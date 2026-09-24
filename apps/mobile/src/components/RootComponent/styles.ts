@@ -20,6 +20,9 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             flex: 1,
             backgroundColor: theme.colors.background,
         },
+        content: {
+            flex: 1,
+        },
         testnetBar: {
             backgroundColor: theme.colors.testnetBg,
             height: insets.top,

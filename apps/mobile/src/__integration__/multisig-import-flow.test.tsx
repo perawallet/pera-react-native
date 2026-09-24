@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { View } from 'react-native'
 
@@ -74,15 +66,7 @@ const ACCOUNT_DETAIL_RESPONSE = {
     participant_addresses: PARTICIPANTS,
 }
 
-// Navigation transitions plus a `requestAnimationFrame` inside `handleFinish`
-// push the wall-clock past the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: Import shared account by scanning its QR code', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -94,95 +78,83 @@ describe('Flow: Import shared account by scanning its QR code', () => {
         useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
     })
 
-    it(
-        'Given a scanned shared-account address, when the user reviews the preview and finishes naming, then a multisig account is persisted and selected',
-        async () => {
-            server.use(
-                mockGetMultisigAccountDetail({
-                    address: SHARED_ADDRESS,
-                    response: ACCOUNT_DETAIL_RESPONSE,
-                }),
-                mockCreateMultisigAccount({
-                    response: ACCOUNT_DETAIL_RESPONSE,
-                }),
-                // "Add to Accounts" fires a fire-and-forget inbox-invitation
-                // delete, like Android — handle it so MSW stays quiet.
-                mockDeleteMultisigImportInbox({
-                    deviceId: 'test-device-id',
-                    multisigAddress: SHARED_ADDRESS,
-                }),
-            )
+    it('Given a scanned shared-account address, when the user reviews the preview and finishes naming, then a multisig account is persisted and selected', async () => {
+        server.use(
+            mockGetMultisigAccountDetail({
+                address: SHARED_ADDRESS,
+                response: ACCOUNT_DETAIL_RESPONSE,
+            }),
+            mockCreateMultisigAccount({
+                response: ACCOUNT_DETAIL_RESPONSE,
+            }),
+            // "Add to Accounts" fires a fire-and-forget inbox-invitation
+            // delete, like Android — handle it so MSW stays quiet.
+            mockDeleteMultisigImportInbox({
+                deviceId: 'test-device-id',
+                multisigAddress: SHARED_ADDRESS,
+            }),
+        )
 
-            renderWithNavigation(
-                ImportSharedAccountScreen,
-                'ImportSharedAccount',
+        renderWithNavigation(ImportSharedAccountScreen, 'ImportSharedAccount', {
+            initialParams: { address: SHARED_ADDRESS },
+            additionalScreens: [
+                { name: 'NameMultisig', component: NameMultisigScreen },
+                // exitAccountFlow resets to 'TabBar' after finishing
+                // — a stub gives the reset a real, observable target.
                 {
-                    initialParams: { address: SHARED_ADDRESS },
-                    additionalScreens: [
-                        { name: 'NameMultisig', component: NameMultisigScreen },
-                        // exitAccountFlow resets to 'TabBar' after finishing
-                        // — a stub gives the reset a real, observable target.
-                        {
-                            name: 'TabBar',
-                            component: () => <View testID='import-flow-home' />,
-                        },
-                    ],
+                    name: 'TabBar',
+                    component: () => <View testID='import-flow-home' />,
                 },
-            )
+            ],
+        })
 
-            // The preview renders once the backend lookup resolves: the
-            // threshold, every participant row, and both footer actions.
-            await waitFor(() =>
-                screen.getByTestId('import-shared-account-add-button'),
-            )
+        // The preview renders once the backend lookup resolves: the
+        // threshold, every participant row, and both footer actions.
+        await waitFor(() =>
+            screen.getByTestId('import-shared-account-add-button'),
+        )
+        expect(
+            screen.getByTestId('import-shared-account-threshold'),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId('import-shared-account-ignore-button'),
+        ).toBeTruthy()
+        PARTICIPANTS.forEach(participant => {
             expect(
-                screen.getByTestId('import-shared-account-threshold'),
+                screen.getByTestId(`import-participant-row-${participant}`),
             ).toBeTruthy()
-            expect(
-                screen.getByTestId('import-shared-account-ignore-button'),
-            ).toBeTruthy()
-            PARTICIPANTS.forEach(participant => {
-                expect(
-                    screen.getByTestId(`import-participant-row-${participant}`),
-                ).toBeTruthy()
-            })
+        })
 
-            // "Add to Accounts" hands off to the naming screen.
-            fireEvent.click(
-                screen.getByTestId('import-shared-account-add-button'),
-            )
-            await waitFor(() =>
-                screen.getByTestId('name_account_finish_button'),
-            )
+        // "Add to Accounts" hands off to the naming screen.
+        fireEvent.click(screen.getByTestId('import-shared-account-add-button'))
+        await waitFor(() => screen.getByTestId('name_account_finish_button'))
 
-            // Name the account and finish.
-            fireEvent.change(screen.getByTestId('name_account_name_input'), {
-                target: { value: 'Team treasury' },
-            })
-            fireEvent.click(screen.getByTestId('name_account_finish_button'))
+        // Name the account and finish.
+        fireEvent.change(screen.getByTestId('name_account_name_input'), {
+            target: { value: 'Team treasury' },
+        })
+        fireEvent.click(screen.getByTestId('name_account_finish_button'))
 
-            // The multisig account is persisted — with the verified address —
-            // and selected.
-            await waitFor(() => {
-                expect(useAccountsStore.getState().accounts).toHaveLength(1)
-            })
-            const saved = useAccountsStore.getState().accounts[0]
-            expect(saved.type).toBe('multisig')
-            expect(saved.address).toBe(SHARED_ADDRESS)
-            expect(saved.name).toBe('Team treasury')
-            expect((saved as MultiSigAccount).multisigDetails).toEqual({
-                threshold: THRESHOLD,
-                addresses: PARTICIPANTS,
-                version: 1,
-            })
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                SHARED_ADDRESS,
-            )
+        // The multisig account is persisted — with the verified address —
+        // and selected.
+        await waitFor(() => {
+            expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        })
+        const saved = useAccountsStore.getState().accounts[0]
+        expect(saved.type).toBe('multisig')
+        expect(saved.address).toBe(SHARED_ADDRESS)
+        expect(saved.name).toBe('Team treasury')
+        expect((saved as MultiSigAccount).multisigDetails).toEqual({
+            threshold: THRESHOLD,
+            addresses: PARTICIPANTS,
+            version: 1,
+        })
+        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+            SHARED_ADDRESS,
+        )
 
-            // Finishing navigates away from the flow — the reset lands on
-            // the wallet home (the stub TabBar route).
-            await waitFor(() => screen.getByTestId('import-flow-home'))
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Finishing navigates away from the flow — the reset lands on
+        // the wallet home (the stub TabBar route).
+        await waitFor(() => screen.getByTestId('import-flow-home'))
+    })
 })

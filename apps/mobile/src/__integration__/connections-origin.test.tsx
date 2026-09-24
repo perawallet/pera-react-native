@@ -24,6 +24,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { Linking } from 'react-native'
 
+import { setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { render } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { walletConnectClientStub } from '@test-utils/walletconnect-client-stub'
@@ -65,7 +66,6 @@ const OTHER_ACCOUNT: WalletAccount = {
     name: 'DeFi',
 }
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
 const SUCCESS_SHEET_TEST_ID = 'wc_connection_success'
 const RETURN_BUTTON_TEST_ID = 'wc_connection_success_return'
 
@@ -165,6 +165,10 @@ const waitForStoredConnection = async (clientId: string) => {
 }
 
 describe('Flow: connection origin → return to the dApp', () => {
+    // The approval header's projects lookup is left unmocked; this file asserts
+    // the return-to-dApp routing, not project metadata.
+    setSuiteUnhandledRequestMode('bypass')
+
     beforeEach(async () => {
         resetTestKeystore()
         walletConnectClientStub.reset()
@@ -184,112 +188,93 @@ describe('Flow: connection origin → return to the dApp', () => {
         useAccountsStore.getState().setAccounts([])
     })
 
-    it(
-        'Given a browser-initiated pairing, when the user approves, then the success sheet offers Return to the dApp, tapping it focuses the browser, and the persisted connection records the origin',
-        async () => {
-            await mountProvider()
-            const connector = await pairAndHandshake(
-                'Browser dApp',
-                CHROME_ORIGIN,
-            )
+    it('Given a browser-initiated pairing, when the user approves, then the success sheet offers Return to the dApp, tapping it focuses the browser, and the persisted connection records the origin', async () => {
+        await mountProvider()
+        const connector = await pairAndHandshake('Browser dApp', CHROME_ORIGIN)
 
-            await approveViaUi(SIGNING_ACCOUNT.name as string)
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
 
-            await waitFor(() => {
-                expect(screen.getByTestId(RETURN_BUTTON_TEST_ID)).toBeTruthy()
-            })
-            fireEvent.click(screen.getByTestId(RETURN_BUTTON_TEST_ID))
+        await waitFor(() => {
+            expect(screen.getByTestId(RETURN_BUTTON_TEST_ID)).toBeTruthy()
+        })
+        fireEvent.click(screen.getByTestId(RETURN_BUTTON_TEST_ID))
 
-            // iOS has no task stack to fall back on, so the bare launch scheme
-            // foregrounds the browser on the tab it was showing.
-            expect(Linking.openURL).toHaveBeenCalledWith('googlechrome://')
-            await waitFor(() => {
-                expect(screen.queryByTestId(SUCCESS_SHEET_TEST_ID)).toBeNull()
-            })
-
-            const stored = await getProvider().connections.store.get(
-                connector.clientId,
-            )
-            expect(stored?.origin).toEqual(CHROME_ORIGIN)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a QR-initiated pairing, when the user approves, then the success sheet offers only Close and the origin is persisted as qr',
-        async () => {
-            await mountProvider()
-            const connector = await pairAndHandshake('QR dApp', {
-                source: 'qr',
-            })
-
-            await approveViaUi(SIGNING_ACCOUNT.name as string)
-
-            await waitFor(() => {
-                expect(screen.getByTestId(SUCCESS_SHEET_TEST_ID)).toBeTruthy()
-            })
-            expect(findButton('common.close.label')).toBeTruthy()
-            expect(screen.queryByTestId(RETURN_BUTTON_TEST_ID)).toBeNull()
-            expect(Linking.openURL).not.toHaveBeenCalled()
-
-            const stored = await getProvider().connections.store.get(
-                connector.clientId,
-            )
-            expect(stored?.origin?.source).toBe('qr')
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given an in-app pairing, when the user approves, then no success sheet appears and the origin is persisted as in-app',
-        async () => {
-            await mountProvider()
-            const connector = await pairAndHandshake('Discover dApp', {
-                source: 'in-app',
-            })
-
-            await approveViaUi(SIGNING_ACCOUNT.name as string)
-            await waitForStoredConnection(connector.clientId)
-
-            // The approval sheet is gone and nothing replaced it: the dApp is
-            // right behind the sheet host and shows its own connected state.
-            await waitFor(() => {
-                expect(findButton('common.connect.label')).toBeUndefined()
-            })
+        // iOS has no task stack to fall back on, so the bare launch scheme
+        // foregrounds the browser on the tab it was showing.
+        expect(Linking.openURL).toHaveBeenCalledWith('googlechrome://')
+        await waitFor(() => {
             expect(screen.queryByTestId(SUCCESS_SHEET_TEST_ID)).toBeNull()
+        })
 
-            const stored = await getProvider().connections.store.get(
-                connector.clientId,
-            )
-            expect(stored?.origin?.source).toBe('in-app')
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        const stored = await getProvider().connections.store.get(
+            connector.clientId,
+        )
+        expect(stored?.origin).toEqual(CHROME_ORIGIN)
+    })
 
-    it(
-        'Given a browser-initiated pairing, when the user rejects it, then nothing is persisted and no success sheet appears',
-        async () => {
-            await mountProvider()
-            const connector = await pairAndHandshake(
-                'Rejected browser dApp',
-                CHROME_ORIGIN,
-            )
+    it('Given a QR-initiated pairing, when the user approves, then the success sheet offers only Close and the origin is persisted as qr', async () => {
+        await mountProvider()
+        const connector = await pairAndHandshake('QR dApp', {
+            source: 'qr',
+        })
 
-            await waitFor(() => {
-                expect(findButton('common.cancel.label')).toBeTruthy()
-            })
-            await act(async () => {
-                fireEvent.click(findButton('common.cancel.label')!)
-            })
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
 
-            await waitFor(() => {
-                expect(connector.rejectSessionCalls).toBe(1)
-            })
-            expect(connector.approveSessionCalls).toHaveLength(0)
-            expect(await getProvider().connections.store.list()).toEqual([])
-            expect(screen.queryByTestId(SUCCESS_SHEET_TEST_ID)).toBeNull()
-            expect(Linking.openURL).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => {
+            expect(screen.getByTestId(SUCCESS_SHEET_TEST_ID)).toBeTruthy()
+        })
+        expect(findButton('common.close.label')).toBeTruthy()
+        expect(screen.queryByTestId(RETURN_BUTTON_TEST_ID)).toBeNull()
+        expect(Linking.openURL).not.toHaveBeenCalled()
+
+        const stored = await getProvider().connections.store.get(
+            connector.clientId,
+        )
+        expect(stored?.origin?.source).toBe('qr')
+    })
+
+    it('Given an in-app pairing, when the user approves, then no success sheet appears and the origin is persisted as in-app', async () => {
+        await mountProvider()
+        const connector = await pairAndHandshake('Discover dApp', {
+            source: 'in-app',
+        })
+
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
+        await waitForStoredConnection(connector.clientId)
+
+        // The approval sheet is gone and nothing replaced it: the dApp is
+        // right behind the sheet host and shows its own connected state.
+        await waitFor(() => {
+            expect(findButton('common.connect.label')).toBeUndefined()
+        })
+        expect(screen.queryByTestId(SUCCESS_SHEET_TEST_ID)).toBeNull()
+
+        const stored = await getProvider().connections.store.get(
+            connector.clientId,
+        )
+        expect(stored?.origin?.source).toBe('in-app')
+    })
+
+    it('Given a browser-initiated pairing, when the user rejects it, then nothing is persisted and no success sheet appears', async () => {
+        await mountProvider()
+        const connector = await pairAndHandshake(
+            'Rejected browser dApp',
+            CHROME_ORIGIN,
+        )
+
+        await waitFor(() => {
+            expect(findButton('common.cancel.label')).toBeTruthy()
+        })
+        await act(async () => {
+            fireEvent.click(findButton('common.cancel.label')!)
+        })
+
+        await waitFor(() => {
+            expect(connector.rejectSessionCalls).toBe(1)
+        })
+        expect(connector.approveSessionCalls).toHaveLength(0)
+        expect(await getProvider().connections.store.list()).toEqual([])
+        expect(screen.queryByTestId(SUCCESS_SHEET_TEST_ID)).toBeNull()
+        expect(Linking.openURL).not.toHaveBeenCalled()
+    })
 })

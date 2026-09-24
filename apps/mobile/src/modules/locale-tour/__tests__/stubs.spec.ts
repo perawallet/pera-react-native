@@ -46,11 +46,11 @@ const deeplinkHandler: typeof import('@modules/deeplink/handlers/useLocaleTourDe
 const register: typeof import('../register') = registerStub
 
 describe('locale tour stubs', () => {
-    // register.stub.ts having been imported above is the whole test: it is the
-    // only module that ever registers a runner, so a non-dev bundle leaves the
-    // registry empty and the deeplink handler with nothing to call.
+    // register.ts is the only module that ever registers a runner, so its stub
+    // leaves a non-dev bundle's registry empty and the deeplink handler with
+    // nothing to call.
     it('leave the registry empty, so the tour deeplink has no runner', () => {
-        expect(register).toBeDefined()
+        register.registerLocaleTour()
         expect(getLocaleTourRunner()).toBeUndefined()
     })
 

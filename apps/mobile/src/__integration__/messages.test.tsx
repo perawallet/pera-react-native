@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { cleanup, screen, waitFor } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
@@ -82,10 +74,7 @@ const UNREAD_BADGE_HANDLERS = [
     mockInbox({ deviceID: DEVICE_ID, response: EMPTY_INBOX }),
 ]
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: Messages — inbox & notifications lists', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     // Unmount before dropping the handlers: vitest runs describe-level
     // afterEach hooks before the file-level RTL auto-cleanup, so resetting
     // first leaves the inbox/notification polls running against an empty MSW
@@ -94,9 +83,7 @@ describe('Flow: Messages — inbox & notifications lists', () => {
     // "onUserConsoleLog" was pending`, failing the run with every test passing.
     afterEach(() => {
         cleanup()
-        server.resetHandlers()
     })
-    afterAll(() => server.close())
 
     beforeEach(() => {
         resetTestKeystore()
@@ -107,134 +94,116 @@ describe('Flow: Messages — inbox & notifications lists', () => {
         useDeviceStore.getState().setDeviceID('testnet', DEVICE_ID)
     })
 
-    it(
-        'Given the inbox endpoint returns one ASA request, when InboxScreen mounts, then the ASA request row renders',
-        async () => {
-            server.use(
-                mockInbox({
-                    deviceID: DEVICE_ID,
-                    response: {
-                        ...EMPTY_INBOX,
-                        asa_inboxes: [
-                            {
-                                address: HD_TEST_ADDRESS,
-                                inbox_address: null,
-                                request_count: 3,
-                            },
-                        ],
-                    },
-                }),
-            )
+    it('Given the inbox endpoint returns one ASA request, when InboxScreen mounts, then the ASA request row renders', async () => {
+        server.use(
+            mockInbox({
+                deviceID: DEVICE_ID,
+                response: {
+                    ...EMPTY_INBOX,
+                    asa_inboxes: [
+                        {
+                            address: HD_TEST_ADDRESS,
+                            inbox_address: null,
+                            request_count: 3,
+                        },
+                    ],
+                },
+            }),
+        )
 
-            renderWithNavigation(InboxScreen, 'Inbox')
+        renderWithNavigation(InboxScreen, 'Inbox')
 
-            // AsaInboxItem titles the row with `messages.inbox.asa_requests`;
-            // i18n falls back to the raw key under the integration setup.
-            await waitFor(() => {
-                expect(
-                    screen.getAllByText((_, node) =>
-                        (node?.textContent ?? '').includes(
-                            'messages.inbox.asa_requests',
-                        ),
-                    ).length,
-                ).toBeGreaterThan(0)
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // AsaInboxItem titles the row with `messages.inbox.asa_requests`;
+        // i18n falls back to the raw key under the integration setup.
+        await waitFor(() => {
+            expect(
+                screen.getAllByText((_, node) =>
+                    (node?.textContent ?? '').includes(
+                        'messages.inbox.asa_requests',
+                    ),
+                ).length,
+            ).toBeGreaterThan(0)
+        })
+    })
 
-    it(
-        'Given the inbox endpoint returns no requests, when InboxScreen mounts, then the empty state renders',
-        async () => {
-            server.use(
-                mockInbox({ deviceID: DEVICE_ID, response: EMPTY_INBOX }),
-            )
+    it('Given the inbox endpoint returns no requests, when InboxScreen mounts, then the empty state renders', async () => {
+        server.use(mockInbox({ deviceID: DEVICE_ID, response: EMPTY_INBOX }))
 
-            renderWithNavigation(InboxScreen, 'Inbox')
+        renderWithNavigation(InboxScreen, 'Inbox')
 
-            await waitFor(() => {
-                expect(
-                    screen.getAllByText((_, node) =>
-                        (node?.textContent ?? '').includes(
-                            'messages.inbox.empty_title',
-                        ),
-                    ).length,
-                ).toBeGreaterThan(0)
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => {
+            expect(
+                screen.getAllByText((_, node) =>
+                    (node?.textContent ?? '').includes(
+                        'messages.inbox.empty_title',
+                    ),
+                ).length,
+            ).toBeGreaterThan(0)
+        })
+    })
 
-    it(
-        'Given the notifications endpoint returns two notifications, when NotificationsScreen mounts, then both messages render',
-        async () => {
-            server.use(
-                ...UNREAD_BADGE_HANDLERS,
-                mockNotificationList({
-                    deviceID: DEVICE_ID,
-                    response: {
-                        next: null,
-                        previous: null,
-                        results: [
-                            {
-                                id: '101',
-                                type: 'transaction',
-                                account_address: ALGO25_TEST_ADDRESS,
-                                message: 'You received 5 ALGO',
-                                url: null,
-                                creation_datetime: '2024-01-02T00:00:00Z',
-                                is_unread: true,
-                                icon: null,
-                            },
-                            {
-                                id: '100',
-                                type: 'transaction',
-                                account_address: ALGO25_TEST_ADDRESS,
-                                message: 'You sent 2 ALGO',
-                                url: null,
-                                creation_datetime: '2024-01-01T00:00:00Z',
-                                is_unread: false,
-                                icon: null,
-                            },
-                        ],
-                    },
-                }),
-            )
+    it('Given the notifications endpoint returns two notifications, when NotificationsScreen mounts, then both messages render', async () => {
+        server.use(
+            ...UNREAD_BADGE_HANDLERS,
+            mockNotificationList({
+                deviceID: DEVICE_ID,
+                response: {
+                    next: null,
+                    previous: null,
+                    results: [
+                        {
+                            id: '101',
+                            type: 'transaction',
+                            account_address: ALGO25_TEST_ADDRESS,
+                            message: 'You received 5 ALGO',
+                            url: null,
+                            creation_datetime: '2024-01-02T00:00:00Z',
+                            is_unread: true,
+                            icon: null,
+                        },
+                        {
+                            id: '100',
+                            type: 'transaction',
+                            account_address: ALGO25_TEST_ADDRESS,
+                            message: 'You sent 2 ALGO',
+                            url: null,
+                            creation_datetime: '2024-01-01T00:00:00Z',
+                            is_unread: false,
+                            icon: null,
+                        },
+                    ],
+                },
+            }),
+        )
 
-            renderWithNavigation(NotificationsScreen, 'Notifications')
+        renderWithNavigation(NotificationsScreen, 'Notifications')
 
-            // NotificationItem renders `item.message` directly as text.
-            await waitFor(() => {
-                expect(screen.getByText('You received 5 ALGO')).toBeTruthy()
-            })
-            expect(screen.getByText('You sent 2 ALGO')).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // NotificationItem renders `item.message` directly as text.
+        await waitFor(() => {
+            expect(screen.getByText('You received 5 ALGO')).toBeTruthy()
+        })
+        expect(screen.getByText('You sent 2 ALGO')).toBeTruthy()
+    })
 
-    it(
-        'Given the notifications endpoint returns nothing, when NotificationsScreen mounts, then the empty state renders',
-        async () => {
-            server.use(
-                ...UNREAD_BADGE_HANDLERS,
-                mockNotificationList({
-                    deviceID: DEVICE_ID,
-                    response: { next: null, previous: null, results: [] },
-                }),
-            )
+    it('Given the notifications endpoint returns nothing, when NotificationsScreen mounts, then the empty state renders', async () => {
+        server.use(
+            ...UNREAD_BADGE_HANDLERS,
+            mockNotificationList({
+                deviceID: DEVICE_ID,
+                response: { next: null, previous: null, results: [] },
+            }),
+        )
 
-            renderWithNavigation(NotificationsScreen, 'Notifications')
+        renderWithNavigation(NotificationsScreen, 'Notifications')
 
-            await waitFor(() => {
-                expect(
-                    screen.getAllByText((_, node) =>
-                        (node?.textContent ?? '').includes(
-                            'notifications.empty_title',
-                        ),
-                    ).length,
-                ).toBeGreaterThan(0)
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => {
+            expect(
+                screen.getAllByText((_, node) =>
+                    (node?.textContent ?? '').includes(
+                        'notifications.empty_title',
+                    ),
+                ).length,
+            ).toBeGreaterThan(0)
+        })
+    })
 })

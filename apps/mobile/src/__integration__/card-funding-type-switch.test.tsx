@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
@@ -112,7 +103,6 @@ const openFundingTypeSheet = async () => {
 }
 
 describe('Flow: Card funding type switch', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => {
         useAccountsStore.getState().setAccounts([ACCOUNT])
         useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT.address)
@@ -129,8 +119,6 @@ describe('Flow: Card funding type switch', () => {
         useCardSessionStore.getState().setAuthenticated(true)
         server.use(activeCardStatus)
     })
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     it('disables auto-draw and persists Manual when switching Auto → Manual', async () => {
         useCardStore.getState().setSelectedFundingType(FundingType.Auto)

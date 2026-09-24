@@ -14,16 +14,23 @@ import { useCallback } from 'react'
 import { canSignProgram } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { concatBytes } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    concatBytes,
+} from '@perawallet/wallet-core-shared'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { encodeDelegatedLsig } from '../utils/lsig'
 
 const PROGRAM_PREFIX = new TextEncoder().encode('Program')
 
 /** The account cannot produce a delegated LSig (hardware/watch/rekeyed). */
-export class ProgramSigningUnsupportedError extends Error {
+export class ProgramSigningUnsupportedError extends AppError {
     constructor(address: string) {
-        super(`Cannot sign a program with ${address}`)
+        super(`Cannot sign a program with ${address}`, {
+            category: ErrorCategory.ACCOUNTS,
+            recoverable: false,
+        })
         this.name = 'ProgramSigningUnsupportedError'
     }
 }

@@ -1040,13 +1040,6 @@
                 "body": "The server ran into a problem processing your request. Please try again."
             }
         },
-        "validation": {
-            "generic": "The data appears to be invalid.",
-            "invalid_address": "The address appears to be invalid: {{address}}",
-            "invalid_amount": "The amount appears to be invalid: {{amount}}",
-            "invalid_mnemonic": "The recovery passphrase appears to be invalid.",
-            "required_field": "A required field is missing: {{field}}"
-        },
         "transaction": {
             "title": "An error occurred processing this transaction",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
@@ -2038,6 +2031,7 @@
             "pair_ledger_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via Bluetooth",
             "pair_ledger_usb_title": "Pair Ledger via USB",
             "pair_ledger_usb_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via USB cable",
+            "pair_ledger_unsupported_description": "Not supported by this browser or device",
             "pera_web_title": "Import from Pera Web",
             "pera_web_description": "I want to import Algorand accounts from Pera Web",
             "cloud_backup_title": "Import from Cloud Backup",
@@ -4017,7 +4011,17 @@
             "error_invalid_password": "Incorrect password. Please try again.",
             "corrupted_error": "Your vault data is corrupted and cannot be unlocked. You may need to reset the extension and restore from your backup.",
             "passkey_error": "Passkey unlock failed. Use your password instead.",
-            "lockout_countdown": "Too many attempts. Try again in {{time}}"
+            "lockout_countdown": "Too many attempts. Try again in {{time}}",
+            "forgot_password": "Forgot password?"
+        },
+        "reset": {
+            "title": "Reset your wallet?",
+            "body": "Your password can't be recovered. Resetting deletes everything Pera Wallet stores in this browser, then you can set a new password.",
+            "restore_note": "Restore your accounts afterwards with their recovery passphrase. Any account whose recovery passphrase isn't backed up will be lost.",
+            "hardware_note": "Ledger and watch accounts can't be restored from a passphrase. Add them again after the reset.",
+            "acknowledge": "I understand this deletes my data and can't be undone",
+            "confirm_button": "Reset Wallet",
+            "error": "Couldn't reset the wallet. Please try again."
         },
         "security": {
             "autolock_title": "Auto-lock after",

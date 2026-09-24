@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
@@ -52,10 +44,6 @@ const noCardResponse = () =>
 // NOTE: whenever the status handler 404s, the issuance flow polls
 // GET /v1/user — register a user handler too, or MSW warns on it.
 describe('Flow: Card dashboard without a Baanx card', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     it('waits on PENDING verification: dimmed-state notice, no card actions, no order request', async () => {
         const order = vi.fn(() =>
             HttpResponse.json({ success: true }, { status: 200 }),

@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { createWrapper } from '@perawallet/wallet-extension-platform'
+import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { useBannersQuery } from '../useBannersQuery'
 import { fetchBanners } from '../../api/banners'
 import { useDeviceID } from '@perawallet/wallet-core-device'

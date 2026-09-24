@@ -202,10 +202,11 @@ pnpm fallow         # report unused code, circular deps, duplication
 dependencies, plus circular dependencies and code duplication, which neither Oxlint nor `tsc` cover.
 Config lives in [`.fallowrc.jsonc`](.fallowrc.jsonc).
 
-It runs in CI as an advisory, non-blocking job (`Dead Code` in
-[`ci-pre-merge.yml`](.github/workflows/ci-pre-merge.yml)): findings appear in the job summary but never
-fail a PR. The plan is to triage the existing findings, then ratchet specific rules to blocking with
-a `--baseline` so only new findings fail. Do removals in reviewed PRs, not via `fallow fix`.
+It runs in CI as the `Dead Code` job in [`ci-pre-merge.yml`](.github/workflows/ci-pre-merge.yml):
+findings appear in the job summary, and any rule set to `"error"` (unused files, exports and
+dependencies, cycles) fails the PR. A dependency used outside the import graph (an autolinked native
+module, a config plugin, a Metro polyfill) goes in `ignoreDependencies` with its reason. Do removals
+in reviewed PRs, not via `fallow fix`.
 
 ## Documentation
 

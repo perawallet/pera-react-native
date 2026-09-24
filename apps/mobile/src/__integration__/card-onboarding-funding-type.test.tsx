@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
@@ -236,7 +227,6 @@ const mockOnboardingDetails = (verificationState: string) =>
     )
 
 describe('Flow: Card onboarding — select funding type', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(async () => {
         await seedFundingSigner()
         const store = useCardStore.getState()
@@ -258,11 +248,9 @@ describe('Flow: Card onboarding — select funding type', () => {
         })
     })
     afterEach(() => {
-        server.resetHandlers()
         useAccountsStore.getState().setAccounts([])
         useAppIntegrityStore.getState().resetState()
     })
-    afterAll(() => server.close())
 
     it('Given funds are connected, then both funding-type options and the Create button show', async () => {
         renderStatus()

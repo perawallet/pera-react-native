@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
-import { createWrapper } from '@perawallet/wallet-extension-platform'
+import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'

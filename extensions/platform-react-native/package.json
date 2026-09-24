@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
-    "@algorandfoundation/wallet-provider": "catalog:",
     "@expensify/react-native-wallet": "^0.1.22",
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
@@ -44,7 +43,6 @@
     "expo-device": "catalog:",
     "expo-local-authentication": "catalog:",
     "expo-localization": "catalog:",
-    "zustand": "catalog:",
     "expo": "catalog:"
   },
   "devDependencies": {

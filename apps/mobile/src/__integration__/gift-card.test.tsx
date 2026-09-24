@@ -11,15 +11,7 @@
  */
 
 import type { ReactNode } from 'react'
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { QueryClientProvider } from '@tanstack/react-query'
 import {
     act,
@@ -47,8 +39,6 @@ import { useBidaliTransport } from '@modules/gift-card/hooks/useBidaliTransport'
 
 import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const ACCOUNT_A: WalletAccount = {
     id: 'gift-card-a',
@@ -113,10 +103,6 @@ const getPendingSignRequests = () =>
         .pendingSignRequests
 
 describe('Flow: Gift card (Bidali)', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -129,34 +115,28 @@ describe('Flow: Gift card (Bidali)', () => {
         drainSigningRequests()
     })
 
-    it(
-        'Given two accounts on the Bidali account-selection screen, when the user taps one, then it is recorded as the selected Bidali account and the flow advances to the web view',
-        async () => {
-            useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
+    it('Given two accounts on the Bidali account-selection screen, when the user taps one, then it is recorded as the selected Bidali account and the flow advances to the web view', async () => {
+        useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
 
-            renderWithNavigation(
-                BidaliAccountSelectionScreen,
-                'BidaliAccountSelection',
-                {
-                    additionalScreens: [
-                        { name: 'BidaliWebView', component: WebViewProbe },
-                    ],
-                },
-            )
+        renderWithNavigation(
+            BidaliAccountSelectionScreen,
+            'BidaliAccountSelection',
+            {
+                additionalScreens: [
+                    { name: 'BidaliWebView', component: WebViewProbe },
+                ],
+            },
+        )
 
-            tapAccountRow(ACCOUNT_B.name as string)
+        tapAccountRow(ACCOUNT_B.name as string)
 
-            await waitFor(() => {
-                expect(screen.getByTestId('bidali-webview-screen')).toBeTruthy()
-            })
+        await waitFor(() => {
+            expect(screen.getByTestId('bidali-webview-screen')).toBeTruthy()
+        })
 
-            const { result } = renderHook(() => useBidali())
-            expect(result.current.selectedAccount?.address).toBe(
-                ACCOUNT_B.address,
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        const { result } = renderHook(() => useBidali())
+        expect(result.current.selectedAccount?.address).toBe(ACCOUNT_B.address)
+    })
 
     it('Given a selected account, when a malformed Bidali payment request arrives (bad address), then no sign request is enqueued', async () => {
         const { result } = renderHook(
@@ -196,33 +176,29 @@ describe('Flow: Gift card (Bidali)', () => {
         expect(getPendingSignRequests()).toHaveLength(0)
     })
 
-    it(
-        'Given a selected account, when a well-formed ALGO Bidali payment request arrives, then a transactions sign request is enqueued',
-        async () => {
-            server.use(mockAlgodTransactionParams())
+    it('Given a selected account, when a well-formed ALGO Bidali payment request arrives, then a transactions sign request is enqueued', async () => {
+        server.use(mockAlgodTransactionParams())
 
-            const { result } = renderHook(
-                () => useBidaliTransport(ACCOUNT_A, EMPTY_BALANCES),
-                { wrapper: Wrapper },
+        const { result } = renderHook(
+            () => useBidaliTransport(ACCOUNT_A, EMPTY_BALANCES),
+            { wrapper: Wrapper },
+        )
+
+        await act(async () => {
+            result.current.handleMessage(
+                bidaliRPC('bidaliPaymentRequest', {
+                    address: HD_TEST_ADDRESS,
+                    amount: '1.5',
+                    protocol: 'algorand',
+                }),
             )
+        })
 
-            await act(async () => {
-                result.current.handleMessage(
-                    bidaliRPC('bidaliPaymentRequest', {
-                        address: HD_TEST_ADDRESS,
-                        amount: '1.5',
-                        protocol: 'algorand',
-                    }),
-                )
-            })
-
-            await waitFor(() => {
-                const requests = getPendingSignRequests()
-                expect(requests).toHaveLength(1)
-                expect(requests[0].type).toBe('transactions')
-                expect(requests[0].sourceType).toBe('gift-card')
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => {
+            const requests = getPendingSignRequests()
+            expect(requests).toHaveLength(1)
+            expect(requests[0].type).toBe('transactions')
+            expect(requests[0].sourceType).toBe('gift-card')
+        })
+    })
 })

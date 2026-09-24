@@ -13,7 +13,6 @@
 import React from 'react'
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -31,7 +30,6 @@ import {
 } from '@testing-library/react'
 
 import { render } from '@test-utils/render'
-import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -63,8 +61,6 @@ import {
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
 } from './__fixtures__/onboarding'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Tiny host that drives the imperative `useViewPassphraseFlow` hook
 // when the trigger is tapped. Models how `AccountOptionsContent` opens
@@ -224,12 +220,9 @@ const advanceToDisplayedWords = async (): Promise<void> => {
 
 describe('Flow: View account passphrase', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -243,298 +236,254 @@ describe('Flow: View account passphrase', () => {
         vi.clearAllMocks()
     })
 
-    it(
-        'Given an algo25 account, when the user opens the flow, acknowledges all warnings, and reveals the passphrase, then the original mnemonic is displayed',
-        async () => {
-            const account = await seedAlgo25Account()
-            const onClose = vi.fn()
+    it('Given an algo25 account, when the user opens the flow, acknowledges all warnings, and reveals the passphrase, then the original mnemonic is displayed', async () => {
+        const account = await seedAlgo25Account()
+        const onClose = vi.fn()
 
-            render(
-                <ViewPassphraseHost
-                    address={account.address}
-                    onClose={onClose}
-                />,
-            )
+        render(
+            <ViewPassphraseHost
+                address={account.address}
+                onClose={onClose}
+            />,
+        )
 
-            // Flow is initially closed: neither sheet is mounted.
-            // The PWBottomSheet host mock uses a fixed
-            // `data-testid="PWBottomSheet"`, so probe by the inner
-            // testIDs that the acknowledge / display sheets attach to
-            // their own contents.
+        // Flow is initially closed: neither sheet is mounted.
+        // The PWBottomSheet host mock uses a fixed
+        // `data-testid="PWBottomSheet"`, so probe by the inner
+        // testIDs that the acknowledge / display sheets attach to
+        // their own contents.
+        expect(
+            screen.queryByTestId('passphrase_acknowledge_bottom_sheet_reveal'),
+        ).toBeNull()
+        expect(
+            screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
+        ).toBeNull()
+
+        // Open the flow. With no PIN configured in the test
+        // keystore, `checkPinEnabled()` resolves to false, so the
+        // first step is the acknowledge sheet (the PIN gate is
+        // skipped). The acknowledge sheet always mounts at this
+        // point; the reveal CTA stays disabled until every checkbox
+        // has been ticked.
+        fireEvent.click(screen.getByTestId('open_view_passphrase'))
+        await waitFor(() => {
             expect(
-                screen.queryByTestId(
+                screen.getByTestId(
                     'passphrase_acknowledge_bottom_sheet_reveal',
                 ),
-            ).toBeNull()
-            expect(
-                screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
-            ).toBeNull()
+            ).toBeTruthy()
+        })
 
-            // Open the flow. With no PIN configured in the test
-            // keystore, `checkPinEnabled()` resolves to false, so the
-            // first step is the acknowledge sheet (the PIN gate is
-            // skipped). The acknowledge sheet always mounts at this
-            // point; the reveal CTA stays disabled until every checkbox
-            // has been ticked.
-            fireEvent.click(screen.getByTestId('open_view_passphrase'))
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(
-                        'passphrase_acknowledge_bottom_sheet_reveal',
-                    ),
-                ).toBeTruthy()
-            })
+        const revealButton = () =>
+            screen.getByTestId('passphrase_acknowledge_bottom_sheet_reveal')
+        expect(isElementDisabled(revealButton())).toBe(true)
 
-            const revealButton = () =>
-                screen.getByTestId('passphrase_acknowledge_bottom_sheet_reveal')
-            expect(isElementDisabled(revealButton())).toBe(true)
-
-            // Tap each row in turn. Each tap toggles one checkbox; once
-            // all four are checked, the reveal CTA enables.
-            for (let i = 0; i < 4; i++) {
-                fireEvent.click(
-                    screen.getByTestId(
-                        `passphrase_acknowledge_bottom_sheet_row_${i}`,
-                    ),
-                )
-            }
-            await waitFor(() => {
-                expect(isElementDisabled(revealButton())).toBe(false)
-            })
-
-            // Reveal advances the flow to the display step. The
-            // acknowledge sheet unmounts (PWBottomSheet only renders
-            // when `isVisible`), and the display sheet mounts and
-            // resolves the mnemonic via the KMS session.
-            fireEvent.click(revealButton())
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('view_passphrase_bottom_sheet_grid'),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
-            // Acknowledge sheet has unmounted: its reveal button is
-            // gone from the DOM.
-            expect(
-                screen.queryByTestId(
-                    'passphrase_acknowledge_bottom_sheet_reveal',
-                ),
-            ).toBeNull()
-
-            // Every word from the original mnemonic is rendered inside
-            // the grid. Order matters — the display lays the 25 words
-            // out in two columns top-to-bottom, so we walk the rendered
-            // grid in the same order and compare against the source
-            // phrase.
-            expect(readMnemonicWordsFromGrid()).toEqual(
-                ALGO25_TEST_MNEMONIC_WORDS,
-            )
-
-            // onClose was not called — the user is still inside the
-            // display sheet. Closing the host would fire it, but that's
-            // the parent's concern, not the flow's.
-            expect(onClose).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the user opens the flow but cancels at the acknowledge step, when they tap cancel, then onClose fires and no mnemonic is read',
-        async () => {
-            const account = await seedAlgo25Account()
-            const onClose = vi.fn()
-
-            render(
-                <ViewPassphraseHost
-                    address={account.address}
-                    onClose={onClose}
-                />,
-            )
-
-            fireEvent.click(screen.getByTestId('open_view_passphrase'))
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(
-                        'passphrase_acknowledge_bottom_sheet_cancel',
-                    ),
-                ).toBeTruthy()
-            })
-
-            // Cancel from the acknowledge sheet without ticking any
-            // boxes. The flow surfaces this as `onClose`, the host
-            // hides the sheet, and the display sheet never mounts.
+        // Tap each row in turn. Each tap toggles one checkbox; once
+        // all four are checked, the reveal CTA enables.
+        for (let i = 0; i < 4; i++) {
             fireEvent.click(
+                screen.getByTestId(
+                    `passphrase_acknowledge_bottom_sheet_row_${i}`,
+                ),
+            )
+        }
+        await waitFor(() => {
+            expect(isElementDisabled(revealButton())).toBe(false)
+        })
+
+        // Reveal advances the flow to the display step. The
+        // acknowledge sheet unmounts (PWBottomSheet only renders
+        // when `isVisible`), and the display sheet mounts and
+        // resolves the mnemonic via the KMS session.
+        fireEvent.click(revealButton())
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('view_passphrase_bottom_sheet_grid'),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        // Acknowledge sheet has unmounted: its reveal button is
+        // gone from the DOM.
+        expect(
+            screen.queryByTestId('passphrase_acknowledge_bottom_sheet_reveal'),
+        ).toBeNull()
+
+        // Every word from the original mnemonic is rendered inside
+        // the grid. Order matters — the display lays the 25 words
+        // out in two columns top-to-bottom, so we walk the rendered
+        // grid in the same order and compare against the source
+        // phrase.
+        expect(readMnemonicWordsFromGrid()).toEqual(ALGO25_TEST_MNEMONIC_WORDS)
+
+        // onClose was not called — the user is still inside the
+        // display sheet. Closing the host would fire it, but that's
+        // the parent's concern, not the flow's.
+        expect(onClose).not.toHaveBeenCalled()
+    })
+
+    it('Given the user opens the flow but cancels at the acknowledge step, when they tap cancel, then onClose fires and no mnemonic is read', async () => {
+        const account = await seedAlgo25Account()
+        const onClose = vi.fn()
+
+        render(
+            <ViewPassphraseHost
+                address={account.address}
+                onClose={onClose}
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId('open_view_passphrase'))
+        await waitFor(() => {
+            expect(
                 screen.getByTestId(
                     'passphrase_acknowledge_bottom_sheet_cancel',
                 ),
-            )
+            ).toBeTruthy()
+        })
 
-            await waitFor(() => {
-                expect(onClose).toHaveBeenCalled()
-            })
-            expect(
-                screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Cancel from the acknowledge sheet without ticking any
+        // boxes. The flow surfaces this as `onClose`, the host
+        // hides the sheet, and the display sheet never mounts.
+        fireEvent.click(
+            screen.getByTestId('passphrase_acknowledge_bottom_sheet_cancel'),
+        )
 
-    it(
-        'Given an HD wallet root account, when the user reveals the passphrase, then the 24-word HD mnemonic is displayed',
-        async () => {
-            const { rootAccount } = await seedHDWalletAccounts()
+        await waitFor(() => {
+            expect(onClose).toHaveBeenCalled()
+        })
+        expect(
+            screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
+        ).toBeNull()
+    })
 
-            render(<ViewPassphraseHost address={rootAccount.address} />)
-            await advanceToDisplayedWords()
+    it('Given an HD wallet root account, when the user reveals the passphrase, then the 24-word HD mnemonic is displayed', async () => {
+        const { rootAccount } = await seedHDWalletAccounts()
 
-            expect(readMnemonicWordsFromGrid()).toEqual(
-                HD_TEST_MNEMONIC_24_WORDS,
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        render(<ViewPassphraseHost address={rootAccount.address} />)
+        await advanceToDisplayedWords()
 
-    it(
-        'Given an HD wallet derived account at keyIndex=1, when the user reveals the passphrase, then the SAME 24-word root mnemonic is displayed (derived addresses share the root phrase)',
-        async () => {
-            const { rootAccount, derivedAccount } = await seedHDWalletAccounts()
-            // Sanity: addresses differ — the derived account is a
-            // distinct Algorand address — but they share the keyPairId
-            // pointing at the same root key in the keystore.
-            expect(derivedAccount.address).not.toBe(rootAccount.address)
-            expect(derivedAccount.keyPairId).toBe(rootAccount.keyPairId)
+        expect(readMnemonicWordsFromGrid()).toEqual(HD_TEST_MNEMONIC_24_WORDS)
+    })
 
-            render(<ViewPassphraseHost address={derivedAccount.address} />)
-            await advanceToDisplayedWords()
+    it('Given an HD wallet derived account at keyIndex=1, when the user reveals the passphrase, then the SAME 24-word root mnemonic is displayed (derived addresses share the root phrase)', async () => {
+        const { rootAccount, derivedAccount } = await seedHDWalletAccounts()
+        // Sanity: addresses differ — the derived account is a
+        // distinct Algorand address — but they share the keyPairId
+        // pointing at the same root key in the keystore.
+        expect(derivedAccount.address).not.toBe(rootAccount.address)
+        expect(derivedAccount.keyPairId).toBe(rootAccount.keyPairId)
 
-            // Same expected vector as the root test: an HD wallet has
-            // exactly one mnemonic regardless of which derived address
-            // the user opens the flow against.
-            expect(readMnemonicWordsFromGrid()).toEqual(
-                HD_TEST_MNEMONIC_24_WORDS,
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        render(<ViewPassphraseHost address={derivedAccount.address} />)
+        await advanceToDisplayedWords()
 
-    it(
-        'Given a PIN is configured, when the user opens the flow, then the PIN gate mounts in front of the acknowledge step',
-        async () => {
-            const account = await seedAlgo25Account()
+        // Same expected vector as the root test: an HD wallet has
+        // exactly one mnemonic regardless of which derived address
+        // the user opens the flow against.
+        expect(readMnemonicWordsFromGrid()).toEqual(HD_TEST_MNEMONIC_24_WORDS)
+    })
 
-            // Set the PIN before opening the flow. `savePin` writes to
-            // the typed-secret store; `checkPinEnabled` then reports
-            // true and the flow's gate routes to step='pin' rather than
-            // 'acknowledge'.
-            const TEST_PIN = '123456'
-            const { result: pinHook } = renderHook(() => usePinCode())
-            await waitFor(async () => {
-                await pinHook.current.savePin(TEST_PIN)
-                expect(await pinHook.current.checkPinEnabled()).toBe(true)
-            })
+    it('Given a PIN is configured, when the user opens the flow, then the PIN gate mounts in front of the acknowledge step', async () => {
+        const account = await seedAlgo25Account()
 
-            render(<ViewPassphraseHost address={account.address} />)
+        // Set the PIN before opening the flow. `savePin` writes to
+        // the typed-secret store; `checkPinEnabled` then reports
+        // true and the flow's gate routes to step='pin' rather than
+        // 'acknowledge'.
+        const TEST_PIN = '123456'
+        const { result: pinHook } = renderHook(() => usePinCode())
+        await waitFor(async () => {
+            await pinHook.current.savePin(TEST_PIN)
+            expect(await pinHook.current.checkPinEnabled()).toBe(true)
+        })
 
-            // Open. The PinEditView mounts its numpad — that's the
-            // user-facing handle to the gate. The acknowledge sheet
-            // and the display sheet are both absent: the gate stands
-            // in front of them.
-            fireEvent.click(screen.getByTestId('open_view_passphrase'))
-            await waitFor(() => {
-                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
-            })
-            expect(
-                screen.queryByTestId(
-                    'passphrase_acknowledge_bottom_sheet_reveal',
-                ),
-            ).toBeNull()
-            expect(
-                screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        render(<ViewPassphraseHost address={account.address} />)
 
-    it(
-        'Given a PIN is configured, when the user enters a PIN one digit short, then the flow stays on the gate (no auto-advance from a partial PIN)',
-        async () => {
-            const account = await seedAlgo25Account()
-
-            const TEST_PIN = '123456'
-            const { result: pinHook } = renderHook(() => usePinCode())
-            await waitFor(async () => {
-                await pinHook.current.savePin(TEST_PIN)
-                expect(await pinHook.current.checkPinEnabled()).toBe(true)
-            })
-
-            render(<ViewPassphraseHost address={account.address} />)
-
-            fireEvent.click(screen.getByTestId('open_view_passphrase'))
-            await waitFor(() => {
-                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
-            })
-
-            // Enter five of the six digits — one short of `PIN_LENGTH`.
-            // `usePinEntry` only schedules `onPinComplete` once the
-            // pin actually reaches length 6, so this is a meaningful
-            // negative case: the gate must stay up.
-            for (const digit of '12345') {
-                await act(async () => {
-                    fireEvent.click(screen.getByTestId(`numpad_key_${digit}`))
-                })
-            }
-
-            // Settle: give any pending React commits and the 100ms
-            // `onPinComplete` setTimeout (which would NOT have been
-            // scheduled, but we wait long enough that any false
-            // positive would have surfaced).
-            await act(async () => {
-                await new Promise(resolve => setTimeout(resolve, 250))
-            })
-
+        // Open. The PinEditView mounts its numpad — that's the
+        // user-facing handle to the gate. The acknowledge sheet
+        // and the display sheet are both absent: the gate stands
+        // in front of them.
+        fireEvent.click(screen.getByTestId('open_view_passphrase'))
+        await waitFor(() => {
             expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
+        })
+        expect(
+            screen.queryByTestId('passphrase_acknowledge_bottom_sheet_reveal'),
+        ).toBeNull()
+        expect(
+            screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
+        ).toBeNull()
+    })
+
+    it('Given a PIN is configured, when the user enters a PIN one digit short, then the flow stays on the gate (no auto-advance from a partial PIN)', async () => {
+        const account = await seedAlgo25Account()
+
+        const TEST_PIN = '123456'
+        const { result: pinHook } = renderHook(() => usePinCode())
+        await waitFor(async () => {
+            await pinHook.current.savePin(TEST_PIN)
+            expect(await pinHook.current.checkPinEnabled()).toBe(true)
+        })
+
+        render(<ViewPassphraseHost address={account.address} />)
+
+        fireEvent.click(screen.getByTestId('open_view_passphrase'))
+        await waitFor(() => {
+            expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
+        })
+
+        // Enter five of the six digits — one short of `PIN_LENGTH`.
+        // `usePinEntry` only schedules `onPinComplete` once the
+        // pin actually reaches length 6, so this is a meaningful
+        // negative case: the gate must stay up.
+        for (const digit of '12345') {
+            await act(async () => {
+                fireEvent.click(screen.getByTestId(`numpad_key_${digit}`))
+            })
+        }
+
+        // Settle: give any pending React commits and the 100ms
+        // `onPinComplete` setTimeout (which would NOT have been
+        // scheduled, but we wait long enough that any false
+        // positive would have surfaced).
+        await act(async () => {
+            await new Promise(resolve => setTimeout(resolve, 250))
+        })
+
+        expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
+        expect(
+            screen.queryByTestId('passphrase_acknowledge_bottom_sheet_reveal'),
+        ).toBeNull()
+        expect(
+            screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
+        ).toBeNull()
+    })
+
+    it('Given no PIN is configured, when the user opens the flow, then the PIN gate is bypassed and the acknowledge step renders directly', async () => {
+        // Mirror image of the PIN-configured test above. With no
+        // PIN saved in the typed-secret store, `checkPinEnabled`
+        // resolves to false and `useViewPassphraseFlow` skips
+        // step='pin' altogether — the acknowledge sheet should be
+        // the very first thing the user sees, and the PinEditView
+        // bottom sheet (the numpad host) should never mount.
+        const account = await seedAlgo25Account()
+        const { result: pinHook } = renderHook(() => usePinCode())
+        await waitFor(async () => {
+            expect(await pinHook.current.checkPinEnabled()).toBe(false)
+        })
+
+        render(<ViewPassphraseHost address={account.address} />)
+
+        fireEvent.click(screen.getByTestId('open_view_passphrase'))
+        await waitFor(() => {
             expect(
-                screen.queryByTestId(
+                screen.getByTestId(
                     'passphrase_acknowledge_bottom_sheet_reveal',
                 ),
-            ).toBeNull()
-            expect(
-                screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given no PIN is configured, when the user opens the flow, then the PIN gate is bypassed and the acknowledge step renders directly',
-        async () => {
-            // Mirror image of the PIN-configured test above. With no
-            // PIN saved in the typed-secret store, `checkPinEnabled`
-            // resolves to false and `useViewPassphraseFlow` skips
-            // step='pin' altogether — the acknowledge sheet should be
-            // the very first thing the user sees, and the PinEditView
-            // bottom sheet (the numpad host) should never mount.
-            const account = await seedAlgo25Account()
-            const { result: pinHook } = renderHook(() => usePinCode())
-            await waitFor(async () => {
-                expect(await pinHook.current.checkPinEnabled()).toBe(false)
-            })
-
-            render(<ViewPassphraseHost address={account.address} />)
-
-            fireEvent.click(screen.getByTestId('open_view_passphrase'))
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(
-                        'passphrase_acknowledge_bottom_sheet_reveal',
-                    ),
-                ).toBeTruthy()
-            })
-            expect(screen.queryByTestId('numpad_key_0')).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+            ).toBeTruthy()
+        })
+        expect(screen.queryByTestId('numpad_key_0')).toBeNull()
+    })
 })

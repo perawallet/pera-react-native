@@ -53,8 +53,6 @@ const buildMigrationService = (overrides: Partial<MigrationService> = {}) => {
         markMigrationComplete: vi.fn().mockResolvedValue(undefined),
         clearMigrationComplete: vi.fn().mockResolvedValue(undefined),
         getMigrationPlans: vi.fn().mockResolvedValue([]),
-        simulateLegacyDatabase: vi.fn().mockResolvedValue(undefined),
-        simulatePreSixxAccounts: vi.fn().mockResolvedValue(undefined),
         resetLegacyData: vi.fn().mockResolvedValue(undefined),
         getCompletedStepVersions: vi
             .fn()

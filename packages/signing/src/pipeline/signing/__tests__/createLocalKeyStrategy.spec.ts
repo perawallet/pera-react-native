@@ -501,7 +501,7 @@ describe('createLocalKeyStrategy', () => {
                 signTransactions.mockRejectedValue(
                     new AppError('bad request', {
                         category: ErrorCategory.VALIDATION,
-                        messageKey: 'errors.validation.generic',
+                        messageKey: 'errors.webview.invalid_method',
                     }),
                 )
 
@@ -510,7 +510,7 @@ describe('createLocalKeyStrategy', () => {
                     .catch((e: unknown) => e)
 
                 expect((error as SigningError).metadata.messageKey).toBe(
-                    'errors.validation.generic',
+                    'errors.webview.invalid_method',
                 )
                 expect(errorSpy).not.toHaveBeenCalled()
             })

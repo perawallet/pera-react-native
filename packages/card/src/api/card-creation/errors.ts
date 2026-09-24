@@ -10,16 +10,18 @@
  limitations under the License
  */
 
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+
 /**
  * Thrown when card creation requires a valid app-integrity (device
  * attestation) token and none is available, so the request cannot proceed.
  * Callers own the user-facing wording for their flow.
  */
-export class CardIntegrityAttestationRequiredError extends Error {
+export class CardIntegrityAttestationRequiredError extends AppError {
     constructor(
         message = 'Device verification is required to create a Pera Card.',
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.UNKNOWN, recoverable: false })
         this.name = 'CardIntegrityAttestationRequiredError'
     }
 }
@@ -30,11 +32,11 @@ export class CardIntegrityAttestationRequiredError extends Error {
  * succeed; the user must connect a different funding account. Callers own the
  * user-facing wording for their flow.
  */
-export class CardAccountLinkedElsewhereError extends Error {
+export class CardAccountLinkedElsewhereError extends AppError {
     constructor(
         message = 'This account is already linked to another Pera Card user.',
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.ACCOUNTS, recoverable: false })
         this.name = 'CardAccountLinkedElsewhereError'
     }
 }
@@ -45,11 +47,11 @@ export class CardAccountLinkedElsewhereError extends Error {
  * linked, and the backend would reject card creation anyway — so the flow
  * stops here rather than failing later with a less actionable error.
  */
-export class CardUserUnavailableError extends Error {
+export class CardUserUnavailableError extends AppError {
     constructor(
         message = 'Your Pera Card account could not be loaded. Please sign in again.',
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.ACCOUNTS })
         this.name = 'CardUserUnavailableError'
     }
 }
@@ -58,11 +60,11 @@ export class CardUserUnavailableError extends Error {
  * Backend 409: another request still holds this account's creation lock (the
  * backend serialises card creation per funding address). Retry after a moment.
  */
-export class CardCreateInProgressError extends Error {
+export class CardCreateInProgressError extends AppError {
     constructor(
         message = 'Card creation is already in progress for this account.',
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.NETWORK, retryable: true })
         this.name = 'CardCreateInProgressError'
     }
 }
@@ -71,9 +73,9 @@ export class CardCreateInProgressError extends Error {
  * Backend 404 BAANX_ACCOUNT_NOT_FOUND: the Baanx account has no card record to
  * attach the escrow card to yet, so the remaining setup must finish first.
  */
-export class CardSetupIncompleteError extends Error {
+export class CardSetupIncompleteError extends AppError {
     constructor(message = 'Your Pera Card account setup is not complete yet.') {
-        super(message)
+        super(message, { category: ErrorCategory.ACCOUNTS })
         this.name = 'CardSetupIncompleteError'
     }
 }
@@ -83,12 +85,12 @@ export class CardSetupIncompleteError extends Error {
  * funding account rekeyed on-chain that signed with its own, no longer
  * authorised key. Terminal for this account.
  */
-export class CardOwnershipProofRejectedError extends Error {
+export class CardOwnershipProofRejectedError extends AppError {
     constructor(
         public readonly code?: string,
         message = 'This account could not prove ownership for card creation.',
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.ACCOUNTS, recoverable: false })
         this.name = 'CardOwnershipProofRejectedError'
     }
 }
@@ -97,12 +99,12 @@ export class CardOwnershipProofRejectedError extends Error {
  * Backend 5xx: creation could not be completed on-chain, or the service or its
  * node is unavailable. Nothing was minted for the caller, so retrying is safe.
  */
-export class CardCreateUnavailableError extends Error {
+export class CardCreateUnavailableError extends AppError {
     constructor(
         public readonly code?: string,
         message = 'Card creation is temporarily unavailable.',
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.NETWORK, retryable: true })
         this.name = 'CardCreateUnavailableError'
     }
 }

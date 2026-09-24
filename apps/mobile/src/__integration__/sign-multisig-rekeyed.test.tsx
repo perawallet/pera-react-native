@@ -18,7 +18,6 @@
 
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -56,8 +55,6 @@ import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 import { REKEY_TARGET_ADDRESS } from './__fixtures__/onboarding'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // The seeded Algo25 signer is the multisig's (only) participant; the sender
 // is a watch account whose on-chain auth is the multisig.
@@ -114,14 +111,9 @@ const proposeResponse = {
 
 describe('Flow: signing review for a sender rekeyed to a held multisig', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => {
-        server.resetHandlers()
-    })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -165,46 +157,38 @@ describe('Flow: signing review for a sender rekeyed to a held multisig', () => {
             ])
     })
 
-    it(
-        'proposes via the auth multisig when the user confirms the send',
-        async () => {
-            const proposeSpy = vi.fn(() =>
-                HttpResponse.json(proposeResponse, { status: 200 }),
-            )
-            server.use(
-                http.post('*/v1/joint-accounts/sign-requests/', proposeSpy),
-            )
+    it('proposes via the auth multisig when the user confirms the send', async () => {
+        const proposeSpy = vi.fn(() =>
+            HttpResponse.json(proposeResponse, { status: 200 }),
+        )
+        server.use(http.post('*/v1/joint-accounts/sign-requests/', proposeSpy))
 
-            const { request, reject } = buildTransactionSignRequest({
-                txs: [
-                    buildPaymentTransaction({
-                        sender: REKEY_TARGET_ADDRESS,
-                        receiver: REVIEW_SIGNER_ADDRESS,
-                    }),
-                ],
-            })
+        const { request, reject } = buildTransactionSignRequest({
+            txs: [
+                buildPaymentTransaction({
+                    sender: REKEY_TARGET_ADDRESS,
+                    receiver: REVIEW_SIGNER_ADDRESS,
+                }),
+            ],
+        })
 
-            const { confirm } = renderSignReview(request)
+        const { confirm } = renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('signing-confirm-slide'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            confirm()
+        confirm()
 
-            await waitFor(
-                () => {
-                    expect(proposeSpy).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            expect(reject).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(proposeSpy).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(reject).not.toHaveBeenCalled()
+    })
 })

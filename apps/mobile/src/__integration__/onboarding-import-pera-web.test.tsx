@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     act,
     fireEvent,
@@ -58,10 +49,6 @@ import {
     buildPeraWebQrString,
     buildSingleAccountPeraWebBackup,
 } from './__fixtures__/peraWeb'
-
-// Loading screen runs through fetch → decrypt → keystore commits → store
-// rewrites; mirrors the ASB flow's slow-test timeout.
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 /**
  * Mount the Loading screen as the initial route with the result screen
@@ -127,10 +114,6 @@ const seedQrInFlowStore = (
 }
 
 describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -139,226 +122,190 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         vi.mocked(Notifier.showNotification).mockClear()
     })
 
-    it(
-        'Given a valid QR + backup with one account, the account lands in the wallet and the result screen renders',
-        async () => {
-            installBackupHandler({
-                status: 200,
-                encryptedContent: buildSingleAccountPeraWebBackup({
-                    name: 'My Web Account',
-                }),
-            })
-            seedQrInFlowStore()
+    it('Given a valid QR + backup with one account, the account lands in the wallet and the result screen renders', async () => {
+        installBackupHandler({
+            status: 200,
+            encryptedContent: buildSingleAccountPeraWebBackup({
+                name: 'My Web Account',
+            }),
+        })
+        seedQrInFlowStore()
 
-            renderLoadingWithFlowStore()
+        renderLoadingWithFlowStore()
 
-            await waitFor(
-                () => {
-                    expect(useAccountsStore.getState().accounts).toHaveLength(1)
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(useAccountsStore.getState().accounts).toHaveLength(1)
+            },
+            { timeout: 10_000 },
+        )
 
-            const [account] = useAccountsStore.getState().accounts
-            expect(account.type).toBe(AccountTypes.algo25)
-            expect(account.address).toBe(ALGO25_TEST_ADDRESS)
-            expect(account.name).toBe('My Web Account')
+        const [account] = useAccountsStore.getState().accounts
+        expect(account.type).toBe(AccountTypes.algo25)
+        expect(account.address).toBe(ALGO25_TEST_ADDRESS)
+        expect(account.name).toBe('My Web Account')
 
-            await waitFor(() => screen.getByTestId('pera_web_import_result'))
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => screen.getByTestId('pera_web_import_result'))
+    })
 
-    it(
-        'Given a backup with multiple accounts, every account is imported',
-        async () => {
-            const { encryptedContent, addresses } =
-                buildMultiAccountPeraWebBackup()
-            installBackupHandler({ status: 200, encryptedContent })
-            seedQrInFlowStore()
+    it('Given a backup with multiple accounts, every account is imported', async () => {
+        const { encryptedContent, addresses } = buildMultiAccountPeraWebBackup()
+        installBackupHandler({ status: 200, encryptedContent })
+        seedQrInFlowStore()
 
-            renderLoadingWithFlowStore()
+        renderLoadingWithFlowStore()
 
-            await waitFor(
-                () => {
-                    expect(useAccountsStore.getState().accounts).toHaveLength(2)
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(useAccountsStore.getState().accounts).toHaveLength(2)
+            },
+            { timeout: 10_000 },
+        )
 
-            const got = useAccountsStore
-                .getState()
-                .accounts.map(a => a.address)
-                .sort()
-            expect(got).toEqual([...addresses].sort())
+        const got = useAccountsStore
+            .getState()
+            .accounts.map(a => a.address)
+            .sort()
+        expect(got).toEqual([...addresses].sort())
 
-            for (const a of useAccountsStore.getState().accounts) {
-                expect(a.type).toBe(AccountTypes.algo25)
-            }
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        for (const a of useAccountsStore.getState().accounts) {
+            expect(a.type).toBe(AccountTypes.algo25)
+        }
+    })
 
-    it(
-        'Given the QR encryption key does not match the encrypted blob, decryption fails and no account is imported',
-        async () => {
-            installBackupHandler({
-                status: 200,
-                encryptedContent: buildSingleAccountPeraWebBackup(),
-            })
+    it('Given the QR encryption key does not match the encrypted blob, decryption fails and no account is imported', async () => {
+        installBackupHandler({
+            status: 200,
+            encryptedContent: buildSingleAccountPeraWebBackup(),
+        })
 
-            // Seed with a 32-byte key that wasn't used to seal the
-            // encrypted_content fixture. The blob fetches fine; only the
-            // user-supplied key is wrong — parity with scanning a stale QR.
-            seedQrInFlowStore({ encryptionKey: new Uint8Array(32).fill(0xff) })
+        // Seed with a 32-byte key that wasn't used to seal the
+        // encrypted_content fixture. The blob fetches fine; only the
+        // user-supplied key is wrong — parity with scanning a stale QR.
+        seedQrInFlowStore({ encryptionKey: new Uint8Array(32).fill(0xff) })
 
-            renderLoadingWithFlowStore()
+        renderLoadingWithFlowStore()
 
-            await waitFor(
-                () => {
-                    expect(
-                        vi.mocked(Notifier.showNotification),
-                    ).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
 
-            expect(useAccountsStore.getState().accounts).toHaveLength(0)
-            expect(screen.queryByTestId('pera_web_import_result')).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+        expect(screen.queryByTestId('pera_web_import_result')).toBeNull()
+    })
 
-    it(
-        'Given an account in the backup is already in the wallet, the import is counted as skipped',
-        async () => {
-            useAccountsStore.getState().setAccounts([
-                {
-                    id: 'pre-seeded',
-                    type: AccountTypes.algo25,
-                    address: ALGO25_TEST_ADDRESS,
-                    keyPairId: 'pre-seeded-keypair-id',
-                },
-            ])
+    it('Given an account in the backup is already in the wallet, the import is counted as skipped', async () => {
+        useAccountsStore.getState().setAccounts([
+            {
+                id: 'pre-seeded',
+                type: AccountTypes.algo25,
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: 'pre-seeded-keypair-id',
+            },
+        ])
 
-            installBackupHandler({
-                status: 200,
-                encryptedContent: buildSingleAccountPeraWebBackup({
-                    name: 'Web Account',
-                }),
-            })
-            seedQrInFlowStore()
+        installBackupHandler({
+            status: 200,
+            encryptedContent: buildSingleAccountPeraWebBackup({
+                name: 'Web Account',
+            }),
+        })
+        seedQrInFlowStore()
 
+        renderLoadingWithFlowStore()
+
+        await waitFor(() => screen.getByTestId('pera_web_import_result'), {
+            timeout: 10_000,
+        })
+
+        // Pre-seeded account is still there; no duplicate import.
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        expect(useAccountsStore.getState().accounts[0].id).toBe('pre-seeded')
+        // The result screen renders the "nothing new" variant because
+        // the only account in the backup was already in the wallet.
+        expect(
+            screen.getByText(
+                'onboarding.pera_web_import.result.nothing_new_title',
+            ),
+        ).toBeTruthy()
+    })
+
+    it('Given the backend returns 500 for the backup, an error toast is raised and no account is imported', async () => {
+        installBackupHandler({ status: 500 })
+        seedQrInFlowStore()
+
+        renderLoadingWithFlowStore()
+
+        await waitFor(
+            () => {
+                expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+        expect(screen.queryByTestId('pera_web_import_result')).toBeNull()
+    })
+
+    it('Given the user finishes the flow successfully, decrypted private keys are zeroed in place and the flow store is empty by the time the result screen renders', async () => {
+        installBackupHandler({
+            status: 200,
+            encryptedContent: buildSingleAccountPeraWebBackup(),
+        })
+        seedQrInFlowStore()
+
+        // Hold a reference to the QR encryptionKey before the loading
+        // hook runs. Reset() during the flow wipes this Uint8Array in
+        // place; the test asserts byte-zeroing, not just that the
+        // store reference was dropped.
+        const qrKey = usePeraWebImportFlowStore.getState().qr!.encryptionKey
+        expect(qrKey.some(b => b !== 0)).toBe(true)
+
+        // Subscribe so we capture the decrypted account.privateKey the
+        // instant `setPayload` fires inside the loading hook. By the
+        // time the result screen renders the loop has already wiped
+        // these buffers in place, so we can't fetch them from the
+        // store after the fact.
+        let capturedPrivateKey: Uint8Array | null = null
+        const unsubscribe = usePeraWebImportFlowStore.subscribe(state => {
+            const pk = state.payload?.accounts[0]?.privateKey ?? null
+            if (pk && !capturedPrivateKey) capturedPrivateKey = pk
+        })
+
+        try {
             renderLoadingWithFlowStore()
 
             await waitFor(() => screen.getByTestId('pera_web_import_result'), {
                 timeout: 10_000,
             })
+        } finally {
+            unsubscribe()
+        }
 
-            // Pre-seeded account is still there; no duplicate import.
-            expect(useAccountsStore.getState().accounts).toHaveLength(1)
-            expect(useAccountsStore.getState().accounts[0].id).toBe(
-                'pre-seeded',
-            )
-            // The result screen renders the "nothing new" variant because
-            // the only account in the backup was already in the wallet.
-            expect(
-                screen.getByText(
-                    'onboarding.pera_web_import.result.nothing_new_title',
-                ),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // By the time the result screen renders, the store is already
+        // empty: the loading hook calls reset() before navigating, so
+        // an attacker who heap-dumps after the flow completes finds
+        // nothing live.
+        expect(usePeraWebImportFlowStore.getState().payload).toBeNull()
+        expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
 
-    it(
-        'Given the backend returns 500 for the backup, an error toast is raised and no account is imported',
-        async () => {
-            installBackupHandler({ status: 500 })
-            seedQrInFlowStore()
+        // The actual byte buffers we held references to have been
+        // zeroed in place (not just dropped on the floor for GC to
+        // eventually pick up).
+        expect(capturedPrivateKey).not.toBeNull()
+        expect(capturedPrivateKey!.length).toBeGreaterThan(0)
+        expect(capturedPrivateKey!.every(b => b === 0)).toBe(true)
+        expect(qrKey.every(b => b === 0)).toBe(true)
 
-            renderLoadingWithFlowStore()
-
-            await waitFor(
-                () => {
-                    expect(
-                        vi.mocked(Notifier.showNotification),
-                    ).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-
-            expect(useAccountsStore.getState().accounts).toHaveLength(0)
-            expect(screen.queryByTestId('pera_web_import_result')).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the user finishes the flow successfully, decrypted private keys are zeroed in place and the flow store is empty by the time the result screen renders',
-        async () => {
-            installBackupHandler({
-                status: 200,
-                encryptedContent: buildSingleAccountPeraWebBackup(),
-            })
-            seedQrInFlowStore()
-
-            // Hold a reference to the QR encryptionKey before the loading
-            // hook runs. Reset() during the flow wipes this Uint8Array in
-            // place; the test asserts byte-zeroing, not just that the
-            // store reference was dropped.
-            const qrKey = usePeraWebImportFlowStore.getState().qr!.encryptionKey
-            expect(qrKey.some(b => b !== 0)).toBe(true)
-
-            // Subscribe so we capture the decrypted account.privateKey the
-            // instant `setPayload` fires inside the loading hook. By the
-            // time the result screen renders the loop has already wiped
-            // these buffers in place, so we can't fetch them from the
-            // store after the fact.
-            let capturedPrivateKey: Uint8Array | null = null
-            const unsubscribe = usePeraWebImportFlowStore.subscribe(state => {
-                const pk = state.payload?.accounts[0]?.privateKey ?? null
-                if (pk && !capturedPrivateKey) capturedPrivateKey = pk
-            })
-
-            try {
-                renderLoadingWithFlowStore()
-
-                await waitFor(
-                    () => screen.getByTestId('pera_web_import_result'),
-                    {
-                        timeout: 10_000,
-                    },
-                )
-            } finally {
-                unsubscribe()
-            }
-
-            // By the time the result screen renders, the store is already
-            // empty: the loading hook calls reset() before navigating, so
-            // an attacker who heap-dumps after the flow completes finds
-            // nothing live.
-            expect(usePeraWebImportFlowStore.getState().payload).toBeNull()
-            expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
-
-            // The actual byte buffers we held references to have been
-            // zeroed in place (not just dropped on the floor for GC to
-            // eventually pick up).
-            expect(capturedPrivateKey).not.toBeNull()
-            expect(capturedPrivateKey!.length).toBeGreaterThan(0)
-            expect(capturedPrivateKey!.every(b => b === 0)).toBe(true)
-            expect(qrKey.every(b => b === 0)).toBe(true)
-
-            // Pressing Done after the cleanup is a no-op for the store
-            // and still exits the flow.
-            fireEvent.click(
-                screen.getByTestId('pera_web_import_result-primary'),
-            )
-            expect(usePeraWebImportFlowStore.getState().payload).toBeNull()
-            expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Pressing Done after the cleanup is a no-op for the store
+        // and still exits the flow.
+        fireEvent.click(screen.getByTestId('pera_web_import_result-primary'))
+        expect(usePeraWebImportFlowStore.getState().payload).toBeNull()
+        expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
+    })
 })
 
 describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
@@ -373,10 +320,6 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
         </ThemeProvider>
     )
 
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -385,127 +328,111 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
         vi.mocked(Notifier.showNotification).mockClear()
     })
 
-    it(
-        'Given a JSON QR payload, when handleDeepLink dispatches it with source="qr", then the flow store is seeded with the parsed payload and the loading screen completes the import',
-        async () => {
-            installBackupHandler({
-                status: 200,
-                encryptedContent: buildSingleAccountPeraWebBackup({
-                    name: 'Scanned Account',
-                }),
-            })
+    it('Given a JSON QR payload, when handleDeepLink dispatches it with source="qr", then the flow store is seeded with the parsed payload and the loading screen completes the import', async () => {
+        installBackupHandler({
+            status: 200,
+            encryptedContent: buildSingleAccountPeraWebBackup({
+                name: 'Scanned Account',
+            }),
+        })
 
-            // Drive the real dispatcher: this exercises parseDeeplink's JSON
-            // sniff → parsePeraWebQrPayload → usePeraWebImportDeeplink →
-            // store.setQr. The dispatcher also tries to navigate via the
-            // global navigationRef, which is a noop under the integration
-            // navigator — that part is asserted in useDeepLink.test.ts.
-            // Here we assert the side effect that actually bridges to the
-            // import pipeline: the flow store ends up populated.
-            const { result } = renderHook(() => useDeepLink(), {
-                wrapper: HookWrapper,
-            })
-            await act(async () => {
-                await result.current.handleDeepLink(
-                    buildPeraWebQrString(),
-                    true,
-                    'qr',
-                )
-            })
-
-            const seeded = usePeraWebImportFlowStore.getState().qr
-            expect(seeded).not.toBeNull()
-            expect(seeded!.backupId).toBe(PERA_WEB_BACKUP_ID)
-
-            // Mount the loading screen against the dispatcher-populated
-            // store. This is the same pipeline the production app runs:
-            // dispatcher seeds qr → navigation lands on
-            // PeraWebImportLoading → its mount hook reads qr → fetch +
-            // decrypt + import.
-            renderLoadingWithFlowStore()
-
-            await waitFor(
-                () => {
-                    expect(useAccountsStore.getState().accounts).toHaveLength(1)
-                },
-                { timeout: 10_000 },
+        // Drive the real dispatcher: this exercises parseDeeplink's JSON
+        // sniff → parsePeraWebQrPayload → usePeraWebImportDeeplink →
+        // store.setQr. The dispatcher also tries to navigate via the
+        // global navigationRef, which is a noop under the integration
+        // navigator — that part is asserted in useDeepLink.test.ts.
+        // Here we assert the side effect that actually bridges to the
+        // import pipeline: the flow store ends up populated.
+        const { result } = renderHook(() => useDeepLink(), {
+            wrapper: HookWrapper,
+        })
+        await act(async () => {
+            await result.current.handleDeepLink(
+                buildPeraWebQrString(),
+                true,
+                'qr',
             )
+        })
 
-            const [account] = useAccountsStore.getState().accounts
-            expect(account.type).toBe(AccountTypes.algo25)
-            expect(account.address).toBe(ALGO25_TEST_ADDRESS)
-            expect(account.name).toBe('Scanned Account')
+        const seeded = usePeraWebImportFlowStore.getState().qr
+        expect(seeded).not.toBeNull()
+        expect(seeded!.backupId).toBe(PERA_WEB_BACKUP_ID)
 
-            await waitFor(() => screen.getByTestId('pera_web_import_result'))
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Mount the loading screen against the dispatcher-populated
+        // store. This is the same pipeline the production app runs:
+        // dispatcher seeds qr → navigation lands on
+        // PeraWebImportLoading → its mount hook reads qr → fetch +
+        // decrypt + import.
+        renderLoadingWithFlowStore()
 
-    it(
-        'Given the same JSON payload arrives via source="deeplink" (not a QR scan), then it is ignored and no import is staged',
-        async () => {
-            // A malicious deeplink could embed the JSON shape directly;
-            // production gates the handler on source==="qr" so a tapped link
-            // can't auto-stage an attacker-controlled backup decryption.
-            const { result } = renderHook(() => useDeepLink(), {
-                wrapper: HookWrapper,
-            })
-            await act(async () => {
-                await result.current.handleDeepLink(
-                    buildPeraWebQrString(),
-                    true,
-                    'deeplink',
-                )
-            })
+        await waitFor(
+            () => {
+                expect(useAccountsStore.getState().accounts).toHaveLength(1)
+            },
+            { timeout: 10_000 },
+        )
 
-            expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        const [account] = useAccountsStore.getState().accounts
+        expect(account.type).toBe(AccountTypes.algo25)
+        expect(account.address).toBe(ALGO25_TEST_ADDRESS)
+        expect(account.name).toBe('Scanned Account')
 
-    it(
-        'Given the web-import app-action URL, when dispatched with source="qr", then the flow store is seeded with the parsed payload',
-        async () => {
-            const { result } = renderHook(() => useDeepLink(), {
-                wrapper: HookWrapper,
-            })
-            await act(async () => {
-                await result.current.handleDeepLink(
-                    buildPeraWebImportUrl(),
-                    true,
-                    'qr',
-                )
-            })
+        await waitFor(() => screen.getByTestId('pera_web_import_result'))
+    })
 
-            const seeded = usePeraWebImportFlowStore.getState().qr
-            expect(seeded).not.toBeNull()
-            expect(seeded!.backupId).toBe(PERA_WEB_BACKUP_ID)
-            expect(Array.from(seeded!.encryptionKey)).toEqual(
-                Array.from(PERA_WEB_KEY_BYTES),
+    it('Given the same JSON payload arrives via source="deeplink" (not a QR scan), then it is ignored and no import is staged', async () => {
+        // A malicious deeplink could embed the JSON shape directly;
+        // production gates the handler on source==="qr" so a tapped link
+        // can't auto-stage an attacker-controlled backup decryption.
+        const { result } = renderHook(() => useDeepLink(), {
+            wrapper: HookWrapper,
+        })
+        await act(async () => {
+            await result.current.handleDeepLink(
+                buildPeraWebQrString(),
+                true,
+                'deeplink',
             )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
 
-    it(
-        'Given the web-import app-action URL arrives via source="deeplink" (a tapped link), then it is ignored and no import is staged',
-        async () => {
-            // QR-only by design: a tappable link would put the
-            // backup encryption key in a URL, so the handler drops non-QR
-            // sources. This pins the decided policy for the URL form too.
-            const { result } = renderHook(() => useDeepLink(), {
-                wrapper: HookWrapper,
-            })
-            await act(async () => {
-                await result.current.handleDeepLink(
-                    buildPeraWebImportUrl(),
-                    true,
-                    'deeplink',
-                )
-            })
+        expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
+    })
 
-            expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given the web-import app-action URL, when dispatched with source="qr", then the flow store is seeded with the parsed payload', async () => {
+        const { result } = renderHook(() => useDeepLink(), {
+            wrapper: HookWrapper,
+        })
+        await act(async () => {
+            await result.current.handleDeepLink(
+                buildPeraWebImportUrl(),
+                true,
+                'qr',
+            )
+        })
+
+        const seeded = usePeraWebImportFlowStore.getState().qr
+        expect(seeded).not.toBeNull()
+        expect(seeded!.backupId).toBe(PERA_WEB_BACKUP_ID)
+        expect(Array.from(seeded!.encryptionKey)).toEqual(
+            Array.from(PERA_WEB_KEY_BYTES),
+        )
+    })
+
+    it('Given the web-import app-action URL arrives via source="deeplink" (a tapped link), then it is ignored and no import is staged', async () => {
+        // QR-only by design: a tappable link would put the
+        // backup encryption key in a URL, so the handler drops non-QR
+        // sources. This pins the decided policy for the URL form too.
+        const { result } = renderHook(() => useDeepLink(), {
+            wrapper: HookWrapper,
+        })
+        await act(async () => {
+            await result.current.handleDeepLink(
+                buildPeraWebImportUrl(),
+                true,
+                'deeplink',
+            )
+        })
+
+        expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
+    })
 })

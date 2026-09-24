@@ -36,7 +36,6 @@ import {
     type EnableBiometricsResult,
 } from '@perawallet/wallet-core-security'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
 const PROMPT = { title: 'Unlock', cancelLabel: 'Cancel' }
 const TEST_PIN = '123456'
 
@@ -122,365 +121,307 @@ describe('Flow: Biometric authentication lifecycle', () => {
         resetTestKeystore()
     })
 
-    it(
-        'Given the device supports biometrics, when the user enables it, then the blob is stored, isEnabled flips on, and unlockWithBiometrics succeeds',
-        async () => {
-            const { result } = renderHook(() => useBiometrics())
-            await waitFor(() => {
-                expect(result.current.isAvailable).toBe(true)
-            })
+    it('Given the device supports biometrics, when the user enables it, then the blob is stored, isEnabled flips on, and unlockWithBiometrics succeeds', async () => {
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
 
-            // Drive the enable path. The confirmation ceremony IS the
-            // unwrap: the test stub releases TEST_TOKEN, its hash matches
-            // the tokenHash armBiometricBinding returned, so the blob gets
-            // written under BIOMETRIC_BLOB_KEY_ID and isEnabled flips true.
-            let enabled: Optional<EnableBiometricsResult>
-            await act(async () => {
-                enabled = await result.current.enableBiometrics(PROMPT)
+        // Drive the enable path. The confirmation ceremony IS the
+        // unwrap: the test stub releases TEST_TOKEN, its hash matches
+        // the tokenHash armBiometricBinding returned, so the blob gets
+        // written under BIOMETRIC_BLOB_KEY_ID and isEnabled flips true.
+        let enabled: Optional<EnableBiometricsResult>
+        await act(async () => {
+            enabled = await result.current.enableBiometrics(PROMPT)
+        })
+        expect(enabled).toEqual({ ok: true })
+        expect(result.current.isEnabled).toBe(true)
+
+        // checkBiometricsEnabled reads the keystore — it should
+        // also report enabled now.
+        await act(async () => {
+            expect(await result.current.checkBiometricsEnabled()).toBe(true)
+        })
+
+        // Unlock succeeds via the stub.
+        let outcome: Optional<BiometricUnlockOutcome>
+        await act(async () => {
+            outcome = await result.current.unlockWithBiometrics(PROMPT)
+        })
+        expect(outcome).toEqual({ kind: 'ok' })
+    })
+
+    it('Given a blob from before OS-bound keys existed, when the user unlocks with the PIN, then the binding is re-armed silently and biometric unlock works with no offer shown', async () => {
+        const { result: pinHook } = renderHook(() => usePinCode())
+        await act(async () => {
+            await pinHook.current.savePin(TEST_PIN)
+        })
+        await commitSecret({
+            id: LEGACY_BIOMETRIC_BLOB_KEY_ID,
+            bytes: new TextEncoder().encode('{"legacy":true}'),
+        })
+
+        const { result } = renderHook(() => useBiometrics())
+        // The reconcile sweeps the old record without a prompt or an
+        // offer; the user is asked for nothing at the lock screen.
+        await waitFor(() => {
+            expect(hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)).toBe(false)
+        })
+        expect(result.current.disabledReason).toBeNull()
+        expect(mockedBiometrics().armBiometricBinding).not.toHaveBeenCalled()
+
+        await act(async () => {
+            expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
+                kind: 'ok',
             })
-            expect(enabled).toEqual({ ok: true })
+        })
+
+        await waitFor(() => {
             expect(result.current.isEnabled).toBe(true)
+        })
+        expect(hasSecret(BIOMETRIC_BLOB_KEY_ID)).toBe(true)
+        expect(mockedBiometrics().unwrapBiometricToken).not.toHaveBeenCalled()
+        expect(result.current.disabledReason).toBeNull()
 
-            // checkBiometricsEnabled reads the keystore — it should
-            // also report enabled now.
-            await act(async () => {
-                expect(await result.current.checkBiometricsEnabled()).toBe(true)
-            })
+        let outcome: Optional<BiometricUnlockOutcome>
+        await act(async () => {
+            outcome = await result.current.unlockWithBiometrics(PROMPT)
+        })
+        expect(outcome).toEqual({ kind: 'ok' })
+    })
 
-            // Unlock succeeds via the stub.
-            let outcome: Optional<BiometricUnlockOutcome>
-            await act(async () => {
-                outcome = await result.current.unlockWithBiometrics(PROMPT)
-            })
-            expect(outcome).toEqual({ kind: 'ok' })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given biometrics is enabled, when the sensor is temporarily unavailable, then the keystore record survives and unlock recovers by itself', async () => {
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
+        await act(async () => {
+            await result.current.enableBiometrics(PROMPT)
+        })
+        expect(result.current.isEnabled).toBe(true)
 
-    it(
-        'Given a blob from before OS-bound keys existed, when the user unlocks with the PIN, then the binding is re-armed silently and biometric unlock works with no offer shown',
-        async () => {
-            const { result: pinHook } = renderHook(() => usePinCode())
-            await act(async () => {
-                await pinHook.current.savePin(TEST_PIN)
-            })
-            await commitSecret({
-                id: LEGACY_BIOMETRIC_BLOB_KEY_ID,
-                bytes: new TextEncoder().encode('{"legacy":true}'),
-            })
+        // Android folds a lockout (HW_UNAVAILABLE) in with "nothing
+        // enrolled", so this is what a user who failed the fingerprint too
+        // many times looks like from here.
+        wireBiometricsService({ available: false, unwrap: true })
+        await act(async () => {
+            expect(await result.current.checkBiometricsEnabled()).toBe(false)
+        })
 
-            const { result } = renderHook(() => useBiometrics())
-            // The reconcile sweeps the old record without a prompt or an
-            // offer; the user is asked for nothing at the lock screen.
-            await waitFor(() => {
-                expect(hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)).toBe(false)
-            })
-            expect(result.current.disabledReason).toBeNull()
-            expect(
-                mockedBiometrics().armBiometricBinding,
-            ).not.toHaveBeenCalled()
+        // The lockout expires. Nothing was destroyed, so the opt-in returns
+        // without a trip to Settings.
+        wireBiometricsService({ available: true, unwrap: true })
+        await act(async () => {
+            expect(await result.current.checkBiometricsEnabled()).toBe(true)
+        })
 
-            await act(async () => {
-                expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
-                    kind: 'ok',
-                })
-            })
+        let outcome: Optional<BiometricUnlockOutcome>
+        await act(async () => {
+            outcome = await result.current.unlockWithBiometrics(PROMPT)
+        })
+        expect(outcome).toEqual({ kind: 'ok' })
+    })
 
-            await waitFor(() => {
-                expect(result.current.isEnabled).toBe(true)
-            })
-            expect(hasSecret(BIOMETRIC_BLOB_KEY_ID)).toBe(true)
-            expect(
-                mockedBiometrics().unwrapBiometricToken,
-            ).not.toHaveBeenCalled()
-            expect(result.current.disabledReason).toBeNull()
+    it('Given biometrics is enabled, when the enrolled biometric set changes, then the opt-in is dropped and cannot come back on its own', async () => {
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
+        await act(async () => {
+            await result.current.enableBiometrics(PROMPT)
+        })
+        expect(result.current.isEnabled).toBe(true)
 
-            let outcome: Optional<BiometricUnlockOutcome>
-            await act(async () => {
-                outcome = await result.current.unlockWithBiometrics(PROMPT)
-            })
-            expect(outcome).toEqual({ kind: 'ok' })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The user deleted the enrolled fingerprint and added a different
+        // one in device settings. Still enrolled, still strong: the binding
+        // is the only signal that notices.
+        wireEnrollmentBinding('changed')
 
-    it(
-        'Given biometrics is enabled, when the sensor is temporarily unavailable, then the keystore record survives and unlock recovers by itself',
-        async () => {
-            const { result } = renderHook(() => useBiometrics())
-            await waitFor(() => {
-                expect(result.current.isAvailable).toBe(true)
-            })
-            await act(async () => {
-                await result.current.enableBiometrics(PROMPT)
-            })
-            expect(result.current.isEnabled).toBe(true)
+        let outcome: Optional<BiometricUnlockOutcome>
+        await act(async () => {
+            outcome = await result.current.unlockWithBiometrics(PROMPT)
+        })
+        expect(outcome).toEqual({
+            kind: 'failed',
+            reason: 'unavailable',
+        })
+        expect(result.current.isEnabled).toBe(false)
 
-            // Android folds a lockout (HW_UNAVAILABLE) in with "nothing
-            // enrolled", so this is what a user who failed the fingerprint too
-            // many times looks like from here.
-            wireBiometricsService({ available: false, unwrap: true })
-            await act(async () => {
-                expect(await result.current.checkBiometricsEnabled()).toBe(
-                    false,
-                )
-            })
+        // The new binding now reads clean — the blob is gone, so unlock
+        // stays off until the user opts in again.
+        wireEnrollmentBinding('valid')
+        await act(async () => {
+            expect(await result.current.checkBiometricsEnabled()).toBe(false)
+        })
+    })
 
-            // The lockout expires. Nothing was destroyed, so the opt-in returns
-            // without a trip to Settings.
-            wireBiometricsService({ available: true, unwrap: true })
-            await act(async () => {
-                expect(await result.current.checkBiometricsEnabled()).toBe(true)
-            })
+    it('Given biometrics is enabled, when the user disables it, then the keystore record is removed and unlockWithBiometrics reports unavailable', async () => {
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
+        await act(async () => {
+            await result.current.enableBiometrics(PROMPT)
+        })
+        expect(result.current.isEnabled).toBe(true)
 
-            let outcome: Optional<BiometricUnlockOutcome>
-            await act(async () => {
-                outcome = await result.current.unlockWithBiometrics(PROMPT)
-            })
-            expect(outcome).toEqual({ kind: 'ok' })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Disable: removes the typed-secret record. Subsequent unlock
+        // attempts skip the platform prompt entirely and resolve
+        // false (the consumer sees this as "biometrics not enabled").
+        await act(async () => {
+            await result.current.disableBiometrics()
+        })
+        expect(result.current.isEnabled).toBe(false)
 
-    it(
-        'Given biometrics is enabled, when the enrolled biometric set changes, then the opt-in is dropped and cannot come back on its own',
-        async () => {
-            const { result } = renderHook(() => useBiometrics())
-            await waitFor(() => {
-                expect(result.current.isAvailable).toBe(true)
-            })
-            await act(async () => {
-                await result.current.enableBiometrics(PROMPT)
-            })
-            expect(result.current.isEnabled).toBe(true)
+        let outcome: Optional<BiometricUnlockOutcome>
+        await act(async () => {
+            outcome = await result.current.unlockWithBiometrics(PROMPT)
+        })
+        // The hook short-circuits when checkBiometricsEnabled is
+        // false — the platform's unwrapBiometricToken() doesn't even
+        // get a chance to run.
+        expect(outcome).toEqual({
+            kind: 'failed',
+            reason: 'unavailable',
+        })
+    })
 
-            // The user deleted the enrolled fingerprint and added a different
-            // one in device settings. Still enrolled, still strong: the binding
-            // is the only signal that notices.
-            wireEnrollmentBinding('changed')
+    it('Given biometrics is enabled but the device prompt is denied, when unlockWithBiometrics is called, then it reports the user cancel (the consumer should fall back to PIN)', async () => {
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
+        await act(async () => {
+            await result.current.enableBiometrics(PROMPT)
+        })
+        expect(result.current.isEnabled).toBe(true)
 
-            let outcome: Optional<BiometricUnlockOutcome>
-            await act(async () => {
-                outcome = await result.current.unlockWithBiometrics(PROMPT)
-            })
-            expect(outcome).toEqual({
-                kind: 'failed',
-                reason: 'unavailable',
-            })
-            expect(result.current.isEnabled).toBe(false)
+        // Re-wire the platform stub: the device prompt now resolves
+        // false (user cancelled FaceID, presented wrong finger, etc).
+        // The blob is still in the keystore, so consumers should
+        // see "biometrics enabled, last prompt failed".
+        wireBiometricsService({ available: true, unwrap: false })
 
-            // The new binding now reads clean — the blob is gone, so unlock
-            // stays off until the user opts in again.
-            wireEnrollmentBinding('valid')
-            await act(async () => {
-                expect(await result.current.checkBiometricsEnabled()).toBe(
-                    false,
-                )
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        let outcome: Optional<BiometricUnlockOutcome>
+        await act(async () => {
+            outcome = await result.current.unlockWithBiometrics(PROMPT)
+        })
+        expect(outcome).toEqual({
+            kind: 'failed',
+            reason: 'user-cancel',
+        })
+        // The keystore record is untouched — the user can retry.
+        expect(result.current.isEnabled).toBe(true)
+    })
 
-    it(
-        'Given biometrics is enabled, when the user disables it, then the keystore record is removed and unlockWithBiometrics reports unavailable',
-        async () => {
-            const { result } = renderHook(() => useBiometrics())
-            await waitFor(() => {
-                expect(result.current.isAvailable).toBe(true)
-            })
-            await act(async () => {
-                await result.current.enableBiometrics(PROMPT)
-            })
-            expect(result.current.isEnabled).toBe(true)
+    it('Given biometrics has not been enabled, when unlockWithBiometrics is called, then it reports unavailable without invoking the platform unwrap prompt', async () => {
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
+        expect(result.current.isEnabled).toBe(false)
 
-            // Disable: removes the typed-secret record. Subsequent unlock
-            // attempts skip the platform prompt entirely and resolve
-            // false (the consumer sees this as "biometrics not enabled").
-            await act(async () => {
-                await result.current.disableBiometrics()
-            })
-            expect(result.current.isEnabled).toBe(false)
+        let outcome: Optional<BiometricUnlockOutcome>
+        await act(async () => {
+            outcome = await result.current.unlockWithBiometrics(PROMPT)
+        })
+        expect(outcome).toEqual({
+            kind: 'failed',
+            reason: 'unavailable',
+        })
+    })
 
-            let outcome: Optional<BiometricUnlockOutcome>
-            await act(async () => {
-                outcome = await result.current.unlockWithBiometrics(PROMPT)
-            })
-            // The hook short-circuits when checkBiometricsEnabled is
-            // false — the platform's unwrapBiometricToken() doesn't even
-            // get a chance to run.
-            expect(outcome).toEqual({
-                kind: 'failed',
-                reason: 'unavailable',
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given biometrics is enabled, when the OS releases the token, then the app unlocks', async () => {
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
 
-    it(
-        'Given biometrics is enabled but the device prompt is denied, when unlockWithBiometrics is called, then it reports the user cancel (the consumer should fall back to PIN)',
-        async () => {
-            const { result } = renderHook(() => useBiometrics())
-            await waitFor(() => {
-                expect(result.current.isAvailable).toBe(true)
-            })
-            await act(async () => {
-                await result.current.enableBiometrics(PROMPT)
-            })
-            expect(result.current.isEnabled).toBe(true)
+        await act(async () => {
+            await result.current.enableBiometrics(PROMPT)
+        })
+        expect(result.current.isEnabled).toBe(true)
 
-            // Re-wire the platform stub: the device prompt now resolves
-            // false (user cancelled FaceID, presented wrong finger, etc).
-            // The blob is still in the keystore, so consumers should
-            // see "biometrics enabled, last prompt failed".
-            wireBiometricsService({ available: true, unwrap: false })
+        let outcome: Optional<BiometricUnlockOutcome>
+        await act(async () => {
+            outcome = await result.current.unlockWithBiometrics(PROMPT)
+        })
+        expect(outcome).toEqual({ kind: 'ok' })
+    })
 
-            let outcome: Optional<BiometricUnlockOutcome>
-            await act(async () => {
-                outcome = await result.current.unlockWithBiometrics(PROMPT)
-            })
-            expect(outcome).toEqual({
-                kind: 'failed',
-                reason: 'user-cancel',
-            })
-            // The keystore record is untouched — the user can retry.
-            expect(result.current.isEnabled).toBe(true)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given a blob from a build with no OS-bound key, when the reconcile runs, then it is dropped and re-opt-in is offered', async () => {
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
+        await act(async () => {
+            await result.current.enableBiometrics(PROMPT)
+        })
+        expect(result.current.isEnabled).toBe(true)
 
-    it(
-        'Given biometrics has not been enabled, when unlockWithBiometrics is called, then it reports unavailable without invoking the platform unwrap prompt',
-        async () => {
-            const { result } = renderHook(() => useBiometrics())
-            await waitFor(() => {
-                expect(result.current.isAvailable).toBe(true)
-            })
-            expect(result.current.isEnabled).toBe(false)
+        // What every installed user looks like on first launch of this
+        // build: the blob survived the upgrade, the key pair never
+        // existed.
+        wireEnrollmentBinding('absent')
 
-            let outcome: Optional<BiometricUnlockOutcome>
-            await act(async () => {
-                outcome = await result.current.unlockWithBiometrics(PROMPT)
-            })
-            expect(outcome).toEqual({
-                kind: 'failed',
-                reason: 'unavailable',
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await act(async () => {
+            expect(await result.current.checkBiometricsEnabled()).toBe(false)
+        })
+        expect(result.current.isEnabled).toBe(false)
+        expect(result.current.disabledReason).toBe('rebind-required')
 
-    it(
-        'Given biometrics is enabled, when the OS releases the token, then the app unlocks',
-        async () => {
-            const { result } = renderHook(() => useBiometrics())
-            await waitFor(() => {
-                expect(result.current.isAvailable).toBe(true)
-            })
+        // The offer is spent by re-enabling, not by the reconcile
+        // running again: a dropped blob must not re-arm itself.
+        wireEnrollmentBinding('valid')
+        await act(async () => {
+            expect(await result.current.checkBiometricsEnabled()).toBe(false)
+        })
+    })
 
-            await act(async () => {
-                await result.current.enableBiometrics(PROMPT)
-            })
-            expect(result.current.isEnabled).toBe(true)
+    it('Given biometrics is enabled, when the ceremony is cancelled, then the opt-in survives', async () => {
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
+        await act(async () => {
+            await result.current.enableBiometrics(PROMPT)
+        })
+        expect(result.current.isEnabled).toBe(true)
 
-            let outcome: Optional<BiometricUnlockOutcome>
-            await act(async () => {
-                outcome = await result.current.unlockWithBiometrics(PROMPT)
-            })
-            expect(outcome).toEqual({ kind: 'ok' })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        wireBiometricsService({ available: true, unwrap: false })
 
-    it(
-        'Given a blob from a build with no OS-bound key, when the reconcile runs, then it is dropped and re-opt-in is offered',
-        async () => {
-            const { result } = renderHook(() => useBiometrics())
-            await waitFor(() => {
-                expect(result.current.isAvailable).toBe(true)
-            })
-            await act(async () => {
-                await result.current.enableBiometrics(PROMPT)
-            })
-            expect(result.current.isEnabled).toBe(true)
+        let outcome: Optional<BiometricUnlockOutcome>
+        await act(async () => {
+            outcome = await result.current.unlockWithBiometrics(PROMPT)
+        })
+        expect(outcome).toEqual({ kind: 'failed', reason: 'user-cancel' })
+        // Nothing was destroyed: the next attempt still has a blob to
+        // unwrap.
+        expect(result.current.isEnabled).toBe(true)
+        expect(result.current.disabledReason).toBeNull()
+    })
 
-            // What every installed user looks like on first launch of this
-            // build: the blob survived the upgrade, the key pair never
-            // existed.
-            wireEnrollmentBinding('absent')
+    it('Given no key pair can be created, when the user opts in, then nothing is stored', async () => {
+        wireBiometricsService({
+            available: true,
+            unwrap: true,
+            canArm: false,
+        })
 
-            await act(async () => {
-                expect(await result.current.checkBiometricsEnabled()).toBe(
-                    false,
-                )
-            })
-            expect(result.current.isEnabled).toBe(false)
-            expect(result.current.disabledReason).toBe('rebind-required')
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
 
-            // The offer is spent by re-enabling, not by the reconcile
-            // running again: a dropped blob must not re-arm itself.
-            wireEnrollmentBinding('valid')
-            await act(async () => {
-                expect(await result.current.checkBiometricsEnabled()).toBe(
-                    false,
-                )
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given biometrics is enabled, when the ceremony is cancelled, then the opt-in survives',
-        async () => {
-            const { result } = renderHook(() => useBiometrics())
-            await waitFor(() => {
-                expect(result.current.isAvailable).toBe(true)
-            })
-            await act(async () => {
-                await result.current.enableBiometrics(PROMPT)
-            })
-            expect(result.current.isEnabled).toBe(true)
-
-            wireBiometricsService({ available: true, unwrap: false })
-
-            let outcome: Optional<BiometricUnlockOutcome>
-            await act(async () => {
-                outcome = await result.current.unlockWithBiometrics(PROMPT)
-            })
-            expect(outcome).toEqual({ kind: 'failed', reason: 'user-cancel' })
-            // Nothing was destroyed: the next attempt still has a blob to
-            // unwrap.
-            expect(result.current.isEnabled).toBe(true)
-            expect(result.current.disabledReason).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given no key pair can be created, when the user opts in, then nothing is stored',
-        async () => {
-            wireBiometricsService({
-                available: true,
-                unwrap: true,
-                canArm: false,
-            })
-
-            const { result } = renderHook(() => useBiometrics())
-            await waitFor(() => {
-                expect(result.current.isAvailable).toBe(true)
-            })
-
-            let enabled: Optional<EnableBiometricsResult>
-            await act(async () => {
-                enabled = await result.current.enableBiometrics(PROMPT)
-            })
-            expect(enabled).toEqual({ ok: false, reason: 'error' })
-            expect(result.current.isEnabled).toBe(false)
-            await act(async () => {
-                expect(await result.current.checkBiometricsEnabled()).toBe(
-                    false,
-                )
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        let enabled: Optional<EnableBiometricsResult>
+        await act(async () => {
+            enabled = await result.current.enableBiometrics(PROMPT)
+        })
+        expect(enabled).toEqual({ ok: false, reason: 'error' })
+        expect(result.current.isEnabled).toBe(false)
+        await act(async () => {
+            expect(await result.current.checkBiometricsEnabled()).toBe(false)
+        })
+    })
 })

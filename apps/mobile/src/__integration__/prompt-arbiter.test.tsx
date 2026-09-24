@@ -19,22 +19,13 @@
 // three, the delay being paid once for the session, and the guarantee that no
 // bottom sheet paints while the legal gate is up.
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@rneui/themed'
 
-import { server } from '@test-utils/msw-server'
+import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import {
     createTestQueryClient,
     render,
@@ -138,8 +129,9 @@ const buildWrapper = () => {
 }
 
 describe('Flow: prompt arbiter', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
-    afterAll(() => server.close())
+    // The gate-only cases register no banners handler; the device banners fetch
+    // they trigger is incidental, so it falls through without a warning.
+    setSuiteUnhandledRequestMode('bypass')
 
     beforeEach(() => {
         // shouldAdvanceTime: waitFor polls on real timers, so a frozen clock
@@ -153,7 +145,6 @@ describe('Flow: prompt arbiter', () => {
 
     afterEach(() => {
         vi.useRealTimers()
-        server.resetHandlers()
         act(() => {
             useBannersStore.getState().resetState()
             usePromptStore.getState().resetState()

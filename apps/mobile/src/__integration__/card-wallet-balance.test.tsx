@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
@@ -74,14 +65,11 @@ const balanceText = () =>
 const claimCta = () => screen.getByTestId('card-wallet-balance-claim-cta')
 
 describe('Flow: card wallet balance claim', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => {
         vi.mocked(Notifier.showNotification).mockClear()
         // The wallet queries are gated on the card session.
         useCardSessionStore.getState().setAuthenticated(true)
     })
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     // Rewards and refunds share one screen and one contract; every case runs
     // per kind so a regression in the parametrization cannot hide behind the

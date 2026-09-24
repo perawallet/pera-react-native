@@ -23,7 +23,6 @@
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "react": "catalog:",
-    "react-dom": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {
@@ -32,6 +31,7 @@
     "vitest": "catalog:",
     "@types/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "catalog:"
+    "@testing-library/react": "catalog:",
+    "react-dom": "catalog:"
   }
 }

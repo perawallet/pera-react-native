@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     act,
     fireEvent,
@@ -32,7 +23,6 @@ import { Notifier } from 'react-native-notifier'
 import { File } from 'expo-file-system'
 
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import {
@@ -43,6 +33,8 @@ import {
 import { usePinCode } from '@perawallet/wallet-core-security'
 
 import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
+
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 const TEST_PIN = '123456'
@@ -85,9 +77,6 @@ const toastTitles = (): string[] =>
         .mocked(Notifier.showNotification)
         .mock.calls.map(call => String(call[0].title))
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-afterAll(() => server.close())
-
 beforeEach(async () => {
     resetTestKeystore()
     useDeviceStore.getState().setDeviceID('mainnet', 'device-integration')
@@ -107,7 +96,6 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-    server.resetHandlers()
     vi.restoreAllMocks()
     vi.clearAllMocks()
     await deleteBackupKeys()
@@ -127,7 +115,11 @@ describe('storing backup credentials', () => {
         await enterPin()
 
         fireEvent.click(
-            await screen.findByTestId('backup_credentials_done_button'),
+            await screen.findByTestId(
+                'backup_credentials_done_button',
+                {},
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            ),
         )
         fireEvent.click(
             await screen.findByTestId('store_backup_credentials_local'),
@@ -171,7 +163,11 @@ describe('storing backup credentials', () => {
         )
         await enterPin()
         fireEvent.click(
-            await screen.findByTestId('backup_credentials_done_button'),
+            await screen.findByTestId(
+                'backup_credentials_done_button',
+                {},
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            ),
         )
         fireEvent.click(
             await screen.findByTestId(

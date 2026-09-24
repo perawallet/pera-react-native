@@ -52,7 +52,10 @@ vi.mock('@perawallet/wallet-core-database', () => ({
     clearDatabase: (...args: unknown[]) => mockClearDatabase(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    AppError: (
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    ).AppError,
     logger: { api: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
     clearAllStores: vi.fn(),
 }))

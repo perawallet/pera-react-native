@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
@@ -136,16 +127,7 @@ const startHDImportThroughMnemonic = async (words: string[]) => {
     fireEvent.click(screen.getByTestId('import_account_import_button'))
 }
 
-// Per-test timeout: HD import runs real BIP39 + xhd-wallet-api derivation,
-// followed by several screen transitions and an MSW round trip per
-// candidate address. Bump above the 5s vitest default.
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: Onboarding → Import HD wallet', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -172,484 +154,436 @@ describe('Flow: Onboarding → Import HD wallet', () => {
         )
     })
 
-    it(
-        'Given a valid 24-word mnemonic, when the user advances through HD import, then the derived account is persisted and onboarding completes',
-        async () => {
-            renderHDImportFromOnboarding()
+    it('Given a valid 24-word mnemonic, when the user advances through HD import, then the derived account is persisted and onboarding completes', async () => {
+        renderHDImportFromOnboarding()
 
-            // Open the import options sheet.
-            await openImportOptionsSheet()
-            await waitFor(() =>
-                screen.getByTestId('import_options_hd_wallet_button'),
-            )
-            fireEvent.click(
-                screen.getByTestId('import_options_hd_wallet_button'),
-            )
+        // Open the import options sheet.
+        await openImportOptionsSheet()
+        await waitFor(() =>
+            screen.getByTestId('import_options_hd_wallet_button'),
+        )
+        fireEvent.click(screen.getByTestId('import_options_hd_wallet_button'))
 
-            await advanceThroughImportInfo()
+        await advanceThroughImportInfo()
 
-            await waitFor(() =>
-                screen.getByTestId('import_account_word_input_0'),
-            )
+        await waitFor(() => screen.getByTestId('import_account_word_input_0'))
 
-            typeWordsIndividually(HD_TEST_MNEMONIC_24_WORDS)
+        typeWordsIndividually(HD_TEST_MNEMONIC_24_WORDS)
 
-            await waitFor(() => {
-                expect(
-                    isElementDisabled(
-                        screen.getByTestId('import_account_import_button'),
-                    ),
-                ).toBe(false)
-            })
-
-            fireEvent.click(screen.getByTestId('import_account_import_button'))
-
-            // SearchAccounts kicks off discovery on mount. With no on-chain
-            // activity it falls back to a single "zero account" (the master),
-            // then replaces to ImportSelectAddresses with that single entry.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId(
-                            'import_select_addresses_continue_button',
-                        ),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
-
-            // The first new account is auto-selected (see
-            // useImportSelectAddressesScreen). Continue commits the import.
-            fireEvent.click(
-                screen.getByTestId('import_select_addresses_continue_button'),
-            )
-
-            // Single committed account → name it before finishing.
-            await advanceThroughNameAccount()
-
-            await waitFor(
-                () => {
-                    expect(useOnboardingStore.getState().isOnboarding).toBe(
-                        false,
-                    )
-                },
-                { timeout: 5000 },
-            )
-
-            const accounts = useAccountsStore.getState().accounts
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0].type).toBe(AccountTypes.hdWallet)
-            expect(accounts[0].address).toBe(HD_TEST_ADDRESS)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given an invalid mnemonic, when the user taps Import, then an error toast is raised and no account is persisted',
-        async () => {
-            renderHDImportFromOnboarding()
-
-            await openImportOptionsSheet()
-            await waitFor(() =>
-                screen.getByTestId('import_options_hd_wallet_button'),
-            )
-            fireEvent.click(
-                screen.getByTestId('import_options_hd_wallet_button'),
-            )
-
-            await advanceThroughImportInfo()
-
-            await waitFor(() =>
-                screen.getByTestId('import_account_word_input_0'),
-            )
-
-            typeWordsIndividually(INVALID_HD_MNEMONIC_24_WORDS)
-
-            await waitFor(() => {
-                expect(
-                    isElementDisabled(
-                        screen.getByTestId('import_account_import_button'),
-                    ),
-                ).toBe(false)
-            })
-
-            fireEvent.click(screen.getByTestId('import_account_import_button'))
-
-            // The notifier is invoked from the showToast hook on error.
-            await waitFor(
-                () => {
-                    expect(
-                        vi.mocked(Notifier.showNotification),
-                    ).toHaveBeenCalled()
-                },
-                { timeout: 5000 },
-            )
-
-            expect(useAccountsStore.getState().accounts).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the wallet was already imported, when re-importing, then the address is shown as already imported',
-        async () => {
-            // Pre-seed the accounts store with the HD master address. The flow
-            // will rediscover the same address; ImportSelectAddresses must mark
-            // it as already imported and offer no new selections.
-            useAccountsStore.getState().setAccounts([
-                {
-                    id: 'existing-1',
-                    type: AccountTypes.hdWallet,
-                    address: HD_TEST_ADDRESS,
-                    keyPairId: 'pre-seeded',
-                    hdWalletDetails: {
-                        account: 0,
-                        change: 0,
-                        keyIndex: 0,
-                        derivationType: DerivationTypes.Peikert,
-                    },
-                },
-            ])
-
-            renderHDImportFromOnboarding()
-
-            await openImportOptionsSheet()
-            await waitFor(() =>
-                screen.getByTestId('import_options_hd_wallet_button'),
-            )
-            fireEvent.click(
-                screen.getByTestId('import_options_hd_wallet_button'),
-            )
-
-            await advanceThroughImportInfo()
-
-            await waitFor(() =>
-                screen.getByTestId('import_account_word_input_0'),
-            )
-            typeWordsIndividually(HD_TEST_MNEMONIC_24_WORDS)
-
-            await waitFor(() => {
-                expect(
-                    isElementDisabled(
-                        screen.getByTestId('import_account_import_button'),
-                    ),
-                ).toBe(false)
-            })
-
-            fireEvent.click(screen.getByTestId('import_account_import_button'))
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId(
-                            'import_select_addresses_continue_button',
-                        ),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
-
-            // Already-imported addresses render a chip instead of a checkbox,
-            // so the per-address checkbox is absent.
+        await waitFor(() => {
             expect(
-                screen.queryByTestId(
-                    `import_select_addresses_item_checkbox_${HD_TEST_ADDRESS}`,
+                isElementDisabled(
+                    screen.getByTestId('import_account_import_button'),
                 ),
-            ).toBeFalsy()
+            ).toBe(false)
+        })
 
-            // The accounts store is unchanged — still just the pre-seeded entry.
-            expect(useAccountsStore.getState().accounts).toHaveLength(1)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        fireEvent.click(screen.getByTestId('import_account_import_button'))
 
-    it(
-        'Given discovery finds three derived addresses, when the user keeps the default selection and continues, then only that one address is persisted',
-        async () => {
-            // Pre-compute the addresses discovery would surface for keyIndex
-            // 0–2 of account 0. We mock fast-lookup to return `account_exists`
-            // for these three; the catch-all returns false so the scan stops
-            // after the first key-gap of 5 misses, leaving exactly three
-            // candidates in the selection list.
-            const addr0 = HD_TEST_ADDRESS // (account 0, keyIndex 0)
-            const addr1 = await deriveTestHDAddress(0, 1)
-            const addr2 = await deriveTestHDAddress(0, 2)
+        // SearchAccounts kicks off discovery on mount. With no on-chain
+        // activity it falls back to a single "zero account" (the master),
+        // then replaces to ImportSelectAddresses with that single entry.
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId(
+                        'import_select_addresses_continue_button',
+                    ),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
 
-            server.use(
-                mockAccountFastLookup({
-                    address: addr0,
-                    response: { account_exists: true },
-                }),
-                mockAccountFastLookup({
-                    address: addr1,
-                    response: { account_exists: true },
-                }),
-                mockAccountFastLookup({
-                    address: addr2,
-                    response: { account_exists: true },
-                }),
-                // Catch-all: any other probed address has no on-chain history.
-                mockAccountFastLookup({
-                    address: ':any',
-                    response: { account_exists: false },
-                }),
-                mockIndexerSearchForAccounts(),
-            )
+        // The first new account is auto-selected (see
+        // useImportSelectAddressesScreen). Continue commits the import.
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_continue_button'),
+        )
 
-            await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
+        // Single committed account → name it before finishing.
+        await advanceThroughNameAccount()
 
-            // All three checkboxes render — the first is auto-selected by the
-            // hook (`new Set([newAccounts[0].address])`).
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId(
-                            `import_select_addresses_item_checkbox_${addr0}`,
-                        ),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
+        await waitFor(
+            () => {
+                expect(useOnboardingStore.getState().isOnboarding).toBe(false)
+            },
+            { timeout: 5000 },
+        )
+
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].type).toBe(AccountTypes.hdWallet)
+        expect(accounts[0].address).toBe(HD_TEST_ADDRESS)
+    })
+
+    it('Given an invalid mnemonic, when the user taps Import, then an error toast is raised and no account is persisted', async () => {
+        renderHDImportFromOnboarding()
+
+        await openImportOptionsSheet()
+        await waitFor(() =>
+            screen.getByTestId('import_options_hd_wallet_button'),
+        )
+        fireEvent.click(screen.getByTestId('import_options_hd_wallet_button'))
+
+        await advanceThroughImportInfo()
+
+        await waitFor(() => screen.getByTestId('import_account_word_input_0'))
+
+        typeWordsIndividually(INVALID_HD_MNEMONIC_24_WORDS)
+
+        await waitFor(() => {
             expect(
-                screen.getByTestId(
-                    `import_select_addresses_item_checkbox_${addr1}`,
+                isElementDisabled(
+                    screen.getByTestId('import_account_import_button'),
                 ),
-            ).toBeTruthy()
+            ).toBe(false)
+        })
+
+        fireEvent.click(screen.getByTestId('import_account_import_button'))
+
+        // The notifier is invoked from the showToast hook on error.
+        await waitFor(
+            () => {
+                expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalled()
+            },
+            { timeout: 5000 },
+        )
+
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+    })
+
+    it('Given the wallet was already imported, when re-importing, then the address is shown as already imported', async () => {
+        // Pre-seed the accounts store with the HD master address. The flow
+        // will rediscover the same address; ImportSelectAddresses must mark
+        // it as already imported and offer no new selections.
+        useAccountsStore.getState().setAccounts([
+            {
+                id: 'existing-1',
+                type: AccountTypes.hdWallet,
+                address: HD_TEST_ADDRESS,
+                keyPairId: 'pre-seeded',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: DerivationTypes.Peikert,
+                },
+            },
+        ])
+
+        renderHDImportFromOnboarding()
+
+        await openImportOptionsSheet()
+        await waitFor(() =>
+            screen.getByTestId('import_options_hd_wallet_button'),
+        )
+        fireEvent.click(screen.getByTestId('import_options_hd_wallet_button'))
+
+        await advanceThroughImportInfo()
+
+        await waitFor(() => screen.getByTestId('import_account_word_input_0'))
+        typeWordsIndividually(HD_TEST_MNEMONIC_24_WORDS)
+
+        await waitFor(() => {
             expect(
-                screen.getByTestId(
-                    `import_select_addresses_item_checkbox_${addr2}`,
+                isElementDisabled(
+                    screen.getByTestId('import_account_import_button'),
                 ),
-            ).toBeTruthy()
+            ).toBe(false)
+        })
 
-            // Continue with only the auto-selected first address.
-            fireEvent.click(
-                screen.getByTestId('import_select_addresses_continue_button'),
+        fireEvent.click(screen.getByTestId('import_account_import_button'))
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId(
+                        'import_select_addresses_continue_button',
+                    ),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+
+        // Already-imported addresses render a chip instead of a checkbox,
+        // so the per-address checkbox is absent.
+        expect(
+            screen.queryByTestId(
+                `import_select_addresses_item_checkbox_${HD_TEST_ADDRESS}`,
+            ),
+        ).toBeFalsy()
+
+        // The accounts store is unchanged — still just the pre-seeded entry.
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+    })
+
+    it('Given discovery finds three derived addresses, when the user keeps the default selection and continues, then only that one address is persisted', async () => {
+        // Pre-compute the addresses discovery would surface for keyIndex
+        // 0–2 of account 0. We mock fast-lookup to return `account_exists`
+        // for these three; the catch-all returns false so the scan stops
+        // after the first key-gap of 5 misses, leaving exactly three
+        // candidates in the selection list.
+        const addr0 = HD_TEST_ADDRESS // (account 0, keyIndex 0)
+        const addr1 = await deriveTestHDAddress(0, 1)
+        const addr2 = await deriveTestHDAddress(0, 2)
+
+        server.use(
+            mockAccountFastLookup({
+                address: addr0,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: addr1,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: addr2,
+                response: { account_exists: true },
+            }),
+            // Catch-all: any other probed address has no on-chain history.
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+        )
+
+        await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
+
+        // All three checkboxes render — the first is auto-selected by the
+        // hook (`new Set([newAccounts[0].address])`).
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_item_checkbox_${addr0}`,
+                    ),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        expect(
+            screen.getByTestId(
+                `import_select_addresses_item_checkbox_${addr1}`,
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId(
+                `import_select_addresses_item_checkbox_${addr2}`,
+            ),
+        ).toBeTruthy()
+
+        // Continue with only the auto-selected first address.
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_continue_button'),
+        )
+
+        // Single committed account → name it before finishing.
+        await advanceThroughNameAccount()
+
+        await waitFor(
+            () => {
+                expect(useOnboardingStore.getState().isOnboarding).toBe(false)
+            },
+            { timeout: 5000 },
+        )
+
+        // Exactly the auto-selected (first) address is persisted; the other
+        // two discovered candidates are dropped.
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].address).toBe(addr0)
+    })
+
+    it('Given discovery finds three derived addresses, when the user toggles the selection so only the third is selected, then only that address is persisted', async () => {
+        const addr0 = HD_TEST_ADDRESS
+        const addr1 = await deriveTestHDAddress(0, 1)
+        const addr2 = await deriveTestHDAddress(0, 2)
+
+        server.use(
+            mockAccountFastLookup({
+                address: addr0,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: addr1,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: addr2,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+        )
+
+        await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_item_checkbox_${addr2}`,
+                    ),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+
+        // ImportSelectAddressesScreen wraps each row in a PWTouchableOpacity
+        // whose onPress *also* calls toggleSelection. In RN, tapping the
+        // checkbox doesn't bubble to the row; under jsdom every click does,
+        // double-firing the handler and netting zero. Click the row's
+        // wrapping button (the parent of the checkbox) so only the row's
+        // onPress fires once.
+        const rowOf = (address: string): HTMLElement => {
+            const checkbox = screen.getByTestId(
+                `import_select_addresses_item_checkbox_${address}`,
             )
-
-            // Single committed account → name it before finishing.
-            await advanceThroughNameAccount()
-
-            await waitFor(
-                () => {
-                    expect(useOnboardingStore.getState().isOnboarding).toBe(
-                        false,
-                    )
-                },
-                { timeout: 5000 },
-            )
-
-            // Exactly the auto-selected (first) address is persisted; the other
-            // two discovered candidates are dropped.
-            const accounts = useAccountsStore.getState().accounts
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0].address).toBe(addr0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given discovery finds three derived addresses, when the user toggles the selection so only the third is selected, then only that address is persisted',
-        async () => {
-            const addr0 = HD_TEST_ADDRESS
-            const addr1 = await deriveTestHDAddress(0, 1)
-            const addr2 = await deriveTestHDAddress(0, 2)
-
-            server.use(
-                mockAccountFastLookup({
-                    address: addr0,
-                    response: { account_exists: true },
-                }),
-                mockAccountFastLookup({
-                    address: addr1,
-                    response: { account_exists: true },
-                }),
-                mockAccountFastLookup({
-                    address: addr2,
-                    response: { account_exists: true },
-                }),
-                mockAccountFastLookup({
-                    address: ':any',
-                    response: { account_exists: false },
-                }),
-                mockIndexerSearchForAccounts(),
-            )
-
-            await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId(
-                            `import_select_addresses_item_checkbox_${addr2}`,
-                        ),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
-
-            // ImportSelectAddressesScreen wraps each row in a PWTouchableOpacity
-            // whose onPress *also* calls toggleSelection. In RN, tapping the
-            // checkbox doesn't bubble to the row; under jsdom every click does,
-            // double-firing the handler and netting zero. Click the row's
-            // wrapping button (the parent of the checkbox) so only the row's
-            // onPress fires once.
-            const rowOf = (address: string): HTMLElement => {
-                const checkbox = screen.getByTestId(
-                    `import_select_addresses_item_checkbox_${address}`,
-                )
-                const row = closestPressable(checkbox)
-                if (!row) {
-                    throw new Error(`Row button not found for ${address}`)
-                }
-                return row
+            const row = closestPressable(checkbox)
+            if (!row) {
+                throw new Error(`Row button not found for ${address}`)
             }
-            fireEvent.click(rowOf(addr0))
-            fireEvent.click(rowOf(addr2))
+            return row
+        }
+        fireEvent.click(rowOf(addr0))
+        fireEvent.click(rowOf(addr2))
 
-            fireEvent.click(
-                screen.getByTestId('import_select_addresses_continue_button'),
-            )
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_continue_button'),
+        )
 
-            // Single committed account → name it before finishing.
-            await advanceThroughNameAccount()
+        // Single committed account → name it before finishing.
+        await advanceThroughNameAccount()
 
-            await waitFor(
-                () => {
-                    expect(useOnboardingStore.getState().isOnboarding).toBe(
-                        false,
-                    )
-                },
-                { timeout: 5000 },
-            )
+        await waitFor(
+            () => {
+                expect(useOnboardingStore.getState().isOnboarding).toBe(false)
+            },
+            { timeout: 5000 },
+        )
 
-            const accounts = useAccountsStore.getState().accounts
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0].address).toBe(addr2)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].address).toBe(addr2)
+    })
 
-    it(
-        'Given discovery finds rekeyed addresses, when the user commits the selection, then the rekeyed addresses screen is shown',
-        async () => {
-            // Default fast-lookup mock is "no on-chain activity" → discovery
-            // returns just the master. Indexer rekey lookup returns one watch
-            // candidate, which routes to ImportRekeyedAddresses after the
-            // commit (rather than exiting the flow).
-            server.use(
-                mockAccountFastLookup({
-                    address: ':any',
-                    response: { account_exists: false },
-                }),
-                mockIndexerSearchForAccounts({
-                    response: { accounts: [{ address: REKEY_TARGET_ADDRESS }] },
-                }),
-            )
+    it('Given discovery finds rekeyed addresses, when the user commits the selection, then the rekeyed addresses screen is shown', async () => {
+        // Default fast-lookup mock is "no on-chain activity" → discovery
+        // returns just the master. Indexer rekey lookup returns one watch
+        // candidate, which routes to ImportRekeyedAddresses after the
+        // commit (rather than exiting the flow).
+        server.use(
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts({
+                response: { accounts: [{ address: REKEY_TARGET_ADDRESS }] },
+            }),
+        )
 
-            await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
+        await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId(
-                            'import_select_addresses_continue_button',
-                        ),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId(
+                        'import_select_addresses_continue_button',
+                    ),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
 
-            fireEvent.click(
-                screen.getByTestId('import_select_addresses_continue_button'),
-            )
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_continue_button'),
+        )
 
-            // commitImport persists the master before navigating to the rekey
-            // screen — the master is in the accounts store regardless of
-            // whether the user later commits the rekey selection.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('import_rekeyed_addresses_screen'),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
-            expect(
-                screen.getByTestId('import_rekeyed_addresses_continue_button'),
-            ).toBeTruthy()
+        // commitImport persists the master before navigating to the rekey
+        // screen — the master is in the accounts store regardless of
+        // whether the user later commits the rekey selection.
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('import_rekeyed_addresses_screen'),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        expect(
+            screen.getByTestId('import_rekeyed_addresses_continue_button'),
+        ).toBeTruthy()
 
-            const accounts = useAccountsStore.getState().accounts
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0].address).toBe(HD_TEST_ADDRESS)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].address).toBe(HD_TEST_ADDRESS)
+    })
 
-    it(
-        'Given discovery finds three derived addresses each with a rekey, when the user commits the selection, then both screens flow into ImportRekeyedAddresses',
-        async () => {
-            const addr0 = HD_TEST_ADDRESS
-            const addr1 = await deriveTestHDAddress(0, 1)
-            const addr2 = await deriveTestHDAddress(0, 2)
+    it('Given discovery finds three derived addresses each with a rekey, when the user commits the selection, then both screens flow into ImportRekeyedAddresses', async () => {
+        const addr0 = HD_TEST_ADDRESS
+        const addr1 = await deriveTestHDAddress(0, 1)
+        const addr2 = await deriveTestHDAddress(0, 2)
 
-            server.use(
-                mockAccountFastLookup({
-                    address: addr0,
-                    response: { account_exists: true },
-                }),
-                mockAccountFastLookup({
-                    address: addr1,
-                    response: { account_exists: true },
-                }),
-                mockAccountFastLookup({
-                    address: addr2,
-                    response: { account_exists: true },
-                }),
-                mockAccountFastLookup({
-                    address: ':any',
-                    response: { account_exists: false },
-                }),
-                // Every rekey lookup returns the same watch candidate. After
-                // commit, discoverRekeyedAccounts probes ALL discovered
-                // addresses (route param `accounts`, not just the selected
-                // ones), so the rekey screen lists three entries — all the
-                // same target.
-                mockIndexerSearchForAccounts({
-                    response: { accounts: [{ address: REKEY_TARGET_ADDRESS }] },
-                }),
-            )
+        server.use(
+            mockAccountFastLookup({
+                address: addr0,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: addr1,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: addr2,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            // Every rekey lookup returns the same watch candidate. After
+            // commit, discoverRekeyedAccounts probes ALL discovered
+            // addresses (route param `accounts`, not just the selected
+            // ones), so the rekey screen lists three entries — all the
+            // same target.
+            mockIndexerSearchForAccounts({
+                response: { accounts: [{ address: REKEY_TARGET_ADDRESS }] },
+            }),
+        )
 
-            await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
+        await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId(
-                            `import_select_addresses_item_checkbox_${addr0}`,
-                        ),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_item_checkbox_${addr0}`,
+                    ),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
 
-            fireEvent.click(
-                screen.getByTestId('import_select_addresses_continue_button'),
-            )
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_continue_button'),
+        )
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('import_rekeyed_addresses_screen'),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('import_rekeyed_addresses_screen'),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
 
-            // The selected derived address (addr0 by default) is persisted.
-            const accounts = useAccountsStore.getState().accounts
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0].address).toBe(addr0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The selected derived address (addr0 by default) is persisted.
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].address).toBe(addr0)
+    })
 })

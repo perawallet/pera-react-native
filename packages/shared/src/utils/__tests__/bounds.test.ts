@@ -11,6 +11,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { AppError, ErrorCategory } from '../../errors/base'
+import { isExpectedError } from '../../errors/expected'
 import { encodeToBase64 } from '../strings'
 import {
     InputTooLargeError,
@@ -63,5 +65,21 @@ describe('decodeBoundedBase64', () => {
         expect(() =>
             decodeBoundedBase64(encodeToBase64(original), 32, 'txn'),
         ).toThrow(InputTooLargeError)
+    })
+})
+
+describe('InputTooLargeError', () => {
+    it('is a validation AppError carrying the bound for logs', () => {
+        const error = new InputTooLargeError('field', 5, 6)
+
+        expect(error).toBeInstanceOf(AppError)
+        expect(error.name).toBe('InputTooLargeError')
+        expect(error.message).toBe('field exceeds maximum size (6 > 5)')
+        expect(error.metadata).toMatchObject({
+            category: ErrorCategory.VALIDATION,
+            params: { label: 'field', limit: 5, actual: 6 },
+        })
+        expect(error.metadata.messageKey).toBeUndefined()
+        expect(isExpectedError(error)).toBe(false)
     })
 })

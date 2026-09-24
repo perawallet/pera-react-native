@@ -585,8 +585,8 @@ describe('services/accounts/store', () => {
         })
 
         test('rekeyed/signable derivation follows the network switch', async () => {
-            const { isRekeyedAccount, canSignWith } =
-                await import('../../utils')
+            const { isRekeyedAccount } = await import('../../utils')
+            const { canSignWith } = await import('../../signer-resolution')
             useAccountsStore.getState().setAccounts([
                 {
                     type: 'algo25',

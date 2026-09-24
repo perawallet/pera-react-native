@@ -36,10 +36,20 @@ type UseUnlockScreenResult = {
     setPassword: (value: string) => void
     handleUnlock: () => Promise<void>
     handlePasskeyUnlock: () => Promise<void>
+    isForgotPasswordOpen: boolean
+    openForgotPassword: () => void
+    closeForgotPassword: () => void
 }
 
 export const useUnlockScreen = (): UseUnlockScreenResult => {
     const [password, setPassword] = useState('')
+    const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false)
+    const openForgotPassword = useCallback(() => {
+        setIsForgotPasswordOpen(true)
+    }, [])
+    const closeForgotPassword = useCallback(() => {
+        setIsForgotPasswordOpen(false)
+    }, [])
     const [isSubmitting, setIsSubmitting] = useState(false)
     // Tracks the passkey challenge separately from isSubmitting so a
     // password unlock stays available while a passkey prompt is in flight —
@@ -273,5 +283,8 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
         setPassword,
         handleUnlock,
         handlePasskeyUnlock,
+        isForgotPasswordOpen,
+        openForgotPassword,
+        closeForgotPassword,
     }
 }

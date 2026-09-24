@@ -84,7 +84,6 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
 const NETWORK = 'mainnet'
 const CONFIRMED_ROUND = 1000
 
@@ -126,7 +125,6 @@ describe('Flow: offline submission reconnect', () => {
     let onlineBeforeTest: boolean
 
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
 
@@ -151,171 +149,162 @@ describe('Flow: offline submission reconnect', () => {
 
     afterEach(() => {
         onlineManager.setOnline(onlineBeforeTest)
-        server.resetHandlers()
     })
 
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
-    it(
-        'Given a signed group accepted before a kill, when the app relaunches offline and then online, then the open row is reconciled to confirmed and the transaction appears in history exactly once',
-        async () => {
-            // Submit through the real chokepoint; the baseline 404 pending
-            // lookup makes the fire-and-forget confirmation wait fail and leave
-            // the ledger row open.
-            const account = await seedAlgo25Signer()
-            const unsignedTxn = buildPaymentTransaction()
-            const { result: signer } = renderHook(() =>
-                useLocalKeyTransactionSigner(),
+    it('Given a signed group accepted before a kill, when the app relaunches offline and then online, then the open row is reconciled to confirmed and the transaction appears in history exactly once', async () => {
+        // Submit through the real chokepoint; the baseline 404 pending
+        // lookup makes the fire-and-forget confirmation wait fail and leave
+        // the ledger row open.
+        const account = await seedAlgo25Signer()
+        const unsignedTxn = buildPaymentTransaction()
+        const { result: signer } = renderHook(() =>
+            useLocalKeyTransactionSigner(),
+        )
+        const { result: encoder } = renderHook(() => useTransactionEncoder())
+        const signedTxns = await signer.current.signTransactions(
+            [unsignedTxn],
+            [0],
+            account,
+        )
+        const algokit = getAlgorandClient(NETWORK)
+
+        const txIds = await submitAndAutoRefresh(
+            algokit,
+            encoder.current.encodeSignedTransactions,
+            signedTxns,
+        )
+        expect(txIds).toHaveLength(1)
+        // The ledger row records the locally-derived txid, while algod's
+        // mocked POST echoes its own fixed txId — assert against the former.
+        const txid = signedTxns[0]!.txn.txID()
+
+        await waitFor(async () => {
+            const open = await getOpenSubmissionAttempts({
+                network: NETWORK,
+            })
+            expect(open).toHaveLength(1)
+            expect(open[0]!.txIds).toContain(txid)
+            expect(open[0]!.status).toBe('submitted')
+        })
+
+        // Relaunch offline: the pending entry and its badge are observable
+        // even though nothing has been persisted as a sign request.
+        onlineManager.setOnline(false)
+
+        const history = renderHistoryQuery(account.address)
+        await waitFor(() => {
+            expect(history.result.current.transactions.length).toBeGreaterThan(
+                0,
             )
-            const { result: encoder } = renderHook(() =>
-                useTransactionEncoder(),
-            )
-            const signedTxns = await signer.current.signTransactions(
-                [unsignedTxn],
-                [0],
-                account,
-            )
-            const algokit = getAlgorandClient(NETWORK)
+        })
+        const firstHistoryItem = history.result.current.transactions[0]!
+        expect(firstHistoryItem.id).toBe(txid)
+        expect(firstHistoryItem.confirmedRound).toBe(0)
 
-            const txIds = await submitAndAutoRefresh(
-                algokit,
-                encoder.current.encodeSignedTransactions,
-                signedTxns,
-            )
-            expect(txIds).toHaveLength(1)
-            // The ledger row records the locally-derived txid, while algod's
-            // mocked POST echoes its own fixed txId — assert against the former.
-            const txid = signedTxns[0]!.txn.txID()
-
-            await waitFor(async () => {
-                const open = await getOpenSubmissionAttempts({
-                    network: NETWORK,
-                })
-                expect(open).toHaveLength(1)
-                expect(open[0]!.txIds).toContain(txid)
-                expect(open[0]!.status).toBe('submitted')
-            })
-
-            // Relaunch offline: the pending entry and its badge are observable
-            // even though nothing has been persisted as a sign request.
-            onlineManager.setOnline(false)
-
-            const history = renderHistoryQuery(account.address)
-            await waitFor(() => {
-                expect(
-                    history.result.current.transactions.length,
-                ).toBeGreaterThan(0)
-            })
-            const firstHistoryItem = history.result.current.transactions[0]!
-            expect(firstHistoryItem.id).toBe(txid)
-            expect(firstHistoryItem.confirmedRound).toBe(0)
-
-            // The badge query is a pure DB read pinned to networkMode 'always'
-            // in source; mirror that here so the badge is observable offline.
-            const offlineBadgeClient = new QueryClient({
-                defaultOptions: {
-                    queries: { retry: false, gcTime: 0, networkMode: 'always' },
-                    mutations: { retry: false },
-                },
-            })
-            render(<TransactionListItem transaction={firstHistoryItem} />, {
-                queryClient: offlineBadgeClient,
-            })
-            await waitFor(() => {
-                // The integration harness leaves i18n uninitialised, so `t`
-                // returns the key rather than the English translation.
-                expect(
-                    screen.getByText('transactions.common.pending_verifying'),
-                ).toBeTruthy()
-            })
-
-            const signingClient = createTestQueryClient()
-            const { result: signingRequest } = renderHook(
-                () => useSigningRequest(),
-                {
-                    wrapper: ({ children }) => (
-                        <QueryClientProvider client={signingClient}>
-                            {children}
-                        </QueryClientProvider>
-                    ),
-                },
-            )
-            expect(signingRequest.current.pendingSignRequests).toHaveLength(0)
-
-            // Relaunch online and reconcile the open row to confirmed.
-            onlineManager.setOnline(true)
-            server.use(
-                mockAlgodPendingTransaction({
-                    response: { 'confirmed-round': CONFIRMED_ROUND },
-                }),
-                // The reconciler's algod probe reads both wire forms, so the
-                // committed response settles the row directly; the indexer
-                // fallback (covered by unit tests) is not exercised here.
-                http.get('*/v2/transactions/:txId', ({ params }) =>
-                    HttpResponse.json({
-                        'current-round': CONFIRMED_ROUND,
-                        transaction: {
-                            id: String(params.txId),
-                            sender: account.address,
-                            fee: 1000,
-                            'first-valid': 1000,
-                            'last-valid': 2000,
-                            'tx-type': 'pay',
-                            'confirmed-round': CONFIRMED_ROUND,
-                            'round-time': Math.floor(Date.now() / 1000),
-                        },
-                    }),
-                ),
-                mockTransactionHistory({
-                    accountAddress: account.address,
-                    response: { results: [], current_round: CONFIRMED_ROUND },
-                }),
-            )
-
-            const summary = await reconcileOpenSubmissions()
-            expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
-
-            await waitFor(async () => {
-                const open = await getOpenSubmissionAttempts({
-                    network: NETWORK,
-                })
-                expect(open).toHaveLength(0)
-            })
-
-            const settledHistory = renderHistoryQuery(account.address)
-            await waitFor(() => {
-                expect(settledHistory.result.current.isFetched).toBe(true)
-            })
+        // The badge query is a pure DB read pinned to networkMode 'always'
+        // in source; mirror that here so the badge is observable offline.
+        const offlineBadgeClient = new QueryClient({
+            defaultOptions: {
+                queries: { retry: false, gcTime: 0, networkMode: 'always' },
+                mutations: { retry: false },
+            },
+        })
+        render(<TransactionListItem transaction={firstHistoryItem} />, {
+            queryClient: offlineBadgeClient,
+        })
+        await waitFor(() => {
+            // The integration harness leaves i18n uninitialised, so `t`
+            // returns the key rather than the English translation.
             expect(
-                settledHistory.result.current.transactions.some(
-                    tx => tx.id === txid && tx.confirmedRound === 0,
+                screen.getByText('transactions.common.pending_verifying'),
+            ).toBeTruthy()
+        })
+
+        const signingClient = createTestQueryClient()
+        const { result: signingRequest } = renderHook(
+            () => useSigningRequest(),
+            {
+                wrapper: ({ children }) => (
+                    <QueryClientProvider client={signingClient}>
+                        {children}
+                    </QueryClientProvider>
                 ),
-            ).toBe(false)
+            },
+        )
+        expect(signingRequest.current.pendingSignRequests).toHaveLength(0)
 
-            // Persist the committed transaction through the real sync path and
-            // confirm it renders exactly once (the pending row is gone).
-            server.use(
-                mockTransactionHistory({
-                    accountAddress: account.address,
-                    response: committedHistoryResponse(txid, account.address),
+        // Relaunch online and reconcile the open row to confirmed.
+        onlineManager.setOnline(true)
+        server.use(
+            mockAlgodPendingTransaction({
+                response: { 'confirmed-round': CONFIRMED_ROUND },
+            }),
+            // The reconciler's algod probe reads both wire forms, so the
+            // committed response settles the row directly; the indexer
+            // fallback (covered by unit tests) is not exercised here.
+            http.get('*/v2/transactions/:txId', ({ params }) =>
+                HttpResponse.json({
+                    'current-round': CONFIRMED_ROUND,
+                    transaction: {
+                        id: String(params.txId),
+                        sender: account.address,
+                        fee: 1000,
+                        'first-valid': 1000,
+                        'last-valid': 2000,
+                        'tx-type': 'pay',
+                        'confirmed-round': CONFIRMED_ROUND,
+                        'round-time': Math.floor(Date.now() / 1000),
+                    },
                 }),
-            )
+            ),
+            mockTransactionHistory({
+                accountAddress: account.address,
+                response: { results: [], current_round: CONFIRMED_ROUND },
+            }),
+        )
 
-            await fetchAndPersistTransactions(account.address, NETWORK)
+        const summary = await reconcileOpenSubmissions()
+        expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
 
-            const syncedHistory = renderHistoryQuery(account.address)
-            await waitFor(() => {
-                const matches =
-                    syncedHistory.result.current.transactions.filter(
-                        tx => tx.id === txid,
-                    )
-                expect(matches).toHaveLength(1)
-                expect(matches[0]!.confirmedRound).toBe(CONFIRMED_ROUND)
+        await waitFor(async () => {
+            const open = await getOpenSubmissionAttempts({
+                network: NETWORK,
             })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+            expect(open).toHaveLength(0)
+        })
+
+        const settledHistory = renderHistoryQuery(account.address)
+        await waitFor(() => {
+            expect(settledHistory.result.current.isFetched).toBe(true)
+        })
+        expect(
+            settledHistory.result.current.transactions.some(
+                tx => tx.id === txid && tx.confirmedRound === 0,
+            ),
+        ).toBe(false)
+
+        // Persist the committed transaction through the real sync path and
+        // confirm it renders exactly once (the pending row is gone).
+        server.use(
+            mockTransactionHistory({
+                accountAddress: account.address,
+                response: committedHistoryResponse(txid, account.address),
+            }),
+        )
+
+        await fetchAndPersistTransactions(account.address, NETWORK)
+
+        const syncedHistory = renderHistoryQuery(account.address)
+        await waitFor(() => {
+            const matches = syncedHistory.result.current.transactions.filter(
+                tx => tx.id === txid,
+            )
+            expect(matches).toHaveLength(1)
+            expect(matches[0]!.confirmedRound).toBe(CONFIRMED_ROUND)
+        })
+    })
 })

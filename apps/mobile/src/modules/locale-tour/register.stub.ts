@@ -15,7 +15,5 @@
  * deeplink handler no-ops. Nothing else imports the tour driver, so this empty
  * module is what actually keeps runTour/runTourStep/steps — and the gallery
  * catalog traversal they perform — out of non-dev bundles.
- *
- * Intentionally has no exports: App.tsx imports it for effect only.
  */
-export {}
+export const registerLocaleTour = (): void => {}

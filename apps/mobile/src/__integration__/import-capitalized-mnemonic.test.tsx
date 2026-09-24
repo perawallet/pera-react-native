@@ -17,16 +17,7 @@
 // paste imports successfully, and a genuine typo still blocks Recover with
 // the bad slot marked, instead of failing opaquely.
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { mnemonicFromSeed } from 'algosdk'
 import { Notifier } from 'react-native-notifier'
@@ -97,18 +88,10 @@ const startAlgo25Import = async () => {
     await waitFor(() => screen.getByTestId('import_account_word_input_24'))
 }
 
-// Real algo25 key derivation (tweetnacl + algokit) plus several screen
-// transitions — bump above the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: Onboarding → Import Algo25 (IME-capitalized passphrase)', () => {
     // A genuine wordlist mnemonic, not hand-picked strings — proves the flow
     // against real BIP39/Algorand words rather than fixture-shaped stand-ins.
     const words = mnemonicFromSeed(new Uint8Array(32).fill(7)).split(' ')
-
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     beforeEach(() => {
         resetTestKeystore()
@@ -122,61 +105,51 @@ describe('Flow: Onboarding → Import Algo25 (IME-capitalized passphrase)', () =
         server.use(mockIndexerSearchForAccounts())
     })
 
-    it(
-        'imports successfully when every word arrives capitalized',
-        async () => {
-            const capitalized = words.map(
-                w => w.charAt(0).toUpperCase() + w.slice(1),
-            )
+    it('imports successfully when every word arrives capitalized', async () => {
+        const capitalized = words.map(
+            w => w.charAt(0).toUpperCase() + w.slice(1),
+        )
 
-            await startAlgo25Import()
+        await startAlgo25Import()
 
-            // A multi-word value typed into slot 0 distributes across every
-            // slot — what an IME-capitalized paste looks like on Android.
-            fireEvent.change(
-                screen.getByTestId('import_account_word_input_0'),
-                { target: { value: capitalized.join(' ') } },
-            )
+        // A multi-word value typed into slot 0 distributes across every
+        // slot — what an IME-capitalized paste looks like on Android.
+        fireEvent.change(screen.getByTestId('import_account_word_input_0'), {
+            target: { value: capitalized.join(' ') },
+        })
 
-            await waitFor(() => {
-                expect(
-                    isElementDisabled(
-                        screen.getByTestId('import_account_import_button'),
-                    ),
-                ).toBe(false)
-            })
-
-            fireEvent.click(screen.getByTestId('import_account_import_button'))
-
-            await waitFor(() =>
-                expect(useAccountsStore.getState().accounts).toHaveLength(1),
-            )
-            expect(vi.mocked(Notifier.showNotification)).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'keeps Recover disabled on a typo',
-        async () => {
-            await startAlgo25Import()
-
-            typeWordsIndividually(words)
-            fireEvent.change(
-                screen.getByTestId('import_account_word_input_3'),
-                { target: { value: 'zzzz' } },
-            )
-
+        await waitFor(() => {
             expect(
                 isElementDisabled(
                     screen.getByTestId('import_account_import_button'),
                 ),
-            ).toBe(true)
+            ).toBe(false)
+        })
 
-            // Pressing a disabled button must not start an import.
-            fireEvent.click(screen.getByTestId('import_account_import_button'))
-            expect(useAccountsStore.getState().accounts).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        fireEvent.click(screen.getByTestId('import_account_import_button'))
+
+        await waitFor(() =>
+            expect(useAccountsStore.getState().accounts).toHaveLength(1),
+        )
+        expect(vi.mocked(Notifier.showNotification)).not.toHaveBeenCalled()
+    })
+
+    it('keeps Recover disabled on a typo', async () => {
+        await startAlgo25Import()
+
+        typeWordsIndividually(words)
+        fireEvent.change(screen.getByTestId('import_account_word_input_3'), {
+            target: { value: 'zzzz' },
+        })
+
+        expect(
+            isElementDisabled(
+                screen.getByTestId('import_account_import_button'),
+            ),
+        ).toBe(true)
+
+        // Pressing a disabled button must not start an import.
+        fireEvent.click(screen.getByTestId('import_account_import_button'))
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+    })
 })

@@ -48,7 +48,7 @@ import {
     createItemKeyHasher,
     type ItemKeyHasher,
 } from '@perawallet/wallet-core-backup/test-handlers'
-import { server } from '@test-utils/msw-server'
+import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -64,7 +64,6 @@ import { waitPastDoublePressGuard } from '@test-utils/rnw'
 import {
     BACKUP_MNEMONIC,
     BACKUP_SALT,
-    SLOW_TEST_TIMEOUT_MS,
     renderQueryHook,
     seedAlgo25Account,
 } from './__fixtures__/cloudBackup'
@@ -147,20 +146,21 @@ const seedAvailableFromBackup = (
 }
 
 describe('Flow: Cloud backup → review actions while offline', () => {
+    // The background account-information fetch is left unmocked: this file
+    // asserts backup state, not balances.
+    setSuiteUnhandledRequestMode('bypass')
+
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'bypass' })
         await setupTestDatabase()
     })
 
     afterEach(() => {
-        server.resetHandlers()
         // `onlineManager` is process-wide: a test that left it offline would
         // fail every later file in the same worker.
         setConnected(true)
     })
 
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -177,124 +177,101 @@ describe('Flow: Cloud backup → review actions while offline', () => {
         vi.clearAllMocks()
     })
 
-    it(
-        'Given a not-backed-up account, when Back Up is tapped offline, then it reports being offline and the account stays not backed up — and backs up once reconnected',
-        async () => {
-            await seedAlgo25Account()
-            const { seenDeviceIds } = await setupBackup()
+    it('Given a not-backed-up account, when Back Up is tapped offline, then it reports being offline and the account stays not backed up — and backs up once reconnected', async () => {
+        await seedAlgo25Account()
+        const { seenDeviceIds } = await setupBackup()
 
-            renderWithNavigation(
-                CloudBackupAccountsScreen,
-                'CloudBackupAccounts',
-            )
+        renderWithNavigation(CloudBackupAccountsScreen, 'CloudBackupAccounts')
 
-            const backUpButton = await screen.findByTestId(
-                'cloud_backup_account_back_up',
-            )
+        const backUpButton = await screen.findByTestId(
+            'cloud_backup_account_back_up',
+        )
 
-            setConnected(false)
-            fireEvent.click(backUpButton)
+        setConnected(false)
+        fireEvent.click(backUpButton)
 
-            await waitFor(() =>
-                expect(toastTitles()).toContain(
-                    'errors.network.no_connection.title',
-                ),
-            )
-            expect(toastTitles()).not.toContain(
+        await waitFor(() =>
+            expect(toastTitles()).toContain(
+                'errors.network.no_connection.title',
+            ),
+        )
+        expect(toastTitles()).not.toContain(
+            'cloud_backup.accounts.back_up_success',
+        )
+        expect(
+            screen.getByTestId('backup_account_row_not_backed_up'),
+        ).toBeTruthy()
+        expect(seenDeviceIds()).toEqual([])
+
+        setConnected(true)
+        await waitPastDoublePressGuard()
+        fireEvent.click(screen.getByTestId('cloud_backup_account_back_up'))
+
+        await waitFor(() =>
+            expect(toastTitles()).toContain(
                 'cloud_backup.accounts.back_up_success',
-            )
-            expect(
-                screen.getByTestId('backup_account_row_not_backed_up'),
-            ).toBeTruthy()
-            expect(seenDeviceIds()).toEqual([])
+            ),
+        )
+        expect(
+            await screen.findByTestId('backup_account_row_backed_up'),
+        ).toBeTruthy()
+    })
 
-            setConnected(true)
-            await waitPastDoublePressGuard()
-            fireEvent.click(screen.getByTestId('cloud_backup_account_back_up'))
+    it('Given an account only the backup holds, when Add is tapped offline, then it reports being offline and the row stays available to add', async () => {
+        const { seenDeviceIds, hashAddress } = await setupBackup()
+        seedAvailableFromBackup(REMOTE_ONLY_ADDRESS, hashAddress)
 
-            await waitFor(() =>
-                expect(toastTitles()).toContain(
-                    'cloud_backup.accounts.back_up_success',
-                ),
-            )
-            expect(
-                await screen.findByTestId('backup_account_row_backed_up'),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        renderWithNavigation(
+            CloudBackupAccountsReviewScreen,
+            'CloudBackupAccountsReview',
+        )
 
-    it(
-        'Given an account only the backup holds, when Add is tapped offline, then it reports being offline and the row stays available to add',
-        async () => {
-            const { seenDeviceIds, hashAddress } = await setupBackup()
-            seedAvailableFromBackup(REMOTE_ONLY_ADDRESS, hashAddress)
+        const addButton = await screen.findByTestId('add_from_backup_button')
 
-            renderWithNavigation(
-                CloudBackupAccountsReviewScreen,
-                'CloudBackupAccountsReview',
-            )
+        setConnected(false)
+        fireEvent.click(addButton)
 
-            const addButton = await screen.findByTestId(
-                'add_from_backup_button',
-            )
+        await waitFor(() =>
+            expect(toastTitles()).toContain(
+                'errors.network.no_connection.title',
+            ),
+        )
+        expect(toastTitles()).not.toContain('cloud_backup.accounts.add_success')
+        expect(screen.getByTestId('add_from_backup_button')).toBeTruthy()
+        expect(seenDeviceIds()).toEqual([])
+    })
 
-            setConnected(false)
-            fireEvent.click(addButton)
+    it('Given an account only the backup holds, when Remove is confirmed offline, then it reports being offline and nothing is staged for deletion', async () => {
+        const { seenDeviceIds, hashAddress } = await setupBackup()
+        seedAvailableFromBackup(REMOTE_ONLY_ADDRESS, hashAddress)
 
-            await waitFor(() =>
-                expect(toastTitles()).toContain(
-                    'errors.network.no_connection.title',
-                ),
-            )
-            expect(toastTitles()).not.toContain(
-                'cloud_backup.accounts.add_success',
-            )
-            expect(screen.getByTestId('add_from_backup_button')).toBeTruthy()
-            expect(seenDeviceIds()).toEqual([])
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        renderWithNavigation(
+            CloudBackupAccountsReviewScreen,
+            'CloudBackupAccountsReview',
+        )
 
-    it(
-        'Given an account only the backup holds, when Remove is confirmed offline, then it reports being offline and nothing is staged for deletion',
-        async () => {
-            const { seenDeviceIds, hashAddress } = await setupBackup()
-            seedAvailableFromBackup(REMOTE_ONLY_ADDRESS, hashAddress)
+        setConnected(false)
+        fireEvent.click(await screen.findByTestId('delete_from_backup_button'))
 
-            renderWithNavigation(
-                CloudBackupAccountsReviewScreen,
-                'CloudBackupAccountsReview',
-            )
+        // Offline is reported after the confirmation, not instead of it:
+        // the guard sits on the action, not on opening the sheet.
+        fireEvent.click(await screen.findByTestId('delete_from_backup_confirm'))
 
-            setConnected(false)
-            fireEvent.click(
-                await screen.findByTestId('delete_from_backup_button'),
-            )
-
-            // Offline is reported after the confirmation, not instead of it:
-            // the guard sits on the action, not on opening the sheet.
-            fireEvent.click(
-                await screen.findByTestId('delete_from_backup_confirm'),
-            )
-
-            await waitFor(() =>
-                expect(toastTitles()).toContain(
-                    'errors.network.no_connection.title',
-                ),
-            )
-            expect(toastTitles()).not.toContain(
-                'cloud_backup.accounts.delete_success',
-            )
-            expect(seenDeviceIds()).toEqual([])
-            // A pendingDelete written here would drop the row out of the
-            // backup's view on the strength of a request that never went out.
-            expect(
-                useBackupSyncStateStore.getState().syncState?.items[
-                    accountItemKey(hashAddress(REMOTE_ONLY_ADDRESS))
-                ]?.pendingDelete,
-            ).not.toBe(true)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() =>
+            expect(toastTitles()).toContain(
+                'errors.network.no_connection.title',
+            ),
+        )
+        expect(toastTitles()).not.toContain(
+            'cloud_backup.accounts.delete_success',
+        )
+        expect(seenDeviceIds()).toEqual([])
+        // A pendingDelete written here would drop the row out of the
+        // backup's view on the strength of a request that never went out.
+        expect(
+            useBackupSyncStateStore.getState().syncState?.items[
+                accountItemKey(hashAddress(REMOTE_ONLY_ADDRESS))
+            ]?.pendingDelete,
+        ).not.toBe(true)
+    })
 })

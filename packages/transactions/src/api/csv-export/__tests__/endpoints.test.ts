@@ -12,7 +12,13 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fetchTransactionsCsv, CsvExportError } from '../endpoints'
-import { Networks, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    Networks,
+    isExpectedError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 // Track the last queryClient call for assertions
 let lastQueryClientCall: any = null
@@ -229,5 +235,26 @@ describe('CsvExportError', () => {
         )
 
         expect(error.originalError).toBe(originalError)
+    })
+    it('is an AppError without a user-facing key', () => {
+        const error = new CsvExportError('Test error')
+
+        expect(error).toBeInstanceOf(AppError)
+        expect(error.metadata.category).toBe(ErrorCategory.NETWORK)
+        expect(error.metadata.messageKey).toBeUndefined()
+    })
+
+    it('stays expected when the flattened cause is a raw platform offline failure', () => {
+        const error = new CsvExportError(
+            'Failed to export transactions: Network request failed',
+        )
+
+        expect(isExpectedError(error)).toBe(true)
+    })
+
+    it('stays reportable for any other failure', () => {
+        const error = new CsvExportError('Empty CSV content received from API')
+
+        expect(isExpectedError(error)).toBe(false)
     })
 })

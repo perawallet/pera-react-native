@@ -817,12 +817,12 @@ describe('RNMigrationService', () => {
         })
     })
 
-    describe('simulateLegacyDatabase', () => {
+    describe('devTools.simulateLegacyDatabase', () => {
         const args = { dbName: 'pera.db', version: 3 }
 
         test('is a no-op when the native module is missing', async () => {
             await expect(
-                service.simulateLegacyDatabase(args),
+                service.devTools.simulateLegacyDatabase(args),
             ).resolves.toBeUndefined()
         })
 
@@ -831,7 +831,7 @@ describe('RNMigrationService', () => {
                 simulateLegacyDatabase: undefined,
             })
             await expect(
-                service.simulateLegacyDatabase(args),
+                service.devTools.simulateLegacyDatabase(args),
             ).resolves.toBeUndefined()
         })
 
@@ -840,17 +840,17 @@ describe('RNMigrationService', () => {
             const module = createNativeModule()
             nativeModulesMock.LegacyMigration = module
 
-            await service.simulateLegacyDatabase(args)
+            await service.devTools.simulateLegacyDatabase(args)
 
             expect(module.simulateLegacyDatabase).toHaveBeenCalledWith(args)
             expect(storage.getItem(MIGRATION_SENTINEL_KEY)).toBeNull()
         })
     })
 
-    describe('simulatePreSixxAccounts', () => {
+    describe('devTools.simulatePreSixxAccounts', () => {
         test('is a no-op when the native module is missing', async () => {
             await expect(
-                service.simulatePreSixxAccounts(),
+                service.devTools.simulatePreSixxAccounts(),
             ).resolves.toBeUndefined()
         })
 
@@ -859,7 +859,7 @@ describe('RNMigrationService', () => {
                 simulatePreSixxAccounts: undefined,
             })
             await expect(
-                service.simulatePreSixxAccounts(),
+                service.devTools.simulatePreSixxAccounts(),
             ).resolves.toBeUndefined()
         })
 
@@ -868,7 +868,7 @@ describe('RNMigrationService', () => {
             const module = createNativeModule()
             nativeModulesMock.LegacyMigration = module
 
-            await service.simulatePreSixxAccounts()
+            await service.devTools.simulatePreSixxAccounts()
 
             expect(module.simulatePreSixxAccounts).toHaveBeenCalledOnce()
             expect(storage.getItem(MIGRATION_SENTINEL_KEY)).toBeNull()

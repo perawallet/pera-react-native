@@ -20,15 +20,7 @@
 // (`addRekeyedWatchAccounts`).
 
 import { useEffect } from 'react'
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
@@ -55,8 +47,6 @@ import {
     HD_TEST_ADDRESS,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const SOURCE: WalletAccount = {
     id: 'rescan-source',
@@ -120,12 +110,9 @@ const renderFromAccountOptions = () =>
 
 describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -135,147 +122,127 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
         useAccountsStore.getState().setSelectedAccountAddress(SOURCE.address)
     })
 
-    it(
-        'Given the indexer reports accounts rekeyed to the source, when the user imports the candidates, then they are persisted as watch accounts pointing at the source',
-        async () => {
-            server.use(
-                mockIndexerSearchForAccounts({
-                    response: {
-                        accounts: [
-                            { address: HD_TEST_ADDRESS },
-                            { address: REKEY_TARGET_ADDRESS },
-                        ],
-                    },
-                }),
-            )
+    it('Given the indexer reports accounts rekeyed to the source, when the user imports the candidates, then they are persisted as watch accounts pointing at the source', async () => {
+        server.use(
+            mockIndexerSearchForAccounts({
+                response: {
+                    accounts: [
+                        { address: HD_TEST_ADDRESS },
+                        { address: REKEY_TARGET_ADDRESS },
+                    ],
+                },
+            }),
+        )
 
-            renderRescan()
+        renderRescan()
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rescan-rekeyed-select-screen'),
-                ).toBeTruthy()
-            })
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('rescan-rekeyed-select-screen'),
+            ).toBeTruthy()
+        })
+        expect(
+            screen.getByTestId(`rescan-rekeyed-row-${HD_TEST_ADDRESS}`),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId(`rescan-rekeyed-row-${REKEY_TARGET_ADDRESS}`),
+        ).toBeTruthy()
+
+        // Candidates are default-selected after the scan resolves, so a
+        // single tap on the CTA imports them.
+        fireEvent.click(screen.getByTestId('rescan-rekeyed-add'))
+
+        await waitFor(() => {
+            const addresses = useAccountsStore
+                .getState()
+                .accounts.map(a => a.address)
+            expect(addresses).toContain(HD_TEST_ADDRESS)
+            expect(addresses).toContain(REKEY_TARGET_ADDRESS)
+        })
+
+        const imported = useAccountsStore
+            .getState()
+            .accounts.filter(a => a.address !== ALGO25_TEST_ADDRESS)
+        expect(imported).toHaveLength(2)
+        imported.forEach(account => {
+            expect(account.type).toBe(AccountTypes.watch)
+            expect(account.rekeyAddress).toBe(ALGO25_TEST_ADDRESS)
+        })
+    })
+
+    it('Given the account options sheet, when the user taps Scan for Rekeyed Accounts, then the rescan flow opens, scans, and imports the candidate', async () => {
+        server.use(
+            mockIndexerSearchForAccounts({
+                response: {
+                    accounts: [{ address: HD_TEST_ADDRESS }],
+                },
+            }),
+        )
+
+        renderFromAccountOptions()
+
+        // i18n falls back to key strings under the integration setup.
+        const scanLabel = await screen.findByText(
+            'account_options.scan_rekeyed',
+        )
+        const scanRow = closestPressable(scanLabel)
+        expect(scanRow).toBeTruthy()
+        fireEvent.click(scanRow!)
+
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('rescan-rekeyed-select-screen'),
+            ).toBeTruthy()
+        })
+        await waitFor(() => {
             expect(
                 screen.getByTestId(`rescan-rekeyed-row-${HD_TEST_ADDRESS}`),
             ).toBeTruthy()
-            expect(
-                screen.getByTestId(
-                    `rescan-rekeyed-row-${REKEY_TARGET_ADDRESS}`,
-                ),
-            ).toBeTruthy()
+        })
 
-            // Candidates are default-selected after the scan resolves, so a
-            // single tap on the CTA imports them.
-            fireEvent.click(screen.getByTestId('rescan-rekeyed-add'))
+        fireEvent.click(screen.getByTestId('rescan-rekeyed-add'))
 
-            await waitFor(() => {
-                const addresses = useAccountsStore
-                    .getState()
-                    .accounts.map(a => a.address)
-                expect(addresses).toContain(HD_TEST_ADDRESS)
-                expect(addresses).toContain(REKEY_TARGET_ADDRESS)
-            })
-
-            const imported = useAccountsStore
+        await waitFor(() => {
+            const addresses = useAccountsStore
                 .getState()
-                .accounts.filter(a => a.address !== ALGO25_TEST_ADDRESS)
-            expect(imported).toHaveLength(2)
-            imported.forEach(account => {
-                expect(account.type).toBe(AccountTypes.watch)
-                expect(account.rekeyAddress).toBe(ALGO25_TEST_ADDRESS)
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                .accounts.map(a => a.address)
+            expect(addresses).toContain(HD_TEST_ADDRESS)
+        })
+        const imported = useAccountsStore
+            .getState()
+            .accounts.find(a => a.address === HD_TEST_ADDRESS)
+        expect(imported?.type).toBe(AccountTypes.watch)
+        expect(imported?.rekeyAddress).toBe(ALGO25_TEST_ADDRESS)
+    })
 
-    it(
-        'Given the account options sheet, when the user taps Scan for Rekeyed Accounts, then the rescan flow opens, scans, and imports the candidate',
-        async () => {
-            server.use(
-                mockIndexerSearchForAccounts({
-                    response: {
-                        accounts: [{ address: HD_TEST_ADDRESS }],
-                    },
-                }),
-            )
+    it('Given the indexer reports no rekeyed accounts, when the screen scans, then the empty state renders', async () => {
+        server.use(mockIndexerSearchForAccounts())
 
-            renderFromAccountOptions()
+        renderRescan()
 
-            // i18n falls back to key strings under the integration setup.
-            const scanLabel = await screen.findByText(
-                'account_options.scan_rekeyed',
-            )
-            const scanRow = closestPressable(scanLabel)
-            expect(scanRow).toBeTruthy()
-            fireEvent.click(scanRow!)
+        await waitFor(() => {
+            expect(screen.getByTestId('rescan-rekeyed-empty')).toBeTruthy()
+        })
+        // Nothing was imported — only the seeded source remains.
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+    })
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rescan-rekeyed-select-screen'),
-                ).toBeTruthy()
-            })
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(`rescan-rekeyed-row-${HD_TEST_ADDRESS}`),
-                ).toBeTruthy()
-            })
+    it('Given the indexer request fails, when the screen scans, then the error state renders instead of the empty state', async () => {
+        server.use(mockIndexerSearchForAccounts({ status: 500 }))
 
-            fireEvent.click(screen.getByTestId('rescan-rekeyed-add'))
+        renderRescan()
 
-            await waitFor(() => {
-                const addresses = useAccountsStore
-                    .getState()
-                    .accounts.map(a => a.address)
-                expect(addresses).toContain(HD_TEST_ADDRESS)
-            })
-            const imported = useAccountsStore
-                .getState()
-                .accounts.find(a => a.address === HD_TEST_ADDRESS)
-            expect(imported?.type).toBe(AccountTypes.watch)
-            expect(imported?.rekeyAddress).toBe(ALGO25_TEST_ADDRESS)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the indexer reports no rekeyed accounts, when the screen scans, then the empty state renders',
-        async () => {
-            server.use(mockIndexerSearchForAccounts())
-
-            renderRescan()
-
-            await waitFor(() => {
-                expect(screen.getByTestId('rescan-rekeyed-empty')).toBeTruthy()
-            })
-            // Nothing was imported — only the seeded source remains.
-            expect(useAccountsStore.getState().accounts).toHaveLength(1)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the indexer request fails, when the screen scans, then the error state renders instead of the empty state',
-        async () => {
-            server.use(mockIndexerSearchForAccounts({ status: 500 }))
-
-            renderRescan()
-
-            // The indexer failure must surface as an error — not be swallowed
-            // and shown as "no rekeyed accounts found". The indexer client
-            // retries the 500 with backoff before giving up, so allow a
-            // generous window.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('rescan-rekeyed-error'),
-                    ).toBeTruthy()
-                },
-                { timeout: 15_000 },
-            )
-            expect(screen.queryByTestId('rescan-rekeyed-empty')).toBeNull()
-            expect(useAccountsStore.getState().accounts).toHaveLength(1)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The indexer failure must surface as an error — not be swallowed
+        // and shown as "no rekeyed accounts found". The indexer client
+        // retries the 500 with backoff before giving up, so allow a
+        // generous window.
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('rescan-rekeyed-error')).toBeTruthy()
+            },
+            { timeout: 15_000 },
+        )
+        expect(screen.queryByTestId('rescan-rekeyed-empty')).toBeNull()
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+    })
 })

@@ -17,7 +17,6 @@
 
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -52,8 +51,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // The multisig account's address is the transaction sender; the seeded Algo25
 // signer is its (only) participant, so the wallet can sign for it.
@@ -102,14 +99,9 @@ const proposeResponse = {
 
 describe('Flow: multisig signing review (propose)', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => {
-        server.resetHandlers()
-    })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -145,45 +137,37 @@ describe('Flow: multisig signing review (propose)', () => {
             ])
     })
 
-    it(
-        'proposes the sign request to the backend when the user confirms a multisig dApp transaction',
-        async () => {
-            const proposeSpy = vi.fn(() =>
-                HttpResponse.json(proposeResponse, { status: 200 }),
-            )
-            server.use(
-                http.post('*/v1/joint-accounts/sign-requests/', proposeSpy),
-            )
+    it('proposes the sign request to the backend when the user confirms a multisig dApp transaction', async () => {
+        const proposeSpy = vi.fn(() =>
+            HttpResponse.json(proposeResponse, { status: 200 }),
+        )
+        server.use(http.post('*/v1/joint-accounts/sign-requests/', proposeSpy))
 
-            const { request, reject } = buildTransactionSignRequest({
-                txs: [buildPaymentTransaction({ sender: MSIG_ADDRESS })],
-            })
+        const { request, reject } = buildTransactionSignRequest({
+            txs: [buildPaymentTransaction({ sender: MSIG_ADDRESS })],
+        })
 
-            const { confirm } = renderSignReview(request)
+        const { confirm } = renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('signing-confirm-slide'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            confirm()
+        confirm()
 
-            // The participant's signature is proposed to the joint-accounts
-            // backend.
-            await waitFor(
-                () => {
-                    expect(proposeSpy).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            expect(reject).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The participant's signature is proposed to the joint-accounts
+        // backend.
+        await waitFor(
+            () => {
+                expect(proposeSpy).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(reject).not.toHaveBeenCalled()
+    })
 
     // Cosign (multisig-cosign source → addSignatures) and deferred propose
     // (hardware-only proposer → local draft) are driven in production by the

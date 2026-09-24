@@ -121,10 +121,9 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
+    enableQuantumFlag,
 } from './__fixtures__/quantum'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-const QUANTUM_FLAG = 'enable_quantum_accounts'
 const ADJUSTED_LABEL_KEY = 'transactions.quantum_fee.adjusted_label'
 const EXTERNAL_PILL_KEY = 'signing.external_transaction.pill_label'
 const SLIDE_TEST_ID = 'signing-confirm-slide'
@@ -207,11 +206,6 @@ const drainPendingSignRequests = () => {
             result.current.removeSignRequest(request)
         }
     })
-}
-
-const enableQuantumFlag = async (): Promise<void> => {
-    await useRemoteConfigStore.persist.rehydrate()
-    useRemoteConfigStore.getState().setConfigOverride(QUANTUM_FLAG, true)
 }
 
 /**
@@ -373,17 +367,14 @@ const useAlgodMocks = () => {
 
 describe('Flow: connections quantum fee override end-to-end', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
     afterEach(async () => {
-        server.resetHandlers()
         useRemoteConfigStore.getState().resetState()
         useAccountsStore.getState().setAccounts([])
         await getProvider().connections.store.clear()
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -404,214 +395,198 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         useAlgodMocks()
     })
 
-    it(
-        'Given a quantum signer and a dApp fee below the PQ minimum, when the request is reviewed and confirmed, then the fee is raised to 3000 µAlgo with a regrouped grp, the review shows the Adjusted marker + explainer, and the delivered result carries pqsig bytes at the quantum slot and null at the external slot',
-        async () => {
-            await enableQuantumFlag()
-            const signer = await seedQuantumSender()
-            await mountProviderWithSigning()
-            const { result: signReq } = renderHook(() => useSigningRequest(), {
-                wrapper: HookWrapper,
-            })
+    it('Given a quantum signer and a dApp fee below the PQ minimum, when the request is reviewed and confirmed, then the fee is raised to 3000 µAlgo with a regrouped grp, the review shows the Adjusted marker + explainer, and the delivered result carries pqsig bytes at the quantum slot and null at the external slot', async () => {
+        await enableQuantumFlag()
+        const signer = await seedQuantumSender()
+        await mountProviderWithSigning()
+        const { result: signReq } = renderHook(() => useSigningRequest(), {
+            wrapper: HookWrapper,
+        })
 
-            const connector = await pairAndHandshake()
-            await approveViaUi([signer.name as string])
-            await waitForStoredConnection(connector.clientId)
+        const connector = await pairAndHandshake()
+        await approveViaUi([signer.name as string])
+        await waitForStoredConnection(connector.clientId)
 
-            const { entries, originalGroup } = buildGroupEntries(signer.address)
-            const requestId = 7001
-            fireSignRequest(connector, requestId, entries)
+        const { entries, originalGroup } = buildGroupEntries(signer.address)
+        const requestId = 7001
+        fireSignRequest(connector, requestId, entries)
 
-            // Review sheet opened — the enqueue (which awaits suggested params
-            // for the quantum signer) has completed and the pipeline mounted.
-            await waitFor(
-                () => {
-                    expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
-                },
-                { timeout: 15_000 },
-            )
+        // Review sheet opened — the enqueue (which awaits suggested params
+        // for the quantum signer) has completed and the pipeline mounted.
+        await waitFor(
+            () => {
+                expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
+            },
+            { timeout: 15_000 },
+        )
 
-            // (i18n returns keys as-is in the integration environment.)
-            expect(await screen.findByText(ADJUSTED_LABEL_KEY)).toBeTruthy()
-            expect(
-                await screen.findByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
-            ).toBeTruthy()
+        // (i18n returns keys as-is in the integration environment.)
+        expect(await screen.findByText(ADJUSTED_LABEL_KEY)).toBeTruthy()
+        expect(
+            await screen.findByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
+        ).toBeTruthy()
 
-            // Enqueue-level truth: the raised fee + recomputed grp live on the
-            // request the pipeline signs (the quantum slot's own bytes are a
-            // pqsig carrier, so the fee/grp are asserted on this decodable
-            // representation).
-            const enqueued = signReq.current
-                .pendingSignRequests[0] as TransactionSignRequest
-            expect(enqueued).toBeTruthy()
-            expect(enqueued.feeAdjustments).toHaveLength(1)
-            expect(enqueued.feeAdjustments![0].originalFee).toBe(1000n)
-            expect(enqueued.feeAdjustments![0].adjustedFee).toBe(
-                EXPECTED_PQ_FEE,
-            )
+        // Enqueue-level truth: the raised fee + recomputed grp live on the
+        // request the pipeline signs (the quantum slot's own bytes are a
+        // pqsig carrier, so the fee/grp are asserted on this decodable
+        // representation).
+        const enqueued = signReq.current
+            .pendingSignRequests[0] as TransactionSignRequest
+        expect(enqueued).toBeTruthy()
+        expect(enqueued.feeAdjustments).toHaveLength(1)
+        expect(enqueued.feeAdjustments![0].originalFee).toBe(1000n)
+        expect(enqueued.feeAdjustments![0].adjustedFee).toBe(EXPECTED_PQ_FEE)
 
-            const group = enqueued.groupContext as PeraTransaction[]
-            expect(group[0].fee).toBe(EXPECTED_PQ_FEE)
-            // Regrouped over the ENTIRE group: both slots carry the SAME new grp
-            // (consistent recompute) and it differs from the incoming grp.
-            expect(group[0].group).toBeTruthy()
-            expect(group[1].group).toBeTruthy()
-            expect(bytesEqual(group[0].group!, group[1].group!)).toBe(true)
-            expect(originalGroup).toBeTruthy()
-            expect(bytesEqual(group[0].group!, originalGroup!)).toBe(false)
+        const group = enqueued.groupContext as PeraTransaction[]
+        expect(group[0].fee).toBe(EXPECTED_PQ_FEE)
+        // Regrouped over the ENTIRE group: both slots carry the SAME new grp
+        // (consistent recompute) and it differs from the incoming grp.
+        expect(group[0].group).toBeTruthy()
+        expect(group[1].group).toBeTruthy()
+        expect(bytesEqual(group[0].group!, group[1].group!)).toBe(true)
+        expect(originalGroup).toBeTruthy()
+        expect(bytesEqual(group[0].group!, originalGroup!)).toBe(false)
 
-            fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
+        fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
 
-            await waitFor(
-                () => {
-                    expect(connector.approveRequestCalls).toHaveLength(1)
-                },
-                { timeout: 15_000 },
-            )
+        await waitFor(
+            () => {
+                expect(connector.approveRequestCalls).toHaveLength(1)
+            },
+            { timeout: 15_000 },
+        )
 
-            expect(connector.approveRequestCalls[0].id).toBe(requestId)
-            const result = connector.approveRequestCalls[0]
-                .result as Nullable<string>[]
-            // ARC-0001 slot-order contract: one entry per requested txn.
-            expect(result).toHaveLength(2)
-            // External party's slot is padded null (the wallet did not sign it).
-            expect(result[1]).toBeNull()
-            // Quantum slot carries the pqsig carrier: present and far larger
-            // than an ed25519-signed payment (~250B) — a Falcon-1024 signature
-            // pushes the carrier well past 1KB.
-            expect(result[0]).toBeTruthy()
-            const pqsigBytes = decodeFromBase64(result[0] as string)
-            expect(pqsigBytes.length).toBeGreaterThan(1000)
+        expect(connector.approveRequestCalls[0].id).toBe(requestId)
+        const result = connector.approveRequestCalls[0]
+            .result as Nullable<string>[]
+        // ARC-0001 slot-order contract: one entry per requested txn.
+        expect(result).toHaveLength(2)
+        // External party's slot is padded null (the wallet did not sign it).
+        expect(result[1]).toBeNull()
+        // Quantum slot carries the pqsig carrier: present and far larger
+        // than an ed25519-signed payment (~250B) — a Falcon-1024 signature
+        // pushes the carrier well past 1KB.
+        expect(result[0]).toBeTruthy()
+        const pqsigBytes = decodeFromBase64(result[0] as string)
+        expect(pqsigBytes.length).toBeGreaterThan(1000)
 
-            expect(connector.rejectRequestCalls).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(connector.rejectRequestCalls).toHaveLength(0)
+    })
 
-    it(
-        'Given a non-quantum (algo25) signer, when the same 2-txn group is signed over the connection, then no fee is adjusted, no Adjusted marker is shown, only the external slot wears the Other signer pill, and the delivered transaction is byte-identical to the request',
-        async () => {
-            await enableQuantumFlag()
-            const account = await seedAlgo25Signer()
-            await mountProviderWithSigning()
-            const { result: signReq } = renderHook(() => useSigningRequest(), {
-                wrapper: HookWrapper,
-            })
+    it('Given a non-quantum (algo25) signer, when the same 2-txn group is signed over the connection, then no fee is adjusted, no Adjusted marker is shown, only the external slot wears the Other signer pill, and the delivered transaction is byte-identical to the request', async () => {
+        await enableQuantumFlag()
+        const account = await seedAlgo25Signer()
+        await mountProviderWithSigning()
+        const { result: signReq } = renderHook(() => useSigningRequest(), {
+            wrapper: HookWrapper,
+        })
 
-            const connector = await pairAndHandshake()
-            await approveViaUi([account.name as string])
-            await waitForStoredConnection(connector.clientId)
+        const connector = await pairAndHandshake()
+        await approveViaUi([account.name as string])
+        await waitForStoredConnection(connector.clientId)
 
-            const { entries } = buildGroupEntries(account.address)
-            const requestId = 7002
-            fireSignRequest(connector, requestId, entries)
+        const { entries } = buildGroupEntries(account.address)
+        const requestId = 7002
+        fireSignRequest(connector, requestId, entries)
 
-            await waitFor(
-                () => {
-                    expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
-                },
-                { timeout: 15_000 },
-            )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
+            },
+            { timeout: 15_000 },
+        )
 
-            // No quantum signer ⇒ no fee override marker on the review surface.
-            expect(screen.queryByText(ADJUSTED_LABEL_KEY)).toBeNull()
-            // Only slot 1 (`signers: []`) is external; the wallet's own slot
-            // must not wear the pill.
-            expect(screen.getAllByText(EXTERNAL_PILL_KEY)).toHaveLength(1)
+        // No quantum signer ⇒ no fee override marker on the review surface.
+        expect(screen.queryByText(ADJUSTED_LABEL_KEY)).toBeNull()
+        // Only slot 1 (`signers: []`) is external; the wallet's own slot
+        // must not wear the pill.
+        expect(screen.getAllByText(EXTERNAL_PILL_KEY)).toHaveLength(1)
 
-            // Enqueue fast-path: no adjustments, and the signable slot's wire
-            // bytes are passed through verbatim (byte-identical to the dApp's).
-            const enqueued = signReq.current
-                .pendingSignRequests[0] as TransactionSignRequest
-            expect(enqueued).toBeTruthy()
-            expect(enqueued.feeAdjustments).toBeUndefined()
-            expect(enqueued.rawTransactionsBase64![0]).toBe(entries[0].txn)
+        // Enqueue fast-path: no adjustments, and the signable slot's wire
+        // bytes are passed through verbatim (byte-identical to the dApp's).
+        const enqueued = signReq.current
+            .pendingSignRequests[0] as TransactionSignRequest
+        expect(enqueued).toBeTruthy()
+        expect(enqueued.feeAdjustments).toBeUndefined()
+        expect(enqueued.rawTransactionsBase64![0]).toBe(entries[0].txn)
 
-            fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
+        fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
 
-            await waitFor(
-                () => {
-                    expect(connector.approveRequestCalls).toHaveLength(1)
-                },
-                { timeout: 15_000 },
-            )
+        await waitFor(
+            () => {
+                expect(connector.approveRequestCalls).toHaveLength(1)
+            },
+            { timeout: 15_000 },
+        )
 
-            expect(connector.approveRequestCalls[0].id).toBe(requestId)
-            const result = connector.approveRequestCalls[0]
-                .result as Nullable<string>[]
-            expect(result).toHaveLength(2)
-            expect(result[1]).toBeNull()
-            expect(result[0]).toBeTruthy()
+        expect(connector.approveRequestCalls[0].id).toBe(requestId)
+        const result = connector.approveRequestCalls[0]
+            .result as Nullable<string>[]
+        expect(result).toHaveLength(2)
+        expect(result[1]).toBeNull()
+        expect(result[0]).toBeTruthy()
 
-            // The signed response's embedded transaction is byte-for-byte the
-            // request transaction (the signature differs, the txn must not).
-            const signed = decodeSignedTransaction(
-                decodeFromBase64(result[0] as string),
-            )
-            const deliveredTxn = encodeToBase64(
-                encodeTransactionRaw(signed.txn),
-            )
-            expect(rawTransactionsMatch([entries[0].txn], [deliveredTxn])).toBe(
-                true,
-            )
+        // The signed response's embedded transaction is byte-for-byte the
+        // request transaction (the signature differs, the txn must not).
+        const signed = decodeSignedTransaction(
+            decodeFromBase64(result[0] as string),
+        )
+        const deliveredTxn = encodeToBase64(encodeTransactionRaw(signed.txn))
+        expect(rawTransactionsMatch([entries[0].txn], [deliveredTxn])).toBe(
+            true,
+        )
 
-            expect(connector.rejectRequestCalls).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(connector.rejectRequestCalls).toHaveLength(0)
+    })
 
-    it(
-        'Given a quantum signer whose dApp warning is unacknowledged, when a sign request is opened and confirmed, then the warning sheet appears before signing',
-        async () => {
-            await enableQuantumFlag()
-            const signer = await seedQuantumSender()
-            await mountProviderWithSigning()
+    it('Given a quantum signer whose dApp warning is unacknowledged, when a sign request is opened and confirmed, then the warning sheet appears before signing', async () => {
+        await enableQuantumFlag()
+        const signer = await seedQuantumSender()
+        await mountProviderWithSigning()
 
-            const connector = await pairAndHandshake()
-            await approveViaUi([signer.name as string])
-            await waitForStoredConnection(connector.clientId)
+        const connector = await pairAndHandshake()
+        await approveViaUi([signer.name as string])
+        await waitForStoredConnection(connector.clientId)
 
-            // Approving through the sheet with a quantum account already
-            // passes the connect-time gate, so the acknowledgement is dropped
-            // here: the sign-time backstop must catch a session whose
-            // acknowledgement is gone (a restored session on a fresh install).
-            act(() => {
-                useSettingsStore
-                    .getState()
-                    .deletePreference(
-                        UserPreferences.quantumDappWarningAcknowledged,
-                    )
-            })
+        // Approving through the sheet with a quantum account already
+        // passes the connect-time gate, so the acknowledgement is dropped
+        // here: the sign-time backstop must catch a session whose
+        // acknowledgement is gone (a restored session on a fresh install).
+        act(() => {
+            useSettingsStore
+                .getState()
+                .deletePreference(
+                    UserPreferences.quantumDappWarningAcknowledged,
+                )
+        })
 
-            const { entries } = buildGroupEntries(signer.address)
-            fireSignRequest(connector, 7003, entries)
+        const { entries } = buildGroupEntries(signer.address)
+        fireSignRequest(connector, 7003, entries)
 
-            await waitFor(
-                () => {
-                    expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
-                },
-                { timeout: 15_000 },
-            )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
+            },
+            { timeout: 15_000 },
+        )
 
-            // The backstop runs from handleSignAndSend, so it only fires once
-            // the user commits via slide-to-confirm.
-            fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
+        // The backstop runs from handleSignAndSend, so it only fires once
+        // the user commits via slide-to-confirm.
+        fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
-                    ).toBeTruthy()
-                },
-                { timeout: 15_000 },
-            )
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+                ).toBeTruthy()
+            },
+            { timeout: 15_000 },
+        )
 
-            // Backstop intercepted before signing — no request has gone out.
-            expect(connector.approveRequestCalls).toHaveLength(0)
-            expect(connector.rejectRequestCalls).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Backstop intercepted before signing — no request has gone out.
+        expect(connector.approveRequestCalls).toHaveLength(0)
+        expect(connector.rejectRequestCalls).toHaveLength(0)
+    })
 })
 
 // On native the pairing entry point is transient: `useConnectionPairing` is
@@ -716,17 +691,14 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
     }
 
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
     afterEach(async () => {
-        server.resetHandlers()
         useRemoteConfigStore.getState().resetState()
         useAccountsStore.getState().setAccounts([])
         await getProvider().connections.store.clear()
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -750,83 +722,71 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
         useAlgodMocks()
     })
 
-    it(
-        'Given a session paired from a surface that has since unmounted, when a rekey pointing the sender at a held quantum auth address lands and the dApp then requests a signature, then the request is signable and its fee is raised to the post-quantum minimum',
-        async () => {
-            await enableQuantumFlag()
-            const sender = await seedAlgo25Signer()
-            const quantumAuth = await seedQuantumSigner()
-            await mountProviderWithTransientSurface()
-            const { result: signReq } = renderHook(() => useSigningRequest(), {
-                wrapper: HookWrapper,
-            })
+    it('Given a session paired from a surface that has since unmounted, when a rekey pointing the sender at a held quantum auth address lands and the dApp then requests a signature, then the request is signable and its fee is raised to the post-quantum minimum', async () => {
+        await enableQuantumFlag()
+        const sender = await seedAlgo25Signer()
+        const quantumAuth = await seedQuantumSigner()
+        await mountProviderWithTransientSurface()
+        const { result: signReq } = renderHook(() => useSigningRequest(), {
+            wrapper: HookWrapper,
+        })
 
-            const connector = await pairApproveThenUnmountSurface([
-                sender.name as string,
-                quantumAuth.name as string,
-            ])
+        const connector = await pairApproveThenUnmountSurface([
+            sender.name as string,
+            quantumAuth.name as string,
+        ])
 
-            applyRekey(sender.address, quantumAuth.address)
+        applyRekey(sender.address, quantumAuth.address)
 
-            const { entries } = buildGroupEntries(sender.address)
-            // The signing store is a module singleton with no per-test
-            // reset, so count from the pre-request baseline, not zero.
-            const baseline = signReq.current.pendingSignRequests.length
-            fireSignRequest(connector, 7101, entries)
+        const { entries } = buildGroupEntries(sender.address)
+        // The signing store is a module singleton with no per-test
+        // reset, so count from the pre-request baseline, not zero.
+        const baseline = signReq.current.pendingSignRequests.length
+        fireSignRequest(connector, 7101, entries)
 
-            const enqueued = await enqueuedAfter(signReq, baseline)
-            expect(enqueued.feeAdjustments).toHaveLength(1)
-            expect(enqueued.feeAdjustments![0].adjustedFee).toBe(
-                EXPECTED_PQ_FEE,
-            )
-            expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(
-                EXPECTED_PQ_FEE,
-            )
-            expect(connector.rejectRequestCalls).toHaveLength(0)
+        const enqueued = await enqueuedAfter(signReq, baseline)
+        expect(enqueued.feeAdjustments).toHaveLength(1)
+        expect(enqueued.feeAdjustments![0].adjustedFee).toBe(EXPECTED_PQ_FEE)
+        expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(
+            EXPECTED_PQ_FEE,
+        )
+        expect(connector.rejectRequestCalls).toHaveLength(0)
 
-            act(() => {
-                signReq.current.removeSignRequest(enqueued)
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        act(() => {
+            signReq.current.removeSignRequest(enqueued)
+        })
+    })
 
-    it(
-        "Given a session paired from a surface that has since unmounted, when a rekey to a held quantum auth address is undone back to the sender's own standard key, then the still-signable request's fee drops from the post-quantum minimum back to the ordinary minimum",
-        async () => {
-            await enableQuantumFlag()
-            const sender = await seedAlgo25Signer()
-            const quantumAuth = await seedQuantumSigner()
-            // Rekeyed to a HELD quantum auth address from the start: signable
-            // throughout, so the fee is the only thing the undo changes.
-            applyRekey(sender.address, quantumAuth.address)
-            await mountProviderWithTransientSurface()
-            const { result: signReq } = renderHook(() => useSigningRequest(), {
-                wrapper: HookWrapper,
-            })
+    it("Given a session paired from a surface that has since unmounted, when a rekey to a held quantum auth address is undone back to the sender's own standard key, then the still-signable request's fee drops from the post-quantum minimum back to the ordinary minimum", async () => {
+        await enableQuantumFlag()
+        const sender = await seedAlgo25Signer()
+        const quantumAuth = await seedQuantumSigner()
+        // Rekeyed to a HELD quantum auth address from the start: signable
+        // throughout, so the fee is the only thing the undo changes.
+        applyRekey(sender.address, quantumAuth.address)
+        await mountProviderWithTransientSurface()
+        const { result: signReq } = renderHook(() => useSigningRequest(), {
+            wrapper: HookWrapper,
+        })
 
-            const connector = await pairApproveThenUnmountSurface([
-                sender.name as string,
-                quantumAuth.name as string,
-            ])
+        const connector = await pairApproveThenUnmountSurface([
+            sender.name as string,
+            quantumAuth.name as string,
+        ])
 
-            applyRekey(sender.address, undefined)
+        applyRekey(sender.address, undefined)
 
-            const { entries } = buildGroupEntries(sender.address)
-            const baseline = signReq.current.pendingSignRequests.length
-            fireSignRequest(connector, 7102, entries)
+        const { entries } = buildGroupEntries(sender.address)
+        const baseline = signReq.current.pendingSignRequests.length
+        fireSignRequest(connector, 7102, entries)
 
-            const enqueued = await enqueuedAfter(signReq, baseline)
-            expect(enqueued.feeAdjustments).toBeUndefined()
-            expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(
-                1000n,
-            )
-            expect(connector.rejectRequestCalls).toHaveLength(0)
+        const enqueued = await enqueuedAfter(signReq, baseline)
+        expect(enqueued.feeAdjustments).toBeUndefined()
+        expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(1000n)
+        expect(connector.rejectRequestCalls).toHaveLength(0)
 
-            act(() => {
-                signReq.current.removeSignRequest(enqueued)
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        act(() => {
+            signReq.current.removeSignRequest(enqueued)
+        })
+    })
 })

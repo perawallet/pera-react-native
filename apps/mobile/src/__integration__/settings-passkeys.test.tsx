@@ -19,20 +19,11 @@
 // per scenario), `biometrics.getSecurityLevel()` (spied to 'none' for the
 // screen-lock case), and a real accounts store seeded with an HD account.
 
-import {
-    afterAll,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import { server } from '@test-utils/msw-server'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
 import { PASSKEY_MIGRATION_NEEDED } from '@perawallet/wallet-core-passkeys'
@@ -44,8 +35,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { SettingsPasskeyScreen } from '@modules/settings/screens/SettingsPasskeysScreen'
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const HD_ACCOUNT: WalletAccount = {
     id: 'hd-1',
@@ -143,9 +132,6 @@ const setBiometricLevel = (level: BiometricLevel) => {
 }
 
 describe('Flow: Settings → Passkeys', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterAll(() => server.close())
-
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -163,178 +149,146 @@ describe('Flow: Settings → Passkeys', () => {
         wireAutofill({ providerActive: false })
     })
 
-    it(
-        'Given Pera is not the active credential provider, when the screen mounts, then the disabled state is shown and no prerequisite notice appears',
-        async () => {
-            wireAutofill({ providerActive: false })
+    it('Given Pera is not the active credential provider, when the screen mounts, then the disabled state is shown and no prerequisite notice appears', async () => {
+        wireAutofill({ providerActive: false })
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('settings_passkeys_disabled_state'),
-                ).toBeTruthy()
-            })
-            // Notices are gated to the managing (empty / populated) states —
-            // never shown over the disabled state, even with no HD wallet.
+        await waitFor(() => {
             expect(
-                screen.queryByTestId('settings_passkeys_hd_wallet_notice'),
-            ).toBeFalsy()
-            expect(
-                screen.queryByTestId('settings_passkeys_biometric_notice'),
-            ).toBeFalsy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                screen.getByTestId('settings_passkeys_disabled_state'),
+            ).toBeTruthy()
+        })
+        // Notices are gated to the managing (empty / populated) states —
+        // never shown over the disabled state, even with no HD wallet.
+        expect(
+            screen.queryByTestId('settings_passkeys_hd_wallet_notice'),
+        ).toBeFalsy()
+        expect(
+            screen.queryByTestId('settings_passkeys_biometric_notice'),
+        ).toBeFalsy()
+    })
 
-    it(
-        'Given the provider is active with no passkeys and all prerequisites met, when the screen mounts, then the empty state is shown without any notice',
-        async () => {
-            wireAutofill({ providerActive: true })
-            seedHDWallet()
+    it('Given the provider is active with no passkeys and all prerequisites met, when the screen mounts, then the empty state is shown without any notice', async () => {
+        wireAutofill({ providerActive: true })
+        seedHDWallet()
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('settings_passkeys_empty_state'),
-                ).toBeTruthy()
-            })
-            expect(
-                screen.queryByTestId('settings_passkeys_hd_wallet_notice'),
-            ).toBeFalsy()
-            expect(
-                screen.queryByTestId('settings_passkeys_biometric_notice'),
-            ).toBeFalsy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the provider is active but there is no HD wallet, when the screen mounts, then the empty state shows the universal-wallet-required notice',
-        async () => {
-            wireAutofill({ providerActive: true })
-            // No HD wallet seeded.
-
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('settings_passkeys_hd_wallet_notice'),
-                ).toBeTruthy()
-            })
+        await waitFor(() => {
             expect(
                 screen.getByTestId('settings_passkeys_empty_state'),
             ).toBeTruthy()
-            // HD wallet is the more fundamental gap, so the screen-lock notice
-            // is suppressed regardless of the device's authentication level.
+        })
+        expect(
+            screen.queryByTestId('settings_passkeys_hd_wallet_notice'),
+        ).toBeFalsy()
+        expect(
+            screen.queryByTestId('settings_passkeys_biometric_notice'),
+        ).toBeFalsy()
+    })
+
+    it('Given the provider is active but there is no HD wallet, when the screen mounts, then the empty state shows the universal-wallet-required notice', async () => {
+        wireAutofill({ providerActive: true })
+        // No HD wallet seeded.
+
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+
+        await waitFor(() => {
             expect(
-                screen.queryByTestId('settings_passkeys_biometric_notice'),
-            ).toBeFalsy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                screen.getByTestId('settings_passkeys_hd_wallet_notice'),
+            ).toBeTruthy()
+        })
+        expect(screen.getByTestId('settings_passkeys_empty_state')).toBeTruthy()
+        // HD wallet is the more fundamental gap, so the screen-lock notice
+        // is suppressed regardless of the device's authentication level.
+        expect(
+            screen.queryByTestId('settings_passkeys_biometric_notice'),
+        ).toBeFalsy()
+    })
 
-    it(
-        'Given an HD wallet but no screen lock, when the screen mounts, then the empty state shows the screen-lock-required notice',
-        async () => {
-            wireAutofill({ providerActive: true })
-            seedHDWallet()
-            setBiometricLevel('none')
+    it('Given an HD wallet but no screen lock, when the screen mounts, then the empty state shows the screen-lock-required notice', async () => {
+        wireAutofill({ providerActive: true })
+        seedHDWallet()
+        setBiometricLevel('none')
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('settings_passkeys_biometric_notice'),
-                ).toBeTruthy()
-            })
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('settings_passkeys_biometric_notice'),
+            ).toBeTruthy()
+        })
+        expect(screen.getByTestId('settings_passkeys_empty_state')).toBeTruthy()
+        expect(
+            screen.queryByTestId('settings_passkeys_hd_wallet_notice'),
+        ).toBeFalsy()
+    })
+
+    it('Given an HD wallet and only a device credential (no biometric), when the screen mounts, then no screen-lock notice appears', async () => {
+        wireAutofill({ providerActive: true })
+        seedHDWallet()
+        setBiometricLevel('secret')
+
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+
+        await waitFor(() => {
             expect(
                 screen.getByTestId('settings_passkeys_empty_state'),
             ).toBeTruthy()
+        })
+        expect(
+            screen.queryByTestId('settings_passkeys_biometric_notice'),
+        ).toBeFalsy()
+    })
+
+    it('Given a stored native credential, when the screen mounts, then the populated list renders the passkey with its display name and origin', async () => {
+        wireAutofill({
+            providerActive: true,
+            credentials: [NATIVE_CREDENTIAL],
+        })
+        seedHDWallet()
+
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+
+        await waitFor(() => {
             expect(
-                screen.queryByTestId('settings_passkeys_hd_wallet_notice'),
-            ).toBeFalsy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given an HD wallet and only a device credential (no biometric), when the screen mounts, then no screen-lock notice appears',
-        async () => {
-            wireAutofill({ providerActive: true })
-            seedHDWallet()
-            setBiometricLevel('secret')
-
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('settings_passkeys_empty_state'),
-                ).toBeTruthy()
-            })
-            expect(
-                screen.queryByTestId('settings_passkeys_biometric_notice'),
-            ).toBeFalsy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a stored native credential, when the screen mounts, then the populated list renders the passkey with its display name and origin',
-        async () => {
-            wireAutofill({
-                providerActive: true,
-                credentials: [NATIVE_CREDENTIAL],
-            })
-            seedHDWallet()
-
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(NATIVE_CREDENTIAL_ITEM_TESTID),
-                ).toBeTruthy()
-            })
-            expect(screen.getByText('Alice Example')).toBeTruthy()
-            expect(screen.getByText('example.com')).toBeTruthy()
-            // With credentials present, prerequisites are satisfied and no
-            // notice should appear.
-            expect(
-                screen.queryByTestId('settings_passkeys_hd_wallet_notice'),
-            ).toBeFalsy()
-            expect(
-                screen.queryByTestId('settings_passkeys_biometric_notice'),
-            ).toBeFalsy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a flagged passkey and Pera is the active provider, when the screen mounts, then the migration banner offers to remove it',
-        async () => {
-            wireAutofill({ providerActive: true })
-            seedHDWallet()
-            await seedFlaggedKeystorePasskey()
-
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('settings_passkeys_migration_banner'),
-                ).toBeTruthy()
-            })
-            expect(
-                screen.getByTestId(
-                    `settings_passkeys_migration_recreate_${FLAGGED_PASSKEY_ID}`,
-                ),
+                screen.getByTestId(NATIVE_CREDENTIAL_ITEM_TESTID),
             ).toBeTruthy()
+        })
+        expect(screen.getByText('Alice Example')).toBeTruthy()
+        expect(screen.getByText('example.com')).toBeTruthy()
+        // With credentials present, prerequisites are satisfied and no
+        // notice should appear.
+        expect(
+            screen.queryByTestId('settings_passkeys_hd_wallet_notice'),
+        ).toBeFalsy()
+        expect(
+            screen.queryByTestId('settings_passkeys_biometric_notice'),
+        ).toBeFalsy()
+    })
+
+    it('Given a flagged passkey and Pera is the active provider, when the screen mounts, then the migration banner offers to remove it', async () => {
+        wireAutofill({ providerActive: true })
+        seedHDWallet()
+        await seedFlaggedKeystorePasskey()
+
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+
+        await waitFor(() => {
             expect(
-                screen.queryByTestId('settings_passkeys_migration_blocked'),
-            ).toBeFalsy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                screen.getByTestId('settings_passkeys_migration_banner'),
+            ).toBeTruthy()
+        })
+        expect(
+            screen.getByTestId(
+                `settings_passkeys_migration_recreate_${FLAGGED_PASSKEY_ID}`,
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.queryByTestId('settings_passkeys_migration_blocked'),
+        ).toBeFalsy()
+    })
 
     // R7: removing the credential is irreversible and the replacement can only
     // be registered while Pera is the active provider. `resolveState` reports
@@ -343,56 +297,48 @@ describe('Flow: Settings → Passkeys', () => {
     // is what has to be withheld, the banner's CTA and the row's trash icon
     // alike. (The row's own removal flow is exercised in
     // `settings-passkeys-delete.test.tsx`.)
-    it(
-        'Given a flagged passkey but Pera is not the active provider, when the screen mounts, then the banner warns without offering to remove it',
-        async () => {
-            wireAutofill({ providerActive: false })
-            seedHDWallet()
-            await seedFlaggedKeystorePasskey()
+    it('Given a flagged passkey but Pera is not the active provider, when the screen mounts, then the banner warns without offering to remove it', async () => {
+        wireAutofill({ providerActive: false })
+        seedHDWallet()
+        await seedFlaggedKeystorePasskey()
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('settings_passkeys_migration_banner'),
-                ).toBeTruthy()
-            })
+        await waitFor(() => {
             expect(
-                screen.getByTestId('settings_passkeys_migration_blocked'),
+                screen.getByTestId('settings_passkeys_migration_banner'),
             ).toBeTruthy()
+        })
+        expect(
+            screen.getByTestId('settings_passkeys_migration_blocked'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByTestId(
+                `settings_passkeys_migration_recreate_${FLAGGED_PASSKEY_ID}`,
+            ),
+        ).toBeFalsy()
+        // The flagged credential is the only row on screen, so the list's
+        // remove action must be gone too — otherwise the banner's blocked
+        // note is contradicted two taps below it.
+        expect(screen.queryByTestId(/_remove$/)).toBeFalsy()
+    })
+
+    it('Given the native credential lookup throws, when the screen mounts, then the failure is swallowed and the empty state is shown rather than an error', async () => {
+        getAutofill().isProviderActive.mockResolvedValue(true)
+        getAutofill().getStoredCredentials.mockRejectedValue(
+            new Error('native identity store unavailable'),
+        )
+        seedHDWallet()
+
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+
+        // Reaching the empty state (rather than hanging in loading or
+        // surfacing an error) is the proof: usePasskeysQuery catches the
+        // native failure and falls back to "no native credentials".
+        await waitFor(() => {
             expect(
-                screen.queryByTestId(
-                    `settings_passkeys_migration_recreate_${FLAGGED_PASSKEY_ID}`,
-                ),
-            ).toBeFalsy()
-            // The flagged credential is the only row on screen, so the list's
-            // remove action must be gone too — otherwise the banner's blocked
-            // note is contradicted two taps below it.
-            expect(screen.queryByTestId(/_remove$/)).toBeFalsy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the native credential lookup throws, when the screen mounts, then the failure is swallowed and the empty state is shown rather than an error',
-        async () => {
-            getAutofill().isProviderActive.mockResolvedValue(true)
-            getAutofill().getStoredCredentials.mockRejectedValue(
-                new Error('native identity store unavailable'),
-            )
-            seedHDWallet()
-
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-
-            // Reaching the empty state (rather than hanging in loading or
-            // surfacing an error) is the proof: usePasskeysQuery catches the
-            // native failure and falls back to "no native credentials".
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('settings_passkeys_empty_state'),
-                ).toBeTruthy()
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                screen.getByTestId('settings_passkeys_empty_state'),
+            ).toBeTruthy()
+        })
+    })
 })

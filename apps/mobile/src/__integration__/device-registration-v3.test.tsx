@@ -16,16 +16,7 @@
 // else in the migration (endpoints, serializers, the account-type mapping) is
 // machinery in service of this one assertion.
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 
 // The default driver mock in vitest.setup.ts predates the v3 payload (its
@@ -36,10 +27,9 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 // `deviceInfo.getAppVersion()` is what `useDevice`'s registration payload
 // actually calls.
 vi.unmock('@perawallet/wallet-extension-platform-driver')
-// The real driver above imports `MemoryKeyValueStorage` (a value, not just a
-// type) from `@perawallet/wallet-extension-platform`; the default mock in
-// vitest.setup.ts only exports constants, so it must be unmocked too — same
-// pairing migration-inbox.test.tsx uses.
+// The contract is unmocked too so the real driver runs against its genuine
+// exports rather than the vitest.setup.ts stubs — same pairing
+// migration-inbox.test.tsx uses.
 vi.unmock('@perawallet/wallet-extension-platform')
 
 import { server, http, HttpResponse } from '@test-utils/msw-server'
@@ -62,8 +52,7 @@ import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrati
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
-
-const INTEGRATION_TIMEOUT = 30_000
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
 // Other quantum integration suites (rekey-quantum.test.tsx,
 // send-from-quantum.test.tsx, ...) gate quantum-account UI behind this
@@ -131,9 +120,6 @@ const algo25Account: WalletAccount = {
 }
 
 describe('Device registration v3', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterAll(() => server.close())
-
     beforeEach(async () => {
         useAccountsStore.getState().setAccounts([])
         useDeviceStore.getState().resetState()
@@ -152,192 +138,156 @@ describe('Device registration v3', () => {
         resetNotificationPreferences()
         useCurrenciesStore.getState().resetState()
         useRemoteConfigStore.getState().resetState()
-        server.resetHandlers()
     })
 
-    it(
-        'registers a quantum account with account_type quantum',
-        async () => {
-            const bodies: DeviceRegistrationRequest[] = []
-            server.use(
-                http.post('*/api/v3/devices', async ({ request }) => {
-                    bodies.push(
-                        (await request.json()) as DeviceRegistrationRequest,
-                    )
-                    return HttpResponse.json({ id: 'DEV-1' })
+    it('registers a quantum account with account_type quantum', async () => {
+        const bodies: DeviceRegistrationRequest[] = []
+        server.use(
+            http.post('*/api/v3/devices', async ({ request }) => {
+                bodies.push((await request.json()) as DeviceRegistrationRequest)
+                return HttpResponse.json({ id: 'DEV-1' })
+            }),
+        )
+
+        seedAccounts([quantumAccount, watchedAccount])
+        renderApp()
+
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        const latest = bodies[bodies.length - 1]
+
+        expect(latest.accounts).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    address: quantumAccount.address,
+                    account_type: 'quantum',
+                    receive_notifications: true,
                 }),
-            )
-
-            seedAccounts([quantumAccount, watchedAccount])
-            renderApp()
-
-            await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
-                timeout: INTEGRATION_TIMEOUT,
-            })
-            const latest = bodies[bodies.length - 1]
-
-            expect(latest.accounts).toEqual(
-                expect.arrayContaining([
-                    expect.objectContaining({
-                        address: quantumAccount.address,
-                        account_type: 'quantum',
-                        receive_notifications: true,
-                    }),
-                    expect.objectContaining({
-                        address: watchedAccount.address,
-                        account_type: 'watch',
-                    }),
-                ]),
-            )
-        },
-        INTEGRATION_TIMEOUT,
-    )
-
-    it(
-        'sends the required v3 fields and none of the v1-only ones',
-        async () => {
-            const bodies: DeviceRegistrationRequest[] = []
-            server.use(
-                http.post('*/api/v3/devices', async ({ request }) => {
-                    bodies.push(
-                        (await request.json()) as DeviceRegistrationRequest,
-                    )
-                    return HttpResponse.json({ id: 'DEV-1' })
+                expect.objectContaining({
+                    address: watchedAccount.address,
+                    account_type: 'watch',
                 }),
-            )
+            ]),
+        )
+    })
 
-            seedAccounts([quantumAccount])
-            renderApp()
+    it('sends the required v3 fields and none of the v1-only ones', async () => {
+        const bodies: DeviceRegistrationRequest[] = []
+        server.use(
+            http.post('*/api/v3/devices', async ({ request }) => {
+                bodies.push((await request.json()) as DeviceRegistrationRequest)
+                return HttpResponse.json({ id: 'DEV-1' })
+            }),
+        )
 
-            await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
-                timeout: INTEGRATION_TIMEOUT,
-            })
-            const latest = bodies[bodies.length - 1]
+        seedAccounts([quantumAccount])
+        renderApp()
 
-            expect(latest.app_version).toBeTruthy()
-            expect(latest.locale).toBeTruthy()
-            expect(latest.push_token).toBeDefined()
-            expect(latest).not.toHaveProperty('model')
-            expect(latest).not.toHaveProperty('application')
-            expect(latest).not.toHaveProperty('is_watch_account')
-        },
-        INTEGRATION_TIMEOUT,
-    )
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        const latest = bodies[bodies.length - 1]
 
-    it(
-        're-registers with the new currency when the user changes it',
-        async () => {
-            const bodies: DeviceRegistrationRequest[] = []
-            server.use(
-                http.post('*/api/v3/devices', async ({ request }) => {
-                    bodies.push(
-                        (await request.json()) as DeviceRegistrationRequest,
-                    )
-                    return HttpResponse.json({ id: 'DEV-1' })
+        expect(latest.app_version).toBeTruthy()
+        expect(latest.locale).toBeTruthy()
+        expect(latest.push_token).toBeDefined()
+        expect(latest).not.toHaveProperty('model')
+        expect(latest).not.toHaveProperty('application')
+        expect(latest).not.toHaveProperty('is_watch_account')
+    })
+
+    it('re-registers with the new currency when the user changes it', async () => {
+        const bodies: DeviceRegistrationRequest[] = []
+        server.use(
+            http.post('*/api/v3/devices', async ({ request }) => {
+                bodies.push((await request.json()) as DeviceRegistrationRequest)
+                return HttpResponse.json({ id: 'DEV-1' })
+            }),
+        )
+
+        seedAccounts([quantumAccount])
+        renderApp()
+
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        expect(bodies[0].currency).toBe('USD')
+
+        act(() => {
+            useCurrenciesStore.getState().setPreferredCurrency('EUR')
+        })
+
+        await waitFor(
+            () =>
+                expect(bodies.some(body => body.currency === 'EUR')).toBe(true),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+    })
+
+    it('carries the device id on the registration that follows the first', async () => {
+        const bodies: DeviceRegistrationRequest[] = []
+        server.use(
+            http.post('*/api/v3/devices', async ({ request }) => {
+                bodies.push((await request.json()) as DeviceRegistrationRequest)
+                return HttpResponse.json({ id: 'DEV-1' })
+            }),
+        )
+
+        seedAccounts([quantumAccount])
+        renderApp()
+
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        expect(bodies[0].id).toBeUndefined()
+
+        // No `addAccount` harness helper exists yet — drive the accounts
+        // store directly, per the task brief's fallback instruction.
+        addAccount(algo25Account)
+
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(1), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        expect(bodies[bodies.length - 1].id).toBe('DEV-1')
+    })
+
+    it('registers a muted account with receive_notifications false and an unmuted one with true, in the same body', async () => {
+        const bodies: DeviceRegistrationRequest[] = []
+        server.use(
+            http.post('*/api/v3/devices', async ({ request }) => {
+                bodies.push((await request.json()) as DeviceRegistrationRequest)
+                return HttpResponse.json({ id: 'DEV-1' })
+            }),
+        )
+
+        // Mute one account BEFORE mounting the registrar so the first
+        // (and only) registration this test drives already reflects the
+        // muted/unmuted split — no need to wait on a second effect tick.
+        const { result: notifications } = renderHook(() =>
+            useNotificationPreferences(),
+        )
+        notifications.current.setAccountEnabled(algo25Account.address, false)
+
+        seedAccounts([quantumAccount, algo25Account])
+        renderApp()
+
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        const latest = bodies[bodies.length - 1]
+
+        expect(latest.accounts).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    address: quantumAccount.address,
+                    receive_notifications: true,
                 }),
-            )
-
-            seedAccounts([quantumAccount])
-            renderApp()
-
-            await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
-                timeout: INTEGRATION_TIMEOUT,
-            })
-            expect(bodies[0].currency).toBe('USD')
-
-            act(() => {
-                useCurrenciesStore.getState().setPreferredCurrency('EUR')
-            })
-
-            await waitFor(
-                () =>
-                    expect(bodies.some(body => body.currency === 'EUR')).toBe(
-                        true,
-                    ),
-                { timeout: INTEGRATION_TIMEOUT },
-            )
-        },
-        INTEGRATION_TIMEOUT,
-    )
-
-    it(
-        'carries the device id on the registration that follows the first',
-        async () => {
-            const bodies: DeviceRegistrationRequest[] = []
-            server.use(
-                http.post('*/api/v3/devices', async ({ request }) => {
-                    bodies.push(
-                        (await request.json()) as DeviceRegistrationRequest,
-                    )
-                    return HttpResponse.json({ id: 'DEV-1' })
+                expect.objectContaining({
+                    address: algo25Account.address,
+                    receive_notifications: false,
                 }),
-            )
-
-            seedAccounts([quantumAccount])
-            renderApp()
-
-            await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
-                timeout: INTEGRATION_TIMEOUT,
-            })
-            expect(bodies[0].id).toBeUndefined()
-
-            // No `addAccount` harness helper exists yet — drive the accounts
-            // store directly, per the task brief's fallback instruction.
-            addAccount(algo25Account)
-
-            await waitFor(() => expect(bodies.length).toBeGreaterThan(1), {
-                timeout: INTEGRATION_TIMEOUT,
-            })
-            expect(bodies[bodies.length - 1].id).toBe('DEV-1')
-        },
-        INTEGRATION_TIMEOUT,
-    )
-
-    it(
-        'registers a muted account with receive_notifications false and an unmuted one with true, in the same body',
-        async () => {
-            const bodies: DeviceRegistrationRequest[] = []
-            server.use(
-                http.post('*/api/v3/devices', async ({ request }) => {
-                    bodies.push(
-                        (await request.json()) as DeviceRegistrationRequest,
-                    )
-                    return HttpResponse.json({ id: 'DEV-1' })
-                }),
-            )
-
-            // Mute one account BEFORE mounting the registrar so the first
-            // (and only) registration this test drives already reflects the
-            // muted/unmuted split — no need to wait on a second effect tick.
-            const { result: notifications } = renderHook(() =>
-                useNotificationPreferences(),
-            )
-            notifications.current.setAccountEnabled(
-                algo25Account.address,
-                false,
-            )
-
-            seedAccounts([quantumAccount, algo25Account])
-            renderApp()
-
-            await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
-                timeout: INTEGRATION_TIMEOUT,
-            })
-            const latest = bodies[bodies.length - 1]
-
-            expect(latest.accounts).toEqual(
-                expect.arrayContaining([
-                    expect.objectContaining({
-                        address: quantumAccount.address,
-                        receive_notifications: true,
-                    }),
-                    expect.objectContaining({
-                        address: algo25Account.address,
-                        receive_notifications: false,
-                    }),
-                ]),
-            )
-        },
-        INTEGRATION_TIMEOUT,
-    )
+            ]),
+        )
+    })
 })

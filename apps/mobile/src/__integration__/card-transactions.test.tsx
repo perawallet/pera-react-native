@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
@@ -38,10 +38,6 @@ const activeCardStatus = http.get('*/v1/card/status', () =>
 )
 
 describe('Flow: Card transactions list', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     it('renders fetched transactions grouped across months on the full screen', async () => {
         server.use(transactionsHandler(buildMockCardTransactions()))
 

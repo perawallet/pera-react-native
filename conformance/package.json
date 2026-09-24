@@ -11,7 +11,6 @@
     },
     "dependencies": {
         "@algorandfoundation/algokit-utils": "catalog:",
-        "@algorandfoundation/dp256": "catalog:",
         "@algorandfoundation/keystore-core": "catalog:",
         "@algorandfoundation/xhd-wallet-api": "catalog:",
         "@perawallet/wallet-core-accounts": "workspace:*",

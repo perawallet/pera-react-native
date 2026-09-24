@@ -345,6 +345,9 @@ export default defineConfig({
                         './vitest.integration-setup.ts',
                     ],
                     include: ['src/__integration__/**/*.{test,spec}.{ts,tsx}'],
+                    // Flows run real key derivation and several screen
+                    // transitions, which routinely outrun vitest's 5s default.
+                    testTimeout: 30_000,
                     // Flow tests mount real screens whose queries can still be
                     // in flight when the file ends. Routing their console output
                     // through the worker RPC makes a late log race teardown

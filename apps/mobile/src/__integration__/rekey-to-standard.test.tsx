@@ -22,7 +22,6 @@
 
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -70,8 +69,6 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // The rekey txn is sent + signed by the source; the target only contributes
 // its address. A fake `keyPairId` is enough for the target to pass
@@ -141,12 +138,9 @@ const REKEY_SCREENS = [
 
 describe('Flow: Rekey to standard account end-to-end', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -173,146 +167,134 @@ describe('Flow: Rekey to standard account end-to-end', () => {
         )
     })
 
-    it(
-        'Given a funded source and an eligible target, when the user walks intro → select target → confirm, then a signed rekey payment is POSTed to algod and the success screen renders',
-        async () => {
-            await seedRekeyAccounts()
+    it('Given a funded source and an eligible target, when the user walks intro → select target → confirm, then a signed rekey payment is POSTed to algod and the success screen renders', async () => {
+        await seedRekeyAccounts()
 
-            // Capture the algod POST so we can prove a real signed group was
-            // built and submitted (not a placeholder).
-            const sendSpy = vi.fn(async () =>
-                HttpResponse.json(
-                    {
-                        txId: 'REKEYSTDTESTTXID00000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderWithNavigation(
-                RekeyToStandardIntroScreen,
-                'RekeyToStandardIntro',
+        // Capture the algod POST so we can prove a real signed group was
+        // built and submitted (not a placeholder).
+        const sendSpy = vi.fn(async () =>
+            HttpResponse.json(
                 {
-                    initialParams: { sourceAddress: ALGO25_TEST_ADDRESS },
-                    additionalScreens: REKEY_SCREENS,
+                    txId: 'REKEYSTDTESTTXID00000000000000000000000000000000000000',
                 },
-            )
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rekey-to-standard-intro-screen'),
-                ).toBeTruthy()
-            })
-            fireEvent.click(screen.getByTestId('rekey-to-standard-intro-start'))
+        renderWithNavigation(
+            RekeyToStandardIntroScreen,
+            'RekeyToStandardIntro',
+            {
+                initialParams: { sourceAddress: ALGO25_TEST_ADDRESS },
+                additionalScreens: REKEY_SCREENS,
+            },
+        )
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(
-                        'rekey-to-standard-select-target-screen',
-                    ),
-                ).toBeTruthy()
-            })
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(`rekey-target-row-${HD_TEST_ADDRESS}`),
-                ).toBeTruthy()
-            })
-            fireEvent.click(
-                screen.getByTestId(`rekey-target-row-${HD_TEST_ADDRESS}`),
-            )
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rekey-to-standard-confirm-screen'),
-                ).toBeTruthy()
-            })
-            const cta = () =>
-                screen.getByTestId('rekey-to-standard-confirm-cta')
-            await waitFor(() => {
-                expect(isElementDisabled(cta())).toBe(false)
-            })
-            fireEvent.click(cta())
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('rekey-to-standard-success-screen'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
-
-            expect(sendSpy).toHaveBeenCalled()
-            const calls = sendSpy.mock.calls as unknown as Array<
-                [{ request: Request }]
-            >
-            const body = await calls[0][0].request.arrayBuffer()
-            // A signed rekey payment is well over 100 bytes; an empty /
-            // placeholder body would be tiny.
-            expect(body.byteLength).toBeGreaterThan(50)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given algod rejects the submission, when the user confirms, then a rekey error toast surfaces and the success screen is NOT shown',
-        async () => {
-            await seedRekeyAccounts()
-
-            server.use(
-                http.post('*/v2/transactions', () =>
-                    HttpResponse.json(
-                        { message: 'TransactionPool.Remember: rejected' },
-                        { status: 500 },
-                    ),
-                ),
-            )
-
-            renderWithNavigation(
-                RekeyToStandardConfirmScreen,
-                'RekeyToStandardConfirm',
-                {
-                    initialParams: {
-                        sourceAddress: ALGO25_TEST_ADDRESS,
-                        targetAddress: HD_TEST_ADDRESS,
-                    },
-                    additionalScreens: REKEY_SCREENS,
-                },
-            )
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rekey-to-standard-confirm-screen'),
-                ).toBeTruthy()
-            })
-            const cta = () =>
-                screen.getByTestId('rekey-to-standard-confirm-cta')
-            await waitFor(() => {
-                expect(isElementDisabled(cta())).toBe(false)
-            })
-            fireEvent.click(cta())
-
-            // The submission failure surfaces as an error toast via
-            // `useHandleRekeyError` → `useErrorToast` → `Notifier`. algod
-            // retries the 500 with backoff before giving up, so allow a
-            // generous window.
-            await waitFor(
-                () => {
-                    expect(Notifier.showNotification).toHaveBeenCalled()
-                },
-                { timeout: 25_000 },
-            )
-
-            // The catch path does not navigate, so the confirm screen stays
-            // mounted and the success screen never appears.
+        await waitFor(() => {
             expect(
-                screen.queryByTestId('rekey-to-standard-success-screen'),
-            ).toBeNull()
+                screen.getByTestId('rekey-to-standard-intro-screen'),
+            ).toBeTruthy()
+        })
+        fireEvent.click(screen.getByTestId('rekey-to-standard-intro-start'))
+
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('rekey-to-standard-select-target-screen'),
+            ).toBeTruthy()
+        })
+        await waitFor(() => {
+            expect(
+                screen.getByTestId(`rekey-target-row-${HD_TEST_ADDRESS}`),
+            ).toBeTruthy()
+        })
+        fireEvent.click(
+            screen.getByTestId(`rekey-target-row-${HD_TEST_ADDRESS}`),
+        )
+
+        await waitFor(() => {
             expect(
                 screen.getByTestId('rekey-to-standard-confirm-screen'),
             ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
+        const cta = () => screen.getByTestId('rekey-to-standard-confirm-cta')
+        await waitFor(() => {
+            expect(isElementDisabled(cta())).toBe(false)
+        })
+        fireEvent.click(cta())
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('rekey-to-standard-success-screen'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+
+        expect(sendSpy).toHaveBeenCalled()
+        const calls = sendSpy.mock.calls as unknown as Array<
+            [{ request: Request }]
+        >
+        const body = await calls[0][0].request.arrayBuffer()
+        // A signed rekey payment is well over 100 bytes; an empty /
+        // placeholder body would be tiny.
+        expect(body.byteLength).toBeGreaterThan(50)
+    })
+
+    it('Given algod rejects the submission, when the user confirms, then a rekey error toast surfaces and the success screen is NOT shown', async () => {
+        await seedRekeyAccounts()
+
+        server.use(
+            http.post('*/v2/transactions', () =>
+                HttpResponse.json(
+                    { message: 'TransactionPool.Remember: rejected' },
+                    { status: 500 },
+                ),
+            ),
+        )
+
+        renderWithNavigation(
+            RekeyToStandardConfirmScreen,
+            'RekeyToStandardConfirm',
+            {
+                initialParams: {
+                    sourceAddress: ALGO25_TEST_ADDRESS,
+                    targetAddress: HD_TEST_ADDRESS,
+                },
+                additionalScreens: REKEY_SCREENS,
+            },
+        )
+
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('rekey-to-standard-confirm-screen'),
+            ).toBeTruthy()
+        })
+        const cta = () => screen.getByTestId('rekey-to-standard-confirm-cta')
+        await waitFor(() => {
+            expect(isElementDisabled(cta())).toBe(false)
+        })
+        fireEvent.click(cta())
+
+        // The submission failure surfaces as an error toast via
+        // `useHandleRekeyError` → `useErrorToast` → `Notifier`. algod
+        // retries the 500 with backoff before giving up, so allow a
+        // generous window.
+        await waitFor(
+            () => {
+                expect(Notifier.showNotification).toHaveBeenCalled()
+            },
+            { timeout: 25_000 },
+        )
+
+        // The catch path does not navigate, so the confirm screen stays
+        // mounted and the success screen never appears.
+        expect(
+            screen.queryByTestId('rekey-to-standard-success-screen'),
+        ).toBeNull()
+        expect(
+            screen.getByTestId('rekey-to-standard-confirm-screen'),
+        ).toBeTruthy()
+    })
 })

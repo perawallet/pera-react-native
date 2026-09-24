@@ -24,7 +24,11 @@ const { getNetworkConfig } = vi.hoisted(() => ({
 const MAINNET_BIDALI = 'https://commerce.bidali.com/dapp'
 const TESTNET_BIDALI = 'https://commerce.staging.bidali.com/dapp'
 
-vi.mock('@perawallet/wallet-core-config', () => ({
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    // The real helper: the commerce -> giftcards redirect rule under test.
+    getIframeOrigins: (
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    ).getIframeOrigins,
     config: {
         discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
     },

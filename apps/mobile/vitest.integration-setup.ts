@@ -14,7 +14,7 @@
 // `vi.mock` factories are hoisted to the top of the module — top-level
 // imports aren't bound when they run, so the factories below `require('react')`.
 
-import { afterEach, beforeEach, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest'
 
 // Start from the unit setup's native-module, navigation and package mocks,
 // then opt back into the real code below. Running native firebase, keychain,
@@ -27,8 +27,17 @@ import './vitest.setup'
 import { useBottomSheetStore } from './src/modules/bottom-sheet/store/bottomSheetStore'
 import { setTestTheme } from './src/test-utils/test-theme'
 import { getTheme } from './src/theme/theme'
+import { onUnhandledRequest, server } from './src/test-utils/msw-server'
 
 setTestTheme(getTheme('light'))
+
+// Registered before any file-level hook, so a file's beforeAll/beforeEach
+// `server.use(...)` lands on a listening server and the reset runs after the
+// file's own afterEach. Handlers added in beforeAll are gone after the first
+// test; per-test handlers belong in beforeEach.
+beforeAll(() => server.listen({ onUnhandledRequest }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
 
 // The bottom-sheet store is a module-scoped singleton, so requests opened in one
 // test survive into the next unless reset.

@@ -1040,13 +1040,6 @@
                 "body": "Le serveur a rencontré un problème lors du traitement de votre demande. Veuillez réessayer."
             }
         },
-        "validation": {
-            "generic": "Les données ne semblent pas valides.",
-            "invalid_address": "L’adresse ne semble pas valide : {{address}}",
-            "invalid_amount": "Le montant ne semble pas valide : {{amount}}",
-            "invalid_mnemonic": "La passphrase de récupération ne semble pas valide.",
-            "required_field": "Un champ obligatoire est manquant : {{field}}"
-        },
         "transaction": {
             "title": "Une erreur est survenue lors du traitement de cette transaction",
             "body": "Un problème semble être survenu. Veuillez réessayer et contacter l’assistance si le problème persiste."
@@ -2038,6 +2031,7 @@
             "pair_ledger_description": "Je souhaite récupérer un compte Algorand sécurisé par mon hardware wallet Ledger via Bluetooth",
             "pair_ledger_usb_title": "Associer un Ledger via USB",
             "pair_ledger_usb_description": "Je souhaite récupérer un compte Algorand sécurisé par mon hardware wallet Ledger via un câble USB",
+            "pair_ledger_unsupported_description": "Non pris en charge par ce navigateur ou cet appareil",
             "pera_web_title": "Importer depuis Pera Web",
             "pera_web_description": "Je souhaite importer des comptes Algorand depuis Pera Web",
             "cloud_backup_title": "Importer depuis la sauvegarde cloud",
@@ -4017,7 +4011,17 @@
             "error_invalid_password": "Mot de passe incorrect. Veuillez réessayer.",
             "corrupted_error": "Les données de votre Vault sont corrompues et ne peuvent pas être déverrouillées. Vous devrez peut-être réinitialiser l’extension et restaurer depuis votre sauvegarde.",
             "passkey_error": "Le déverrouillage par passkey a échoué. Utilisez votre mot de passe à la place.",
-            "lockout_countdown": "Trop de tentatives. Réessayez dans {{time}}"
+            "lockout_countdown": "Trop de tentatives. Réessayez dans {{time}}",
+            "forgot_password": "Mot de passe oublié ?"
+        },
+        "reset": {
+            "title": "Réinitialiser votre wallet ?",
+            "body": "Votre mot de passe ne peut pas être récupéré. La réinitialisation supprime tout ce que Pera Wallet enregistre dans ce navigateur, puis vous pourrez définir un nouveau mot de passe.",
+            "restore_note": "Restaurez ensuite vos comptes avec leur passphrase de récupération. Tout compte dont la passphrase de récupération n’est pas sauvegardée sera perdu.",
+            "hardware_note": "Les comptes Ledger et les comptes de suivi ne peuvent pas être restaurés à partir d’une passphrase. Ajoutez-les à nouveau après la réinitialisation.",
+            "acknowledge": "Je comprends que cela supprime mes données et ne peut pas être annulé",
+            "confirm_button": "Réinitialiser le wallet",
+            "error": "Impossible de réinitialiser le wallet. Veuillez réessayer."
         },
         "security": {
             "autolock_title": "Verrouillage automatique après",

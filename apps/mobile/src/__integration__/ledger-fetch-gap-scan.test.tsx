@@ -38,13 +38,11 @@ import {
 } from '@test-utils/database-setup'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     LedgerFetchAccountsScreen,
     type SerializedLedgerAccount,
 } from '@modules/ledger'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
+import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 
 // One deterministic 58-char address per derivation index.
 const addressForIndex = (index: number): string =>
@@ -54,26 +52,6 @@ const FUNDED_INDICES = new Set([0, 5])
 // The scan visits indices 0..10: index 5 funded resets the gap, then five
 // consecutive unfunded indices (6-10) exhaust it.
 const PROBED_INDICES = 11
-
-const registerFakeLedgerProvider = () => {
-    getProvider().hardwareWalletRegistry.register({
-        manufacturer: 'ledger',
-        transportType: 'ble',
-        scan: () => () => {},
-        connect: async () => ({
-            getAddress: async (accountIndex: number) => ({
-                address: addressForIndex(accountIndex),
-                publicKey: new Uint8Array(32),
-                accountIndex,
-            }),
-            signTransaction: async () => new Uint8Array(64),
-            signData: async () => new Uint8Array(64),
-            getAppVersion: async () => ({ major: 0, minor: 0, patch: 0 }),
-            disconnect: async () => {},
-        }),
-        isSupported: async () => false,
-    })
-}
 
 // Captures the params the fetch screen forwards to the select screen.
 let capturedAccounts: SerializedLedgerAccount[] | null = null
@@ -99,16 +77,13 @@ const renderFetch = () =>
 
 describe('Flow: Ledger initial fetch with on-chain gap scan', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
-        registerFakeLedgerProvider()
+        registerFakeLedgerProvider({ address: addressForIndex })
     })
     afterEach(() => {
-        server.resetHandlers()
         capturedAccounts = null
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -119,52 +94,42 @@ describe('Flow: Ledger initial fetch with on-chain gap scan', () => {
         useAccountsStore.getState().setAccounts([])
     })
 
-    it(
-        'lists funded accounts at indices {0, 5} in the initial fetch',
-        async () => {
-            server.use(
-                ...Array.from({ length: PROBED_INDICES }, (_, index) =>
-                    mockAccountFastLookup({
-                        address: addressForIndex(index),
-                        response: { account_exists: FUNDED_INDICES.has(index) },
-                    }),
-                ),
-            )
+    it('lists funded accounts at indices {0, 5} in the initial fetch', async () => {
+        server.use(
+            ...Array.from({ length: PROBED_INDICES }, (_, index) =>
+                mockAccountFastLookup({
+                    address: addressForIndex(index),
+                    response: { account_exists: FUNDED_INDICES.has(index) },
+                }),
+            ),
+        )
 
-            renderFetch()
+        renderFetch()
 
-            await waitFor(
-                () => {
-                    expect(capturedAccounts).not.toBeNull()
-                },
-                { timeout: 10_000 },
-            )
-            expect(capturedAccounts!.map(a => a.accountIndex)).toEqual([0, 5])
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(capturedAccounts).not.toBeNull()
+            },
+            { timeout: 10_000 },
+        )
+        expect(capturedAccounts!.map(a => a.accountIndex)).toEqual([0, 5])
+    })
 
-    it(
-        'degrades to the capped scan when the probe is unreachable',
-        async () => {
-            server.use(
-                http.get('*/v1/accounts/fast-lookup/*', () =>
-                    HttpResponse.json({}, { status: 503 }),
-                ),
-            )
+    it('degrades to the capped scan when the probe is unreachable', async () => {
+        server.use(
+            http.get('*/v1/accounts/fast-lookup/*', () =>
+                HttpResponse.json({}, { status: 503 }),
+            ),
+        )
 
-            renderFetch()
+        renderFetch()
 
-            await waitFor(
-                () => {
-                    expect(capturedAccounts).not.toBeNull()
-                },
-                { timeout: 10_000 },
-            )
-            expect(capturedAccounts!.map(a => a.accountIndex)).toEqual([
-                0, 1, 2,
-            ])
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(capturedAccounts).not.toBeNull()
+            },
+            { timeout: 10_000 },
+        )
+        expect(capturedAccounts!.map(a => a.accountIndex)).toEqual([0, 1, 2])
+    })
 })

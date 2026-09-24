@@ -12,7 +12,12 @@
 
 import { DeterministicP256 } from '@algorandfoundation/dp256'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { concatBytes } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+    concatBytes,
+} from '@perawallet/wallet-core-shared'
 import {
     authenticatorData,
     attestationObjectNone,
@@ -141,11 +146,11 @@ export type DiscoverableCredentialChoice = {
 }
 
 /** WebAuthn §5.1.3: the RP ID must be a registrable suffix of the origin. */
-export class SecurityError extends Error {
+export class SecurityError extends AppError {
     constructor(
         message = 'The relying party ID is not a registrable domain suffix of, or equal to, the caller origin.',
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.VALIDATION })
         this.name = 'SecurityError'
     }
 }
@@ -205,21 +210,27 @@ export const resolveRpId = (
 }
 
 /** Thrown from `createCredential` when `excludeCredentials` names a credential this origin already has (WebAuthn `InvalidStateError`). */
-export class InvalidStateError extends Error {
+export class InvalidStateError extends AppError {
     constructor(
         message = 'The user attempted to register an authenticator that contains one of the credentials already registered with the relying party.',
     ) {
-        super(message)
+        super(message, {
+            severity: ErrorSeverity.LOW,
+            category: ErrorCategory.VALIDATION,
+        })
         this.name = 'InvalidStateError'
     }
 }
 
 /** Thrown from `assertCredential` when no stored credential matches `allowCredentials` (or none exist at all) — WebAuthn `NotAllowedError`. */
-export class NotAllowedError extends Error {
+export class NotAllowedError extends AppError {
     constructor(
         message = 'The operation either timed out or was not allowed.',
     ) {
-        super(message)
+        super(message, {
+            severity: ErrorSeverity.LOW,
+            category: ErrorCategory.VALIDATION,
+        })
         this.name = 'NotAllowedError'
     }
 }

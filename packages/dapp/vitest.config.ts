@@ -76,6 +76,11 @@ export default defineConfig({
                 __dirname,
                 '../device/src/index.ts',
             ),
+            // Before the bare specifier: an alias key also prefix-matches its subpaths.
+            '@perawallet/wallet-extension-platform/test-utils': path.resolve(
+                __dirname,
+                '../../extensions/platform/src/test-utils/index.ts',
+            ),
             '@perawallet/wallet-extension-platform': path.resolve(
                 __dirname,
                 '../../extensions/platform/src/index.ts',
@@ -93,6 +98,10 @@ export default defineConfig({
             '@perawallet/wallet-core-connections/testing': path.resolve(
                 __dirname,
                 '../connections/src/testing/handler-contract.ts',
+            ),
+            '@perawallet/wallet-core-connections/handlerKit': path.resolve(
+                __dirname,
+                '../connections/src/handlerKit.ts',
             ),
             '@perawallet/wallet-core-connections': path.resolve(
                 __dirname,

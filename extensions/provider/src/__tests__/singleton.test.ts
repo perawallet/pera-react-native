@@ -71,14 +71,11 @@ vi.mock('before-after-hook', () => ({
     },
 }))
 
-import { memoryLedger } from '@algorandfoundation/provider-migrations'
 import {
     getProvider,
     getKeystore,
     getKeystoreStore,
     getKeystoreHooks,
-    initializeProvider,
-    resetProvider,
     clearKeystore,
     reconcileKeystore,
 } from '../singleton'
@@ -104,30 +101,10 @@ describe('provider singleton', () => {
         resetKeystoreStateForTest()
     })
 
-    test('exposes the default PeraProvider before any reinitialization', () => {
+    test('exposes the module-scope PeraProvider, the same instance on every call', () => {
         const provider = getProvider()
         expect(provider).toBeInstanceOf(PeraProvider)
-    })
-
-    test('resetProvider clears the instance and getProvider then throws', () => {
-        resetProvider()
-        expect(() => getProvider()).toThrow(/Provider not initialized/)
-    })
-
-    test('initializeProvider sets the instance once and rejects reinitialization', () => {
-        resetProvider()
-        // WithMigrations throws MissingLedgerError without one; a fresh
-        // in-memory ledger is enough since this test never awaits a run.
-        const dummy = new PeraProvider(
-            { id: 'x', name: 'X' },
-            { migrations: { ledger: memoryLedger() } },
-        )
-        initializeProvider(dummy)
-
-        expect(getProvider()).toBe(dummy)
-        expect(() => initializeProvider(dummy)).toThrow(
-            /Provider already initialized/,
-        )
+        expect(getProvider()).toBe(provider)
     })
 
     test('clearKeystore delegates to the keystore instance', async () => {

@@ -16,12 +16,9 @@ import {
     canSignArc60,
     canSignProgram,
     canSignViaParticipants,
-    canSignWith,
     findAccountByKey,
     getAccountDisplayName,
     getAccountsRekeyedTo,
-    getRekeyAccount,
-    getSignerFor,
     hasSigningKeys,
     isAlgo25Account,
     isEligibleLedgerRekeyTarget,
@@ -29,17 +26,22 @@ import {
     isEligibleRekeyTarget,
     isEligibleSharedRekeyTarget,
     isQuantumAccount,
-    isQuantumDowngrade,
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
     isRekeyedAccount,
     isWatchAccount,
     matchesAccountKey,
-    rekeyTransitionFor,
-    resolveAuthAccount,
     resolveImportAccountType,
 } from '../utils'
+import {
+    canSignWith,
+    getRekeyAccount,
+    getSignerFor,
+    isQuantumDowngrade,
+    rekeyTransitionFor,
+    resolveAuthAccount,
+} from '../signer-resolution'
 import { AccountTypes, type WalletAccount } from '../models'
 import { MNEMONIC_WORD_COUNT } from '../constants'
 import { RekeyTargetNotFoundError } from '../errors'

@@ -13,7 +13,6 @@
 import React, { useEffect } from 'react'
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -87,8 +86,6 @@ const INBOX_ADDRESS =
     'OJVMSUIFJXMRWFSFG2CPPWMFTWXRXN3J42PZATE24FVKU4Q43DPCZXEA24'
 
 const ASSET_ID = '741234567'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // The list screen's GET endpoint returns the *raw* (snake_case) ARC-59 shape;
 // `fetchArc59AssetRequests` runs it through the real zod schema + transformer,
@@ -282,12 +279,9 @@ const renderClaimFlow = (
 
 describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing → Success)', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -325,311 +319,275 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         )
     })
 
-    it(
-        'Given an inbound request in the list, when the user taps it and confirms the claim, then the ARC-59 claim group is signed, POSTed to algod, and the success screen renders',
-        async () => {
-            const account = await seedClaimingAccount()
+    it('Given an inbound request in the list, when the user taps it and confirms the claim, then the ARC-59 claim group is signed, POSTed to algod, and the success screen renders', async () => {
+        const account = await seedClaimingAccount()
 
-            // The list screen reads requests for the claimer account via the
-            // ARC-59 requests endpoint. Register it directly (the asa-inbox
-            // `mockArc59AssetRequests` factory isn't aliased into apps/mobile).
-            server.use(
-                http.get(
-                    `*/v1/asa-inboxes/requests/${ALGO25_TEST_ADDRESS}/`,
-                    () =>
-                        HttpResponse.json(rawAssetRequestsResponse, {
-                            status: 200,
-                        }),
-                ),
-            )
+        // The list screen reads requests for the claimer account via the
+        // ARC-59 requests endpoint. Register it directly (the asa-inbox
+        // `mockArc59AssetRequests` factory isn't aliased into apps/mobile).
+        server.use(
+            http.get(`*/v1/asa-inboxes/requests/${ALGO25_TEST_ADDRESS}/`, () =>
+                HttpResponse.json(rawAssetRequestsResponse, {
+                    status: 200,
+                }),
+            ),
+        )
 
-            // Spy on the submission so we can prove the pipeline reached algod
-            // with the signed ARC-59 claim group.
-            const sendSpy = vi.fn(() =>
+        // Spy on the submission so we can prove the pipeline reached algod
+        // with the signed ARC-59 claim group.
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    txId: 'CLAIMTXID000000000000000000000000000000000000000000000',
+                },
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
+
+        renderClaimFlow('AssetTransferRequests')
+
+        // The list resolves once the requests query returns; the row shows
+        // the asset name. Tapping it pushes into the claim detail screen.
+        await waitFor(
+            () => {
+                expect(screen.getByText('Test Asset')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        fireEvent.click(screen.getByText('Test Asset'))
+
+        // Claim detail renders the slide-to-confirm (mocked as a button).
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('arc59_claim_confirm_slide'),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+
+        fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
+
+        // ClaimProcessing kicks off the claim in a useEffect; success
+        // renders once algod accepts the submission.
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_success')).toBeTruthy()
+            },
+            { timeout: 15_000 },
+        )
+
+        // The signed ARC-59 claim group reached algod — the load-bearing
+        // assertion that the build + sign chain produced a valid group.
+        expect(sendSpy).toHaveBeenCalled()
+        const calls = sendSpy.mock.calls as unknown as Array<
+            [{ request: Request }]
+        >
+        const body = await calls[0][0].request.arrayBuffer()
+        // A real signed app-call group is well over a few bytes.
+        expect(body.byteLength).toBeGreaterThan(50)
+        expect(account.address).toBe(ALGO25_TEST_ADDRESS)
+
+        // The core guarantee: with an inbox address on record, the
+        // claim group is built via explicit resource refs (`buildGroup`)
+        // and never falls back to a live `/v2/transactions/simulate`
+        // call.
+        expect(simulateCallCount).toBe(0)
+    })
+
+    it('Given an inbound request with no inbox address on record, when the user confirms the claim, then the claim group is populated via a live simulate call and the success screen still renders', async () => {
+        await seedClaimingAccount()
+
+        // Same requests endpoint as the happy path, but the router
+        // reports no known inbox address for this receiver yet — the
+        // builders must fall back to `buildPopulatedGroup`, which calls
+        // simulate exactly once to populate resources.
+        server.use(
+            http.get(`*/v1/asa-inboxes/requests/${ALGO25_TEST_ADDRESS}/`, () =>
                 HttpResponse.json(
                     {
-                        txId: 'CLAIMTXID000000000000000000000000000000000000000000000',
+                        ...rawAssetRequestsResponse,
+                        inbox_address: null,
                     },
                     { status: 200 },
                 ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
+            ),
+        )
 
-            renderClaimFlow('AssetTransferRequests')
-
-            // The list resolves once the requests query returns; the row shows
-            // the asset name. Tapping it pushes into the claim detail screen.
-            await waitFor(
-                () => {
-                    expect(screen.getByText('Test Asset')).toBeTruthy()
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    txId: 'FALLBACKTXID00000000000000000000000000000000000000000',
                 },
-                { timeout: 5000 },
-            )
-            fireEvent.click(screen.getByText('Test Asset'))
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            // Claim detail renders the slide-to-confirm (mocked as a button).
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('arc59_claim_confirm_slide'),
-                    ).toBeTruthy()
+        renderClaimFlow('AssetTransferRequests')
+
+        await waitFor(
+            () => {
+                expect(screen.getByText('Test Asset')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        fireEvent.click(screen.getByText('Test Asset'))
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('arc59_claim_confirm_slide'),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
+
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_success')).toBeTruthy()
+            },
+            { timeout: 15_000 },
+        )
+
+        expect(sendSpy).toHaveBeenCalled()
+        // Fallback path: exactly one simulate call to populate resources.
+        expect(simulateCallCount).toBe(1)
+    })
+
+    it('Given the claim detail screen, when the user rejects and confirms the warning sheet, then a reject group is signed, POSTed to algod, and the success screen renders', async () => {
+        await seedClaimingAccount()
+        // Reject reads the request from the store; start at the detail
+        // screen with the store pre-populated the way the list tap would.
+        useClaimAssetsStore.getState().setAccountAddress(ALGO25_TEST_ADDRESS)
+        useClaimAssetsStore.getState().setAssetRequests([buildAssetRequest()])
+
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    txId: 'REJECTTXID00000000000000000000000000000000000000000000',
                 },
-                { timeout: 5000 },
-            )
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
+        renderClaimFlow('AssetClaimDetail')
 
-            // ClaimProcessing kicks off the claim in a useEffect; success
-            // renders once algod accepts the submission.
-            await waitFor(
-                () => {
-                    expect(screen.getByTestId('send_success')).toBeTruthy()
-                },
-                { timeout: 15_000 },
-            )
+        // The detail screen's reject trigger (a link button). i18n returns
+        // raw keys in tests, so it renders as `arc59.claim.reject`; the
+        // sheet's confirm/cancel use the distinct `messages.claim.*` keys.
+        await waitFor(
+            () => {
+                expect(screen.getByText('arc59.claim.reject')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        fireEvent.click(screen.getByText('arc59.claim.reject'))
 
-            // The signed ARC-59 claim group reached algod — the load-bearing
-            // assertion that the build + sign chain produced a valid group.
-            expect(sendSpy).toHaveBeenCalled()
-            const calls = sendSpy.mock.calls as unknown as Array<
-                [{ request: Request }]
-            >
-            const body = await calls[0][0].request.arrayBuffer()
-            // A real signed app-call group is well over a few bytes.
-            expect(body.byteLength).toBeGreaterThan(50)
-            expect(account.address).toBe(ALGO25_TEST_ADDRESS)
+        // The reject confirmation sheet (ConfirmActionContent) renders via
+        // the BottomSheetManager that renderWithNavigation mounts.
+        await waitFor(
+            () => {
+                expect(screen.getByText('messages.claim.reject')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        fireEvent.click(screen.getByText('messages.claim.reject'))
 
-            // The core guarantee: with an inbox address on record, the
-            // claim group is built via explicit resource refs (`buildGroup`)
-            // and never falls back to a live `/v2/transactions/simulate`
-            // call.
-            expect(simulateCallCount).toBe(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Confirming pushes ClaimProcessing in rejectArc59 mode, which
+        // builds + signs + submits the reject group and lands on success.
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_success')).toBeTruthy()
+            },
+            { timeout: 15_000 },
+        )
 
-    it(
-        'Given an inbound request with no inbox address on record, when the user confirms the claim, then the claim group is populated via a live simulate call and the success screen still renders',
-        async () => {
-            await seedClaimingAccount()
+        expect(sendSpy).toHaveBeenCalled()
+        const calls = sendSpy.mock.calls as unknown as Array<
+            [{ request: Request }]
+        >
+        const body = await calls[0][0].request.arrayBuffer()
+        expect(body.byteLength).toBeGreaterThan(50)
+    })
 
-            // Same requests endpoint as the happy path, but the router
-            // reports no known inbox address for this receiver yet — the
-            // builders must fall back to `buildPopulatedGroup`, which calls
-            // simulate exactly once to populate resources.
-            server.use(
-                http.get(
-                    `*/v1/asa-inboxes/requests/${ALGO25_TEST_ADDRESS}/`,
-                    () =>
-                        HttpResponse.json(
-                            {
-                                ...rawAssetRequestsResponse,
-                                inbox_address: null,
-                            },
-                            { status: 200 },
-                        ),
-                ),
-            )
-
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json(
-                    {
-                        txId: 'FALLBACKTXID00000000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderClaimFlow('AssetTransferRequests')
-
-            await waitFor(
-                () => {
-                    expect(screen.getByText('Test Asset')).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
-            fireEvent.click(screen.getByText('Test Asset'))
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('arc59_claim_confirm_slide'),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
-            fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
-
-            await waitFor(
-                () => {
-                    expect(screen.getByTestId('send_success')).toBeTruthy()
-                },
-                { timeout: 15_000 },
-            )
-
-            expect(sendSpy).toHaveBeenCalled()
-            // Fallback path: exactly one simulate call to populate resources.
-            expect(simulateCallCount).toBe(1)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the claim detail screen, when the user rejects and confirms the warning sheet, then a reject group is signed, POSTed to algod, and the success screen renders',
-        async () => {
-            await seedClaimingAccount()
-            // Reject reads the request from the store; start at the detail
-            // screen with the store pre-populated the way the list tap would.
-            useClaimAssetsStore
-                .getState()
-                .setAccountAddress(ALGO25_TEST_ADDRESS)
-            useClaimAssetsStore
-                .getState()
-                .setAssetRequests([buildAssetRequest()])
-
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json(
-                    {
-                        txId: 'REJECTTXID00000000000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderClaimFlow('AssetClaimDetail')
-
-            // The detail screen's reject trigger (a link button). i18n returns
-            // raw keys in tests, so it renders as `arc59.claim.reject`; the
-            // sheet's confirm/cancel use the distinct `messages.claim.*` keys.
-            await waitFor(
-                () => {
-                    expect(screen.getByText('arc59.claim.reject')).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
-            fireEvent.click(screen.getByText('arc59.claim.reject'))
-
-            // The reject confirmation sheet (ConfirmActionContent) renders via
-            // the BottomSheetManager that renderWithNavigation mounts.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByText('messages.claim.reject'),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
-            fireEvent.click(screen.getByText('messages.claim.reject'))
-
-            // Confirming pushes ClaimProcessing in rejectArc59 mode, which
-            // builds + signs + submits the reject group and lands on success.
-            await waitFor(
-                () => {
-                    expect(screen.getByTestId('send_success')).toBeTruthy()
-                },
-                { timeout: 15_000 },
-            )
-
-            expect(sendSpy).toHaveBeenCalled()
-            const calls = sendSpy.mock.calls as unknown as Array<
-                [{ request: Request }]
-            >
-            const body = await calls[0][0].request.arrayBuffer()
-            expect(body.byteLength).toBeGreaterThan(50)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a collectible request, when the claim detail screen renders, then the NFT preview image is shown',
-        async () => {
-            await seedClaimingAccount()
-            useClaimAssetsStore
-                .getState()
-                .setAccountAddress(ALGO25_TEST_ADDRESS)
-            useClaimAssetsStore.getState().setAssetRequests([
-                buildAssetRequest({
-                    asset: {
-                        ...CLAIMED_ASSET,
-                        // `peraMetadata` is optional on PeraAsset, so the
-                        // spread alone leaves the required fields possibly
-                        // undefined — restate them for the type.
-                        peraMetadata: {
-                            ...CLAIMED_ASSET.peraMetadata,
-                            verificationTier: 'verified',
-                            isDeleted: false,
-                            type: 'collectible',
-                            collectible: {
-                                title: 'GEMS NFT 1',
-                                primaryImage: 'https://example.com/nft.png',
-                            },
+    it('Given a collectible request, when the claim detail screen renders, then the NFT preview image is shown', async () => {
+        await seedClaimingAccount()
+        useClaimAssetsStore.getState().setAccountAddress(ALGO25_TEST_ADDRESS)
+        useClaimAssetsStore.getState().setAssetRequests([
+            buildAssetRequest({
+                asset: {
+                    ...CLAIMED_ASSET,
+                    // `peraMetadata` is optional on PeraAsset, so the
+                    // spread alone leaves the required fields possibly
+                    // undefined — restate them for the type.
+                    peraMetadata: {
+                        ...CLAIMED_ASSET.peraMetadata,
+                        verificationTier: 'verified',
+                        isDeleted: false,
+                        type: 'collectible',
+                        collectible: {
+                            title: 'GEMS NFT 1',
+                            primaryImage: 'https://example.com/nft.png',
                         },
                     },
-                }),
-            ])
-
-            renderClaimFlow('AssetClaimDetail')
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('arc59_claim_asset_preview'),
-                    ).toBeTruthy()
                 },
-                { timeout: 5000 },
-            )
+            }),
+        ])
 
-            // The collectible's primaryImage renders as an actual image
-            // (expo-image's stub), not the initials fallback.
-            const preview = screen.getByTestId('arc59_claim_asset_preview')
-            expect(within(preview).getByTestId('expo-image')).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        renderClaimFlow('AssetClaimDetail')
 
-    it(
-        'Given a request flagged insufficientAlgoForClaiming, when the claim detail screen opens, then the shortfall is surfaced before the slide, the slide is inert, and nothing is submitted to algod',
-        async () => {
-            await seedClaimingAccount()
-            useClaimAssetsStore
-                .getState()
-                .setAccountAddress(ALGO25_TEST_ADDRESS)
-            // Blocked only when insufficientAlgoForClaiming AND NOT
-            // shouldUseFundsBeforeClaiming — the inbox's own funds would
-            // otherwise cover the opt-in.
-            useClaimAssetsStore.getState().setAssetRequests([
-                buildAssetRequest({
-                    insufficientAlgoForClaiming: true,
-                    shouldUseFundsBeforeClaiming: false,
-                }),
-            ])
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('arc59_claim_asset_preview'),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
 
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json({ txId: 'unused' }, { status: 200 }),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
+        // The collectible's primaryImage renders as an actual image
+        // (expo-image's stub), not the initials fallback.
+        const preview = screen.getByTestId('arc59_claim_asset_preview')
+        expect(within(preview).getByTestId('expo-image')).toBeTruthy()
+    })
 
-            renderClaimFlow('AssetClaimDetail')
+    it('Given a request flagged insufficientAlgoForClaiming, when the claim detail screen opens, then the shortfall is surfaced before the slide, the slide is inert, and nothing is submitted to algod', async () => {
+        await seedClaimingAccount()
+        useClaimAssetsStore.getState().setAccountAddress(ALGO25_TEST_ADDRESS)
+        // Blocked only when insufficientAlgoForClaiming AND NOT
+        // shouldUseFundsBeforeClaiming — the inbox's own funds would
+        // otherwise cover the opt-in.
+        useClaimAssetsStore.getState().setAssetRequests([
+            buildAssetRequest({
+                insufficientAlgoForClaiming: true,
+                shouldUseFundsBeforeClaiming: false,
+            }),
+        ])
 
-            // The shortfall is stated on arrival, not after the user commits.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('arc59_claim_insufficient_algo'),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json({ txId: 'unused' }, { status: 200 }),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
+        renderClaimFlow('AssetClaimDetail')
 
-            expect(sendSpy).not.toHaveBeenCalled()
-            expect(
-                screen.queryByTestId('arc59_claim_confirm_slide'),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The shortfall is stated on arrival, not after the user commits.
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('arc59_claim_insufficient_algo'),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+
+        fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
+
+        expect(sendSpy).not.toHaveBeenCalled()
+        expect(screen.queryByTestId('arc59_claim_confirm_slide')).toBeTruthy()
+    })
 })

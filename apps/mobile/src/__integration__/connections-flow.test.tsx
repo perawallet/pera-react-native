@@ -54,7 +54,7 @@ import {
 
 import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { server } from '@test-utils/msw-server'
+import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -156,7 +156,6 @@ const QUANTUM_ACCOUNT: WalletAccount = {
     name: 'Falcon',
 }
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
 const SLIDE_TEST_ID = 'signing-confirm-slide'
 const QUANTUM_DAPP_WARNING_TEST_ID = 'quantum-dapp-warning-sheet'
 
@@ -375,6 +374,9 @@ const signedSlotsFrom = (walletKit: FakeWalletKit): Nullable<string>[] => {
 }
 
 describe('Flow: ConnectionsProvider pair → approve → sign', () => {
+    // Outside the signing-pipeline suite the approval header's projects lookup
+    // is left unmocked; these cases assert pairing, not project metadata.
+    setSuiteUnhandledRequestMode('bypass')
     beforeEach(async () => {
         resetTestKeystore()
         walletConnectClientStub.reset()
@@ -399,335 +401,296 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         useRemoteConfigStore.getState().resetState()
     })
 
-    it(
-        'Given a dApp pairs through the registry, when the user picks one account and taps Connect, then approveSession carries that exact address list and the connection is persisted',
-        async () => {
-            await mountProvider()
-            const connector = await pairAndHandshake('Connections dApp')
+    it('Given a dApp pairs through the registry, when the user picks one account and taps Connect, then approveSession carries that exact address list and the connection is persisted', async () => {
+        await mountProvider()
+        const connector = await pairAndHandshake('Connections dApp')
 
-            await approveViaUi(SIGNING_ACCOUNT.name as string)
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
 
-            await waitFor(() => {
-                expect(connector.approveSessionCalls).toHaveLength(1)
-            })
-            const call = connector.approveSessionCalls[0]
-            expect(call.chainId).toBe(AlgorandWalletConnectChainId.mainnet)
-            expect(call.accounts).toEqual([SIGNING_ACCOUNT.address])
+        await waitFor(() => {
+            expect(connector.approveSessionCalls).toHaveLength(1)
+        })
+        const call = connector.approveSessionCalls[0]
+        expect(call.chainId).toBe(AlgorandWalletConnectChainId.mainnet)
+        expect(call.accounts).toEqual([SIGNING_ACCOUNT.address])
 
-            const stored = await getProvider().connections.store.list()
-            expect(stored.map(connection => connection.id)).toEqual([
-                connector.clientId,
-            ])
-            // The session key never reaches the record — it lives in the
-            // keystore behind `secretRef`.
-            expect(stored[0].accounts).toEqual([SIGNING_ACCOUNT.address])
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        const stored = await getProvider().connections.store.list()
+        expect(stored.map(connection => connection.id)).toEqual([
+            connector.clientId,
+        ])
+        // The session key never reaches the record — it lives in the
+        // keystore behind `secretRef`.
+        expect(stored[0].accounts).toEqual([SIGNING_ACCOUNT.address])
+    })
 
-    it(
-        'Given a v2 URI arrives at the deeplink front door, when the dApp proposes, then the approval sheet opens and the session is persisted',
-        async () => {
-            // Every other v2 case starts at `registry.pair`, which skips the
-            // parser — and the parser is what a scanned or OS-delivered URI
-            // meets first. A v2 URI carries no `bridge=`, so a parser that
-            // requires one turns the whole handler into unreachable code and
-            // the user into an invalid-URL toast.
-            await mountProvider()
-            const walletKit = await waitForWalletKit()
+    it('Given a v2 URI arrives at the deeplink front door, when the dApp proposes, then the approval sheet opens and the session is persisted', async () => {
+        // Every other v2 case starts at `registry.pair`, which skips the
+        // parser — and the parser is what a scanned or OS-delivered URI
+        // meets first. A v2 URI carries no `bridge=`, so a parser that
+        // requires one turns the whole handler into unreachable code and
+        // the user into an invalid-URL toast.
+        await mountProvider()
+        const walletKit = await waitForWalletKit()
 
-            const dispatched = captured.handleDeepLink!(V2_URI, false, 'qr')
-            await waitFor(() => {
-                expect(walletKit.pair).toHaveBeenCalledTimes(1)
-            })
-            act(() => {
-                walletKit.emit('session_proposal', makeProposal())
-            })
-            // Resolves on the peer's answer, well before the user decides.
-            await act(async () => {
-                await dispatched
-            })
+        const dispatched = captured.handleDeepLink!(V2_URI, false, 'qr')
+        await waitFor(() => {
+            expect(walletKit.pair).toHaveBeenCalledTimes(1)
+        })
+        act(() => {
+            walletKit.emit('session_proposal', makeProposal())
+        })
+        // Resolves on the peer's answer, well before the user decides.
+        await act(async () => {
+            await dispatched
+        })
 
-            await approveViaUi(SIGNING_ACCOUNT.name as string)
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
 
-            await waitForStoredConnection(V2_SESSION_TOPIC)
-            expect(walletKit.approveSession).toHaveBeenCalledTimes(1)
-            const stored =
-                await getProvider().connections.store.get(V2_SESSION_TOPIC)
-            expect(stored?.accounts).toEqual([SIGNING_ACCOUNT.address])
-            // The scanner's source, carried from the dispatcher through the
-            // registry onto the record.
-            expect(stored?.origin?.source).toBe('qr')
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitForStoredConnection(V2_SESSION_TOPIC)
+        expect(walletKit.approveSession).toHaveBeenCalledTimes(1)
+        const stored =
+            await getProvider().connections.store.get(V2_SESSION_TOPIC)
+        expect(stored?.accounts).toEqual([SIGNING_ACCOUNT.address])
+        // The scanner's source, carried from the dispatcher through the
+        // registry onto the record.
+        expect(stored?.origin?.source).toBe('qr')
+    })
 
-    it(
-        'Given a session approved for one account, when the dApp asks to sign for another the wallet holds, then the peer is rejected rather than left waiting',
-        async () => {
-            // The branch's headline security property. The refusal is a THROW
-            // out of the ARC-0001 resolver, and the legacy hook's synchronous
-            // try/catch used to be what turned that into a `rejectRequest`.
-            // Nothing inherited that job when the hook went — so "nothing was
-            // signed" is only half of it, and this is the guard on the other
-            // half: the dApp must hear back rather than time out.
-            await mountProvider()
-            const connector = await pairAndHandshake('Rejecting dApp')
-            await approveViaUi(SIGNING_ACCOUNT.name as string)
-            await waitForStoredConnection(connector.clientId)
+    it('Given a session approved for one account, when the dApp asks to sign for another the wallet holds, then the peer is rejected rather than left waiting', async () => {
+        // The branch's headline security property. The refusal is a THROW
+        // out of the ARC-0001 resolver, and the legacy hook's synchronous
+        // try/catch used to be what turned that into a `rejectRequest`.
+        // Nothing inherited that job when the hook went — so "nothing was
+        // signed" is only half of it, and this is the guard on the other
+        // half: the dApp must hear back rather than time out.
+        await mountProvider()
+        const connector = await pairAndHandshake('Rejecting dApp')
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
+        await waitForStoredConnection(connector.clientId)
 
-            // Sender is OTHER_ACCOUNT: signable by the wallet, but never
-            // approved for this session.
-            const unauthorized = payTransactionFrom(OTHER_ACCOUNT.address)
+        // Sender is OTHER_ACCOUNT: signable by the wallet, but never
+        // approved for this session.
+        const unauthorized = payTransactionFrom(OTHER_ACCOUNT.address)
 
-            const requestId = 9101
-            act(() => {
-                connector.fire('algo_signTxn', null, {
-                    id: requestId,
-                    method: 'algo_signTxn',
-                    params: [
-                        [
-                            {
-                                txn: encodeToBase64(
-                                    encodeTransaction(unauthorized),
-                                ),
-                            },
-                        ],
+        const requestId = 9101
+        act(() => {
+            connector.fire('algo_signTxn', null, {
+                id: requestId,
+                method: 'algo_signTxn',
+                params: [
+                    [
+                        {
+                            txn: encodeToBase64(
+                                encodeTransaction(unauthorized),
+                            ),
+                        },
                     ],
-                })
+                ],
             })
+        })
 
-            await waitFor(() => {
-                expect(connector.rejectRequestCalls).toHaveLength(1)
-            })
-            expect(connector.rejectRequestCalls[0].id).toBe(requestId)
-            const rejected = connector.rejectRequestCalls[0].error as
-                | (Error & { code?: number })
-                | undefined
-            // 4100 is ARC-0001's `Unauthorized`.
-            expect(rejected?.code).toBe(4100)
-            expect(connector.approveRequestCalls).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => {
+            expect(connector.rejectRequestCalls).toHaveLength(1)
+        })
+        expect(connector.rejectRequestCalls[0].id).toBe(requestId)
+        const rejected = connector.rejectRequestCalls[0].error as
+            | (Error & { code?: number })
+            | undefined
+        // 4100 is ARC-0001's `Unauthorized`.
+        expect(rejected?.code).toBe(4100)
+        expect(connector.approveRequestCalls).toHaveLength(0)
+    })
 
-    it(
-        'Given an open proposal, when the user taps Cancel, then nothing is persisted and the pairing socket is closed',
-        async () => {
-            await mountProvider()
-            const connector = await pairAndHandshake('Declined dApp')
+    it('Given an open proposal, when the user taps Cancel, then nothing is persisted and the pairing socket is closed', async () => {
+        await mountProvider()
+        const connector = await pairAndHandshake('Declined dApp')
 
-            await waitFor(() => {
-                expect(findButton('common.cancel.label')).toBeTruthy()
-            })
-            await act(async () => {
-                fireEvent.click(findButton('common.cancel.label')!)
-            })
+        await waitFor(() => {
+            expect(findButton('common.cancel.label')).toBeTruthy()
+        })
+        await act(async () => {
+            fireEvent.click(findButton('common.cancel.label')!)
+        })
 
-            await waitFor(() => {
-                expect(connector.rejectSessionCalls).toBe(1)
-            })
-            expect(await getProvider().connections.store.list()).toEqual([])
-            // The SDK's `rejectSession` forgets the connector synchronously
-            // and leaves the socket open, so only a teardown by reference
-            // stops a late `session_request` popping a ghost approval sheet.
-            expect(connector.transportCloseCalls).toBe(1)
-            expect(connector.approveSessionCalls).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => {
+            expect(connector.rejectSessionCalls).toBe(1)
+        })
+        expect(await getProvider().connections.store.list()).toEqual([])
+        // The SDK's `rejectSession` forgets the connector synchronously
+        // and leaves the socket open, so only a teardown by reference
+        // stops a late `session_request` popping a ghost approval sheet.
+        expect(connector.transportCloseCalls).toBe(1)
+        expect(connector.approveSessionCalls).toHaveLength(0)
+    })
 
-    it(
-        'Given an approved session, when it is revoked through the registry, then the peer is killed and the record is gone',
-        async () => {
-            await mountProvider()
-            const connector = await pairAndHandshake('Revoked dApp')
-            await approveViaUi(SIGNING_ACCOUNT.name as string)
-            await waitForStoredConnection(connector.clientId)
+    it('Given an approved session, when it is revoked through the registry, then the peer is killed and the record is gone', async () => {
+        await mountProvider()
+        const connector = await pairAndHandshake('Revoked dApp')
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
+        await waitForStoredConnection(connector.clientId)
 
-            await act(async () => {
-                await captured.registry!.disconnect(connector.clientId)
-            })
+        await act(async () => {
+            await captured.registry!.disconnect(connector.clientId)
+        })
 
-            expect(connector.killSessionCalls).toHaveLength(1)
-            expect(await getProvider().connections.store.list()).toEqual([])
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(connector.killSessionCalls).toHaveLength(1)
+        expect(await getProvider().connections.store.list()).toEqual([])
+    })
 
-    it(
-        'Given a second dApp handshakes while the first proposal is on screen, when the first settles, then the second opens instead of being dropped',
-        async () => {
-            // `subscribeToProposals` is an unbuffered fan-out: without the
-            // provider's queue the second dApp would wait out its own TTL.
-            await mountProvider()
-            const first = await pairAndHandshake('First dApp', {
-                url: 'https://first.example',
-                // The success sheet would otherwise hold the queue until the
-                // user dismissed it.
-                origin: IN_APP_ORIGIN,
-            })
-            const second = await pairAndHandshake('Second dApp', {
-                url: 'https://second.example',
-                origin: IN_APP_ORIGIN,
-            })
+    it('Given a second dApp handshakes while the first proposal is on screen, when the first settles, then the second opens instead of being dropped', async () => {
+        // `subscribeToProposals` is an unbuffered fan-out: without the
+        // provider's queue the second dApp would wait out its own TTL.
+        await mountProvider()
+        const first = await pairAndHandshake('First dApp', {
+            url: 'https://first.example',
+            // The success sheet would otherwise hold the queue until the
+            // user dismissed it.
+            origin: IN_APP_ORIGIN,
+        })
+        const second = await pairAndHandshake('Second dApp', {
+            url: 'https://second.example',
+            origin: IN_APP_ORIGIN,
+        })
 
-            await waitFor(() => {
-                expect(findButton('first.example')).toBeTruthy()
-            })
-            expect(findButton('second.example')).toBeUndefined()
+        await waitFor(() => {
+            expect(findButton('first.example')).toBeTruthy()
+        })
+        expect(findButton('second.example')).toBeUndefined()
 
-            await approveViaUi(SIGNING_ACCOUNT.name as string)
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
 
-            await waitFor(() => {
-                expect(findButton('second.example')).toBeTruthy()
-            })
-            await approveViaUi(OTHER_ACCOUNT.name as string)
+        await waitFor(() => {
+            expect(findButton('second.example')).toBeTruthy()
+        })
+        await approveViaUi(OTHER_ACCOUNT.name as string)
 
-            await waitFor(() => {
-                expect(second.approveSessionCalls).toHaveLength(1)
-            })
-            expect(first.approveSessionCalls[0].accounts).toEqual([
-                SIGNING_ACCOUNT.address,
-            ])
-            expect(second.approveSessionCalls[0].accounts).toEqual([
-                OTHER_ACCOUNT.address,
-            ])
-            const stored = await getProvider().connections.store.list()
-            expect(stored.map(connection => connection.origin?.source)).toEqual(
-                ['in-app', 'in-app'],
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => {
+            expect(second.approveSessionCalls).toHaveLength(1)
+        })
+        expect(first.approveSessionCalls[0].accounts).toEqual([
+            SIGNING_ACCOUNT.address,
+        ])
+        expect(second.approveSessionCalls[0].accounts).toEqual([
+            OTHER_ACCOUNT.address,
+        ])
+        const stored = await getProvider().connections.store.list()
+        expect(stored.map(connection => connection.origin?.source)).toEqual([
+            'in-app',
+            'in-app',
+        ])
+    })
 
-    it(
-        'Given an approved session, when the dApp asks to sub-sign a multisig slot, then the peer is rejected 4200 rather than shown an ordinary signing sheet',
-        async () => {
-            // The `msig` slot reaches the resolver only because the request
-            // schema is the resolver's own: a hand-written copy would strip
-            // the field and turn this refusal into a signing sheet.
-            await mountProvider()
-            const connector = await pairAndHandshake('Multisig dApp')
-            await approveViaUi(SIGNING_ACCOUNT.name as string)
-            await waitForStoredConnection(connector.clientId)
+    it('Given an approved session, when the dApp asks to sub-sign a multisig slot, then the peer is rejected 4200 rather than shown an ordinary signing sheet', async () => {
+        // The `msig` slot reaches the resolver only because the request
+        // schema is the resolver's own: a hand-written copy would strip
+        // the field and turn this refusal into a signing sheet.
+        await mountProvider()
+        const connector = await pairAndHandshake('Multisig dApp')
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
+        await waitForStoredConnection(connector.clientId)
 
-            const requestId = 9202
-            act(() => {
-                connector.fire('algo_signTxn', null, {
-                    id: requestId,
-                    method: 'algo_signTxn',
-                    params: [
-                        [
-                            {
-                                txn: encodeToBase64(
-                                    encodeTransaction(
-                                        payTransactionFrom(
-                                            SIGNING_ACCOUNT.address,
-                                        ),
-                                    ),
+        const requestId = 9202
+        act(() => {
+            connector.fire('algo_signTxn', null, {
+                id: requestId,
+                method: 'algo_signTxn',
+                params: [
+                    [
+                        {
+                            txn: encodeToBase64(
+                                encodeTransaction(
+                                    payTransactionFrom(SIGNING_ACCOUNT.address),
                                 ),
-                                msig: {
-                                    version: 1,
-                                    threshold: 2,
-                                    addrs: [
-                                        SIGNING_ACCOUNT.address,
-                                        OTHER_ACCOUNT.address,
-                                    ],
-                                },
+                            ),
+                            msig: {
+                                version: 1,
+                                threshold: 2,
+                                addrs: [
+                                    SIGNING_ACCOUNT.address,
+                                    OTHER_ACCOUNT.address,
+                                ],
                             },
-                        ],
+                        },
                     ],
-                })
+                ],
             })
+        })
 
-            await waitFor(() => {
-                expect(connector.rejectRequestCalls).toHaveLength(1)
+        await waitFor(() => {
+            expect(connector.rejectRequestCalls).toHaveLength(1)
+        })
+        expect(connector.rejectRequestCalls[0].id).toBe(requestId)
+        const rejected = connector.rejectRequestCalls[0].error as
+            | (Error & { code?: number })
+            | undefined
+        // 4200 is ARC-0001's `Unsupported`.
+        expect(rejected?.code).toBe(4200)
+        expect(connector.approveRequestCalls).toHaveLength(0)
+    })
+
+    it('Given an established session, when the dApp fires algo_signTxn with no params, then the request is rejected as a malformed sign request before anything is enqueued', async () => {
+        await mountProvider()
+        const connector = await pairAndHandshake('Garbage dApp')
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
+        await waitForStoredConnection(connector.clientId)
+
+        const requestId = 9002
+        act(() => {
+            connector.fire('algo_signTxn', null, {
+                id: requestId,
+                method: 'algo_signTxn',
+                params: [],
             })
-            expect(connector.rejectRequestCalls[0].id).toBe(requestId)
-            const rejected = connector.rejectRequestCalls[0].error as
-                | (Error & { code?: number })
-                | undefined
-            // 4200 is ARC-0001's `Unsupported`.
-            expect(rejected?.code).toBe(4200)
-            expect(connector.approveRequestCalls).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
 
-    it(
-        'Given an established session, when the dApp fires algo_signTxn with no params, then the request is rejected as a malformed sign request before anything is enqueued',
-        async () => {
-            await mountProvider()
-            const connector = await pairAndHandshake('Garbage dApp')
-            await approveViaUi(SIGNING_ACCOUNT.name as string)
-            await waitForStoredConnection(connector.clientId)
+        await waitFor(() => {
+            expect(connector.rejectRequestCalls).toHaveLength(1)
+        })
+        expect(connector.rejectRequestCalls[0].id).toBe(requestId)
+        expect(connector.rejectRequestCalls[0].error?.name).toBe(
+            'WalletConnectSignRequestError',
+        )
+        expect(connector.approveRequestCalls).toHaveLength(0)
+    })
 
-            const requestId = 9002
-            act(() => {
-                connector.fire('algo_signTxn', null, {
-                    id: requestId,
-                    method: 'algo_signTxn',
-                    params: [],
-                })
-            })
+    it('Given a quantum account is selected, when the user taps Connect, then the warning sheet appears once even on a double tap, and Cancel rejects the session without persisting it', async () => {
+        await useRemoteConfigStore.persist.rehydrate()
+        useRemoteConfigStore
+            .getState()
+            .setConfigOverride('enable_quantum_accounts', true)
+        // The acknowledgement is a persisted preference on a singleton
+        // store, so a prior test's Continue would hide the warning here.
+        useSettingsStore
+            .getState()
+            .deletePreference(UserPreferences.quantumDappWarningAcknowledged)
+        useAccountsStore
+            .getState()
+            .setAccounts([SIGNING_ACCOUNT, QUANTUM_ACCOUNT])
+        await mountProvider()
+        const connector = await pairAndHandshake('Quantum dApp')
 
-            await waitFor(() => {
-                expect(connector.rejectRequestCalls).toHaveLength(1)
-            })
-            expect(connector.rejectRequestCalls[0].id).toBe(requestId)
-            expect(connector.rejectRequestCalls[0].error?.name).toBe(
-                'WalletConnectSignRequestError',
-            )
-            expect(connector.approveRequestCalls).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await approveViaUi(QUANTUM_ACCOUNT.name as string)
 
-    it(
-        'Given a quantum account is selected, when the user taps Connect, then the warning sheet appears once even on a double tap, and Cancel rejects the session without persisting it',
-        async () => {
-            await useRemoteConfigStore.persist.rehydrate()
-            useRemoteConfigStore
-                .getState()
-                .setConfigOverride('enable_quantum_accounts', true)
-            // The acknowledgement is a persisted preference on a singleton
-            // store, so a prior test's Continue would hide the warning here.
-            useSettingsStore
-                .getState()
-                .deletePreference(
-                    UserPreferences.quantumDappWarningAcknowledged,
-                )
-            useAccountsStore
-                .getState()
-                .setAccounts([SIGNING_ACCOUNT, QUANTUM_ACCOUNT])
-            await mountProvider()
-            const connector = await pairAndHandshake('Quantum dApp')
-
-            await approveViaUi(QUANTUM_ACCOUNT.name as string)
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
-                ).toBeTruthy()
-            })
-            // The sheet's own request is still pending, so this lands while
-            // `confirmQuantumDappUsage`'s await is genuinely unresolved.
-            fireEvent.click(findButton('common.connect.label')!)
+        await waitFor(() => {
             expect(
-                screen.getAllByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
-            ).toHaveLength(1)
+                screen.getByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+            ).toBeTruthy()
+        })
+        // The sheet's own request is still pending, so this lands while
+        // `confirmQuantumDappUsage`'s await is genuinely unresolved.
+        fireEvent.click(findButton('common.connect.label')!)
+        expect(
+            screen.getAllByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+        ).toHaveLength(1)
 
-            fireEvent.click(findButton('quantum.dapp_warning.cancel')!)
+        fireEvent.click(findButton('quantum.dapp_warning.cancel')!)
 
-            await waitFor(() => {
-                expect(connector.rejectSessionCalls).toBe(1)
-            })
-            expect(connector.approveSessionCalls).toHaveLength(0)
-            expect(await getProvider().connections.store.list()).toEqual([])
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => {
+            expect(connector.rejectSessionCalls).toBe(1)
+        })
+        expect(connector.approveSessionCalls).toHaveLength(0)
+        expect(await getProvider().connections.store.list()).toEqual([])
+    })
 
     // Own suite because the success path is the only one that reaches the
     // signing pipeline: it needs a real key in the keystore, algod for
@@ -744,16 +707,15 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         >['key']['store']['sign']
         let signSpy: MockInstance<KeyStoreSign>
 
+        setSuiteUnhandledRequestMode('warn')
+
         beforeAll(async () => {
-            server.listen({ onUnhandledRequest: 'warn' })
             await setupTestDatabase()
         })
         afterAll(async () => {
-            server.close()
             await teardownTestDatabase()
         })
         afterEach(() => {
-            server.resetHandlers()
             signSpy.mockRestore()
         })
 
@@ -784,264 +746,237 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             )
         })
 
-        it(
-            'Given a session approved for an account the wallet holds, when the dApp requests a signature and the user confirms, then the peer is answered once with a signed transaction carrying the bytes it asked for',
-            async () => {
-                // The branch's headline claim, end to end on the shipped path:
-                // provider → registry → v1 handler → signing adapter →
-                // ARC-0001 resolver → review sheet → `respond` →
-                // `toWireResult` → the connector. Only the relay socket is a
-                // stub.
-                const signer = await seedAlgo25Signer()
-                await mountProviderWithSigning()
-                const connector = await pairAndHandshake('Signing dApp', {
-                    origin: IN_APP_ORIGIN,
-                })
-                await approveViaUi(signer.name as string)
-                await waitForStoredConnection(connector.clientId)
+        it('Given a session approved for an account the wallet holds, when the dApp requests a signature and the user confirms, then the peer is answered once with a signed transaction carrying the bytes it asked for', async () => {
+            // The branch's headline claim, end to end on the shipped path:
+            // provider → registry → v1 handler → signing adapter →
+            // ARC-0001 resolver → review sheet → `respond` →
+            // `toWireResult` → the connector. Only the relay socket is a
+            // stub.
+            const signer = await seedAlgo25Signer()
+            await mountProviderWithSigning()
+            const connector = await pairAndHandshake('Signing dApp', {
+                origin: IN_APP_ORIGIN,
+            })
+            await approveViaUi(signer.name as string)
+            await waitForStoredConnection(connector.clientId)
 
-                const requested = buildPaymentTransaction({
-                    sender: signer.address,
-                    receiver: HD_TEST_ADDRESS,
+            const requested = buildPaymentTransaction({
+                sender: signer.address,
+                receiver: HD_TEST_ADDRESS,
+                amount: 1_000_000n,
+            })
+            // ARC-0001 carries the UNPREFIXED msgpack, which is what the
+            // delivered signed transaction is compared against below.
+            const requestedTxn = encodeToBase64(encodeTransactionRaw(requested))
+            const requestId = 9303
+            act(() => {
+                connector.fire('algo_signTxn', null, {
+                    id: requestId,
+                    method: 'algo_signTxn',
+                    params: [[{ txn: requestedTxn }]],
+                })
+            })
+
+            await waitFor(
+                () => {
+                    expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
+                },
+                { timeout: 15_000 },
+            )
+            fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
+
+            await waitFor(
+                () => {
+                    expect(connector.approveRequestCalls).toHaveLength(1)
+                },
+                { timeout: 15_000 },
+            )
+            expect(connector.approveRequestCalls[0].id).toBe(requestId)
+            const result = connector.approveRequestCalls[0]
+                .result as Nullable<string>[]
+            // ARC-0001 slot-order contract: one entry per requested txn.
+            expect(result).toHaveLength(1)
+            const carrier = result[0]
+            if (!carrier) throw new Error('the peer got no signed slot')
+
+            const signed = decodeSignedTransaction(decodeFromBase64(carrier))
+            // The signature the peer got is the one the keystore produced,
+            // over the requested transaction's own signing bytes.
+            expect(signed.sig).toEqual(VISIBLE_SIGNATURE)
+            expect(signSpy).toHaveBeenCalledTimes(1)
+            expect(encodeToBase64(signSpy.mock.calls[0][1])).toBe(
+                encodeToBase64(encodeTransaction(requested)),
+            )
+            // And the transaction inside the envelope is the dApp's own
+            // bytes, not something the wallet re-encoded.
+            expect(
+                rawTransactionsMatch(
+                    [requestedTxn],
+                    [encodeToBase64(encodeTransactionRaw(signed.txn))],
+                ),
+            ).toBe(true)
+            expect(connector.rejectRequestCalls).toHaveLength(0)
+        })
+
+        it('Given a mainnet session, when the dApp requests a signature over a transaction carrying the testnet genesis hash, then the peer is rejected for the genesis-hash mismatch and no signature is produced', async () => {
+            // The chain-id gate passes (the session IS mainnet); this is
+            // the analyzer's own safety net, reached only through the
+            // signing pipeline. The sender is the session's account so the
+            // resolver places the transaction in `toSign` — an empty
+            // toSign short-circuits before analysis.
+            const signer = await seedAlgo25Signer()
+            await mountProviderWithSigning()
+            const connector = await pairAndHandshake('Foreign-chain dApp', {
+                origin: IN_APP_ORIGIN,
+            })
+            await approveViaUi(signer.name as string)
+            await waitForStoredConnection(connector.clientId)
+
+            const foreign = new Transaction({
+                type: TransactionType.pay,
+                sender: Address.fromString(signer.address),
+                suggestedParams: {
+                    fee: 1000n,
+                    minFee: 1000n,
+                    flatFee: true,
+                    firstValid: 1000n,
+                    lastValid: 2000n,
+                    genesisID: 'testnet-v1.0',
+                    genesisHash: TESTNET_GENESIS_HASH,
+                },
+                paymentParams: {
+                    receiver: Address.fromString(HD_TEST_ADDRESS),
                     amount: 1_000_000n,
-                })
-                // ARC-0001 carries the UNPREFIXED msgpack, which is what the
-                // delivered signed transaction is compared against below.
-                const requestedTxn = encodeToBase64(
-                    encodeTransactionRaw(requested),
-                )
-                const requestId = 9303
-                act(() => {
-                    connector.fire('algo_signTxn', null, {
-                        id: requestId,
-                        method: 'algo_signTxn',
-                        params: [[{ txn: requestedTxn }]],
-                    })
-                })
-
-                await waitFor(
-                    () => {
-                        expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
-                    },
-                    { timeout: 15_000 },
-                )
-                fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
-
-                await waitFor(
-                    () => {
-                        expect(connector.approveRequestCalls).toHaveLength(1)
-                    },
-                    { timeout: 15_000 },
-                )
-                expect(connector.approveRequestCalls[0].id).toBe(requestId)
-                const result = connector.approveRequestCalls[0]
-                    .result as Nullable<string>[]
-                // ARC-0001 slot-order contract: one entry per requested txn.
-                expect(result).toHaveLength(1)
-                const carrier = result[0]
-                if (!carrier) throw new Error('the peer got no signed slot')
-
-                const signed = decodeSignedTransaction(
-                    decodeFromBase64(carrier),
-                )
-                // The signature the peer got is the one the keystore produced,
-                // over the requested transaction's own signing bytes.
-                expect(signed.sig).toEqual(VISIBLE_SIGNATURE)
-                expect(signSpy).toHaveBeenCalledTimes(1)
-                expect(encodeToBase64(signSpy.mock.calls[0][1])).toBe(
-                    encodeToBase64(encodeTransaction(requested)),
-                )
-                // And the transaction inside the envelope is the dApp's own
-                // bytes, not something the wallet re-encoded.
-                expect(
-                    rawTransactionsMatch(
-                        [requestedTxn],
-                        [encodeToBase64(encodeTransactionRaw(signed.txn))],
-                    ),
-                ).toBe(true)
-                expect(connector.rejectRequestCalls).toHaveLength(0)
-            },
-            SLOW_TEST_TIMEOUT_MS,
-        )
-
-        it(
-            'Given a mainnet session, when the dApp requests a signature over a transaction carrying the testnet genesis hash, then the peer is rejected for the genesis-hash mismatch and no signature is produced',
-            async () => {
-                // The chain-id gate passes (the session IS mainnet); this is
-                // the analyzer's own safety net, reached only through the
-                // signing pipeline. The sender is the session's account so the
-                // resolver places the transaction in `toSign` — an empty
-                // toSign short-circuits before analysis.
-                const signer = await seedAlgo25Signer()
-                await mountProviderWithSigning()
-                const connector = await pairAndHandshake('Foreign-chain dApp', {
-                    origin: IN_APP_ORIGIN,
-                })
-                await approveViaUi(signer.name as string)
-                await waitForStoredConnection(connector.clientId)
-
-                const foreign = new Transaction({
-                    type: TransactionType.pay,
-                    sender: Address.fromString(signer.address),
-                    suggestedParams: {
-                        fee: 1000n,
-                        minFee: 1000n,
-                        flatFee: true,
-                        firstValid: 1000n,
-                        lastValid: 2000n,
-                        genesisID: 'testnet-v1.0',
-                        genesisHash: TESTNET_GENESIS_HASH,
-                    },
-                    paymentParams: {
-                        receiver: Address.fromString(HD_TEST_ADDRESS),
-                        amount: 1_000_000n,
-                    },
-                })
-                const requestId = 9404
-                act(() => {
-                    connector.fire('algo_signTxn', null, {
-                        id: requestId,
-                        method: 'algo_signTxn',
-                        params: [
-                            [
-                                {
-                                    txn: encodeToBase64(
-                                        encodeTransactionRaw(foreign),
-                                    ),
-                                },
-                            ],
+                },
+            })
+            const requestId = 9404
+            act(() => {
+                connector.fire('algo_signTxn', null, {
+                    id: requestId,
+                    method: 'algo_signTxn',
+                    params: [
+                        [
+                            {
+                                txn: encodeToBase64(
+                                    encodeTransactionRaw(foreign),
+                                ),
+                            },
                         ],
-                    })
+                    ],
                 })
+            })
 
-                await waitFor(
-                    () => {
-                        expect(connector.rejectRequestCalls).toHaveLength(1)
-                    },
-                    { timeout: 15_000 },
+            await waitFor(
+                () => {
+                    expect(connector.rejectRequestCalls).toHaveLength(1)
+                },
+                { timeout: 15_000 },
+            )
+            expect(connector.rejectRequestCalls[0].id).toBe(requestId)
+            // Pinned to the cause so an unrelated rejection cannot pass
+            // vacuously.
+            expect(connector.rejectRequestCalls[0].error?.name).toBe(
+                'GenesisHashMismatchError',
+            )
+            expect(connector.approveRequestCalls).toHaveLength(0)
+        })
+
+        it('Given a dApp pairs on a v2 URI, when the user approves and the dApp requests a signature, then the peer is answered on the session topic with a signed transaction', async () => {
+            // The whole design's acceptance claim: the same provider,
+            // registry, approval sheet, signing adapter and ARC-0001
+            // resolver, over a protocol whose pairing topic is not its
+            // session topic and whose chain ids are CAIP-2 — and the only
+            // app file that had to learn about it is the one that calls
+            // `register`.
+            const signer = await seedAlgo25Signer()
+            await mountProviderWithSigning()
+            const walletKit = await pairAndProposeV2()
+
+            await approveViaUi(signer.name as string)
+            // The record is keyed by the SESSION topic, which the pairing
+            // topic in `V2_URI` is not.
+            await waitForStoredConnection(V2_SESSION_TOPIC)
+
+            const requested = buildPaymentTransaction({
+                sender: signer.address,
+                receiver: HD_TEST_ADDRESS,
+                amount: 1_000_000n,
+            })
+            const requestedTxn = encodeToBase64(encodeTransactionRaw(requested))
+            const requestId = 9505
+            act(() => {
+                walletKit.emit(
+                    'session_request',
+                    makeRequest({
+                        id: requestId,
+                        // ARC-0025 puts the ARC-0001 group in the first
+                        // positional slot.
+                        params: [[{ txn: requestedTxn }]],
+                    }),
                 )
-                expect(connector.rejectRequestCalls[0].id).toBe(requestId)
-                // Pinned to the cause so an unrelated rejection cannot pass
-                // vacuously.
-                expect(connector.rejectRequestCalls[0].error?.name).toBe(
-                    'GenesisHashMismatchError',
-                )
-                expect(connector.approveRequestCalls).toHaveLength(0)
-            },
-            SLOW_TEST_TIMEOUT_MS,
-        )
+            })
 
-        it(
-            'Given a dApp pairs on a v2 URI, when the user approves and the dApp requests a signature, then the peer is answered on the session topic with a signed transaction',
-            async () => {
-                // The whole design's acceptance claim: the same provider,
-                // registry, approval sheet, signing adapter and ARC-0001
-                // resolver, over a protocol whose pairing topic is not its
-                // session topic and whose chain ids are CAIP-2 — and the only
-                // app file that had to learn about it is the one that calls
-                // `register`.
-                const signer = await seedAlgo25Signer()
-                await mountProviderWithSigning()
-                const walletKit = await pairAndProposeV2()
+            await waitFor(
+                () => {
+                    expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
+                },
+                { timeout: 15_000 },
+            )
+            fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
 
-                await approveViaUi(signer.name as string)
-                // The record is keyed by the SESSION topic, which the pairing
-                // topic in `V2_URI` is not.
-                await waitForStoredConnection(V2_SESSION_TOPIC)
-
-                const requested = buildPaymentTransaction({
-                    sender: signer.address,
-                    receiver: HD_TEST_ADDRESS,
-                    amount: 1_000_000n,
-                })
-                const requestedTxn = encodeToBase64(
-                    encodeTransactionRaw(requested),
-                )
-                const requestId = 9505
-                act(() => {
-                    walletKit.emit(
-                        'session_request',
-                        makeRequest({
-                            id: requestId,
-                            // ARC-0025 puts the ARC-0001 group in the first
-                            // positional slot.
-                            params: [[{ txn: requestedTxn }]],
-                        }),
-                    )
-                })
-
-                await waitFor(
-                    () => {
-                        expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
-                    },
-                    { timeout: 15_000 },
-                )
-                fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
-
-                await waitFor(
-                    () => {
-                        expect(
-                            walletKit.respondSessionRequest,
-                        ).toHaveBeenCalled()
-                    },
-                    { timeout: 15_000 },
-                )
-                const result = signedSlotsFrom(walletKit)
-                expect(result).toHaveLength(1)
-                const carrier = result[0]
-                if (!carrier) throw new Error('the peer got no signed slot')
-
-                const signed = decodeSignedTransaction(
-                    decodeFromBase64(carrier),
-                )
-                expect(signed.sig).toEqual(VISIBLE_SIGNATURE)
-                expect(
-                    rawTransactionsMatch(
-                        [requestedTxn],
-                        [encodeToBase64(encodeTransactionRaw(signed.txn))],
-                    ),
-                ).toBe(true)
-            },
-            SLOW_TEST_TIMEOUT_MS,
-        )
-
-        it(
-            'Given an approved v2 session, when the dApp requests a signature on a chain it was not approved for, then the peer is refused and nothing is offered to sign',
-            async () => {
-                // A v2 session can hold several chains at once, so the guard
-                // is not "is this my session" but "is this the chain the
-                // wallet is on" — a mainnet dApp must not get a testnet group
-                // signed while the wallet shows mainnet.
-                const signer = await seedAlgo25Signer()
-                await mountProviderWithSigning()
-                const walletKit = await pairAndProposeV2()
-                await approveViaUi(signer.name as string)
-                await waitForStoredConnection(V2_SESSION_TOPIC)
-
-                const requestId = 9606
-                act(() => {
-                    walletKit.emit(
-                        'session_request',
-                        makeRequest({
-                            id: requestId,
-                            chainId: TESTNET_CHAIN_ID,
-                        }),
-                    )
-                })
-
-                await waitFor(() => {
+            await waitFor(
+                () => {
                     expect(walletKit.respondSessionRequest).toHaveBeenCalled()
-                })
-                const [{ response }] =
-                    walletKit.respondSessionRequest.mock.calls[0]
-                expect(response).toMatchObject({ id: requestId })
-                expect('result' in response).toBe(false)
-                // Refused before the registry ever validated the payload, so
-                // no review sheet and no key access.
-                expect(screen.queryByTestId(SLIDE_TEST_ID)).toBeNull()
-                expect(signSpy).not.toHaveBeenCalled()
-            },
-            SLOW_TEST_TIMEOUT_MS,
-        )
+                },
+                { timeout: 15_000 },
+            )
+            const result = signedSlotsFrom(walletKit)
+            expect(result).toHaveLength(1)
+            const carrier = result[0]
+            if (!carrier) throw new Error('the peer got no signed slot')
+
+            const signed = decodeSignedTransaction(decodeFromBase64(carrier))
+            expect(signed.sig).toEqual(VISIBLE_SIGNATURE)
+            expect(
+                rawTransactionsMatch(
+                    [requestedTxn],
+                    [encodeToBase64(encodeTransactionRaw(signed.txn))],
+                ),
+            ).toBe(true)
+        })
+
+        it('Given an approved v2 session, when the dApp requests a signature on a chain it was not approved for, then the peer is refused and nothing is offered to sign', async () => {
+            // A v2 session can hold several chains at once, so the guard
+            // is not "is this my session" but "is this the chain the
+            // wallet is on" — a mainnet dApp must not get a testnet group
+            // signed while the wallet shows mainnet.
+            const signer = await seedAlgo25Signer()
+            await mountProviderWithSigning()
+            const walletKit = await pairAndProposeV2()
+            await approveViaUi(signer.name as string)
+            await waitForStoredConnection(V2_SESSION_TOPIC)
+
+            const requestId = 9606
+            act(() => {
+                walletKit.emit(
+                    'session_request',
+                    makeRequest({
+                        id: requestId,
+                        chainId: TESTNET_CHAIN_ID,
+                    }),
+                )
+            })
+
+            await waitFor(() => {
+                expect(walletKit.respondSessionRequest).toHaveBeenCalled()
+            })
+            const [{ response }] = walletKit.respondSessionRequest.mock.calls[0]
+            expect(response).toMatchObject({ id: requestId })
+            expect('result' in response).toBe(false)
+            // Refused before the registry ever validated the payload, so
+            // no review sheet and no key access.
+            expect(screen.queryByTestId(SLIDE_TEST_ID)).toBeNull()
+            expect(signSpy).not.toHaveBeenCalled()
+        })
     })
 })

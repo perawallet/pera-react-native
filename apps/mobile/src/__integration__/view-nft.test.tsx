@@ -12,7 +12,6 @@
 
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -83,8 +82,6 @@ const NFT_HOLDER_PLACEHOLDER: WalletAccount = {
     name: 'NFT Holder',
 }
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 // Mint a real algo25 keystore key + register the matching account.
 // Returns the account so callers can wire the send-funds store + spies
 // to the same address the keystore knows how to sign for.
@@ -111,12 +108,9 @@ const seedSigningHolder = async (): Promise<WalletAccount> => {
 
 describe('Flow: View NFT collectible detail', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -220,176 +214,161 @@ describe('Flow: View NFT collectible detail', () => {
         )
     })
 
-    it(
-        'Given the holder owns an NFT, when CollectibleDetailScreen mounts, then the title and quantity render and the Send action is available',
-        async () => {
-            renderWithNavigation(
-                CollectibleDetailScreen,
-                'CollectibleDetails',
-                {
-                    initialParams: { assetId: NFT_TEST_ASSET_ID },
-                },
-            )
+    it('Given the holder owns an NFT, when CollectibleDetailScreen mounts, then the title and quantity render and the Send action is available', async () => {
+        renderWithNavigation(CollectibleDetailScreen, 'CollectibleDetails', {
+            initialParams: { assetId: NFT_TEST_ASSET_ID },
+        })
 
-            // The screen renders a skeleton while the asset query is in
-            // flight. Wait for the loaded title to appear.
-            await waitFor(
-                () => {
-                    expect(screen.getByText('Test Collectible #1')).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
+        // The screen renders a skeleton while the asset query is in
+        // flight. Wait for the loaded title to appear.
+        await waitFor(
+            () => {
+                expect(screen.getByText('Test Collectible #1')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
 
-            // Owned NFT (amount > 0) shows the action button row with
-            // RoundButton labels common.send / common.copy / common.save.
-            // Multiple elements include 'common.send' (the leaf span +
-            // its button ancestor); we just need one to exist.
-            await waitFor(() => {
-                expect(
-                    screen.queryAllByText(
-                        (_, node) =>
-                            (node?.textContent ?? '') === 'common.send',
-                    ).length,
-                ).toBeGreaterThan(0)
-            })
-
-            // Quantity chip shows `x{amount}`. Amount is 1 — the chip
-            // renders 'x1' alongside the title. Multiple ancestors
-            // contain it (chip → row → screen), so just assert at least
-            // one match.
+        // Owned NFT (amount > 0) shows the action button row with
+        // RoundButton labels common.send / common.copy / common.save.
+        // Multiple elements include 'common.send' (the leaf span +
+        // its button ancestor); we just need one to exist.
+        await waitFor(() => {
             expect(
                 screen.queryAllByText(
-                    (_, node) => (node?.textContent ?? '') === 'x1',
+                    (_, node) => (node?.textContent ?? '') === 'common.send',
                 ).length,
             ).toBeGreaterThan(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
 
-    it(
-        'Given the holder navigates from NFT detail into the send flow, when they confirm the transfer, then a signed asset-transfer for the NFT is POSTed to algod',
-        async () => {
-            // Replace the placeholder holder with one whose key we
-            // actually hold in the in-memory keystore — required for
-            // the signing pipeline to produce a valid signature.
-            const holder = await seedSigningHolder()
+        // Quantity chip shows `x{amount}`. Amount is 1 — the chip
+        // renders 'x1' alongside the title. Multiple ancestors
+        // contain it (chip → row → screen), so just assert at least
+        // one match.
+        expect(
+            screen.queryAllByText(
+                (_, node) => (node?.textContent ?? '') === 'x1',
+            ).length,
+        ).toBeGreaterThan(0)
+    })
 
-            // Re-insert the holding under the (now real) holder. The
-            // address is the same as the placeholder, so this is
-            // essentially a no-op, but keeps the seed explicit.
-            await insertAssetHolding({
-                accountAddress: holder.address,
-                assetId: NFT_TEST_ASSET_ID,
-                network: 'mainnet',
-                amount: '1',
-            })
+    it('Given the holder navigates from NFT detail into the send flow, when they confirm the transfer, then a signed asset-transfer for the NFT is POSTed to algod', async () => {
+        // Replace the placeholder holder with one whose key we
+        // actually hold in the in-memory keystore — required for
+        // the signing pipeline to produce a valid signature.
+        const holder = await seedSigningHolder()
 
-            // The bottom-sheet entry on CollectibleDetailScreen pushes
-            // the user through `SendFundsRoutes` — for an NFT
-            // (decimals=0, supply=1) the initial route is
-            // `SelectDestination`, then `ConfirmTransaction`. The
-            // production sheet lives inside a nested
-            // `NavigationIndependentTree`. Rather than fight the
-            // nested navigator under jsdom, we exercise the user-
-            // visible part the modal owns once the user has chosen a
-            // destination: pre-set the send-funds store the way the
-            // upstream screens would, then mount the same Confirmation
-            // → Processing → Success stack send-asa.test.tsx uses.
-            useSendFundsStore.getState().setSelectedAssetId(NFT_TEST_ASSET_ID)
-            // NFT amount is `1` in display units; decimals=0 means base
-            // == display, so the asset-transfer tx will carry amount=1.
-            useSendFundsStore.getState().setAmount(new Decimal(1))
-            useSendFundsStore.getState().setDestination(HD_TEST_ADDRESS)
-            useSendFundsStore.getState().setSendMode('normal')
+        // Re-insert the holding under the (now real) holder. The
+        // address is the same as the placeholder, so this is
+        // essentially a no-op, but keeps the seed explicit.
+        await insertAssetHolding({
+            accountAddress: holder.address,
+            assetId: NFT_TEST_ASSET_ID,
+            network: 'mainnet',
+            amount: '1',
+        })
 
-            // Algod stubs sufficient for the build/submit path.
-            server.use(
-                mockAlgodTransactionParams({ response: { fee: 1000 } }),
-                mockAlgodAccountInformation({
-                    address: holder.address,
-                    response: {
-                        amount: 5_000_000,
-                        'min-balance': 200_000,
-                        assets: [
-                            {
-                                'asset-id': Number(NFT_TEST_ASSET_ID),
-                                amount: 1,
-                                'is-frozen': false,
-                            },
-                        ],
-                    },
-                }),
-                mockAlgodAccountInformation({
-                    address: HD_TEST_ADDRESS,
-                    response: { amount: 5_000_000, 'min-balance': 100_000 },
-                }),
-                mockAlgodStatus({ response: { 'last-round': 100 } }),
-                mockAlgodSendRawTransaction(),
-                mockIndexerSearchForAccounts(),
-            )
+        // The bottom-sheet entry on CollectibleDetailScreen pushes
+        // the user through `SendFundsRoutes` — for an NFT
+        // (decimals=0, supply=1) the initial route is
+        // `SelectDestination`, then `ConfirmTransaction`. The
+        // production sheet lives inside a nested
+        // `NavigationIndependentTree`. Rather than fight the
+        // nested navigator under jsdom, we exercise the user-
+        // visible part the modal owns once the user has chosen a
+        // destination: pre-set the send-funds store the way the
+        // upstream screens would, then mount the same Confirmation
+        // → Processing → Success stack send-asa.test.tsx uses.
+        useSendFundsStore.getState().setSelectedAssetId(NFT_TEST_ASSET_ID)
+        // NFT amount is `1` in display units; decimals=0 means base
+        // == display, so the asset-transfer tx will carry amount=1.
+        useSendFundsStore.getState().setAmount(new Decimal(1))
+        useSendFundsStore.getState().setDestination(HD_TEST_ADDRESS)
+        useSendFundsStore.getState().setSendMode('normal')
 
-            const sendSpy = vi.fn(async () =>
-                HttpResponse.json(
-                    {
-                        txId: 'NFTSENDTXID0000000000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderWithNavigation(
-                TransactionConfirmationScreen,
-                'ConfirmTransaction',
-                {
-                    additionalScreens: [
+        // Algod stubs sufficient for the build/submit path.
+        server.use(
+            mockAlgodTransactionParams({ response: { fee: 1000 } }),
+            mockAlgodAccountInformation({
+                address: holder.address,
+                response: {
+                    amount: 5_000_000,
+                    'min-balance': 200_000,
+                    assets: [
                         {
-                            name: 'TransactionProcessing',
-                            component: TransactionProcessingScreen,
-                        },
-                        {
-                            name: 'TransactionSuccess',
-                            component: TransactionSuccessScreen,
+                            'asset-id': Number(NFT_TEST_ASSET_ID),
+                            amount: 1,
+                            'is-frozen': false,
                         },
                     ],
                 },
-            )
+            }),
+            mockAlgodAccountInformation({
+                address: HD_TEST_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+            mockAlgodStatus({ response: { 'last-round': 100 } }),
+            mockAlgodSendRawTransaction(),
+            mockIndexerSearchForAccounts(),
+        )
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('send_confirm_button'),
-                    ).toBeTruthy()
+        const sendSpy = vi.fn(async () =>
+            HttpResponse.json(
+                {
+                    txId: 'NFTSENDTXID0000000000000000000000000000000000000000000',
                 },
-                { timeout: 5000 },
-            )
-            const confirmButton = screen.getByTestId(
-                'send_confirm_button',
-            ) as HTMLButtonElement
-            await waitFor(() => {
-                expect(isElementDisabled(confirmButton)).toBe(false)
-            })
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            fireEvent.click(confirmButton)
+        renderWithNavigation(
+            TransactionConfirmationScreen,
+            'ConfirmTransaction',
+            {
+                additionalScreens: [
+                    {
+                        name: 'TransactionProcessing',
+                        component: TransactionProcessingScreen,
+                    },
+                    {
+                        name: 'TransactionSuccess',
+                        component: TransactionSuccessScreen,
+                    },
+                ],
+            },
+        )
 
-            await waitFor(
-                () => {
-                    expect(screen.getByTestId('send_success')).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        const confirmButton = screen.getByTestId(
+            'send_confirm_button',
+        ) as HTMLButtonElement
+        await waitFor(() => {
+            expect(isElementDisabled(confirmButton)).toBe(false)
+        })
 
-            // Algod received the signed asset-transfer for the NFT.
-            expect(sendSpy).toHaveBeenCalled()
-            // `vi.fn(() => ...)` infers the call args as `[]`; cast
-            // the whole calls array to the MSW handler shape that the
-            // runtime actually invokes the spy with.
-            const calls = sendSpy.mock.calls as unknown as Array<
-                [{ request: Request }]
-            >
-            const body = await calls[0][0].request.arrayBuffer()
-            expect(body.byteLength).toBeGreaterThan(50)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        fireEvent.click(confirmButton)
+
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_success')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+
+        // Algod received the signed asset-transfer for the NFT.
+        expect(sendSpy).toHaveBeenCalled()
+        // `vi.fn(() => ...)` infers the call args as `[]`; cast
+        // the whole calls array to the MSW handler shape that the
+        // runtime actually invokes the spy with.
+        const calls = sendSpy.mock.calls as unknown as Array<
+            [{ request: Request }]
+        >
+        const body = await calls[0][0].request.arrayBuffer()
+        expect(body.byteLength).toBeGreaterThan(50)
+    })
 })

@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
-    "@perawallet/wallet-core-background": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-database": "workspace:*",

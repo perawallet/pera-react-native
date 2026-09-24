@@ -11,11 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { Linking } from 'react-native'
 import { create } from 'zustand'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { routeCapabilities } from '@routes/capabilities'
-import { toValidatedBrowserUrl } from './handlers-shared'
+import { openValidatedBrowserUrl } from './handlers-shared'
 
 /**
  * Favorite capability for a controlled WebView. Present only when the host
@@ -92,14 +91,7 @@ export const useWebView = (): UseWebViewResult => {
             }
             // Nothing mounts the webview stack when in-app webviews are off,
             // so a push would silently do nothing; open a browser tab instead.
-            const url = toValidatedBrowserUrl(view.url)
-            if (!url) {
-                logger.warn('Blocked browser open for an unsafe URL', {
-                    url: view.url,
-                })
-                return
-            }
-            void Linking.openURL(url)
+            openValidatedBrowserUrl(view.url)
         },
         [push],
     )

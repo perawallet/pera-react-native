@@ -24,6 +24,10 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
+import {
+    assertExtensionPagesCsp,
+    buildExtensionPagesCsp,
+} from './csp.mjs'
 
 const requireFromHere = createRequire(import.meta.url)
 
@@ -299,8 +303,46 @@ for (const surface of SURFACES) {
 }
 rmSync(path.join(dist, 'index.html'))
 
-// 4. Manifest
-cpSync(path.join(root, 'manifest.json'), path.join(dist, 'manifest.json'))
+// 4. Manifest. The CSP is generated rather than committed so each build only
+// trusts its own environment's frame origins. Imported here, not at the top,
+// because packages/config is rebuilt against the fresh generated-env above.
+const { config, getIframeOrigins, getNetworkConfig, Networks } = await import(
+    '@perawallet/wallet-core-config'
+)
+const frameUrls = [
+    config.discoverBaseUrl,
+    config.integrityCheckOrigin,
+    config.termsOfServiceUrl,
+    // Networks with no Pera deployment have no Bidali and contribute ''.
+    ...Object.values(Networks)
+        .map(network => getNetworkConfig(network).bidaliBaseUrl)
+        .filter(Boolean),
+]
+const unparseableFrameUrls = frameUrls.filter(
+    url => getIframeOrigins(url).length === 0,
+)
+if (unparseableFrameUrls.length > 0) {
+    throw new Error(
+        `configured iframe URLs do not parse: ${unparseableFrameUrls.join(', ')}`,
+    )
+}
+const frameOrigins = frameUrls.flatMap(getIframeOrigins)
+const extensionPagesCsp = buildExtensionPagesCsp({
+    appEnvironment: config.appEnvironment,
+    frameOrigins,
+})
+assertExtensionPagesCsp(extensionPagesCsp, {
+    appEnvironment: config.appEnvironment,
+    requiredFrameOrigins: frameOrigins,
+})
+const manifest = JSON.parse(
+    readFileSync(path.join(root, 'manifest.json'), 'utf8'),
+)
+manifest.content_security_policy = { extension_pages: extensionPagesCsp }
+writeFileSync(
+    path.join(dist, 'manifest.json'),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+)
 
 // 4b. Extension icons (toolbar/action + management page), referenced by the
 // manifest's `icons` and `action.default_icon` maps.

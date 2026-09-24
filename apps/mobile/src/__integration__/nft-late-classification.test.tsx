@@ -137,15 +137,12 @@ const cacheAssetAt = async (whenMs: number) => {
 
 describe('Flow: an NFT the backend classifies late still reaches the gallery', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
     afterEach(() => {
-        server.resetHandlers()
         useCollectiblePreferencesStore.getState().resetState()
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 

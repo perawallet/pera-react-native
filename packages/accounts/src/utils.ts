@@ -27,7 +27,6 @@ import {
     type WalletAccount,
 } from './models'
 import { MNEMONIC_WORD_COUNT } from './constants'
-import { RekeyTargetNotFoundError } from './errors'
 
 // Matches any `prefix...suffix`/`prefix…suffix` truncation of the address,
 // not just our own 5+5 format — legacy apps auto-named accounts with a 6+6
@@ -137,97 +136,6 @@ const canSignViaMultisig = (
 ): boolean =>
     canSignViaParticipants(multisig.multisigDetails.addresses, accounts)
 
-/** Use the tagged form to branch on *why* signing isn't possible. */
-export type SignerResolution =
-    | { kind: 'ok'; signer: WalletAccount }
-    | { kind: 'accountNotFound' }
-    | { kind: 'watch'; account: WalletAccount }
-    | {
-          kind: 'authMissing'
-          account: WalletAccount
-          authAddress: string
-      }
-    | { kind: 'authIsWatch'; account: WalletAccount; auth: WalletAccount }
-    | {
-          kind: 'authNoLocalParticipant'
-          account: WalletAccount
-          auth: MultiSigAccount
-      }
-    | { kind: 'noLocalParticipant'; account: MultiSigAccount }
-
-/** Account-in-hand counterpart to {@link resolveSignerFor}. */
-export const resolveSignerForAccount = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): SignerResolution => {
-    if (account.rekeyAddress) {
-        const auth = accounts.find(a => a.address === account.rekeyAddress)
-        if (!auth) {
-            return {
-                kind: 'authMissing',
-                account,
-                authAddress: account.rekeyAddress,
-            }
-        }
-        if (isMultisigAccount(auth)) {
-            return canSignViaMultisig(auth, accounts)
-                ? { kind: 'ok', signer: auth }
-                : { kind: 'authNoLocalParticipant', account, auth }
-        }
-        if (canSignDirectly(auth)) return { kind: 'ok', signer: auth }
-        return { kind: 'authIsWatch', account, auth }
-    }
-    if (isMultisigAccount(account)) {
-        return canSignViaMultisig(account, accounts)
-            ? { kind: 'ok', signer: account }
-            : { kind: 'noLocalParticipant', account }
-    }
-    if (canSignDirectly(account)) return { kind: 'ok', signer: account }
-    return { kind: 'watch', account }
-}
-
-/**
- * The immediate auth-addr relationship only. For "who actually signs", use
- * `getSignerFor` — it also resolves multisig participation and signability.
- */
-export const getRekeyAccount = (
-    address: string,
-    accounts: WalletAccount[],
-): WalletAccount | null => {
-    const account = accounts.find(a => a.address === address)
-    if (!account?.rekeyAddress) return null
-    return accounts.find(a => a.address === account.rekeyAddress) ?? null
-}
-
-/** Single-hop only. */
-export const resolveSignerFor = (
-    address: string,
-    accounts: WalletAccount[],
-): SignerResolution => {
-    const account = accounts.find(a => a.address === address)
-    if (!account) return { kind: 'accountNotFound' }
-    return resolveSignerForAccount(account, accounts)
-}
-
-/**
- * The account that will produce signatures for `address`, or null. Single-hop
- * only: cyclic and multi-hop auth chains are not followed. Use
- * `resolveSignerFor` when the failure reason matters.
- */
-export const getSignerFor = (
-    address: string,
-    accounts: WalletAccount[],
-): WalletAccount | null => {
-    const r = resolveSignerFor(address, accounts)
-    return r.kind === 'ok' ? r.signer : null
-}
-
-/** Unlike `getSignerFor`, `account` need not be present in `accounts`. */
-export const canSignWith = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): boolean => resolveSignerForAccount(account, accounts).kind === 'ok'
-
 /**
  * Off-chain data has no auth-addr lookup — the dApp verifies against the
  * requested account's own pubkey — so rekey indirection is NOT followed: a
@@ -281,29 +189,6 @@ export const canSignProgram = (account: WalletAccount): boolean =>
     !isRekeyedAccount(account) &&
     hasSigningKeys(account)
 
-/** The "rekeyed but stranded" display state, distinct from `isWatchAccount`. */
-export const isRekeyedUnsignable = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): boolean =>
-    !!account.rekeyAddress &&
-    resolveSignerForAccount(account, accounts).kind !== 'ok'
-
-/** Display-state counterpart to `isRekeyedUnsignable`. */
-export const isMultisigUnsignable = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): boolean => isMultisigAccount(account) && !canSignWith(account, accounts)
-
-/**
- * Aliases `canSignWith` — the rekey txn itself must be signed by the current
- * auth chain — under an intent-revealing name.
- */
-export const canInitiateRekey = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): boolean => canSignWith(account, accounts)
-
 /**
  * Wallet accounts whose auth-addr is `address` — the accounts `address` signs
  * for. Self-references are excluded (an account rekeyed to itself is not
@@ -324,25 +209,6 @@ export const getAccountsRekeyedTo = (
             (a.rekeyAddress === address ||
                 Object.values(a.rekeyAddressByNetwork ?? {}).includes(address)),
     )
-
-export type RekeyTransition = {
-    /** Raw type of the rekeyed account itself. */
-    from: WalletAccount['type']
-    /** Raw type of the account it is now rekeyed to. */
-    to: WalletAccount['type']
-}
-
-/** Backs the UI's "Rekeyed (Signed by <to>)" label and its info-sheet copy. */
-export const rekeyTransitionFor = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): RekeyTransition | null => {
-    if (!account.rekeyAddress) return null
-    const auth = accounts.find(a => a.address === account.rekeyAddress)
-    if (!auth) return null
-    if (!canSignWith(account, accounts)) return null
-    return { from: account.type, to: auth.type }
-}
 
 /**
  * Rekeying to self or to the current auth are both fee-burning no-ops, so
@@ -394,38 +260,6 @@ export const isEligibleQuantumRekeyTarget = (
     return true
 }
 
-/**
- * A broken auth chain ({@link resolveAuthAccount} throws) counts as
- * non-quantum: we cannot assert protection we cannot resolve.
- */
-const hasQuantumAuthority = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): boolean => {
-    try {
-        return isQuantumAccount(resolveAuthAccount(account, accounts))
-    } catch {
-        return false
-    }
-}
-
-/**
- * Compares *effective* authority (one rekey hop), not raw account type,
- * because that is where the protection lives:
- * - An Ed25519 account rekeyed to a quantum auth IS downgraded when rekeyed
- *   back to Ed25519, even though its own `type` is still `algo25`.
- * - A quantum-typed account already rekeyed away to Ed25519 has no protection
- *   left, so rekeying it further is NOT a downgrade.
- */
-export const isQuantumDowngrade = (
-    source: WalletAccount,
-    target: WalletAccount,
-    accounts: WalletAccount[],
-): boolean => {
-    if (!hasQuantumAuthority(source, accounts)) return false
-    return !hasQuantumAuthority(target, accounts)
-}
-
 export const isEligibleLedgerRekeyTarget = (
     target: WalletAccount,
     source: RekeySourceFields,
@@ -452,30 +286,6 @@ export const isEligibleSharedRekeyTarget = (
     if (!isMultisigAccount(target)) return false
     if (isRekeyedAccount(target)) return false
     return canSignViaMultisig(target, allAccounts)
-}
-
-/**
- * Single hop, because rekey indirection is NOT transitive: if A is rekeyed to
- * B and B to C, B still signs for A (A's auth-addr is literally B).
- *
- * Throws `RekeyTargetNotFoundError` when the rekey target isn't held locally.
- */
-export const resolveAuthAccount = (
-    account: WalletAccount,
-    allAccounts: WalletAccount[],
-): WalletAccount => {
-    if (!account.rekeyAddress) {
-        return account
-    }
-
-    const authAccount = allAccounts.find(
-        a => a.address === account.rekeyAddress,
-    )
-    if (!authAccount) {
-        throw new RekeyTargetNotFoundError(account.rekeyAddress)
-    }
-
-    return authAccount
 }
 
 /** An on-chain address, an internal account id, or both. */

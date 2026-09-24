@@ -15,15 +15,7 @@
 // (WalletConnect) request, and the reject path. This is the UI a user actually
 // taps for every dApp signing request; local send/swap flows bypass it.
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -48,18 +40,11 @@ import {
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: interactive transaction review (WalletConnect → review sheet)', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => {
-        server.resetHandlers()
-    })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -77,67 +62,55 @@ describe('Flow: interactive transaction review (WalletConnect → review sheet)'
         )
     })
 
-    it(
-        'opens the review sheet for an external payment and signs it on confirm, delivering the result to the callback transport',
-        async () => {
-            await seedAlgo25Signer()
-            const { request, approve, reject } = buildTransactionSignRequest()
+    it('opens the review sheet for an external payment and signs it on confirm, delivering the result to the callback transport', async () => {
+        await seedAlgo25Signer()
+        const { request, approve, reject } = buildTransactionSignRequest()
 
-            const { confirm } = renderSignReview(request)
+        const { confirm } = renderSignReview(request)
 
-            // Review sheet opened: the slide-to-confirm control is present.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('signing-confirm-slide'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        // Review sheet opened: the slide-to-confirm control is present.
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            confirm()
+        confirm()
 
-            // The callback transport delivers the signed result to the dApp.
-            await waitFor(
-                () => {
-                    expect(approve).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            expect(reject).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The callback transport delivers the signed result to the dApp.
+        await waitFor(
+            () => {
+                expect(approve).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(reject).not.toHaveBeenCalled()
+    })
 
-    it(
-        'rejects the request via the callback when the user cancels',
-        async () => {
-            await seedAlgo25Signer()
-            const { request, approve, reject } = buildTransactionSignRequest({
-                txs: [buildPaymentTransaction({ amount: 2_000_000n })],
-            })
+    it('rejects the request via the callback when the user cancels', async () => {
+        await seedAlgo25Signer()
+        const { request, approve, reject } = buildTransactionSignRequest({
+            txs: [buildPaymentTransaction({ amount: 2_000_000n })],
+        })
 
-            const view = renderSignReview(request)
+        const view = renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('signing-confirm-slide'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            view.reject()
+        view.reject()
 
-            await waitFor(
-                () => {
-                    expect(reject).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            expect(approve).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(reject).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(approve).not.toHaveBeenCalled()
+    })
 })

@@ -22,7 +22,6 @@
 
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -74,8 +73,6 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // The source is a rekeyed account; the held auth account does the signing.
 // integration tests don't load i18n, so `t()` returns the raw key — the
@@ -146,12 +143,9 @@ const renderConfirm = () =>
 
 describe('Flow: Undo rekey end-to-end', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -181,113 +175,99 @@ describe('Flow: Undo rekey end-to-end', () => {
         )
     })
 
-    it(
-        'Given a rekeyed account, when the user confirms the undo and accepts the warning sheet, then a signed rekey payment is POSTed to algod and the success screen renders',
-        async () => {
-            await seedRekeyedSource()
+    it('Given a rekeyed account, when the user confirms the undo and accepts the warning sheet, then a signed rekey payment is POSTed to algod and the success screen renders', async () => {
+        await seedRekeyedSource()
 
-            const sendSpy = vi.fn(async () =>
-                HttpResponse.json(
-                    {
-                        txId: 'UNDOREKEYTESTTXID000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderConfirm()
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('undo-rekey-confirm-screen'),
-                ).toBeTruthy()
-            })
-            const cta = () => screen.getByTestId('undo-rekey-confirm-cta')
-            await waitFor(() => {
-                expect(isElementDisabled(cta())).toBe(false)
-            })
-            fireEvent.click(cta())
-
-            const sheet = await waitFor(() =>
-                screen.getByTestId('undo-rekey-warning-sheet'),
-            )
-            fireEvent.click(within(sheet).getByText(WARNING_CONFIRM_KEY))
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('undo-rekey-success-screen'),
-                    ).toBeTruthy()
+        const sendSpy = vi.fn(async () =>
+            HttpResponse.json(
+                {
+                    txId: 'UNDOREKEYTESTTXID000000000000000000000000000000000000',
                 },
-                { timeout: 10_000 },
-            )
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            expect(sendSpy).toHaveBeenCalled()
-            const calls = sendSpy.mock.calls as unknown as Array<
-                [{ request: Request }]
-            >
-            const body = await calls[0][0].request.arrayBuffer()
-            expect(body.byteLength).toBeGreaterThan(50)
+        renderConfirm()
 
-            // LRK-022: the rekey badge reads the store's rekeyAddress mirror,
-            // which only a sync tick clears once algod stops reporting an
-            // auth-addr. Model the undo landing on chain, then drive the real
-            // sync path and assert the badge source clears.
-            server.use(
-                mockAlgodAccountInformation({
-                    address: REKEY_TARGET_ADDRESS,
-                    response: { amount: 5_000_000, 'min-balance': 100_000 },
-                }),
-            )
-            await fetchAndPersistAccount(REKEY_TARGET_ADDRESS, 'mainnet')
-
-            const synced = useAccountsStore
-                .getState()
-                .accounts.find(a => a.address === REKEY_TARGET_ADDRESS)
-            expect(synced?.rekeyAddress).toBeUndefined()
-            expect(synced?.rekeyAddressByNetwork?.mainnet).toBeUndefined()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the warning sheet is open, when the user cancels it, then no transaction is submitted and the confirm screen stays mounted',
-        async () => {
-            await seedRekeyedSource()
-
-            const sendSpy = vi.fn(async () =>
-                HttpResponse.json({ txId: 'SHOULDNOTSUBMIT' }, { status: 200 }),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderConfirm()
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('undo-rekey-confirm-screen'),
-                ).toBeTruthy()
-            })
-            const cta = () => screen.getByTestId('undo-rekey-confirm-cta')
-            await waitFor(() => {
-                expect(isElementDisabled(cta())).toBe(false)
-            })
-            fireEvent.click(cta())
-
-            const sheet = await waitFor(() =>
-                screen.getByTestId('undo-rekey-warning-sheet'),
-            )
-            fireEvent.click(within(sheet).getByText(WARNING_CANCEL_KEY))
-
-            await waitFor(() => {
-                expect(
-                    screen.queryByTestId('undo-rekey-warning-sheet'),
-                ).toBeNull()
-            })
-            expect(sendSpy).not.toHaveBeenCalled()
-            expect(screen.queryByTestId('undo-rekey-success-screen')).toBeNull()
+        await waitFor(() => {
             expect(screen.getByTestId('undo-rekey-confirm-screen')).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
+        const cta = () => screen.getByTestId('undo-rekey-confirm-cta')
+        await waitFor(() => {
+            expect(isElementDisabled(cta())).toBe(false)
+        })
+        fireEvent.click(cta())
+
+        const sheet = await waitFor(() =>
+            screen.getByTestId('undo-rekey-warning-sheet'),
+        )
+        fireEvent.click(within(sheet).getByText(WARNING_CONFIRM_KEY))
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('undo-rekey-success-screen'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+
+        expect(sendSpy).toHaveBeenCalled()
+        const calls = sendSpy.mock.calls as unknown as Array<
+            [{ request: Request }]
+        >
+        const body = await calls[0][0].request.arrayBuffer()
+        expect(body.byteLength).toBeGreaterThan(50)
+
+        // LRK-022: the rekey badge reads the store's rekeyAddress mirror,
+        // which only a sync tick clears once algod stops reporting an
+        // auth-addr. Model the undo landing on chain, then drive the real
+        // sync path and assert the badge source clears.
+        server.use(
+            mockAlgodAccountInformation({
+                address: REKEY_TARGET_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+        )
+        await fetchAndPersistAccount(REKEY_TARGET_ADDRESS, 'mainnet')
+
+        const synced = useAccountsStore
+            .getState()
+            .accounts.find(a => a.address === REKEY_TARGET_ADDRESS)
+        expect(synced?.rekeyAddress).toBeUndefined()
+        expect(synced?.rekeyAddressByNetwork?.mainnet).toBeUndefined()
+    })
+
+    it('Given the warning sheet is open, when the user cancels it, then no transaction is submitted and the confirm screen stays mounted', async () => {
+        await seedRekeyedSource()
+
+        const sendSpy = vi.fn(async () =>
+            HttpResponse.json({ txId: 'SHOULDNOTSUBMIT' }, { status: 200 }),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
+
+        renderConfirm()
+
+        await waitFor(() => {
+            expect(screen.getByTestId('undo-rekey-confirm-screen')).toBeTruthy()
+        })
+        const cta = () => screen.getByTestId('undo-rekey-confirm-cta')
+        await waitFor(() => {
+            expect(isElementDisabled(cta())).toBe(false)
+        })
+        fireEvent.click(cta())
+
+        const sheet = await waitFor(() =>
+            screen.getByTestId('undo-rekey-warning-sheet'),
+        )
+        fireEvent.click(within(sheet).getByText(WARNING_CANCEL_KEY))
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('undo-rekey-warning-sheet')).toBeNull()
+        })
+        expect(sendSpy).not.toHaveBeenCalled()
+        expect(screen.queryByTestId('undo-rekey-success-screen')).toBeNull()
+        expect(screen.getByTestId('undo-rekey-confirm-screen')).toBeTruthy()
+    })
 })

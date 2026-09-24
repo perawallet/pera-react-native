@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
@@ -41,10 +41,6 @@ const renderListWithDetail = () =>
     })
 
 describe('Flow: Card transaction detail', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     it('opens a payment detail from the list with both tabs and all rows', async () => {
         server.use(transactionsHandler(buildMockCardTransactions()))
 

@@ -12,7 +12,6 @@
 
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -60,8 +59,6 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const seedRekeyAccounts = async (): Promise<{
     source: WalletAccount
@@ -131,12 +128,9 @@ const REKEY_SCREENS = [
 
 describe('Flow: Rekey to ledger account end-to-end', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -163,132 +157,120 @@ describe('Flow: Rekey to ledger account end-to-end', () => {
         )
     })
 
-    it(
-        'Given a funded source and an eligible Ledger target, when the user walks intro → select target → confirm, then a signed rekey payment is POSTed to algod and the success screen renders',
-        async () => {
-            await seedRekeyAccounts()
+    it('Given a funded source and an eligible Ledger target, when the user walks intro → select target → confirm, then a signed rekey payment is POSTed to algod and the success screen renders', async () => {
+        await seedRekeyAccounts()
 
-            const sendSpy = vi.fn(async () =>
-                HttpResponse.json(
-                    {
-                        txId: 'REKEYLEDGERTESTTXID000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderWithNavigation(
-                RekeyToLedgerIntroScreen,
-                'RekeyToLedgerIntro',
+        const sendSpy = vi.fn(async () =>
+            HttpResponse.json(
                 {
-                    initialParams: { sourceAddress: ALGO25_TEST_ADDRESS },
-                    additionalScreens: REKEY_SCREENS,
+                    txId: 'REKEYLEDGERTESTTXID000000000000000000000000000000000000',
                 },
-            )
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rekey-to-ledger-intro-screen'),
-                ).toBeTruthy()
-            })
-            fireEvent.click(screen.getByTestId('rekey-to-ledger-intro-start'))
+        renderWithNavigation(RekeyToLedgerIntroScreen, 'RekeyToLedgerIntro', {
+            initialParams: { sourceAddress: ALGO25_TEST_ADDRESS },
+            additionalScreens: REKEY_SCREENS,
+        })
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rekey-to-ledger-select-target-screen'),
-                ).toBeTruthy()
-            })
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(`rekey-target-row-${HD_TEST_ADDRESS}`),
-                ).toBeTruthy()
-            })
-            fireEvent.click(
-                screen.getByTestId(`rekey-target-row-${HD_TEST_ADDRESS}`),
-            )
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rekey-to-ledger-confirm-screen'),
-                ).toBeTruthy()
-            })
-            const cta = () => screen.getByTestId('rekey-to-ledger-confirm-cta')
-            await waitFor(() => {
-                expect(isElementDisabled(cta())).toBe(false)
-            })
-            fireEvent.click(cta())
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('rekey-to-ledger-success-screen'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
-
-            expect(sendSpy).toHaveBeenCalled()
-            const calls = sendSpy.mock.calls as unknown as Array<
-                [{ request: Request }]
-            >
-            const body = await calls[0][0].request.arrayBuffer()
-            expect(body.byteLength).toBeGreaterThan(50)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given algod rejects the submission, when the user confirms, then a rekey error toast surfaces and the success screen is NOT shown',
-        async () => {
-            await seedRekeyAccounts()
-
-            server.use(
-                http.post('*/v2/transactions', () =>
-                    HttpResponse.json(
-                        { message: 'TransactionPool.Remember: rejected' },
-                        { status: 500 },
-                    ),
-                ),
-            )
-
-            renderWithNavigation(
-                RekeyToLedgerConfirmScreen,
-                'RekeyToLedgerConfirm',
-                {
-                    initialParams: {
-                        sourceAddress: ALGO25_TEST_ADDRESS,
-                        targetAddress: HD_TEST_ADDRESS,
-                    },
-                    additionalScreens: REKEY_SCREENS,
-                },
-            )
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rekey-to-ledger-confirm-screen'),
-                ).toBeTruthy()
-            })
-            const cta = () => screen.getByTestId('rekey-to-ledger-confirm-cta')
-            await waitFor(() => {
-                expect(isElementDisabled(cta())).toBe(false)
-            })
-            fireEvent.click(cta())
-
-            await waitFor(
-                () => {
-                    expect(Notifier.showNotification).toHaveBeenCalled()
-                },
-                { timeout: 25_000 },
-            )
-
+        await waitFor(() => {
             expect(
-                screen.queryByTestId('rekey-to-ledger-success-screen'),
-            ).toBeNull()
+                screen.getByTestId('rekey-to-ledger-intro-screen'),
+            ).toBeTruthy()
+        })
+        fireEvent.click(screen.getByTestId('rekey-to-ledger-intro-start'))
+
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('rekey-to-ledger-select-target-screen'),
+            ).toBeTruthy()
+        })
+        await waitFor(() => {
+            expect(
+                screen.getByTestId(`rekey-target-row-${HD_TEST_ADDRESS}`),
+            ).toBeTruthy()
+        })
+        fireEvent.click(
+            screen.getByTestId(`rekey-target-row-${HD_TEST_ADDRESS}`),
+        )
+
+        await waitFor(() => {
             expect(
                 screen.getByTestId('rekey-to-ledger-confirm-screen'),
             ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
+        const cta = () => screen.getByTestId('rekey-to-ledger-confirm-cta')
+        await waitFor(() => {
+            expect(isElementDisabled(cta())).toBe(false)
+        })
+        fireEvent.click(cta())
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('rekey-to-ledger-success-screen'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+
+        expect(sendSpy).toHaveBeenCalled()
+        const calls = sendSpy.mock.calls as unknown as Array<
+            [{ request: Request }]
+        >
+        const body = await calls[0][0].request.arrayBuffer()
+        expect(body.byteLength).toBeGreaterThan(50)
+    })
+
+    it('Given algod rejects the submission, when the user confirms, then a rekey error toast surfaces and the success screen is NOT shown', async () => {
+        await seedRekeyAccounts()
+
+        server.use(
+            http.post('*/v2/transactions', () =>
+                HttpResponse.json(
+                    { message: 'TransactionPool.Remember: rejected' },
+                    { status: 500 },
+                ),
+            ),
+        )
+
+        renderWithNavigation(
+            RekeyToLedgerConfirmScreen,
+            'RekeyToLedgerConfirm',
+            {
+                initialParams: {
+                    sourceAddress: ALGO25_TEST_ADDRESS,
+                    targetAddress: HD_TEST_ADDRESS,
+                },
+                additionalScreens: REKEY_SCREENS,
+            },
+        )
+
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('rekey-to-ledger-confirm-screen'),
+            ).toBeTruthy()
+        })
+        const cta = () => screen.getByTestId('rekey-to-ledger-confirm-cta')
+        await waitFor(() => {
+            expect(isElementDisabled(cta())).toBe(false)
+        })
+        fireEvent.click(cta())
+
+        await waitFor(
+            () => {
+                expect(Notifier.showNotification).toHaveBeenCalled()
+            },
+            { timeout: 25_000 },
+        )
+
+        expect(
+            screen.queryByTestId('rekey-to-ledger-success-screen'),
+        ).toBeNull()
+        expect(
+            screen.getByTestId('rekey-to-ledger-confirm-screen'),
+        ).toBeTruthy()
+    })
 })

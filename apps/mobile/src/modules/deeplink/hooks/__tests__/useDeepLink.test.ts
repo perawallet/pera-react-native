@@ -1001,6 +1001,56 @@ describe('useDeepLink', () => {
         })
     })
 
+    describe('notification source', () => {
+        it('refuses a value-bearing type and reports it via onError', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.ALGO_TRANSFER,
+                receiverAddress: 'receiver1',
+                amount: '1000000',
+            })
+            const onError = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/algo-transfer',
+                    false,
+                    'notification',
+                    onError,
+                )
+            })
+
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            expect(mockSetDestination).not.toHaveBeenCalled()
+            expect(onError).toHaveBeenCalled()
+            expect(logger.warn).toHaveBeenCalledWith(
+                'Blocked notification deeplink',
+                { type: DeeplinkType.ALGO_TRANSFER },
+            )
+        })
+
+        it('still routes a navigation-shaped type', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.HOME,
+            })
+            const onSuccess = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://home',
+                    false,
+                    'notification',
+                    undefined,
+                    onSuccess,
+                )
+            })
+
+            expect(onSuccess).toHaveBeenCalled()
+            expect(logger.warn).not.toHaveBeenCalled()
+        })
+    })
+
     it('should open send-funds bottom sheet for ALGO_TRANSFER deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ALGO_TRANSFER,
