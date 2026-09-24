@@ -52,7 +52,7 @@ export default defineConfig({
     ],
     // The per-rule budget is a MAXIMUM over every file in the corpus, not an
     // average like the global budget — one slow file trips it regardless of
-    // how fast the other 3900+ run. It has to clear the worst single file on
+    // how fast every other file runs. It has to clear the worst single file on
     // a loaded CI runner, not just a warm dev machine, while still catching a
     // rule that goes quadratic (which would blow well past this ceiling, not
     // graze it). The global budget already covers a rule that's merely slow

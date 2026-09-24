@@ -95,11 +95,10 @@
     ]
   },
 
-  // Severities left at defaults during the report-only rollout. The CI job is
-  // advisory (non-blocking); individual rules will be flipped to "error" with a
-  // baseline once the legacy findings are triaged. Architecture boundaries are
-  // intentionally not configured here — they are covered by lanekeep (see
-  // lanekeep.config.ts and lanekeep/README.md), which runs in `pnpm lint`.
+  // Severities are fallow's defaults, and the CI Dead Code job fails on any
+  // finding. Architecture boundaries are intentionally not configured here —
+  // they are covered by lanekeep (see lanekeep.config.ts and
+  // lanekeep/README.md), which runs in `pnpm lint`.
   "rules": {
     // Disabled: fallow's workspace-dependency resolution produces false positives
     // in this monorepo — it flagged deps that ARE imported (e.g.
