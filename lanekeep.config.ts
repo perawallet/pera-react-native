@@ -21,6 +21,7 @@ import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
 import noUnusedTranslationKeys from './lanekeep/rules/no-unused-translation-keys.js'
 import noWcImportsInConnectionsModule from './lanekeep/rules/no-wc-imports-in-connections-module.js'
 import noWorkItemRefs from './lanekeep/rules/no-work-item-refs.js'
+import pqLibrarySeam from './lanekeep/rules/pq-library-seam.js'
 import translationKeyExists from './lanekeep/rules/translation-key-exists.js'
 
 export default defineConfig({
@@ -78,5 +79,6 @@ export default defineConfig({
         translationKeyExists,
         noUnusedTranslationKeys,
         noI18nIntegritySuppressions,
+        pqLibrarySeam,
     ],
 })
