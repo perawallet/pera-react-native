@@ -12,34 +12,20 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                // Own entry so content scripts (every https page) get the
-                // dependency-free codec and never the handler graph.
-                wire: resolve(__dirname, 'src/wire.ts'),
-                // Same reason for the service worker: the gate reaches only
-                // the two cap subpaths, so an MV3 bundle stays free of the
-                // signing and blockchain barrels.
-                bounds: resolve(__dirname, 'src/bounds.ts'),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            // Own entry so content scripts (every https page) get the
+            // dependency-free codec and never the handler graph.
+            wire: resolve(__dirname, 'src/wire.ts'),
+            // Same reason for the service worker: the gate reaches only
+            // the two cap subpaths, so an MV3 bundle stays free of the
+            // signing and blockchain barrels.
+            bounds: resolve(__dirname, 'src/bounds.ts'),
         },
-        rollupOptions: {
-            external: [
-                '@perawallet/wallet-core-blockchain',
-                '@perawallet/wallet-core-blockchain/arc0001/limits',
-                '@perawallet/wallet-core-config',
-                '@perawallet/wallet-core-connections',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-core-signing',
-                '@perawallet/wallet-core-signing/constants',
-                '@perawallet/wallet-extension-connections',
-            ],
-        },
-    },
-})
+    }),
+)

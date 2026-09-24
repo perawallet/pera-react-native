@@ -12,46 +12,12 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: resolve(__dirname, 'src/index.ts'),
-            formats: ['es'],
-            fileName: 'index',
-        },
-        rollupOptions: {
-            external: [
-                'react',
-                'react/jsx-runtime',
-                'react-native',
-                'react-native-mmkv',
-                'react-native-keychain',
-                'react-native-cloud-storage',
-                '@react-native-google-signin/google-signin',
-                '@react-native-firebase/analytics',
-                '@react-native-firebase/crashlytics',
-                '@react-native-firebase/messaging',
-                '@react-native-firebase/remote-config',
-                '@notifee/react-native',
-                '@expo/app-integrity',
-                '@noble/hashes/sha2.js',
-                'expo',
-                'expo-application',
-                'expo-device',
-                'expo-local-authentication',
-                'expo-localization',
-                'expo-sqlite',
-                'zustand',
-                '@algorandfoundation/wallet-provider',
-                '@perawallet/wallet-core-hardware-wallet',
-                '@perawallet/wallet-core-config',
-                '@perawallet/wallet-core-remote-config',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-core-blockchain',
-            ],
-        },
-    },
-})
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: resolve(__dirname, 'src/index.ts'),
+        fileName: 'index',
+    }),
+)

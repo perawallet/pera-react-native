@@ -18,9 +18,21 @@
     "./vitest/base": {
       "types": "./vitest/base.d.ts",
       "default": "./vitest/base.js"
+    },
+    "./vite/library": {
+      "types": "./vite/library.d.ts",
+      "default": "./vite/library.js"
     }
   },
-  "files": ["tsconfig", "vitest"],
+  "files": [
+    "tsconfig",
+    "vitest",
+    "vite"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:unit": "vitest run"
+  },
   "dependencies": {
     "typescript": "catalog:",
     "fast-glob": "catalog:"
@@ -28,7 +40,10 @@
   "devDependencies": {
     "tsx": "catalog:",
     "vitest": "catalog:",
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "vite": "catalog:"
   },
-  "publishConfig": { "access": "public" }
+  "publishConfig": {
+    "access": "public"
+  }
 }

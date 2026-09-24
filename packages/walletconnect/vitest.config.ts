@@ -33,6 +33,12 @@ export default defineConfig({
             // (betanet/custom) lives in packages/config and shared only
             // re-exports it, so aliasing shared alone still resolves that
             // re-export through config's own dist.
+            // Before the barrel key: aliases prefix-match, so the barrel entry
+            // would rewrite `/queue` (imported by assets' dist) to a bad path.
+            '@perawallet/wallet-core-shared/queue': path.resolve(
+                __dirname,
+                '../shared/src/queue/index.ts',
+            ),
             '@perawallet/wallet-core-shared': path.resolve(
                 __dirname,
                 '../shared/src/index.ts',
