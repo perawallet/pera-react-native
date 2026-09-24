@@ -352,6 +352,26 @@ describe('useCardStore', () => {
         expect(result.current.escrowCardApproved).toBe(false)
     })
 
+    test('restoreEscrowCard adopts an approved card and connects its owner as the funding source', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() =>
+            result.current.restoreEscrowCard({
+                cardAddress: 'CARD1',
+                ownerAddress: 'OWNER1',
+                network: 'mainnet',
+            }),
+        )
+
+        expect(result.current.escrowCardAddress).toBe('CARD1')
+        expect(result.current.escrowCardOwner).toBe('OWNER1')
+        expect(result.current.escrowCardNetwork).toBe('mainnet')
+        expect(result.current.escrowCardTxId).toBeNull()
+        expect(result.current.escrowCardApproved).toBe(true)
+        expect(result.current.connectedFundingSourceAddress).toBe('OWNER1')
+    })
+
     test('setCardSnapshot stores the non-sensitive card hint', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
