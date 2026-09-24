@@ -28,10 +28,16 @@ export default defineRule({
             '**/conformance/src/**',
         ],
     },
-    query: '(program) @file',
+    // tree-sitter-typescript misparses some `typeof import(...)` type
+    // arguments and leaves the whole file as an ERROR root instead of
+    // `program`; the file still needs checking.
+    query: '[(program) (ERROR)] @file',
     check(ctx, m) {
         const file = m.file
         if (file === undefined) return
+        // Only the root ERROR stands in for a missing program; a nested one
+        // is just a parse error inside otherwise-normal code.
+        if (ctx.parent(file) !== undefined) return
         if (ctx.fileText.startsWith(COPYRIGHT_HEADER)) return
 
         // A fix only replaces a node's text, and leading whitespace belongs to

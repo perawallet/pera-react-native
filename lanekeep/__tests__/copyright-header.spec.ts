@@ -25,6 +25,7 @@ describe('pera/copyright-header', () => {
             'banner.ts:1',
             'bare.ts:1',
             'conf.ts:1',
+            'error-root.ts:1',
             'ext.ts:1',
             'helper.ts:1',
             'pkg.ts:1',
