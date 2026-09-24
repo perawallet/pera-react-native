@@ -173,6 +173,15 @@ describe('pera/dev-gallery-entry-points', () => {
             },
         ],
         [
+            'a re-export of everything',
+            'ExportAllDeclaration',
+            {
+                type: 'ExportAllDeclaration',
+                exportKind: 'value',
+                source: literal('../screens/developer/gallery-catalog'),
+            },
+        ],
+        [
             'a deferred import with a template specifier',
             'ImportExpression',
             {

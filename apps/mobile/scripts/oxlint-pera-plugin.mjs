@@ -127,7 +127,8 @@ export const GALLERY_ENTRY_PATHS = [
 const GALLERY_CODE =
     /screens\/developer\/(?:SettingsDeveloperGalleryScreen|GalleryCategoryScreen|GalleryComponentPreviewScreen|gallery-catalog)/
 
-// context.filename is absolute.
+// context.filename is absolute or already relative to apps/mobile,
+// depending on how oxlint is invoked.
 const fromAppRoot = filename => {
     const at = filename.lastIndexOf('/apps/mobile/')
     return at === -1 ? filename : filename.slice(at + '/apps/mobile/'.length)
