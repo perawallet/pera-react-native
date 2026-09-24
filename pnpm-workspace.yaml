@@ -208,9 +208,11 @@ patchedDependencies:
   #   the upgrade.
   # - Android WebAuthn through a browser: clientData names the page's origin,
   #   read through Google's privileged-browser allowlist, not the browser's app
-  #   identity. Registration honours the caller's clientDataHash, as upstream's
-  #   assertion path already does, and returns the authenticatorData /
-  #   publicKeyAlgorithm / publicKey fields without which Chrome rejects it.
+  #   identity. A caller's clientDataHash is honoured only from such a browser;
+  #   upstream's assertion path signs it for any app, which could then pass off a
+  #   clientData it forged for a web origin. Registration also returns the
+  #   authenticatorData / publicKeyAlgorithm / publicKey fields without which
+  #   Chrome rejects it.
   # - The package's iOS strings name its own product ("Rocca"), including the
   #   Face ID usage text and the biometric / passcode prompt reasons.
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.27.patch

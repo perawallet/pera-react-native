@@ -24,7 +24,7 @@ index e664746a384e1403297d47c42c1383f0f41d4766..e6e8cd6ac5ca2a69e4489fc5efad613c
              android:exported="true"
              android:label="@string/passkey_autofill_label"
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
-index 1e3b4a4ff4d3f81d73ca99564509f14398053c7a..376b7d283c8cc1a8d86107c92ac7aaf4d72e28d2 100644
+index 1e3b4a4ff4d3f81d73ca99564509f14398053c7a..9f15b328adfd3f7f00dab54c930a555806e40929 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
 @@ -45,6 +45,7 @@ class CreatePasskeyActivity : AppCompatActivity() {
@@ -35,20 +35,22 @@ index 1e3b4a4ff4d3f81d73ca99564509f14398053c7a..376b7d283c8cc1a8d86107c92ac7aaf4
      }
  
      private var origin: String = "unknown-origin" // Derivation origin (rpId or hash)
-@@ -402,17 +403,30 @@ class CreatePasskeyActivity : AppCompatActivity() {
+@@ -402,17 +403,32 @@ class CreatePasskeyActivity : AppCompatActivity() {
              check(verification.satisfiesRequest) {
                  "Relying party requires user verification but no verification ceremony completed"
              }
-+            // PERA LOCAL PATCH: a browser calling on behalf of a page passes both
-+            // the page's origin and the clientDataHash it has already committed
-+            // to. Honour both. An `android:apk-key-hash:…` origin is not the
-+            // page's origin, and a clientDataJSON we invent cannot match a hash
-+            // the browser computed over its own. Non-browser callers keep the
-+            // app-identity origin and a clientDataJSON built here.
++            // PERA LOCAL PATCH: an allowlisted browser calling on behalf of a page
++            // passes both the page's origin and the clientDataHash it has already
++            // committed to. Honour both. An `android:apk-key-hash:…` origin is not
++            // the page's origin, and a clientDataJSON we invent cannot match a hash
++            // the browser computed over its own. Any other caller keeps its
++            // app-identity origin and gets a clientDataJSON built here; its hash is
++            // ignored, since it would stand in for client data nobody verified.
 +            val browserOrigin = PrivilegedBrowsers.webOrigin(this@CreatePasskeyActivity, req.callingAppInfo)
 +            val clientDataOrigin = browserOrigin ?: credentialRepository.getOrigin(req.callingAppInfo)
-+            val systemClientDataHash =
++            val systemClientDataHash = browserOrigin?.let {
 +                (req.callingRequest as? CreatePublicKeyCredentialRequest)?.clientDataHash
++            }
 +            PasskeyLog.d(TAG, "clientData origin from browser: ${browserOrigin != null}, system hash present: ${systemClientDataHash != null}")
 +
              PasskeyLog.d(TAG, "Building AuthenticatorAttestationResponse (uv=${verification.verified})")
@@ -68,7 +70,7 @@ index 1e3b4a4ff4d3f81d73ca99564509f14398053c7a..376b7d283c8cc1a8d86107c92ac7aaf4
              )
  
              val fidoCredential = FidoPublicKeyCredential(
-@@ -425,30 +439,35 @@ class CreatePasskeyActivity : AppCompatActivity() {
+@@ -425,30 +441,35 @@ class CreatePasskeyActivity : AppCompatActivity() {
              val fullJson = JSONObject(fidoCredential.json())
              val respJson = fullJson.getJSONObject("response")
  
@@ -125,7 +127,7 @@ index 1e3b4a4ff4d3f81d73ca99564509f14398053c7a..376b7d283c8cc1a8d86107c92ac7aaf4
  
              WebAuthn.configuredAaguid(this@CreatePasskeyActivity)?.let { aaguid ->
                  try {
-@@ -459,6 +478,30 @@ class CreatePasskeyActivity : AppCompatActivity() {
+@@ -459,6 +480,30 @@ class CreatePasskeyActivity : AppCompatActivity() {
                  }
              }
  
@@ -157,7 +159,7 @@ index 1e3b4a4ff4d3f81d73ca99564509f14398053c7a..376b7d283c8cc1a8d86107c92ac7aaf4
              // On registration we advertise `enabled = true` whenever the RP
              // asked for the extension, signalling that the credential can be
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
-index 0e96d9c4c8b5c1be76d56e3c7ae83fbc1ecd3249..d50ecd267d1eda1938a4fab24d6b09979ada7c98 100644
+index 0e96d9c4c8b5c1be76d56e3c7ae83fbc1ecd3249..7f1e5acac7e02ef0d9944e390098452bcd707721 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
 @@ -53,6 +53,11 @@ class GetPasskeyActivity : AppCompatActivity() {
@@ -183,7 +185,7 @@ index 0e96d9c4c8b5c1be76d56e3c7ae83fbc1ecd3249..d50ecd267d1eda1938a4fab24d6b0997
              // Try to extract rpId for better display
              val rawJson = bundleRequestJson ?: (request?.credentialOptions?.get(0) as? GetPublicKeyCredentialOption)?.requestJson
              if (rawJson != null) {
-@@ -477,7 +484,7 @@ class GetPasskeyActivity : AppCompatActivity() {
+@@ -477,10 +484,14 @@ class GetPasskeyActivity : AppCompatActivity() {
              } else {
                  throw org.json.JSONException("No value for challenge in requestJson")
              }
@@ -191,16 +193,24 @@ index 0e96d9c4c8b5c1be76d56e3c7ae83fbc1ecd3249..d50ecd267d1eda1938a4fab24d6b0997
 +            val sanitizedOrigin = (browserOrigin ?: origin).replace(Regex("/$"), "")
  
              // Look for system-provided clientDataHash (e.g. from Chrome)
-             val systemClientDataHash = run {
-@@ -591,7 +598,13 @@ class GetPasskeyActivity : AppCompatActivity() {
+-            val systemClientDataHash = run {
++            // PERA LOCAL PATCH: only from an allowlisted browser. The signature
++            // covers this hash in place of our clientDataJSON, so honouring it
++            // from any other caller would let an app sign in with a clientData
++            // it forged for a web origin it does not own.
++            val systemClientDataHash = if (browserOrigin == null) null else run {
+                 val option = req.credentialOptions.find { opt ->
+                     opt is GetPublicKeyCredentialOption && (opt.requestJson == rawRequestJson || 
+                         try { JSONObject(opt.requestJson).toString() == JSONObject(rawRequestJson!!).toString() } catch(e: Exception) { false })
+@@ -591,7 +602,13 @@ class GetPasskeyActivity : AppCompatActivity() {
  
              val fullJson = JSONObject(fidoCredential.json())
              val respJson = fullJson.getJSONObject("response")
 -            respJson.put("clientDataJSON", clientDataJSONb64)
 +            // PERA LOCAL PATCH: the signature above covers `systemClientDataHash`
-+            // when the caller supplied one, so the caller's client data is the
-+            // authoritative copy and adding ours would contradict what was
-+            // signed.
++            // when an allowlisted browser supplied one, so the browser's client
++            // data is the authoritative copy and adding ours would contradict
++            // what was signed.
 +            if (systemClientDataHash == null) {
 +                respJson.put("clientDataJSON", clientDataJSONb64)
 +            }
@@ -209,7 +219,7 @@ index 0e96d9c4c8b5c1be76d56e3c7ae83fbc1ecd3249..d50ecd267d1eda1938a4fab24d6b0997
              // Add clientExtensionResults as seen in the example
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..f0338e6e2db43914ca3b8de27130a509ee6aa706
+index 0000000000000000000000000000000000000000..ce791746dc698f345dc5176c47882605bfd7d6b4
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
 @@ -0,0 +1,72 @@
@@ -239,9 +249,9 @@ index 0000000000000000000000000000000000000000..f0338e6e2db43914ca3b8de27130a509
 + * on `userdebug` builds; AndroidX filters them by `Build.TYPE`.
 + *
 + * Every failure path returns null, which means "treat this as an ordinary app
-+ * call": the caller's app-identity origin is signed instead. A browser missing
-+ * from the allowlist degrades to exactly that, so refreshing the JSON is
-+ * maintenance rather than a correctness dependency.
++ * call": the caller's app-identity origin is signed and any clientDataHash it
++ * sent is ignored. A browser missing from the allowlist is treated the same
++ * way, so its passkey sign-ins fail; keep the JSON current.
 + */
 +object PrivilegedBrowsers {
 +    private const val TAG = "PrivilegedBrowsers"
