@@ -18,6 +18,8 @@ The platform layer (`extensions/*`: storage, keystore, Ledger and device adapter
 
 Component, styling and folder conventions for the app live in `apps/mobile/CLAUDE.md`.
 
+New lint rules: per-file syntax over linted source goes in oxlint (built-in, or the `pera` plugin in `apps/mobile/scripts/oxlint-pera-plugin.mjs`); anything needing tests/tooling coverage, other files' content or cross-file facts goes in lanekeep (`lanekeep/README.md`).
+
 ## Hooks (CRITICAL)
 
 ### Naming & Suffixes

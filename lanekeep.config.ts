@@ -17,6 +17,7 @@ import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
 import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
 import noWcImportsInConnectionsModule from './lanekeep/rules/no-wc-imports-in-connections-module.js'
+import noWorkItemRefs from './lanekeep/rules/no-work-item-refs.js'
 
 export default defineConfig({
     // Every TS/JS file in the repo. A rule about shipped source narrows itself
@@ -68,5 +69,6 @@ export default defineConfig({
         errorParamsMatchCopy,
         noUnusedStyleKeys,
         copyrightHeader,
+        noWorkItemRefs,
     ],
 })
