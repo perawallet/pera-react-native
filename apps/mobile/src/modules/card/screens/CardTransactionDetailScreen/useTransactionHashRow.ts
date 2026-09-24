@@ -61,6 +61,7 @@ export const useTransactionHashRow = (
         trackEvent(CardEvent.TransactionsViewExplorer)
         const url = `${networkConfig.explorerUrl}/tx/${txHash}`
         if (!routeCapabilities.inAppWebView) {
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- rooted at config.explorerUrl
             void Linking.openURL(url)
             return
         }

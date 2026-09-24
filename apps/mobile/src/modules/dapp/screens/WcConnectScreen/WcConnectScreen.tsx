@@ -49,6 +49,8 @@ export const WcConnectScreen = (): React.JSX.Element => {
         isConnecting,
         handleConnect,
         handleCancel,
+        peerUrlLabel,
+        canOpenPeerUrl,
         handlePressUrl,
         deliveryError,
     } = useWcConnectScreen()
@@ -92,6 +94,8 @@ export const WcConnectScreen = (): React.JSX.Element => {
                         permissions={permissions}
                         requesterOrigin={requesterOrigin}
                         isRequesterOriginDistinct={isRequesterOriginDistinct}
+                        peerUrlLabel={peerUrlLabel}
+                        canOpenPeerUrl={canOpenPeerUrl}
                         onPressUrl={handlePressUrl}
                     />
                 }

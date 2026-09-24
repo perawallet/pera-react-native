@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useState } from 'react'
-import { Linking } from 'react-native'
 import type { Decimal } from 'decimal.js'
 import {
     useSelectedAccountAddress,
@@ -34,6 +33,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { trackEvent, OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { openValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
@@ -174,7 +174,7 @@ export const useOnrampConfirm = ({
                 // in-app webview — the webview blocks some of the provider
                 // payment flows (matching the web app, which opens the system
                 // browser here).
-                void Linking.openURL(order.widgetUrl)
+                openValidatedBrowserUrl(order.widgetUrl)
             } else {
                 // A freshly-placed XO order is a pending history entry — render
                 // the shared order-details sheet (titled "Swap Review").

@@ -68,6 +68,7 @@ export const useSettingsScreen = () => {
 
     const openWebView = (url: string) => {
         if (!routeCapabilities.inAppWebView) {
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers pass network config URLs
             void Linking.openURL(url)
             return
         }

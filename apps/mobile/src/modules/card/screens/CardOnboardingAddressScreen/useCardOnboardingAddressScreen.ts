@@ -272,6 +272,7 @@ export const useCardOnboardingAddressScreen =
 
         const handleOpenCardTerms = useCallback(() => {
             if (!routeCapabilities.inAppWebView) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config
                 void Linking.openURL(cardTermsUrl)
                 return
             }

@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Linking } from 'react-native'
 import { Decimal } from 'decimal.js'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import type { RampPair, MeldQuote } from '@perawallet/wallet-core-onramp'
@@ -203,6 +204,7 @@ describe('useOnrampConfirm', () => {
         mockNetwork = 'mainnet'
         mockEnsureOptIn.mockResolvedValue(true)
         mockRequestBottomSheet.mockResolvedValue(undefined)
+        vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
     })
 
     it('shows localized offline copy and resets confirming state when order creation fails offline', async () => {
@@ -250,5 +252,37 @@ describe('useOnrampConfirm', () => {
         expect(mockEnsureOptIn).not.toHaveBeenCalled()
         expect(mockCreateRampOrder).not.toHaveBeenCalled()
         expect(result.current.isConfirming).toBe(false)
+    })
+
+    it('opens the Meld widget URL in the system browser', async () => {
+        mockCreateRampOrder.mockResolvedValueOnce({
+            kind: 'meld',
+            swapOrderId: 'order-meld-1',
+            widgetUrl: 'https://widget.example.com/session',
+        })
+        const { result } = renderHook(() => useOnrampConfirm(defaultProps))
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(Linking.openURL).toHaveBeenCalledWith(
+            'https://widget.example.com/session',
+        )
+    })
+
+    it('refuses a Meld widget URL that is not absolute https', async () => {
+        mockCreateRampOrder.mockResolvedValueOnce({
+            kind: 'meld',
+            swapOrderId: 'order-meld-1',
+            widgetUrl: 'algorand://ATTACKER?amount=1',
+        })
+        const { result } = renderHook(() => useOnrampConfirm(defaultProps))
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(Linking.openURL).not.toHaveBeenCalled()
     })
 })

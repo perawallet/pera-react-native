@@ -568,14 +568,14 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             })
 
             await waitFor(() => {
-                expect(findButton('https://first.example')).toBeTruthy()
+                expect(findButton('first.example')).toBeTruthy()
             })
-            expect(findButton('https://second.example')).toBeUndefined()
+            expect(findButton('second.example')).toBeUndefined()
 
             await approveViaUi(SIGNING_ACCOUNT.name as string)
 
             await waitFor(() => {
-                expect(findButton('https://second.example')).toBeTruthy()
+                expect(findButton('second.example')).toBeTruthy()
             })
             await approveViaUi(OTHER_ACCOUNT.name as string)
 

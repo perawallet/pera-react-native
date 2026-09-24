@@ -44,6 +44,8 @@ export type ConnectionApprovalViewHeaderProps = {
      * the raw string since another handler's methods need not match v1's.
      */
     methods: string[]
+    peerUrlLabel?: string
+    canOpenPeerUrl: boolean
     onPressUrl: () => void
 }
 
@@ -57,6 +59,8 @@ export const ConnectionApprovalViewHeader = ({
     peer,
     networks,
     methods,
+    peerUrlLabel,
+    canOpenPeerUrl,
     onPressUrl,
 }: ConnectionApprovalViewHeaderProps) => {
     const styles = useStyles()
@@ -129,13 +133,21 @@ export const ConnectionApprovalViewHeader = ({
                         />
                     )}
                 </PWView>
-                {!!peer.url && (
-                    <PWButton
-                        variant='link'
-                        onPress={onPressUrl}
-                        title={peer.url}
-                    />
-                )}
+                {!!peerUrlLabel &&
+                    (canOpenPeerUrl ? (
+                        <PWButton
+                            variant='link'
+                            onPress={onPressUrl}
+                            title={peerUrlLabel}
+                        />
+                    ) : (
+                        <PWText
+                            variant='caption'
+                            style={styles.peerUrlText}
+                        >
+                            {peerUrlLabel}
+                        </PWText>
+                    ))}
             </PWView>
 
             <TitledExpandablePanel
