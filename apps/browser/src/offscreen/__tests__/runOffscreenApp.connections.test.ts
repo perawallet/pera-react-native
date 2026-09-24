@@ -119,6 +119,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     seedAlgoAsset: vi.fn().mockResolvedValue(undefined),
 }))
 vi.mock('@perawallet/wallet-core-background', () => ({
+    createSyncStorePorts: vi.fn(() => ({})),
     getSyncService: vi.fn(() => ({ start: vi.fn() })),
     initializeSyncService: vi.fn(),
 }))

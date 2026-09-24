@@ -10,60 +10,39 @@
  limitations under the License
  */
 
+import { onlineManager } from '@tanstack/react-query'
 import { isHTTPError } from 'ky'
 import {
-    useAccountsStore,
-    getAllHeldAssetIdsForNetwork,
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
-    fetchAndPersistAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    sendShouldRefreshRequest,
-    usePollingStore,
-} from '@perawallet/wallet-core-polling'
-import {
-    invalidateAssetQueries,
-    fetchAndPersistAssets,
-    fetchAndPersistPrices,
-} from '@perawallet/wallet-core-assets'
+import { sendShouldRefreshRequest } from '@perawallet/wallet-core-polling'
+import { invalidateAssetQueries } from '@perawallet/wallet-core-assets'
 import {
     invalidateTransactionQueries,
     invalidateTransactionQueriesForAddresses,
-    fetchAndPersistTransactions,
 } from '@perawallet/wallet-core-transactions'
 import {
     logger,
     calculateBackoff,
-    mapWithConcurrency,
     type Network,
     type Nullable,
-    type Optional,
 } from '@perawallet/wallet-core-shared'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { reconcileOpenSubmissions } from '@perawallet/wallet-core-signing'
-import { onlineManager } from '@tanstack/react-query'
 import type { SyncServiceDeps } from '../models'
+import {
+    resolveCheckpointRound,
+    syncAccountsPhase,
+    syncAssetsPhase,
+    syncTransactionsPhase,
+    type AssetSyncKind,
+    type SyncPhaseResult,
+} from './sync-phases'
 
 const POLL_INTERVAL = 3000
 const MAX_BACKOFF_INTERVAL = 30_000
 const BACKOFF_MULTIPLIER = 2
-
-/**
- * Max concurrent per-account requests within one sync phase.
- *
- * Each phase issues one request per account, so an unbounded fan-out scales the
- * burst with the size of the user's wallet and trips the backend's rate limiter
- * on large ones. That is self-sustaining rather than self-correcting: a 429
- * freezes the round checkpoint (see advanceLastRefreshedRound), so the next
- * tick re-syncs the whole network and bursts again.
- *
- * Capping costs wall-clock on large wallets, which is the right trade — the
- * tick is background work, and a slower complete pass beats a fast rejected
- * one.
- */
-const ACCOUNT_FETCH_CONCURRENCY = 6
 
 /** How often a paused tick re-checks. Only a counter read, so keep it snappy. */
 const PAUSE_RECHECK_MS = 400
@@ -278,7 +257,7 @@ export class SyncService {
         // Connectivity gate: while offline, perform zero network work — no
         // should-refresh POST, no syncAll. The loop stays cheaply scheduled so
         // it resumes on its own, and the online-transition listener (subscribed
-        // in start) triggers an immediate tick on reconnect (Part A / Part D).
+        // in start) triggers an immediate tick on reconnect.
         if (!onlineManager.isOnline()) {
             this.scheduleNextTick()
             return
@@ -318,7 +297,7 @@ export class SyncService {
                 invalidateTransactionQueries(this.deps.queryClient)
             }
 
-            const activeNetwork = useNetworkStore.getState().network
+            const activeNetwork = this.deps.stores.getActiveNetwork()
             let networksToSync: Network[]
             let shouldRefreshRound: Nullable<number> = null
 
@@ -378,7 +357,7 @@ export class SyncService {
     /**
      * Ask the backend whether any watched address has activity newer than the
      * checkpoint. Deliberately does NOT advance the checkpoint here — that
-     * happens in {@link advanceLastRefreshedRound} only after the sync pass
+     * happens in syncAll (see resolveCheckpointRound) only after the sync pass
      * actually observed the new state. Advancing up front loses updates: if
      * the data source still lags the backend-reported round when we read it,
      * every subsequent tick asks "anything since round R?" and is told no,
@@ -387,18 +366,13 @@ export class SyncService {
     private async checkShouldRefresh(
         activeNetwork: Network,
     ): Promise<{ networks: Network[]; round: Nullable<number> }> {
-        const accounts = useAccountsStore.getState().accounts
-        const addresses = accounts.map(a => a.address)
+        const addresses = this.deps.stores.getAccountAddresses()
 
         if (addresses.length === 0) return { networks: [], round: null }
 
-        const { lastRefreshedRound } = usePollingStore.getState()
-
-        // `?? null` treats a network absent from the (partial) persisted map
-        // the same as one explicitly recorded as never-synced — both must
-        // force-sync below, rather than an absent key silently reading as
-        // "already synced" (undefined !== null).
-        const neverSynced = (lastRefreshedRound[activeNetwork] ?? null) === null
+        const lastRefreshedRound =
+            this.deps.stores.getLastRefreshedRound(activeNetwork)
+        const neverSynced = lastRefreshedRound === null
 
         // Networks with no Pera deployment (betanet, custom) have no should-refresh
         // endpoint to consult — the request throws PeraServiceUnavailableError every
@@ -427,7 +401,7 @@ export class SyncService {
             const result = await sendShouldRefreshRequest(
                 activeNetwork,
                 addresses,
-                lastRefreshedRound[activeNetwork] ?? null,
+                lastRefreshedRound,
             )
 
             if (result.refresh || neverSynced) {
@@ -464,114 +438,47 @@ export class SyncService {
         return { networks: [], round: null }
     }
 
-    /**
-     * Move the should-refresh checkpoint forward after an account pass.
-     *
-     * Only advances when every account fetch succeeded: the checkpoint is
-     * per-network, so advancing past a failed account's unfetched rounds
-     * would leave it stale until its next on-chain activity. The retry storm
-     * this used to cause is bounded elsewhere — a partial failure now feeds
-     * the tick backoff (see syncAll/tick) instead of freezing at the base
-     * poll cadence. On a clean pass, advances to the minimum round the
-     * fetches observed (state at round X covers all activity ≤ X), falling
-     * back to the backend-reported round only when no fetch reported one.
-     * If the observed round still trails the backend's, the next tick's
-     * should-refresh answers yes again and the sync retries until the data
-     * source catches up.
-     */
-    private advanceLastRefreshedRound(
-        network: Network,
-        accountResults: PromiseSettledResult<
-            Awaited<ReturnType<typeof fetchAndPersistAccount>>
-        >[],
-        fallbackRound: Nullable<number>,
-    ): void {
-        if (accountResults.length === 0) return
-
-        const observedRounds = accountResults
-            .map(r =>
-                r.status === 'fulfilled'
-                    ? (r.value?.observedRound ?? null)
-                    : null,
-            )
-            .filter((round): round is number => round !== null)
-
-        // A rejected fetch freezes the checkpoint: its account's state was
-        // not persisted, so moving forward would skip that account's rounds.
-        // The bounded retry lives in the tick backoff, not here.
-        const anyRejected = accountResults.some(r => r.status === 'rejected')
-        if (anyRejected) return
-
-        const round =
-            observedRounds.length > 0
-                ? Math.min(...observedRounds)
-                : fallbackRound
-        if (round === null) return
-
-        usePollingStore.getState().setLastRefreshedRound(network, round)
-    }
-
+    // Phase order matters: the checkpoint advances off the account pass, and
+    // the asset gate reads that pass's holdings change.
     private async syncAll(
         networks: Network[],
         shouldRefreshRound: Nullable<number> = null,
     ): Promise<{ hadTotalFailure: boolean; hadAccountFailure: boolean }> {
-        const accounts = useAccountsStore.getState().accounts
+        const addresses = this.deps.stores.getAccountAddresses()
         let hasRateLimitError = false
-        // Rejections freeze the checkpoint (see advanceLastRefreshedRound), so
+        // Rejections freeze the checkpoint (see resolveCheckpointRound), so
         // the caller must back off or it re-syncs the whole network every tick.
         let hadAccountFailure = false
         // Tracked across all phases because allSettled absorbs non-429 failures,
         // so syncAll can make zero progress without ever throwing.
         let hadAnySuccess = false
         let hadAnyFailure = false
-        const recordOutcomes = (results: PromiseSettledResult<unknown>[]) => {
-            if (results.some(r => r.status === 'fulfilled'))
-                hadAnySuccess = true
-            if (results.some(r => r.status === 'rejected')) hadAnyFailure = true
+        const recordOutcome = (phase: SyncPhaseResult<unknown>) => {
+            if (phase.hasSuccess) hadAnySuccess = true
+            if (phase.hasFailure) hadAnyFailure = true
+            if (phase.isRateLimited) hasRateLimitError = true
         }
 
         for (const network of networks) {
-            // 1. Sync all accounts, capped in flight (each failure isolated)
-            const accountResults = await mapWithConcurrency(
-                accounts,
-                ACCOUNT_FETCH_CONCURRENCY,
-                a => fetchAndPersistAccount(a.address, network),
-            )
-            recordOutcomes(accountResults)
-            if (accountResults.some(r => r.status === 'rejected')) {
-                hadAccountFailure = true
-            }
-            this.logFailures(
+            const accountPass = await syncAccountsPhase(
+                addresses,
+                network,
                 'account',
-                accountResults,
-                network,
-                i => accounts[i]?.address,
             )
-            if (this.hasRateLimitFailure(accountResults)) {
-                hasRateLimitError = true
-            }
+            recordOutcome(accountPass)
+            if (accountPass.hasFailure) hadAccountFailure = true
 
-            // Only moves once this pass has demonstrably persisted state
-            // covering it — see advanceLastRefreshedRound.
-            this.advanceLastRefreshedRound(
-                network,
-                accountResults,
+            const round = resolveCheckpointRound(
+                accountPass.results,
                 shouldRefreshRound,
             )
+            if (round !== null) {
+                this.deps.stores.setLastRefreshedRound(network, round)
+            }
 
             // Invalidation forces a wide DB re-read per account, so skip the
             // unchanged ones — which is the common tick.
-            const changedAddresses = accounts
-                .map((a, i) => {
-                    const r = accountResults[i]
-                    return r.status === 'fulfilled' && r.value?.changed
-                        ? a.address
-                        : null
-                })
-                .filter((address): address is string => address !== null)
-            const anyHoldingsChanged = accountResults.some(
-                r => r.status === 'fulfilled' && r.value?.holdingsChanged,
-            )
+            const { changedAddresses } = accountPass
             if (changedAddresses.length > 0) {
                 this.debouncedInvalidate('accounts', () =>
                     invalidateAccountQueriesForAddresses(
@@ -581,67 +488,33 @@ export class SyncService {
                 )
             }
 
-            // 2. Asset metadata + prices. The whole-portfolio reads are
-            // expensive, so gate them on a holdings change or the coarse
-            // interval rather than running every tick.
             const nowMs = Date.now()
-            const syncAssets =
-                anyHoldingsChanged ||
-                nowMs - (this.lastAssetSyncAt.get(network) ?? 0) >=
-                    ASSET_RESYNC_INTERVAL_MS
-            const syncPrices =
-                anyHoldingsChanged ||
-                nowMs - (this.lastPriceSyncAt.get(network) ?? 0) >=
-                    PRICE_RESYNC_INTERVAL_MS
-
-            if (syncAssets || syncPrices) {
-                // Fetched and stored under the active network so DB JOINs line up.
-                const assetIds = await getAllHeldAssetIdsForNetwork({ network })
-                const tasks: Array<{
-                    kind: 'assets' | 'prices'
-                    run: () => Promise<void>
-                }> = []
-                if (syncAssets) {
-                    tasks.push({
-                        kind: 'assets',
-                        run: () => fetchAndPersistAssets(assetIds, network),
-                    })
-                }
-                if (syncPrices) {
-                    tasks.push({
-                        kind: 'prices',
-                        run: () => fetchAndPersistPrices(assetIds, network),
-                    })
-                }
-
-                const assetResults = await Promise.allSettled(
-                    tasks.map(t => t.run()),
-                )
-                recordOutcomes(assetResults)
-                this.logFailures(
-                    'asset-metadata-or-prices',
-                    assetResults,
+            const dueKinds = this.dueAssetKinds(
+                network,
+                nowMs,
+                accountPass.hasHoldingsChanged,
+            )
+            if (dueKinds.length > 0) {
+                const assetPass = await syncAssetsPhase(
                     network,
-                    i => tasks[i]?.kind,
+                    dueKinds,
+                    'asset-metadata-or-prices',
                 )
-                if (this.hasRateLimitFailure(assetResults)) {
-                    hasRateLimitError = true
-                }
+                recordOutcome(assetPass)
                 // Only on success, so a failed pass retries next tick instead of
                 // waiting out the interval.
-                assetResults.forEach((r, i) => {
-                    if (r.status !== 'fulfilled') return
-                    if (tasks[i].kind === 'assets') {
-                        this.lastAssetSyncAt.set(network, nowMs)
-                    } else {
-                        this.lastPriceSyncAt.set(network, nowMs)
-                    }
-                })
+                for (const kind of assetPass.succeededKinds) {
+                    const lastSyncAt =
+                        kind === 'assets'
+                            ? this.lastAssetSyncAt
+                            : this.lastPriceSyncAt
+                    lastSyncAt.set(network, nowMs)
+                }
                 // Skipped when every batch was rejected. Account queries go too:
                 // the balance/holdings read joins in metadata + price, and any
                 // account may hold the new assets, so this one is necessarily
                 // broad.
-                if (assetResults.some(r => r.status === 'fulfilled')) {
+                if (assetPass.hasSuccess) {
                     this.debouncedInvalidate('assets', () =>
                         invalidateAssetQueries(this.deps.queryClient),
                     )
@@ -651,25 +524,15 @@ export class SyncService {
                 }
             }
 
-            // 4. Sync recent transactions for each account
-            const txResults = await mapWithConcurrency(
-                accounts,
-                ACCOUNT_FETCH_CONCURRENCY,
-                a => fetchAndPersistTransactions(a.address, network),
-            )
-            recordOutcomes(txResults)
-            this.logFailures(
-                'transactions',
-                txResults,
+            const txPass = await syncTransactionsPhase(
+                addresses,
                 network,
-                i => accounts[i]?.address,
+                'transactions',
             )
-            if (this.hasRateLimitFailure(txResults)) {
-                hasRateLimitError = true
-            }
+            recordOutcome(txPass)
             // Skipped when every fetch was rejected — invalidation forces a DB
             // re-read with no new data to surface.
-            if (txResults.some(r => r.status === 'fulfilled')) {
+            if (txPass.hasSuccess) {
                 this.debouncedInvalidate('transactions', () =>
                     invalidateTransactionQueries(this.deps.queryClient),
                 )
@@ -686,45 +549,29 @@ export class SyncService {
         }
     }
 
-    private logFailures(
-        phase: string,
-        results: PromiseSettledResult<unknown>[],
+    // The whole-portfolio asset reads are expensive, so each kind runs on a
+    // holdings change or once its coarse interval has elapsed, not every tick.
+    private dueAssetKinds(
         network: Network,
-        subject: (index: number) => Optional<string>,
-    ): void {
-        results.forEach((result, index) => {
-            if (result.status !== 'rejected') return
-            // Rate limits are handled separately via backoff — skip noise.
-            if (
-                result.reason instanceof Error &&
-                result.reason.message.includes('429')
-            ) {
-                return
-            }
-            logger.warn('Sync step failed', {
-                phase,
-                network,
-                subject: subject(index),
-                error:
-                    result.reason instanceof Error
-                        ? {
-                              message: result.reason.message,
-                              stack: result.reason.stack,
-                          }
-                        : result.reason,
-            })
-        })
-    }
-
-    private hasRateLimitFailure(
-        results: PromiseSettledResult<unknown>[],
-    ): boolean {
-        return results.some(
-            r =>
-                r.status === 'rejected' &&
-                r.reason instanceof Error &&
-                r.reason.message.includes('429'),
-        )
+        nowMs: number,
+        hasHoldingsChanged: boolean,
+    ): AssetSyncKind[] {
+        const kinds: AssetSyncKind[] = []
+        if (
+            hasHoldingsChanged ||
+            nowMs - (this.lastAssetSyncAt.get(network) ?? 0) >=
+                ASSET_RESYNC_INTERVAL_MS
+        ) {
+            kinds.push('assets')
+        }
+        if (
+            hasHoldingsChanged ||
+            nowMs - (this.lastPriceSyncAt.get(network) ?? 0) >=
+                PRICE_RESYNC_INTERVAL_MS
+        ) {
+            kinds.push('prices')
+        }
+        return kinds
     }
 
     invalidateQueries(): void {
@@ -751,53 +598,28 @@ export class SyncService {
     ): Promise<void> {
         if (addresses.length === 0) return
 
-        const accountResults = await mapWithConcurrency(
+        const accountPass = await syncAccountsPhase(
             addresses,
-            ACCOUNT_FETCH_CONCURRENCY,
-            a => fetchAndPersistAccount(a, network),
-        )
-        const txResults = await mapWithConcurrency(
-            addresses,
-            ACCOUNT_FETCH_CONCURRENCY,
-            a => fetchAndPersistTransactions(a, network),
-        )
-
-        this.logFailures(
+            network,
             'refresh-accounts',
-            accountResults,
-            network,
-            i => addresses[i],
         )
-        this.logFailures(
-            'refresh-transactions',
-            txResults,
-            network,
-            i => addresses[i],
-        )
+        await syncTransactionsPhase(addresses, network, 'refresh-transactions')
 
         // New holdings land here with no metadata or price, so the asset row
         // renders a skeleton. Enrich immediately rather than waiting for the
         // coarse tick, which by then sees the holding already persisted
         // (holdingsChanged === false) and won't fetch until the interval elapses.
-        const anyHoldingsChanged = accountResults.some(
-            r => r.status === 'fulfilled' && r.value?.holdingsChanged,
-        )
-        if (anyHoldingsChanged) {
+        const { hasHoldingsChanged } = accountPass
+        if (hasHoldingsChanged) {
             // Self-contained so a read failure here can't skip the invalidations
             // below. refreshAccounts logs but never throws.
             try {
-                const assetIds = await getAllHeldAssetIdsForNetwork({ network })
-                const assetResults = await Promise.allSettled([
-                    fetchAndPersistAssets(assetIds, network),
-                    fetchAndPersistPrices(assetIds, network),
-                ])
-                this.logFailures(
-                    'refresh-asset-metadata-or-prices',
-                    assetResults,
+                const assetPass = await syncAssetsPhase(
                     network,
-                    i => (i === 0 ? 'assets' : 'prices'),
+                    ['assets', 'prices'],
+                    'refresh-asset-metadata-or-prices',
                 )
-                if (assetResults.some(r => r.status === 'fulfilled')) {
+                if (assetPass.hasSuccess) {
                     invalidateAssetQueries(this.deps.queryClient)
                 }
             } catch (error) {
@@ -816,7 +638,7 @@ export class SyncService {
         // prices), so match the tick's broad accounts pass in that case.
         // Otherwise scope to the refreshed addresses — including the
         // multi-account wealth chart, which must reflect the send immediately.
-        if (anyHoldingsChanged) {
+        if (hasHoldingsChanged) {
             invalidateAccountQueries(this.deps.queryClient)
         } else {
             invalidateAccountQueriesForAddresses(

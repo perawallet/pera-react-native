@@ -37,6 +37,7 @@ const {
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
+    createBackupSyncStoreSources: () => ({}),
     initializeBackupSyncManager: initializeMock,
     getBackupSyncManager: () => managerMock,
     useCloudBackupImport: () => ({ importAccounts: importAccountsMock }),

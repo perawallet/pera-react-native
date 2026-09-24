@@ -18,7 +18,10 @@ import {
     derivePQKeygenSeed,
 } from '@perawallet/wallet-core-blockchain'
 import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
-import { initializeSyncService } from '@perawallet/wallet-core-background'
+import {
+    createSyncStorePorts,
+    initializeSyncService,
+} from '@perawallet/wallet-core-background'
 import {
     initializeDatabase,
     getDatabase,
@@ -237,6 +240,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
                 initializeSyncService({
                     queryClient,
+                    stores: createSyncStorePorts(),
                     registerCompletionHandler: setOnConfirmedHandler,
                 })
 

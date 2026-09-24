@@ -66,11 +66,11 @@ const {
     storedDeviceId: { current: null as string | null },
     accountsState: { current: [] as { address: string; name?: string }[] },
     accountsListeners: {
-        current: [] as ((state: { accounts: unknown[] }) => void)[],
+        current: [] as ((accounts: unknown[]) => void)[],
     },
     contactsState: { current: [] as { address: string; name: string }[] },
     contactsListeners: {
-        current: [] as ((state: { contacts: unknown[] }) => void)[],
+        current: [] as ((contacts: unknown[]) => void)[],
     },
 }))
 
@@ -106,10 +106,6 @@ vi.mock('../webSocketClient', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
-}))
-
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: {
         getState: () => ({ deviceIDs: new Map([['mainnet', 'dev-id']]) }),
@@ -142,33 +138,11 @@ vi.mock('../../store', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountsStore: {
-        getState: () => ({ accounts: accountsState.current }),
-        subscribe: (listener: (state: { accounts: unknown[] }) => void) => {
-            accountsListeners.current.push(listener)
-            return () => {
-                accountsListeners.current = accountsListeners.current.filter(
-                    entry => entry !== listener,
-                )
-            }
-        },
-    },
-}))
-
-vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContactsStore: {
-        getState: () => ({ contacts: contactsState.current }),
-        subscribe: (listener: (state: { contacts: unknown[] }) => void) => {
-            contactsListeners.current.push(listener)
-            return () => {
-                contactsListeners.current = contactsListeners.current.filter(
-                    entry => entry !== listener,
-                )
-            }
-        },
-    },
-}))
+// Empty stubs keep the real store packages out of the module graph; the
+// manager reaches their state only through the injected sources.
+vi.mock('@perawallet/wallet-core-accounts', () => ({}))
+vi.mock('@perawallet/wallet-core-contacts', () => ({}))
+vi.mock('@perawallet/wallet-core-blockchain', () => ({}))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { backupBaseUrl: 'https://backup.example.com' },
@@ -207,13 +181,34 @@ import {
 } from '../backupSyncManager'
 import { BackupItemStatus, accountItemKey, secretsItemKey } from '../../models'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import type { BackupSyncSources } from '../types'
 
 // Must match the key mockWithBackupItemKey hands the manager.
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
+const subscribeTo =
+    <T>(listeners: { current: ((items: T[]) => void)[] }) =>
+    (listener: (items: T[]) => void) => {
+        listeners.current.push(listener)
+        return () => {
+            listeners.current = listeners.current.filter(
+                entry => entry !== listener,
+            )
+        }
+    }
+
+const makeSources = (): BackupSyncSources => ({
+    getNetwork: () => 'mainnet',
+    listAccounts: () => accountsState.current as never,
+    subscribeAccounts: subscribeTo(accountsListeners as never),
+    listContacts: () => contactsState.current as never,
+    subscribeContacts: subscribeTo(contactsListeners as never),
+})
+
 const makeDeps = () => ({
+    sources: makeSources(),
     importAccounts: vi.fn(async () => ({
         imported: 0,
         skippedDuplicate: 0,
@@ -227,14 +222,14 @@ const makeDeps = () => ({
 const setAccounts = (accounts: { address: string; name?: string }[]) => {
     accountsState.current = accounts
     for (const listener of [...accountsListeners.current]) {
-        listener({ accounts })
+        listener(accounts)
     }
 }
 
 const setContacts = (contacts: { address: string; name: string }[]) => {
     contactsState.current = contacts
     for (const listener of [...contactsListeners.current]) {
-        listener({ contacts })
+        listener(contacts)
     }
 }
 
@@ -504,6 +499,31 @@ describe('BackupSyncManager', () => {
             expect(await mgr.deleteAccountFromBackup(ADDR)).toBe('queued')
             mgr.stop()
         })
+    })
+
+    it('reads and writes backup state through an injected state port', async () => {
+        const state = {
+            getBackupId: () => 'injected-backup',
+            getDeviceId: () => 'injected-device',
+            getSyncState: () => null,
+            setSyncState: vi.fn(),
+            setIsSyncing: vi.fn(),
+            reset: vi.fn(),
+        }
+        const mgr = new BackupSyncManager({ ...makeDeps(), state })
+
+        await mgr.syncNow()
+
+        expect(mockSyncBackup).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backupId: 'injected-backup',
+                deviceId: 'injected-device',
+            }),
+            expect.objectContaining({ backupId: 'injected-backup' }),
+        )
+        expect(state.setIsSyncing).toHaveBeenCalledWith(true)
+        expect(state.setSyncState).toHaveBeenCalledOnce()
+        expect(mockSetSyncState).not.toHaveBeenCalled()
     })
 
     it('getBackupSyncManager returns the instance from initializeBackupSyncManager', () => {

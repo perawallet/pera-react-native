@@ -30,6 +30,7 @@ import {
 } from '@perawallet/wallet-core-database'
 import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
 import {
+    createSyncStorePorts,
     getSyncService,
     initializeSyncService,
 } from '@perawallet/wallet-core-background'
@@ -108,6 +109,7 @@ export const runOffscreenApp = async (): Promise<void> => {
 
     initializeSyncService({
         queryClient,
+        stores: createSyncStorePorts(),
         pollIntervalMs: OFFSCREEN_POLL_INTERVAL_MS,
     })
     getSyncService().start()

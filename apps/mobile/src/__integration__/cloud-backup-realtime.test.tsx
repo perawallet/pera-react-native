@@ -38,6 +38,7 @@ import {
     useResolveMnemonicForBackup,
     useCloudBackupStore,
     useBackupSyncStateStore,
+    createBackupSyncStoreSources,
     initializeBackupSyncManager,
     BackupAccountType,
     type BackupSyncManager,
@@ -146,6 +147,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
             )
 
             manager = initializeBackupSyncManager({
+                sources: createBackupSyncStoreSources(),
                 importAccounts: importHook.current.importAccounts,
                 importContacts: contactImportHook.current.importContacts,
                 resolveMnemonic: mnemonicHook.current,
