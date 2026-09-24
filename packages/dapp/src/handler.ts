@@ -13,12 +13,12 @@
 import type { Network } from '@perawallet/wallet-core-config'
 import type {
     ConnectionHandler,
-    ConnectionHandlerContext,
     ConnectionProposal,
     WalletNotice,
     WalletOperationResult,
     WalletOperationType,
 } from '@perawallet/wallet-core-connections'
+import { createHandlerKit } from '@perawallet/wallet-core-connections/handlerKit'
 import {
     encodeToBase64,
     generateOrderedUniqueId,
@@ -121,20 +121,19 @@ export const createDappConnectionHandler = (
     const proposalTtlMs = deps.proposalTtlMs ?? DAPP_PROPOSAL_TTL_MS
     const requestTtlMs = deps.requestTtlMs ?? DAPP_REQUEST_TTL_MS
 
-    let context: ConnectionHandlerContext | null = null
+    const kit = createHandlerKit(DAPP_KIND, {
+        logTag: '[dapp]',
+        notInitializedError: () => new Error('dapp handler is not initialized'),
+    })
+    const { requireContext, store } = kit
     let unsubscribe: (() => void) | null = null
     const openProposals = new Set<string>()
     const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
 
-    const requireContext = (): ConnectionHandlerContext => {
-        if (!context) throw new Error('dapp handler is not initialized')
-        return context
-    }
-
     const getConnection = async (
         origin: string,
     ): Promise<DappConnection | undefined> => {
-        const connection = await requireContext().store.get(origin)
+        const connection = await store().get(origin)
         return connection && isDappConnection(connection)
             ? connection
             : undefined
@@ -250,7 +249,7 @@ export const createDappConnectionHandler = (
             )
         }
         if (existing) {
-            await requireContext().store.upsert({
+            await store().upsert({
                 ...existing,
                 lastActiveAt: now(),
             })
@@ -313,7 +312,7 @@ export const createDappConnectionHandler = (
                     lastActiveAt: now(),
                 }
                 try {
-                    await requireContext().store.upsert(connection)
+                    await store().upsert(connection)
                 } finally {
                     // Freed only once the record exists (or the attempt has
                     // failed): a second tab claiming the slot mid-upsert would
@@ -427,7 +426,7 @@ export const createDappConnectionHandler = (
                 settle()
             },
         })
-        await requireContext().store.upsert({
+        await store().upsert({
             ...connection,
             lastActiveAt: now(),
         })
@@ -436,7 +435,7 @@ export const createDappConnectionHandler = (
     const disconnect = async (id: ConnectionId): Promise<void> => {
         const connection = await getConnection(id)
         if (!connection) return
-        await requireContext().store.remove(id)
+        await store().remove(id)
         await deps.transport
             .notify(id, {
                 jsonrpc: '2.0',
@@ -518,12 +517,12 @@ export const createDappConnectionHandler = (
     }
 
     const restore = async (): Promise<DappConnection[]> =>
-        (await requireContext().store.list()).filter(isDappConnection)
+        (await store().list()).filter(isDappConnection)
 
     return {
         kind: DAPP_KIND,
         async initialize(ctx) {
-            context = ctx
+            kit.attach(ctx)
             unsubscribe = deps.transport.onRequest(onRequest)
         },
         async teardown() {
@@ -532,7 +531,7 @@ export const createDappConnectionHandler = (
             pendingTimers.forEach(timer => clearTimeout(timer))
             pendingTimers.clear()
             openProposals.clear()
-            context = null
+            kit.detach()
         },
         disconnect,
         async disconnectAll() {

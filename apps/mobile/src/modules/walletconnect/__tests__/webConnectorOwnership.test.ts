@@ -146,13 +146,15 @@ const toRepoRelativePosixPath = (path: string): string =>
 // The complete, explicit set of files permitted to own a WalletConnect v1
 // connector: the two connection-layer modules that construct/register the
 // real SDK class, and the v1 connection handler, which hands a connector to
-// the registry via `registerConnector`/`setConnectorHandlerBinder`. On web
+// the registry via `registerConnector`/`setConnectorHandlerBinder` (its
+// restore path, which re-registers revived sockets, lives in `v1/restore.ts`). On web
 // the handler is instantiated only from the offscreen document, never the
 // service worker or a content script; no UI-realm module may own one.
 const ALLOWED_CONNECTOR_OWNERS = [
     'packages/walletconnect/src/connection/createConnector.ts',
     'packages/walletconnect/src/connection/connectorRegistry.ts',
     'packages/walletconnect/src/v1/handler.ts',
+    'packages/walletconnect/src/v1/restore.ts',
 ].sort()
 
 describe('web connector ownership', () => {

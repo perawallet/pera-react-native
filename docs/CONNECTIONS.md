@@ -23,6 +23,11 @@ sign request it is holding for the user, since answering late would only fail on
 `src/testing/handler-contract.ts` is the contract suite every handler runs against. An assertion a
 legitimate handler cannot satisfy is an interface finding, not a reason to bend the handler.
 
+`src/handlerKit.ts` (`createHandlerKit`) is the scaffolding a handler closure would otherwise
+repeat: the context guard, error reporting with pairing/connection scopes, `lastActiveAt` stamping
+and pending pair-time origins. Handlers import it from the `./handlerKit` subpath, not the barrel,
+which would pull signing and blockchain into the walletconnect and dapp module graphs.
+
 ## Client and host surfaces
 
 `ConnectionRegistry` is split by type. `ConnectionRegistryClient` is what a UI context holds: pair,

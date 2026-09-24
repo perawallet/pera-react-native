@@ -10,21 +10,15 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-connections'
+import type WalletConnect from '@perawallet/walletconnect'
+import type { ConnectionErrorScope } from '@perawallet/wallet-core-connections'
+import {
+    connectionScope,
+    pairingScope,
+} from '@perawallet/wallet-core-connections/handlerKit'
 
-export * from './errors'
-export * from './models'
-export * from './schema'
-export * from './validate'
-export * from './handler'
-export * from './handlerKit'
-export * from './registry'
-export * from './signing-adapter'
-export * from './store'
-export * from './pairingOutcome'
-export * from './pairing'
-export * from './proposalQueue'
-export * from './context'
-export * from './activeRegistry'
-export * from './boot'
-export * from './settingsReadModel'
+// `connected` flips inside `approveSession`: exactly "has this pairing become a session".
+export const scopeFor = (connector: WalletConnect): ConnectionErrorScope =>
+    connector.connected
+        ? connectionScope(connector.clientId)
+        : pairingScope(connector.clientId)
