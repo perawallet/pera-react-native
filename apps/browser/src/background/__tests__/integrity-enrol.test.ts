@@ -49,9 +49,18 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', async () => {
     >('@perawallet/wallet-extension-platform-chrome')
     return {
         ...actual,
+        ensureDeviceInstallationID: async () => 'install-1',
+    }
+})
+
+vi.mock('@perawallet/wallet-core-browser-runtime', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-browser-runtime')
+    >('@perawallet/wallet-core-browser-runtime')
+    return {
+        ...actual,
         getInstallKeyId: mockGetInstallKeyId,
         exportInstallPublicKey: async () => 'spki-b64',
-        ensureDeviceInstallationID: async () => 'install-1',
         clearInstallKey: mockClearInstallKey,
         clearSessionIntegrityToken: mockClearSessionIntegrityToken,
         getEnrolmentMarker: async (network: string) =>

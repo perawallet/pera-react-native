@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import {
-    getSurface,
-    openExpandedTab,
-} from '@perawallet/wallet-extension-platform-chrome'
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+import { openExpandedTab } from '@perawallet/wallet-core-browser-runtime'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { UseLedgerExpandedTabHandoffResult } from './useLedgerExpandedTabHandoff'
 

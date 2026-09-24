@@ -144,6 +144,7 @@ pera-react-native/
 │   ├── accounts/            # Account management and state
 │   ├── assets/              # Asset management
 │   ├── blockchain/          # Algorand-specific code (node/indexer)
+│   ├── browser-runtime/     # Browser extension runtime (message routing, dApp/WC plumbing)
 │   ├── config/              # Configuration and environment
 │   ├── database/            # Local persistence
 │   ├── devtools/            # Development tools

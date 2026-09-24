@@ -17,7 +17,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import {
     openExpandedTab,
     type ExpandedFlow,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 
 const useStyles = makeStyles(theme => ({
     container: {

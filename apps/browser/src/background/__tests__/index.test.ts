@@ -26,11 +26,10 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome/vault/autolock', () => ({
 // index.ts pulls in the dapp relay + passkey relay wiring, which is out of
 // scope here — only the onAlarm dispatch (heartbeat, integrity, auto-lock) is under
 // test, so those classes are stubbed to inert no-ops.
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     ApprovalWindowBridge: class {
         listen = vi.fn()
     },
-    DB_CONTROL_SCOPE: 'pera-db-control',
     PasskeyRouter: class {
         listen = vi.fn()
     },
@@ -41,6 +40,10 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     // so a currently-green suite can still throw vitest's "no export
     // defined on mock" the moment a future test does that.
     isWcPagePairMessage: vi.fn().mockReturnValue(false),
+}))
+
+vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+    DB_CONTROL_SCOPE: 'pera-db-control',
     ensureDeviceInstallationID: vi.fn(),
     startStorageProxyHost: vi.fn(),
     // ../push calls this at module scope via installPushHandlers; returning

@@ -35,7 +35,7 @@ import {
     type ConnectionApprovalRequest,
     type ConnectionsControlCommand,
     type ConnectionsEvent,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { startConnectionsHost, type ConnectionsHost } from '../connectionsHost'
 
 // The repo-wide unit setup stubs both packages down to a few hook exports;

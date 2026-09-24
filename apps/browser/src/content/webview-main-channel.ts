@@ -17,12 +17,12 @@
 // only in the RPC surface they install afterward (window.peraMobileInterface
 // vs window.bidaliProvider) — that surface-specific logic stays in each call
 // site's own file.
-import type { DiscoverChannelHandshake } from '@perawallet/wallet-extension-platform-chrome'
+import type { DiscoverChannelHandshake } from '@perawallet/wallet-core-browser-runtime'
 import {
     WEBVIEW_BRIDGE_TOKEN_PARAM,
     WEBVIEW_BRIDGE_HANDSHAKE_EVENT,
     WEBVIEW_BRIDGE_RELAY_READY_EVENT,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 
 export type WebviewMainChannel = {
     token: string

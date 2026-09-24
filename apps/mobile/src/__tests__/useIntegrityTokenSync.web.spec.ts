@@ -16,7 +16,7 @@ import {
     INTEGRITY_TOKEN_SESSION_KEY,
     clearSessionIntegrityToken,
     putSessionIntegrityToken,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { config } from '@perawallet/wallet-core-config'
 import { setIntegrityTokenProvider } from '@perawallet/wallet-core-shared'
 import {

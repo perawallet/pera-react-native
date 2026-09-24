@@ -87,14 +87,18 @@ const {
 
 vi.mock('../connections/connectionsHost', () => ({ startConnectionsHost }))
 
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     createChromeDappTransport,
-    createWorkerExecutor: vi.fn(() => ({ onDeath: vi.fn() })),
     onLocalStorageKeyChanged,
-    startDatabaseHost: vi.fn(() => ({ setReady: vi.fn() })),
     onConnectionsControlMessage,
     sendConnectionApprovalRequest,
     broadcastConnectionsEvent,
+}))
+vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+    startDatabaseHost: vi.fn(() => ({ setReady: vi.fn() })),
+}))
+vi.mock('../worker-executor', () => ({
+    createWorkerExecutor: vi.fn(() => ({ onDeath: vi.fn() })),
 }))
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     getPlatformServices: vi.fn(() => ({ database: {} })),
@@ -237,7 +241,7 @@ describe('runOffscreenApp connections wiring', () => {
         expect(options.getNetwork()).toBe('mainnet')
     })
 
-    it('starts the host with the platform-chrome senders and subscribes the control handler', async () => {
+    it('starts the host with the browser-runtime senders and subscribes the control handler', async () => {
         await boot()
 
         expect(startConnectionsHost).toHaveBeenCalledTimes(1)

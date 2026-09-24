@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { consumeInitialExpandedFlow } from '@perawallet/wallet-extension-platform-chrome'
+import { consumeInitialExpandedFlow } from '@perawallet/wallet-core-browser-runtime'
 import { useIsOnboarding } from '@modules/onboarding'
 
 export type ExpandedFlowScreen = 'AddAccount' | 'BackupWallet' | 'ScanQR'

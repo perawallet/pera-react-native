@@ -17,6 +17,7 @@
         "@perawallet/wallet-core-assets": "workspace:*",
         "@perawallet/wallet-core-background": "workspace:*",
         "@perawallet/wallet-core-blockchain": "workspace:*",
+        "@perawallet/wallet-core-browser-runtime": "workspace:*",
         "@perawallet/wallet-core-config": "workspace:*",
         "@perawallet/wallet-core-connections": "workspace:*",
         "@perawallet/wallet-core-dapp": "workspace:*",

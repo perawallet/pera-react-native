@@ -11,9 +11,9 @@ Source of truth in code:
 - Handler: `packages/dapp/src/handler.ts`
 - Page provider: `apps/browser/src/content/inject-main.ts`, relayed by
   `apps/browser/src/content/relay-isolated.ts`
-- Extension transport: `extensions/platform-chrome/src/dapp/dapp-wire.ts`,
-  `extensions/platform-chrome/src/dapp/transport.ts`,
-  `extensions/platform-chrome/src/dapp/host-client.ts`,
+- Extension transport: `packages/browser-runtime/src/dapp/dapp-wire.ts`,
+  `packages/browser-runtime/src/dapp/transport.ts`,
+  `packages/browser-runtime/src/dapp/host-client.ts`,
   `apps/browser/src/background/dapp.ts`
 
 ## Why a Pera namespace

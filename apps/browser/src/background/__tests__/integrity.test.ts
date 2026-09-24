@@ -72,9 +72,18 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', async () => {
     >('@perawallet/wallet-extension-platform-chrome')
     return {
         ...actual,
+        ensureDeviceInstallationID: async () => 'install-1',
+    }
+})
+
+vi.mock('@perawallet/wallet-core-browser-runtime', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-browser-runtime')
+    >('@perawallet/wallet-core-browser-runtime')
+    return {
+        ...actual,
         signChallenge: mockSignChallenge,
         exportInstallPublicKey: mockExportPublicKey,
-        ensureDeviceInstallationID: async () => 'install-1',
         // Real implementations touch IndexedDB / chrome.storage internals this
         // suite doesn't otherwise exercise — mocked so the 403 tests can assert
         // on call counts directly instead of inspecting storage side effects.
@@ -162,7 +171,7 @@ describe('ensureIntegrityToken', () => {
     it('mints and persists a token when none exists', async () => {
         const { ensureIntegrityToken } = await import('../integrity')
         const { getSessionIntegrityToken } =
-            await import('@perawallet/wallet-extension-platform-chrome')
+            await import('@perawallet/wallet-core-browser-runtime')
 
         await ensureIntegrityToken()
 
@@ -393,7 +402,7 @@ describe('ensureIntegrityToken', () => {
         )
         const { ensureIntegrityToken } = await import('../integrity')
         const { INTEGRITY_BACKOFF_SESSION_KEY } =
-            await import('@perawallet/wallet-extension-platform-chrome')
+            await import('@perawallet/wallet-core-browser-runtime')
 
         await ensureIntegrityToken()
         expect(fake.session.get(INTEGRITY_BACKOFF_SESSION_KEY)).toBeDefined()
@@ -412,7 +421,7 @@ describe('ensureIntegrityToken', () => {
         )
         const { ensureIntegrityToken } = await import('../integrity')
         const { INTEGRITY_BACKOFF_SESSION_KEY } =
-            await import('@perawallet/wallet-extension-platform-chrome')
+            await import('@perawallet/wallet-core-browser-runtime')
 
         // Delays double each time (5, 10, 20, 40min); the 5th failure would be
         // 80min uncapped — this only proves the clamp if driven far enough.

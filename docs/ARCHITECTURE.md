@@ -58,10 +58,13 @@ stub that throws if it is ever reached, and each app's bundler aliases it to a c
 `platform-chrome` on web, `platform-react-native` on native (see `apps/mobile/metro.config.js`).
 Business logic in `packages/*` reaches the resolved services only through `getProvider()`
 (`extensions/provider`), so it depends on the interface and never on a platform. That is what keeps
-`chrome.*` out of `packages/` entirely. The provider is built when that module first loads; there is
-no initialisation call. In-memory test doubles for the contract ship from
-`@perawallet/wallet-extension-platform/test-utils`, never the main entry, so the contract carries no
-React or React Query.
+`chrome.*` out of `packages/`, with one deliberate exception: `packages/browser-runtime` is the
+extension's MV3 runtime (message routing between realms, dApp, WalletConnect, passkey and integrity
+plumbing), which lives under `packages/` only because it depends on business packages, and which
+only web code imports (see [Browser architecture](BROWSER_ARCHITECTURE.md#driver-and-runtime)). The
+provider is built when that module first loads; there is no initialisation call. In-memory test
+doubles for the contract ship from `@perawallet/wallet-extension-platform/test-utils`, never the main
+entry, so the contract carries no React or React Query.
 
 Two platform concerns are swapped by module identity rather than through that interface, and are easy
 to miss when tracing: the keystore engine and the Ledger transports (`.web.ts` twins in
@@ -83,7 +86,7 @@ when `platform === 'web'`.
 
 A lint rule (`pera/no-chrome-imports-outside-web`, enforced by `pnpm lint:lanekeep`) checks the
 boundary in the direction that actually matters: a file that is not `.web.*` may not import
-`platform-chrome` or `keystore-chrome`, because such a file is reachable from the native bundle and
+`platform-chrome`, `keystore-chrome` or `browser-runtime`, because such a file is reachable from the native bundle and
 would fail at runtime on the missing `chrome` global.
 
 ### Turning features off per platform

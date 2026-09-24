@@ -14,10 +14,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useDeepLink } from '@modules/deeplink'
 import { useLanguage } from '@hooks/useLanguage'
 import { logger } from '@perawallet/wallet-core-shared'
-import {
-    getSurface,
-    openExpandedTab,
-} from '@perawallet/wallet-extension-platform-chrome'
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+import { openExpandedTab } from '@perawallet/wallet-core-browser-runtime'
 import {
     PWButton,
     PWInput,
