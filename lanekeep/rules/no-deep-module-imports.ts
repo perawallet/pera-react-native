@@ -4,6 +4,7 @@
 
 import { defineRule } from 'lanekeep'
 import { withoutTests } from '../shared/scope.js'
+import { resolveRelative } from '../shared/paths.js'
 
 const MODULES_DIR = 'apps/mobile/src/modules/'
 
@@ -38,16 +39,6 @@ const moduleOf = (filePath: string): string | undefined => {
     const at = filePath.indexOf(MODULES_DIR)
     if (at === -1) return undefined
     return filePath.slice(at + MODULES_DIR.length).split('/')[0]
-}
-
-// Rules run inside lanekeep's own runtime, so no node:path.
-const resolveRelative = (filePath: string, specifier: string): string => {
-    const parts = filePath.split('/').slice(0, -1)
-    for (const segment of specifier.split('/')) {
-        if (segment === '..') parts.pop()
-        else if (segment !== '.') parts.push(segment)
-    }
-    return parts.join('/')
 }
 
 /** `[module, rest]` for a specifier that lands in apps/mobile/src/modules, else undefined. */
