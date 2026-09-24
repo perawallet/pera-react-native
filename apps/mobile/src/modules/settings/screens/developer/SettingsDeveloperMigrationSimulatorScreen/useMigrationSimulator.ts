@@ -12,6 +12,7 @@
 
 import { useEffect } from 'react'
 import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useMigrationSimulatorStore,
     type ResultRow,
@@ -30,6 +31,7 @@ type UseMigrationSimulatorResult = {
     lastGenerated: Record<string, { version: number; at: number }>
     results: ResultRow[]
     isWorking: boolean
+    canSimulate: boolean
     generate: () => Promise<void>
     generatePreSixxAccounts: () => Promise<void>
     reset: () => Promise<void>
@@ -76,6 +78,7 @@ export const useMigrationSimulator = (): UseMigrationSimulatorResult => {
         state => state.generatePreSixxAccounts,
     )
     const reset = useMigrationSimulatorStore(state => state.reset)
+    const canSimulate = getProvider().migration.devTools !== undefined
 
     return {
         plans,
@@ -90,6 +93,7 @@ export const useMigrationSimulator = (): UseMigrationSimulatorResult => {
         lastGenerated,
         results,
         isWorking,
+        canSimulate,
         generate,
         generatePreSixxAccounts,
         reset,

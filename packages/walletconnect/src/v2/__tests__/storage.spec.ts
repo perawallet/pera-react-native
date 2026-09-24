@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform'
+import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/test-utils'
 import {
     clearWalletConnectV2Storage,
     createWalletConnectV2Storage,

@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { config, Networks } from '@perawallet/wallet-core-config'
-import { createWrapper } from '@perawallet/wallet-extension-platform'
+import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useInboxStatus } from '../useInboxStatus'
 import {

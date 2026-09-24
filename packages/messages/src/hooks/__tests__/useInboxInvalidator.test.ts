@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { createWrapper } from '@perawallet/wallet-extension-platform'
+import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { useInboxInvalidator } from '../useInboxInvalidator'
 import { useQueryClient } from '@tanstack/react-query'
 import { invalidateAllPredicate } from '../querykeys'

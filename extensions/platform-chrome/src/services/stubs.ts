@@ -32,7 +32,6 @@ import type {
     MigrationPlanSummary,
     MigrationService,
     MigrationStepVersions,
-    SimulateLegacyDatabaseArgs,
     WalletProvisioningCardStatus,
     WalletProvisioningService,
     WalletProvisioningTokenizationStatus,
@@ -103,14 +102,6 @@ export class ChromeMigrationService implements MigrationService {
     async clearMigrationComplete(): Promise<void> {}
     async getMigrationPlans(): Promise<MigrationPlanSummary[]> {
         return []
-    }
-    async simulateLegacyDatabase(
-        _args: SimulateLegacyDatabaseArgs,
-    ): Promise<void> {
-        throw new Error('simulateLegacyDatabase is unavailable on web')
-    }
-    async simulatePreSixxAccounts(): Promise<void> {
-        throw new Error('simulatePreSixxAccounts is unavailable on web')
     }
     async resetLegacyData(): Promise<void> {}
     async getCompletedStepVersions(): Promise<MigrationStepVersions | null> {

@@ -36,10 +36,9 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 // `deviceInfo.getAppVersion()` is what `useDevice`'s registration payload
 // actually calls.
 vi.unmock('@perawallet/wallet-extension-platform-driver')
-// The real driver above imports `MemoryKeyValueStorage` (a value, not just a
-// type) from `@perawallet/wallet-extension-platform`; the default mock in
-// vitest.setup.ts only exports constants, so it must be unmocked too — same
-// pairing migration-inbox.test.tsx uses.
+// The contract is unmocked too so the real driver runs against its genuine
+// exports rather than the vitest.setup.ts stubs — same pairing
+// migration-inbox.test.tsx uses.
 vi.unmock('@perawallet/wallet-extension-platform')
 
 import { server, http, HttpResponse } from '@test-utils/msw-server'

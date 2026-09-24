@@ -30,8 +30,8 @@ import { Notifier } from 'react-native-notifier'
 // device via `useDevice().registerDevice` instead of a per-account PATCH, so
 // it reaches `getProvider().deviceInfo.getAppVersion()`. The default driver
 // mock in vitest.setup.ts predates that payload (its `deviceInfo` stub only
-// exposes `getVersion`) — unmock it (and the platform package it needs a real
-// `MemoryKeyValueStorage` from) to route `getProvider()` through the real
+// exposes `getVersion`) — unmock it (and the platform contract it runs
+// against) to route `getProvider()` through the real
 // in-memory driver at test-utils/platform-driver-test.ts. Mirrors
 // migration-inbox.test.tsx.
 vi.unmock('@perawallet/wallet-extension-platform-driver')
