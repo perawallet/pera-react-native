@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-// Ledger types, errors, and protocol constants live in the Ledger
-// extension (platform implementation of the hardware-wallet interface).
-// Re-exported here so callers that depend on the business-logic package
-// get the full Ledger surface from a single `@perawallet/wallet-core-ledger`
-// import. `RNLedgerService` / `WithLedgerExtension` / `name` are extension
-// internals and stay out of this barrel.
+// The transports throw these types, errors and constants, and an extension
+// may not depend on a business package, so they live in the ledger-shared
+// extension. This package is the facade over them (as kms is over the
+// keystore) so the app and signing import Ledger from one place. The
+// transport-only helpers (`createLedgerTransportWrapper`,
+// `resolveUsbDeviceModel`) stay out of this barrel.
 export type {
     LedgerDeviceModel,
     LedgerDevice,
@@ -25,6 +25,7 @@ export type {
     LedgerTransportProvider,
 } from '@perawallet/wallet-extension-ledger-shared'
 export {
+    LedgerError,
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
     LedgerAppOutdatedError,

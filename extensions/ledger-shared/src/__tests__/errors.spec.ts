@@ -149,94 +149,13 @@ describe('classifyLedgerError with @zondax/ledger-js returnCode', () => {
     })
 })
 
-describe('classifyLedgerError with HwTransportError (BLE scan/connect)', () => {
-    // Mirrors what @ledgerhq/react-native-hw-transport-ble emits after
-    // remapping a react-native-ble-plx BleError: name === 'HwTransportError',
-    // an optional `.type`, and the numeric BleErrorCode appended to the message.
-    const createHwTransportError = (
-        type: string | undefined,
-        originCode: number,
-        message = 'BleError',
-    ): Error => {
-        const error = new Error(`${message}. Origin: ${originCode}`)
+describe('classifyLedgerError with HwTransportError', () => {
+    it('leaves ble-plx origin codes to the BLE transport classifier', () => {
+        // The shared classifier is transport-neutral; mapping these codes
+        // belongs to the RN BLE transport.
+        const error = new Error('BleError. Origin: 601')
         error.name = 'HwTransportError'
-        if (type !== undefined) {
-            ;(error as unknown as { type: string }).type = type
-        }
-        return error
-    }
-
-    it('classifies LocationServicesDisabled type as LedgerLocationServicesDisabledError', () => {
-        const result = classifyLedgerError(
-            createHwTransportError('LocationServicesDisabled', 601),
-        )
-        expect(result).toBeInstanceOf(LedgerLocationServicesDisabledError)
-    })
-
-    it('classifies BleErrorCode 601 by message origin even without a typed .type', () => {
-        const result = classifyLedgerError(
-            createHwTransportError(undefined, 601),
-        )
-        expect(result).toBeInstanceOf(LedgerLocationServicesDisabledError)
-    })
-
-    it('classifies LocationServicesUnauthorized type as LedgerPermissionDeniedError', () => {
-        const result = classifyLedgerError(
-            createHwTransportError('LocationServicesUnauthorized', 101),
-        )
-        expect(result).toBeInstanceOf(LedgerPermissionDeniedError)
-    })
-
-    it('classifies BleErrorCode 102 (BluetoothPoweredOff) as LedgerBluetoothDisabledError', () => {
-        const result = classifyLedgerError(
-            createHwTransportError('Unknown', 102),
-        )
-        expect(result).toBeInstanceOf(LedgerBluetoothDisabledError)
-    })
-
-    it('falls back to LedgerConnectionError for unmapped transport errors', () => {
-        const result = classifyLedgerError(
-            createHwTransportError('Unknown', 600),
-        )
-        expect(result).toBeInstanceOf(LedgerConnectionError)
-    })
-
-    it('still routes an unmapped transport error through the disconnect heuristic', () => {
-        const result = classifyLedgerError(
-            createHwTransportError('Unknown', 201, 'Device was disconnected'),
-        )
-        expect(result).toBeInstanceOf(LedgerDisconnectedError)
-    })
-
-    it('preserves the original error reference', () => {
-        const original = createHwTransportError('LocationServicesDisabled', 601)
-        const result = classifyLedgerError(original)
-        expect(result.originalError).toBe(original)
-    })
-
-    // A powered-off or out-of-range device fails the connect with one of these
-    // rather than hanging, so they are what drives the "Ledger not found" copy.
-    it.each([200, 204, 205])(
-        'classifies BleErrorCode %i as LedgerDeviceNotFoundError',
-        code => {
-            expect(
-                classifyLedgerError(createHwTransportError(undefined, code)),
-            ).toBeInstanceOf(LedgerDeviceNotFoundError)
-        },
-    )
-
-    it('classifies BleErrorCode 201 (DeviceDisconnected) as LedgerDisconnectedError', () => {
-        expect(
-            classifyLedgerError(
-                createHwTransportError(undefined, 201, 'BleError'),
-            ),
-        ).toBeInstanceOf(LedgerDisconnectedError)
-    })
-
-    it('classifies BleErrorCode 3 (OperationTimedOut) as LedgerTimeoutError', () => {
-        expect(
-            classifyLedgerError(createHwTransportError(undefined, 3)),
-        ).toBeInstanceOf(LedgerTimeoutError)
+        expect(classifyLedgerError(error)).toBeInstanceOf(LedgerConnectionError)
     })
 })
 
@@ -409,7 +328,8 @@ describe('expected-error classification', () => {
             [...EXPECTED, ...REPORTABLE].map(([name]) => name),
         )
         const exported = Object.keys(ledgerErrors).filter(
-            key => key.startsWith('Ledger') && key.endsWith('Error'),
+            // `\w+` skips the abstract `LedgerError` base.
+            key => /^Ledger\w+Error$/.test(key),
         )
         expect(exported.filter(name => !covered.has(name))).toEqual([])
     })
