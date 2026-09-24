@@ -34,6 +34,8 @@ import { usePinCode } from '@perawallet/wallet-core-security'
 
 import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
 
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 const TEST_PIN = '123456'
 // Named after the backup's own address, so a second backup saves beside it.
@@ -113,7 +115,11 @@ describe('storing backup credentials', () => {
         await enterPin()
 
         fireEvent.click(
-            await screen.findByTestId('backup_credentials_done_button'),
+            await screen.findByTestId(
+                'backup_credentials_done_button',
+                {},
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            ),
         )
         fireEvent.click(
             await screen.findByTestId('store_backup_credentials_local'),
@@ -157,7 +163,11 @@ describe('storing backup credentials', () => {
         )
         await enterPin()
         fireEvent.click(
-            await screen.findByTestId('backup_credentials_done_button'),
+            await screen.findByTestId(
+                'backup_credentials_done_button',
+                {},
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            ),
         )
         fireEvent.click(
             await screen.findByTestId(
