@@ -4010,7 +4010,17 @@
             "error_invalid_password": "Incorrect password. Please try again.",
             "corrupted_error": "Your vault data is corrupted and cannot be unlocked. You may need to reset the extension and restore from your backup.",
             "passkey_error": "Passkey unlock failed. Use your password instead.",
-            "lockout_countdown": "Too many attempts. Try again in {{time}}"
+            "lockout_countdown": "Too many attempts. Try again in {{time}}",
+            "forgot_password": "Forgot password?"
+        },
+        "reset": {
+            "title": "Reset your wallet?",
+            "body": "Your password can't be recovered. Resetting deletes everything Pera Wallet stores in this browser, then you can set a new password.",
+            "restore_note": "Restore your accounts afterwards with their recovery passphrase. Any account whose recovery passphrase isn't backed up will be lost.",
+            "hardware_note": "Ledger and watch accounts can't be restored from a passphrase. Add them again after the reset.",
+            "acknowledge": "I understand this deletes my data and can't be undone",
+            "confirm_button": "Reset Wallet",
+            "error": "Couldn't reset the wallet. Please try again."
         },
         "security": {
             "autolock_title": "Auto-lock after",

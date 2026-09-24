@@ -114,6 +114,19 @@ describe('vault', () => {
         expect(listener).toHaveBeenCalledTimes(2)
     })
 
+    // The forgot-password reset destroys a vault that is already locked.
+    it('reports a lock when a locked vault is destroyed', async () => {
+        await createVault('pw')
+        await lockVault()
+        const listener = vi.fn()
+        const unsubscribe = onLockStateChanged(listener)
+
+        await destroyVault()
+
+        expect(listener).toHaveBeenCalledWith(false)
+        unsubscribe()
+    })
+
     describe('destroyVault', () => {
         it('removes every vault key, the session key and the auto-lock alarm', async () => {
             await createVault('pw')

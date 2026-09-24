@@ -21,6 +21,7 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { formatTime } from '@perawallet/wallet-core-shared'
+import { ForgotPasswordView } from './ForgotPasswordView'
 import { useUnlockScreen } from './useUnlockScreen.web'
 import { useStyles } from './styles'
 
@@ -41,6 +42,9 @@ export const UnlockScreen = (): React.JSX.Element => {
         setPassword,
         handleUnlock,
         handlePasskeyUnlock,
+        isForgotPasswordOpen,
+        openForgotPassword,
+        closeForgotPassword,
     } = useUnlockScreen()
 
     return (
@@ -52,97 +56,108 @@ export const UnlockScreen = (): React.JSX.Element => {
                 />
             </PWView>
             <PWScreen scroll='auto'>
-                <PWView style={styles.container}>
-                    <PWText
-                        variant='h2'
-                        style={styles.title}
-                    >
-                        {t('vault.unlock.title')}
-                    </PWText>
-                    <PWText
-                        variant='body'
-                        style={styles.description}
-                    >
-                        {t('vault.unlock.description')}
-                    </PWText>
-                    <PWInput
-                        testID='unlock-password-input'
-                        placeholder={t('vault.unlock.password_placeholder')}
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        showVisibilityToggle
-                        autoCapitalize='none'
-                        autoComplete='current-password'
-                        autoFocus
-                        blurOnSubmit={false}
-                        onSubmitEditing={() => void handleUnlock()}
-                    />
-                    {hasError && (
+                {isForgotPasswordOpen ? (
+                    <ForgotPasswordView onCancel={closeForgotPassword} />
+                ) : (
+                    <PWView style={styles.container}>
                         <PWText
-                            testID='unlock-error'
-                            variant='body'
-                            style={styles.errorText}
+                            variant='h2'
+                            style={styles.title}
                         >
-                            {t('vault.unlock.error_invalid_password')}
+                            {t('vault.unlock.title')}
                         </PWText>
-                    )}
-                    {hasCorruptedVaultError && (
                         <PWText
-                            testID='unlock-corrupted-error'
                             variant='body'
-                            style={styles.errorText}
+                            style={styles.description}
                         >
-                            {t('vault.unlock.corrupted_error')}
+                            {t('vault.unlock.description')}
                         </PWText>
-                    )}
-                    {hasPasskeyError && (
-                        <PWText
-                            testID='unlock-passkey-error'
-                            variant='body'
-                            style={styles.errorText}
-                        >
-                            {t('vault.unlock.passkey_error')}
-                        </PWText>
-                    )}
-                    {lockoutSeconds > 0 && (
-                        <PWText
-                            testID='unlock-lockout'
-                            variant='body'
-                            style={styles.errorText}
-                        >
-                            {t('vault.unlock.lockout_countdown', {
-                                time: formatTime(lockoutSeconds),
-                            })}
-                        </PWText>
-                    )}
-                    <PWButton
-                        testID='unlock-submit'
-                        variant='primary'
-                        title={t('vault.unlock.submit_button')}
-                        style={styles.unlockButton}
-                        isDisabled={
-                            password.length === 0 ||
-                            isSubmitting ||
-                            lockoutSeconds > 0
-                        }
-                        isLoading={isSubmitting}
-                        onPress={() => void handleUnlock()}
-                    />
-                    {canUsePasskey && (
+                        <PWInput
+                            testID='unlock-password-input'
+                            placeholder={t('vault.unlock.password_placeholder')}
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                            showVisibilityToggle
+                            autoCapitalize='none'
+                            autoComplete='current-password'
+                            autoFocus
+                            blurOnSubmit={false}
+                            onSubmitEditing={() => void handleUnlock()}
+                        />
+                        {hasError && (
+                            <PWText
+                                testID='unlock-error'
+                                variant='body'
+                                style={styles.errorText}
+                            >
+                                {t('vault.unlock.error_invalid_password')}
+                            </PWText>
+                        )}
+                        {hasCorruptedVaultError && (
+                            <PWText
+                                testID='unlock-corrupted-error'
+                                variant='body'
+                                style={styles.errorText}
+                            >
+                                {t('vault.unlock.corrupted_error')}
+                            </PWText>
+                        )}
+                        {hasPasskeyError && (
+                            <PWText
+                                testID='unlock-passkey-error'
+                                variant='body'
+                                style={styles.errorText}
+                            >
+                                {t('vault.unlock.passkey_error')}
+                            </PWText>
+                        )}
+                        {lockoutSeconds > 0 && (
+                            <PWText
+                                testID='unlock-lockout'
+                                variant='body'
+                                style={styles.errorText}
+                            >
+                                {t('vault.unlock.lockout_countdown', {
+                                    time: formatTime(lockoutSeconds),
+                                })}
+                            </PWText>
+                        )}
                         <PWButton
-                            testID='unlock-passkey'
-                            variant='secondary'
-                            title={t('vault.unlock.use_passkey')}
+                            testID='unlock-submit'
+                            variant='primary'
+                            title={t('vault.unlock.submit_button')}
+                            style={styles.unlockButton}
                             isDisabled={
-                                isPasskeyPending ||
+                                password.length === 0 ||
                                 isSubmitting ||
                                 lockoutSeconds > 0
                             }
-                            onPress={() => void handlePasskeyUnlock()}
+                            isLoading={isSubmitting}
+                            onPress={() => void handleUnlock()}
                         />
-                    )}
-                </PWView>
+                        {canUsePasskey && (
+                            <PWButton
+                                testID='unlock-passkey'
+                                variant='secondary'
+                                title={t('vault.unlock.use_passkey')}
+                                isDisabled={
+                                    isPasskeyPending ||
+                                    isSubmitting ||
+                                    lockoutSeconds > 0
+                                }
+                                onPress={() => void handlePasskeyUnlock()}
+                            />
+                        )}
+                        <PWButton
+                            testID='unlock-forgot-password'
+                            variant='link'
+                            title={t('vault.unlock.forgot_password')}
+                            isDisabled={isSubmitting}
+                            onPress={openForgotPassword}
+                        />
+                    </PWView>
+                )}
             </PWScreen>
         </>
     )

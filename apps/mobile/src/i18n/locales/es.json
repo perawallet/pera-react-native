@@ -4010,7 +4010,17 @@
             "error_invalid_password": "Contraseña incorrecta. Vuelve a intentarlo.",
             "corrupted_error": "Los datos de tu Vault están dañados y no se pueden desbloquear. Puede que tengas que restablecer la extensión y restaurarla desde tu copia de seguridad.",
             "passkey_error": "El desbloqueo con passkey falló. Usa tu contraseña en su lugar.",
-            "lockout_countdown": "Demasiados intentos. Vuelve a intentarlo en {{time}}"
+            "lockout_countdown": "Demasiados intentos. Vuelve a intentarlo en {{time}}",
+            "forgot_password": "¿Olvidaste tu contraseña?"
+        },
+        "reset": {
+            "title": "¿Restablecer tu wallet?",
+            "body": "Tu contraseña no se puede recuperar. Al restablecer se borra todo lo que Pera Wallet guarda en este navegador y después podrás crear una contraseña nueva.",
+            "restore_note": "Después, restaura tus cuentas con su passphrase de recuperación. Cualquier cuenta cuya passphrase de recuperación no esté respaldada se perderá.",
+            "hardware_note": "Las cuentas Ledger y las cuentas de observación no se restauran con una passphrase. Vuelve a añadirlas después del restablecimiento.",
+            "acknowledge": "Entiendo que esto borra mis datos y no se puede deshacer",
+            "confirm_button": "Restablecer wallet",
+            "error": "No se pudo restablecer la wallet. Inténtalo de nuevo."
         },
         "security": {
             "autolock_title": "Bloqueo automático tras",
