@@ -32,6 +32,7 @@ describe('pera/no-retired-quantum-custody', () => {
             'stale.ts:3',
             'stale.ts:4',
             'stale.ts:5',
+            'stale.ts:6',
             'stillScanned.ts:1',
         ])
     })
