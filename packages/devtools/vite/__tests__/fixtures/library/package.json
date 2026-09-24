@@ -1,0 +1,11 @@
+{
+  "name": "fixture-library",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "declared-dep": "1.0.0"
+  },
+  "peerDependencies": {
+    "@scope/peer": "1.0.0"
+  }
+}

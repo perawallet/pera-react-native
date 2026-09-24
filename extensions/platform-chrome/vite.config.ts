@@ -12,34 +12,15 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                bootstrap: resolve(__dirname, 'src/bootstrap.ts'),
-                'remote-registry': resolve(__dirname, 'src/remote-registry.ts'),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            bootstrap: resolve(__dirname, 'src/bootstrap.ts'),
+            'remote-registry': resolve(__dirname, 'src/remote-registry.ts'),
         },
-        rollupOptions: {
-            external: [
-                '@perawallet/wallet-core-dapp',
-                '@perawallet/wallet-core-dapp/wire',
-                '@perawallet/wallet-core-connections',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-extension-connections',
-                '@perawallet/wallet-core-hardware-wallet',
-                '@perawallet/wallet-core-passkeys/webauthn',
-                '@perawallet/wallet-extension-platform',
-                'drizzle-orm',
-                'drizzle-orm/sqlite-proxy',
-                'firebase/app',
-                'firebase/remote-config',
-                '@sentry/browser',
-            ],
-        },
-    },
-})
+    }),
+)

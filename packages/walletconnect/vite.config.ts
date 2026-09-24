@@ -12,40 +12,17 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                // Its own entry so the barrel never re-exports the v2
-                // handler: `apps/browser` imports the barrel and must stay
-                // clear of @reown/walletkit.
-                'v2/index': resolve(__dirname, 'src/v2/index.ts'),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            // Its own entry so the barrel never re-exports the v2
+            // handler: `apps/browser` imports the barrel and must stay
+            // clear of @reown/walletkit.
+            'v2/index': resolve(__dirname, 'src/v2/index.ts'),
         },
-        rollupOptions: {
-            external: [
-                'react',
-                'react/jsx-runtime',
-                'react-native',
-                'zustand',
-                '@perawallet/wallet-core-accounts',
-                '@perawallet/wallet-core-blockchain',
-                '@perawallet/wallet-core-config',
-                '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-core-signing',
-                '@perawallet/walletconnect',
-                '@perawallet/walletconnect/types',
-                '@reown/walletkit',
-                '@walletconnect/core',
-                '@walletconnect/utils',
-                'uuid',
-                '@perawallet/wallet-extension-provider',
-            ],
-        },
-    },
-})
+    }),
+)

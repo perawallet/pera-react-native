@@ -2956,6 +2956,9 @@ importers:
       tsx:
         specifier: 'catalog:'
         version: 4.23.12
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
         version: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
