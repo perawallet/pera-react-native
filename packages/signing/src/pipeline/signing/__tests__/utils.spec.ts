@@ -38,7 +38,6 @@ import {
     getLocalParticipants,
     getProposeParticipants,
     canMeetThresholdLocally,
-    getSignaturesNeeded,
 } from '../utils'
 
 const makeMultisig = (threshold: number, addresses: string[]): WalletAccount =>
@@ -295,30 +294,5 @@ describe('canMeetThresholdLocally', () => {
             rekeyAddress: 'MISSING',
         } as unknown as WalletAccount
         expect(canMeetThresholdLocally(stranded, [stranded])).toBe(false)
-    })
-})
-
-describe('getSignaturesNeeded', () => {
-    test('returns 0 when not multisig account', () => {
-        mocks.isMultisigAccount.mockReturnValue(false)
-        expect(getSignaturesNeeded(accountA, 0)).toBe(0)
-    })
-
-    test('returns threshold - existing', () => {
-        mocks.isMultisigAccount.mockReturnValue(true)
-        const multisig = makeMultisig(3, ['A', 'B', 'C'])
-        expect(getSignaturesNeeded(multisig, 1)).toBe(2)
-    })
-
-    test('returns 0 when existing meets threshold', () => {
-        mocks.isMultisigAccount.mockReturnValue(true)
-        const multisig = makeMultisig(2, ['A', 'B'])
-        expect(getSignaturesNeeded(multisig, 2)).toBe(0)
-    })
-
-    test('returns 0 when existing exceeds threshold', () => {
-        mocks.isMultisigAccount.mockReturnValue(true)
-        const multisig = makeMultisig(2, ['A', 'B'])
-        expect(getSignaturesNeeded(multisig, 5)).toBe(0)
     })
 })

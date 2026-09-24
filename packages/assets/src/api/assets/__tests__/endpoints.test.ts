@@ -25,7 +25,6 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 import {
     fetchAssets,
-    fetchAccountAssets,
     fetchAssetDetails,
     fetchPublicAssetDetails,
     fetchIndexerAssetDetails,
@@ -97,19 +96,6 @@ describe('assets endpoints', () => {
             expect.objectContaining({
                 method: 'GET',
                 url: '/v1/assets/',
-            }),
-        )
-    })
-
-    test('fetchAccountAssets calls /v2/accounts/:address/assets/', async () => {
-        queryClientMock.mockResolvedValue({ data: validAssetsResponse })
-
-        await fetchAccountAssets('ADDR', 'testnet')
-
-        expect(queryClientMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                url: '/v2/accounts/ADDR/assets/',
-                network: 'testnet',
             }),
         )
     })

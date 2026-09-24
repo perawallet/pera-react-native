@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { partition, partitionBy, concatBytes, bytesEqual } from '../arrays'
+import { partition, concatBytes, bytesEqual } from '../arrays'
 
 describe('utils/arrays', () => {
     describe('partition', () => {
@@ -37,29 +37,6 @@ describe('utils/arrays', () => {
 
         test('handles chunk size larger than array', () => {
             expect(partition([1, 2, 3], 10)).toEqual([[1, 2, 3]])
-        })
-    })
-
-    describe('partitionBy', () => {
-        test('groups items by the string returned from the predicate', () => {
-            const items = [
-                { id: 1, net: 'mainnet' },
-                { id: 2, net: 'testnet' },
-                { id: 3, net: 'mainnet' },
-            ]
-            const result = partitionBy(items, i => i.net)
-
-            expect(result).toHaveLength(2)
-            const groups = new Map(result.map(g => [g[0].net, g]))
-            expect(groups.get('mainnet')).toEqual([
-                { id: 1, net: 'mainnet' },
-                { id: 3, net: 'mainnet' },
-            ])
-            expect(groups.get('testnet')).toEqual([{ id: 2, net: 'testnet' }])
-        })
-
-        test('returns an empty array for no input', () => {
-            expect(partitionBy<number>([], () => 'k')).toEqual([])
         })
     })
 
