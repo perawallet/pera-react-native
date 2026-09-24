@@ -55,7 +55,8 @@ The `card` is not documentation — it is what an agent or a reviewer acts on, s
 `remediation` should say what to do rather than restate the problem.
 
 Add `gates` (`fileContains`, `pathMatches`, `pathNotMatches`) whenever the rule only
-ever fires on a subset of files — every rule but `no-unused-style-keys` uses one, and
+ever fires on a subset of files — every rule uses one; `no-unused-style-keys` has only
+a path gate, because a content gate would drop consumers its reduce pass needs, and
 the whole run's performance depends on gated rules skipping the files their query
 would never match anyway. `fileContains` is an **and** across its entries, not an
 or: a rule needing "file contains A or B" cannot express that as a single gate and
