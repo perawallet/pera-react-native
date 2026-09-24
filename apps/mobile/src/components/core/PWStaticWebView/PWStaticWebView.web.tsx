@@ -53,6 +53,7 @@ export const PWStaticWebView = ({
             <IFrame
                 {...frameProps}
                 sandbox={sandbox}
+                // oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the frame's name for assistive tech, not visible copy
                 title='static-content'
                 // Raw DOM element rendered via react-dom, not an RN View:
                 // makeStyles produces RN stylesheet ids that a host

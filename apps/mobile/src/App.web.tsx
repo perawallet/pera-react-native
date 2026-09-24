@@ -27,6 +27,7 @@ type ShellComponent = React.ComponentType
 
 const OffscreenStatus = (): React.JSX.Element => (
     <View style={{ flex: 1 }}>
+        {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- e2e status probe in the offscreen document, never shown to a user */}
         <Text testID='offscreen-status'>offscreen host running</Text>
     </View>
 )
@@ -55,12 +56,14 @@ class RootBoundary extends React.Component<
                     padding: 24,
                 }}
             >
+                {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the outermost error boundary renders before i18n can load */}
                 <Text
                     testID='root-boundary-fallback'
                     style={{ marginBottom: 16 }}
                 >
                     Pera Wallet failed to start.
                 </Text>
+                {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the outermost error boundary renders before i18n can load */}
                 <Text
                     testID='root-boundary-reload'
                     accessibilityRole='button'
