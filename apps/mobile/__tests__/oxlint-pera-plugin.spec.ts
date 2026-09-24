@@ -363,4 +363,62 @@ describe('pera/wc-connector-ownership', () => {
             expect(ownership.test(text), owner).toBe(true)
         }
     })
+
+    it('is enabled by the root override for WC_CONNECTOR_OWNERS and by mobile for src/**', () => {
+        const root = join(__dirname, '../../..')
+        const rootConfig = JSON.parse(
+            readFileSync(join(root, '.oxlintrc.json'), 'utf8'),
+        ) as {
+            overrides: {
+                files: string[]
+                excludeFiles?: string[]
+                rules: Record<string, string>
+            }[]
+        }
+        const rootOverride = rootConfig.overrides.find(
+            o => o.rules['pera/wc-connector-ownership'] === 'error',
+        )
+        expect(
+            rootOverride?.excludeFiles?.filter(f => f.startsWith('packages/')),
+        ).toEqual(WC_CONNECTOR_OWNERS)
+
+        const mobileConfig = JSON.parse(
+            readFileSync(join(root, 'apps/mobile/.oxlintrc.json'), 'utf8'),
+        ) as {
+            overrides: { files: string[]; rules: Record<string, string> }[]
+        }
+        const mobileOverride = mobileConfig.overrides.find(
+            o => o.rules['pera/wc-connector-ownership'] === 'error',
+        )
+        expect(mobileOverride?.files).toEqual(['src/**'])
+    })
+})
+
+describe('every pera plugin rule', () => {
+    type Config = {
+        rules?: Record<string, string>
+        overrides?: { rules?: Record<string, string> }[]
+    }
+    const root = join(__dirname, '../../..')
+    const readConfig = (path: string): Config =>
+        JSON.parse(readFileSync(join(root, path), 'utf8')) as Config
+    const rootConfig = readConfig('.oxlintrc.json')
+    const mobileConfig = readConfig('apps/mobile/.oxlintrc.json')
+
+    const enables = (config: Config, ruleId: string): boolean =>
+        config.rules?.[ruleId] === 'error' ||
+        config.rules?.[ruleId] === 'warn' ||
+        (config.overrides ?? []).some(
+            o => o.rules?.[ruleId] === 'error' || o.rules?.[ruleId] === 'warn',
+        )
+
+    it.each(Object.keys(plugin.rules))(
+        'pera/%s is enabled by an override',
+        id => {
+            const ruleId = `pera/${id}`
+            expect(
+                enables(rootConfig, ruleId) || enables(mobileConfig, ruleId),
+            ).toBe(true)
+        },
+    )
 })

@@ -311,6 +311,9 @@ const wcConnectorOwnership = {
     },
 }
 
+// A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
+// oxlint resolves an inherited override's globs from the extending config's
+// directory, so a root apps/mobile/src/** override never reaches mobile.
 export default {
     meta: { name: 'pera' },
     rules: {
