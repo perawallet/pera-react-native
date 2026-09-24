@@ -16,26 +16,25 @@ import type { Connection } from '@perawallet/wallet-extension-connections'
 import { createConnectionStore } from '@perawallet/wallet-extension-connections'
 import { migrateWalletConnect } from '../migrateWalletConnect'
 
-const { accountsState, commitSessionKey, connectionsStorage } = vi.hoisted(
-    () => {
-        const map = new Map<string, string>()
-        const defaultSetItem = (k: string, v: string) => void map.set(k, v)
-        return {
-            accountsState: { accounts: [] as { address: string }[] },
-            commitSessionKey: vi.fn(
-                async (clientId: string) => `wc1-session-key:${clientId}`,
-            ),
-            connectionsStorage: {
-                map,
-                defaultSetItem,
-                trim: vi.fn(),
-                getItem: (k: string) => map.get(k) ?? null,
-                setItem: defaultSetItem,
-                removeItem: (k: string) => void map.delete(k),
-            },
-        }
-    },
-)
+const { accountsState, keystoreCommit, connectionsStorage } = vi.hoisted(() => {
+    const map = new Map<string, string>()
+    const defaultSetItem = (k: string, v: string) => void map.set(k, v)
+    return {
+        accountsState: { accounts: [] as { address: string }[] },
+        keystoreCommit: vi.fn(
+            async (clientId: string, _key: string) =>
+                `wc1-session-key:${clientId}`,
+        ),
+        connectionsStorage: {
+            map,
+            defaultSetItem,
+            trim: vi.fn(),
+            getItem: (k: string) => map.get(k) ?? null,
+            setItem: defaultSetItem,
+            removeItem: (k: string) => void map.delete(k),
+        },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: {
@@ -54,18 +53,27 @@ const { PEER_MODULE, CONNECTION_MODULE } = vi.hoisted(() => ({
 }))
 
 // The barrel drags in RN-only deps that do not resolve here, so the constant
-// is spelled out and the two pure helpers the migrator shares with the blob
+// is spelled out and the pure helpers the migrator shares with the blob
 // importer are loaded straight from source.
 vi.mock('@perawallet/wallet-core-walletconnect', async () => {
     const peer: Pick<WalletConnectModule, 'toPeer'> = await import(
         /* @vite-ignore */ PEER_MODULE
     )
-    const connection: Pick<WalletConnectModule, 'isWalletConnectV1Connection'> =
-        await import(/* @vite-ignore */ CONNECTION_MODULE)
+    const connection: Pick<
+        WalletConnectModule,
+        'buildWalletConnectV1Connection' | 'isWalletConnectV1Connection'
+    > = await import(/* @vite-ignore */ CONNECTION_MODULE)
     return {
-        commitSessionKey,
+        createKeystoreSessionKeyStore: () => ({
+            commit: keystoreCommit,
+            has: () => false,
+            read: async () => null,
+            remove: async () => {},
+        }),
         ALL_PERMISSIONS: ['algo_getAccounts', 'algo_signTxn', 'algo_signData'],
         toPeer: peer.toPeer,
+        buildWalletConnectV1Connection:
+            connection.buildWalletConnectV1Connection,
         isWalletConnectV1Connection: connection.isWalletConnectV1Connection,
     }
 })
@@ -134,8 +142,8 @@ const existingV1 = (id: string, handshakeTopic: string): Connection => ({
 
 describe('migrateWalletConnect', () => {
     beforeEach(() => {
-        commitSessionKey.mockReset()
-        commitSessionKey.mockImplementation(
+        keystoreCommit.mockReset()
+        keystoreCommit.mockImplementation(
             async (clientId: string) => `wc1-session-key:${clientId}`,
         )
         connectionsStorage.map.clear()
@@ -181,7 +189,7 @@ describe('migrateWalletConnect', () => {
                 ],
             },
         })
-        expect(commitSessionKey).toHaveBeenCalledWith('client-1', 'current-key')
+        expect(keystoreCommit).toHaveBeenCalledWith('client-1', 'current-key')
     })
 
     it('omits empty peer fields the way the blob importer does', async () => {
@@ -225,11 +233,9 @@ describe('migrateWalletConnect', () => {
 
         expect(result).toEqual({ imported: 1, skipped: 0 })
         const written = await listConnections()
-        expect(commitSessionKey).toHaveBeenCalledWith(
-            'client-1',
-            'handshake-key',
-        )
-        expect(written[0].metadata?.handshakeId).toBeUndefined()
+        expect(keystoreCommit).toHaveBeenCalledWith('client-1', 'handshake-key')
+        // Absent, not `undefined`: the v1 handler's replay guard tests `!== undefined`.
+        expect(written[0].metadata).not.toHaveProperty('handshakeId')
     })
 
     it('preserves the legacy chainId', async () => {
@@ -445,6 +451,25 @@ describe('migrateWalletConnect', () => {
         expect(written[0].metadata?.handshakeId).toBe(42)
     })
 
+    it('commits through an injected session-key store instead of the keystore', async () => {
+        const injected = {
+            commit: vi.fn(
+                async (clientId: string, _key: string) =>
+                    `injected:${clientId}`,
+            ),
+            has: vi.fn(() => false),
+            read: vi.fn(async () => null),
+            remove: vi.fn(async () => {}),
+        }
+
+        await migrateWalletConnect([buildSession()], { sessionKeys: injected })
+
+        expect(injected.commit).toHaveBeenCalledWith('client-1', 'current-key')
+        expect(keystoreCommit).not.toHaveBeenCalled()
+        const written = await listConnections()
+        expect(written[0].secretRef).toBe('injected:client-1')
+    })
+
     it('writes the session key to the keystore, never into the record', async () => {
         await migrateWalletConnect([buildSession({ currentKey: 'secret-key' })])
 
@@ -455,10 +480,8 @@ describe('migrateWalletConnect', () => {
 
     // A resolved call is stamped complete by the migration runner and never
     // retried, so a write failure folded into `skipped` loses the session.
-    it('rejects rather than silently counting a genuine commitSessionKey failure as skipped', async () => {
-        commitSessionKey.mockRejectedValueOnce(
-            new Error('keystore write failed'),
-        )
+    it('rejects rather than silently counting a genuine session-key commit failure as skipped', async () => {
+        keystoreCommit.mockRejectedValueOnce(new Error('keystore write failed'))
 
         await expect(migrateWalletConnect([buildSession()])).rejects.toThrow(
             'keystore write failed',
@@ -480,11 +503,11 @@ describe('migrateWalletConnect', () => {
         // The key was committed before the write failed — proving the
         // record is genuinely at risk of being orphaned if this were
         // swallowed instead of rethrown.
-        expect(commitSessionKey).toHaveBeenCalledWith('client-1', 'current-key')
+        expect(keystoreCommit).toHaveBeenCalledWith('client-1', 'current-key')
     })
 
     it('keeps attempting the rest of the batch after one session fails, then rejects', async () => {
-        commitSessionKey.mockImplementation(async (clientId: string) => {
+        keystoreCommit.mockImplementation(async (clientId: string) => {
             if (clientId === 'client-1') {
                 throw new Error('boom')
             }

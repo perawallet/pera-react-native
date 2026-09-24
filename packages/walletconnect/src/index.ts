@@ -25,7 +25,6 @@ export { toPeer } from './shared/peer'
 export * from './v1/connection'
 export * from './v1/handler'
 export {
-    commitSessionKey,
     createKeystoreSessionKeyStore,
     createStorageSessionKeyStore,
     type WalletConnectV1SessionKeyStore,

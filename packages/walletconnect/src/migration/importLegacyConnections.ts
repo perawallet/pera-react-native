@@ -21,10 +21,7 @@ import type {
 import { isAlgorandPermission } from '../models'
 import { toPeer } from '../shared/peer'
 import { readString } from '../shared/read'
-import {
-    WALLET_CONNECT_V1_KIND,
-    type WalletConnectV1Connection,
-} from '../v1/connection'
+import { buildWalletConnectV1Connection } from '../v1/connection'
 import {
     createKeystoreSessionKeyStore,
     type WalletConnectV1SessionKeyStore,
@@ -305,30 +302,23 @@ export const importLegacyConnections = async (options: {
             }
 
             const origin = originFor(dappOrigins, reconstructed.clientId)
-            const connection: WalletConnectV1Connection = {
-                id: reconstructed.clientId,
-                kind: WALLET_CONNECT_V1_KIND,
-                name: reconstructed.peer.name,
+            const connection = buildWalletConnectV1Connection({
+                clientId: reconstructed.clientId,
                 peer: reconstructed.peer,
                 accounts: reconstructed.accounts,
                 secretRef,
-                status: 'active',
                 createdAt: reconstructed.createdAt,
                 lastActiveAt: reconstructed.lastActiveAt,
+                origin,
                 metadata: {
                     bridge: reconstructed.bridge,
                     handshakeTopic: reconstructed.handshakeTopic,
                     peerId: reconstructed.peerId,
                     chainId: reconstructed.chainId,
-                    ...(reconstructed.handshakeId !== undefined
-                        ? { handshakeId: reconstructed.handshakeId }
-                        : {}),
-                    ...(reconstructed.permissions
-                        ? { permissions: reconstructed.permissions }
-                        : {}),
+                    handshakeId: reconstructed.handshakeId,
+                    permissions: reconstructed.permissions,
                 },
-                ...(origin ? { origin } : {}),
-            }
+            })
             await store.upsert(connection)
             presentIds.add(connection.id)
             markImported(connection.id)

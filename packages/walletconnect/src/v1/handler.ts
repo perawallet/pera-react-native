@@ -70,6 +70,7 @@ import {
 } from '../validation/inboundRequestGate'
 import {
     bridgeUrlFromV1Uri,
+    buildWalletConnectV1Connection,
     isSecureBridgeUrl,
     isV1PairingUri,
     isWalletConnectV1Connection,
@@ -448,17 +449,14 @@ export const createWalletConnectV1Handler = (
         // A re-approval without an origin must not erase the stored one.
         const origin = pendingOrigins.get(input.clientId) ?? existing?.origin
         const now = Date.now()
-        const connection: WalletConnectV1Connection = {
-            id: input.clientId,
-            kind: WALLET_CONNECT_V1_KIND,
-            name: input.peer.name,
+        const connection = buildWalletConnectV1Connection({
+            clientId: input.clientId,
             peer: input.peer,
             accounts: input.accounts,
             secretRef,
-            status: 'active',
             createdAt: existing?.createdAt ?? now,
             lastActiveAt: now,
-            ...(origin ? { origin } : {}),
+            origin,
             metadata: {
                 bridge: connector.bridge,
                 handshakeTopic: connector.handshakeTopic,
@@ -467,7 +465,7 @@ export const createWalletConnectV1Handler = (
                 handshakeId: input.handshakeId,
                 permissions: input.permissions,
             },
-        }
+        })
         await store().upsert(connection)
         pendingOrigins.delete(input.clientId)
         openProposals.delete(input.clientId)

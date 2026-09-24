@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { Connection } from '@perawallet/wallet-extension-connections'
+import type {
+    Connection,
+    ConnectionOrigin,
+    ConnectionPeer,
+} from '@perawallet/wallet-extension-connections'
 import type { ConnectionHandler } from '@perawallet/wallet-core-connections'
 import { isStringArray, readString } from '../shared/read'
 import { walletConnectUriVersion } from '../shared/uri'
@@ -39,6 +43,51 @@ export type WalletConnectV1Connection = Connection & {
     /** Required — the keystore entry holding the v1 session key. */
     secretRef: string
     metadata: WalletConnectV1Metadata
+}
+
+export type BuildWalletConnectV1ConnectionInput = {
+    clientId: string
+    peer: ConnectionPeer
+    accounts: string[]
+    /** From `WalletConnectV1SessionKeyStore.commit`: commit the key before building the record. */
+    secretRef: string
+    /** Epoch milliseconds. */
+    createdAt: number
+    /** Epoch milliseconds. */
+    lastActiveAt: number
+    origin?: ConnectionOrigin
+    metadata: WalletConnectV1Metadata
+}
+
+/**
+ * The one shape every writer persists. Absent optionals are left off the
+ * record rather than written as `undefined`: readers test `!== undefined`
+ * (the handshake replay guard) or treat a missing key as "unknown".
+ */
+export const buildWalletConnectV1Connection = (
+    input: BuildWalletConnectV1ConnectionInput,
+): WalletConnectV1Connection => {
+    const { handshakeId, permissions, ...metadata } = input.metadata
+    return {
+        id: input.clientId,
+        kind: WALLET_CONNECT_V1_KIND,
+        name: input.peer.name,
+        peer: input.peer,
+        accounts: input.accounts,
+        secretRef: input.secretRef,
+        status: 'active',
+        createdAt: input.createdAt,
+        lastActiveAt: input.lastActiveAt,
+        ...(input.origin ? { origin: input.origin } : {}),
+        metadata: {
+            bridge: metadata.bridge,
+            handshakeTopic: metadata.handshakeTopic,
+            peerId: metadata.peerId,
+            chainId: metadata.chainId,
+            ...(handshakeId !== undefined ? { handshakeId } : {}),
+            ...(permissions !== undefined ? { permissions } : {}),
+        },
+    }
 }
 
 // Plaintext is allowed only on loopback (local dev bridges, the e2e fixture's
