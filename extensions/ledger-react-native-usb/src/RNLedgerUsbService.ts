@@ -24,6 +24,7 @@ import {
     LedgerUsbMultipleDevicesError,
     LedgerUsbNoDeviceError,
     createLedgerTransportWrapper,
+    resolveUsbDeviceModel,
 } from '@perawallet/wallet-extension-ledger-shared'
 
 type LedgerHIDDescriptor = {
@@ -44,33 +45,6 @@ type LedgerHIDDescriptor = {
 const descriptorId = (descriptor: LedgerHIDDescriptor): string | undefined => {
     const id = descriptor.deviceId ?? descriptor.productId
     return id === undefined ? undefined : String(id)
-}
-
-/**
- * Maps a HID descriptor product ID to a friendly model name.
- * IDs from https://developers.ledger.com (vendor 0x2C97).
- */
-const resolveModel = (productId: Nullable<number>): string => {
-    switch (productId) {
-        case 0x00_01: {
-            return 'nanoS'
-        }
-        case 0x00_04: {
-            return 'nanoX'
-        }
-        case 0x40_11: {
-            return 'nanoSPlus'
-        }
-        case 0x60_11: {
-            return 'stax'
-        }
-        case 0x70_11: {
-            return 'flex'
-        }
-        default: {
-            return 'ledger'
-        }
-    }
 }
 
 /**
@@ -102,7 +76,7 @@ export class RNLedgerUsbService implements HardwareWalletService {
                     }) => {
                         if (event.type !== 'add') return
                         const { productId, deviceName } = event.descriptor
-                        const model = resolveModel(productId ?? null)
+                        const model = resolveUsbDeviceModel(productId)
                         // If neither deviceId nor productId is present we skip
                         // the descriptor rather than emit a sentinel that would
                         // alias multiple devices in the connection-routing map.

@@ -16,6 +16,7 @@ import {
     createLedgerTransportWrapper,
     type LedgerAppTransport,
 } from '../transport-wrapper'
+import { LedgerDeviceBusyError, LedgerDisconnectedError } from '../errors'
 
 // The APDU surface is exercised through the transport specs; these tests only
 // cover the disconnect-event passthrough, so a bare stub is enough.
@@ -58,5 +59,42 @@ describe('createLedgerTransportWrapper disconnect events', () => {
 
         unsubscribe?.()
         expect(transport.off).toHaveBeenCalledWith('disconnect', onDisconnected)
+    })
+})
+
+describe('createLedgerTransportWrapper error classification', () => {
+    const transport: LedgerAppTransport = {
+        close: vi.fn().mockResolvedValue(undefined),
+    }
+    const failingApp = (error: Error) =>
+        ({
+            getAddressAndPubKey: vi.fn().mockRejectedValue(error),
+            getVersion: vi.fn().mockRejectedValue(error),
+        }) as unknown as AlgorandApp
+
+    it('classifies APDU failures with the shared classifier by default', async () => {
+        const wrapper = createLedgerTransportWrapper(
+            transport,
+            failingApp(new Error('Device disconnected')),
+        )
+
+        await expect(wrapper.getAppVersion()).rejects.toBeInstanceOf(
+            LedgerDisconnectedError,
+        )
+    })
+
+    it('routes APDU failures through a transport-specific classifier', async () => {
+        const raw = new Error('transport-specific')
+        const classifyError = vi.fn(() => new LedgerDeviceBusyError())
+        const wrapper = createLedgerTransportWrapper(
+            transport,
+            failingApp(raw),
+            classifyError,
+        )
+
+        await expect(wrapper.getAddress(0)).rejects.toBeInstanceOf(
+            LedgerDeviceBusyError,
+        )
+        expect(classifyError).toHaveBeenCalledWith(raw)
     })
 })

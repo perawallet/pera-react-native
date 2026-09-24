@@ -20,35 +20,8 @@ import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {
     classifyLedgerError,
     createLedgerTransportWrapper,
+    resolveUsbDeviceModel,
 } from '@perawallet/wallet-extension-ledger-shared'
-
-/**
- * Maps a WebHID device's USB product ID to a friendly model name.
- * IDs from https://developers.ledger.com (vendor 0x2c97) — identical
- * mapping to RNLedgerUsbService's resolveModel.
- */
-const resolveModel = (productId: number | undefined): string => {
-    switch (productId) {
-        case 0x00_01: {
-            return 'nanoS'
-        }
-        case 0x00_04: {
-            return 'nanoX'
-        }
-        case 0x40_11: {
-            return 'nanoSPlus'
-        }
-        case 0x60_11: {
-            return 'stax'
-        }
-        case 0x70_11: {
-            return 'flex'
-        }
-        default: {
-            return 'ledger'
-        }
-    }
-}
 
 /**
  * WebHID's HIDDevice exposes no stable per-device id (unlike the RN HID
@@ -85,7 +58,7 @@ export class LedgerWebUsbService implements HardwareWalletService {
                         const device = event.descriptor
                         const key = deviceKey(device)
                         devicesByKey.set(key, device)
-                        const model = resolveModel(device.productId)
+                        const model = resolveUsbDeviceModel(device.productId)
                         onDevice({
                             id: key,
                             name: device.productName || `Ledger ${model}`,
