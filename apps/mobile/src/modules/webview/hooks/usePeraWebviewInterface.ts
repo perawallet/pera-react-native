@@ -38,8 +38,6 @@ import { useWebView } from './useWebViewStore'
 import { useLanguage } from '@hooks/useLanguage'
 import { resolveWebviewLanguage } from './webviewLanguage'
 import {
-    type Arc60SignRequest,
-    type ArbitraryDataSignRequest,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type SignRequestSource,
@@ -146,6 +144,39 @@ const toWebviewAccountType = (
     }
     return BASE_WEBVIEW_TYPE[account.type]
 }
+
+// ARC-60 and legacy arbitrary-data requests share one page answer.
+const webviewDataSignRequestBase = (
+    messageId: string,
+    webview: Nullable<WebView>,
+) => ({
+    id: generateOrderedUniqueId(),
+    transport: 'callback' as const,
+    sourceType: 'webview' as const,
+    transportId: messageId,
+    approve: async (signed: PeraArbitraryDataSignResult[]) => {
+        sendMessageToWebview(
+            messageId,
+            signed.map(s => encodeToBase64(s.signature)),
+            webview,
+        )
+    },
+    reject: async () => {
+        sendErrorToWebview(
+            messageId,
+            JsonRpcErrorCode.InternalError,
+            'User rejected',
+            webview,
+        )
+    },
+    error: async (err: Error) =>
+        sendErrorToWebview(
+            messageId,
+            JsonRpcErrorCode.InternalError,
+            err,
+            webview,
+        ),
+})
 
 export const usePeraWebviewInterface = (
     webview: Nullable<WebView>,
@@ -658,11 +689,11 @@ export const usePeraWebviewInterface = (
                                 return
                             }
                             addSignRequest({
-                                id: generateOrderedUniqueId(),
+                                ...webviewDataSignRequestBase(
+                                    message.id,
+                                    webview,
+                                ),
                                 type: 'arc60',
-                                transport: 'callback',
-                                sourceType: 'webview',
-                                transportId: message.id,
                                 // The verified webview origin — NOT the
                                 // dApp-asserted metadata — is what the analyzer
                                 // checks the SIWA domain against.
@@ -672,33 +703,7 @@ export const usePeraWebviewInterface = (
                                 verifiedOrigin: security.sourceUrl ?? undefined,
                                 stdSigData,
                                 metadata,
-                                approve: async (
-                                    signed: PeraArbitraryDataSignResult[],
-                                ) => {
-                                    sendMessageToWebview(
-                                        message.id,
-                                        signed.map(s =>
-                                            encodeToBase64(s.signature),
-                                        ),
-                                        webview,
-                                    )
-                                },
-                                reject: async () => {
-                                    sendErrorToWebview(
-                                        message.id,
-                                        JsonRpcErrorCode.InternalError,
-                                        'User rejected',
-                                        webview,
-                                    )
-                                },
-                                error: async (err: Error) =>
-                                    sendErrorToWebview(
-                                        message.id,
-                                        JsonRpcErrorCode.InternalError,
-                                        err,
-                                        webview,
-                                    ),
-                            } as Arc60SignRequest)
+                            })
                         } catch (e) {
                             sendErrorToWebview(
                                 message.id,
@@ -752,43 +757,14 @@ export const usePeraWebviewInterface = (
                     ] as SignRequestSource
                     try {
                         addSignRequest({
-                            id: generateOrderedUniqueId(),
+                            ...webviewDataSignRequestBase(message.id, webview),
                             type: 'arbitrary-data',
-                            transport: 'callback',
-                            sourceType: 'webview',
-                            transportId: message.id,
                             sourceMetadata: metadata,
                             // Platform-observed origin, not page-asserted —
                             // gates the verification badge.
                             verifiedOrigin: sourceUrl ?? undefined,
-                            data: [data],
-                            approve: async (
-                                signed: PeraArbitraryDataSignResult[],
-                            ) => {
-                                sendMessageToWebview(
-                                    message.id,
-                                    signed.map(s =>
-                                        encodeToBase64(s.signature),
-                                    ),
-                                    webview,
-                                )
-                            },
-                            reject: async () => {
-                                sendErrorToWebview(
-                                    message.id,
-                                    JsonRpcErrorCode.InternalError,
-                                    'User rejected',
-                                    webview,
-                                )
-                            },
-                            error: async (err: Error) =>
-                                sendErrorToWebview(
-                                    message.id,
-                                    JsonRpcErrorCode.InternalError,
-                                    err,
-                                    webview,
-                                ),
-                        } as ArbitraryDataSignRequest)
+                            data: [data as PeraArbitraryDataMessage],
+                        })
                     } catch (e) {
                         sendErrorToWebview(
                             message.id,
