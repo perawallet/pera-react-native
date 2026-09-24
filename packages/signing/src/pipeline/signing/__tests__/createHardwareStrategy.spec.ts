@@ -163,6 +163,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             expect(strategy.canSign(makeLedgerAccount())).toBe(true)
         })
@@ -171,6 +172,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const algo25Account = {
                 type: 'algo25',
@@ -186,6 +188,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const txns = [mockTransaction(), mockTransaction()]
             const group = makeGroup(txns, [0, 1])
@@ -221,6 +224,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const txns = [mockTransaction(), mockTransaction()]
             const group = makeGroup(txns, [0, 1])
@@ -245,6 +249,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const txns = [
                 mockTransaction(),
@@ -278,6 +283,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
 
             const txns = [
@@ -296,6 +302,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const txns = [
                 mockTransaction(),
@@ -319,6 +326,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const txns = [mockTransaction(DIFFERENT_SENDER)]
             const group = makeGroup(txns, [0], SIGNER_ADDRESS)
@@ -335,6 +343,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const txns = [mockTransaction(SIGNER_ADDRESS)]
             const group = makeGroup(txns, [0])
@@ -359,6 +368,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -372,6 +382,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
             await strategy.sign(group, makeLedgerAccount(SIGNER_ADDRESS, 3))
@@ -383,6 +394,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const txns = [
                 mockTransaction(),
@@ -404,6 +416,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const algo25Account = {
                 type: 'algo25',
@@ -420,6 +433,7 @@ describe('createHardwareStrategy', () => {
         it('throws HardwareWalletError when no transport provider', async () => {
             const strategy = createHardwareStrategy({
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -437,6 +451,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const usbAccount = {
                 ...makeLedgerAccount(),
@@ -459,6 +474,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
             const onSigningStart = vi.fn()
@@ -480,6 +496,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
             const onError = vi.fn()
@@ -502,6 +519,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
             const onPhaseChange = vi.fn()
@@ -528,6 +546,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const txns = [
                 mockTransaction(),
@@ -580,6 +599,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -594,6 +614,7 @@ describe('createHardwareStrategy', () => {
                 const strategy = createHardwareStrategy({
                     hardwareWalletRegistry: mockRegistry,
                     encodeTransaction,
+                    getAllAccounts: () => [],
                 })
                 const group = makeGroup([mockTransaction()], [0])
 
@@ -631,6 +652,7 @@ describe('createHardwareStrategy', () => {
                 const strategy = createHardwareStrategy({
                     hardwareWalletRegistry: registry,
                     encodeTransaction,
+                    getAllAccounts: () => [],
                 })
                 const group = makeGroup([mockTransaction()], [0])
 
@@ -666,6 +688,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -687,6 +710,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -717,6 +741,7 @@ describe('createHardwareStrategy', () => {
                     makeMockProvider(transport),
                 ),
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -738,6 +763,7 @@ describe('createHardwareStrategy', () => {
                     makeMockProvider(transport),
                 ),
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
 
             await expect(
@@ -760,6 +786,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
             const onError = vi.fn()
@@ -781,6 +808,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = {
                 ...makeGroup([], []),
@@ -869,6 +897,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeArc60Group()
             const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
@@ -904,6 +933,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeArc60Group()
             const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
@@ -937,6 +967,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: registry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
 
             // Override only the authenticatorData to the mismatched value;
@@ -963,10 +994,36 @@ describe('createHardwareStrategy', () => {
             expect(transport.signData).not.toHaveBeenCalled()
         })
 
+        it('cross-checks the SIWA signer against the injected accounts', async () => {
+            const transport = makeArc60Transport({
+                getAppVersion: vi
+                    .fn()
+                    .mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
+                signData: vi.fn(),
+            })
+            const registry = makeRegistry(makeMockProvider(transport))
+            const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
+            const getAllAccounts = vi.fn(() => [
+                { ...account, rekeyAddress: 'AUTHADDR' } as WalletAccount,
+            ])
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: registry,
+                encodeTransaction,
+                getAllAccounts,
+            })
+
+            await expect(
+                strategy.sign(makeArc60Group(), account),
+            ).rejects.toThrow(/rekeyed/)
+            expect(getAllAccounts).toHaveBeenCalled()
+            expect(transport.signData).not.toHaveBeenCalled()
+            expect(transport.disconnect).toHaveBeenCalled()
+        })
         it('still rejects legacy arbitrary-data on hardware', async () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = {
                 ...makeArc60Group(),
@@ -994,6 +1051,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup(
                 [mockTransaction(), mockTransaction()],
@@ -1028,6 +1086,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -1057,6 +1116,7 @@ describe('createHardwareStrategy', () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
             const group = makeGroup([mockTransaction()], [0])
 
@@ -1091,6 +1151,7 @@ describe('createHardwareStrategy', () => {
                     makeMockProvider(transport),
                 ),
                 encodeTransaction,
+                getAllAccounts: () => [],
             })
 
             const signPromise = strategy.sign(

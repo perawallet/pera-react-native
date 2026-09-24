@@ -16,7 +16,6 @@ import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    ARC60_SCOPE_AUTH,
     Arc60BadJsonError,
     Arc60DomainMismatchError,
     Arc60FailedDecodingError,
@@ -26,6 +25,9 @@ import {
     Arc60InvalidSignerError,
     Arc60MissingAuthDataError,
     Arc60MissingDomainError,
+} from '../arc60-errors'
+import {
+    ARC60_SCOPE_AUTH,
     buildArc60AuthSigningPayload,
     decodeArc60Data,
     parseArc60Timestamp,

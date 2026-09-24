@@ -26,11 +26,6 @@ import { parseSiwa } from './siwa'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-// Re-export the ARC-60 error catalogue so existing `../utils/arc60` imports
-// keep working. The classes live in `./arc60-errors` to avoid an import cycle
-// with the SIWA parser.
-export * from './arc60-errors'
-
 /**
  * ARC-60 scope value for `AUTH` (the only scope defined by the spec today).
  */

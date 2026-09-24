@@ -17,14 +17,14 @@ import { canonify } from 'canonify'
 import { encodeToBase64, type Optional } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLocalKeyArc60Signer } from '../useLocalKeyArc60Signer'
+import { ARC60_SCOPE_AUTH } from '../../utils/arc60'
 import {
-    ARC60_SCOPE_AUTH,
     Arc60BadJsonError,
     Arc60DomainMismatchError,
     Arc60FailedHdPathError,
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
-} from '../../utils/arc60'
+} from '../../utils/arc60-errors'
 import type { Arc60Metadata, Arc60StdSigData } from '../../pipeline/types'
 
 const mockSignDataWithKey = vi.fn()
