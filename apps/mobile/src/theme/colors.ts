@@ -13,7 +13,7 @@
 /**
  * Global color palette from Figma design system.
  * These are raw primitive colors — always use semantic tokens
- * (lightColors / darkColors) in components, never palette directly.
+ * (theme.colors.*, defined in tokens/) in components, never palette directly.
  */
 export const palette = {
     turquoise: {
@@ -86,4 +86,40 @@ export const palette = {
     },
     black: '#000000',
     white: '#FFFFFF',
+} as const
+
+/** Colours the design system uses outside the ramps above. */
+export const accentPalette = {
+    magenta: '#9B1F69',
+    cream: '#FFEAC2',
+    pink: '#FFAEE3',
+    navy: '#424F76',
+    violet: '#8755D5',
+    rose: '#F5B2C6',
+    blue: '#0D7FFF',
+    blueLight: '#48A7FE',
+    stakingLiquid: 'rgba(255,110,92,1)',
+    stakingPools: 'rgba(31,142,157,1)',
+    stakingDelegated: 'rgba(255,174,227,1)',
+    moonpay: '#7D01FF',
+    sardine: '#2925CB',
+    transak: '#2A6BE6',
+    bidali: '#6241E2',
+} as const
+
+/**
+ * Alpha tints shared by more than one token, named `<base>Alpha<percent>`
+ * after the palette or accent colour they are drawn from.
+ */
+export const tints = {
+    turquoise600Alpha12: 'rgba(44, 183, 188, 0.12)',
+    turquoise600Alpha16: 'rgba(44, 183, 188, 0.16)',
+    turquoise600Alpha28: 'rgba(44, 183, 188, 0.28)',
+    turquoise700Alpha20: 'rgba(31, 142, 157, 0.2)',
+    salmon500Alpha16: 'rgba(255, 109, 95, 0.16)',
+    blueAlpha16: 'rgba(13, 127, 255, 0.16)',
+    gray900Alpha60: 'rgba(24, 24, 27, 0.6)',
+    whiteAlpha12: 'rgba(255, 255, 255, 0.12)',
+    whiteAlpha60: 'rgba(255, 255, 255, 0.6)',
+    blackAlpha70: 'rgba(0, 0, 0, 0.7)',
 } as const
