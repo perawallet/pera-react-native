@@ -87,11 +87,11 @@ vi.mock('@modules/multisig', () => ({
     }),
 }))
 
-vi.mock('../../useIsPeraCardEnabled', () => ({
+vi.mock('@hooks/useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: () => true,
 }))
 
-vi.mock('../../useIsGiftCardsEnabled', () => ({
+vi.mock('@hooks/useIsGiftCardsEnabled', () => ({
     useIsGiftCardsEnabled: () => true,
 }))
 
@@ -218,7 +218,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // Non-quantum in every fixture here — the calculator's real fast path
     // is a passthrough no-op. Real fee behavior is covered by
     // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
-    // and apps/mobile/src/hooks/deeplink/handlers/__tests__/useKeyregDeeplink.test.ts.
+    // and apps/mobile/src/modules/deeplink/handlers/__tests__/useKeyregDeeplink.test.ts.
     useMinimumFeeCalculator: () => ({
         assignFeeToGroup: async ({
             transactions,
@@ -304,7 +304,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     }),
 }))
 
-vi.mock('../../useToast', () => ({
+vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         showToast: vi.fn(),
         errorToast: mockErrorToast,
@@ -331,7 +331,7 @@ vi.mock('react-native', () => ({
 // Keep this table flat + parameterised; adding a new deeplink shape is a
 // single row.
 
-import { useDeepLink } from '../../useDeepLink'
+import { useDeepLink } from '../hooks/useDeepLink'
 
 const ADDRESS = '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 const RECEIVER = 'Z73KQDNF5X3OPYUJNKH77CWZTHAYBKDUYRJELNMVFKWWYUJH2V2Y54W4CM'

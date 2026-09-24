@@ -18,7 +18,7 @@ import {
     isWalletConnectScheme,
 } from '@perawallet/wallet-core-walletconnect'
 import { useDeepLink } from './useDeepLink'
-import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
+import { useDeeplinkErrorHandler } from '../handlers/useDeeplinkErrorHandler'
 
 // Every layout mounts this hook, so several instances fire for the same URL;
 // the guards are module-level so a link is handled once. `Linking.getInitialURL()`

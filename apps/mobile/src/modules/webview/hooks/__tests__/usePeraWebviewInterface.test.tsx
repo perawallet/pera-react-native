@@ -24,8 +24,8 @@ import { usePeraWebviewInterface } from '../usePeraWebviewInterface'
 import { useWebView } from '..'
 import { Linking } from 'react-native'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { useDeepLink } from '@hooks/useDeepLink'
-import { parseDeeplink } from '@hooks/deeplink/parser'
+import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
+import { parseDeeplink } from '@modules/deeplink/parser'
 import {
     CONNECTION_LATE_PAIRING_GRACE_MS,
     resetConnectionPairingStateForTesting,
@@ -400,13 +400,13 @@ vi.mock('@hooks/useErrorToast', () => ({
     })),
 }))
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(() => ({
         handleDeepLink: vi.fn(),
     })),
 }))
 
-vi.mock('@hooks/deeplink/parser', () => ({
+vi.mock('@modules/deeplink/parser', () => ({
     parseDeeplink: vi.fn(() => null),
 }))
 

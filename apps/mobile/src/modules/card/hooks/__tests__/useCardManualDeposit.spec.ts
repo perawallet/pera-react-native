@@ -29,6 +29,7 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
     useCardStore: (
         selector: (state: { escrowCardAddress: string | null }) => unknown,
     ) => selector({ escrowCardAddress: mocks.escrowCardAddress }),
+    useSubmitAndConfirmMutation: () => ({ mutateAsync: mockSubmit }),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', async () => ({
@@ -36,9 +37,6 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
     useMinimumFeeCalculator: () => ({
         assignFeeToGroup: mockAssignFeeToGroup,
     }),
-}))
-vi.mock('../useSubmitAndConfirm', () => ({
-    useSubmitAndConfirm: () => mockSubmit,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => ({

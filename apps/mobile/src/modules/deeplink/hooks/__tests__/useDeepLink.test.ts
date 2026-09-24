@@ -26,8 +26,8 @@ import {
     resetDeeplinkListenerStateForTesting,
 } from '../useDeeplinkListener'
 import { StackActions } from '@react-navigation/native'
-import { parseDeeplink } from '../deeplink/parser'
-import { DeeplinkType } from '../deeplink/types'
+import { parseDeeplink } from '../../parser'
+import { DeeplinkType } from '../../types'
 import { Linking, Platform } from 'react-native'
 import { usePairingProgressStore } from '@modules/walletconnect/stores/usePairingProgressStore'
 import {
@@ -65,7 +65,7 @@ vi.mock('@react-navigation/native', () => ({
     },
 }))
 
-vi.mock('../deeplink/parser', () => ({
+vi.mock('../../parser', () => ({
     parseDeeplink: vi.fn(),
 }))
 
@@ -73,8 +73,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     // Real enum rather than a hand-copied literal — see the note in
     // vitest.setup.ts. base.ts has no runtime imports.
     const { ErrorCategory } = await vi.importActual<
-        typeof import('../../../../../packages/shared/src/errors/base')
-    >('../../../../../packages/shared/src/errors/base')
+        typeof import('../../../../../../../packages/shared/src/errors/base')
+    >('../../../../../../../packages/shared/src/errors/base')
 
     return {
         ALGO_ASSET_ID: '0',
@@ -111,7 +111,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // Non-quantum sender in every fixture here — the calculator's real fast
     // path is a passthrough no-op. Real fee behavior is covered by
     // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
-    // and apps/mobile/src/hooks/deeplink/handlers/__tests__/useKeyregDeeplink.test.ts.
+    // and apps/mobile/src/modules/deeplink/handlers/__tests__/useKeyregDeeplink.test.ts.
     useMinimumFeeCalculator: () => ({
         assignFeeToGroup: async ({
             transactions,
@@ -343,11 +343,11 @@ vi.mock('@modules/multisig', () => ({
     }),
 }))
 
-vi.mock('../useIsPeraCardEnabled', () => ({
+vi.mock('@hooks/useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: mockIsPeraCardEnabled,
 }))
 
-vi.mock('../useIsGiftCardsEnabled', () => ({
+vi.mock('@hooks/useIsGiftCardsEnabled', () => ({
     useIsGiftCardsEnabled: mockIsGiftCardsEnabled,
 }))
 
@@ -396,7 +396,7 @@ const { mockInfoToast, mockErrorToast, mockHideToast } = vi.hoisted(() => ({
     mockHideToast: vi.fn(),
 }))
 
-vi.mock('../useToast', () => ({
+vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(() => ({
         showToast: vi.fn(),
         errorToast: mockErrorToast,

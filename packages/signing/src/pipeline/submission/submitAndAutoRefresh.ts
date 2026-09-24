@@ -316,8 +316,8 @@ const backgroundConfirmAndRefresh = async (
  * Used by:
  * - `createAlgodTransport` (the pipeline's algod transport)
  * - `useSignAndSubmitGroup` (callback-transport flows)
- * - `useSwapExecution` (mixes pre-signed bytes with user-signed; submits its
- *   own assembled groups)
+ * - `executeSwap` in `@perawallet/wallet-core-swaps` (mixes pre-signed bytes
+ *   with user-signed; submits its own assembled groups)
  */
 export const submitAndAutoRefresh = async (
     algokit: AlgokitClientInterface,

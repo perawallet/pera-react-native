@@ -11,5 +11,4 @@
  */
 
 export { useSwapExecution, useSwapQuotes } from './hooks'
-export { formatSwapRate, pickBestByAmountOut } from './hooks/swapQuoteHelpers'
 export type { SwapScreenParams } from './routes/types'

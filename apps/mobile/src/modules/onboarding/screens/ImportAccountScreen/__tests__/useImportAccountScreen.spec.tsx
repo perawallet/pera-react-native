@@ -137,7 +137,12 @@ vi.mock('@hooks/useLanguage', () => ({
     })),
 }))
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink', async () => ({
+    DeeplinkType: (
+        await vi.importActual<typeof import('@modules/deeplink/types')>(
+            '@modules/deeplink/types',
+        )
+    ).DeeplinkType,
     useDeepLink: vi.fn(() => ({
         parseDeeplink: vi.fn(),
     })),

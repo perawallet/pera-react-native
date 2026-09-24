@@ -61,12 +61,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('../../../hooks', () => ({
     useCardFundingAccount: () => ({ address: 'ADDR' }),
     useCardManualDeposit: () => ({ deposit: mockDeposit, isDepositing: false }),
-    useCardUsdcCredit: () => ({
+    useCardErrorToast: () => mockDepositError,
+}))
+
+vi.mock('@perawallet/wallet-core-card', () => ({
+    useCardUsdcCreditQuery: () => ({
         readUsdcBalance: mockReadBalance,
         waitForUsdcCredit: mockWaitCredit,
     }),
-    useCardErrorToast: () => mockDepositError,
-    UsdcCreditTimeoutError: class UsdcCreditTimeoutError extends Error {},
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({

@@ -16,7 +16,7 @@ import {
     formatNumber,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { SwapQuote } from '../models'
 
 export const pickBestByAmountOut = (quotes: SwapQuote[]): Nullable<SwapQuote> =>
     quotes.reduce<Nullable<SwapQuote>>((prev, curr) => {

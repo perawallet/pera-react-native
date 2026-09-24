@@ -25,7 +25,7 @@ export default defineRule({
         // applies to them as to the module itself.
         pathMatches: [
             '**/apps/mobile/src/modules/connections/**',
-            '**/apps/mobile/src/hooks/deeplink/handlers/**',
+            '**/apps/mobile/src/modules/deeplink/handlers/**',
         ],
         fileContains: [WALLETCONNECT_PACKAGE],
     },
