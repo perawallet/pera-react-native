@@ -188,6 +188,30 @@ export const getNetworkConfig = (network: Network): NetworkConfig => ({
     ...peraServicesByNetwork[network],
 })
 
+const COMMERCE_HOST_PREFIX = 'commerce.'
+const GIFTCARDS_HOST_PREFIX = 'giftcards.'
+
+/**
+ * Origins an iframe mounted at `url` loads from: its own, plus the `giftcards.`
+ * twin a `commerce.` host 302s to (Bidali). The in-app bridge and the
+ * extension's frame-src both see the post-redirect origin, so they share this.
+ * Empty for a URL that doesn't parse.
+ */
+export const getIframeOrigins = (url: string): string[] => {
+    let parsed: URL
+    try {
+        parsed = new URL(url)
+    } catch {
+        return []
+    }
+    const origin = parsed.origin
+    if (!parsed.hostname.startsWith(COMMERCE_HOST_PREFIX)) return [origin]
+    parsed.hostname =
+        GIFTCARDS_HOST_PREFIX +
+        parsed.hostname.slice(COMMERCE_HOST_PREFIX.length)
+    return [origin, parsed.origin]
+}
+
 /**
  * ARC-59 inbox app id/address for `network`, or `null` where the inbox app is
  * not deployed.

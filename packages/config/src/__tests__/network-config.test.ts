@@ -15,6 +15,7 @@ import { Networks } from '../models/network'
 import { config } from '../main'
 import {
     getArc59Config,
+    getIframeOrigins,
     getNetworkConfig,
     isMainnet,
     isPeraBackedNetwork,
@@ -227,5 +228,27 @@ describe('getNetworkConfig genesisId', () => {
         expect(getNetworkConfig(Networks.betanet).genesisId).toBe(
             'betanet-v1.0',
         )
+    })
+})
+
+describe('getIframeOrigins', () => {
+    test('adds the giftcards twin a commerce host redirects to', () => {
+        expect(
+            getIframeOrigins('https://commerce.staging.bidali.com/dapp'),
+        ).toEqual([
+            'https://commerce.staging.bidali.com',
+            'https://giftcards.staging.bidali.com',
+        ])
+    })
+
+    test('returns only its own origin for any other host', () => {
+        expect(
+            getIframeOrigins('https://discover-mobile.perawallet.app/main'),
+        ).toEqual(['https://discover-mobile.perawallet.app'])
+    })
+
+    test('returns nothing for an empty or malformed URL', () => {
+        expect(getIframeOrigins('')).toEqual([])
+        expect(getIframeOrigins('not a url')).toEqual([])
     })
 })

@@ -59,6 +59,7 @@ export default defineConfig({
             'web-shims/**/*.spec.{js,jsx,ts,tsx}',
             'src/content/**/*.test.{ts,tsx}',
             'src/background/**/*.test.{ts,tsx}',
+            'scripts/**/*.test.ts',
         ],
     },
 })
