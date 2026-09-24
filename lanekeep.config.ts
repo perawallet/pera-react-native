@@ -17,6 +17,7 @@ import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
 import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
+import noUnusedTranslationKeys from './lanekeep/rules/no-unused-translation-keys.js'
 import noWcImportsInConnectionsModule from './lanekeep/rules/no-wc-imports-in-connections-module.js'
 import noWorkItemRefs from './lanekeep/rules/no-work-item-refs.js'
 import translationKeyExists from './lanekeep/rules/translation-key-exists.js'
@@ -74,5 +75,6 @@ export default defineConfig({
         noWorkItemRefs,
         localeKeyParity,
         translationKeyExists,
+        noUnusedTranslationKeys,
     ],
 })
