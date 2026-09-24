@@ -33,6 +33,7 @@ takes the rest: rules that need tests or tooling in view, another file's content
 | `pera/locale-key-parity`                   | Every locale imported by `apps/mobile/src/i18n/locales.ts` has exactly `en.json`'s keys; an extra plural variant is allowed only where `en.json` pluralises the base. Cross-file: skipped under `--staged`.       |
 | `pera/translation-key-exists`              | A literal `t('…')` key is a leaf in `en.json`; a plural base counts.                                                                                                                                              |
 | `pera/no-unused-translation-keys`          | Every `en.json` key is claimed by a string literal, a template head or an ancestor path, or (outside `errors.*`) by a plural base or `EXCLUDED_KEYS`. Cross-file: skipped under `--staged`.                       |
+| `pera/no-i18n-integrity-suppressions`      | The i18n integrity rules above can't be suppressed: a missing, extra or unused key has no legitimate exception.                                                                                                   |
 
 This is the complete set of lanekeep's `pera/*` rules.
 
