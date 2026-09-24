@@ -62,7 +62,8 @@ export default defineRule({
 
         // A licence comment already in first position is replaced; anything
         // else (code, a module banner) keeps its place below a new header.
-        const firstText = ctx.text(first) ?? ''
+        const firstText = ctx.text(first)
+        if (firstText === undefined) return
         const isStale =
             ctx.kind(first) === 'comment' &&
             firstText.startsWith('/*') &&

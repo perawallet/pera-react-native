@@ -58,6 +58,7 @@ describe('pera/copyright-header', () => {
                 'apps/demo/src/bare.ts': 'export const bare = 1\n',
                 'apps/demo/src/stale.ts':
                     '/*\n Copyright 2020 Someone\n */\n\nexport const stale = 1\n',
+                'apps/demo/src/empty.ts': '',
             },
             async dir => {
                 const runner = await createRunner(RULE, `${dir}/**/*.ts`)
@@ -74,6 +75,11 @@ describe('pera/copyright-header', () => {
                     )
                     expect(await read('stale.ts')).toBe(
                         `${COPYRIGHT_HEADER}\n\nexport const stale = 1\n`,
+                    )
+                    expect(await read('empty.ts')).toMatch(
+                        new RegExp(
+                            `^${COPYRIGHT_HEADER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+                        ),
                     )
                     expect(await runner.run()).toEqual([])
                 } finally {
