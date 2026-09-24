@@ -323,8 +323,33 @@ describe('step-version orchestration', () => {
         expect(mockedRunExtrasMigration).toHaveBeenCalledWith(
             expect.anything(),
             ['deviceIdentifiers'],
+            { walletConnectSessionKeys: undefined },
         )
         expect(result.completed).toBe(true)
+    })
+
+    it('hands the WalletConnect session-key store to the extras step, not the account loop', async () => {
+        const walletConnectSessionKeys = {
+            commit: vi.fn(),
+            has: vi.fn(),
+            read: vi.fn(),
+            remove: vi.fn(),
+        }
+
+        await runMigration(buildMigrationService(), {
+            ...buildDeps(),
+            walletConnectSessionKeys,
+        })
+
+        expect(mockedRunExtrasMigration).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            { walletConnectSessionKeys },
+        )
+        expect(mockedRunMigrationLoop).toHaveBeenCalledTimes(1)
+        expect(mockedRunMigrationLoop.mock.calls[0][0]).not.toHaveProperty(
+            'walletConnectSessionKeys',
+        )
     })
 
     it('records versions for succeeded steps even when another step fails', async () => {
