@@ -15,8 +15,15 @@ import { renderHook } from '@testing-library/react'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 
-const { mockCapabilities } = vi.hoisted(() => ({
+const { mockCapabilities, mockLock } = vi.hoisted(() => ({
     mockCapabilities: { developerGallery: true },
+    mockLock: { fn: null as null | (() => Promise<void>) },
+}))
+
+vi.mock('../lockWallet', () => ({
+    get lockWallet() {
+        return mockLock.fn
+    },
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -43,6 +50,7 @@ describe('useAccountHeaderMenu', () => {
     beforeEach(() => {
         ;(usePreferences as Mock).mockReset()
         mockCapabilities.developerGallery = true
+        mockLock.fn = null
     })
 
     it('leads with the chart toggle by default', () => {
@@ -84,5 +92,27 @@ describe('useAccountHeaderMenu', () => {
                 label.startsWith('settings.developer.node_settings.enable_'),
             ),
         ).toBe(true)
+    })
+
+    it('offers no lock where the platform has no manual lock', () => {
+        const { result } = renderHook(() => useAccountHeaderMenu())
+
+        expect(result.current.items.map(item => item.label)).not.toContain(
+            'vault.security.lock_now',
+        )
+    })
+
+    it('locks the wallet from the menu where a manual lock exists', () => {
+        const lock = vi.fn().mockResolvedValue(undefined)
+        mockLock.fn = lock
+
+        const { result } = renderHook(() => useAccountHeaderMenu())
+        const item = result.current.items.find(
+            i => i.label === 'vault.security.lock_now',
+        )
+        item?.onPress()
+
+        expect(item).toBeDefined()
+        expect(lock).toHaveBeenCalledTimes(1)
     })
 })

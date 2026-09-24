@@ -21,6 +21,7 @@ import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { routeCapabilities } from '@routes/capabilities'
+import { lockWallet } from './lockWallet'
 
 export type UseAccountHeaderMenuOptions = {
     showChartToggle?: boolean
@@ -84,6 +85,15 @@ export const useAccountHeaderMenu = ({
                 icon: chartVisible ? 'text-document' : 'chart',
                 onPress: () =>
                     setPreference(UserPreferences.chartVisible, !chartVisible),
+            })
+        }
+
+        if (lockWallet) {
+            baseItems.push({
+                label: t('vault.security.lock_now'),
+                icon: 'locked',
+                // VaultGate observes the lock and takes over the screen.
+                onPress: () => void lockWallet?.(),
             })
         }
 
