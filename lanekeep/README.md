@@ -31,6 +31,7 @@ takes the rest: rules that need tests or tooling in view, another file's content
 | `pera/copyright-header`                    | Every `.ts`/`.tsx` file under `apps/*/src`, `packages/*/src`, `extensions/*/src` and `conformance/src`, tests included, opens with the Apache licence header in `shared/copyright.ts`. `pnpm lint:fix` writes it. |
 | `pera/no-work-item-refs`                   | No ticket, milestone or task reference in a code comment, in any TS/JS file. Markdown, shell and YAML are `pnpm lint:docs`'s.                                                                                     |
 | `pera/locale-key-parity`                   | Every locale imported by `apps/mobile/src/i18n/locales.ts` has exactly `en.json`'s keys; an extra plural variant is allowed only where `en.json` pluralises the base. Cross-file: skipped under `--staged`.       |
+| `pera/translation-key-exists`              | A literal `t('…')` key is a leaf in `en.json`; a plural base counts.                                                                                                                                              |
 
 This is the complete set of lanekeep's `pera/*` rules.
 
