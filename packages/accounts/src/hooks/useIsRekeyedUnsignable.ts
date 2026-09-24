@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { isRekeyedUnsignable } from '../utils'
+import { isRekeyedUnsignable } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
 

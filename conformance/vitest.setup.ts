@@ -35,16 +35,23 @@ const store = new Map<string, string>()
 // — do not reach for `importActual` of the barrel itself, which is the graph
 // this mock exists to avoid.
 vi.mock('@perawallet/wallet-core-accounts', async () => {
-    const [models, utils, constants, errors, bip44] = await Promise.all([
-        vi.importActual<object>('@perawallet/wallet-core-accounts/models'),
-        vi.importActual<object>('@perawallet/wallet-core-accounts/utils'),
-        vi.importActual<object>('@perawallet/wallet-core-accounts/constants'),
-        vi.importActual<object>('@perawallet/wallet-core-accounts/errors'),
-        vi.importActual<object>('@perawallet/wallet-core-accounts/bip44'),
-    ])
+    const [models, utils, signerResolution, constants, errors, bip44] =
+        await Promise.all([
+            vi.importActual<object>('@perawallet/wallet-core-accounts/models'),
+            vi.importActual<object>('@perawallet/wallet-core-accounts/utils'),
+            vi.importActual<object>(
+                '@perawallet/wallet-core-accounts/signer-resolution',
+            ),
+            vi.importActual<object>(
+                '@perawallet/wallet-core-accounts/constants',
+            ),
+            vi.importActual<object>('@perawallet/wallet-core-accounts/errors'),
+            vi.importActual<object>('@perawallet/wallet-core-accounts/bip44'),
+        ])
     return {
         ...models,
         ...utils,
+        ...signerResolution,
         ...constants,
         ...errors,
         ...bip44,

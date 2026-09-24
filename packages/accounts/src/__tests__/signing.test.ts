@@ -11,9 +11,9 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { canSignArbitraryData } from '../utils'
 import {
     canInitiateRekey,
-    canSignArbitraryData,
     canSignWith,
     getRekeyAccount,
     getSignerFor,
@@ -21,7 +21,7 @@ import {
     isRekeyedUnsignable,
     rekeyTransitionFor,
     resolveSignerFor,
-} from '../utils'
+} from '../signer-resolution'
 import {
     AccountTypes,
     type Algo25Account,

@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { getRekeyAccount } from '../utils'
+import { getRekeyAccount } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
 
