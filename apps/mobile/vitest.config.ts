@@ -16,654 +16,180 @@ import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
 import path from 'path'
+import {
+    type AliasEntry,
+    tsconfigPathAliases,
+    workspaceSourceAliases,
+} from './vitest.aliases'
+
+const monorepoRoot = path.resolve(__dirname, '../..')
+const testUtil = (file: string): string =>
+    path.resolve(__dirname, './src/test-utils', file)
+
+// Hand-written redirections: each points a specifier somewhere other than its
+// own source, and says why. They are listed first, so they win over the
+// generated source aliases below.
+const redirections: AliasEntry[] = [
+    {
+        // The published expo-linear-gradient build ships untransformed
+        // JSX that vitest's parser can't read; swap it for a stub.
+        find: 'expo-linear-gradient',
+        replacement: testUtil('expo-linear-gradient-stub.tsx'),
+    },
+    {
+        // Skia's Platform module imports `findNodeHandle` from
+        // react-native, which is aliased to react-native-web below — no such
+        // export, so importing Skia at all fails collection for every suite
+        // that reaches a chart.
+        find: '@shopify/react-native-skia',
+        replacement: testUtil('skia-stub.tsx'),
+    },
+    {
+        // victory-native draws through Skia (see above) and its
+        // gestures need a real UI thread. Suites that assert on chart
+        // wiring mock it themselves.
+        find: 'victory-native',
+        replacement: testUtil('victory-native-stub.tsx'),
+    },
+    {
+        // react-native-keyboard-controller ships untranspiled
+        // sources that vitest can't parse; tests don't need real
+        // keyboard tracking, so route through a passthrough stub.
+        find: 'react-native-keyboard-controller',
+        replacement: testUtil('keyboard-controller-stub.tsx'),
+    },
+    {
+        // react-native-error-boundary ships untranspiled JSX that
+        // vitest can't parse; the stub mirrors its catch/resetError
+        // contract so boundary specs stay behavioral.
+        find: 'react-native-error-boundary',
+        replacement: testUtil('error-boundary-stub.tsx'),
+    },
+    {
+        // `@perawallet/walletconnect` (WC v1 fork) opens a relay socket on
+        // construction — no good in jsdom. Route every consumer (including
+        // `@perawallet/wallet-core-walletconnect`'s v1 handler) through a stub
+        // class that captures `on()` handlers and `approveSession()` calls so
+        // integration tests can drive the pairing flow end-to-end. The stub
+        // also exports `walletConnectClientStub` for tests to inspect instances.
+        find: '@perawallet/walletconnect',
+        replacement: testUtil('walletconnect-client-stub.ts'),
+    },
+    {
+        // v2's transport, same reasoning: `useConnectionsProvider`
+        // registers the WalletConnect v2 handler, so every suite that
+        // mounts `ConnectionsProvider` would otherwise build a real
+        // WalletKit and dial the Reown relay. One stub module serves
+        // both specifiers — the handler's only imports are
+        // `WalletKit`, `Core` and `EXPIRER_EVENTS`.
+        find: '@reown/walletkit',
+        replacement: testUtil('walletkit-stub.ts'),
+    },
+    {
+        find: '@walletconnect/core',
+        replacement: testUtil('walletkit-stub.ts'),
+    },
+    {
+        // Replace the throwing production stub with an in-memory test
+        // implementation so flow tests can exercise real platform-aware
+        // code paths (key-value storage, biometrics opt-in, etc.).
+        find: '@perawallet/wallet-extension-platform-driver',
+        replacement: testUtil('platform-driver-test.ts'),
+    },
+    {
+        // In-memory replacement for the MMKV+AES-GCM React-Native
+        // keystore. Lets `kms` run end-to-end (commit/remove/clear/
+        // export) without native crypto deps.
+        find: '@algorandfoundation/react-native-keystore',
+        replacement: testUtil('algorand-keystore-test.ts'),
+    },
+    {
+        // Ledger BLE/USB extensions transitively load native bluetooth
+        // libraries that don't parse under jsdom. Stub at the
+        // extension boundary; HW-wallet tests can override per-test.
+        find: '@perawallet/wallet-extension-ledger-react-native-usb',
+        replacement: testUtil('ledger-extension-stub.ts'),
+    },
+    {
+        find: '@perawallet/wallet-extension-ledger-react-native',
+        replacement: testUtil('ledger-extension-stub.ts'),
+    },
+]
+
+// Pinned to this app's own copy so an import from another workspace package
+// resolves to the same module instance; under pnpm those packages have no
+// react-native-web of their own, and a second React breaks hooks.
+const singletons: AliasEntry[] = [
+    {
+        find: 'react-native',
+        replacement: path.resolve(__dirname, './node_modules/react-native-web'),
+    },
+    {
+        find: 'react',
+        replacement: path.resolve(__dirname, './node_modules/react'),
+    },
+    {
+        find: 'react-dom',
+        replacement: path.resolve(__dirname, './node_modules/react-dom'),
+    },
+    {
+        find: '@tanstack/react-query',
+        replacement: path.resolve(
+            __dirname,
+            './node_modules/@tanstack/react-query',
+        ),
+    },
+]
+
+// These resolve through node_modules to the package's built `dist` rather
+// than to source. Moving one to source changes the code under test, so do it
+// on purpose and run the full suite.
+const distResolvedPackages = new Set([
+    '@perawallet/wallet-core-app-integrity',
+    '@perawallet/wallet-core-asa-inbox',
+    '@perawallet/wallet-core-background',
+    '@perawallet/wallet-core-dapp',
+    '@perawallet/wallet-core-database',
+    '@perawallet/wallet-core-dev-fixtures',
+    '@perawallet/wallet-core-hardware-wallet',
+    '@perawallet/wallet-core-migrate',
+    '@perawallet/wallet-core-passkeys',
+    '@perawallet/wallet-core-projects',
+    '@perawallet/wallet-core-search',
+    '@perawallet/wallet-extension-keystore-chrome',
+    '@perawallet/wallet-extension-ledger-web-ble',
+    '@perawallet/wallet-extension-ledger-web-usb',
+    '@perawallet/wallet-extension-passkey-autofill',
+    '@perawallet/wallet-extension-platform-chrome',
+    '@perawallet/wallet-extension-platform-react-native',
+])
+// Same, for the root barrel only; their `/test-handlers` still come from source.
+const distResolvedRoots = new Set([
+    '@perawallet/wallet-core-card',
+    '@perawallet/wallet-core-nfd',
+])
 
 export default defineConfig({
     plugins: [svgr(), react()],
     assetsInclude: ['**/*.svg'],
     resolve: {
         alias: [
-            {
-                find: 'react-native',
-                // Absolute path so the alias resolves identically when the
-                // import originates from another workspace package — those
-                // packages don't have react-native-web in their own
-                // node_modules under pnpm.
-                replacement: path.resolve(
-                    __dirname,
-                    './node_modules/react-native-web',
-                ),
-            },
-            {
-                // The published expo-linear-gradient build ships untransformed
-                // JSX that vitest's parser can't read; swap it for a stub.
-                find: 'expo-linear-gradient',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/expo-linear-gradient-stub.tsx',
-                ),
-            },
-            {
-                // Skia's Platform module imports `findNodeHandle` from
-                // react-native, which the alias above points at
-                // react-native-web — no such export, so importing Skia at all
-                // fails collection for every suite that reaches a chart.
-                find: '@shopify/react-native-skia',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/skia-stub.tsx',
-                ),
-            },
-            {
-                // victory-native draws through Skia (see above) and its
-                // gestures need a real UI thread. Suites that assert on chart
-                // wiring mock it themselves.
-                find: 'victory-native',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/victory-native-stub.tsx',
-                ),
-            },
-            {
-                // react-native-keyboard-controller ships untranspiled
-                // sources that vitest can't parse; tests don't need real
-                // keyboard tracking, so route through a passthrough stub.
-                find: 'react-native-keyboard-controller',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/keyboard-controller-stub.tsx',
-                ),
-            },
-            {
-                // react-native-error-boundary ships untranspiled JSX that
-                // vitest can't parse; the stub mirrors its catch/resetError
-                // contract so boundary specs stay behavioral.
-                find: 'react-native-error-boundary',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/error-boundary-stub.tsx',
-                ),
-            },
-            {
-                // `@perawallet/walletconnect` (WC v1 fork) opens a relay
-                // socket on construction — no good in jsdom. Route every
-                // consumer (including `@perawallet/wallet-core-walletconnect`'s
-                // v1 handler) through a
-                // stub class that captures `on()` handlers and
-                // `approveSession()` calls so integration tests can drive the
-                // pairing flow end-to-end. The stub also exports
-                // `walletConnectClientStub` for tests to inspect instances.
-                find: '@perawallet/walletconnect',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/walletconnect-client-stub.ts',
-                ),
-            },
-            {
-                // v2's transport, same reasoning: `useConnectionsProvider`
-                // registers the WalletConnect v2 handler, so every suite that
-                // mounts `ConnectionsProvider` would otherwise build a real
-                // WalletKit and dial the Reown relay. One stub module serves
-                // both specifiers — the handler's only imports are
-                // `WalletKit`, `Core` and `EXPIRER_EVENTS`.
-                find: '@reown/walletkit',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/walletkit-stub.ts',
-                ),
-            },
-            {
-                find: '@walletconnect/core',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/walletkit-stub.ts',
-                ),
-            },
-            {
-                find: 'react',
-                replacement: path.resolve(__dirname, './node_modules/react'),
-            },
-            {
-                find: 'react-dom',
-                replacement: path.resolve(
-                    __dirname,
-                    './node_modules/react-dom',
-                ),
-            },
-            {
-                find: '@components',
-                replacement: path.resolve(__dirname, './src/components'),
-            },
-            {
-                find: '@modules',
-                replacement: path.resolve(__dirname, './src/modules'),
-            },
-            {
-                find: '@hooks',
-                replacement: path.resolve(__dirname, './src/hooks'),
-            },
-            {
-                find: '@i18n',
-                replacement: path.resolve(__dirname, './src/i18n'),
-            },
-            {
-                find: '@analytics',
-                replacement: path.resolve(__dirname, './src/analytics'),
-            },
-            {
-                find: '@constants',
-                replacement: path.resolve(__dirname, './src/constants'),
-            },
-            {
-                find: '@theme',
-                replacement: path.resolve(__dirname, './src/theme'),
-            },
-            {
-                find: '@providers',
-                replacement: path.resolve(__dirname, './src/providers'),
-            },
-            {
-                find: '@routes',
-                replacement: path.resolve(__dirname, './src/routes'),
-            },
-            {
-                find: '@assets',
-                replacement: path.resolve(__dirname, './assets'),
-            },
-            {
-                find: '@layouts',
-                replacement: path.resolve(__dirname, './src/layouts'),
-            },
-            {
-                find: '@test-utils',
-                replacement: path.resolve(__dirname, './src/test-utils'),
-            },
-            {
-                find: '@utils',
-                replacement: path.resolve(__dirname, './src/utils'),
-            },
-            {
-                // Test-only: a spec that has to reach a package module by
-                // path (because the barrel is hand-mocked) should not have to
-                // count how deep it sits to do it.
-                find: '@packages',
-                replacement: path.resolve(__dirname, '../../packages'),
-            },
+            ...redirections,
+            ...singletons,
+            ...tsconfigPathAliases(path.resolve(__dirname, './tsconfig.json')),
+            // Vitest-only shorthand for `src/`: Metro and Babel don't resolve it, so app code must not use it.
             { find: '@', replacement: path.resolve(__dirname, './src') },
-            {
-                // The `/test-utils` sub-export is consumed by msw-handlers
-                // files across packages (validateMockResponse / -Request).
-                // Aliased to source so changes don't require rebuilding the
-                // shared package's dist between iterations.
-                find: '@perawallet/wallet-core-shared/test-utils',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/shared/src/test-utils/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-shared/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/shared/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-shared/queue',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/shared/src/queue/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-shared',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/shared/src/index.ts',
-                ),
-            },
-            {
-                // Replace the throwing production stub with an in-memory test
-                // implementation so flow tests can exercise real platform-aware
-                // code paths (key-value storage, biometrics opt-in, etc.).
-                // See apps/mobile/src/test-utils/platform-driver-test.ts.
-                find: '@perawallet/wallet-extension-platform-driver',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/platform-driver-test.ts',
-                ),
-            },
-            {
-                // In-memory replacement for the MMKV+AES-GCM React-Native
-                // keystore. Lets `kms` run end-to-end (commit/remove/clear/
-                // export) without native crypto deps.
-                // See apps/mobile/src/test-utils/algorand-keystore-test.ts.
-                find: '@algorandfoundation/react-native-keystore',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/algorand-keystore-test.ts',
-                ),
-            },
-            {
-                // Ledger BLE/USB extensions transitively load native bluetooth
-                // libraries that don't parse under jsdom. Stub at the
-                // extension boundary; HW-wallet tests can override per-test.
-                find: '@perawallet/wallet-extension-ledger-react-native-usb',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/ledger-extension-stub.ts',
-                ),
-            },
-            {
-                // Platform-agnostic types/errors/constants, now its own
-                // package (it has no react-native dependency, and the two web
-                // transports were reaching it through a package named
-                // "react-native"). Safe to alias straight to source. MUST come
-                // before the ledger-react-native alias below so prefix
-                // matching doesn't shadow it.
-                find: '@perawallet/wallet-extension-ledger-shared',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../extensions/ledger-shared/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-extension-ledger-react-native',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/ledger-extension-stub.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-extension-provider',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../extensions/provider/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-extension-platform',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../extensions/platform/src/index.ts',
-                ),
-            },
-            {
-                // `vitest.setup.ts` builds the provider's connection store from
-                // this package, so EVERY mobile unit test loads it. Left on
-                // `dist` that is a global stale-build hazard, the same one the
-                // core connections alias above avoids.
-                find: '@perawallet/wallet-extension-connections',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../extensions/connections/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-age-gate',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/age-gate/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-analytics',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/analytics/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-nfd/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/nfd/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-accounts/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/accounts/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-accounts',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/accounts/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-card/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/card/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-backup/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/backup/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-backup',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/backup/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-assets/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/assets/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-assets',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/assets/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-blockchain/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/blockchain/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-blockchain/arc0001/limits',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/blockchain/src/arc0001/limits.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-blockchain',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/blockchain/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-config',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/config/src/index.ts',
-                ),
-            },
-            {
-                // More specific deep-import alias must come BEFORE the
-                // package's main alias so prefix matching doesn't shadow it.
-                find: '@perawallet/wallet-core-currencies/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/currencies/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-currencies',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/currencies/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-contacts',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/contacts/src/index.ts',
-                ),
-            },
-            {
-                // Ahead of the package root, which would otherwise match
-                // this specifier as a prefix and resolve it to
-                // `…/src/index.ts/v2`. The v2 handler has no barrel export —
-                // that is what keeps @reown/walletkit out of `apps/browser`.
-                find: '@perawallet/wallet-core-walletconnect/v2',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/walletconnect/src/v2/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-walletconnect',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/walletconnect/src/index.ts',
-                ),
-            },
-            {
-                // Actively developed alongside the rest of this plan —
-                // aliased to source rather than `dist` to avoid the stale-
-                // build hazard this project has already hit repeatedly.
-                find: '@perawallet/wallet-core-connections',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/connections/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-settings',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/settings/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-kms/constants',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/kms/src/constants.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-kms',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/kms/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-transactions/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/transactions/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-transactions',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/transactions/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-onramp/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/onramp/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-onramp',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/onramp/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-fee-delegation/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/fee-delegation/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-fee-delegation',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/fee-delegation/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-swaps/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/swaps/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-swaps',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/swaps/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-polling/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/polling/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-polling',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/polling/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-devtools',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/devtools/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-signing/constants',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/signing/src/constants.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-signing',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/signing/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-ledger',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/ledger/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-security',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/security/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-messages/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/messages/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-messages',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/messages/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-multisig/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/multisig/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-multisig',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/multisig/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-device/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/device/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-device',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/device/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-banners/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/banners/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-banners',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/banners/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-remote-config',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/remote-config/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-staking/test-handlers',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/staking/src/test-handlers.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-staking',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/staking/src/index.ts',
-                ),
-            },
-            {
-                find: '@perawallet/wallet-core-notifications',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../packages/notifications/src/index.ts',
-                ),
-            },
-            {
-                find: '@tanstack/react-query',
-                replacement: path.resolve(
-                    __dirname,
-                    './node_modules/@tanstack/react-query',
-                ),
-            },
+            ...workspaceSourceAliases({
+                packageRoots: [
+                    path.join(monorepoRoot, 'packages'),
+                    path.join(monorepoRoot, 'extensions'),
+                ],
+                skipPackages: new Set([
+                    ...distResolvedPackages,
+                    ...redirections.map(({ find }) => find),
+                ]),
+                skipSpecifiers: distResolvedRoots,
+            }),
         ],
         extensions: [
             '.mjs',
