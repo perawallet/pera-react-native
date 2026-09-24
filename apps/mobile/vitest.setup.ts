@@ -836,6 +836,7 @@ vi.mock('@components/core', () => {
                 'data-size': size,
             }),
         ),
+        PWBottomSheetView: createMockComponent('PWBottomSheetView'),
         PWScrollView: createMockComponent('PWScrollView'),
         PWSheetLayout: ({ header, children, footer, testID }: any) =>
             React.createElement(
