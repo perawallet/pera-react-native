@@ -47,12 +47,6 @@ const isTransport = dir =>
 // Keyed `from -> to` by workspace directory. Each reason says why the edge is
 // tolerated and what removes it.
 const ALLOWLIST = {
-    'extensions/platform-chrome -> packages/connections':
-        'platform-chrome also hosts the MV3 runtime (dApp routing, connection plumbing, WebAuthn relay) beside its PlatformServices driver; moving that runtime into its own browser-runtime package removes the edge',
-    'extensions/platform-chrome -> packages/dapp':
-        'same MV3 runtime as the connections edge: the dApp router and transport live in platform-chrome',
-    'extensions/platform-chrome -> packages/passkeys':
-        'same MV3 runtime as the connections edge: the WebAuthn relay uses the passkeys /webauthn helpers',
     'extensions/keystore-chrome -> packages/passkeys':
         'the Chrome keystore implements the KeystoreSigner port that packages/passkeys defines, through its dependency-free /webauthn subpath',
 }

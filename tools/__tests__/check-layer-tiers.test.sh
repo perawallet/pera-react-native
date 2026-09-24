@@ -102,17 +102,17 @@ baseline "$TOOLING"
 member "$TOOLING" extensions/platform "$(dep devtools)"
 check "rejects tooling as a runtime dependency" "1" "$(run "$TOOLING")"
 
-# platform-chrome -> dapp is on the script's allowlist.
+# keystore-chrome -> passkeys is on the script's allowlist.
 ALLOWED=$WORK/allowed
 baseline "$ALLOWED"
-member "$ALLOWED" packages/dapp
-member "$ALLOWED" extensions/platform-chrome "$(dep dapp)"
+member "$ALLOWED" packages/passkeys
+member "$ALLOWED" extensions/keystore-chrome "$(dep passkeys)"
 check "accepts an allowlisted edge" "0" "$(run "$ALLOWED")"
 
 STALE=$WORK/stale
 baseline "$STALE"
-member "$STALE" packages/dapp
-member "$STALE" extensions/platform-chrome "$(dep platform)"
+member "$STALE" packages/passkeys
+member "$STALE" extensions/keystore-chrome "$(dep platform)"
 check "rejects an allowlisted edge that no longer exists" "1" "$(run "$STALE")"
 
 # An empty tree means the globs stopped matching; passing would be a false green.
