@@ -149,6 +149,7 @@ jobs:
         run: pnpm run lint:docs
 
       - name: Prettier
+        if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
         run: pnpm run format --check
 
       # Lockfile-only, so it belongs on the cheap job. Two resolved algosdk
@@ -158,6 +159,7 @@ jobs:
       # the ability to sign. Until now this ran only in tools/pre-push, which
       # the documented `--no-fail-on-error` invocation makes non-blocking.
       - name: Single algosdk resolution
+        if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
         run: pnpm run check:single-algosdk
 
   # Blocking static analysis: unused code, circular dependencies, and code
