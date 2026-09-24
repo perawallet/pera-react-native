@@ -67,7 +67,7 @@ export const useImpactTransactions = (): UseImpactTransactionsResult => {
     }
 
     const transactions = useMemo(() => {
-        if (simulation.data && simulation.data.length > 0) {
+        if (simulation.data.length > 0) {
             return [...allTransactions, ...simulation.data]
         }
         return allTransactions
