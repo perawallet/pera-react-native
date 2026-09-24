@@ -126,7 +126,7 @@ whose pan gesture and worklet cannot fire under jsdom; the stand-in confirms on 
 
 ## Integration tests
 
-Flow tests live in `apps/mobile/src/__integration__/<flow>.test.tsx` and run real React Query, real
+Flow tests live in `apps/mobile/src/__integration__/<flow>.spec.tsx` and run real React Query, real
 Zustand stores, real domain hooks and the real KMS keystore. Only the network is mocked (MSW) and the
 platform's native services are swapped for in-memory test implementations.
 
@@ -150,7 +150,7 @@ aliased separately to its real source so consumers still get types and constants
 ### algod and indexer via algokit-utils
 
 `algokit-utils` makes its REST calls through `fetch`, which MSW intercepts cleanly (verified in
-`apps/mobile/src/__integration__/algokit-smoke.test.ts`). Handler factories for the common algod and
+`apps/mobile/src/__integration__/algokit-smoke.spec.ts`). Handler factories for the common algod and
 indexer endpoints live in `packages/blockchain/src/msw-handlers.ts` and are re-exported via
 `@perawallet/wallet-core-blockchain/test-handlers`:
 

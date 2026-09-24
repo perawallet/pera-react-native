@@ -50,7 +50,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 // hooks the calculator consumes. The min-fee fetcher is stubbed at the hook
 // boundary with its real contract (BigInt minFee; fallback on failure) —
 // the fetch-through-cache semantics themselves are covered by
-// packages/blockchain/src/hooks/__tests__/useSuggestedParametersQuery.test.ts.
+// packages/blockchain/src/hooks/__tests__/useSuggestedParametersQuery.spec.ts.
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<Record<string, unknown>>(
         '@perawallet/wallet-core-blockchain',

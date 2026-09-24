@@ -49,7 +49,7 @@ const PBKDF2_P256_SCHEME = 'pbkdf2-p256'
  * -> `react-native-mmkv`, which is why `@perawallet/wallet-core-passkeys`
  * splits the `/webauthn` subpath this port consumes (`webauthn.ts:18-25`).
  *
- * Both copies assert the same literal — `keystore-signer.test.ts` here,
+ * Both copies assert the same literal — `keystore-signer.spec.ts` here,
  * `passkeyMainKey.spec.ts` in provider — so either one drifting alone fails its
  * own suite.
  */

@@ -41,7 +41,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 // A recreated connector starts with a closed socket; `_transport.connected`
 // is the field the registry reads (and tests flip) to simulate it opening —
-// same stand-in as connection/__tests__/connectorRegistry.test.ts.
+// same stand-in as connection/__tests__/connectorRegistry.spec.ts.
 vi.mock('@perawallet/walletconnect', () => ({
     default: vi.fn(function (
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

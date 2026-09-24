@@ -38,7 +38,6 @@ paths = [
 description = "Test fixtures use literal strings like 'test-algod-key-456' or 'algo25-key-ADDR' as dummy identifiers; real credentials never live in test files"
 paths = [
     '''.*__tests__/.*''',
-    '''.*\.test\.(ts|tsx|js|jsx)$''',
     '''.*\.spec\.(ts|tsx|js|jsx)$''',
     '''.*/mocks/.*''',
     '''.*/__mocks__/.*''',

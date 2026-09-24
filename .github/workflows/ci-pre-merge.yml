@@ -154,6 +154,11 @@ jobs:
       - name: Single algosdk resolution
         run: pnpm run check:single-algosdk
 
+      # The mobile and browser vitest configs collect only `*.spec.*`, so a
+      # `.test.ts` there would silently never run.
+      - name: Test file suffix
+        run: pnpm run check:test-suffix
+
   # Blocking static analysis: unused code, circular dependencies, and code
   # duplication via fallow. Findings are surfaced in the job summary and fail
   # the PR (the step exits with fallow's status).

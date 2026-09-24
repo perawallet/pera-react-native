@@ -66,7 +66,7 @@ const collectScannedFiles = (): Promise<string[]> =>
 // pattern anchors on `from`; so is anything outside a `*/src/**` root.
 // Subpath imports ARE covered: canary.23 ships `/types` and `/errors` in its
 // `exports` map (see extensions/keystore-chrome/src/__tests__/
-// no-upstream-keystore-import.test.ts, whose sibling guard makes the same
+// no-upstream-keystore-import.spec.ts, whose sibling guard makes the same
 // point), so a subpath-only escape hatch would otherwise resolve for any
 // consumer. Widening the pattern was preferred over documenting the hole —
 // the tree has no subpath importer today, so the guard costs nothing to hold.
