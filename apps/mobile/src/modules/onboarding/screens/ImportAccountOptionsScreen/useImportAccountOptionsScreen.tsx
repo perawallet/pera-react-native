@@ -11,7 +11,6 @@
  */
 
 import React, { useCallback, useMemo } from 'react'
-import { Platform } from 'react-native'
 import {
     resolveImportAccountType,
     setPendingImportMnemonic,
@@ -32,6 +31,7 @@ import type { AccountOption } from '@modules/onboarding/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRestoreBackupOptions } from '@modules/cloud-backup'
 import { useSupportedLedgerTransports } from '@modules/ledger'
+import { routeCapabilities } from '@routes/capabilities'
 import {
     ImportOptionsContent,
     type ImportOptionsContentResult,
@@ -238,7 +238,7 @@ export const useImportAccountOptionsScreen =
                 },
             ]
 
-            if (Platform.OS === 'android' || Platform.OS === 'web') {
+            if (routeCapabilities.ledgerUsb) {
                 allOptions.push({
                     testID: 'import_account_options_pair_ledger_usb_button',
                     titleKey:

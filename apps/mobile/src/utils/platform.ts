@@ -10,17 +10,10 @@
  limitations under the License
  */
 
-import { isIOS } from '@utils/platform'
+import { Platform } from 'react-native'
 
-export const fontFamilies = {
-    DMSANS: {
-        400: isIOS() ? 'DMSans-Regular' : 'DMSansRegular',
-        500: isIOS() ? 'DMSans-Medium' : 'DMSansMedium',
-        600: isIOS() ? 'DMSans-SemiBold' : 'DMSansSemiBold',
-        700: isIOS() ? 'DMSans-Bold' : 'DMSansBold',
-    },
-    DMMONO: {
-        400: isIOS() ? 'DMMono-Regular' : 'DMMonoRegular',
-        500: isIOS() ? 'DMMono-Medium' : 'DMMonoMedium',
-    },
-}
+// Functions, not constants: specs swap Platform.OS per test, and a value read
+// at import time would pin whichever OS the first import saw.
+export const isIOS = (): boolean => Platform.OS === 'ios'
+
+export const isAndroid = (): boolean => Platform.OS === 'android'

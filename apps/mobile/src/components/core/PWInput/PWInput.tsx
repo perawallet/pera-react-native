@@ -20,7 +20,6 @@ import {
 } from 'react'
 import {
     type LayoutChangeEvent,
-    Platform,
     type TextInput,
     type TextInputProps,
 } from 'react-native'
@@ -30,8 +29,10 @@ import {
     useTheme,
 } from '@rneui/themed'
 import { getTypography, type TypographyVariant } from '@theme/typography'
+import { isAndroid } from '@utils/platform'
 import { PWTouchableIcon } from '../PWTouchableIcon'
 import { computeFitFontSize } from './computeFitFontSize'
+import { isVisibilityToggleAlwaysMounted } from './inputPlatform'
 import { useStyles } from './styles'
 import { getTestProps } from '@utils/test-id-helper'
 import {
@@ -116,8 +117,7 @@ export const getSensitiveInputProps = (): Pick<
     autoCorrect: false,
     spellCheck: false,
     autoComplete: 'off',
-    keyboardType:
-        Platform.OS === 'android' ? 'visible-password' : 'ascii-capable',
+    keyboardType: isAndroid() ? 'visible-password' : 'ascii-capable',
 })
 
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(
@@ -204,13 +204,10 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             onBlur?.(event)
         }
 
-        // Overrides any consumer-supplied rightIcon. Native keeps the toggle
-        // focus-gated (matching the rest of the app's password fields); web
-        // keeps it always mounted, since mousedown on the icon blurs the
-        // input first, which would unmount a focus-conditional toggle before
-        // its press lands.
+        // Overrides any consumer-supplied rightIcon.
         const showToggle =
-            showVisibilityToggle && (Platform.OS === 'web' || isFocused)
+            showVisibilityToggle &&
+            (isVisibilityToggleAlwaysMounted || isFocused)
         const resolvedRightIcon = showToggle ? (
             <PWTouchableIcon
                 name='eye'

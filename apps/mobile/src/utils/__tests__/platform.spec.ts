@@ -28,7 +28,7 @@ vi.mock('react-native', () => ({
     },
 }))
 
-import { isIOS } from '../utils'
+import { isAndroid, isIOS } from '../platform'
 
 describe('isIOS', () => {
     it('returns true when Platform.OS === ios', () => {
@@ -39,5 +39,19 @@ describe('isIOS', () => {
     it('returns false when Platform.OS !== ios', () => {
         mocks.Platform.OS = 'android'
         expect(isIOS()).toBe(false)
+    })
+})
+
+describe('isAndroid', () => {
+    it('returns true when Platform.OS === android', () => {
+        mocks.Platform.OS = 'android'
+        expect(isAndroid()).toBe(true)
+    })
+
+    it('returns false on iOS and web', () => {
+        mocks.Platform.OS = 'ios'
+        expect(isAndroid()).toBe(false)
+        mocks.Platform.OS = 'web'
+        expect(isAndroid()).toBe(false)
     })
 })

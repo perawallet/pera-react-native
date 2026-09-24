@@ -10,17 +10,8 @@
  limitations under the License
  */
 
-import { isIOS } from '@utils/platform'
+/** Extra style spread into the text input. Native has no focus ring to reset. */
+export const inputFocusRingReset: object | null = null
 
-export const fontFamilies = {
-    DMSANS: {
-        400: isIOS() ? 'DMSans-Regular' : 'DMSansRegular',
-        500: isIOS() ? 'DMSans-Medium' : 'DMSansMedium',
-        600: isIOS() ? 'DMSans-SemiBold' : 'DMSansSemiBold',
-        700: isIOS() ? 'DMSans-Bold' : 'DMSansBold',
-    },
-    DMMONO: {
-        400: isIOS() ? 'DMMono-Regular' : 'DMMonoRegular',
-        500: isIOS() ? 'DMMono-Medium' : 'DMMonoMedium',
-    },
-}
+/** Native keeps the reveal toggle focus-gated, like the app's other password fields. */
+export const isVisibilityToggleAlwaysMounted = false

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Alert, Platform } from 'react-native'
+import { Alert } from 'react-native'
 import {
     PWButton,
     PWCheckbox,
@@ -18,6 +18,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
+import { isAndroid } from '@utils/platform'
 import { LegacyDatabaseCard } from './components/LegacyDatabaseCard'
 import { ResultLine } from './components/ResultLine'
 import { useStyles } from './styles'
@@ -214,7 +215,7 @@ export const SettingsDeveloperMigrationSimulatorScreen = () => {
                     />
                 </PWView>
             </PWView>
-            {canSimulate && Platform.OS === 'android' && (
+            {canSimulate && isAndroid() && (
                 <PWView style={styles.actionsRow}>
                     <PWView style={styles.actionButton}>
                         <PWButton

@@ -10,17 +10,6 @@
  limitations under the License
  */
 
-import { isIOS } from '@utils/platform'
-
-export const fontFamilies = {
-    DMSANS: {
-        400: isIOS() ? 'DMSans-Regular' : 'DMSansRegular',
-        500: isIOS() ? 'DMSans-Medium' : 'DMSansMedium',
-        600: isIOS() ? 'DMSans-SemiBold' : 'DMSansSemiBold',
-        700: isIOS() ? 'DMSans-Bold' : 'DMSansBold',
-    },
-    DMMONO: {
-        400: isIOS() ? 'DMMono-Regular' : 'DMMonoRegular',
-        500: isIOS() ? 'DMMono-Medium' : 'DMMonoMedium',
-    },
-}
+// WebHID's and Web Bluetooth's requestDevice() needs transient user
+// activation, so the scan screen waits for an explicit tap.
+export const isScanGestureRequired = true

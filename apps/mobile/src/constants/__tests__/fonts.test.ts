@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
     isIOS: vi.fn(),
 }))
 
-vi.mock('../../platform/utils', () => ({
+vi.mock('@utils/platform', () => ({
     isIOS: mocks.isIOS,
 }))
 
