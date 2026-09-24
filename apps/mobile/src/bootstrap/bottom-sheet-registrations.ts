@@ -24,9 +24,10 @@
  *   useBottomSheetStore.getState().requestByType('<your-key>', { ...props })
  *
  * It lives in the composition root rather than in `@modules/bottom-sheet` so
- * the sheet infrastructure never imports the features it hosts. App.tsx and
- * AppShell.web.tsx import it for effect before the React tree mounts, so the
- * registrations bind before any deep link can fire.
+ * the sheet infrastructure never imports the features it hosts.
+ * `registerAppBottomSheets()` runs from the startup init (`bootstrap/preReact`)
+ * before the React tree mounts, so every entry binds before any deep link can
+ * fire.
  */
 
 import { AccountActionsContent } from '@modules/accounts'
@@ -42,22 +43,24 @@ import {
 } from '@modules/settings'
 import { SendFundsContent } from '@modules/transactions/routes'
 
-registerBottomSheet('asset-opt-in', OptInConfirmationContent)
-registerBottomSheet(
-    'asset-opt-in-account-selection',
-    OptInAccountSelectionContent,
-)
-registerBottomSheet('account-actions', AccountActionsContent)
-registerBottomSheet('send-funds', SendFundsContent)
-registerBottomSheet('bidali', BidaliContent)
-registerBottomSheet(
-    'passkey-biometric-required',
-    PasskeyBiometricRequiredContent,
-)
-registerBottomSheet(
-    'passkey-hd-wallet-required',
-    PasskeyHDWalletRequiredContent,
-)
+export const registerAppBottomSheets = (): void => {
+    registerBottomSheet('asset-opt-in', OptInConfirmationContent)
+    registerBottomSheet(
+        'asset-opt-in-account-selection',
+        OptInAccountSelectionContent,
+    )
+    registerBottomSheet('account-actions', AccountActionsContent)
+    registerBottomSheet('send-funds', SendFundsContent)
+    registerBottomSheet('bidali', BidaliContent)
+    registerBottomSheet(
+        'passkey-biometric-required',
+        PasskeyBiometricRequiredContent,
+    )
+    registerBottomSheet(
+        'passkey-hd-wallet-required',
+        PasskeyHDWalletRequiredContent,
+    )
+}
 
 declare module '@modules/bottom-sheet' {
     interface BottomSheetRegistry {
@@ -83,5 +86,3 @@ declare module '@modules/bottom-sheet' {
         'passkey-hd-wallet-required': Record<string, never>
     }
 }
-
-export {}

@@ -164,7 +164,7 @@ const localeTourEnabled = process.env.NODE_ENV === 'development';
 // and silently miss the next one someone writes.
 const localeTourStubs = toStubMap(projectRoot, [
     // The load-bearing one. register.ts is the tour driver's only importer
-    // (App.tsx pulls it in for effect), so stubbing it is what detaches
+    // (src/bootstrap/preReact.ts calls it), so stubbing it is what detaches
     // runTour/runTourStep/steps from the graph. The deeplink handler
     // reaches the driver through locale-tour/registry.ts instead, which
     // imports nothing — see that file for the cycle this avoids.

@@ -66,14 +66,17 @@ register it in `apps/mobile/src/bootstrap/bottom-sheet-registrations.ts`.
 That file is the single source of truth for the registry, like a route
 table. It lives in the composition root, not in this module, so the sheet
 infrastructure never imports the features it hosts. Add an import from the
-feature's public entry + a `registerBottomSheet(...)` call + a
+feature's public entry + a `registerBottomSheet(...)` call inside
+`registerAppBottomSheets` + a
 `BottomSheetRegistry` augmentation entry:
 
 ```tsx
 import { OptInConfirmationContent } from '@modules/assets'
 import { registerBottomSheet } from '@modules/bottom-sheet'
 
-registerBottomSheet('asset-opt-in', OptInConfirmationContent)
+export const registerAppBottomSheets = (): void => {
+    registerBottomSheet('asset-opt-in', OptInConfirmationContent)
+}
 
 declare module '@modules/bottom-sheet' {
     interface BottomSheetRegistry {
@@ -85,8 +88,9 @@ declare module '@modules/bottom-sheet' {
 }
 ```
 
-`bottom-sheet-registrations.ts` is imported for effect by `App.tsx` and
-`AppShell.web.tsx` before the React tree mounts, so every entry binds before any deep link can fire. Non-React callers
+`registerAppBottomSheets()` runs once from the startup init
+(`apps/mobile/src/bootstrap/preReact.ts`, and `preReact.web.ts` on web) before
+the React tree mounts, so every entry binds before any deep link can fire. Non-React callers
 (deep-link handler, native event listeners, etc.) can then open the sheet
 imperatively:
 

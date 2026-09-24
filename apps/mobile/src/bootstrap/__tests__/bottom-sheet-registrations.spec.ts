@@ -10,13 +10,16 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { OptInConfirmationContent } from '@modules/assets'
-// Side-effect: binds every registry entry.
-import '../bottom-sheet-registrations'
+import { registerAppBottomSheets } from '../bottom-sheet-registrations'
 
 describe('bottom-sheet registrations', () => {
+    beforeAll(() => {
+        registerAppBottomSheets()
+    })
+
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
         useBottomSheetStore.getState().registerBottomSheetHost()
