@@ -78,8 +78,7 @@ const noHardcodedUiStrings = {
         return {
             JSXElement(node) {
                 const { name } = node.openingElement
-                if (name.type !== 'JSXIdentifier' || name.name !== 'Text')
-                    return
+                if (name.type !== 'JSXIdentifier' || name.name !== 'Text') return
                 if (
                     node.children.length === 0 ||
                     node.children.some(child => child.type !== 'JSXText')
@@ -107,11 +106,7 @@ const noHardcodedUiStrings = {
                 if (text === '' || /['"{}]/.test(text) || NOT_COPY.test(text)) {
                     return
                 }
-                context.report({
-                    node,
-                    messageId: 'prop',
-                    data: { name, text },
-                })
+                context.report({ node, messageId: 'prop', data: { name, text } })
             },
         }
     },
