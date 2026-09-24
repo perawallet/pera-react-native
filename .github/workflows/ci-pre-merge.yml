@@ -142,6 +142,12 @@ jobs:
         if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
         run: pnpm run lint:lanekeep
 
+      # Markdown, shell and YAML; code comments are pera/no-work-item-refs in
+      # the lanekeep step. Runs even when a lint step above fails.
+      - name: Doc hygiene
+        if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
+        run: pnpm run lint:docs
+
       - name: Prettier
         run: pnpm run format --check
 

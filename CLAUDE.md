@@ -119,7 +119,8 @@ Keep JSDoc on exported package APIs where it earns its place (units, constraints
 ## Documentation (CRITICAL)
 
 The same rule as comments, one level up: **record the decision and the reason, never the journey.**
-`pnpm lint:docs` enforces the mechanical half of this and runs in pre-push.
+`pnpm lint:docs` (Markdown, shell, YAML) and the lanekeep rule `pera/no-work-item-refs` (code
+comments, in `pnpm lint`) enforce the mechanical half of this.
 
 **Never write, in a doc or a comment:**
 
