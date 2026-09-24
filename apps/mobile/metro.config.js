@@ -337,18 +337,16 @@ const customResolveRequest = (context, moduleName, platform) => {
             }
         }
     }
-    // Web builds swap the RN keystore for the chrome implementation
-    // (extensions/keystore-chrome). Native keeps the real
-    // react-native-keystore (Keychain + MMKV).
-    //
-    // This alias no longer covers key storage. The two surfaces stopped being
-    // equivalent when the app moved to canary.14 — the port implements
-    // canary.12 and has no engine factory — so the web build gets its engine
-    // from @algorandfoundation/keystore-web instead, via the `.web.ts` files
-    // beside extensions/provider's createKeystore and keystore/maintenance.
-    // What still resolves here is everything the extension owns and the RN
-    // package happens to share a name with: the password vault, auto-lock,
-    // passkey unlock and the WebAuthn signer.
+    // Web builds must never load the real react-native-keystore (Keychain +
+    // MMKV + quick-crypto), yet shared barrels still import it statically:
+    // the passkeys native readers, the legacy passkey migration writer and
+    // the provider's native keystore migrations. None of those run on web
+    // (their callers are native-only, or gated by the web migration service
+    // reporting no legacy data), so the import only has to resolve. The
+    // extension's vault package stands in; it exports none of the engine's
+    // names, which therefore read as undefined on web. The web engine itself
+    // is @algorandfoundation/keystore-web, via extensions/provider's `.web.ts`
+    // files.
     if (
         platform === 'web' &&
         moduleName === '@algorandfoundation/react-native-keystore'
@@ -362,32 +360,12 @@ const customResolveRequest = (context, moduleName, platform) => {
         );
         return context.resolveRequest(context, sourcePath, platform);
     }
-    // Subpath: App.web.tsx statically imports only the storage bootstrap to avoid
-    // pulling @algorandfoundation/keystore (and its native-bridge-touching deps)
-    // into the main synchronous bundle. The /bootstrap subpath is safe: it only
-    // re-exports hydrateKeystoreStorage which uses chrome.storage.local.
-    // Native keeps the real react-native-keystore, so this subpath must only
-    // resolve on web (same guard as every sibling branch above).
-    if (
-        platform === 'web' &&
-        moduleName === '@perawallet/wallet-extension-keystore-chrome/bootstrap'
-    ) {
-        const sourcePath = path.resolve(
-            monorepoRoot,
-            'extensions',
-            'keystore-chrome',
-            'src',
-            'bootstrap.ts',
-        );
-        return context.resolveRequest(context, sourcePath, platform);
-    }
     // Subpath: App.web.tsx statically imports only the platform-chrome
     // bootstrap (getSurface/hydratePlatform/installOffscreenStorageShim) to
     // avoid pulling ChromeDatabaseService (drizzle-orm) and the
     // hardware-wallet registry into the pre-hydration web bundle. Native
     // keeps the real react-native platform driver, so this subpath must only
-    // resolve on web (same guard as the keystore-chrome/bootstrap branch
-    // above).
+    // resolve on web.
     if (
         platform === 'web' &&
         moduleName === '@perawallet/wallet-extension-platform-chrome/bootstrap'

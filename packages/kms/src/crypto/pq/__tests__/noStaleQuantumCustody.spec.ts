@@ -46,9 +46,8 @@ const findStaleReferences = (files: string[]): string[] =>
             )
         })
 
-// `extensions/keystore-chrome` is deliberately outside the glob: it is a
-// canary.12 port, out of scope for this migration, and legitimately still owns
-// its own sync `encryptData`/`decryptData` helpers of that vintage.
+// `extensions/keystore-chrome` is outside the glob: it holds the extension's
+// password vault, never quantum key custody.
 describe('no stale quantum-custody references', () => {
     it('leaves no mention of the pre-keystore custody design', async () => {
         const files = await fg(

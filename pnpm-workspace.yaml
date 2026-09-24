@@ -23,7 +23,6 @@ catalog:
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": ^6.39.1
-  "@noble/ciphers": ^2.2.0
   "@noble/hashes": ^2.3.0
   "@notifee/react-native": ^9.1.8
   "@perawallet/walletconnect": 1.0.3
@@ -148,8 +147,8 @@ auditConfig:
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
-  # workspace depends on it (extensions/keystore-chrome vendors the flat
-  # canary.17 API locally), so it needs no freshness exemption of its own.
+  # workspace depends on it (extensions/keystore-chrome vendors the canary.17
+  # key types it needs), so it needs no freshness exemption of its own.
   # keystore-core and keystore-web ARE direct dependencies that share the
   # keystore canary publish date, so they keep their exemption independent of
   # the removed keystore pin: keystore-core is consumed by
@@ -244,8 +243,9 @@ overrides:
   # it on every pre-push.
 
   # No @algorandfoundation/keystore override, and no catalog entry either:
-  # keystore-chrome vendors the flat canary.17 API locally (src/keystore/), so
-  # nothing in the workspace depends on this package. The catalog pin was
+  # keystore-chrome vendors the canary.17 key types and error class its WebAuthn
+  # signer uses (src/keystore/), so nothing in the workspace depends on this
+  # package. The catalog pin was
   # dropped because it resolved to nothing in the lockfile — no importer, no
   # resolution — leaving Dependabot to bump a spec no consumer used and no test
   # could validate.
