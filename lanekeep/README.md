@@ -34,7 +34,7 @@ takes the rest: rules that need tests or tooling in view, another file's content
 | `pera/translation-key-exists`              | A literal `t('…')` key is a leaf in `en.json`; a plural base counts.                                                                                                                                              |
 | `pera/no-unused-translation-keys`          | Every `en.json` key is claimed by a string literal, a template head or an ancestor path, or (outside `errors.*`) by a plural base or `EXCLUDED_KEYS`. Cross-file: skipped under `--staged`.                       |
 | `pera/no-i18n-integrity-suppressions`      | The i18n integrity rules above can't be suppressed: a missing, extra or unused key has no legitimate exception.                                                                                                   |
-| `pera/pq-library-seam`                     | Only `packages/kms/src/crypto/pq` imports `falcon-1024` or `@joe-p/react-native-falcon`, in any import form; build configs, tests, e2e and `tools/` are out of scope.                                             |
+| `pera/pq-library-seam`                     | Only `packages/kms/src/crypto/pq` imports `falcon-1024` or `@joe-p/react-native-falcon`, in any import form, scoped to `apps/` and `packages/`; build configs, tests, e2e and `tools/` are out of scope.          |
 | `pera/no-keystore-meta-package`            | Nothing imports the `@algorandfoundation/keystore` meta-package, in any import form; use the specific keystore package.                                                                                           |
 | `pera/no-retired-quantum-custody`          | The names of the pre-keystore quantum custody design don't reappear, in code, comments or strings.                                                                                                                |
 
@@ -68,19 +68,22 @@ The `card` is not documentation — it is what an agent or a reviewer acts on, s
 `remediation` should say what to do rather than restate the problem.
 
 Add `gates` (`fileContains`, `pathMatches`, `pathNotMatches`) whenever the rule only
-ever fires on a subset of files — every rule uses one; `no-unused-style-keys` has only
-a path gate, because a content gate would drop consumers its reduce pass needs, and
-the whole run's performance depends on gated rules skipping the files their query
-would never match anyway. `fileContains` is an **and** across its entries, not an
-or: a rule needing "file contains A or B" cannot express that as a single gate and
-needs either two gated rules or a hand-rolled check in `check()`.
+ever fires on a subset of files. Most rules need one; `no-work-item-refs` and
+`no-i18n-integrity-suppressions` have none, because every included file is already
+in their scope. `no-unused-style-keys` has only a path gate, because a content gate
+would drop consumers its reduce pass needs, and the whole run's performance depends
+on gated rules skipping the files their query would never match anyway. `fileContains`
+is an **and** across its entries, not an or: a rule needing "file contains A or B"
+cannot express that as a single gate and needs either two gated rules or a hand-rolled
+check in `check()`.
 
 A rule that needs to reason across files — not just within the one it's currently
 handed — emits facts from `check()` with `ctx.emitFact()` and reads them back once,
 after every file has run, in a `reduce(ctx)` hook via `ctx.facts(kind)`; `reduce` is
 also where `ctx.report()` gets called for a cross-file rule, since no single file's
-`check()` sees the whole picture. `no-unused-style-keys` is the only rule that does
-this — see it for a worked example — and it is the subtlest code in this directory.
+`check()` sees the whole picture. `locale-key-parity` and `no-unused-translation-keys`
+are the simplest worked examples of a `reduce` rule; `no-unused-style-keys` is the
+subtlest code in this directory.
 
 ## Suppressing
 
