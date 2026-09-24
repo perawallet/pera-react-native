@@ -27,6 +27,7 @@ describe('pera/pq-library-seam', () => {
             'leaks.ts:3',
             'leaks.ts:5',
             'leaks.ts:6',
+            'requireClause.ts:1',
             'sibling.ts:1',
         ])
     })

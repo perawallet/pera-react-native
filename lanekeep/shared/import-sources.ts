@@ -19,6 +19,7 @@ export const IMPORT_SOURCES_QUERY = `
        function: (identifier) @require
        arguments: (arguments . [(string (string_fragment) @spec) (template_string) @spec])) @site
      (#eq? @require "require"))
+    (import_statement (import_require_clause source: (string (string_fragment) @spec))) @site
 `
 
 interface ImportSource {
