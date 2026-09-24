@@ -205,8 +205,8 @@ patchedDependencies:
   # Three unrelated reasons. The Android credential provider keeps the legacy
   # native app's service class name so Credential Manager carries the user's
   # enablement across the upgrade, relying-party scoping so the credential
-  # provider doesn't hand every stored passkey to any caller (PERA-4714), and
-  # every user-facing string the package ships names "Rocca Wallet" — its own
+  # provider doesn't hand every stored passkey to any caller, and every
+  # user-facing string the package ships names "Rocca Wallet" — its own
   # product, shown verbatim in the iOS Face ID / passcode prompts. None of the
   # three is configurable through plugin options.
   # canary.26 shipped the derivedParentSecret fix upstream (parent.bytes), so
