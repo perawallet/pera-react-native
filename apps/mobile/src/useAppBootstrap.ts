@@ -26,11 +26,7 @@ import {
     initializeDatabase,
     getDatabase,
 } from '@perawallet/wallet-core-database'
-import {
-    logger,
-    updateBackendHeaders,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     readRemoteConfigWithOverrides,
     RemoteConfigKeys,
@@ -49,6 +45,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import type { Persister } from '@tanstack/react-query-persist-client'
 import { queryClient } from './providers/QueryProvider'
 import { runPasskeyAutofillBootstrap } from './bootstrap/passkey-autofill'
+import { updateQueryHeaders } from './bootstrap/query-headers'
 import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
 import { getEffectiveSupportedLocales } from './i18n/effectiveLocales'
 import { resolveLocale } from './i18n/locales'
@@ -76,20 +73,6 @@ const SPLASH_HIDE_BACKSTOP_MS = 1000
 // Ceiling on the wait for store rehydration; see waitForStoreHydration for why
 // an unguarded wait can hang forever.
 const STORE_HYDRATION_TIMEOUT_MS = 2000
-
-const updateQueryHeaders = () => {
-    const deviceInfo = getProvider().deviceInfo
-    const headers = new Map<string, string>()
-    headers.set('App-Name', deviceInfo.getAppName())
-    headers.set('App-Package-Name', deviceInfo.getAppPackage())
-    headers.set('App-Version', deviceInfo.getAppVersion())
-    headers.set('Client-Type', deviceInfo.getDevicePlatform())
-    headers.set('Device-Version', deviceInfo.getDeviceLocale())
-    headers.set('Device-OS-Version', deviceInfo.getDeviceOSVersion())
-    headers.set('Device-Model', deviceInfo.getDeviceModelId())
-    headers.set('User-Agent', deviceInfo.getUserAgent())
-    updateBackendHeaders(headers)
-}
 
 const resolveEffectiveLocale = (): string => {
     // Reads the same dev-override layer `useRemoteConfig()` applies, via the

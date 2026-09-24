@@ -108,6 +108,9 @@ type V2Options = V1Options & {
 const mockCreateV1 = vi.fn((options: V1Options) => ({
     kind: 'walletconnect-v1',
     options,
+    deliverApprove: vi.fn(async () => {}),
+    deliverReject: vi.fn(async () => {}),
+    deliverRejectInBackground: vi.fn(),
 }))
 const mockCreateV2 = vi.fn((options: V2Options) => ({
     kind: 'walletconnect-v2',
@@ -118,6 +121,7 @@ const mockRegister = vi.fn((_handler: { kind: string }) => {})
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     importLegacyConnections: mockImport,
     createWalletConnectV1Handler: mockCreateV1,
+    WalletConnectInvalidSessionError: class extends Error {},
 }))
 // The subpath the barrel deliberately omits, mocked so this spec never loads
 // WalletKit for a registration assertion.
@@ -215,6 +219,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 const { getActiveConnectionRegistry } =
     await import('@perawallet/wallet-core-connections')
 const { useConnectionsProvider } = await import('../useConnectionsProvider')
+const { deliverApprove } =
+    await import('@modules/walletconnect/utils/activeV1Delivery')
 
 /** Flushes pending microtasks without asserting anything ran. */
 const flush = (): Promise<void> =>
@@ -323,6 +329,21 @@ describe('useConnectionsProvider', () => {
 
         unmount()
         expect(getActiveConnectionRegistry()).toBeNull()
+    })
+
+    // The multisig handoff resolver mounts beside this provider and answers a
+    // resumed v1 request through the handler it registered.
+    it('publishes its v1 handler for delivery while mounted', async () => {
+        const { unmount } = renderHook(() => useConnectionsProvider())
+        const v1 = mockCreateV1.mock.results[0].value
+
+        await deliverApprove('c1', 7, ['c2ln'])
+        expect(v1.deliverApprove).toHaveBeenCalledWith('c1', 7, ['c2ln'])
+
+        unmount()
+        await expect(deliverApprove('c1', 8, [])).rejects.toThrow(
+            'No WalletConnect v1 handler is mounted',
+        )
     })
 
     // Registration happens during render, ahead of the boot effect: a factory

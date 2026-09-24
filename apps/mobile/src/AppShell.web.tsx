@@ -10,21 +10,12 @@
  limitations under the License
  */
 
-import { initDecimalConfig, logger } from '@perawallet/wallet-core-shared'
-// Initialize Decimal.js configuration before any other imports that may use it
-initDecimalConfig()
-
 import React from 'react'
 import './i18n'
-// Side-effect import: binds the bottom-sheet registry before the React tree
-// mounts so non-React callers (deep links) can request sheets from boot.
-import './bootstrap/bottom-sheet-registrations'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { ThemeProvider, makeStyles } from '@rneui/themed'
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { KeyboardProvider } from 'react-native-keyboard-controller'
-import { NotifierWrapper } from 'react-native-notifier'
 import {
     NavigationContainer,
     useNavigationContainerRef,
@@ -38,9 +29,8 @@ import {
 import {
     getProvider,
     PeraWalletProvider,
-    usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
-import { QueryProvider } from '@providers/QueryProvider'
+import { AppProviders } from '@providers/AppProviders'
 import {
     VaultGate,
     CreatePasswordScreen,
@@ -52,37 +42,31 @@ import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { PWButton, PWText, PWView } from '@components/core'
+import { useAppTheme } from '@hooks/useAppTheme'
+import { useCrashReporterBinding } from '@hooks/useCrashReporterBinding'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTheme, getNavigationTheme } from '@theme/theme'
-import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
+import { getNavigationTheme } from '@theme/theme'
 import { WebMainRoutes } from '@routes/WebMainRoutes.web'
 import { useOnboardingExpandedFlowNavigation } from '@routes/useExpandedFlowNavigation.web'
 import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
 import { IntegrityCheckFrameHost } from '@components/IntegrityCheckFrameHost'
 import { OfflineBanner } from '@components/OfflineBanner'
-import { initNetworkStatus, useNetworkStatusListener } from '@modules/network'
+import { useNetworkStatusListener } from '@modules/network'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 import { useWebAppShell } from './useWebAppShell.web'
-import { updateQueryHeaders } from './bootstrap/query-headers'
 import { useIntegrityTokenSync } from './useIntegrityTokenSync.web'
 
-// Platform hydration is complete before AppShell mounts (App.web.tsx ensures
-// this), so getProvider() is safe to call at module scope here.
+// Platform hydration is complete before this module evaluates (App.web.tsx
+// ensures this), so getProvider() is safe to call at module scope here. The
+// rest of the post-hydration setup is bootstrap/preReact.web.ts.
 const persister = createAsyncStoragePersister({
     storage: getProvider().keyValueStorage,
     serialize: algorandSafeQuerySerialize,
     deserialize: algorandSafeQueryParse,
 })
-
-updateQueryHeaders()
-
-// App.web.tsx must stay free of store-bearing imports (BOOT-ORDER CONTRACT), so
-// this is the earliest safe point, still before QueryProvider mounts. Without
-// it there is no onlineManager binding and every query treats the app as online.
-void initNetworkStatus()
 
 // Theme-aware paint for the whole app area, below ThemeProvider so it sees
 // in-app overrides; build.mjs's global CSS is only the pre-mount fallback.
@@ -279,24 +263,16 @@ const AppShellThemedRoot = (): React.JSX.Element => {
             <GestureHandlerRootView style={rootStyles.root}>
                 <PWView style={rootStyles.card}>
                     <TestnetIndicator />
-                    <KeyboardProvider>
-                        <NotifierWrapper
-                            componentProps={{
-                                ContainerComponent: SafeAreaView,
-                            }}
-                        >
-                            <QueryProvider persister={persister}>
-                                <NetworkSwitchInvalidation />
-                                {/* VaultGate OUTERMOST inside providers: locked ⇒ nothing else renders */}
-                                <VaultGate>
-                                    <ShellRouter />
-                                </VaultGate>
-                                <ActivityAutoLock />
-                                {/* Outside VaultGate: locking must not kill a check mid-solve, and enrolment needs no unlocked vault. */}
-                                <IntegrityCheckFrameHost />
-                            </QueryProvider>
-                        </NotifierWrapper>
-                    </KeyboardProvider>
+                    <AppProviders persister={persister}>
+                        <NetworkSwitchInvalidation />
+                        {/* VaultGate OUTERMOST inside providers: locked ⇒ nothing else renders */}
+                        <VaultGate>
+                            <ShellRouter />
+                        </VaultGate>
+                        <ActivityAutoLock />
+                        {/* Outside VaultGate: locking must not kill a check mid-solve, and enrolment needs no unlocked vault. */}
+                        <IntegrityCheckFrameHost />
+                    </AppProviders>
                     {/* Same contract as RootComponent's: LAST node inside the
                         card so it paints above navigation and sheets. */}
                     <OfflineBanner />
@@ -307,19 +283,9 @@ const AppShellThemedRoot = (): React.JSX.Element => {
 }
 
 const AppShellContent = (): React.JSX.Element => {
-    const provider = usePeraProvider()
-    const isDarkMode = useIsDarkMode()
-    const theme = getTheme(isDarkMode ? 'dark' : 'light')
+    const theme = useAppTheme()
     useIntegrityTokenSync()
-
-    React.useEffect(() => {
-        logger.setErrorReporter(
-            createCrashReportingErrorReporter(provider.crashReporting),
-        )
-        return () => {
-            logger.setErrorReporter(undefined)
-        }
-    }, [provider])
+    useCrashReporterBinding()
 
     return (
         <ThemeProvider theme={theme}>

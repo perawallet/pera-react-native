@@ -11,7 +11,7 @@
  */
 
 import { onlineManager } from '@tanstack/react-query'
-import { NoConnectionError } from '../errors/network-validation'
+import { NoConnectionError } from '../errors/network'
 
 /**
  * Single source of truth for the app's mutation policy. Mirrored by

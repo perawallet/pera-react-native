@@ -169,7 +169,8 @@
         "**/*.test.{ts,tsx}",
         "packages/walletconnect/src/connection/createConnector.ts",
         "packages/walletconnect/src/connection/connectorRegistry.ts",
-        "packages/walletconnect/src/v1/handler.ts"
+        "packages/walletconnect/src/v1/handler.ts",
+        "packages/walletconnect/src/v1/restore.ts"
       ],
       "rules": {
         "pera/wc-connector-ownership": "error"

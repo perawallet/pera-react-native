@@ -18,7 +18,7 @@ import { logger, withTimeout } from '@perawallet/wallet-core-shared'
 
 import { platformServices } from './resources'
 // Imported directly (not via the ./services barrel) so this module's graph
-// stays free of the expo-backed services — extension.test.ts stubs
+// stays free of the expo-backed services — extension.spec.ts stubs
 // ./resources and must not transitively load expo.
 import { initializeSslPinningService } from './services/ssl-pinning/ssl-pinning.service'
 

@@ -12,7 +12,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
-import { AppState } from 'react-native'
 import {
     memoryStore,
     runHandlerContractTests,
@@ -33,14 +32,25 @@ import {
 import { createWalletConnectV1Handler } from '../handler'
 import type { WalletConnectV1SessionKeyStore } from '../secrets'
 import {
-    __resetRegistryForTests,
-    getConnector,
+    createConnectorRegistry,
+    type WalletConnectConnectorRegistry,
 } from '../../connection/connectorRegistry'
 import { toPeer } from '../../shared/peer'
 
 // Spied, not replaced: the point is proving the handler reaches the one
 // shared implementation rather than carrying its own.
 vi.mock('../../shared/peer', { spy: true })
+// Spied so a test can read the connectors of the handler it built last; the
+// registry is that handler's private state.
+vi.mock('../../connection/connectorRegistry', { spy: true })
+
+const lastRegistry = (): WalletConnectConnectorRegistry => {
+    const registry = vi.mocked(createConnectorRegistry).mock.results.at(-1)
+    if (!registry) throw new Error('no handler was constructed')
+    return registry.value as WalletConnectConnectorRegistry
+}
+
+const getConnector = (clientId: string) => lastRegistry().get(clientId)
 
 // Backs the kms mock; only the default-store test reaches it.
 const secrets = vi.hoisted(() => new Map<string, Uint8Array>())
@@ -75,8 +85,8 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     zeroBytes: vi.fn((bytes: Uint8Array) => bytes.fill(0)),
 }))
 
-// Same stand-in as validation/__tests__/inboundRequestGate.test.ts and
-// connection/__tests__/connectorRegistry.test.ts: the signing barrel drags in
+// Same stand-in as validation/__tests__/inboundRequestGate.spec.ts and
+// connection/__tests__/connectorRegistry.spec.ts: the signing barrel drags in
 // RN-only deps (react-native-mmkv) that don't resolve under jsdom, and the
 // handler reaches it through `../shared/schema`. Real limits and a faithful
 // ARC-60 wire shape, so the gate assertions still mean something.
@@ -99,9 +109,15 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     assertArc60RequestWithinLimits: vi.fn(),
 }))
 
-// The connector registry's zustand stores persist through the provider, whose
-// keystore migration ledger imports react-native-mmkv at module scope — same
-// stand-in as connection/__tests__/connectorRegistry.test.ts.
+// This spec's import graph reaches the platform provider, whose native
+// adapters don't resolve under jsdom.
+// `initialize` starts the foreground reconnect sweep, which subscribes to the
+// provider's app lifecycle.
+const appLifecycle = vi.hoisted(() => ({
+    getCurrentState: () => 'active',
+    addChangeListener: vi.fn(() => vi.fn()),
+}))
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: {
@@ -109,19 +125,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             setItem: () => {},
             removeItem: () => {},
         },
+        appLifecycle,
+        deviceInfo: { getDevicePlatform: () => 'android' },
     }),
-}))
-
-// react-native ships untranspiled Flow, so every spec in this package that
-// reaches it has to stand one in (see utils/__tests__/app-state.spec.ts).
-// `initialize` starts the foreground reconnect sweep, which subscribes to
-// AppState.
-vi.mock('react-native', () => ({
-    AppState: {
-        currentState: 'active',
-        addEventListener: vi.fn(() => ({ remove: vi.fn() })),
-    },
-    Platform: { OS: 'android' },
 }))
 
 /**
@@ -248,7 +254,6 @@ describe('walletconnect v1 handler contract', () => {
     beforeEach(() => {
         keys.clear()
         wc.FakeConnector.instances.length = 0
-        __resetRegistryForTests()
     })
 
     runHandlerContractTests(
@@ -595,7 +600,6 @@ describe('walletconnect v1 handler behaviour', () => {
         secrets.clear()
         keys.clear()
         wc.FakeConnector.instances.length = 0
-        __resetRegistryForTests()
         vi.clearAllMocks()
     })
 
@@ -1103,19 +1107,28 @@ describe('walletconnect v1 handler behaviour', () => {
         })
     })
 
-    it('rebinds a surviving connector when the handler is remounted', async () => {
-        // `teardown` deliberately leaves sockets alive and the connector
-        // registry is module-global, so a remount (`ConnectionsProvider`, or
-        // StrictMode's mount/unmount/mount) leaves live connectors holding the
-        // previous instance's closures — whose context is null. Unrepaired, an
-        // inbound request is answered to nobody and reported to nobody.
+    it('rebinds a surviving connector when the handler is re-initialised', async () => {
+        // `teardown` deliberately leaves sockets alive, so a registry re-boot
+        // of the same handler (StrictMode's mount/unmount/mount, or a data
+        // wipe reopening the migration gate) finds live connectors whose
+        // listeners last ran against a context that is now null. Unrepaired,
+        // an inbound request is answered to nobody and reported to nobody.
         keys.set('c1', 'restored-key')
-        const first = await setupRestored([SEEDED])
+        const { handler } = await setupRestored([SEEDED])
         const connector = lastConnector()
         connector.connected = true
-        await first.handler.teardown()
+        await handler.teardown()
 
-        const second = await setupRestored([SEEDED])
+        const onMessage = vi.fn<(message: RawInboundMessage) => void>()
+        await handler.initialize({
+            store: memoryStore([SEEDED]),
+            onProposal: vi.fn(),
+            onMessage,
+            onDisconnected: vi.fn(),
+            onRequestExpired: vi.fn(),
+            onError: vi.fn(),
+        })
+        await handler.restore()
 
         // The socket survived, so nothing was rebuilt — only rebound.
         expect(wc.FakeConnector.instances).toHaveLength(1)
@@ -1126,12 +1139,74 @@ describe('walletconnect v1 handler behaviour', () => {
         })
         await flush()
 
-        // Unrebound, this is silent: the stale closure throws in
-        // `requireContext()` and bottoms out at a no-op `context?.onError`.
-        expect(second.onMessage).toHaveBeenCalledTimes(1)
-        const message = asRequest(second.onMessage.mock.calls[0][0])
+        expect(onMessage).toHaveBeenCalledTimes(1)
+        const message = asRequest(onMessage.mock.calls[0][0])
         expect(message.correlationId).toBe('5')
         expect(message.authorizedAccounts).toEqual(['AAAA'])
+    })
+
+    it('never shares connectors between handler instances', async () => {
+        // A UI realm constructs its own handler for descriptors alone; it must
+        // not be able to reach, rebind or answer through another's sockets.
+        keys.set('c1', 'restored-key')
+        await setupRestored([SEEDED])
+        const owner = lastRegistry()
+        const other = await setupRestored([])
+
+        expect(owner.get('c1')).toBeDefined()
+        expect(lastRegistry().get('c1')).toBeUndefined()
+        await expect(
+            other.handler.deliverApprove('c1', 5, ['c2ln']),
+        ).rejects.toThrow('No WalletConnect connector for client c1')
+    })
+
+    it('reconnect revives the sockets the platform suspended and leaves open ones alone', async () => {
+        keys.set('c1', 'restored-key')
+        keys.set('c2', 'restored-key')
+        const { handler } = await setupRestored([
+            SEEDED,
+            { ...SEEDED, id: 'c2' },
+        ])
+        const [suspended, open] = wc.FakeConnector.instances
+        suspended._transport.connected = false
+
+        handler.reconnect()
+
+        expect(wc.FakeConnector.instances).toHaveLength(3)
+        const fresh = wc.FakeConnector.instances[2]
+        expect(fresh.options.session).toMatchObject({ clientId: 'c1' })
+        expect(getConnector('c1') as unknown).toBe(fresh)
+        expect(getConnector('c2') as unknown).toBe(open)
+        // Bound like the original, so the revived session still answers.
+        expect([...fresh.listeners.keys()]).toContain('algo_signTxn')
+    })
+
+    it('delivers a resumed request by client id through its own connector', async () => {
+        keys.set('c1', 'restored-key')
+        const { handler } = await setupRestored([SEEDED])
+        const connector = lastConnector()
+
+        await handler.deliverApprove('c1', 9, ['c2ln'])
+        const declined = new Error('declined')
+        await handler.deliverReject('c1', 10, declined)
+
+        expect(connector.approveRequest).toHaveBeenCalledWith({
+            id: 9,
+            result: ['c2ln'],
+        })
+        expect(connector.rejectRequest).toHaveBeenCalledWith({
+            id: 10,
+            error: declined,
+        })
+    })
+
+    it('swallows a background reject that cannot be delivered', async () => {
+        const { handler } = await setup()
+
+        expect(() =>
+            handler.deliverRejectInBackground('missing', 1, new Error('x')),
+        ).not.toThrow()
+        await flush()
     })
 
     it('reports a session whose key is gone as inactive rather than dropping it', async () => {
@@ -1503,10 +1578,10 @@ describe('walletconnect v1 handler behaviour', () => {
         await handler.initialize(context)
         await handler.teardown()
 
-        const subscriptions = vi.mocked(AppState.addEventListener).mock.results
-        expect(subscriptions).toHaveLength(2)
-        for (const subscription of subscriptions) {
-            expect(subscription.value.remove).toHaveBeenCalledTimes(1)
+        const unsubscribes = appLifecycle.addChangeListener.mock.results
+        expect(unsubscribes).toHaveLength(2)
+        for (const unsubscribe of unsubscribes) {
+            expect(unsubscribe.value).toHaveBeenCalledTimes(1)
         }
     })
 

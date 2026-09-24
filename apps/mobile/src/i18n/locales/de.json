@@ -1032,13 +1032,6 @@
                 "body": "Der Server hatte ein Problem bei der Verarbeitung deiner Anfrage. Bitte versuche es erneut."
             }
         },
-        "validation": {
-            "generic": "Die Daten scheinen ungültig zu sein.",
-            "invalid_address": "Die Adresse scheint ungültig zu sein: {{address}}",
-            "invalid_amount": "Der Betrag scheint ungültig zu sein: {{amount}}",
-            "invalid_mnemonic": "Die Wiederherstellungsphrase scheint ungültig zu sein.",
-            "required_field": "Ein Pflichtfeld fehlt: {{field}}"
-        },
         "transaction": {
             "title": "Bei der Verarbeitung dieser Transaktion ist ein Fehler aufgetreten",
             "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht."
@@ -2030,6 +2023,7 @@
             "pair_ledger_description": "Ich möchte ein Algorand-Konto wiederherstellen, das über Bluetooth durch mein Ledger-Hardware-Wallet gesichert ist",
             "pair_ledger_usb_title": "Ledger per USB koppeln",
             "pair_ledger_usb_description": "Ich möchte ein Algorand-Konto wiederherstellen, das über USB-Kabel durch mein Ledger-Hardware-Wallet gesichert ist",
+            "pair_ledger_unsupported_description": "Von diesem Browser oder Gerät nicht unterstützt",
             "pera_web_title": "Von Pera Web importieren",
             "pera_web_description": "Ich möchte Algorand-Konten von Pera Web importieren",
             "cloud_backup_title": "Aus Cloud-Backup importieren",
@@ -4009,7 +4003,17 @@
             "error_invalid_password": "Falsches Passwort. Bitte versuche es erneut.",
             "corrupted_error": "Deine Vault-Daten sind beschädigt und können nicht entsperrt werden. Möglicherweise musst du die Erweiterung zurücksetzen und aus deinem Backup wiederherstellen.",
             "passkey_error": "Passkey-Entsperrung fehlgeschlagen. Verwende stattdessen dein Passwort.",
-            "lockout_countdown": "Zu viele Versuche. Erneut versuchen in {{time}}"
+            "lockout_countdown": "Zu viele Versuche. Erneut versuchen in {{time}}",
+            "forgot_password": "Passwort vergessen?"
+        },
+        "reset": {
+            "title": "Wallet zurücksetzen?",
+            "body": "Dein Passwort lässt sich nicht wiederherstellen. Beim Zurücksetzen wird alles gelöscht, was Pera Wallet in diesem Browser speichert. Danach legst du ein neues Passwort fest.",
+            "restore_note": "Stelle deine Konten danach mit ihrer Wiederherstellungsphrase wieder her. Konten ohne gesicherte Wiederherstellungsphrase gehen verloren.",
+            "hardware_note": "Ledger-Konten und Beobachtungskonten lassen sich nicht aus einer Passphrase wiederherstellen. Füge sie nach dem Zurücksetzen erneut hinzu.",
+            "acknowledge": "Mir ist klar, dass meine Daten gelöscht werden und das nicht rückgängig gemacht werden kann",
+            "confirm_button": "Wallet zurücksetzen",
+            "error": "Die Wallet konnte nicht zurückgesetzt werden. Bitte versuche es erneut."
         },
         "security": {
             "autolock_title": "Automatisch sperren nach",

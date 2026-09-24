@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+// Reached only through the `./test-utils` subpath, never the main barrel, so
+// the production contract carries no React or React Query.
+export * from './app-lifecycle'
 export * from './database'
 export * from './migration'
 export * from './storage'

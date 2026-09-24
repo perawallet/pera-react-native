@@ -23,16 +23,24 @@ sign request it is holding for the user, since answering late would only fail on
 `src/testing/handler-contract.ts` is the contract suite every handler runs against. An assertion a
 legitimate handler cannot satisfy is an interface finding, not a reason to bend the handler.
 
+`src/handlerKit.ts` (`createHandlerKit`) is the scaffolding a handler closure would otherwise
+repeat: the context guard, error reporting with pairing/connection scopes, `lastActiveAt` stamping
+and pending pair-time origins. Handlers import it from the `./handlerKit` subpath, not the barrel,
+which would pull signing and blockchain into the walletconnect and dapp module graphs.
+
 ## Client and host surfaces
 
 `ConnectionRegistry` is split by type. `ConnectionRegistryClient` is what a UI context holds: pair,
 abandon a pairing, describe a URI, list a connection's networks, disconnect, subscribe to proposals
-and errors. The full `ConnectionRegistry` adds `register`, `initialize`, `teardown` and
-`subscribeToMessages`, and only the composition root that owns handlers holds one.
+and errors. The full `ConnectionRegistry` adds `register`, `initialize`, `teardown`, `reconnect` and
+`subscribeToMessages`, and only the composition root that owns handlers holds one. `reconnect` fans
+out to each handler's optional `reconnect()`, for a transport the platform suspends and nothing
+revives on its own: WalletConnect v1's per-session bridge sockets. In the extension the service
+worker's connections heartbeat alarm asks for it with `reconnect-all`.
 
 The split exists for the browser extension. There the live handlers run in the offscreen document,
 and the popup, expanded tab and approval window cannot hold an in-process registry. Those realms get
-`createRemoteConnectionRegistry` (`extensions/platform-chrome/src/connections/remote-registry.ts`),
+`createRemoteConnectionRegistry` (`packages/browser-runtime/src/connections/remote-registry.ts`),
 a `ConnectionRegistryClient` whose descriptors are answered locally by handler instances that are
 constructed but never initialised, whose lifecycle calls are request/response messages to the
 offscreen host, and whose proposals and errors are re-emitted from a broadcast. The host surface is
@@ -46,14 +54,14 @@ promise semantics honest: a proxied `respond()` that had to reject on a failed d
 message port is exactly what would have been lost.
 
 The remote registry is served from its own package entry,
-`@perawallet/wallet-extension-platform-chrome/remote-registry`, and is kept off the main barrel: it
-is the one platform-chrome module with a runtime dependency on the connections package, whose barrel
+`@perawallet/wallet-core-browser-runtime/remote-registry`, and is kept off the main barrel: it is
+the one browser-runtime module with a runtime dependency on the connections package, whose barrel
 reaches react-native, and the service worker imports the main barrel.
 
 ## Message scopes
 
-Defined in `extensions/platform-chrome/src/connections/protocol.ts`, and the `pera-dapp-*` ones in
-`extensions/platform-chrome/src/dapp/dapp-wire.ts`; every listener is gated to extension-origin
+Defined in `packages/browser-runtime/src/connections/protocol.ts`, and the `pera-dapp-*` ones in
+`packages/browser-runtime/src/dapp/dapp-wire.ts`; every listener is gated to extension-origin
 senders because content scripts share `chrome.runtime.onMessage`.
 
 | Scope                      | Direction                | Carries                                                                                                                                                             |
@@ -108,7 +116,7 @@ neither web realm constructs it; a v2 URI there fails as `no-handler` rather tha
 
 `packages/dapp` is the `window.pera` transport ([dApp bridge](DAPP_BRIDGE.md)) as a handler. It is
 origin-identified — no `pair`, no URI — and the origin is the connection id, so the connections list,
-the per-origin approval cap in `extensions/platform-chrome/src/dapp/approval-bridge.ts` and
+the per-origin approval cap in `packages/browser-runtime/src/dapp/approval-bridge.ts` and
 `disconnect` all key on one value. It is network-agnostic (`matchesNetwork` is always true) and
 reports the active network at connect time instead.
 
@@ -129,6 +137,16 @@ lose it on worker eviction.
 hydration. The legacy importer reads the keystore synchronously and reports "absent" before
 hydration, and a handler restored before the import has written its records reports zero sessions,
 which reconciliation would then delete.
+
+## WalletConnect v1 sockets
+
+The v1 handler owns its connectors as instance state, one bridge socket per session, and sweeps
+them itself on a foreground or network-regain edge. Nothing is module-global, so the descriptor-only
+handler a UI realm constructs can never reach the offscreen document's sockets. `teardown` leaves
+the sockets alive and a re-initialised handler rebinds them. On native the multisig handoff
+resolver, which mounts beside the connections provider, answers a resumed request through the
+handler that `useConnectionsProvider.ts` publishes in
+`apps/mobile/src/modules/walletconnect/utils/activeV1Delivery.ts`.
 
 ## WalletConnect v1 session keys
 

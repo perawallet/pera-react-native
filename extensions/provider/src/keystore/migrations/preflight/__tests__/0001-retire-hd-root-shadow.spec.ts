@@ -21,7 +21,7 @@ import { assertIdempotent } from '@algorandfoundation/provider-migrations/testin
 // The package root executes native Keychain/Nitro bindings at import time,
 // which jsdom can't run, and vitest can't intercept a mock inside an
 // externalised dependency's own graph — so every spec here mocks the whole
-// module (see createKeystore.spec.ts, singleton.test.ts). The prefixes are
+// module (see createKeystore.spec.ts, singleton.spec.ts). The prefixes are
 // what this revision's key filtering turns on, so they are re-exported from
 // the driver's real dist module rather than restated: an upstream change to
 // either string still breaks this test. The path is relative because the

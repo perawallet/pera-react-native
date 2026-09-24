@@ -11,13 +11,11 @@
  */
 
 import type WalletConnect from '@perawallet/walletconnect'
-import { logger } from '@perawallet/wallet-core-shared'
 import { WC_DELIVERY_TIMEOUT_MS } from '../shared/constants'
 import {
     WalletConnectConnectionTimeoutError,
     WalletConnectInvalidSessionError,
 } from '../shared/errors'
-import { useConnectorRegistryStore } from '../store/connectorRegistryStore'
 import { createWalletConnectConnector } from './createConnector'
 
 /**
@@ -26,9 +24,39 @@ import { createWalletConnectConnector } from './createConnector'
  * post-background delivery "succeeds" without reaching the dApp. The SDK has
  * no heartbeat, so a half-open socket is undetectable until a delivery fails.
  */
+export type WalletConnectConnectorRegistry = {
+    get(clientId: string): WalletConnect | undefined
+    /** Called for both freshly created and recovered connectors. */
+    register(clientId: string, connector: WalletConnect): void
+    /**
+     * User disconnect. The tombstone aborts any in-flight recreation instead
+     * of letting it resurrect the session.
+     */
+    forget(clientId: string): void
+    /**
+     * A timed-out pairing keeps `session_request` bound for the full request
+     * TTL, so a slow dApp can pop a ghost approval sheet minutes later.
+     * `connected` flips inside `approveSession` and alone says whether a
+     * session exists; reading the legacy store here would re-persist the
+     * plaintext keys the importer just deleted.
+     */
+    abandonPairing(clientId: string): void
+    /**
+     * Resolved as-is when the socket is open, otherwise recreated from the
+     * stored session. Concurrent calls share one recreation.
+     */
+    ensureReady(clientId: string, timeoutMs?: number): Promise<WalletConnect>
+    /**
+     * Fire-and-forget: a failed warm-up isn't user-facing, since the next real
+     * delivery surfaces a genuine error if the socket is still down.
+     */
+    reconnectAll(timeoutMs?: number): void
+}
 
-/** Re-binds dApp request handlers (`algo_signTxn`, …) onto a connector. */
-type HandlerBinder = (connector: WalletConnect) => void
+export type CreateConnectorRegistryOptions = {
+    /** Re-binds dApp request handlers onto a recreated connector, which starts with none. */
+    bindHandlers: (connector: WalletConnect) => void
+}
 
 /** The connector events the v1 handler binds; teardown unbinds exactly these. */
 export const BOUND_EVENTS = [
@@ -43,18 +71,6 @@ export const BOUND_EVENTS = [
 /** Poll cadence while waiting for a recreated socket to report open. */
 const POLL_INTERVAL_MS = 50
 
-// Not store state: nothing renders off these.
-
-/** De-dupes concurrent readiness requests for the same session. */
-const readinessInFlight = new Map<string, Promise<WalletConnect>>()
-
-/**
- * A recreated connector starts with no request handlers. The binder's owner must
- * outlive every connector: a binder from an unmounted React instance keeps
- * working but frozen on the render state it last saw (accounts, network).
- */
-let handlerBinder: HandlerBinder | null = null
-
 /**
  * v1 exposes no socket-state API and never emits `transport_open`/`_close`; the
  * private `_transport.connected` (`readyState === 1`) is the one real signal.
@@ -65,60 +81,6 @@ const isSocketOpen = (connector: WalletConnect): boolean =>
         (connector as unknown as { _transport?: { connected?: boolean } })
             ._transport?.connected,
     )
-
-/**
- * Register how dApp request handlers get (re)bound onto a connector. Reserved
- * for a single long-lived owner per realm: the v1 handler's `initialize` on
- * native, the offscreen host on web.
- */
-export const setConnectorHandlerBinder = (binder: HandlerBinder): void => {
-    handlerBinder = binder
-}
-
-/** No-op unless `binder` is still the registered one: a departing owner must never clear its successor. */
-export const clearConnectorHandlerBinder = (binder: HandlerBinder): void => {
-    if (handlerBinder === binder) {
-        handlerBinder = null
-    }
-}
-
-/**
- * `fallback` is used only before an owner has registered; it accepts the freeze
- * risk described on `handlerBinder`, since nothing re-binds the connector later.
- */
-export const bindConnectorHandlers = (
-    connector: WalletConnect,
-    fallback?: HandlerBinder,
-): void => {
-    if (handlerBinder) {
-        handlerBinder(connector)
-        return
-    }
-    if (fallback) {
-        logger.warn(
-            'WC bindConnectorHandlers: no handler binder registered — binding through the calling instance, whose handlers freeze if it unmounts',
-            { clientId: connector.clientId },
-        )
-        fallback(connector)
-        return
-    }
-    logger.error(
-        'WC bindConnectorHandlers: no handler binder registered — the connector is deaf to dApp requests',
-        { clientId: connector.clientId },
-    )
-}
-
-/** The current connector for a session, if the registry has one. */
-export const getConnector = (clientId: string): WalletConnect | undefined =>
-    useConnectorRegistryStore.getState().connectors[clientId]
-
-/** Called for both freshly created and recovered connectors. */
-export const registerConnector = (
-    clientId: string,
-    connector: WalletConnect,
-): void => {
-    useConnectorRegistryStore.getState().registerConnector(clientId, connector)
-}
 
 /**
  * Unbinds and closes a connector so a dead or superseded socket cannot run its
@@ -132,29 +94,6 @@ export const teardownConnector = (connector: WalletConnect): void => {
     } catch {
         // Discarding the connector anyway.
     }
-}
-
-/**
- * User disconnect. The tombstone aborts any in-flight `recreateConnector`
- * instead of letting it resurrect the session.
- */
-export const forgetConnector = (clientId: string): void => {
-    useConnectorRegistryStore.getState().forgetConnector(clientId)
-    readinessInFlight.delete(clientId)
-}
-
-/**
- * A timed-out pairing keeps `session_request` bound for the full request TTL, so
- * a slow dApp can pop a ghost approval sheet minutes later. `connected` flips
- * inside `approveSession` and alone says whether a session exists; reading the
- * legacy store here would re-persist the plaintext keys the importer just deleted.
- */
-export const abandonPairing = (clientId: string): void => {
-    const connector = useConnectorRegistryStore.getState().connectors[clientId]
-    if (!connector) return
-    if (connector.connected) return
-    teardownConnector(connector)
-    forgetConnector(clientId)
 }
 
 /** Resolves once `connector`'s socket reports open, or rejects on timeout. */
@@ -179,128 +118,120 @@ const waitForSocketOpen = (
     })
 
 /**
- * Never rejects and never touches the connector; the caller decides whether a
- * dead pairing socket means abandoning. A pairing connector has no `peerId`
- * yet, so recreation is impossible and watching is all there is.
+ * One per v1 handler instance, never shared: each socket is bound to its
+ * handler's closures, and in the extension only the offscreen document's
+ * handler may hold live ones.
  */
-export const waitForPairingSocketOpen = (
-    clientId: string,
-    timeoutMs: number,
-): Promise<boolean> =>
-    new Promise(resolve => {
-        const startedAt = Date.now()
-        const poll = (): void => {
-            const connector =
-                useConnectorRegistryStore.getState().connectors[clientId]
-            if (connector && isSocketOpen(connector)) {
-                resolve(true)
-                return
+export const createConnectorRegistry = ({
+    bindHandlers,
+}: CreateConnectorRegistryOptions): WalletConnectConnectorRegistry => {
+    const connectors = new Map<string, WalletConnect>()
+    const tombstones = new Set<string>()
+    const readinessInFlight = new Map<string, Promise<WalletConnect>>()
+
+    const register = (clientId: string, connector: WalletConnect): void => {
+        tombstones.delete(clientId)
+        connectors.set(clientId, connector)
+    }
+
+    const forget = (clientId: string): void => {
+        connectors.delete(clientId)
+        tombstones.add(clientId)
+        readinessInFlight.delete(clientId)
+    }
+
+    /**
+     * A new `Connector` builds a transport that opens in its constructor — the
+     * only reliable way past v1's zombie-`_nextSocket` reconnect deadlock.
+     */
+    const recreate = async (
+        clientId: string,
+        staleConnector: WalletConnect,
+        timeoutMs: number,
+    ): Promise<WalletConnect> => {
+        const session = staleConnector.session
+        if (!session?.peerId) {
+            throw new WalletConnectInvalidSessionError(
+                `WalletConnect session ${clientId} has no peer to deliver to`,
+            )
+        }
+
+        teardownConnector(staleConnector)
+
+        const fresh = createWalletConnectConnector({ session })
+        register(clientId, fresh)
+        bindHandlers(fresh)
+
+        await waitForSocketOpen(fresh, timeoutMs)
+
+        // The user may have disconnected the session while we waited.
+        if (tombstones.has(clientId)) {
+            teardownConnector(fresh)
+            throw new WalletConnectInvalidSessionError(
+                `WalletConnect session ${clientId} was disconnected during reconnect`,
+            )
+        }
+
+        return fresh
+    }
+
+    const ensureReady = (
+        clientId: string,
+        timeoutMs: number = WC_DELIVERY_TIMEOUT_MS,
+    ): Promise<WalletConnect> => {
+        const inFlight = readinessInFlight.get(clientId)
+        if (inFlight) {
+            return inFlight
+        }
+
+        const existing = connectors.get(clientId)
+        if (!existing) {
+            return Promise.reject(
+                new WalletConnectInvalidSessionError(
+                    `No WalletConnect connector for client ${clientId}`,
+                ),
+            )
+        }
+
+        if (isSocketOpen(existing)) {
+            return Promise.resolve(existing)
+        }
+
+        const tracked: Promise<WalletConnect> = recreate(
+            clientId,
+            existing,
+            timeoutMs,
+        ).finally(() => {
+            if (readinessInFlight.get(clientId) === tracked) {
+                readinessInFlight.delete(clientId)
             }
-            if (Date.now() - startedAt >= timeoutMs) {
-                resolve(false)
-                return
-            }
-            setTimeout(poll, POLL_INTERVAL_MS)
-        }
-        poll()
-    })
-
-/**
- * A new `Connector` builds a transport that opens in its constructor — the only
- * reliable way past v1's zombie-`_nextSocket` reconnect deadlock.
- */
-const recreateConnector = async (
-    clientId: string,
-    staleConnector: WalletConnect,
-    timeoutMs: number,
-): Promise<WalletConnect> => {
-    const session = staleConnector.session
-    if (!session?.peerId) {
-        throw new WalletConnectInvalidSessionError(
-            `WalletConnect session ${clientId} has no peer to deliver to`,
-        )
-    }
-
-    teardownConnector(staleConnector)
-
-    const fresh = createWalletConnectConnector({ session })
-    registerConnector(clientId, fresh)
-
-    bindConnectorHandlers(fresh)
-
-    await waitForSocketOpen(fresh, timeoutMs)
-
-    // The user may have disconnected the session while we waited.
-    if (useConnectorRegistryStore.getState().tombstones.has(clientId)) {
-        teardownConnector(fresh)
-        throw new WalletConnectInvalidSessionError(
-            `WalletConnect session ${clientId} was disconnected during reconnect`,
-        )
-    }
-
-    return fresh
-}
-
-/**
- * Resolved as-is when the socket is open, otherwise recreated from the stored
- * session. Concurrent calls share one recreation.
- */
-export const ensureConnectorReady = (
-    clientId: string,
-    timeoutMs: number = WC_DELIVERY_TIMEOUT_MS,
-): Promise<WalletConnect> => {
-    const inFlight = readinessInFlight.get(clientId)
-    if (inFlight) {
-        return inFlight
-    }
-
-    const existing = useConnectorRegistryStore.getState().connectors[clientId]
-    if (!existing) {
-        return Promise.reject(
-            new WalletConnectInvalidSessionError(
-                `No WalletConnect connector for client ${clientId}`,
-            ),
-        )
-    }
-
-    if (isSocketOpen(existing)) {
-        return Promise.resolve(existing)
-    }
-
-    const tracked: Promise<WalletConnect> = recreateConnector(
-        clientId,
-        existing,
-        timeoutMs,
-    ).finally(() => {
-        if (readinessInFlight.get(clientId) === tracked) {
-            readinessInFlight.delete(clientId)
-        }
-    })
-    readinessInFlight.set(clientId, tracked)
-    return tracked
-}
-
-/**
- * Fire-and-forget: a failed warm-up isn't user-facing, since the next real
- * delivery surfaces a genuine error if the socket is still down.
- */
-export const reconnectAllConnectors = (
-    timeoutMs: number = WC_DELIVERY_TIMEOUT_MS,
-): void => {
-    const connectors = useConnectorRegistryStore.getState().connectors
-    for (const [clientId, connector] of Object.entries(connectors)) {
-        if (isSocketOpen(connector)) {
-            continue
-        }
-        void ensureConnectorReady(clientId, timeoutMs).catch(() => {
-            // Fire-and-forget; see above.
         })
+        readinessInFlight.set(clientId, tracked)
+        return tracked
     }
-}
 
-/** Test-only: clears all registry state between tests. */
-export const __resetRegistryForTests = (): void => {
-    useConnectorRegistryStore.getState().resetState()
-    readinessInFlight.clear()
-    handlerBinder = null
+    return {
+        get: clientId => connectors.get(clientId),
+        register,
+        forget,
+        abandonPairing: clientId => {
+            const connector = connectors.get(clientId)
+            if (!connector) return
+            if (connector.connected) return
+            teardownConnector(connector)
+            forget(clientId)
+        },
+        ensureReady,
+        reconnectAll: (timeoutMs = WC_DELIVERY_TIMEOUT_MS) => {
+            // Snapshotted: a recreation re-registers into the map mid-loop.
+            for (const [clientId, connector] of [...connectors]) {
+                if (isSocketOpen(connector)) {
+                    continue
+                }
+                void ensureReady(clientId, timeoutMs).catch(() => {
+                    // Fire-and-forget; see the type.
+                })
+            }
+        },
+    }
 }

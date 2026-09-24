@@ -11,10 +11,14 @@
  */
 
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { Platform } from 'react-native'
 import { act, renderHook } from '@test-utils/render'
 import { isSeparatorSuppressed, useSearchableList } from '../useSearchableList'
 import type { PWFlatListRef } from '@components/core'
+import * as webScrollUnpin from '../scrollUnpin.web'
+
+// vitest doesn't resolve `.web.ts` twins, so the web cases swap one in here.
+const scrollUnpin = vi.hoisted(() => ({ shouldUnpinSearchOnScroll: false }))
+vi.mock('../scrollUnpin', () => scrollUnpin)
 
 const HEADER_SENTINEL = { __searchableListHeader: true, key: 'h' }
 const SEARCH_SENTINEL = { __searchableListSearch: true, key: 's' }
@@ -98,11 +102,11 @@ describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
         )
 
     beforeEach(() => {
-        Platform.OS = 'ios'
+        scrollUnpin.shouldUnpinSearchOnScroll = false
     })
 
     it('unpins (hides the overlay) once a real scroll moves away from the settled pin offset on web', () => {
-        Platform.OS = 'web'
+        Object.assign(scrollUnpin, webScrollUnpin)
         const { result } = setup()
         layoutHeader(result, HEADER_HEIGHT)
 
@@ -126,7 +130,7 @@ describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
     })
 
     it('unpins when scrolling further down past the settled pin offset on web', () => {
-        Platform.OS = 'web'
+        Object.assign(scrollUnpin, webScrollUnpin)
         const { result } = setup()
         layoutHeader(result, HEADER_HEIGHT)
 
@@ -139,7 +143,6 @@ describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
     })
 
     it('does not unpin from scroll alone on native — onScrollBeginDrag remains the only trigger', () => {
-        Platform.OS = 'ios'
         const { result } = setup()
         layoutHeader(result, HEADER_HEIGHT)
 
@@ -222,7 +225,7 @@ describe('useSearchableList content-size pin correction', () => {
         )
 
     beforeEach(() => {
-        Platform.OS = 'ios'
+        scrollUnpin.shouldUnpinSearchOnScroll = false
     })
 
     it('leaves a scroll position deep in the list alone when content size changes', () => {

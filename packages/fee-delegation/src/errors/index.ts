@@ -10,16 +10,22 @@
  limitations under the License
  */
 
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
+
 /**
  * Thrown when fee delegation requires a valid app-integrity (device
  * attestation) token and none is available, so the request cannot proceed.
  * Callers own the user-facing wording for their flow.
  */
-export class FeeDelegationAttestationRequiredError extends Error {
+export class FeeDelegationAttestationRequiredError extends AppError {
     constructor(
         message = 'Device verification is required for fee-delegated transactions.',
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.UNKNOWN, recoverable: false })
         this.name = 'FeeDelegationAttestationRequiredError'
     }
 }
@@ -32,11 +38,15 @@ export class FeeDelegationAttestationRequiredError extends Error {
  * whole group is rejected rather than signed — this is the substitution
  * trust-anchor for fee delegation.
  */
-export class FeeDelegationResponseMismatchError extends Error {
+export class FeeDelegationResponseMismatchError extends AppError {
     constructor(
         message = 'The fee-delegation server returned transactions that do not match the ones the wallet sent.',
     ) {
-        super(message)
+        super(message, {
+            severity: ErrorSeverity.HIGH,
+            category: ErrorCategory.TRANSACTIONS,
+            recoverable: false,
+        })
         this.name = 'FeeDelegationResponseMismatchError'
     }
 }

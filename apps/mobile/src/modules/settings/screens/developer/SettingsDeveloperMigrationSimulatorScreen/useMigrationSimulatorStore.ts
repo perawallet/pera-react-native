@@ -113,7 +113,8 @@ export const useMigrationSimulatorStore = create<MigrationSimulatorStore>()(
                 includeUnroutable,
                 includeAuthState,
             } = get()
-            if (plans.length === 0) return
+            const devTools = getProvider().migration.devTools
+            if (!devTools || plans.length === 0) return
             set({
                 isWorking: true,
                 results: plans.map(plan => ({
@@ -121,7 +122,6 @@ export const useMigrationSimulatorStore = create<MigrationSimulatorStore>()(
                     outcome: { kind: 'pending' } as const,
                 })),
             })
-            const migration = getProvider().migration
             const next: ResultRow[] = []
             const successful: Record<string, { version: number; at: number }> =
                 {}
@@ -129,7 +129,7 @@ export const useMigrationSimulatorStore = create<MigrationSimulatorStore>()(
                 const version =
                     selectedVersions[plan.dbName] ?? plan.oldestSupported
                 try {
-                    await migration.simulateLegacyDatabase({
+                    await devTools.simulateLegacyDatabase({
                         dbName: plan.dbName,
                         version,
                         includeUnroutableAccounts: includeUnroutable,
@@ -161,9 +161,11 @@ export const useMigrationSimulatorStore = create<MigrationSimulatorStore>()(
             }))
         },
         generatePreSixxAccounts: async () => {
+            const devTools = getProvider().migration.devTools
+            if (!devTools) return
             set({ isWorking: true })
             try {
-                await getProvider().migration.simulatePreSixxAccounts()
+                await devTools.simulatePreSixxAccounts()
                 set({
                     results: [
                         {

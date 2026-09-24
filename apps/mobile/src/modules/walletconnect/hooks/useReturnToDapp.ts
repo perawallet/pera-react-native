@@ -11,8 +11,9 @@
  */
 
 import { useCallback } from 'react'
-import { BackHandler, Linking, Platform } from 'react-native'
+import { BackHandler, Linking } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
+import { isAndroid } from '@utils/platform'
 
 export type ReturnToDappArgs = {
     /** Browser name from the iOS @perawallet/connect wrapper's `browser=`
@@ -54,14 +55,13 @@ export const buildIosBrowserFocusUrl = (
 export const useReturnToDapp = (): UseReturnToDappResult => {
     const canReturnToDapp = useCallback(
         (args: ReturnToDappArgs): boolean =>
-            Platform.OS === 'android' ||
-            buildIosBrowserFocusUrl(args.browserName) !== null,
+            isAndroid() || buildIosBrowserFocusUrl(args.browserName) !== null,
         [],
     )
 
     const returnToDapp = useCallback(
         async ({ browserName }: ReturnToDappArgs): Promise<void> => {
-            if (Platform.OS === 'android') {
+            if (isAndroid()) {
                 BackHandler.exitApp()
                 return
             }

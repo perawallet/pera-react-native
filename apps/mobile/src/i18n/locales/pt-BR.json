@@ -1040,13 +1040,6 @@
                 "body": "O servidor encontrou um problema ao processar sua solicitação. Tente novamente."
             }
         },
-        "validation": {
-            "generic": "Os dados não parecem ser válidos.",
-            "invalid_address": "O endereço não parece ser válido: {{address}}",
-            "invalid_amount": "O valor não parece ser válido: {{amount}}",
-            "invalid_mnemonic": "A passphrase de recuperação não parece ser válida.",
-            "required_field": "Falta um campo obrigatório: {{field}}"
-        },
         "transaction": {
             "title": "Ocorreu um erro ao processar esta transação",
             "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
@@ -2042,6 +2035,7 @@
             "pair_ledger_description": "Quero recuperar uma conta Algorand protegida pelo meu hardware wallet Ledger via Bluetooth",
             "pair_ledger_usb_title": "Parear Ledger via USB",
             "pair_ledger_usb_description": "Quero recuperar uma conta Algorand protegida pelo meu hardware wallet Ledger via cabo USB",
+            "pair_ledger_unsupported_description": "Não compatível com este navegador ou dispositivo",
             "pera_web_title": "Importar do Pera Web",
             "pera_web_description": "Quero importar contas Algorand do Pera Web",
             "cloud_backup_title": "Importar do backup na nuvem",
@@ -4045,7 +4039,17 @@
             "error_invalid_password": "Senha incorreta. Tente novamente.",
             "corrupted_error": "Os dados do seu Vault estão corrompidos e não podem ser desbloqueados. Talvez seja necessário redefinir a extensão e restaurar a partir do seu backup.",
             "passkey_error": "Falha ao desbloquear com passkey. Use sua senha.",
-            "lockout_countdown": "Muitas tentativas. Tente novamente em {{time}}"
+            "lockout_countdown": "Muitas tentativas. Tente novamente em {{time}}",
+            "forgot_password": "Esqueceu a senha?"
+        },
+        "reset": {
+            "title": "Redefinir sua wallet?",
+            "body": "Sua senha não pode ser recuperada. A redefinição apaga tudo o que a Pera Wallet guarda neste navegador e depois você poderá criar uma nova senha.",
+            "restore_note": "Depois, restaure suas contas com a passphrase de recuperação de cada uma. Qualquer conta cuja passphrase de recuperação não tenha backup será perdida.",
+            "hardware_note": "Contas Ledger e contas de observação não são restauradas a partir de uma passphrase. Adicione-as novamente após a redefinição.",
+            "acknowledge": "Entendo que isso apaga meus dados e não pode ser desfeito",
+            "confirm_button": "Redefinir wallet",
+            "error": "Não foi possível redefinir a wallet. Tente novamente."
         },
         "security": {
             "autolock_title": "Bloqueio automático após",

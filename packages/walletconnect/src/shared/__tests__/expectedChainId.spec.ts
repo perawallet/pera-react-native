@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { AlgorandChainId } from '../../models'
+import { AlgorandWalletConnectChainId } from '../../models'
 import {
     EXPECTED_CHAIN_ID_BY_NETWORK,
     getExpectedChainId,
@@ -21,13 +21,13 @@ import {
 describe('getExpectedChainId', () => {
     it('resolves mainnet to its registered chain id', () => {
         expect(getExpectedChainId(Networks.mainnet)).toBe(
-            AlgorandChainId.mainnet,
+            AlgorandWalletConnectChainId.mainnet,
         )
     })
 
     it('resolves testnet to its registered chain id', () => {
         expect(getExpectedChainId(Networks.testnet)).toBe(
-            AlgorandChainId.testnet,
+            AlgorandWalletConnectChainId.testnet,
         )
     })
 
@@ -38,10 +38,10 @@ describe('getExpectedChainId', () => {
         // so a correctly-configured betanet dApp presenting 416_003 was
         // rejected outright.
         expect(getExpectedChainId(Networks.betanet)).toBe(
-            AlgorandChainId.betanet,
+            AlgorandWalletConnectChainId.betanet,
         )
         expect(getExpectedChainId(Networks.betanet)).not.toBe(
-            AlgorandChainId.mainnet,
+            AlgorandWalletConnectChainId.mainnet,
         )
     })
 
@@ -53,16 +53,16 @@ describe('getExpectedChainId', () => {
         // branch), so a dApp presenting MainNet's 416_001 was WRONGLY
         // accepted while on a network with no id of its own.
         expect(getExpectedChainId(Networks.custom)).toBe(
-            AlgorandChainId.testnet,
+            AlgorandWalletConnectChainId.testnet,
         )
     })
 
     it('maps every network, with custom borrowing testnet id', () => {
         expect(EXPECTED_CHAIN_ID_BY_NETWORK).toEqual({
-            mainnet: AlgorandChainId.mainnet,
-            testnet: AlgorandChainId.testnet,
-            betanet: AlgorandChainId.betanet,
-            custom: AlgorandChainId.testnet,
+            mainnet: AlgorandWalletConnectChainId.mainnet,
+            testnet: AlgorandWalletConnectChainId.testnet,
+            betanet: AlgorandWalletConnectChainId.betanet,
+            custom: AlgorandWalletConnectChainId.testnet,
         })
     })
 })

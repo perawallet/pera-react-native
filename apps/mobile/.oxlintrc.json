@@ -66,7 +66,6 @@
   "overrides": [
     {
       "files": [
-        "**/*.test.{ts,tsx,js,jsx}",
         "**/*.spec.{ts,tsx,js,jsx}",
         "**/__tests__/**/*.{ts,tsx,js,jsx}"
       ],
@@ -77,11 +76,12 @@
     {
       "files": ["src/**/*.{ts,tsx}"],
       "rules": {
+        "pera/no-platform-os-web": "error",
         "no-restricted-globals": [
           "error",
           {
             "name": "chrome",
-            "message": "apps/mobile must not reference the ambient chrome global directly — go through an extension package (e.g. @perawallet/wallet-extension-platform-chrome, @perawallet/wallet-extension-keystore-chrome) or its typed accessor instead."
+            "message": "apps/mobile must not reference the ambient chrome global directly — go through a chrome-owning package (e.g. @perawallet/wallet-extension-platform-chrome, @perawallet/wallet-core-browser-runtime, @perawallet/wallet-extension-keystore-chrome) or its typed accessor instead."
           }
         ]
       }

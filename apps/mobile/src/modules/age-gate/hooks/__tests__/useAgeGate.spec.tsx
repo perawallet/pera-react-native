@@ -17,7 +17,7 @@ const resolveAgeGate = vi.fn()
 const applyDeclaration = vi.fn()
 let storeStatus: 'adult' | 'minor' | null = null
 
-vi.mock('@perawallet/wallet-core-age-gate', () => ({
+vi.mock('@perawallet/wallet-core-device', () => ({
     resolveAgeGate: (...args: unknown[]) => resolveAgeGate(...args),
     applyDeclaration: (...args: unknown[]) => applyDeclaration(...args),
     useAgeGateStore: (

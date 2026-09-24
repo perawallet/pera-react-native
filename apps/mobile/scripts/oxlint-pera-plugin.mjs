@@ -56,6 +56,51 @@ const noUnvalidatedOpenUrl = {
     },
 }
 
+const isPlatformOs = node =>
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    node.object.type === 'Identifier' &&
+    node.object.name === 'Platform' &&
+    node.property.type === 'Identifier' &&
+    node.property.name === 'OS'
+
+const isWebLiteral = node => node?.type === 'Literal' && node.value === 'web'
+
+const EQUALITY_OPERATORS = new Set(['===', '!==', '==', '!='])
+
+const noPlatformOsWeb = {
+    meta: {
+        type: 'problem',
+        docs: {
+            description:
+                "Gate web differences on routeCapabilities or a .web.ts twin, not Platform.OS === 'web'",
+        },
+        messages: {
+            web: "Don't branch on Platform.OS === 'web': gate a product capability on routeCapabilities (routes/capabilities-types.ts), or move a rendering/implementation difference into a .web.ts(x) twin.",
+        },
+        schema: [],
+    },
+    create(context) {
+        return {
+            BinaryExpression(node) {
+                if (!EQUALITY_OPERATORS.has(node.operator)) return
+                const isMatch =
+                    (isPlatformOs(node.left) && isWebLiteral(node.right)) ||
+                    (isPlatformOs(node.right) && isWebLiteral(node.left))
+                if (isMatch) context.report({ node, messageId: 'web' })
+            },
+            SwitchStatement(node) {
+                if (!isPlatformOs(node.discriminant)) return
+                for (const switchCase of node.cases) {
+                    if (isWebLiteral(switchCase.test)) {
+                        context.report({ node: switchCase, messageId: 'web' })
+                    }
+                }
+            },
+        }
+    },
+}
+
 // Digits, whitespace and punctuation alone are not copy.
 const NOT_COPY = /^[0-9\s!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]*$/
 // A prop whose name ends in one of these carries user-facing copy.
@@ -268,16 +313,17 @@ const noProgramSignerInDappPaths = {
     },
 }
 
-/** The files allowed to construct, register or bind a WalletConnect v1 connector. */
+/** The files allowed to construct a WalletConnect v1 connector or the registry that holds them. */
 export const WC_CONNECTOR_OWNERS = [
     'packages/walletconnect/src/connection/createConnector.ts',
     'packages/walletconnect/src/connection/connectorRegistry.ts',
     'packages/walletconnect/src/v1/handler.ts',
+    'packages/walletconnect/src/v1/restore.ts',
 ]
 
 const CONNECTOR_CALLS = new Set([
-    'registerConnector',
-    'setConnectorHandlerBinder',
+    'createWalletConnectConnector',
+    'createConnectorRegistry',
     'useWalletConnect',
 ])
 
@@ -301,7 +347,7 @@ const wcConnectorOwnership = {
                 'Only the WalletConnect connection layer owns a v1 connector',
         },
         messages: {
-            owner: '{{name}} owns a WalletConnect v1 connector outside the connection layer: go through the connections registry. On web only the offscreen document may own one.',
+            owner: '{{name}} creates a WalletConnect v1 connector or its registry outside the connection layer: connectors are v1 handler state, and on web only the offscreen document\'s handler holds live ones.',
         },
         schema: [],
     },
@@ -335,6 +381,7 @@ export default {
     meta: { name: 'pera' },
     rules: {
         'no-unvalidated-open-url': noUnvalidatedOpenUrl,
+        'no-platform-os-web': noPlatformOsWeb,
         'no-hardcoded-ui-strings': noHardcodedUiStrings,
         'dev-gallery-entry-points': devGalleryEntryPoints,
         'no-program-signer-in-dapp-paths': noProgramSignerInDappPaths,

@@ -7,35 +7,75 @@ Pera Wallet is a monorepo that keeps UI and business logic in separate layers.
 ```
 ┌──────────────────────────┐   ┌──────────────────────────┐
 │       apps/mobile        │   │       apps/browser       │
-│  (React Native UI)       │   │  (MV3 extension shell)   │
-│                          │   │                          │
-│  Components → Screens →  │   │  manifest, service       │
-│  Navigation → User       │   │  worker, content         │
-│  Facing                  │   │  scripts, offscreen      │
+│  (React Native UI, and   │   │  (MV3 extension shell)   │
+│   the web UI via Metro)  │   │  manifest, service       │
+│  composition root        │   │  worker, content         │
+│                          │   │  scripts, offscreen      │
 └───────────┬──────────────┘   └───────────┬──────────────┘
             │                              │
-            │  both import                 │
             ▼                              ▼
 ┌─────────────────────────────────────────────────────┐
 │                    packages/*                        │
 │           (Headless Business Logic)                  │
-│                                                      │
 │   Stores → Hooks → API Clients → Models              │
 └────────────────────────┬────────────────────────────┘
                          │ getProvider()
                          ▼
 ┌─────────────────────────────────────────────────────┐
 │                   extensions/*                       │
-│      (Platform drivers behind one interface)         │
-│                                                      │
-│   platform (the contract) → platform-chrome /        │
-│   platform-react-native (the implementations)        │
+│   provider · drivers (platform-chrome,               │
+│   platform-react-native, keystore-chrome) ·          │
+│   Ledger transports → hardware-wallet                │
+│                         ▼                            │
+│   platform  (the PlatformServices contract)          │
+└────────────────────────┬────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│    bottom tier: packages/config, packages/shared     │
+│             (usable from every tier)                 │
 └─────────────────────────────────────────────────────┘
 ```
 
 `apps/mobile` owns rendering, navigation, styling and gestures. `packages/*` owns everything else:
 data fetching, stores, business rules, API clients, crypto. The split is what lets the logic be
 tested without React Native, and what let the browser extension reuse it.
+
+### Layer tiers
+
+Dependencies point down the diagram and never up. `tools/check-layer-tiers.mjs` enforces this on
+every workspace `package.json` (all dependency fields) in pre-push and CI:
+
+| Tier                                                             | May depend on                                                   |
+| ---------------------------------------------------------------- | --------------------------------------------------------------- |
+| `apps/*`                                                         | anything                                                        |
+| `packages/*` (business)                                          | other packages, and extensions other than the Ledger transports |
+| `extensions/*`                                                   | other extensions and the bottom tier                            |
+| `extensions/platform` (the contract)                             | the bottom tier only                                            |
+| Ledger transports (`extensions/ledger-*` except `ledger-shared`) | depended on only by apps and each other                         |
+| bottom tier (`packages/config`, `packages/shared`)               | the bottom tier only                                            |
+
+The bottom tier lives under `packages/` but is not business logic, so the directory alone does not
+tell you the tier. `packages/devtools` is build and test tooling, allowed anywhere as a
+devDependency.
+
+The app is the composition root. It picks the platform driver (a bundler alias, below) and registers
+the concrete Ledger transports into `getProvider().hardwareWalletRegistry`
+(`apps/mobile/src/bootstrap/hardware-wallet-transports.ts` and its `.web.ts` twin, called from
+`App.tsx` and `App.web.tsx`). Keeping transports out of `extensions/provider` is what stops every
+package that depends on the provider from inheriting the BLE/USB driver graph.
+
+Hardware wallets are a provider extension (`extensions/hardware-wallet`, composed as
+`WithHardwareWalletExtension`), not a platform service. Nothing about the registry differs per
+platform; what differs is the transports, and the app already chooses those. Its types are wallet
+domain (ARC-60 sign requests, Ledger device models), which the platform contract has no reason to
+know. The extension supplies an empty registry, and `@perawallet/wallet-core-hardware-wallet`
+re-exports its types beside the discovery logic.
+
+The few edges that break a tier are listed in the check's `ALLOWLIST`, each with its reason; an
+entry whose edge disappears fails the check, so it has to be deleted rather than left to permit the
+edge's return. The check reads manifests, so it cannot see a bundler alias: `platform-driver`
+declares only the contract, yet resolves to `platform-chrome` on web, which is why
+`platform-chrome`'s own edges into business packages close a cycle no manifest shows.
 
 ### Two meanings of "extension"
 
@@ -58,13 +98,19 @@ stub that throws if it is ever reached, and each app's bundler aliases it to a c
 `platform-chrome` on web, `platform-react-native` on native (see `apps/mobile/metro.config.js`).
 Business logic in `packages/*` reaches the resolved services only through `getProvider()`
 (`extensions/provider`), so it depends on the interface and never on a platform. That is what keeps
-`chrome.*` out of `packages/` entirely.
+`chrome.*` out of `packages/`, with one deliberate exception: `packages/browser-runtime` is the
+extension's MV3 runtime (message routing between realms, dApp, WalletConnect, passkey and integrity
+plumbing), which lives under `packages/` only because it depends on business packages, and which
+only web code imports (see [Browser architecture](BROWSER_ARCHITECTURE.md#driver-and-runtime)). The
+provider is built when that module first loads; there is no initialisation call. In-memory test
+doubles for the contract ship from `@perawallet/wallet-extension-platform/test-utils`, never the main
+entry, so the contract carries no React or React Query.
 
 Two platform concerns are swapped by module identity rather than through that interface, and are easy
-to miss when tracing: the keystore engine and the Ledger transports (`.web.ts` twins in
-`extensions/provider`). On web `@algorandfoundation/react-native-keystore` resolves to
-`extensions/keystore-chrome`, but only so static imports of it resolve; the engine comes from
-`@algorandfoundation/keystore-web`.
+to miss when tracing: the keystore engine and the Ledger transports (the `.web.ts` twin of the
+app's `bootstrap/hardware-wallet-transports.ts`). On web
+`@algorandfoundation/react-native-keystore` resolves to `extensions/keystore-chrome`, but only so
+static imports of it resolve; the engine comes from `@algorandfoundation/keystore-web`.
 
 ### Where browser-specific code lives
 
@@ -80,8 +126,14 @@ when `platform === 'web'`.
 
 A lint rule (`pera/no-chrome-imports-outside-web`, enforced by `pnpm lint:lanekeep`) checks the
 boundary in the direction that actually matters: a file that is not `.web.*` may not import
-`platform-chrome` or `keystore-chrome`, because such a file is reachable from the native bundle and
+`platform-chrome`, `keystore-chrome` or `browser-runtime`, because such a file is reachable from the native bundle and
 would fail at runtime on the missing `chrome` global.
+
+`pera/no-react-native-imports-in-packages` holds the other direction: `packages/*/src` may not
+import `react-native`, `react-native-*` or `expo-*`. App lifecycle comes from
+`getProvider().appLifecycle`, the OS from `getProvider().deviceInfo.getDevicePlatform()`. The few
+native modules with no service equivalent (Falcon, the native keystore envelope) are listed with a
+reason in the rule itself.
 
 ### Turning features off per platform
 
@@ -102,6 +154,13 @@ Anything off on web is off for one of three reasons, and the comment says which.
 
 Keeping the reason at the flag rather than in a separate document is deliberate: the next person to
 consider flipping it is already reading that line.
+
+A web difference that is not a product decision (a focus-ring reset, a browser API that needs a user
+gesture) goes in a small `.web.ts` twin of a constant or function instead of a flag.
+`pera/no-platform-os-web` (`apps/mobile/scripts/oxlint-pera-plugin.mjs`) fails any
+`Platform.OS === 'web'` comparison in `apps/mobile/src`, so one of the two is the only way to branch.
+Native-only iOS/Android splits read `isIOS()`/`isAndroid()` from `@utils/platform`; a capability that
+differs between them computes its native value there (`ledgerUsb` is `isAndroid()`).
 
 ### Keeping code out of a build
 

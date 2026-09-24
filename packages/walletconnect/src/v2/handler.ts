@@ -18,18 +18,20 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
 import type {
-    ConnectionErrorScope,
     ConnectionHandler,
-    ConnectionHandlerContext,
     ConnectionProposal,
     WalletOperationType,
 } from '@perawallet/wallet-core-connections'
+import {
+    connectionScope,
+    createHandlerKit,
+    pairingScope,
+} from '@perawallet/wallet-core-connections/handlerKit'
 import type {
     Connection,
     ConnectionId,
     ConnectionOrigin,
     ConnectionPeer,
-    ConnectionStoreAPI,
 } from '@perawallet/wallet-extension-connections'
 import { AlgorandPermission } from '../models'
 import {
@@ -227,12 +229,25 @@ export const createWalletConnectV2Handler = (
         createWalletKit = createWalletKitClient,
     } = options
 
-    let context: Nullable<ConnectionHandlerContext> = null
+    const kit = createHandlerKit(WALLET_CONNECT_V2_KIND, {
+        logTag: '[WC v2]',
+        notInitializedError: () =>
+            new WalletConnectError(
+                'The WalletConnect v2 handler was used before initialize()',
+            ),
+    })
+    // Pending origins are keyed by PAIRING topic: the origin is known at
+    // `pair()` and only has a record to live on once a session settles under
+    // a different topic.
+    const {
+        requireContext,
+        store,
+        reportError,
+        recordActivity,
+        pendingOrigins,
+    } = kit
     let client: Nullable<WalletKitClient> = null
     let unbinders: (() => void)[] = []
-    // Keyed by PAIRING topic: the origin is known at `pair()` and only has a
-    // record to live on once a session settles under a different topic.
-    const pendingOrigins = new Map<string, ConnectionOrigin>()
     // Proposal id to pairing topic, and the once-only ledger: a proposal
     // missing from here has been approved, rejected or expired.
     const pendingProposals = new Map<number, string>()
@@ -243,30 +258,6 @@ export const createWalletConnectV2Handler = (
     // because a slow dApp can still deliver a proposal on one and a sheet
     // appearing from nowhere is worse than a map entry per abandon.
     const abandonedPairings = new Set<string>()
-
-    const requireContext = (): ConnectionHandlerContext => {
-        if (!context) {
-            throw new WalletConnectError(
-                'The WalletConnect v2 handler was used before initialize()',
-            )
-        }
-        return context
-    }
-
-    const store = (): ConnectionStoreAPI => requireContext().store
-
-    const reportError = (error: Error, scope?: ConnectionErrorScope): void => {
-        logger.error(error, scope)
-        context?.onError(error, scope)
-    }
-
-    const connectionScope = (id: ConnectionId): ConnectionErrorScope => ({
-        connectionId: id,
-    })
-
-    const pairingScope = (pairingId: string): ConnectionErrorScope => ({
-        pairingId,
-    })
 
     const requireClient = (): WalletKitClient => {
         if (!client) {
@@ -287,18 +278,12 @@ export const createWalletConnectV2Handler = (
     const bindEvents = (walletKit: WalletKitClient): void => {
         bind(walletKit, 'session_proposal', event => {
             void handleProposal(event).catch((error: unknown) => {
-                reportError(
-                    error instanceof Error ? error : new Error(String(error)),
-                    pairingScope(event.params.pairingTopic),
-                )
+                reportError(error, pairingScope(event.params.pairingTopic))
             })
         })
         bind(walletKit, 'session_request', event => {
             void handleRequest(event).catch((error: unknown) => {
-                reportError(
-                    error instanceof Error ? error : new Error(String(error)),
-                    connectionScope(event.topic),
-                )
+                reportError(error, connectionScope(event.topic))
             })
         })
         // The peer hung up: the record goes, whatever else is pending. No
@@ -306,7 +291,7 @@ export const createWalletConnectV2Handler = (
         // relay callback is worse than dropping a record the next `restore()`
         // reconciles anyway.
         bind(walletKit, 'session_delete', ({ topic }) => {
-            context?.onDisconnected(topic)
+            kit.currentContext()?.onDisconnected(topic)
         })
         // WalletKit has already dropped the proposal; releasing ours is what
         // stops a sheet from outliving the answer window it had.
@@ -328,7 +313,7 @@ export const createWalletConnectV2Handler = (
             const topic = pendingRequests.get(id)
             if (topic === undefined) return
             pendingRequests.delete(id)
-            context?.onRequestExpired(topic, String(id))
+            kit.currentContext()?.onRequestExpired(topic, String(id))
             reportError(
                 new WalletConnectRequestExpiredError(),
                 connectionScope(topic),
@@ -382,27 +367,11 @@ export const createWalletConnectV2Handler = (
     // Pairings expire through the same channel and have no record, which is
     // exactly what tells the two apart.
     const handleExpiry = async (topic: string): Promise<void> => {
-        const current = context
+        const current = kit.currentContext()
         if (!current) return
         const stored = await current.store.get(topic)
         if (!stored || !isWalletConnectV2Connection(stored)) return
         current.onDisconnected(topic)
-    }
-
-    // Requests are user-paced, so this needs no debounce. Re-read first so a
-    // disconnect that already landed is not undone; a remove that lands between
-    // the read and the write can still be, and the next reconcile drops it.
-    const recordActivity = (id: ConnectionId): void => {
-        void (async () => {
-            const current = await store().get(id)
-            if (!current) return
-            await store().upsert({ ...current, lastActiveAt: Date.now() })
-        })().catch((error: unknown) => {
-            logger.warn('[WC v2] failed to record connection activity', {
-                connectionId: id,
-                error,
-            })
-        })
     }
 
     /**
@@ -571,10 +540,7 @@ export const createWalletConnectV2Handler = (
             // namespace build, the relay, a session naming no usable account.
             // The proposal goes back so a second Connect works.
             pendingProposals.set(input.id, pairingId)
-            reportError(
-                error instanceof Error ? error : new Error(String(error)),
-                pairingScope(pairingId),
-            )
+            reportError(error, pairingScope(pairingId))
             throw error
         }
     }
@@ -632,7 +598,7 @@ export const createWalletConnectV2Handler = (
                 lastActiveAt: Date.now(),
             }
             await store().upsert(approved)
-            pendingOrigins.delete(pairingId)
+            pendingOrigins.forget(pairingId)
             return approved
         } catch (error) {
             // The session settled, so the dApp believes it is connected: left
@@ -659,7 +625,7 @@ export const createWalletConnectV2Handler = (
      * proposal on it would approve with no origin.
      */
     const releasePairing = (pairingId: string): void => {
-        pendingOrigins.delete(pairingId)
+        pendingOrigins.forget(pairingId)
         expirePairing(pairingId)
     }
 
@@ -955,13 +921,12 @@ export const createWalletConnectV2Handler = (
             abandonedPairings.delete(topic)
             // Cleared, not left: a re-pairing of the same topic from another
             // entry point would otherwise inherit the first one's origin.
-            if (opts?.origin) pendingOrigins.set(topic, opts.origin)
-            else pendingOrigins.delete(topic)
+            pendingOrigins.remember(topic, opts?.origin)
             return topic
         },
 
         abandonPairing: pairingId => {
-            pendingOrigins.delete(pairingId)
+            pendingOrigins.forget(pairingId)
             // Tombstoned before the delete: the caller has moved on, and a
             // relay that will not take it still leaves the tombstone.
             abandonedPairings.add(pairingId)
@@ -976,7 +941,7 @@ export const createWalletConnectV2Handler = (
                 logger.warn('[WC v2] initialize replaced a live client')
                 await releaseClient()
             }
-            context = next
+            kit.attach(next)
             if (projectId.length === 0) {
                 // Logged, not thrown or reported: v2 being unconfigured is a
                 // build fact, not a failure of this boot, and every other
@@ -998,8 +963,7 @@ export const createWalletConnectV2Handler = (
         },
 
         teardown: async () => {
-            context = null
-            pendingOrigins.clear()
+            kit.detach()
             pendingProposals.clear()
             pendingRequests.clear()
             abandonedPairings.clear()

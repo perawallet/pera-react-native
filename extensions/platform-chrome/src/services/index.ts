@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export { ChromeAppLifecycleService } from './app-lifecycle'
 export { ChromeKeyValueStorageService } from './key-value-storage'
 export { ChromeDeviceInfoService } from './device'
 export { ChromeDatabaseService } from './database'

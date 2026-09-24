@@ -12,13 +12,22 @@
 
 import { sha256 } from '@noble/hashes/sha2.js'
 import { config } from '@perawallet/wallet-core-config'
-import { bytesToHex } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+    bytesToHex,
+} from '@perawallet/wallet-core-shared'
 import { AUTODRAW_TEAL_TEMPLATE } from './autodraw-teal'
 
 /** The bundled AutoDraw TEAL template does not match the build-time pin. */
-export class AutoDrawTealUnverifiedError extends Error {
+export class AutoDrawTealUnverifiedError extends AppError {
     constructor() {
-        super('AutoDraw TEAL template does not match the pinned hash')
+        super('AutoDraw TEAL template does not match the pinned hash', {
+            severity: ErrorSeverity.HIGH,
+            category: ErrorCategory.BLOCKCHAIN,
+            recoverable: false,
+        })
         this.name = 'AutoDrawTealUnverifiedError'
     }
 }

@@ -69,8 +69,8 @@ The provider has never been asked to read a credential from the split layout, so
 started. When it does, the migration has to handle everything the fixture corpus in
 `__tests__/nativeProviderRecord.spec.ts` pins:
 
-- Both envelope shapes: sealed `{iv, tag, content}` _and_ the unsealed base64url payload the provider
-  falls back to when it has no master key.
+- Both envelope shapes: sealed `{iv, tag, content}` _and_ the unsealed base64url payload, which the
+  provider's read path still accepts although it only writes sealed records.
 - Both credential type strings: `hd-derived-p256` and the legacy `xhd-derived-p256`, which the
   provider's read path still accepts.
 - Byte fields as JSON number arrays, not `{$u8}`.
@@ -88,9 +88,11 @@ None of this runs in CI; each item needs a real device and, in places, two build
    `getStoredCredentials` is iOS-only by design (`extensions/passkey-autofill/src/service.ts`), so
    an empty Android passkey list for un-adopted credentials is correct.
 2. Relying-party scoping: a get-credential request for one origin must not surface credentials
-   belonging to another. Upstream still ships `processGetCredentialRequest` filtering on
-   `allowCredentials` only, so the local patch is what enforces scoping, and it is the easiest thing
-   to lose on a version bump.
+   belonging to another. The package enforces this in its `credentials/RelyingParty.kt`: the
+   provider service offers only credentials stored for the requested rpId (or, when none is sent,
+   for the calling app's own identity), and `GetPasskeyActivity` re-checks the selected one before
+   signing. Web origins compare by host, so a migrated legacy Android passkey, stored under its full
+   `https://` origin, must still be offered and sign.
 3. Migration-banner delete gating: with Pera _not_ the active credential provider and at least one
    flagged passkey present, the banner must warn but offer no remove action, and the row's own trash
    icon must be withheld too. Re-registration is impossible in that state, so offering
@@ -99,7 +101,7 @@ None of this runs in CI; each item needs a real device and, in places, two build
 
 The flagged half of step 3 is not reachable on device without a legacy-import dataset, because the
 `metadata.migration: "needs-migration"` marker is only written by the legacy import path.
-`settings-passkeys-delete.test.tsx` covers that half instead.
+`settings-passkeys-delete.spec.tsx` covers that half instead.
 
 ## What passkeys actually depend on
 

@@ -32,7 +32,7 @@ import {
     encodeWalletOperationResult,
     rejectApproval,
     resolveConnectionRequest,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 

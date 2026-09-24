@@ -129,9 +129,11 @@
     "https://firebaseinstallations.googleapis.com/*",
     "https://fcmregistrations.googleapis.com/*",
     "https://www.google-analytics.com/*",
-    "https://*.ingest.sentry.io/*"
-  ],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; font-src 'self'"
-  }
+    "https://*.ingest.sentry.io/*",
+    "https://*.ingest.us.sentry.io/*",
+    "https://*.ingest.de.sentry.io/*",
+    "https://api.nf.domains/*",
+    "https://api.testnet.nf.domains/*",
+    "https://clients3.google.com/*"
+  ]
 }

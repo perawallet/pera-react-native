@@ -1,0 +1,55 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, expect, it } from 'vitest'
+import {
+    ChromeAgeGateService,
+    ChromeAppIntegrityService,
+    ChromeBiometricsService,
+    ChromeMigrationService,
+} from '../stubs'
+
+describe('capability stubs', () => {
+    it('reports unsupported/none capabilities', async () => {
+        await expect(
+            new ChromeAppIntegrityService().isSupported(),
+        ).resolves.toBe(false)
+        await expect(
+            new ChromeBiometricsService().getSecurityLevel(),
+        ).resolves.toBe('none')
+        await expect(
+            new ChromeBiometricsService().checkEnrollmentBinding(),
+        ).resolves.toBe('unavailable')
+        await expect(
+            new ChromeAgeGateService().requestAgeRange(18),
+        ).resolves.toEqual({ status: 'unknown', source: 'self-declared' })
+        await expect(
+            new ChromeMigrationService().hasLegacyData(),
+        ).resolves.toBe(false)
+    })
+
+    it('exposes no migration dev tools, having no legacy store to write', () => {
+        expect(new ChromeMigrationService().devTools).toBeUndefined()
+    })
+
+    it('refuses to arm or unwrap, having no OS biometric to bind to', async () => {
+        const service = new ChromeBiometricsService()
+
+        await expect(service.armBiometricBinding()).resolves.toBeNull()
+        await expect(service.unwrapBiometricToken('anything')).resolves.toEqual(
+            {
+                success: false,
+                reason: 'unavailable',
+            },
+        )
+    })
+})

@@ -11,11 +11,11 @@
  */
 
 import type { PlatformServices } from '@perawallet/wallet-extension-platform'
-import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import {
     ChromeAgeGateService,
     ChromeAnalyticsService,
     ChromeAppIntegrityService,
+    ChromeAppLifecycleService,
     ChromeBiometricsService,
     ChromeCloudFileStorageService,
     ChromeCrashReportingService,
@@ -41,7 +41,7 @@ export const platformServices: PlatformServices = {
     database: new ChromeDatabaseService(),
     deviceInfo: new ChromeDeviceInfoService(),
     appIntegrity: new ChromeAppIntegrityService(),
-    hardwareWalletRegistry: createHardwareWalletRegistry(),
+    appLifecycle: new ChromeAppLifecycleService(),
     migration: new ChromeMigrationService(),
     walletProvisioning: new ChromeWalletProvisioningService(),
     cloudFileStorage: new ChromeCloudFileStorageService(),

@@ -172,6 +172,21 @@ export const runHandlerContractTests = (
             await expect(makeHandler().teardown()).resolves.toBeUndefined()
         })
 
+        // The registry fans `reconnect` out on platform edges it does not
+        // sequence against the lifecycle, so any point in it is fair game.
+        it.skipIf(makeHandler().reconnect === undefined)(
+            'reconnect never throws, whatever the lifecycle state',
+            async () => {
+                const handler = makeHandler()
+
+                expect(() => handler.reconnect?.()).not.toThrow()
+                await handler.initialize(noopContext())
+                expect(() => handler.reconnect?.()).not.toThrow()
+                await handler.teardown()
+                expect(() => handler.reconnect?.()).not.toThrow()
+            },
+        )
+
         it('restore returns only records of its own kind', async () => {
             const handler = makeHandler()
             const foreign: Connection = {

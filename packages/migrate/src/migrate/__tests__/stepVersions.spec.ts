@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { createStubMigrationService } from '@perawallet/wallet-extension-platform'
+import { createStubMigrationService } from '@perawallet/wallet-extension-platform/test-utils'
 import {
     ALL_MIGRATION_STEPS,
     MIGRATION_STEP_TARGET_VERSIONS,

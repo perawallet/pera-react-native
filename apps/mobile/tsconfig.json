@@ -90,8 +90,8 @@
       "@perawallet/wallet-core-transactions/test-handlers": [
         "../../packages/transactions/src/test-handlers.ts"
       ],
-      "@perawallet/wallet-core-polling/test-handlers": [
-        "../../packages/polling/src/test-handlers.ts"
+      "@perawallet/wallet-core-background/test-handlers": [
+        "../../packages/background/src/test-handlers.ts"
       ],
       "@perawallet/wallet-core-device/test-handlers": [
         "../../packages/device/src/test-handlers.ts"
@@ -124,8 +124,14 @@
       "@perawallet/wallet-extension-platform-chrome/bootstrap": [
         "../../extensions/platform-chrome/src/bootstrap.ts"
       ],
-      "@perawallet/wallet-extension-platform-chrome/remote-registry": [
-        "../../extensions/platform-chrome/src/remote-registry.ts"
+      "@perawallet/wallet-extension-platform-chrome/messaging": [
+        "../../extensions/platform-chrome/src/messaging.ts"
+      ],
+      "@perawallet/wallet-core-browser-runtime": [
+        "../../packages/browser-runtime/src/index.ts"
+      ],
+      "@perawallet/wallet-core-browser-runtime/remote-registry": [
+        "../../packages/browser-runtime/src/remote-registry.ts"
       ],
       "@perawallet/wallet-extension-platform-driver": [
         "../../extensions/platform-driver/src/index.ts"

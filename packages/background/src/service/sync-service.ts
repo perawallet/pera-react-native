@@ -16,7 +16,6 @@ import {
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
-import { sendShouldRefreshRequest } from '@perawallet/wallet-core-polling'
 import { invalidateAssetQueries } from '@perawallet/wallet-core-assets'
 import {
     invalidateTransactionQueries,
@@ -30,6 +29,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { reconcileOpenSubmissions } from '@perawallet/wallet-core-signing'
+import { sendShouldRefreshRequest } from '../polling'
 import type { SyncServiceDeps } from '../models'
 import {
     resolveCheckpointRound,

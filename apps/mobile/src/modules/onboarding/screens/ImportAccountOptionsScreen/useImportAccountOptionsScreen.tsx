@@ -11,7 +11,6 @@
  */
 
 import React, { useCallback, useMemo } from 'react'
-import { Platform } from 'react-native'
 import {
     resolveImportAccountType,
     setPendingImportMnemonic,
@@ -31,6 +30,8 @@ import { useDeepLink, DeeplinkType } from '@modules/deeplink'
 import type { AccountOption } from '@modules/onboarding/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRestoreBackupOptions } from '@modules/cloud-backup'
+import { useSupportedLedgerTransports } from '@modules/ledger'
+import { routeCapabilities } from '@routes/capabilities'
 import {
     ImportOptionsContent,
     type ImportOptionsContentResult,
@@ -55,6 +56,17 @@ export const useImportAccountOptionsScreen =
             useRestoreBackupOptions()
         const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
         const isCloudBackupEnabled = useIsCloudBackupEnabled()
+        const {
+            isReady: isLedgerSupportKnown,
+            supportedTransportTypes: ledgerTransports,
+        } = useSupportedLedgerTransports()
+        // Browsers differ (Brave ships Web Bluetooth off, Firefox has neither
+        // API), so each row reflects what this one can do. Enabled until the
+        // check resolves, so rows don't flash disabled on every visit.
+        const isLedgerBleAvailable =
+            !isLedgerSupportKnown || ledgerTransports.includes('ble')
+        const isLedgerUsbAvailable =
+            !isLedgerSupportKnown || ledgerTransports.includes('usb')
         const isCloudBackupConfigured = useCloudBackupStore(state =>
             state.isConfigured(),
         )
@@ -217,22 +229,26 @@ export const useImportAccountOptionsScreen =
                     testID: 'import_account_options_pair_ledger_button',
                     titleKey:
                         'onboarding.import_account_options.pair_ledger_title',
-                    descriptionKey:
-                        'onboarding.import_account_options.pair_ledger_description',
+                    descriptionKey: isLedgerBleAvailable
+                        ? 'onboarding.import_account_options.pair_ledger_description'
+                        : 'onboarding.import_account_options.pair_ledger_unsupported_description',
                     leftIcon: 'wallet' as IconName,
                     onPress: handlePairLedgerBle,
+                    isDisabled: !isLedgerBleAvailable,
                 },
             ]
 
-            if (Platform.OS === 'android' || Platform.OS === 'web') {
+            if (routeCapabilities.ledgerUsb) {
                 allOptions.push({
                     testID: 'import_account_options_pair_ledger_usb_button',
                     titleKey:
                         'onboarding.import_account_options.pair_ledger_usb_title',
-                    descriptionKey:
-                        'onboarding.import_account_options.pair_ledger_usb_description',
+                    descriptionKey: isLedgerUsbAvailable
+                        ? 'onboarding.import_account_options.pair_ledger_usb_description'
+                        : 'onboarding.import_account_options.pair_ledger_unsupported_description',
                     leftIcon: 'wallet' as IconName,
                     onPress: handlePairLedgerUsb,
+                    isDisabled: !isLedgerUsbAvailable,
                 })
             }
 
@@ -290,6 +306,8 @@ export const useImportAccountOptionsScreen =
             handleImportQuantum,
             isCloudBackupEnabled,
             isQuantumAccountsEnabled,
+            isLedgerBleAvailable,
+            isLedgerUsbAvailable,
             network,
         ])
 

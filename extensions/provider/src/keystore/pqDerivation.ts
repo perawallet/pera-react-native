@@ -16,7 +16,7 @@
  * depends on this package, so the reverse edge would close a build-order
  * cycle. Both sides now pin the literals in a test —
  * `migrations/repairs/0004-stamp-quantum-derivation.ts`'s spec asserts the
- * stamped value is `'legacy'`, and `packages/kms/src/models/__tests__/keys.test.ts`
+ * stamped value is `'legacy'`, and `packages/kms/src/models/__tests__/keys.spec.ts`
  * asserts both literals directly.
  */
 export const PQ_DERIVATION_LEGACY = 'legacy'

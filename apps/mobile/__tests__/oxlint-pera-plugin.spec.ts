@@ -324,25 +324,19 @@ describe('pera/wc-connector-ownership', () => {
             { type: 'NewExpression', callee: id('WalletConnect') },
         ],
         [
-            'registerConnector(...)',
+            'createWalletConnectConnector(...)',
             'CallExpression',
-            call(id('registerConnector'), []),
+            call(id('createWalletConnectConnector'), []),
         ],
         [
-            'a member registerConnector(...)',
+            'a member createConnectorRegistry(...)',
             'CallExpression',
-            call(
-                member(
-                    call(member(id('registry'), 'getState'), []),
-                    'registerConnector',
-                ),
-                [],
-            ),
+            call(member(id('walletconnect'), 'createConnectorRegistry'), []),
         ],
         [
-            'setConnectorHandlerBinder(...)',
+            'createConnectorRegistry(...)',
             'CallExpression',
-            call(id('setConnectorHandlerBinder'), []),
+            call(id('createConnectorRegistry'), []),
         ],
         [
             'useWalletConnect()',
@@ -371,7 +365,7 @@ describe('pera/wc-connector-ownership', () => {
     it('carves out only files that still own a connector', () => {
         const root = join(__dirname, '../../..')
         const ownership =
-            /\bnew WalletConnect\(|\bregisterConnector\(|\bsetConnectorHandlerBinder\(|\buseWalletConnect\(/
+            /\bnew WalletConnect\(|\bcreateWalletConnectConnector\(|\bcreateConnectorRegistry\(|\buseWalletConnect\(/
         for (const owner of WC_CONNECTOR_OWNERS) {
             const text = readFileSync(join(root, owner), 'utf8')
             expect(ownership.test(text), owner).toBe(true)
@@ -435,4 +429,59 @@ describe('every pera plugin rule', () => {
             ).toBe(true)
         },
     )
+})
+
+describe('pera/no-platform-os-web', () => {
+    const platformOs = member(id('Platform'), 'OS')
+    const literal = (value: string): Node => ({ type: 'Literal', value })
+    const compare = (operator: string, left: Node, right: Node): Node => ({
+        type: 'BinaryExpression',
+        operator,
+        left,
+        right,
+    })
+    const switchOn = (discriminant: Node, ...tests: Node[]): Node => ({
+        type: 'SwitchStatement',
+        discriminant,
+        cases: tests.map(test => ({ type: 'SwitchCase', test })),
+    })
+
+    const lintWeb = (node: Node) => {
+        const report = vi.fn()
+        const visitors = plugin.rules['no-platform-os-web'].create({ report })
+        const visit = visitors[node.type as keyof typeof visitors]
+        visit(node)
+        return report
+    }
+
+    it.each([
+        ['=== web', compare('===', platformOs, literal('web'))],
+        ['!== web', compare('!==', platformOs, literal('web'))],
+        ['== web', compare('==', platformOs, literal('web'))],
+        ['a reversed comparison', compare('===', literal('web'), platformOs)],
+        [
+            "a switch with case 'web'",
+            switchOn(platformOs, literal('ios'), literal('web')),
+        ],
+    ])('reports %s', (_label, node) => {
+        expect(lintWeb(node)).toHaveBeenCalledWith(
+            expect.objectContaining({ messageId: 'web' }),
+        )
+    })
+
+    it.each([
+        ['=== ios', compare('===', platformOs, literal('ios'))],
+        [
+            'another object’s OS',
+            compare('===', member(id('device'), 'OS'), literal('web')),
+        ],
+        ['a non-equality operator', compare('+', platformOs, literal('web'))],
+        [
+            'a switch without a web case',
+            switchOn(platformOs, literal('ios'), literal('android')),
+        ],
+        ['a switch on something else', switchOn(id('surface'), literal('web'))],
+    ])('allows %s', (_label, node) => {
+        expect(lintWeb(node)).not.toHaveBeenCalled()
+    })
 })

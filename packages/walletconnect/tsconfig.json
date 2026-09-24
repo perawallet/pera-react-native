@@ -16,6 +16,9 @@
       ],
       "@perawallet/wallet-core-connections/pairingOutcome": [
         "../connections/src/pairingOutcome.ts"
+      ],
+      "@perawallet/wallet-core-connections/handlerKit": [
+        "../connections/src/handlerKit.ts"
       ]
     }
   },

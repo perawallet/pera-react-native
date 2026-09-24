@@ -10,8 +10,23 @@
  limitations under the License
  */
 
-export * from './types'
-export * from './registry'
+// The device and registry contract lives in the hardware-wallet provider
+// extension so transports implement it without depending on this package;
+// re-exported for callers here.
+export {
+    createHardwareWalletRegistry,
+    type HardwareWalletAdapterState,
+    type HardwareWalletAppVersion,
+    type HardwareWalletArbitrarySignRequest,
+    type HardwareWalletConnectionStatus,
+    type HardwareWalletDerivedAccount,
+    type HardwareWalletDevice,
+    type HardwareWalletManufacturer,
+    type HardwareWalletRegistry,
+    type HardwareWalletTransport,
+    type HardwareWalletTransportProvider,
+    type LedgerTransportType,
+} from '@perawallet/wallet-extension-hardware-wallet'
 export * from './constants'
 export { discoverAccounts, type DiscoverAccountsOptions } from './discovery'
 export { verifyAddress } from './verify'

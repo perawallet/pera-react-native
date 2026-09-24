@@ -28,6 +28,10 @@ type Query = Record<string, unknown> & { format?: string }
  * so algosdk's decoders and Pera's `toAlgodError` (`fromApiError`) can read
  * `.response.status` / `.response.body` exactly as they do for the SDK's own
  * client.
+ *
+ * Deliberately not an `AppError`: `resolveErrorCopy` and `isExpectedError`
+ * short-circuit on AppError metadata, which would skip the structural status
+ * and algod-body classification every node rejection relies on for its copy.
  */
 class TimeoutHttpClientError extends Error implements BaseHTTPClientError {
     constructor(

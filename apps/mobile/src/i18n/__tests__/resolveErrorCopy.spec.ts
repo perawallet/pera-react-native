@@ -137,26 +137,26 @@ describe('resolveErrorCopy', () => {
     it('resolves a declared messageKey as the body', () => {
         const error = new AppError('log only', {
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.validation.invalid_address',
+            messageKey: 'errors.webview.unsupported_url',
         })
 
         const result = resolveErrorCopy(error, t, undefined, getAlgodMessage)
 
-        expect(result.body).toBe('errors.validation.invalid_address')
+        expect(result.body).toBe('errors.webview.unsupported_url')
     })
 
     it('passes params through to the translator', () => {
         const spy = vi.fn((key: string) => key)
         const error = new AppError('log only', {
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.validation.invalid_address',
-            params: { address: 'ABC' },
+            messageKey: 'errors.webview.unsupported_url',
+            params: { url: 'ABC' },
         })
 
         resolveErrorCopy(error, spy, undefined, getAlgodMessage)
 
-        expect(spy).toHaveBeenCalledWith('errors.validation.invalid_address', {
-            address: 'ABC',
+        expect(spy).toHaveBeenCalledWith('errors.webview.unsupported_url', {
+            url: 'ABC',
         })
     })
 

@@ -19,7 +19,6 @@ import {
     useState,
 } from 'react'
 import {
-    Platform,
     type LayoutChangeEvent,
     type NativeScrollEvent,
     type NativeSyntheticEvent,
@@ -28,6 +27,7 @@ import {
 import type { PWFlatListRef } from '@components/core'
 import type { SearchInputRef } from '@components/SearchInput'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { shouldUnpinSearchOnScroll } from './scrollUnpin'
 
 const SEARCH_KEY = '__searchable_list_search__'
 const HEADER_KEY = '__searchable_list_header__'
@@ -329,7 +329,7 @@ export const useSearchableList = <T>({
             // settled at headerH, any further movement away from it — either
             // direction — means the user is manually scrolling, so unpin.
             if (
-                Platform.OS === 'web' &&
+                shouldUnpinSearchOnScroll &&
                 isSearchingRef.current &&
                 headerH > 0
             ) {

@@ -30,13 +30,11 @@
     "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-remote-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "decimal.js": "catalog:",
     "drizzle-orm": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
     "tweetnacl": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:"
@@ -50,6 +48,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "msw": "catalog:"
+    "msw": "catalog:",
+    "react-dom": "catalog:"
   }
 }

@@ -12,6 +12,10 @@
     "./pairingOutcome": {
       "types": "./dist/pairingOutcome.d.ts",
       "default": "./dist/pairingOutcome.js"
+    },
+    "./handlerKit": {
+      "types": "./dist/handlerKit.d.ts",
+      "default": "./dist/handlerKit.js"
     }
   },
   "scripts": {

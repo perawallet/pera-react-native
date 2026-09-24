@@ -130,10 +130,6 @@ export class StubMigrationService implements MigrationService {
         return []
     }
 
-    async simulateLegacyDatabase() {}
-
-    async simulatePreSixxAccounts() {}
-
     async resetLegacyData() {
         this.hasData = false
         this.sentinel = null

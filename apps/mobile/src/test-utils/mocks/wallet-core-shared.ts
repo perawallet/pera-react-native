@@ -50,6 +50,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('@packages/shared/src/errors/expected')
     >('@packages/shared/src/errors/expected')
 
+    // Real money math, not a stub: unit-conversion.ts imports only constants
+    // and decimal-config. Blockchain re-exports these from shared, so a spec
+    // that spreads the actual blockchain module resolves them through here.
+    const unitConversion = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+
     // Mirrors packages/shared/src/errors/base.ts: the metadata defaulting, the
     // third `originalError` argument, and the instance members consumers reach
     // for (`timestamp`, `toJSON`, `isMinor`, `shouldReport`). `name` comes from
@@ -135,14 +142,16 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         unknown: 'medium',
     }
 
-    // Extends Error, not AppError, matching packages/shared/src/utils/bounds.ts.
-    class InputTooLargeError extends Error {
+    class InputTooLargeError extends AppError {
         constructor(
             public readonly label: string,
             public readonly limit: number,
             public readonly actual: number,
         ) {
-            super(`${label} exceeds maximum size (${actual} > ${limit})`)
+            super(`${label} exceeds maximum size (${actual} > ${limit})`, {
+                severity: 'low',
+                category: 'validation',
+            })
             this.name = 'InputTooLargeError'
         }
     }
@@ -172,15 +181,11 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         }
     }
 
-    // Mirrors packages/shared/src/errors/network-validation.ts's
-    // NoConnectionError (via NetworkError → AppError). Declared here (rather
-    // than only in the returned object below) so getNetworkErrorMessageKeys
-    // can reference it.
+    // Mirrors packages/shared/src/errors/network.ts's NoConnectionError.
+    // Declared here (rather than only in the returned object below) so
+    // getNetworkErrorMessageKeys can reference it.
     class NoConnectionError extends AppError {
         constructor() {
-            // Real chain is NoConnectionError -> NetworkError -> AppError:
-            // NetworkError sets category network / retryable true, then
-            // NoConnectionError raises severity to HIGH.
             super('No network connection found', {
                 severity: 'high',
                 category: 'network',
@@ -265,6 +270,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     return {
         ALGO_ASSET_ID: '0',
         ALGO_ASSET_NAME: 'ALGO',
+        ALGO_DECIMALS: 6,
+        ...unitConversion,
         isAlgoAssetId: (assetId: string | number | bigint) =>
             String(assetId) === '0',
         isAlgoAssetName: (value: string) => value === 'ALGO',

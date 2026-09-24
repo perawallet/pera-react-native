@@ -12,7 +12,6 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { AppState } from 'react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { MainRoutes } from '@routes/index'
 import { OverlayErrorFallback } from './OverlayErrorFallback'
@@ -101,7 +100,8 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                     </PWView>
                 )}
 
-                <GestureHandlerRootView>
+                {/* App.tsx mounts the single GestureHandlerRootView above this tree. */}
+                <PWView style={styles.content}>
                     <MainRoutes />
                     <WebViewOverlay />
                     {/* After WebViewOverlay so a deep-link pairing scrim
@@ -110,7 +110,7 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                     {/* Blocking prompts paint above the navigator and tab bar, but
                         inside AutoLockGuard's children so the lock still hides them. */}
                     <PromptContainer />
-                </GestureHandlerRootView>
+                </PWView>
             </PWView>
         </ErrorBoundary>
     )

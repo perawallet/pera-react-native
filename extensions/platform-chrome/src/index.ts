@@ -35,96 +35,11 @@ export {
 export { getFirebaseApp } from './services/firebase-app'
 export { getPlatformServices, hydratePlatform } from './resources'
 export { getSurface, type ExtensionSurface } from './surface'
-export {
-    openExpandedTab,
-    closeCurrentTab,
-    consumeInitialExpandedFlow,
-    openExternalTab,
-    type ExpandedFlow,
-} from './navigation'
 export { isTrustedExtensionPageSender } from './trusted-sender'
 export {
     ensureDeviceInstallationID,
     DEVICE_INSTALLATION_ID_STORAGE_KEY,
 } from './device-installation-id'
-export {
-    INSTALL_KEY_DB_NAME,
-    clearInstallKey,
-    clearEnrolmentMarker,
-    exportInstallPublicKey,
-    getEnrolmentMarker,
-    getInstallKeyId,
-    getOrCreateInstallKey,
-    putEnrolmentMarker,
-    signChallenge,
-    type EnrolmentMarker,
-} from './integrity/device-key'
-export {
-    INTEGRITY_TOKEN_SESSION_KEY,
-    clearSessionIntegrityToken,
-    getSessionIntegrityToken,
-    putSessionIntegrityToken,
-    type SessionIntegrityToken,
-} from './integrity/session-token'
-export {
-    INTEGRITY_BACKOFF_SESSION_KEY,
-    INTEGRITY_ENROL_ATTEMPT_SESSION_KEY,
-    INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
-    INTEGRITY_ENROL_NEEDED_SESSION_KEY,
-} from './integrity/storage-keys'
-export * from './integrity/check-wire'
-export {
-    holdIntegrityCheckHost,
-    onHostedCheckEnded,
-    onIntegrityEnrolmentNeeded,
-    requestIntegrityEnrolment,
-} from './integrity/enrol-client'
-export {
-    CONNECTIONS_CONTROL_SCOPE,
-    CONNECTIONS_REQUEST_SCOPE,
-    CONNECTIONS_EVENT_SCOPE,
-    isConnectionsControlMessage,
-    isConnectionsControlResponse,
-    isConnectionApprovalRequest,
-    isConnectionApprovalRequestMessage,
-    isConnectionsAck,
-    isConnectionsEvent,
-    isConnectionsEventMessage,
-    isWireWalletOperation,
-    isWireWalletOperationResult,
-    encodeWalletOperation,
-    decodeWalletOperation,
-    encodeWalletOperationResult,
-    decodeWalletOperationResult,
-    type ConnectionsControlMessage,
-    type ConnectionsControlKind,
-    type ConnectionsControlResult,
-    type ConnectionsControlResultByKind,
-    type ConnectionsControlResponse,
-    type ConnectionApprovalRequest,
-    type ConnectionApprovalRequestMessage,
-    type ConnectionErrorReason,
-    type ConnectionsAck,
-    type ConnectionsEvent,
-    type ConnectionsEventMessage,
-    type ConnectionProposalSummary,
-    type WireWalletOperation,
-    type WireWalletOperationResult,
-} from './connections/protocol'
-export {
-    WC_PAGE_PAIR_SCOPE,
-    isWcPagePairMessage,
-    type WcPagePairMessage,
-} from './connections/page-pair'
-export {
-    sendConnectionsControlMessage,
-    onConnectionsControlMessage,
-    sendConnectionApprovalRequest,
-    broadcastConnectionsEvent,
-    onConnectionsEvent,
-    type ConnectionsControlCommand,
-    type ConnectionsControlHandler,
-} from './connections/client'
 export {
     DB_SCOPE,
     DB_CONTROL_SCOPE,
@@ -145,11 +60,6 @@ export {
     getActiveDatabaseHost,
     type SqlExecutor,
 } from './database/host'
-export { createWorkerExecutor } from './database/worker-executor'
-export {
-    onLocalStorageKeyChanged,
-    onSessionStorageKeyChanged,
-} from './storage-events'
 export {
     STORAGE_PROXY_SCOPE,
     STORAGE_EVENT_SCOPE,
@@ -159,35 +69,3 @@ export {
     type StorageProxyResponse,
     type StorageChangedBroadcast,
 } from './storage-proxy'
-export * from './dapp/passkey-opener'
-export * from './dapp/approval-bridge'
-export * from './dapp/dapp-wire'
-export * from './dapp/transport'
-export * from './dapp/host-client'
-export * from './dapp/secure-origin'
-// The same codec subset content-wire.ts serves: content scripts import these
-// from this package name (aliased to content-wire.ts at bundle time), and the
-// vitest runs resolve the real barrel, so both must provide them.
-export {
-    DAPP_METHODS,
-    DAPP_NOTIFICATIONS,
-    DAPP_PAGE_TIMEOUT_MS,
-    DAPP_PROVIDER_VERSION,
-    JsonRpcErrorCode,
-    isJsonRpcNotification,
-    isJsonRpcResponse,
-    type DappMethod,
-    type JsonRpcErrorObject,
-    type JsonRpcId,
-    type JsonRpcNotification,
-    type JsonRpcRequest,
-    type JsonRpcResponse,
-} from '@perawallet/wallet-core-dapp/wire'
-export * from './dapp/approval-client'
-export * from './dapp/webauthn-router-protocol'
-export * from './dapp/passkey-router'
-export {
-    createDiscoverBridgeHost,
-    type DiscoverBridgeHost,
-} from './webview/bridge-host'
-export * from './webview/bridge-wire'

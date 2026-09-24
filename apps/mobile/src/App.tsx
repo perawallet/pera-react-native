@@ -10,63 +10,33 @@
  limitations under the License
  */
 
-import { initNetworkStatus } from '@modules/network'
-
-// Seed reachability-aware connectivity and wire onlineManager before the query
-// layer mounts, so early queries never fire-and-fail against a dead link.
-void initNetworkStatus()
-
-import { initDecimalConfig, logger } from '@perawallet/wallet-core-shared'
-// Initialize Decimal.js configuration before any other imports that may use it
-initDecimalConfig()
-
-import React, { useEffect } from 'react'
+import React from 'react'
 import './i18n'
 import { ThemeProvider } from '@rneui/themed'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { PeraWalletProvider } from '@perawallet/wallet-extension-provider'
+import { useAppIntegrityBootstrap } from '@perawallet/wallet-core-app-integrity'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
+import { EmptyView } from '@components/EmptyView/EmptyView'
 import { PWButton } from '@components/core'
+import { RootComponent } from '@components/RootComponent'
+import { useAppTheme } from '@hooks/useAppTheme'
+import { useCrashReporterBinding } from '@hooks/useCrashReporterBinding'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useOrientationPolicy } from '@hooks/useOrientationPolicy'
 import { useSystemBarsAppearance } from '@hooks/useSystemBarsAppearance'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTheme } from '@theme/theme'
-import { QueryProvider } from './providers/QueryProvider'
-import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
-import {
-    PeraWalletProvider,
-    usePeraProvider,
-} from '@perawallet/wallet-extension-provider'
-import { useAppIntegrityBootstrap } from '@perawallet/wallet-core-app-integrity'
+import { AppProviders } from './providers/AppProviders'
 import { usePasskeyAutofillLifecycle } from './bootstrap/passkey-autofill'
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import { RootComponent } from '@components/RootComponent'
 import { useAppBootstrap } from './useAppBootstrap'
-// Side-effect: binds every entry in the bottom-sheet manager's typed
-// registry (see bootstrap/bottom-sheet-registrations.ts) before anything in
-// the React tree mounts, so deep links and other non-React callers can
-// safely call useBottomSheetStore.getState().requestByType(...) from the
-// moment the app boots.
-import './bootstrap/bottom-sheet-registrations'
-// Side-effect: hands the locale-tour driver to its registry so the deeplink
-// handler can reach it without importing it (modules/locale-tour/registry.ts
-// explains why that indirection exists). Resolves to a no-op stub in every
-// non-dev bundle, which is what keeps the driver out of release builds.
-import '@modules/locale-tour/register'
-import * as SplashScreen from 'expo-splash-screen'
 
-// Keep the splash screen visible while we fetch resources
-void SplashScreen.preventAutoHideAsync()
-
-import { NotifierWrapper } from 'react-native-notifier'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { KeyboardProvider } from 'react-native-keyboard-controller'
-import { EmptyView } from '@components/EmptyView/EmptyView'
-
+// Process-wide setup (Decimal config, network status, splash hold, sheet
+// registry) runs before this tree mounts: see bootstrap/preReact.ts.
 const AppContent = () => {
     const { t } = useLanguage()
-    const provider = usePeraProvider()
     const isDarkMode = useIsDarkMode()
-    const theme = getTheme(isDarkMode ? 'dark' : 'light')
+    const theme = useAppTheme()
 
     const { bootstrapped, persister, fcmToken, initError, retryBootstrap } =
         useAppBootstrap()
@@ -75,16 +45,7 @@ const AppContent = () => {
     useOrientationPolicy()
     usePasskeyAutofillLifecycle()
     useAppIntegrityBootstrap()
-
-    useEffect(() => {
-        logger.setErrorReporter(
-            createCrashReportingErrorReporter(provider.crashReporting),
-        )
-
-        return () => {
-            logger.setErrorReporter(undefined)
-        }
-    }, [provider])
+    useCrashReporterBinding()
 
     if (initError) {
         // A keystore-integrity failure recurs on every launch, so the generic
@@ -118,18 +79,12 @@ const AppContent = () => {
             <SafeAreaProvider>
                 {!bootstrapped && <FullScreenLoadingView />}
                 {bootstrapped && persister && (
+                    // The app's only GestureHandlerRootView: gesture handlers
+                    // and bottom-sheet portals must all render beneath it.
                     <GestureHandlerRootView>
-                        <KeyboardProvider>
-                            <NotifierWrapper
-                                componentProps={{
-                                    ContainerComponent: SafeAreaView,
-                                }}
-                            >
-                                <QueryProvider persister={persister}>
-                                    <RootComponent fcmToken={fcmToken} />
-                                </QueryProvider>
-                            </NotifierWrapper>
-                        </KeyboardProvider>
+                        <AppProviders persister={persister}>
+                            <RootComponent fcmToken={fcmToken} />
+                        </AppProviders>
                     </GestureHandlerRootView>
                 )}
             </SafeAreaProvider>

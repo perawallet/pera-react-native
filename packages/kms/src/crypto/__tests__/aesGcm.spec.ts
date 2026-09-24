@@ -13,6 +13,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from 'vitest'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import { AesGcmOpenError, openAesGcm, sealAesGcm } from '../aesGcm'
 import * as secureMemory from '../secure-memory'
 
@@ -73,5 +74,22 @@ describe('sealAesGcm / openAesGcm', () => {
             expect(error).toBeInstanceOf(AesGcmOpenError)
             expect((error as AesGcmOpenError).reason).toBe('too-short')
         }
+    })
+})
+
+describe('AesGcmOpenError', () => {
+    it('is a non-recoverable KMS AppError that keeps its name and reason', () => {
+        const error = new AesGcmOpenError('too-short')
+
+        expect(error).toBeInstanceOf(AppError)
+        expect(error.name).toBe('AesGcmOpenError')
+        expect(error.message).toBe('Failed to open AES-GCM payload: too-short')
+        expect(error.reason).toBe('too-short')
+        expect(error.metadata).toMatchObject({
+            category: ErrorCategory.KMS,
+            recoverable: false,
+            retryable: false,
+        })
+        expect(error.metadata.messageKey).toBeUndefined()
     })
 })

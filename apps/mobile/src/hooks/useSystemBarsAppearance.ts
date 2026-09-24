@@ -11,9 +11,9 @@
  */
 
 import { useEffect } from 'react'
-import { Platform } from 'react-native'
 import { NavigationBar } from 'expo-navigation-bar'
 import { setStatusBarStyle } from 'expo-status-bar'
+import { isAndroid } from '@utils/platform'
 
 /**
  * Keeps the OS status- and navigation-bar icons legible against the app's own
@@ -38,7 +38,7 @@ import { setStatusBarStyle } from 'expo-status-bar'
  */
 export const useSystemBarsAppearance = (isDarkMode: boolean): void => {
     useEffect(() => {
-        if (Platform.OS !== 'android') return
+        if (!isAndroid()) return
 
         setStatusBarStyle(isDarkMode ? 'light' : 'dark')
         NavigationBar.setStyle(isDarkMode ? 'light' : 'dark')

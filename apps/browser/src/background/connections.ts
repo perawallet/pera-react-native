@@ -10,15 +10,15 @@
  limitations under the License
  */
 
+import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome'
 import {
     APPROVAL_WITHDRAWN,
     isConnectionApprovalRequestMessage,
-    isTrustedExtensionPageSender,
     sendConnectionsControlMessage,
     type ApprovalWindowBridge,
     type ConnectionsAck,
     type ConnectionsControlCommand,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { ensureOffscreenDocument } from './offscreen'
 
