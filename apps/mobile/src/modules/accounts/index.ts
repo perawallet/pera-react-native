@@ -28,7 +28,6 @@ export {
     AccountMenuContent,
     type AccountMenuContentResult,
 } from './components/AccountMenuContent'
-export { AccountPicker } from './components/AccountPicker'
 export { AccountSelection } from './components/AccountSelection'
 export { SelectableAccountCheckboxRow } from './components/SelectableAccountCheckboxRow'
 export {

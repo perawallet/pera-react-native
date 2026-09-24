@@ -13,7 +13,7 @@
 import { memo, useCallback } from 'react'
 import { PWFlatList } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
-import { SelectableAccountRow } from '@modules/accounts/components/SelectableAccountRow'
+import { SelectableAccountRow } from '@components/SelectableAccountRow'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 

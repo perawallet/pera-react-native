@@ -13,7 +13,7 @@
 import { PWScreen } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountPicker } from '@modules/accounts'
+import { AccountPicker } from '@components/AccountPicker'
 import { useRekeyToStandardSelectTargetScreen } from './useRekeyToStandardSelectTargetScreen'
 
 export const RekeyToStandardSelectTargetScreen = () => {

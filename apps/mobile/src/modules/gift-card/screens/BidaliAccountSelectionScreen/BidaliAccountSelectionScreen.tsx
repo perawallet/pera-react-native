@@ -19,7 +19,7 @@ import {
 import { PWView } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountPicker } from '@modules/accounts'
+import { AccountPicker } from '@components/AccountPicker'
 import { useBidali } from '../../hooks/useBidali'
 import { useStyles } from './styles'
 

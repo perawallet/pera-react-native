@@ -11,7 +11,7 @@
  */
 
 import { PWScreen, PWRadioButton, PWText, PWView } from '@components/core'
-import { AccountPicker } from '@modules/accounts'
+import { AccountPicker } from '@components/AccountPicker'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsLaunchScreen } from './useSettingsLaunchScreen'
 import { useStyles } from './styles'
