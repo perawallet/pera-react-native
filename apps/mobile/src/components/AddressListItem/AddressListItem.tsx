@@ -14,7 +14,7 @@ import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
 import { dedupeSecondaryLabel } from '@perawallet/wallet-core-shared'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { ContactAvatar } from '@components/ContactAvatar'
-import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import { AccountIcon } from '@components/AccountIcon'
 import { useAddressDisplay } from '@components/AddressDisplay/useAddressDisplay'
 
 import type { ReactNode } from 'react'

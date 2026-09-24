@@ -162,6 +162,7 @@ const runMigrationWithLegacyData = async (
     pending: MigrationStepName[],
     isRerun: boolean,
 ): Promise<MigrationRunResult> => {
+    const { walletConnectSessionKeys, ...accountDeps } = deps
     const accountsPending = pending.includes('accounts')
     // Sound by construction: ExtrasMigrationStepName is defined as
     // Exclude<MigrationStepName, 'accounts'>.
@@ -177,7 +178,7 @@ const runMigrationWithLegacyData = async (
                 undecodableAccounts: data.undecodableAccounts,
                 hdWallets: data.hdWallets,
                 isRerun,
-                ...deps,
+                ...accountDeps,
             })
         } catch (err) {
             const error = toError(err)
@@ -198,7 +199,9 @@ const runMigrationWithLegacyData = async (
 
     let extrasResult: ExtrasMigrationResult
     try {
-        extrasResult = await runExtrasMigration(data, pendingExtras)
+        extrasResult = await runExtrasMigration(data, pendingExtras, {
+            walletConnectSessionKeys,
+        })
     } catch (err) {
         const error = toError(err)
         logger.error(

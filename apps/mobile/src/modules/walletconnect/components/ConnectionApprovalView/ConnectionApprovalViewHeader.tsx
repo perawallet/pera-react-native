@@ -18,7 +18,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
+import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as usePermissionItemStyles } from '../PermissionItem/styles'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
@@ -28,7 +28,7 @@ import {
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
-import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
+import { ProjectVerificationIcon } from '@modules/projects'
 import { getPreferredDappIcon } from '../../utils/dapp-icon'
 
 export type ConnectionApprovalViewHeaderProps = {

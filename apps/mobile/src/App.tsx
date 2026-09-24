@@ -42,11 +42,11 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 import { useAppBootstrap } from './useAppBootstrap'
 // Side-effect: binds every entry in the bottom-sheet manager's typed
-// registry (see modules/bottom-sheet/registrations.ts) before anything in
+// registry (see bootstrap/bottom-sheet-registrations.ts) before anything in
 // the React tree mounts, so deep links and other non-React callers can
 // safely call useBottomSheetStore.getState().requestByType(...) from the
 // moment the app boots.
-import '@modules/bottom-sheet/registrations'
+import './bootstrap/bottom-sheet-registrations'
 // Side-effect: hands the locale-tour driver to its registry so the deeplink
 // handler can reach it without importing it (modules/locale-tour/registry.ts
 // explains why that indirection exists). Resolves to a no-op stub in every

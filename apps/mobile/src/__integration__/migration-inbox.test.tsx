@@ -60,7 +60,7 @@ import {
     useDeviceStore,
     type DeviceRegistrationRequest,
 } from '@perawallet/wallet-core-device'
-import { MigrationSplashScreen } from '@modules/migration/screens/MigrationSplashScreen'
+import { MigrationSplashScreen } from '@modules/migration'
 import { InboxScreen } from '@modules/messages/screens/InboxScreen/InboxScreen'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 

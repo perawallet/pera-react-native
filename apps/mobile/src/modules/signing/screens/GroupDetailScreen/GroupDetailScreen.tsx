@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { PWFlatList, PWScreen, PWView } from '@components/core'
-import { TransactionPreview } from '@modules/transactions/components/transaction-details/TransactionPreview'
+import { TransactionPreview } from '@modules/transactions'
 import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
 import { GroupDetailHeader } from './GroupDetailHeader'
 import { useStyles } from './styles'

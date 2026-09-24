@@ -29,7 +29,7 @@ import { mockCreateMultisigAccount } from '@perawallet/wallet-core-multisig/test
 import { CreateMultisigScreen } from '@modules/multisig/screens/CreateMultisigScreen/CreateMultisigScreen'
 import { SetThresholdScreen } from '@modules/multisig/screens/SetThresholdScreen/SetThresholdScreen'
 import { NameMultisigScreen } from '@modules/multisig/screens/NameMultisigScreen/NameMultisigScreen'
-import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
+import { useMultisigCreationStore } from '@modules/multisig'
 import {
     useAccountsStore,
     type MultiSigAccount,

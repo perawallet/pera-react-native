@@ -22,7 +22,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { getPreferredDappIcon } from '@modules/walletconnect/utils/dapp-icon'
+import { getPreferredDappIcon } from '@modules/walletconnect'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import { useStyles } from './styles'
 

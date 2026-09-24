@@ -15,7 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useTransactionSuccessScreen } from '../useTransactionSuccessScreen'
 import { useSendFunds, useClaimAssets } from '@modules/transactions/hooks'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useWebView } from '@modules/webview/hooks'
+import { useWebView } from '@modules/webview'
 
 const mockOnFinished = vi.fn()
 const mockPushWebView = vi.fn()
@@ -57,7 +57,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(),
 }))
 
-vi.mock('@modules/webview/hooks', () => ({
+vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
     useWebView: vi.fn(),
 }))
 

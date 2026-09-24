@@ -26,9 +26,8 @@ import {
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
-import { useWebView } from '@modules/webview'
-import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
-import { getPreferredDappIcon } from '@modules/walletconnect/utils/dapp-icon'
+import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
+import { getPreferredDappIcon } from '@modules/walletconnect'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 

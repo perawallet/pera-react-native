@@ -33,7 +33,6 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 }))
 
 const {
-    commitSessionKey,
     createKeystoreSessionKeyStore,
     createStorageSessionKeyStore,
     sessionKeySecretRef,
@@ -80,13 +79,6 @@ describe('v1 session key storage', () => {
             await keys.remove('abc')
 
             expect(await keys.read('abc')).toBeNull()
-        })
-
-        it('commitSessionKey is the keystore commit', async () => {
-            const ref = await commitSessionKey('abc', 'deadbeef')
-
-            expect(ref).toBe('wc1-session-key:abc')
-            expect(await keys.read('abc')).toBe('deadbeef')
         })
     })
 

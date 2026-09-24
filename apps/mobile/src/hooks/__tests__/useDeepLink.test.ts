@@ -216,7 +216,7 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 
 // Forward to the real store so the dispatcher's `setQr` lands on the same
 // instance the tests below assert against (imported via the deep path).
-vi.mock('@modules/onboarding/hooks', async () => {
+vi.mock('@modules/onboarding', async () => {
     const actual = (await vi.importActual(
         '@modules/onboarding/hooks/peraWebImportFlowStore',
     )) as typeof import('@modules/onboarding/hooks/peraWebImportFlowStore')
@@ -337,7 +337,7 @@ vi.mock('@routes/capabilities', () => ({
     routeCapabilities: mockRouteCapabilities,
 }))
 
-vi.mock('@modules/multisig/hooks/usePendingSignaturesSheet', () => ({
+vi.mock('@modules/multisig', () => ({
     usePendingSignaturesSheet: () => ({
         showSignRequest: mockShowSignRequest,
     }),
@@ -376,7 +376,7 @@ const { mockSetPendingAmountBaseUnits } = vi.hoisted(() => ({
     mockSetPendingAmountBaseUnits: vi.fn(),
 }))
 
-vi.mock('@modules/transactions/hooks', () => ({
+vi.mock('@modules/transactions', () => ({
     useSendFundsStore: {
         getState: () => ({
             reset: mockSendFundsReset,

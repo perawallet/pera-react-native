@@ -11,6 +11,7 @@
  */
 
 import { logger } from '@perawallet/wallet-core-shared'
+import type { WalletConnectV1SessionKeyStore } from '@perawallet/wallet-core-walletconnect'
 import type {
     LegacyMigrationData,
     MigrationStepName,
@@ -69,9 +70,15 @@ export const EXTRAS_STEP_NAMES: ExtrasMigrationStepName[] = [
     'stashed',
 ]
 
+export type ExtrasMigrationOptions = {
+    /** Defaults to the keystore, as the v1 handler and blob importer do. */
+    walletConnectSessionKeys?: WalletConnectV1SessionKeyStore
+}
+
 export const runExtrasMigration = async (
     data: LegacyMigrationData,
     steps?: ExtrasMigrationStepName[],
+    options: ExtrasMigrationOptions = {},
 ): Promise<ExtrasMigrationResult> => {
     const enabled = new Set(steps ?? EXTRAS_STEP_NAMES)
     const result: ExtrasMigrationResult = {
@@ -133,6 +140,7 @@ export const runExtrasMigration = async (
         await runAsyncStep(result, 'walletConnect', async () => {
             result.walletConnect = await migrateWalletConnect(
                 data.walletConnectV1,
+                { sessionKeys: options.walletConnectSessionKeys },
             )
         })
 

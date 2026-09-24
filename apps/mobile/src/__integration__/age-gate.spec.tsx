@@ -18,7 +18,7 @@ vi.unmock('@perawallet/wallet-extension-platform')
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { withAgeGate } from '@components/AgeGated'
-import { DiscoverScreen } from '@modules/discover/screens/DiscoverScreen/DiscoverScreen'
+import { DiscoverScreen } from '@modules/discover/routes'
 import { useAgeGateStore } from '@perawallet/wallet-core-age-gate'
 
 // The gate is applied at the navigator via withAgeGate (screens no longer

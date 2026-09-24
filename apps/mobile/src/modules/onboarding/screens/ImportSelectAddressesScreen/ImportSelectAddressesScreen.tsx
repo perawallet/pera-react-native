@@ -23,7 +23,7 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { ScreenHeader } from '@components/ScreenHeader'
-import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
+import { SelectableAccountCheckboxRow } from '@modules/accounts'
 
 import { useStyles } from './styles'
 import { useImportSelectAddressesScreen } from './useImportSelectAddressesScreen'

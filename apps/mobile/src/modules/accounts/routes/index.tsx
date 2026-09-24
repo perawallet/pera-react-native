@@ -16,10 +16,12 @@ import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
 import { AccountScreen } from '@modules/accounts/screens/AccountScreen'
-import { AssetDetailsScreen } from '@modules/assets/screens/AssetDetailsScreen'
-import { CollectibleDetailScreen } from '@modules/assets/screens/CollectibleDetailScreen'
+import {
+    AssetDetailsScreen,
+    CollectibleDetailScreen,
+} from '@modules/assets/routes'
 import { RemoveAssetsScreen } from '@modules/accounts/screens/RemoveAssetsScreen'
-import { peraCardAccountScreens } from '@modules/card/routes/screen-descriptors'
+import { peraCardAccountScreens } from '@modules/card'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { routeCapabilities } from '@routes/capabilities'
 import { fullScreenLayout } from '@layouts/index'

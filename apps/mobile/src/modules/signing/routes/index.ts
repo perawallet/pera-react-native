@@ -12,3 +12,6 @@
 
 export { SigningRoutes } from './SigningRoutes'
 export * from './types'
+export { TransactionDetailsScreen } from '../screens/TransactionDetailsScreen'
+// Hosts the signing navigator inside a sheet or the extension's approval window.
+export { SignRequestView } from '../components/SignRequestView'

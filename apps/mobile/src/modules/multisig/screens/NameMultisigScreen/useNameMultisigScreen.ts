@@ -30,10 +30,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
-import {
-    useShouldPlayConfetti,
-    useExitAccountFlow,
-} from '@modules/onboarding/hooks'
+import { useShouldPlayConfetti, useExitAccountFlow } from '@modules/onboarding'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import { getNextSharedAccountName } from '../../utils'
 import type { MultisigStackParamList } from '../../routes/types'

@@ -37,7 +37,7 @@ vi.mock('@perawallet/wallet-core-settings', async importOriginal => ({
     }),
 }))
 
-import { CloudBackupStackNavigator } from '@modules/cloud-backup/routes'
+import { CloudBackupStackNavigator } from '@modules/cloud-backup'
 
 const renderCloudBackup = () =>
     renderWithNavigation(CloudBackupStackNavigator, 'CloudBackupSettings')

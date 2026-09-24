@@ -103,7 +103,7 @@ vi.mock('@perawallet/wallet-core-settings', async importOriginal => ({
 }))
 
 import { usePromptContainer } from '@modules/prompts/components/PromptContainer/usePromptContainer'
-import { PromptContainer } from '@modules/prompts/components/PromptContainer'
+import { PromptContainer } from '@modules/prompts'
 
 const forcedBannerResponse = {
     count: 1,

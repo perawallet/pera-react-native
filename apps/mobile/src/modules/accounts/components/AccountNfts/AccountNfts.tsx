@@ -24,10 +24,7 @@ import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountNfts } from './useAccountNfts'
-import {
-    CollectibleGridItem,
-    CollectibleListItem,
-} from '@modules/assets/components'
+import { CollectibleGridItem, CollectibleListItem } from '@modules/assets'
 import { NftEmptyState } from '../NftEmptyState'
 import { GallerySkeleton } from './GallerySkeleton'
 import { EmptyView } from '@components/EmptyView'

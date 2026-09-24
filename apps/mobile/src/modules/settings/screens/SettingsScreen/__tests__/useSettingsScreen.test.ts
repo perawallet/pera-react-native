@@ -15,7 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useSettingsScreen } from '../useSettingsScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
-import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
+import { useDeleteAllData } from '@hooks/useDeleteAllData'
 import { trackEvent, SettingsEvent } from '@analytics'
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
@@ -41,7 +41,7 @@ vi.mock('@modules/webview', () => ({
     useWebView: vi.fn(),
 }))
 
-vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
+vi.mock('@hooks/useDeleteAllData', () => ({
     useDeleteAllData: vi.fn(),
     clearAccountsStore: vi.fn(),
 }))

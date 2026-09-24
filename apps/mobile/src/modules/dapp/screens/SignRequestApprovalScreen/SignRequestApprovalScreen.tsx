@@ -13,7 +13,7 @@
 // Authors no signing UI: the hook enqueues into the shared signing pipeline and
 // SignRequestView routes off the request's `type`.
 import React from 'react'
-import { SignRequestView } from '@modules/signing/components/SignRequestView'
+import { SignRequestView } from '@modules/signing/routes'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton } from '@components/core'

@@ -16,7 +16,7 @@ import {
 } from '@react-navigation/native'
 
 import { PWView } from '@components/core'
-import { BidaliRoutes } from '../../routes'
+import { BidaliRoutes } from '../../routes/BidaliRoutes'
 import { useStyles } from './styles'
 
 export const BidaliContent = () => {

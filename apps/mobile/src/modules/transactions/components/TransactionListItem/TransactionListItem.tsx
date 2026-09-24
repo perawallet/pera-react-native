@@ -13,7 +13,7 @@
 import { memo } from 'react'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
+import { TransactionIcon } from '@components/TransactionIcon'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'

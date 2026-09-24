@@ -12,7 +12,7 @@
 
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import { useWebView } from '@modules/webview/hooks'
+import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 

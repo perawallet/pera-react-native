@@ -23,8 +23,8 @@ import {
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
-import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
-import { usePendingSignaturesSheet } from '@modules/multisig/hooks/usePendingSignaturesSheet'
+import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
+import { usePendingSignaturesSheet } from '@modules/multisig'
 import {
     isValidAlgorandAddress,
     microAlgosToAlgos,

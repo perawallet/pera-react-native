@@ -12,7 +12,7 @@
 
 import { PWText, PWView } from '@components/core'
 import { NameAccountForm } from '@components/NameAccountForm'
-import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import { AccountIcon } from '@components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
 import { useNameAccountScreen } from './useNameAccountScreen'

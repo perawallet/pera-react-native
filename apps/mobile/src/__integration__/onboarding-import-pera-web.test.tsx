@@ -40,7 +40,7 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
-import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks/peraWebImportFlowStore'
+import { usePeraWebImportFlowStore } from '@modules/onboarding'
 import { parsePeraWebQrPayload } from '@perawallet/wallet-core-backup'
 import { config } from '@perawallet/wallet-core-config'
 import { useDeepLink } from '@hooks/useDeepLink'

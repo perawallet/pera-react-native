@@ -23,18 +23,18 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSendFunds } from '@modules/transactions'
 import {
     SendFundsContent,
     SEND_FUNDS_SHEET_ID,
-} from '@modules/transactions/components/send-funds/SendFundsContent'
-import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
+    ReceiveFundsContent,
+} from '@modules/transactions/routes'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useSelectedAccount,
     useCanSignWith,
     type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
-import { useSendFunds } from '@modules/transactions/hooks'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, AssetDetailsEvent } from '@analytics'

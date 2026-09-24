@@ -25,9 +25,11 @@ import {
     isAlgoAssetId,
     pow10,
 } from '@perawallet/wallet-core-shared'
-import { AssetItemView } from '@modules/assets/components/AssetItem/AssetItemView'
-import { CollectibleListItem } from '@modules/assets/components/CollectibleListItem'
-import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
+import {
+    AssetItemView,
+    CollectibleListItem,
+    AssetRowSkeleton,
+} from '@modules/assets'
 import type { AssetFiatConverter } from '../useAssetListFiat'
 import { useStyles } from './styles'
 

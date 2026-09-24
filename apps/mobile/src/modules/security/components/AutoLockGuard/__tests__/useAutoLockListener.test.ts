@@ -15,10 +15,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { useAutoLockListener } from '../useAutoLockListener'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import {
-    clearAccountsStore,
-    useDeleteAllData,
-} from '@modules/settings/hooks/useDeleteAllData'
+import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
 import { AppState, type AppStateStatus } from 'react-native'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
@@ -37,7 +34,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     ) => selector(securityStoreState),
 }))
 
-vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
+vi.mock('@hooks/useDeleteAllData', () => ({
     useDeleteAllData: vi.fn(),
     clearAccountsStore: vi.fn(),
 }))

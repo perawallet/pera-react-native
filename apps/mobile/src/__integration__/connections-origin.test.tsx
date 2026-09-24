@@ -40,7 +40,7 @@ import {
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { ConnectionsProvider } from '@modules/connections'
+import { ConnectionsProvider } from '@modules/connections/shell'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'

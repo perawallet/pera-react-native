@@ -82,8 +82,3 @@ export const createStorageSessionKeyStore = (
         storage.trim?.()
     },
 })
-
-export const commitSessionKey = (
-    clientId: string,
-    key: string,
-): Promise<string> => createKeystoreSessionKeyStore().commit(clientId, key)

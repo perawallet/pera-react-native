@@ -12,8 +12,8 @@
 
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { NumberPad } from '@components/NumberPad'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AccountDisplay } from '@components/AccountDisplay'
+import { AssetIcon } from '@components/AssetIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardAmountInput } from '../../components/CardAmountInput'
 import { useCardAddFundsScreen } from './useCardAddFundsScreen'

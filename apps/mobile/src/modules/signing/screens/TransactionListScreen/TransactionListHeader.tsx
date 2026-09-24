@@ -11,7 +11,7 @@
  */
 
 import { PWDivider, PWText, PWView } from '@components/core'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
+import { TransactionIcon } from '@components/TransactionIcon'
 import { SourceMetadataBadge } from '@modules/signing/components/SourceMetadataBadge'
 import {
     BalanceImpactSummary,

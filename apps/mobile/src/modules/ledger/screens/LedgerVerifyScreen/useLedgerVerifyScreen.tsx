@@ -43,11 +43,11 @@ import {
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import {
+    type AddAccountStackParamList,
     useExitAccountFlow,
     useShouldPlayConfetti,
-} from '@modules/onboarding/hooks'
+} from '@modules/onboarding'
 import {
     deserializeSelectableAccount,
     getLedgerErrorPreset,

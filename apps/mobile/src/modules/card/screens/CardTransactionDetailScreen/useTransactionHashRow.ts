@@ -18,7 +18,7 @@ import {
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
-import { useWebView } from '@modules/webview/hooks'
+import { useWebView } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 import { useClipboard } from '@hooks/useClipboard'
 

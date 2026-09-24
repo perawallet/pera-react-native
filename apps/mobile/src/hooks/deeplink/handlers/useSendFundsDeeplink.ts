@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
-import { useSendFundsStore } from '@modules/transactions/hooks'
+import { useSendFundsStore } from '@modules/transactions'
 
 export type SendFundsDeeplinkPrefill = {
     assetId?: string

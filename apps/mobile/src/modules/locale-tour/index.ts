@@ -23,5 +23,7 @@ export type {
     RunTourStepOutcome,
     RunTourStepParams,
     TourCategory,
+    LocaleTourDeeplinkHandler,
+    PseudoResources,
     TourStep,
 } from './types'

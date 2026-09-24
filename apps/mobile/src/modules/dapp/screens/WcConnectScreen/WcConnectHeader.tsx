@@ -20,9 +20,9 @@ import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
 import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
-import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
-import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
-import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
+import { ProjectVerificationIcon } from '@modules/projects'
+import { PermissionItem } from '@modules/walletconnect'
+import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useRequesterStyles } from './styles'
 
 export type WcConnectHeaderProps = {

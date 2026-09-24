@@ -23,7 +23,7 @@ import {
     PWView,
 } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
-import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
+import { SelectableAccountCheckboxRow } from '@modules/accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import {

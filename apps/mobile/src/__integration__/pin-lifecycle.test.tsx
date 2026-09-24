@@ -16,7 +16,7 @@ import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen'
+import { SettingsSecurityScreen } from '@modules/security/routes'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 const TEST_PIN = '123456'

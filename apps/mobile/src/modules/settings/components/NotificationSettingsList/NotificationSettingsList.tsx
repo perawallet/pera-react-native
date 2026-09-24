@@ -22,9 +22,9 @@ import { useSettingsNotificationsScreen } from '@modules/settings/screens/Settin
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { useMemo } from 'react'
-import type { AccountIconProps } from '@modules/accounts/components/AccountIcon'
+import type { AccountIconProps } from '@components/AccountIcon'
 import { useStyles } from './styles'
 import type { StyleProp, ViewStyle } from 'react-native'
 
