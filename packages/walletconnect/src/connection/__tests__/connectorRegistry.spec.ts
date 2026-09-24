@@ -14,17 +14,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import WalletConnect from '@perawallet/walletconnect'
 import { isRetryableError } from '@perawallet/wallet-core-shared'
 import {
-    __resetRegistryForTests,
-    abandonPairing,
-    ensureConnectorReady,
-    forgetConnector,
-    getConnector,
-    reconnectAllConnectors,
-    registerConnector,
-    setConnectorHandlerBinder,
-    bindConnectorHandlers,
-    clearConnectorHandlerBinder,
-    waitForPairingSocketOpen,
+    createConnectorRegistry,
+    type WalletConnectConnectorRegistry,
 } from '../connectorRegistry'
 import {
     WalletConnectConnectionTimeoutError,
@@ -32,6 +23,8 @@ import {
 } from '../../shared/errors'
 import { PERA_CLIENT_META } from '../../shared/constants'
 
+// This spec's import graph reaches the platform provider, whose native
+// adapters don't resolve under jsdom.
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: {
@@ -94,10 +87,14 @@ const makeConnector = (clientId: string): MockConnector => ({
 })
 
 describe('connectorRegistry', () => {
+    let bindHandlers: ReturnType<typeof vi.fn>
+    let registry: WalletConnectConnectorRegistry
+
     beforeEach(() => {
         vi.clearAllMocks()
         vi.useFakeTimers()
-        __resetRegistryForTests()
+        bindHandlers = vi.fn()
+        registry = createConnectorRegistry({ bindHandlers })
     })
 
     afterEach(() => {
@@ -108,82 +105,38 @@ describe('connectorRegistry', () => {
         it('tears down a pending pairing so a late session_request cannot fire its handlers', () => {
             const pending = makeConnector('c1')
             pending.connected = false
-            registerConnector('c1', pending)
+            registry.register('c1', pending)
 
-            abandonPairing('c1')
+            registry.abandonPairing('c1')
 
             expect(pending.off).toHaveBeenCalledWith('session_request')
             expect(pending.transportClose).toHaveBeenCalledTimes(1)
-            expect(getConnector('c1')).toBeUndefined()
+            expect(registry.get('c1')).toBeUndefined()
         })
 
         it('refuses to touch a connected session', () => {
             const connected = makeConnector('c1')
             connected.connected = true
-            registerConnector('c1', connected)
+            registry.register('c1', connected)
 
-            abandonPairing('c1')
+            registry.abandonPairing('c1')
 
             expect(connected.transportClose).not.toHaveBeenCalled()
-            expect(getConnector('c1')).toBe(connected)
+            expect(registry.get('c1')).toBe(connected)
         })
 
         it('is a no-op for an unknown clientId', () => {
-            expect(() => abandonPairing('unknown')).not.toThrow()
+            expect(() => registry.abandonPairing('unknown')).not.toThrow()
         })
     })
 
-    describe('waitForPairingSocketOpen', () => {
-        it('resolves true immediately when the socket is already open', async () => {
-            const pairing = makeConnector('c1')
-            pairing.connected = false
-            pairing._transport.connected = true
-            registerConnector('c1', pairing)
-
-            await expect(waitForPairingSocketOpen('c1', 8000)).resolves.toBe(
-                true,
-            )
-        })
-
-        it('resolves true as soon as the socket opens mid-wait', async () => {
-            const pairing = makeConnector('c1')
-            pairing.connected = false
-            registerConnector('c1', pairing)
-
-            const wait = waitForPairingSocketOpen('c1', 8000)
-            await vi.advanceTimersByTimeAsync(200)
-            pairing._transport.connected = true
-            await vi.advanceTimersByTimeAsync(100)
-
-            await expect(wait).resolves.toBe(true)
-        })
-
-        it('resolves false when the socket never opens within the budget', async () => {
-            const pairing = makeConnector('c1')
-            pairing.connected = false
-            registerConnector('c1', pairing)
-
-            const wait = waitForPairingSocketOpen('c1', 8000)
-            await vi.advanceTimersByTimeAsync(8100)
-
-            await expect(wait).resolves.toBe(false)
-        })
-
-        it('resolves false for an unknown clientId instead of rejecting', async () => {
-            const wait = waitForPairingSocketOpen('missing', 500)
-            await vi.advanceTimersByTimeAsync(600)
-
-            await expect(wait).resolves.toBe(false)
-        })
-    })
-
-    describe('ensureConnectorReady', () => {
+    describe('ensureReady', () => {
         it('returns the existing connector without recreating when the socket is open', async () => {
             const conn = makeConnector('c1')
             conn._transport.connected = true
-            registerConnector('c1', conn)
+            registry.register('c1', conn)
 
-            const result = await ensureConnectorReady('c1')
+            const result = await registry.ensureReady('c1')
 
             expect(result).toBe(conn)
             expect(WalletConnect).not.toHaveBeenCalled()
@@ -191,21 +144,19 @@ describe('connectorRegistry', () => {
 
         it('rejects with WalletConnectInvalidSessionError for an unknown session', async () => {
             await expect(
-                ensureConnectorReady('unknown'),
+                registry.ensureReady('unknown'),
             ).rejects.toBeInstanceOf(WalletConnectInvalidSessionError)
         })
 
         it('recreates a fresh connector when the socket is not open', async () => {
-            const binder = vi.fn()
-            setConnectorHandlerBinder(binder)
             const stale = makeConnector('c1')
-            registerConnector('c1', stale)
+            registry.register('c1', stale)
 
-            const promise = ensureConnectorReady('c1', 1000)
+            const promise = registry.ensureReady('c1', 1000)
 
             // recreateConnector runs synchronously up to the first await:
             // a fresh connector is built, the stale one is torn down, and
-            // the handler binder re-attaches the dApp request handlers.
+            // the owner's binder re-attaches the dApp request handlers.
             expect(WalletConnect).toHaveBeenCalledTimes(1)
             // Built through the shared factory: Pera's client metadata and
             // the no-op session storage, never the SDK's localStorage default.
@@ -220,8 +171,8 @@ describe('connectorRegistry', () => {
             expect(stale.transportClose).toHaveBeenCalled()
             const fresh = vi.mocked(WalletConnect).mock.results[0]
                 .value as MockConnector
-            expect(binder).toHaveBeenCalledWith(fresh)
-            expect(getConnector('c1')).toBe(fresh)
+            expect(bindHandlers).toHaveBeenCalledWith(fresh)
+            expect(registry.get('c1')).toBe(fresh)
 
             // Simulate the fresh socket opening.
             fresh._transport.connected = true
@@ -231,9 +182,9 @@ describe('connectorRegistry', () => {
         })
 
         it('rejects with a retryable WalletConnectConnectionTimeoutError when the socket never opens', async () => {
-            registerConnector('c1', makeConnector('c1'))
+            registry.register('c1', makeConnector('c1'))
 
-            const promise = ensureConnectorReady('c1', 1000)
+            const promise = registry.ensureReady('c1', 1000)
             const settled = promise.catch((error: unknown) => error)
 
             await vi.advanceTimersByTimeAsync(1100)
@@ -244,10 +195,10 @@ describe('connectorRegistry', () => {
         })
 
         it('shares a single recreation between concurrent callers', async () => {
-            registerConnector('c1', makeConnector('c1'))
+            registry.register('c1', makeConnector('c1'))
 
-            const first = ensureConnectorReady('c1', 1000)
-            const second = ensureConnectorReady('c1', 1000)
+            const first = registry.ensureReady('c1', 1000)
+            const second = registry.ensureReady('c1', 1000)
             // Attach handlers before advancing timers so the shared
             // timeout rejection is never seen as unhandled.
             const settled = Promise.allSettled([first, second])
@@ -260,17 +211,17 @@ describe('connectorRegistry', () => {
         })
 
         it('clears the in-flight guard after a timeout so a later call retries', async () => {
-            registerConnector('c1', makeConnector('c1'))
+            registry.register('c1', makeConnector('c1'))
 
-            const firstSettled = ensureConnectorReady('c1', 1000).catch(
-                () => undefined,
-            )
+            const firstSettled = registry
+                .ensureReady('c1', 1000)
+                .catch(() => undefined)
             await vi.advanceTimersByTimeAsync(1100)
             await firstSettled
 
             // A second call recreates again rather than returning the
             // stale rejected promise.
-            const retry = ensureConnectorReady('c1', 1000)
+            const retry = registry.ensureReady('c1', 1000)
             const retrySettled = retry.catch(() => undefined)
             expect(WalletConnect).toHaveBeenCalledTimes(2)
             await vi.advanceTimersByTimeAsync(1100)
@@ -278,15 +229,15 @@ describe('connectorRegistry', () => {
         })
 
         it('aborts the recreation when the session is forgotten mid-reconnect', async () => {
-            registerConnector('c1', makeConnector('c1'))
+            registry.register('c1', makeConnector('c1'))
 
-            const promise = ensureConnectorReady('c1', 1000)
+            const promise = registry.ensureReady('c1', 1000)
             const settled = promise.catch((error: unknown) => error)
             const fresh = vi.mocked(WalletConnect).mock.results[0]
                 .value as MockConnector
 
             // User disconnects the session while the socket is opening.
-            forgetConnector('c1')
+            registry.forget('c1')
             fresh._transport.connected = true
             await vi.advanceTimersByTimeAsync(100)
 
@@ -296,15 +247,15 @@ describe('connectorRegistry', () => {
         })
     })
 
-    describe('reconnectAllConnectors', () => {
+    describe('reconnectAll', () => {
         it('recreates only the sessions whose socket is not open', async () => {
             const open = makeConnector('open')
             open._transport.connected = true
-            registerConnector('open', open)
+            registry.register('open', open)
 
-            registerConnector('closed', makeConnector('closed'))
+            registry.register('closed', makeConnector('closed'))
 
-            reconnectAllConnectors(1000)
+            registry.reconnectAll(1000)
 
             // Only the closed session is recreated.
             expect(WalletConnect).toHaveBeenCalledTimes(1)
@@ -313,55 +264,34 @@ describe('connectorRegistry', () => {
         })
     })
 
-    describe('forgetConnector', () => {
+    describe('forget', () => {
         it('removes the connector from the registry', () => {
-            registerConnector('c1', makeConnector('c1'))
-            expect(getConnector('c1')).toBeDefined()
+            registry.register('c1', makeConnector('c1'))
+            expect(registry.get('c1')).toBeDefined()
 
-            forgetConnector('c1')
+            registry.forget('c1')
 
-            expect(getConnector('c1')).toBeUndefined()
+            expect(registry.get('c1')).toBeUndefined()
+        })
+
+        it('lifts the tombstone when the same session is registered again', async () => {
+            registry.forget('c1')
+            registry.register('c1', makeConnector('c1'))
+
+            const promise = registry.ensureReady('c1', 1000)
+            const fresh = vi.mocked(WalletConnect).mock.results[0]
+                .value as MockConnector
+            fresh._transport.connected = true
+            await vi.advanceTimersByTimeAsync(100)
+
+            await expect(promise).resolves.toBe(fresh)
         })
     })
 
-    // A connector's event listeners live outside React, so whichever binder
-    // they were attached through keeps serving them for the session's whole
-    // life. Ownership therefore has to belong to one long-lived registrant and
-    // survive transient surfaces registering and going away around it.
-    describe('handler-binder ownership', () => {
-        it('binds through the registered owner rather than the caller, so a transient caller cannot capture the connector', () => {
-            const owner = vi.fn()
-            const caller = vi.fn()
-            setConnectorHandlerBinder(owner)
-            const connector = makeConnector('c1')
+    it('keeps each instance isolated, so a handler never sees another realm’s sockets', () => {
+        const other = createConnectorRegistry({ bindHandlers: vi.fn() })
+        registry.register('c1', makeConnector('c1'))
 
-            bindConnectorHandlers(connector, caller)
-
-            expect(owner).toHaveBeenCalledWith(connector)
-            expect(caller).not.toHaveBeenCalled()
-        })
-
-        it('falls back to the caller when no owner is registered, so the connector is never left deaf', () => {
-            const caller = vi.fn()
-            const connector = makeConnector('c1')
-
-            bindConnectorHandlers(connector, caller)
-
-            expect(caller).toHaveBeenCalledWith(connector)
-        })
-
-        it('lets a departing owner clear only its own registration, never a successor that already replaced it', () => {
-            const departing = vi.fn()
-            const successor = vi.fn()
-            setConnectorHandlerBinder(departing)
-            setConnectorHandlerBinder(successor)
-
-            clearConnectorHandlerBinder(departing)
-
-            const connector = makeConnector('c1')
-            bindConnectorHandlers(connector)
-            expect(successor).toHaveBeenCalledWith(connector)
-            expect(departing).not.toHaveBeenCalled()
-        })
+        expect(other.get('c1')).toBeUndefined()
     })
 })

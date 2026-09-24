@@ -41,7 +41,6 @@ export type ConnectionsHostDeps = {
      */
     requestApproval: (request: ConnectionApprovalRequest) => Promise<void>
     broadcastEvent: (event: ConnectionsEvent) => Promise<void>
-    reconnectAll: () => void
 }
 
 export type ConnectionsHost = {
@@ -355,7 +354,7 @@ export const startConnectionsHost = (
                 return registry.disconnectAll().then(() => ok())
             }
             case 'reconnect-all': {
-                deps.reconnectAll()
+                registry.reconnect()
                 return ok()
             }
             case 'approve-proposal': {

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-// Static backstop: on web the offscreen document is the SOLE owner of
-// WalletConnect connectors; on native the v1 handler is. An allowlist, not a
+// Static backstop: connectors are v1 handler instance state, and on web only
+// the offscreen document's handler is ever initialised to hold live ones. An allowlist, not a
 // blocklist: the offender set must EQUAL the allowlist, so a new owner fails by
 // default (a blocklist keyed on `.web` twins misses a shared hook consumed by a
 // web surface). The scan is textual and comments are stripped first, so prose
@@ -33,19 +33,20 @@ const PACKAGES_ROOT = join(REPO_ROOT, 'packages')
 const APPS_BROWSER_SRC_ROOT = join(REPO_ROOT, 'apps', 'browser', 'src')
 const EXTENSIONS_ROOT = join(REPO_ROOT, 'extensions')
 
-// The four call shapes that create or bind a live WC v1 connector.
-// `\b...\(` (not just the bare name) so this doesn't false-positive on a
-// similarly-named export such as `useWalletConnectDeeplink(`, which has more
-// characters between `useWalletConnect` and `(` and so doesn't match.
+// The call shapes that construct a live WC v1 connector or the registry that
+// holds them. `\b...\(` (not just the bare name) so this doesn't
+// false-positive on a similarly-named export such as
+// `useWalletConnectDeeplink(`, which has more characters between
+// `useWalletConnect` and `(` and so doesn't match.
 const CONNECTOR_OWNERSHIP_PATTERNS = [
     /\bnew WalletConnect\(/,
-    /\bregisterConnector\(/,
-    /\bsetConnectorHandlerBinder\(/,
+    /\bcreateWalletConnectConnector\(/,
+    /\bcreateConnectorRegistry\(/,
     /\buseWalletConnect\(/,
 ]
 
 // Removes line and block comments while leaving string/template contents
-// alone, so a doc comment that merely names one of the four patterns above
+// alone, so a doc comment that merely names one of the patterns above
 // (e.g. explaining what `new WalletConnect(...)` retains) doesn't read as
 // constructing one. A hand-rolled scanner rather than a regex: a regex can't
 // track "am I inside a string" state, and a `//` or `/*` inside a URL or
@@ -144,12 +145,11 @@ const toRepoRelativePosixPath = (path: string): string =>
     relative(REPO_ROOT, path).split(sep).join('/')
 
 // The complete, explicit set of files permitted to own a WalletConnect v1
-// connector: the two connection-layer modules that construct/register the
-// real SDK class, and the v1 connection handler, which hands a connector to
-// the registry via `registerConnector`/`setConnectorHandlerBinder` (its
-// restore path, which re-registers revived sockets, lives in `v1/restore.ts`). On web
-// the handler is instantiated only from the offscreen document, never the
-// service worker or a content script; no UI-realm module may own one.
+// connector: the factory that constructs the real SDK class, the registry
+// that recreates suspended ones, and the v1 handler, which creates its own
+// registry and the connectors it pairs (the ones it restores are rebuilt in
+// `v1/restore.ts`). On web the handler is initialised only in the offscreen
+// document; UI realms construct one for its descriptors and never pair through it.
 const ALLOWED_CONNECTOR_OWNERS = [
     'packages/walletconnect/src/connection/createConnector.ts',
     'packages/walletconnect/src/connection/connectorRegistry.ts',
@@ -184,7 +184,7 @@ describe('isConnectorOwnershipOffender', () => {
         const source = `
             // A doc comment describing new WalletConnect(options) retention.
             /*
-             * Also explains registerConnector( and setConnectorHandlerBinder(
+             * Also explains createConnectorRegistry( and createWalletConnectConnector(
              * without calling either.
              */
             export const explainsWithoutCalling = (): void => {}
@@ -207,7 +207,7 @@ describe('isConnectorOwnershipOffender', () => {
 
     it('leaves string contents intact so a URL is not mistaken for a comment', () => {
         const source = `
-            const bridgeUrl = 'https://example.com/registerConnector(real)'
+            const bridgeUrl = 'https://example.com/createConnectorRegistry(real)'
             export const build = () => new WalletConnect({})
         `
         expect(isConnectorOwnershipOffender(source)).toBe(true)

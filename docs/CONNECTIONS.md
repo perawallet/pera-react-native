@@ -32,8 +32,11 @@ which would pull signing and blockchain into the walletconnect and dapp module g
 
 `ConnectionRegistry` is split by type. `ConnectionRegistryClient` is what a UI context holds: pair,
 abandon a pairing, describe a URI, list a connection's networks, disconnect, subscribe to proposals
-and errors. The full `ConnectionRegistry` adds `register`, `initialize`, `teardown` and
-`subscribeToMessages`, and only the composition root that owns handlers holds one.
+and errors. The full `ConnectionRegistry` adds `register`, `initialize`, `teardown`, `reconnect` and
+`subscribeToMessages`, and only the composition root that owns handlers holds one. `reconnect` fans
+out to each handler's optional `reconnect()`, for a transport the platform suspends and nothing
+revives on its own: WalletConnect v1's per-session bridge sockets. In the extension the service
+worker's connections heartbeat alarm asks for it with `reconnect-all`.
 
 The split exists for the browser extension. There the live handlers run in the offscreen document,
 and the popup, expanded tab and approval window cannot hold an in-process registry. Those realms get
@@ -134,6 +137,16 @@ lose it on worker eviction.
 hydration. The legacy importer reads the keystore synchronously and reports "absent" before
 hydration, and a handler restored before the import has written its records reports zero sessions,
 which reconciliation would then delete.
+
+## WalletConnect v1 sockets
+
+The v1 handler owns its connectors as instance state, one bridge socket per session, and sweeps
+them itself on a foreground or network-regain edge. Nothing is module-global, so the descriptor-only
+handler a UI realm constructs can never reach the offscreen document's sockets. `teardown` leaves
+the sockets alive and a re-initialised handler rebinds them. On native the multisig handoff
+resolver, which mounts beside the connections provider, answers a resumed request through the
+handler that `useConnectionsProvider.ts` publishes in
+`apps/mobile/src/modules/walletconnect/utils/activeV1Delivery.ts`.
 
 ## WalletConnect v1 session keys
 

@@ -35,7 +35,6 @@ const {
     sessionKeys,
     createStorageSessionKeyStore,
     importLegacyConnections,
-    reconnectAllConnectors,
     canSignWith,
     customNetworkGetState,
     dappTransport,
@@ -74,7 +73,6 @@ const {
             imported: 0,
             skipped: 0,
         })),
-        reconnectAllConnectors: vi.fn(),
         canSignWith: vi.fn((_account: { address: string }) => true),
         customNetworkGetState: vi.fn(),
         dappTransport,
@@ -160,7 +158,6 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     createWalletConnectV1Handler,
     createStorageSessionKeyStore,
     importLegacyConnections,
-    reconnectAllConnectors,
 }))
 
 const chromeStorageLocal = { get: vi.fn(), remove: vi.fn() }
@@ -248,7 +245,6 @@ describe('runOffscreenApp connections wiring', () => {
         expect(deps.registry).toBe(registry)
         expect(deps.requestApproval).toBe(sendConnectionApprovalRequest)
         expect(deps.broadcastEvent).toBe(broadcastConnectionsEvent)
-        expect(deps.reconnectAll).toBe(reconnectAllConnectors)
         expect(onConnectionsControlMessage).toHaveBeenCalledWith(
             handleControlMessage,
         )

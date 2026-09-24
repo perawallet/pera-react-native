@@ -66,6 +66,7 @@ const makeFakeRegistry = () => {
         networksFor: vi.fn(() => []),
         disconnect: vi.fn(async () => {}),
         disconnectAll: vi.fn(async () => {}),
+        reconnect: vi.fn(),
         reportError: (error, scope) => {
             for (const listener of errorListeners) listener(error, scope)
         },
@@ -143,7 +144,6 @@ describe('startConnectionsHost', () => {
         (request: ConnectionApprovalRequest) => Promise<void>
     >
     let broadcastEvent: Mock<(event: ConnectionsEvent) => Promise<void>>
-    let reconnectAll: Mock<() => void>
 
     const control = (command: ConnectionsControlCommand) =>
         host.handleControlMessage({
@@ -155,14 +155,12 @@ describe('startConnectionsHost', () => {
         fake = makeFakeRegistry()
         requestApproval = vi.fn(async () => {})
         broadcastEvent = vi.fn(async () => {})
-        reconnectAll = vi.fn()
         host = startConnectionsHost({
             registry: fake.registry,
             network: () => 'mainnet' as Network,
             knownAddresses: () => ['ADDR1', 'ADDR2'],
             requestApproval,
             broadcastEvent,
-            reconnectAll,
         })
     })
 
@@ -815,9 +813,9 @@ describe('startConnectionsHost', () => {
             expect(fake.registry.disconnectAll).toHaveBeenCalledTimes(1)
         })
 
-        it('sweeps sockets on reconnect-all', () => {
+        it('sweeps sockets through the registry on reconnect-all', () => {
             expect(control({ kind: 'reconnect-all' })).toEqual({ ok: true })
-            expect(reconnectAll).toHaveBeenCalledTimes(1)
+            expect(fake.registry.reconnect).toHaveBeenCalledTimes(1)
         })
 
         it('returns null for a message on another scope or a malformed one', () => {

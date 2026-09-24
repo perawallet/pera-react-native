@@ -51,7 +51,6 @@ import {
     createStorageSessionKeyStore,
     createWalletConnectV1Handler,
     importLegacyConnections,
-    reconnectAllConnectors,
 } from '@perawallet/wallet-core-walletconnect'
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
@@ -159,7 +158,6 @@ export const runOffscreenApp = async (): Promise<void> => {
                 .accounts.map(account => account.address),
         requestApproval: sendConnectionApprovalRequest,
         broadcastEvent: broadcastConnectionsEvent,
-        reconnectAll: reconnectAllConnectors,
     })
     // Bound after the registry is live, never before: the registry refuses a
     // `pair` it cannot route, and an early command answered with that error

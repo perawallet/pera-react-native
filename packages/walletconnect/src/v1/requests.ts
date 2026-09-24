@@ -21,7 +21,7 @@ import {
     connectionScope,
     type HandlerKit,
 } from '@perawallet/wallet-core-connections/handlerKit'
-import { ensureConnectorReady } from '../connection'
+import type { WalletConnectConnectorRegistry } from '../connection'
 import { WC_DELIVERY_TIMEOUT_MS } from '../shared/constants'
 import { isChainIdAcceptable } from '../shared/chain'
 import { toWireResult } from '../shared/wire'
@@ -63,9 +63,10 @@ export type V1RequestHandlers = {
 
 export const createV1RequestHandlers = (deps: {
     kit: HandlerKit
+    connectors: Pick<WalletConnectConnectorRegistry, 'ensureReady'>
     getNetwork: () => Network
 }): V1RequestHandlers => {
-    const { kit, getNetwork } = deps
+    const { kit, connectors, getNetwork } = deps
     const { reportError, store, recordActivity, requireContext } = kit
 
     const connectionFor = async (
@@ -83,7 +84,8 @@ export const createV1RequestHandlers = (deps: {
         requestId: number,
         error: Error,
     ): void => {
-        void ensureConnectorReady(clientId, WC_DELIVERY_TIMEOUT_MS)
+        void connectors
+            .ensureReady(clientId, WC_DELIVERY_TIMEOUT_MS)
             .then(connector =>
                 connector.rejectRequest({ id: requestId, error }),
             )
@@ -113,7 +115,7 @@ export const createV1RequestHandlers = (deps: {
         const deliver = async (
             send: (connector: WalletConnect) => void,
         ): Promise<void> => {
-            const connector = await ensureConnectorReady(
+            const connector = await connectors.ensureReady(
                 connection.id,
                 WC_DELIVERY_TIMEOUT_MS,
             )

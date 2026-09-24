@@ -28,10 +28,8 @@ import {
     type HandlerKit,
 } from '@perawallet/wallet-core-connections/handlerKit'
 import {
-    abandonPairing as abandonConnectorPairing,
-    ensureConnectorReady,
-    forgetConnector,
     teardownConnector,
+    type WalletConnectConnectorRegistry,
 } from '../connection'
 import { isAlgorandPermission } from '../models'
 import {
@@ -71,11 +69,12 @@ export type V1ProposalHandlers = {
 
 export const createV1ProposalHandlers = (deps: {
     kit: HandlerKit
+    connectors: WalletConnectConnectorRegistry
     getNetwork: () => Network
     sessionKeys: WalletConnectV1SessionKeyStore
     connectionFor: V1RequestHandlers['connectionFor']
 }): V1ProposalHandlers => {
-    const { kit, getNetwork, sessionKeys, connectionFor } = deps
+    const { kit, connectors, getNetwork, sessionKeys, connectionFor } = deps
     const { reportError, store, requireContext, pendingOrigins } = kit
 
     // The proposal id already handed out for each pairing. The bridge replays a
@@ -108,7 +107,7 @@ export const createV1ProposalHandlers = (deps: {
 
         // Revive before persisting: a failed delivery must leave nothing that
         // claims a session the dApp never heard about.
-        const connector = await ensureConnectorReady(
+        const connector = await connectors.ensureReady(
             input.clientId,
             WC_DELIVERY_TIMEOUT_MS,
         )
@@ -164,10 +163,10 @@ export const createV1ProposalHandlers = (deps: {
         forgetPairing(clientId)
         if (connector) {
             teardownConnector(connector)
-            forgetConnector(clientId)
+            connectors.forget(clientId)
             return
         }
-        abandonConnectorPairing(clientId)
+        connectors.abandonPairing(clientId)
     }
 
     const rejectProposal = async (
@@ -176,7 +175,7 @@ export const createV1ProposalHandlers = (deps: {
     ): Promise<void> => {
         let connector: Nullable<WalletConnect> = null
         try {
-            connector = await ensureConnectorReady(
+            connector = await connectors.ensureReady(
                 clientId,
                 WC_DELIVERY_TIMEOUT_MS,
             )

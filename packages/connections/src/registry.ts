@@ -71,6 +71,8 @@ export interface ConnectionRegistry extends ConnectionRegistryClient {
     initialize(): Promise<void>
     teardown(): Promise<void>
     subscribeToMessages(listener: (m: InboundMessage) => void): () => void
+    /** Fans out to every handler that declares `reconnect`; fire-and-forget. */
+    reconnect(): void
     /**
      * Publishes to `subscribeToErrors`. For host-side adapters that answer
      * requests themselves and would otherwise fail silently.
@@ -378,6 +380,21 @@ export const createConnectionRegistry = (options: {
             await Promise.allSettled(
                 [...handlers.values()].map(h => h.disconnectAll()),
             )
+        },
+        reconnect: () => {
+            for (const handler of handlers.values()) {
+                // One throwing handler must not starve the rest of the sweep.
+                try {
+                    handler.reconnect?.()
+                } catch (error) {
+                    const normalized = toError(error)
+                    logger.warn('[connections] handler reconnect threw', {
+                        kind: handler.kind,
+                        error: normalized,
+                    })
+                    emitError(normalized)
+                }
+            }
         },
         subscribeToProposals: listener => {
             proposalListeners.add(listener)

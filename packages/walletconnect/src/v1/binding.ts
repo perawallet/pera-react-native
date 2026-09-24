@@ -17,7 +17,10 @@ import {
     pairingScope,
     type HandlerKit,
 } from '@perawallet/wallet-core-connections/handlerKit'
-import { BOUND_EVENTS, forgetConnector } from '../connection'
+import {
+    BOUND_EVENTS,
+    type WalletConnectConnectorRegistry,
+} from '../connection'
 import {
     WalletConnectBridgeConnectionError,
     WalletConnectError,
@@ -35,6 +38,7 @@ export type V1ConnectorBinding = {
 
 export const createV1ConnectorBinding = (deps: {
     kit: HandlerKit
+    connectors: Pick<WalletConnectConnectorRegistry, 'forget'>
     sessionKeys: WalletConnectV1SessionKeyStore
     handleSessionRequest: V1ConnectorEventHandler
     handleSignTxn: V1ConnectorEventHandler
@@ -42,6 +46,7 @@ export const createV1ConnectorBinding = (deps: {
 }): V1ConnectorBinding => {
     const {
         kit,
+        connectors,
         sessionKeys,
         handleSessionRequest,
         handleSignTxn,
@@ -59,7 +64,7 @@ export const createV1ConnectorBinding = (deps: {
 
     const forgetSession = async (id: ConnectionId): Promise<void> => {
         // Tombstoned so an in-flight socket recovery aborts instead of resurrecting the peer.
-        forgetConnector(id)
+        connectors.forget(id)
         await sessionKeys.remove(id).catch((secretError: unknown) => {
             logger.warn('[WC v1] failed to remove a stored session key', {
                 connectionId: id,

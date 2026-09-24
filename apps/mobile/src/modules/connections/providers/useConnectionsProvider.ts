@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import {
@@ -23,6 +23,10 @@ import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconn
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the composition root is the one place the app names a handler
 import { createWalletConnectV2Handler } from '@perawallet/wallet-core-walletconnect/v2'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    clearActiveWalletConnectV1Delivery,
+    setActiveWalletConnectV1Delivery,
+} from '@modules/walletconnect'
 import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import { useProposalQueue } from './useProposalQueue'
@@ -35,6 +39,9 @@ import { useProposalQueue } from './useProposalQueue'
  */
 export const useConnectionsProvider = (): ConnectionRegistry => {
     const registryRef = useRef<ConnectionRegistry | null>(null)
+    const v1HandlerRef = useRef<ReturnType<
+        typeof createWalletConnectV1Handler
+    > | null>(null)
     if (!registryRef.current) {
         const registry = createConnectionRegistry({
             store: getProvider().connections.store,
@@ -43,7 +50,9 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         // blockchain package into every importer's graph, `apps/browser`
         // included.
         const getNetwork = () => useNetworkStore.getState().network
-        registry.register(createWalletConnectV1Handler({ getNetwork }))
+        const v1Handler = createWalletConnectV1Handler({ getNetwork })
+        registry.register(v1Handler)
+        v1HandlerRef.current = v1Handler
         registry.register(
             createWalletConnectV2Handler({
                 getNetwork,
@@ -57,6 +66,13 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         registryRef.current = registry
     }
     const registry = registryRef.current
+
+    useEffect(() => {
+        const v1Handler = v1HandlerRef.current
+        if (!v1Handler) return
+        setActiveWalletConnectV1Delivery(v1Handler)
+        return () => clearActiveWalletConnectV1Delivery(v1Handler)
+    }, [])
 
     useConnectionSigningAdapter(registry)
     useConnectionsBoot(registry)
