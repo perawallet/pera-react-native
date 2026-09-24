@@ -2031,6 +2031,7 @@
             "pair_ledger_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via Bluetooth",
             "pair_ledger_usb_title": "Pair Ledger via USB",
             "pair_ledger_usb_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via USB cable",
+            "pair_ledger_unsupported_description": "Not supported by this browser or device",
             "pera_web_title": "Import from Pera Web",
             "pera_web_description": "I want to import Algorand accounts from Pera Web",
             "cloud_backup_title": "Import from Cloud Backup",

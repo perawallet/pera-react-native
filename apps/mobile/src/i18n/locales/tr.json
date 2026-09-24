@@ -2031,6 +2031,7 @@
             "pair_ledger_description": "Ledger hardware wallet’ımdaki bir Algorand hesabını Bluetooth ile kurtarmak istiyorum",
             "pair_ledger_usb_title": "Ledger’ı USB ile eşleştir",
             "pair_ledger_usb_description": "Ledger hardware wallet’ımdaki bir Algorand hesabını USB kablosu ile kurtarmak istiyorum",
+            "pair_ledger_unsupported_description": "Bu tarayıcı veya cihaz tarafından desteklenmiyor",
             "pera_web_title": "Pera Web’den içe aktar",
             "pera_web_description": "Pera Web’den Algorand hesapları içe aktarmak istiyorum",
             "cloud_backup_title": "Bulut yedeklemeden içe aktar",

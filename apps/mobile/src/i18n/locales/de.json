@@ -2023,6 +2023,7 @@
             "pair_ledger_description": "Ich möchte ein Algorand-Konto wiederherstellen, das über Bluetooth durch mein Ledger-Hardware-Wallet gesichert ist",
             "pair_ledger_usb_title": "Ledger per USB koppeln",
             "pair_ledger_usb_description": "Ich möchte ein Algorand-Konto wiederherstellen, das über USB-Kabel durch mein Ledger-Hardware-Wallet gesichert ist",
+            "pair_ledger_unsupported_description": "Von diesem Browser oder Gerät nicht unterstützt",
             "pera_web_title": "Von Pera Web importieren",
             "pera_web_description": "Ich möchte Algorand-Konten von Pera Web importieren",
             "cloud_backup_title": "Aus Cloud-Backup importieren",
