@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
@@ -119,7 +110,6 @@ const acceptBothTerms = () => {
 }
 
 describe('Flow: Card onboarding — residential address', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => {
         vi.mocked(Notifier.showNotification).mockClear()
         const store = useCardStore.getState()
@@ -157,8 +147,6 @@ describe('Flow: Card onboarding — residential address', () => {
             ...mockOauthChain(),
         )
     })
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     it('Given a complete UK address and accepted terms, when Continue is pressed, then the address posts with isSameMailingAddress true and registration completes', async () => {
         let body: Record<string, unknown> | undefined

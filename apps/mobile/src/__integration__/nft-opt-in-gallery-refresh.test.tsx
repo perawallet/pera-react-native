@@ -82,8 +82,6 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 // Gallery + opt-in in one host so both share the provider tree's query
 // client, mirroring the production layout (gallery mounted while the
 // add-asset sheet opts in). State is surfaced through a text node because
@@ -153,15 +151,12 @@ const expectGalleryState = async (
 
 describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
     afterEach(() => {
-        server.resetHandlers()
         useCollectiblePreferencesStore.getState().resetState()
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -269,60 +264,56 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
         )
     })
 
-    it(
-        'Given sort caches warmed before the opt-in, when the user opts in under recentlyAdded and then switches sort modes, then every mode lists the fresh NFT without any background sync',
-        async () => {
-            useCollectiblePreferencesStore
-                .getState()
-                .setCollectibleSortMode('titleAsc')
+    it('Given sort caches warmed before the opt-in, when the user opts in under recentlyAdded and then switches sort modes, then every mode lists the fresh NFT without any background sync', async () => {
+        useCollectiblePreferencesStore
+            .getState()
+            .setCollectibleSortMode('titleAsc')
 
-            renderWithNavigation(
-                () => (
-                    <GalleryOptInHost
-                        sender={sender}
-                        assetId={NFT_TEST_ASSET_3_ID}
-                    />
-                ),
-                'GalleryOptInHost',
-            )
+        renderWithNavigation(
+            () => (
+                <GalleryOptInHost
+                    sender={sender}
+                    assetId={NFT_TEST_ASSET_3_ID}
+                />
+            ),
+            'GalleryOptInHost',
+        )
 
-            // Warm the titleAsc cache with the pre-opt-in pair ('Another' <
-            // 'Test'), then move to recentlyAdded (QA's starting point) and
-            // let it settle.
-            await expectGalleryState('titleAsc', [
-                NFT_TEST_ASSET_2_ID,
-                NFT_TEST_ASSET_ID,
-            ])
-            fireEvent.click(screen.getByTestId('sort-recent'))
-            await expectGalleryState('recentlyAdded', [
-                NFT_TEST_ASSET_ID,
-                NFT_TEST_ASSET_2_ID,
-            ])
+        // Warm the titleAsc cache with the pre-opt-in pair ('Another' <
+        // 'Test'), then move to recentlyAdded (QA's starting point) and
+        // let it settle.
+        await expectGalleryState('titleAsc', [
+            NFT_TEST_ASSET_2_ID,
+            NFT_TEST_ASSET_ID,
+        ])
+        fireEvent.click(screen.getByTestId('sort-recent'))
+        await expectGalleryState('recentlyAdded', [
+            NFT_TEST_ASSET_ID,
+            NFT_TEST_ASSET_2_ID,
+        ])
 
-            // Approve the opt-in; the real mutation signs, submits, writes
-            // the holding + metadata, and must invalidate the gallery reads.
-            await waitFor(() => {
-                expect(screen.getByTestId('opt_in_confirm')).toBeTruthy()
-            })
-            fireEvent.click(screen.getByTestId('opt_in_confirm'))
+        // Approve the opt-in; the real mutation signs, submits, writes
+        // the holding + metadata, and must invalidate the gallery reads.
+        await waitFor(() => {
+            expect(screen.getByTestId('opt_in_confirm')).toBeTruthy()
+        })
+        fireEvent.click(screen.getByTestId('opt_in_confirm'))
 
-            // Fresh opt-in leads under recentlyAdded (indexer doesn't know
-            // its round yet).
-            await expectGalleryState('recentlyAdded', [
-                NFT_TEST_ASSET_3_ID,
-                NFT_TEST_ASSET_ID,
-                NFT_TEST_ASSET_2_ID,
-            ])
+        // Fresh opt-in leads under recentlyAdded (indexer doesn't know
+        // its round yet).
+        await expectGalleryState('recentlyAdded', [
+            NFT_TEST_ASSET_3_ID,
+            NFT_TEST_ASSET_ID,
+            NFT_TEST_ASSET_2_ID,
+        ])
 
-            // QA's failing step: the pre-warmed titleAsc cache must not keep
-            // serving the pre-opt-in list ('Another' < 'Middle' < 'Test').
-            fireEvent.click(screen.getByTestId('sort-title'))
-            await expectGalleryState('titleAsc', [
-                NFT_TEST_ASSET_2_ID,
-                NFT_TEST_ASSET_3_ID,
-                NFT_TEST_ASSET_ID,
-            ])
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // QA's failing step: the pre-warmed titleAsc cache must not keep
+        // serving the pre-opt-in list ('Another' < 'Middle' < 'Test').
+        fireEvent.click(screen.getByTestId('sort-title'))
+        await expectGalleryState('titleAsc', [
+            NFT_TEST_ASSET_2_ID,
+            NFT_TEST_ASSET_3_ID,
+            NFT_TEST_ASSET_ID,
+        ])
+    })
 })

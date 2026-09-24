@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
@@ -103,7 +94,6 @@ const enterEmailAndCountry = async () => {
 
 describe('Flow: Card onboarding — email + country', () => {
     beforeAll(() => {
-        server.listen({ onUnhandledRequest: 'warn' })
         // The waitlist call sends the device id; the harness defaults to mainnet.
         useDeviceStore.getState().setDeviceID('mainnet', DEVICE_ID)
     })
@@ -119,8 +109,6 @@ describe('Flow: Card onboarding — email + country', () => {
             ),
         )
     })
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     it('Given a valid email and an eligible country, when Confirm is pressed, then the code is sent and the verification screen opens', async () => {
         const sendSpy = vi.fn(() =>

@@ -81,21 +81,9 @@ import {
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
+    disableQuantumFlag,
+    enableQuantumFlag,
 } from './__fixtures__/quantum'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
-const QUANTUM_FLAG_KEY = 'enable_quantum_accounts'
-
-const enableQuantumFlag = async (): Promise<void> => {
-    await useRemoteConfigStore.persist.rehydrate()
-    useRemoteConfigStore.getState().setConfigOverride(QUANTUM_FLAG_KEY, true)
-}
-
-const disableQuantumFlag = async (): Promise<void> => {
-    await useRemoteConfigStore.persist.rehydrate()
-    useRemoteConfigStore.getState().setConfigOverride(QUANTUM_FLAG_KEY, false)
-}
 
 // The production rekey screens navigate via `navigate('RekeyToStandard', {
 // screen, params })`. The flat test navigator can't resolve nested routes, so
@@ -266,15 +254,12 @@ const seedSignableRekeyOutAccounts = async (): Promise<{
 
 describe('rekey quantum account', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
     afterEach(() => {
-        server.resetHandlers()
         useRemoteConfigStore.getState().resetState()
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -306,259 +291,224 @@ describe('rekey quantum account', () => {
         )
     })
 
-    it(
-        'Given the quantum flag is on, when the user opens the rekey options sheet and taps the quantum entry, then the rekey-to-quantum flow lists the quantum account as a target',
-        async () => {
-            await enableQuantumFlag()
-            const { source, quantumTarget } = await seedRekeyInAccounts()
+    it('Given the quantum flag is on, when the user opens the rekey options sheet and taps the quantum entry, then the rekey-to-quantum flow lists the quantum account as a target', async () => {
+        await enableQuantumFlag()
+        const { source, quantumTarget } = await seedRekeyInAccounts()
 
-            renderWithNavigation(
-                () => <AccountOptionsHost account={source} />,
-                'AccountOptionsHost',
-                { additionalScreens: QUANTUM_REKEY_SCREENS },
-            )
+        renderWithNavigation(
+            () => <AccountOptionsHost account={source} />,
+            'AccountOptionsHost',
+            { additionalScreens: QUANTUM_REKEY_SCREENS },
+        )
 
-            fireEvent.click(
-                await screen.findByTestId('account_option_rekey-account'),
-            )
-            fireEvent.click(await screen.findByTestId('rekey_option_quantum'))
+        fireEvent.click(
+            await screen.findByTestId('account_option_rekey-account'),
+        )
+        fireEvent.click(await screen.findByTestId('rekey_option_quantum'))
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rekey-to-quantum-intro-screen'),
-                ).toBeTruthy()
-            })
-            fireEvent.click(screen.getByTestId('rekey-to-quantum-intro-start'))
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(
-                        `rekey-target-row-${quantumTarget.address}`,
-                    ),
-                ).toBeTruthy()
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the quantum flag is off, when the user opens the rekey options sheet, then only the Ledger and standard entries are offered',
-        async () => {
-            await disableQuantumFlag()
-            const { source } = await seedRekeyInAccounts()
-
-            renderWithNavigation(
-                () => <AccountOptionsHost account={source} />,
-                'AccountOptionsHost',
-                { additionalScreens: QUANTUM_REKEY_SCREENS },
-            )
-
-            fireEvent.click(
-                await screen.findByTestId('account_option_rekey-account'),
-            )
-
-            await waitFor(() => {
-                expect(screen.getByTestId('rekey_option_ledger')).toBeTruthy()
-            })
-            expect(screen.getByTestId('rekey_option_standard')).toBeTruthy()
-            expect(screen.queryByTestId('rekey_option_quantum')).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the quantum flag is on, when the user opens rekey-to-standard select-target, then the quantum account is not listed (the dedicated flow owns quantum targets)',
-        async () => {
-            await enableQuantumFlag()
-            const { source, quantumTarget } = await seedRekeyInAccounts()
-
-            renderWithNavigation(
-                RekeyToStandardSelectTargetScreen,
-                'RekeyToStandardSelectTarget',
-                {
-                    initialParams: { sourceAddress: source.address },
-                    additionalScreens: REKEY_SCREENS,
-                },
-            )
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(
-                        'rekey-to-standard-select-target-screen',
-                    ),
-                ).toBeTruthy()
-            })
+        await waitFor(() => {
             expect(
-                screen.queryByTestId(
-                    `rekey-target-row-${quantumTarget.address}`,
-                ),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                screen.getByTestId('rekey-to-quantum-intro-screen'),
+            ).toBeTruthy()
+        })
+        fireEvent.click(screen.getByTestId('rekey-to-quantum-intro-start'))
 
-    it(
-        'Given the quantum flag is off, when the user opens rekey-to-quantum select-target directly, then no targets are listed',
-        async () => {
-            await disableQuantumFlag()
-            const { source, quantumTarget } = await seedRekeyInAccounts()
-
-            renderWithNavigation(
-                RekeyToQuantumSelectTargetScreen,
-                'RekeyToQuantumSelectTarget',
-                {
-                    initialParams: { sourceAddress: source.address },
-                    additionalScreens: QUANTUM_REKEY_SCREENS,
-                },
-            )
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rekey-to-quantum-select-target-screen'),
-                ).toBeTruthy()
-            })
+        await waitFor(() => {
             expect(
-                screen.queryByTestId(
-                    `rekey-target-row-${quantumTarget.address}`,
-                ),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                screen.getByTestId(`rekey-target-row-${quantumTarget.address}`),
+            ).toBeTruthy()
+        })
+    })
 
-    it(
-        'Given a quantum source and a standard target, when the user confirms the rekey, then the quantum-downgrade warning sheet appears before any signing occurs',
-        async () => {
-            await enableQuantumFlag()
-            const { quantumSource, target } = await seedRekeyOutAccounts()
+    it('Given the quantum flag is off, when the user opens the rekey options sheet, then only the Ledger and standard entries are offered', async () => {
+        await disableQuantumFlag()
+        const { source } = await seedRekeyInAccounts()
 
-            // Registered before driving to confirm so we can assert the
-            // downgrade warning sheet blocks the flow before any broadcast
-            // is attempted.
-            const submitSpy = vi.fn(() =>
-                HttpResponse.json({ txId: 'REKEY_MOCK' }, { status: 200 }),
-            )
-            server.use(http.post('*/v2/transactions', submitSpy))
+        renderWithNavigation(
+            () => <AccountOptionsHost account={source} />,
+            'AccountOptionsHost',
+            { additionalScreens: QUANTUM_REKEY_SCREENS },
+        )
 
-            renderWithNavigation(
-                RekeyToStandardConfirmScreen,
-                'RekeyToStandardConfirm',
-                {
-                    initialParams: {
-                        sourceAddress: quantumSource.address,
-                        targetAddress: target.address,
-                    },
-                    additionalScreens: REKEY_SCREENS,
-                },
-            )
+        fireEvent.click(
+            await screen.findByTestId('account_option_rekey-account'),
+        )
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('rekey-to-standard-confirm-screen'),
-                ).toBeTruthy()
-            })
-            const cta = () =>
-                screen.getByTestId('rekey-to-standard-confirm-cta')
-            await waitFor(() => {
-                expect(isElementDisabled(cta())).toBe(false)
-            })
-            fireEvent.click(cta())
+        await waitFor(() => {
+            expect(screen.getByTestId('rekey_option_ledger')).toBeTruthy()
+        })
+        expect(screen.getByTestId('rekey_option_standard')).toBeTruthy()
+        expect(screen.queryByTestId('rekey_option_quantum')).toBeNull()
+    })
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('quantum-downgrade-warning-sheet'),
-                ).toBeTruthy()
-            })
-            expect(submitSpy).not.toHaveBeenCalled()
+    it('Given the quantum flag is on, when the user opens rekey-to-standard select-target, then the quantum account is not listed (the dedicated flow owns quantum targets)', async () => {
+        await enableQuantumFlag()
+        const { source, quantumTarget } = await seedRekeyInAccounts()
 
-            // The suite stops here on purpose (see the file-level comment):
-            // this test's job is the warning sheet gate, not full
-            // sign/submit coverage — confirming past it is out of scope
-            // here even though signing quantum accounts now works.
+        renderWithNavigation(
+            RekeyToStandardSelectTargetScreen,
+            'RekeyToStandardSelectTarget',
+            {
+                initialParams: { sourceAddress: source.address },
+                additionalScreens: REKEY_SCREENS,
+            },
+        )
+
+        await waitFor(() => {
             expect(
-                screen.queryByTestId('rekey-to-standard-success-screen'),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                screen.getByTestId('rekey-to-standard-select-target-screen'),
+            ).toBeTruthy()
+        })
+        expect(
+            screen.queryByTestId(`rekey-target-row-${quantumTarget.address}`),
+        ).toBeNull()
+    })
 
-    it(
-        'Given the downgrade is confirmed and algod rejects the submission, when the error toast surfaces, then the confirm CTA leaves its loading state so the user can retry',
-        async () => {
-            await enableQuantumFlag()
-            const { quantumSource, target } =
-                await seedSignableRekeyOutAccounts()
+    it('Given the quantum flag is off, when the user opens rekey-to-quantum select-target directly, then no targets are listed', async () => {
+        await disableQuantumFlag()
+        const { source, quantumTarget } = await seedRekeyInAccounts()
 
-            server.use(
-                http.post('*/v2/transactions', () =>
-                    HttpResponse.json(
-                        { message: 'TransactionPool.Remember: rejected' },
-                        { status: 400 },
-                    ),
-                ),
-            )
+        renderWithNavigation(
+            RekeyToQuantumSelectTargetScreen,
+            'RekeyToQuantumSelectTarget',
+            {
+                initialParams: { sourceAddress: source.address },
+                additionalScreens: QUANTUM_REKEY_SCREENS,
+            },
+        )
 
-            renderWithNavigation(
-                RekeyToStandardConfirmScreen,
-                'RekeyToStandardConfirm',
-                {
-                    initialParams: {
-                        sourceAddress: quantumSource.address,
-                        targetAddress: target.address,
-                    },
-                    additionalScreens: REKEY_SCREENS,
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('rekey-to-quantum-select-target-screen'),
+            ).toBeTruthy()
+        })
+        expect(
+            screen.queryByTestId(`rekey-target-row-${quantumTarget.address}`),
+        ).toBeNull()
+    })
+
+    it('Given a quantum source and a standard target, when the user confirms the rekey, then the quantum-downgrade warning sheet appears before any signing occurs', async () => {
+        await enableQuantumFlag()
+        const { quantumSource, target } = await seedRekeyOutAccounts()
+
+        // Registered before driving to confirm so we can assert the
+        // downgrade warning sheet blocks the flow before any broadcast
+        // is attempted.
+        const submitSpy = vi.fn(() =>
+            HttpResponse.json({ txId: 'REKEY_MOCK' }, { status: 200 }),
+        )
+        server.use(http.post('*/v2/transactions', submitSpy))
+
+        renderWithNavigation(
+            RekeyToStandardConfirmScreen,
+            'RekeyToStandardConfirm',
+            {
+                initialParams: {
+                    sourceAddress: quantumSource.address,
+                    targetAddress: target.address,
                 },
-            )
+                additionalScreens: REKEY_SCREENS,
+            },
+        )
 
-            await screen.findByTestId('rekey-to-standard-confirm-cta')
-            const cta = () =>
-                screen.getByTestId('rekey-to-standard-confirm-cta')
-            await waitFor(() => {
-                expect(isElementDisabled(cta())).toBe(false)
-            })
-            fireEvent.click(cta())
-
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('quantum-downgrade-warning-sheet'),
-                ).toBeTruthy()
-            })
-            fireEvent.click(
-                screen.getByText('rekey.quantum_downgrade_warning.confirm'),
-            )
-
-            await waitFor(
-                () => {
-                    expect(Notifier.showNotification).toHaveBeenCalled()
-                },
-                { timeout: 25_000 },
-            )
-
-            await waitFor(() => {
-                expect(screen.queryByTestId('activity-indicator')).toBeNull()
-            })
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('rekey-to-standard-confirm-screen'),
+            ).toBeTruthy()
+        })
+        const cta = () => screen.getByTestId('rekey-to-standard-confirm-cta')
+        await waitFor(() => {
             expect(isElementDisabled(cta())).toBe(false)
+        })
+        fireEvent.click(cta())
 
-            vi.mocked(Notifier.showNotification).mockClear()
-            fireEvent.click(cta())
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('quantum-downgrade-warning-sheet'),
-                ).toBeTruthy()
-            })
-            fireEvent.click(
-                screen.getByText('rekey.quantum_downgrade_warning.confirm'),
-            )
-            await waitFor(
-                () => {
-                    expect(Notifier.showNotification).toHaveBeenCalled()
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('quantum-downgrade-warning-sheet'),
+            ).toBeTruthy()
+        })
+        expect(submitSpy).not.toHaveBeenCalled()
+
+        // The suite stops here on purpose (see the file-level comment):
+        // this test's job is the warning sheet gate, not full
+        // sign/submit coverage — confirming past it is out of scope
+        // here even though signing quantum accounts now works.
+        expect(
+            screen.queryByTestId('rekey-to-standard-success-screen'),
+        ).toBeNull()
+    })
+
+    it('Given the downgrade is confirmed and algod rejects the submission, when the error toast surfaces, then the confirm CTA leaves its loading state so the user can retry', async () => {
+        await enableQuantumFlag()
+        const { quantumSource, target } = await seedSignableRekeyOutAccounts()
+
+        server.use(
+            http.post('*/v2/transactions', () =>
+                HttpResponse.json(
+                    { message: 'TransactionPool.Remember: rejected' },
+                    { status: 400 },
+                ),
+            ),
+        )
+
+        renderWithNavigation(
+            RekeyToStandardConfirmScreen,
+            'RekeyToStandardConfirm',
+            {
+                initialParams: {
+                    sourceAddress: quantumSource.address,
+                    targetAddress: target.address,
                 },
-                { timeout: 25_000 },
-            )
-            await waitFor(() => {
-                expect(screen.queryByTestId('activity-indicator')).toBeNull()
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                additionalScreens: REKEY_SCREENS,
+            },
+        )
+
+        await screen.findByTestId('rekey-to-standard-confirm-cta')
+        const cta = () => screen.getByTestId('rekey-to-standard-confirm-cta')
+        await waitFor(() => {
+            expect(isElementDisabled(cta())).toBe(false)
+        })
+        fireEvent.click(cta())
+
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('quantum-downgrade-warning-sheet'),
+            ).toBeTruthy()
+        })
+        fireEvent.click(
+            screen.getByText('rekey.quantum_downgrade_warning.confirm'),
+        )
+
+        await waitFor(
+            () => {
+                expect(Notifier.showNotification).toHaveBeenCalled()
+            },
+            { timeout: 25_000 },
+        )
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('activity-indicator')).toBeNull()
+        })
+        expect(isElementDisabled(cta())).toBe(false)
+
+        vi.mocked(Notifier.showNotification).mockClear()
+        fireEvent.click(cta())
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('quantum-downgrade-warning-sheet'),
+            ).toBeTruthy()
+        })
+        fireEvent.click(
+            screen.getByText('rekey.quantum_downgrade_warning.confirm'),
+        )
+        await waitFor(
+            () => {
+                expect(Notifier.showNotification).toHaveBeenCalled()
+            },
+            { timeout: 25_000 },
+        )
+        await waitFor(() => {
+            expect(screen.queryByTestId('activity-indicator')).toBeNull()
+        })
+    })
 })

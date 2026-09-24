@@ -59,7 +59,6 @@ import { encodeTransaction } from '@perawallet/wallet-core-blockchain'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { SigningOverlays } from '@modules/signing/shell'
 import {
     useSwapExecution,
@@ -67,8 +66,8 @@ import {
 } from '@modules/swap/hooks/useSwapExecution'
 
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
 const SWAP_ID = '98765'
 const LEDGER_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const AUTH_ADDRESS = REVIEW_SIGNER_ADDRESS
@@ -90,27 +89,9 @@ const createDeferred = <T,>(): Deferred<T> => {
 
 let pendingSignature: Deferred<Uint8Array> | null = null
 
-const registerFakeLedgerProvider = () => {
-    getProvider().hardwareWalletRegistry.register({
-        manufacturer: 'ledger',
-        transportType: 'ble',
-        scan: () => () => {},
-        connect: async () => ({
-            getAddress: async (accountIndex: number) => ({
-                address: LEDGER_ADDRESS,
-                publicKey: new Uint8Array(32),
-                accountIndex,
-            }),
-            signTransaction: async () => {
-                pendingSignature = createDeferred<Uint8Array>()
-                return pendingSignature.promise
-            },
-            signData: async () => new Uint8Array(64),
-            getAppVersion: async () => ({ major: 0, minor: 0, patch: 0 }),
-            disconnect: async () => {},
-        }),
-        isSupported: async () => false,
-    })
+const blockOnSignature = (): Promise<Uint8Array> => {
+    pendingSignature = createDeferred<Uint8Array>()
+    return pendingSignature.promise
 }
 
 const ledgerAccount: HardwareWalletAccount = {
@@ -229,17 +210,17 @@ const spyOnSubmissionAndStatus = () => {
 
 describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
-        registerFakeLedgerProvider()
+        registerFakeLedgerProvider({
+            address: LEDGER_ADDRESS,
+            signTransaction: blockOnSignature,
+        })
     })
     afterEach(() => {
-        server.resetHandlers()
         pendingSignature = null
         executeSwap = null
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -263,128 +244,108 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         )
     })
 
-    it(
-        'Given a Ledger sender, when the user approves on the device, then the swap submits to algod and reports in_progress with the txn ids',
-        async () => {
-            useAccountsStore.getState().setAccounts([ledgerAccount])
-            useAccountsStore
-                .getState()
-                .setSelectedAccountAddress(LEDGER_ADDRESS)
-            mockPrepareWithPayment(LEDGER_ADDRESS)
-            const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
+    it('Given a Ledger sender, when the user approves on the device, then the swap submits to algod and reports in_progress with the txn ids', async () => {
+        useAccountsStore.getState().setAccounts([ledgerAccount])
+        useAccountsStore.getState().setSelectedAccountAddress(LEDGER_ADDRESS)
+        mockPrepareWithPayment(LEDGER_ADDRESS)
+        const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
 
-            renderWithNavigation(SwapHost, 'SwapLedgerHost')
-            await waitFor(() => expect(executeSwap).not.toBeNull())
+        renderWithNavigation(SwapHost, 'SwapLedgerHost')
+        await waitFor(() => expect(executeSwap).not.toBeNull())
 
-            let outcome: SwapExecutionOutcome | null = null
-            const run = executeSwap!(buildQuote(LEDGER_ADDRESS)).then(o => {
-                outcome = o
-            })
+        let outcome: SwapExecutionOutcome | null = null
+        const run = executeSwap!(buildQuote(LEDGER_ADDRESS)).then(o => {
+            outcome = o
+        })
 
-            // The device-approval overlay surfaces while the exchange is
-            // parked on the Ledger prompt.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('ledger-signing-overlay-lottie'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
-            expect(algodBodies).toHaveLength(0)
+        // The device-approval overlay surfaces while the exchange is
+        // parked on the Ledger prompt.
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('ledger-signing-overlay-lottie'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        expect(algodBodies).toHaveLength(0)
 
-            pendingSignature!.resolve(new Uint8Array(64))
-            await run
+        pendingSignature!.resolve(new Uint8Array(64))
+        await run
 
-            expect(outcome).toEqual({ kind: 'success' })
-            expect(algodBodies).toHaveLength(1)
-            expect(statusPayloads).toHaveLength(1)
-            expect(statusPayloads[0].status).toBe('in_progress')
-            expect(statusPayloads[0].submitted_transaction_ids).toHaveLength(1)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(algodBodies).toHaveLength(1)
+        expect(statusPayloads).toHaveLength(1)
+        expect(statusPayloads[0].status).toBe('in_progress')
+        expect(statusPayloads[0].submitted_transaction_ids).toHaveLength(1)
+    })
 
-    it(
-        'Given a Ledger sender, when the device rejects, then the swap resolves as cancelled and the backend never receives a failure report',
-        async () => {
-            // LRK-012 swap contract: an on-device reject is a user cancel —
-            // reportSwapFailure (status failed/blockchain_error) must stay
-            // unreachable, and nothing may reach algod.
-            useAccountsStore.getState().setAccounts([ledgerAccount])
-            useAccountsStore
-                .getState()
-                .setSelectedAccountAddress(LEDGER_ADDRESS)
-            mockPrepareWithPayment(LEDGER_ADDRESS)
-            const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
+    it('Given a Ledger sender, when the device rejects, then the swap resolves as cancelled and the backend never receives a failure report', async () => {
+        // LRK-012 swap contract: an on-device reject is a user cancel —
+        // reportSwapFailure (status failed/blockchain_error) must stay
+        // unreachable, and nothing may reach algod.
+        useAccountsStore.getState().setAccounts([ledgerAccount])
+        useAccountsStore.getState().setSelectedAccountAddress(LEDGER_ADDRESS)
+        mockPrepareWithPayment(LEDGER_ADDRESS)
+        const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
 
-            renderWithNavigation(SwapHost, 'SwapLedgerHost')
-            await waitFor(() => expect(executeSwap).not.toBeNull())
+        renderWithNavigation(SwapHost, 'SwapLedgerHost')
+        await waitFor(() => expect(executeSwap).not.toBeNull())
 
-            let outcome: SwapExecutionOutcome | null = null
-            const run = executeSwap!(buildQuote(LEDGER_ADDRESS)).then(o => {
-                outcome = o
-            })
+        let outcome: SwapExecutionOutcome | null = null
+        const run = executeSwap!(buildQuote(LEDGER_ADDRESS)).then(o => {
+            outcome = o
+        })
 
-            await waitFor(
-                () => {
-                    expect(pendingSignature).not.toBeNull()
-                },
-                { timeout: 10_000 },
-            )
-            pendingSignature!.reject(new LedgerUserRejectedError())
+        await waitFor(
+            () => {
+                expect(pendingSignature).not.toBeNull()
+            },
+            { timeout: 10_000 },
+        )
+        pendingSignature!.reject(new LedgerUserRejectedError())
 
-            // The Ledger error sheet offers Retry and Cancel — cancel out.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByText('ledger.signing.cancel'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
-            fireEvent.click(screen.getByText('ledger.signing.cancel'))
-            await run
+        // The Ledger error sheet offers Retry and Cancel — cancel out.
+        await waitFor(
+            () => {
+                expect(screen.getByText('ledger.signing.cancel')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        fireEvent.click(screen.getByText('ledger.signing.cancel'))
+        await run
 
-            expect(outcome).toEqual({ kind: 'cancelled' })
-            expect(algodBodies).toHaveLength(0)
-            expect(statusPayloads).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(outcome).toEqual({ kind: 'cancelled' })
+        expect(algodBodies).toHaveLength(0)
+        expect(statusPayloads).toHaveLength(0)
+    })
 
-    it(
-        'Given a sender rekeyed to a held local key, when the swap signs headlessly, then the auth key signs and the submitted blob carries sgnr',
-        async () => {
-            const authSigner = await seedAlgo25Signer()
-            const rekeyedSender: WalletAccount = {
-                id: 'rekeyed-swapper',
-                type: AccountTypes.watch,
-                address: LEDGER_ADDRESS,
-                rekeyAddress: AUTH_ADDRESS,
-                name: 'Rekeyed swapper',
-            }
-            useAccountsStore.getState().setAccounts([rekeyedSender, authSigner])
-            useAccountsStore
-                .getState()
-                .setSelectedAccountAddress(rekeyedSender.address)
-            mockPrepareWithPayment(rekeyedSender.address)
-            const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
+    it('Given a sender rekeyed to a held local key, when the swap signs headlessly, then the auth key signs and the submitted blob carries sgnr', async () => {
+        const authSigner = await seedAlgo25Signer()
+        const rekeyedSender: WalletAccount = {
+            id: 'rekeyed-swapper',
+            type: AccountTypes.watch,
+            address: LEDGER_ADDRESS,
+            rekeyAddress: AUTH_ADDRESS,
+            name: 'Rekeyed swapper',
+        }
+        useAccountsStore.getState().setAccounts([rekeyedSender, authSigner])
+        useAccountsStore
+            .getState()
+            .setSelectedAccountAddress(rekeyedSender.address)
+        mockPrepareWithPayment(rekeyedSender.address)
+        const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
 
-            renderWithNavigation(SwapHost, 'SwapLedgerHost')
-            await waitFor(() => expect(executeSwap).not.toBeNull())
+        renderWithNavigation(SwapHost, 'SwapLedgerHost')
+        await waitFor(() => expect(executeSwap).not.toBeNull())
 
-            const outcome = await executeSwap!(
-                buildQuote(rekeyedSender.address),
-            )
+        const outcome = await executeSwap!(buildQuote(rekeyedSender.address))
 
-            expect(outcome).toEqual({ kind: 'success' })
-            expect(algodBodies).toHaveLength(1)
-            const signed = decodeSignedTransaction(algodBodies[0])
-            expect(signed.txn.sender.toString()).toBe(rekeyedSender.address)
-            expect(signed.sgnr?.toString()).toBe(AUTH_ADDRESS)
-            expect(statusPayloads[0]?.status).toBe('in_progress')
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(algodBodies).toHaveLength(1)
+        const signed = decodeSignedTransaction(algodBodies[0])
+        expect(signed.txn.sender.toString()).toBe(rekeyedSender.address)
+        expect(signed.sgnr?.toString()).toBe(AUTH_ADDRESS)
+        expect(statusPayloads[0]?.status).toBe('in_progress')
+    })
 })

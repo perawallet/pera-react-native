@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
@@ -57,10 +48,7 @@ const statefulStatus = (initial: string) => {
 const renderDetails = () => renderWithNavigation(PeraCardDetails, 'CardDetails')
 
 describe('Flow: Card frozen state', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => vi.mocked(Notifier.showNotification).mockClear())
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     it('shows the Card Frozen banner on the Card Details tab when the card is frozen', async () => {
         server.use(

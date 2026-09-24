@@ -93,8 +93,6 @@ import { useEditContactForm } from '@modules/contacts/hooks'
 import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 // EditContactScreen navigates to a 'Contacts' route after a delete via
 // navigation.replace. Register a stand-in so the transition has a target.
 const ContactsListPlaceholder = () => null
@@ -219,67 +217,59 @@ describe('Flow: Contacts CRUD', () => {
         resetContacts()
     })
 
-    it(
-        'Given AddContactScreen, when a valid name and address are entered and submit is tapped, then the contact is persisted',
-        async () => {
-            renderWithNavigation(AddContactScreen, 'AddContact')
+    it('Given AddContactScreen, when a valid name and address are entered and submit is tapped, then the contact is persisted', async () => {
+        renderWithNavigation(AddContactScreen, 'AddContact')
 
-            fireEvent.change(screen.getByTestId('contact_name_input'), {
-                target: { value: 'Alice' },
-            })
-            fireEvent.change(screen.getByTestId('contact_address_input'), {
-                target: { value: HD_TEST_ADDRESS },
-            })
+        fireEvent.change(screen.getByTestId('contact_name_input'), {
+            target: { value: 'Alice' },
+        })
+        fireEvent.change(screen.getByTestId('contact_address_input'), {
+            target: { value: HD_TEST_ADDRESS },
+        })
 
-            await waitFor(() => {
-                expect(
-                    isElementDisabled(screen.getByTestId('add_contact_button')),
-                ).toBe(false)
-            })
-            fireEvent.click(screen.getByTestId('add_contact_button'))
+        await waitFor(() => {
+            expect(
+                isElementDisabled(screen.getByTestId('add_contact_button')),
+            ).toBe(false)
+        })
+        fireEvent.click(screen.getByTestId('add_contact_button'))
 
-            await waitFor(() => {
-                expect(readContacts()).toHaveLength(1)
-            })
-            const [contact] = readContacts()
-            expect(contact.name).toBe('Alice')
-            expect(contact.address).toBe(HD_TEST_ADDRESS)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a duplicate address is entered on AddContactScreen, when submit is tapped, then no second contact is added',
-        async () => {
-            seedContact('Existing', HD_TEST_ADDRESS)
-
-            renderWithNavigation(AddContactScreen, 'AddContact')
-
-            fireEvent.change(screen.getByTestId('contact_name_input'), {
-                target: { value: 'Duplicate' },
-            })
-            fireEvent.change(screen.getByTestId('contact_address_input'), {
-                target: { value: HD_TEST_ADDRESS },
-            })
-
-            await waitFor(() => {
-                expect(
-                    isElementDisabled(screen.getByTestId('add_contact_button')),
-                ).toBe(false)
-            })
-            fireEvent.click(screen.getByTestId('add_contact_button'))
-
-            await waitFor(() => {
-                expect(
-                    getInputErrorMessage(
-                        screen.getByTestId('contact_address_input'),
-                    ),
-                ).toBe('contacts.add_contact.duplicate_address_error')
-            })
+        await waitFor(() => {
             expect(readContacts()).toHaveLength(1)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
+        const [contact] = readContacts()
+        expect(contact.name).toBe('Alice')
+        expect(contact.address).toBe(HD_TEST_ADDRESS)
+    })
+
+    it('Given a duplicate address is entered on AddContactScreen, when submit is tapped, then no second contact is added', async () => {
+        seedContact('Existing', HD_TEST_ADDRESS)
+
+        renderWithNavigation(AddContactScreen, 'AddContact')
+
+        fireEvent.change(screen.getByTestId('contact_name_input'), {
+            target: { value: 'Duplicate' },
+        })
+        fireEvent.change(screen.getByTestId('contact_address_input'), {
+            target: { value: HD_TEST_ADDRESS },
+        })
+
+        await waitFor(() => {
+            expect(
+                isElementDisabled(screen.getByTestId('add_contact_button')),
+            ).toBe(false)
+        })
+        fireEvent.click(screen.getByTestId('add_contact_button'))
+
+        await waitFor(() => {
+            expect(
+                getInputErrorMessage(
+                    screen.getByTestId('contact_address_input'),
+                ),
+            ).toBe('contacts.add_contact.duplicate_address_error')
+        })
+        expect(readContacts()).toHaveLength(1)
+    })
 
     it('Given a selected contact, when EditContactScreen mounts, then the form prefills with the contact name and address', () => {
         seedContact('Alice', HD_TEST_ADDRESS)
@@ -301,134 +291,110 @@ describe('Flow: Contacts CRUD', () => {
         ).toBe(HD_TEST_ADDRESS)
     })
 
-    it(
-        'Given a selected contact, when the name is changed and the edit form is saved, then the store reflects the updated name',
-        async () => {
-            seedContact('Alice', HD_TEST_ADDRESS)
-            selectContact('Alice', HD_TEST_ADDRESS)
+    it('Given a selected contact, when the name is changed and the edit form is saved, then the store reflects the updated name', async () => {
+        seedContact('Alice', HD_TEST_ADDRESS)
+        selectContact('Alice', HD_TEST_ADDRESS)
 
-            renderWithNavigation(EditContactHost, 'EditContact')
+        renderWithNavigation(EditContactHost, 'EditContact')
 
-            fireEvent.change(screen.getByTestId('contact_name_input'), {
-                target: { value: 'Alice Renamed' },
-            })
+        fireEvent.change(screen.getByTestId('contact_name_input'), {
+            target: { value: 'Alice Renamed' },
+        })
 
-            await waitFor(() => {
-                expect(
-                    isElementDisabled(
-                        screen.getByTestId('edit_contact_save_button'),
-                    ),
-                ).toBe(false)
-            })
-            fireEvent.click(screen.getByTestId('edit_contact_save_button'))
+        await waitFor(() => {
+            expect(
+                isElementDisabled(
+                    screen.getByTestId('edit_contact_save_button'),
+                ),
+            ).toBe(false)
+        })
+        fireEvent.click(screen.getByTestId('edit_contact_save_button'))
 
-            await waitFor(() => {
-                expect(readContacts()[0]?.name).toBe('Alice Renamed')
-            })
-            expect(readContacts()).toHaveLength(1)
-            expect(readContacts()[0].address).toBe(HD_TEST_ADDRESS)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => {
+            expect(readContacts()[0]?.name).toBe('Alice Renamed')
+        })
+        expect(readContacts()).toHaveLength(1)
+        expect(readContacts()[0].address).toBe(HD_TEST_ADDRESS)
+    })
 
-    it(
-        'Given a selected contact, when delete is confirmed in the bottom sheet, then the contact is removed from the store',
-        async () => {
-            seedContact('Alice', HD_TEST_ADDRESS)
-            selectContact('Alice', HD_TEST_ADDRESS)
+    it('Given a selected contact, when delete is confirmed in the bottom sheet, then the contact is removed from the store', async () => {
+        seedContact('Alice', HD_TEST_ADDRESS)
+        selectContact('Alice', HD_TEST_ADDRESS)
 
-            renderWithNavigation(EditContactScreen, 'EditContact', {
-                additionalScreens: [
-                    { name: 'Contacts', component: ContactsListPlaceholder },
-                ],
-            })
+        renderWithNavigation(EditContactScreen, 'EditContact', {
+            additionalScreens: [
+                { name: 'Contacts', component: ContactsListPlaceholder },
+            ],
+        })
 
-            fireEvent.click(screen.getByTestId('edit_contact_delete_button'))
+        fireEvent.click(screen.getByTestId('edit_contact_delete_button'))
 
-            await waitFor(() =>
-                screen.getByTestId('contact_delete_confirm_button'),
+        await waitFor(() => screen.getByTestId('contact_delete_confirm_button'))
+        fireEvent.click(screen.getByTestId('contact_delete_confirm_button'))
+
+        await waitFor(() => {
+            expect(readContacts()).toHaveLength(0)
+        })
+    })
+
+    it('Given a backed-up contact, when the cloud-backup sheet is answered with "Keep it", then the contact leaves the device and stays in the backup', async () => {
+        isCloudBackupEnabledMock.mockReturnValue(true)
+        seedContact('Alice', HD_TEST_ADDRESS)
+        selectContact('Alice', HD_TEST_ADDRESS)
+        markContactBackedUp(HD_TEST_ADDRESS)
+
+        renderWithNavigation(EditContactScreen, 'EditContact', {
+            additionalScreens: [
+                { name: 'Contacts', component: ContactsListPlaceholder },
+            ],
+        })
+
+        fireEvent.click(screen.getByTestId('edit_contact_delete_button'))
+        await waitFor(() => screen.getByTestId('contact_delete_confirm_button'))
+        fireEvent.click(screen.getByTestId('contact_delete_confirm_button'))
+
+        await waitFor(() => screen.getByTestId('delete_from_backup_cancel'))
+        fireEvent.click(screen.getByTestId('delete_from_backup_cancel'))
+
+        await waitFor(() => {
+            expect(keepContactInBackupMock).toHaveBeenCalledWith(
+                HD_TEST_ADDRESS,
+                'Alice',
             )
-            fireEvent.click(screen.getByTestId('contact_delete_confirm_button'))
+        })
+        await waitFor(() => {
+            expect(readContacts()).toHaveLength(0)
+        })
+        expect(deleteContactFromBackupMock).not.toHaveBeenCalled()
+    })
 
-            await waitFor(() => {
-                expect(readContacts()).toHaveLength(0)
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given a backed-up contact, when the cloud-backup sheet is confirmed, then the backup copy is deleted too', async () => {
+        isCloudBackupEnabledMock.mockReturnValue(true)
+        seedContact('Alice', HD_TEST_ADDRESS)
+        selectContact('Alice', HD_TEST_ADDRESS)
+        markContactBackedUp(HD_TEST_ADDRESS)
 
-    it(
-        'Given a backed-up contact, when the cloud-backup sheet is answered with "Keep it", then the contact leaves the device and stays in the backup',
-        async () => {
-            isCloudBackupEnabledMock.mockReturnValue(true)
-            seedContact('Alice', HD_TEST_ADDRESS)
-            selectContact('Alice', HD_TEST_ADDRESS)
-            markContactBackedUp(HD_TEST_ADDRESS)
+        renderWithNavigation(EditContactScreen, 'EditContact', {
+            additionalScreens: [
+                { name: 'Contacts', component: ContactsListPlaceholder },
+            ],
+        })
 
-            renderWithNavigation(EditContactScreen, 'EditContact', {
-                additionalScreens: [
-                    { name: 'Contacts', component: ContactsListPlaceholder },
-                ],
-            })
+        fireEvent.click(screen.getByTestId('edit_contact_delete_button'))
+        await waitFor(() => screen.getByTestId('contact_delete_confirm_button'))
+        fireEvent.click(screen.getByTestId('contact_delete_confirm_button'))
 
-            fireEvent.click(screen.getByTestId('edit_contact_delete_button'))
-            await waitFor(() =>
-                screen.getByTestId('contact_delete_confirm_button'),
+        await waitFor(() => screen.getByTestId('delete_from_backup_confirm'))
+        fireEvent.click(screen.getByTestId('delete_from_backup_confirm'))
+
+        await waitFor(() => {
+            expect(deleteContactFromBackupMock).toHaveBeenCalledWith(
+                HD_TEST_ADDRESS,
             )
-            fireEvent.click(screen.getByTestId('contact_delete_confirm_button'))
-
-            await waitFor(() => screen.getByTestId('delete_from_backup_cancel'))
-            fireEvent.click(screen.getByTestId('delete_from_backup_cancel'))
-
-            await waitFor(() => {
-                expect(keepContactInBackupMock).toHaveBeenCalledWith(
-                    HD_TEST_ADDRESS,
-                    'Alice',
-                )
-            })
-            await waitFor(() => {
-                expect(readContacts()).toHaveLength(0)
-            })
-            expect(deleteContactFromBackupMock).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a backed-up contact, when the cloud-backup sheet is confirmed, then the backup copy is deleted too',
-        async () => {
-            isCloudBackupEnabledMock.mockReturnValue(true)
-            seedContact('Alice', HD_TEST_ADDRESS)
-            selectContact('Alice', HD_TEST_ADDRESS)
-            markContactBackedUp(HD_TEST_ADDRESS)
-
-            renderWithNavigation(EditContactScreen, 'EditContact', {
-                additionalScreens: [
-                    { name: 'Contacts', component: ContactsListPlaceholder },
-                ],
-            })
-
-            fireEvent.click(screen.getByTestId('edit_contact_delete_button'))
-            await waitFor(() =>
-                screen.getByTestId('contact_delete_confirm_button'),
-            )
-            fireEvent.click(screen.getByTestId('contact_delete_confirm_button'))
-
-            await waitFor(() =>
-                screen.getByTestId('delete_from_backup_confirm'),
-            )
-            fireEvent.click(screen.getByTestId('delete_from_backup_confirm'))
-
-            await waitFor(() => {
-                expect(deleteContactFromBackupMock).toHaveBeenCalledWith(
-                    HD_TEST_ADDRESS,
-                )
-            })
-            await waitFor(() => {
-                expect(readContacts()).toHaveLength(0)
-            })
-            expect(keepContactInBackupMock).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
+        await waitFor(() => {
+            expect(readContacts()).toHaveLength(0)
+        })
+        expect(keepContactInBackupMock).not.toHaveBeenCalled()
+    })
 })

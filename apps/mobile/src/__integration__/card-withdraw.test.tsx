@@ -11,16 +11,7 @@
  */
 
 import React from 'react'
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
@@ -92,7 +83,6 @@ const USDC_ASSET_ID = 31_566_704
 const CARD_ADDRESS =
     'PWJLR77JXPCJDWUCGB7MXGH2AFXAFU6UE7FNZLRLSEXJNP6MKJMIXGWT4I'
 const WAIT_TIME_SECONDS = 20
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const SELECTORS = {
     withdrawalRequest: 'b7349158',
@@ -263,7 +253,6 @@ const goToWithdrawAndTypeAmount = async () => {
 describe('Flow: Card withdraw', () => {
     let box: BoxState
 
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => {
         vi.mocked(Notifier.showNotification).mockClear()
         resetTestKeystore()
@@ -313,183 +302,163 @@ describe('Flow: Card withdraw', () => {
         )
     })
     afterEach(() => {
-        server.resetHandlers()
         useCardStore.getState().setEscrowCard(null)
         useAccountsStore.getState().setAccounts([])
     })
-    afterAll(() => server.close())
 
-    it(
-        'requests a withdrawal through the confirmation sheet and shows it pending on the overview',
-        async () => {
-            await seedOwnerAccount()
-            let submitted: Uint8Array | null = null
-            server.use(
-                http.post('*/v2/transactions', async ({ request }) => {
-                    submitted = new Uint8Array(await request.arrayBuffer())
-                    // The request lands: the box exists from here on, already
-                    // past the wait so the claim is offered straight away.
-                    box.pendingAmount = 25_000_000n
-                    box.createdAt =
-                        Math.floor(Date.now() / 1000) - WAIT_TIME_SECONDS * 3
-                    return HttpResponse.json(
-                        {
-                            txId: 'REQUESTTXID000000000000000000000000000000000000000000',
-                        },
-                        { status: 200 },
-                    )
-                }),
-            )
+    it('requests a withdrawal through the confirmation sheet and shows it pending on the overview', async () => {
+        await seedOwnerAccount()
+        let submitted: Uint8Array | null = null
+        server.use(
+            http.post('*/v2/transactions', async ({ request }) => {
+                submitted = new Uint8Array(await request.arrayBuffer())
+                // The request lands: the box exists from here on, already
+                // past the wait so the claim is offered straight away.
+                box.pendingAmount = 25_000_000n
+                box.createdAt =
+                    Math.floor(Date.now() / 1000) - WAIT_TIME_SECONDS * 3
+                return HttpResponse.json(
+                    {
+                        txId: 'REQUESTTXID000000000000000000000000000000000000000000',
+                    },
+                    { status: 200 },
+                )
+            }),
+        )
 
-            renderOverviewWithWithdraw()
-            await goToWithdrawAndTypeAmount()
+        renderOverviewWithWithdraw()
+        await goToWithdrawAndTypeAmount()
 
-            // Enabling the button proves the escrow account's 150 USDC flowed
-            // through as the card balance.
-            fireEvent.click(screen.getByTestId('card_withdraw_button'))
-            fireEvent.click(
-                await screen.findByTestId('card_withdraw_confirm_button'),
-            )
+        // Enabling the button proves the escrow account's 150 USDC flowed
+        // through as the card balance.
+        fireEvent.click(screen.getByTestId('card_withdraw_button'))
+        fireEvent.click(
+            await screen.findByTestId('card_withdraw_confirm_button'),
+        )
 
-            await waitFor(() => expect(submitted).not.toBeNull(), {
-                timeout: 15_000,
-            })
-            const call = decodeAppCall(submitted!)
-            expect(call.appIndex).toBe(BigInt(APP_ID))
-            expect(call.selector).toBe(SELECTORS.withdrawalRequest)
-            expect(encodeAddress(call.args[0])).toBe(CARD_ADDRESS)
-            expect(toBigInt(call.args[1])).toBe(BigInt(USDC_ASSET_ID))
-            expect(toBigInt(call.args[2])).toBe(25_000_000n)
+        await waitFor(() => expect(submitted).not.toBeNull(), {
+            timeout: 15_000,
+        })
+        const call = decodeAppCall(submitted!)
+        expect(call.appIndex).toBe(BigInt(APP_ID))
+        expect(call.selector).toBe(SELECTORS.withdrawalRequest)
+        expect(encodeAddress(call.args[0])).toBe(CARD_ADDRESS)
+        expect(toBigInt(call.args[1])).toBe(BigInt(USDC_ASSET_ID))
+        expect(toBigInt(call.args[2])).toBe(25_000_000n)
 
-            // The form hands over to the status screen, which reads the open
-            // request from the owner-keyed box with its claim ready.
-            expect(
-                await screen.findByTestId(
-                    'card-withdraw-status',
-                    {},
-                    { timeout: 10_000 },
-                ),
-            ).toBeTruthy()
-            await waitFor(
-                () =>
-                    expect(
-                        isElementDisabled(
-                            screen.getByTestId(
-                                'card_withdraw_status_complete_button',
-                            ),
+        // The form hands over to the status screen, which reads the open
+        // request from the owner-keyed box with its claim ready.
+        expect(
+            await screen.findByTestId(
+                'card-withdraw-status',
+                {},
+                { timeout: 10_000 },
+            ),
+        ).toBeTruthy()
+        await waitFor(
+            () =>
+                expect(
+                    isElementDisabled(
+                        screen.getByTestId(
+                            'card_withdraw_status_complete_button',
                         ),
-                    ).toBe(false),
+                    ),
+                ).toBe(false),
+            { timeout: 10_000 },
+        )
+        expect(box.requestedNames).toContain(`b64:${toBase64(ownerBoxName)}`)
+    })
+
+    it('claims a matured request from the overview and clears it once the block lands', async () => {
+        await seedOwnerAccount()
+        box.pendingAmount = 40_000_000n
+        box.createdAt = Math.floor(Date.now() / 1000) - WAIT_TIME_SECONDS * 3
+        let submitted: Uint8Array | null = null
+        server.use(
+            http.post('*/v2/transactions', async ({ request }) => {
+                submitted = new Uint8Array(await request.arrayBuffer())
+                box.pendingAmount = null
+                return HttpResponse.json(
+                    {
+                        txId: 'WITHDRAWTXID00000000000000000000000000000000000000000',
+                    },
+                    { status: 200 },
+                )
+            }),
+        )
+
+        renderOverviewWithWithdraw()
+
+        // With a matured request open, the overview's Withdraw button
+        // leads to the status screen rather than the form.
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('pera_card_withdraw_button').textContent,
+                ).toContain('complete_button'),
+            { timeout: 10_000 },
+        )
+        fireEvent.click(screen.getByTestId('pera_card_withdraw_button'))
+        fireEvent.click(
+            await screen.findByTestId(
+                'card_withdraw_status_complete_button',
+                {},
                 { timeout: 10_000 },
-            )
-            expect(box.requestedNames).toContain(
-                `b64:${toBase64(ownerBoxName)}`,
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+            ),
+        )
 
-    it(
-        'claims a matured request from the overview and clears it once the block lands',
-        async () => {
-            await seedOwnerAccount()
-            box.pendingAmount = 40_000_000n
-            box.createdAt =
-                Math.floor(Date.now() / 1000) - WAIT_TIME_SECONDS * 3
-            let submitted: Uint8Array | null = null
-            server.use(
-                http.post('*/v2/transactions', async ({ request }) => {
-                    submitted = new Uint8Array(await request.arrayBuffer())
-                    box.pendingAmount = null
-                    return HttpResponse.json(
-                        {
-                            txId: 'WITHDRAWTXID00000000000000000000000000000000000000000',
-                        },
-                        { status: 200 },
-                    )
-                }),
-            )
+        await waitFor(() => expect(submitted).not.toBeNull(), {
+            timeout: 15_000,
+        })
+        const call = decodeAppCall(submitted!)
+        expect(call.selector).toBe(SELECTORS.withdraw)
+        expect(encodeAddress(call.args[0])).toBe(CARD_ADDRESS)
+        expect(toBigInt(call.args[1])).toBe(40_000_000n)
 
-            renderOverviewWithWithdraw()
+        // The status screen pops back to the overview once the block lands.
+        await waitFor(
+            () =>
+                expect(screen.queryByTestId('card-withdraw-status')).toBeNull(),
+            { timeout: 10_000 },
+        )
+        expect(Notifier.showNotification).toHaveBeenCalled()
+    })
 
-            // With a matured request open, the overview's Withdraw button
-            // leads to the status screen rather than the form.
-            await waitFor(
-                () =>
-                    expect(
-                        screen.getByTestId('pera_card_withdraw_button')
-                            .textContent,
-                    ).toContain('complete_button'),
-                { timeout: 10_000 },
-            )
-            fireEvent.click(screen.getByTestId('pera_card_withdraw_button'))
-            fireEvent.click(
-                await screen.findByTestId(
-                    'card_withdraw_status_complete_button',
-                    {},
-                    { timeout: 10_000 },
-                ),
-            )
+    it('keeps the sheet open and surfaces an error toast when the node rejects the request', async () => {
+        await seedOwnerAccount()
+        let rejections = 0
+        // algod's real wording: the pipeline only treats a verdict it can
+        // parse as a rejection, anything else is probed as "maybe landed".
+        server.use(
+            http.post('*/v2/transactions', () => {
+                rejections += 1
+                return HttpResponse.json(
+                    {
+                        message: `TransactionPool.Remember: transaction REQTX: overspend (account ${ALGO25_TEST_ADDRESS}, data {_struct:{} Status:Offline MicroAlgos:{Raw:0}}, tried to spend {1000})`,
+                    },
+                    { status: 400 },
+                )
+            }),
+        )
 
-            await waitFor(() => expect(submitted).not.toBeNull(), {
-                timeout: 15_000,
-            })
-            const call = decodeAppCall(submitted!)
-            expect(call.selector).toBe(SELECTORS.withdraw)
-            expect(encodeAddress(call.args[0])).toBe(CARD_ADDRESS)
-            expect(toBigInt(call.args[1])).toBe(40_000_000n)
+        renderOverviewWithWithdraw()
+        await goToWithdrawAndTypeAmount()
 
-            // The status screen pops back to the overview once the block lands.
-            await waitFor(
-                () =>
-                    expect(
-                        screen.queryByTestId('card-withdraw-status'),
-                    ).toBeNull(),
-                { timeout: 10_000 },
-            )
-            expect(Notifier.showNotification).toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        fireEvent.click(screen.getByTestId('card_withdraw_button'))
+        fireEvent.click(
+            await screen.findByTestId('card_withdraw_confirm_button'),
+        )
 
-    it(
-        'keeps the sheet open and surfaces an error toast when the node rejects the request',
-        async () => {
-            await seedOwnerAccount()
-            let rejections = 0
-            // algod's real wording: the pipeline only treats a verdict it can
-            // parse as a rejection, anything else is probed as "maybe landed".
-            server.use(
-                http.post('*/v2/transactions', () => {
-                    rejections += 1
-                    return HttpResponse.json(
-                        {
-                            message: `TransactionPool.Remember: transaction REQTX: overspend (account ${ALGO25_TEST_ADDRESS}, data {_struct:{} Status:Offline MicroAlgos:{Raw:0}}, tried to spend {1000})`,
-                        },
-                        { status: 400 },
-                    )
-                }),
-            )
-
-            renderOverviewWithWithdraw()
-            await goToWithdrawAndTypeAmount()
-
-            fireEvent.click(screen.getByTestId('card_withdraw_button'))
-            fireEvent.click(
-                await screen.findByTestId('card_withdraw_confirm_button'),
-            )
-
-            await waitFor(() => expect(rejections).toBe(1), {
-                timeout: 15_000,
-            })
-            await waitFor(
-                () => expect(Notifier.showNotification).toHaveBeenCalled(),
-                { timeout: 15_000 },
-            )
-            // The sheet stays open for a retry.
-            expect(
-                screen.getByTestId('card_withdraw_confirmation_sheet'),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => expect(rejections).toBe(1), {
+            timeout: 15_000,
+        })
+        await waitFor(
+            () => expect(Notifier.showNotification).toHaveBeenCalled(),
+            { timeout: 15_000 },
+        )
+        // The sheet stays open for a retry.
+        expect(
+            screen.getByTestId('card_withdraw_confirmation_sheet'),
+        ).toBeTruthy()
+    })
 })

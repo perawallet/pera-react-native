@@ -16,16 +16,7 @@
 // renders as the raw i18n key and the lookup falls apart.
 import '../i18n'
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     act,
     fireEvent,
@@ -54,12 +45,7 @@ import { CloudBackupVerifyScreen } from '@modules/cloud-backup/screens/CloudBack
 import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
 import { CloudBackupStoreEncryptionKeyScreen } from '@modules/cloud-backup/screens/CloudBackupStoreEncryptionKeyScreen'
 import { isElementDisabled } from '@test-utils/rnw'
-
-// Enabling derives the backup keys for real. Where the runtime has
-// `crypto.argon2` (Node 24+) that is genuine Argon2 and dominates the test;
-// elsewhere `test-utils/node-crypto-with-argon2` stands in and it is fast.
-// Sized for the slow case rather than mocking the crypto.
-const SLOW_TEST_TIMEOUT_MS = 30_000
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 
@@ -187,9 +173,6 @@ const enterPin = async (pin: string): Promise<void> => {
     }
 }
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-afterAll(() => server.close())
-
 beforeEach(() => {
     // Also wipes the PIN, so a PIN test can't gate the tests after it.
     resetTestKeystore()
@@ -200,7 +183,6 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
-    server.resetHandlers()
     vi.clearAllMocks()
     await deleteBackupKeys()
 })
@@ -254,252 +236,212 @@ describe('cloud backup setup screen', () => {
 })
 
 describe('cloud backup verification and enable', () => {
-    it(
-        'registers at the quiz without writing anything to the device',
-        async () => {
-            const registered = vi.fn()
-            server.use(buildRegisterHandler({ onRegister: registered }))
-            seedDraft()
-            renderVerifyFlow()
+    it('registers at the quiz without writing anything to the device', async () => {
+        const registered = vi.fn()
+        server.use(buildRegisterHandler({ onRegister: registered }))
+        seedDraft()
+        renderVerifyFlow()
 
-            await answerQuizCorrectly()
-            fireEvent.click(
-                screen.getByTestId('cloud_backup_verify_proceed_button'),
-            )
+        await answerQuizCorrectly()
+        fireEvent.click(
+            screen.getByTestId('cloud_backup_verify_proceed_button'),
+        )
 
-            await waitFor(() => expect(registered).toHaveBeenCalledTimes(1), {
-                timeout: SLOW_TEST_TIMEOUT_MS,
-            })
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId(
-                        'cloud_backup_store_encryption_key_screen',
-                    ),
-                ).toBeTruthy(),
-            )
-
-            // The consent boundary: registered, but nothing is on the device.
-            expect(useCloudBackupStore.getState().isConfigured()).toBe(false)
+        await waitFor(() => expect(registered).toHaveBeenCalledTimes(1), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        await waitFor(() =>
             expect(
-                await withBackupMnemonicIndices(i => Array.from(i)),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                screen.getByTestId('cloud_backup_store_encryption_key_screen'),
+            ).toBeTruthy(),
+        )
 
-    it(
-        'stores the keys and marks the backup configured only once enable is pressed',
-        async () => {
-            const registered = vi.fn()
-            server.use(buildRegisterHandler({ onRegister: registered }))
-            seedDraft()
-            renderVerifyFlow()
+        // The consent boundary: registered, but nothing is on the device.
+        expect(useCloudBackupStore.getState().isConfigured()).toBe(false)
+        expect(await withBackupMnemonicIndices(i => Array.from(i))).toBeNull()
+    })
 
-            await answerQuizCorrectly()
-            fireEvent.click(
-                screen.getByTestId('cloud_backup_verify_proceed_button'),
-            )
-            await enableFromStoreKeyScreen()
+    it('stores the keys and marks the backup configured only once enable is pressed', async () => {
+        const registered = vi.fn()
+        server.use(buildRegisterHandler({ onRegister: registered }))
+        seedDraft()
+        renderVerifyFlow()
 
-            await waitFor(
+        await answerQuizCorrectly()
+        fireEvent.click(
+            screen.getByTestId('cloud_backup_verify_proceed_button'),
+        )
+        await enableFromStoreKeyScreen()
+
+        await waitFor(
+            () =>
+                expect(useCloudBackupStore.getState().isConfigured()).toBe(
+                    true,
+                ),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(useCloudBackupStore.getState().salt).toBe(SALT)
+        // The backup id is derived from the phrase, not handed back by the
+        // server.
+        const backupId = useCloudBackupStore.getState().backupId!
+        expect(backupId).toMatch(/^did:pera:[A-Z2-7]+$/)
+        expect(registered).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backup_id: backupId,
+                device_id: 'device-integration',
+            }),
+        )
+
+        // The phrase the user just verified is the one we persisted.
+        const stored = await withBackupMnemonicIndices(indices =>
+            Array.from(indices),
+        )
+        expect(stored).toEqual(Array.from(mnemonicWordsToIndices(PHRASE)!))
+        expect(useCloudBackupDraftStore.getState().mnemonicIndices).toBeNull()
+
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('cloud_backup_overview_screen'),
+            ).toBeTruthy(),
+        )
+        expect(registered).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves nothing configured or persisted when registration fails', async () => {
+        const attempted = vi.fn()
+        server.use(buildRegisterHandler({ onRegister: attempted, status: 500 }))
+        seedDraft()
+        renderVerifyFlow()
+
+        await answerQuizCorrectly()
+        fireEvent.click(
+            screen.getByTestId('cloud_backup_verify_proceed_button'),
+        )
+
+        await waitFor(() => expect(attempted).toHaveBeenCalled(), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        // Assert the absence explicitly rather than reading the store once:
+        // `isConfigured()` is already false the moment the flow starts, so
+        // a bare expectation passes at t=0 and proves nothing. This fails
+        // if registration ever quietly succeeds.
+        await expect(
+            waitFor(
                 () =>
                     expect(useCloudBackupStore.getState().isConfigured()).toBe(
                         true,
                     ),
-                { timeout: SLOW_TEST_TIMEOUT_MS },
-            )
-            expect(useCloudBackupStore.getState().salt).toBe(SALT)
-            // The backup id is derived from the phrase, not handed back by the
-            // server.
-            const backupId = useCloudBackupStore.getState().backupId!
-            expect(backupId).toMatch(/^did:pera:[A-Z2-7]+$/)
-            expect(registered).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    backup_id: backupId,
-                    device_id: 'device-integration',
-                }),
-            )
+                { timeout: 2000 },
+            ),
+        ).rejects.toThrow()
+        expect(await withBackupMnemonicIndices(i => Array.from(i))).toBeNull()
+        expect(
+            screen.queryByTestId('cloud_backup_store_encryption_key_screen'),
+        ).toBeNull()
+    })
 
-            // The phrase the user just verified is the one we persisted.
-            const stored = await withBackupMnemonicIndices(indices =>
-                Array.from(indices),
-            )
-            expect(stored).toEqual(Array.from(mnemonicWordsToIndices(PHRASE)!))
+    it('re-samples which words it asks for after a wrong answer', async () => {
+        seedDraft()
+        renderVerifyFlow()
+
+        await waitFor(() =>
             expect(
-                useCloudBackupDraftStore.getState().mnemonicIndices,
-            ).toBeNull()
+                screen.getByTestId('cloud_backup_verify_item_0'),
+            ).toBeTruthy(),
+        )
+        const before = askedPositions()
 
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('cloud_backup_overview_screen'),
-                ).toBeTruthy(),
-            )
-            expect(registered).toHaveBeenCalledTimes(1)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'leaves nothing configured or persisted when registration fails',
-        async () => {
-            const attempted = vi.fn()
-            server.use(
-                buildRegisterHandler({ onRegister: attempted, status: 500 }),
-            )
-            seedDraft()
-            renderVerifyFlow()
-
-            await answerQuizCorrectly()
+        // Positions are drawn at random, so one re-roll can coincidentally
+        // land on the same three. A few wrong answers is enough to prove
+        // they aren't pinned, which is what makes the quiz grindable.
+        let changed = false
+        for (let attempt = 0; attempt < 3 && !changed; attempt++) {
+            answerQuizIncorrectly()
             fireEvent.click(
                 screen.getByTestId('cloud_backup_verify_proceed_button'),
             )
-
-            await waitFor(() => expect(attempted).toHaveBeenCalled(), {
-                timeout: SLOW_TEST_TIMEOUT_MS,
-            })
-            // Assert the absence explicitly rather than reading the store once:
-            // `isConfigured()` is already false the moment the flow starts, so
-            // a bare expectation passes at t=0 and proves nothing. This fails
-            // if registration ever quietly succeeds.
-            await expect(
-                waitFor(
-                    () =>
-                        expect(
-                            useCloudBackupStore.getState().isConfigured(),
-                        ).toBe(true),
-                    { timeout: 2000 },
-                ),
-            ).rejects.toThrow()
-            expect(
-                await withBackupMnemonicIndices(i => Array.from(i)),
-            ).toBeNull()
-            expect(
-                screen.queryByTestId(
-                    'cloud_backup_store_encryption_key_screen',
-                ),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        're-samples which words it asks for after a wrong answer',
-        async () => {
-            seedDraft()
-            renderVerifyFlow()
-
             await waitFor(() =>
-                expect(
-                    screen.getByTestId('cloud_backup_verify_item_0'),
-                ).toBeTruthy(),
+                expect(askedPositions()).toHaveLength(before.length),
             )
-            const before = askedPositions()
+            changed = askedPositions().join() !== before.join()
+        }
 
-            // Positions are drawn at random, so one re-roll can coincidentally
-            // land on the same three. A few wrong answers is enough to prove
-            // they aren't pinned, which is what makes the quiz grindable.
-            let changed = false
-            for (let attempt = 0; attempt < 3 && !changed; attempt++) {
-                answerQuizIncorrectly()
-                fireEvent.click(
-                    screen.getByTestId('cloud_backup_verify_proceed_button'),
-                )
-                await waitFor(() =>
-                    expect(askedPositions()).toHaveLength(before.length),
-                )
-                changed = askedPositions().join() !== before.join()
-            }
-
-            expect(changed).toBe(true)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(changed).toBe(true)
+    })
 })
 
 describe('cloud backup enable with a PIN set', () => {
-    it(
-        'asks for the PIN before storing keys, and stores nothing when the PIN sheet is closed',
-        async () => {
-            const registered = vi.fn()
-            server.use(buildRegisterHandler({ onRegister: registered }))
-            await seedPin()
-            seedDraft()
-            renderVerifyFlow()
+    it('asks for the PIN before storing keys, and stores nothing when the PIN sheet is closed', async () => {
+        const registered = vi.fn()
+        server.use(buildRegisterHandler({ onRegister: registered }))
+        await seedPin()
+        seedDraft()
+        renderVerifyFlow()
 
-            await answerQuizCorrectly()
-            fireEvent.click(
-                screen.getByTestId('cloud_backup_verify_proceed_button'),
-            )
-            // Registration is not PIN-gated: it writes nothing locally.
-            await waitFor(() => expect(registered).toHaveBeenCalledTimes(1), {
-                timeout: SLOW_TEST_TIMEOUT_MS,
-            })
-            await enableFromStoreKeyScreen()
+        await answerQuizCorrectly()
+        fireEvent.click(
+            screen.getByTestId('cloud_backup_verify_proceed_button'),
+        )
+        // Registration is not PIN-gated: it writes nothing locally.
+        await waitFor(() => expect(registered).toHaveBeenCalledTimes(1), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        await enableFromStoreKeyScreen()
 
-            await waitFor(() =>
-                expect(screen.getByTestId('numpad_key_0')).toBeTruthy(),
-            )
-            fireEvent.click(screen.getByTestId('close-button'))
-            await waitFor(() =>
-                expect(screen.queryByTestId('numpad_key_0')).toBeNull(),
-            )
+        await waitFor(() =>
+            expect(screen.getByTestId('numpad_key_0')).toBeTruthy(),
+        )
+        fireEvent.click(screen.getByTestId('close-button'))
+        await waitFor(() =>
+            expect(screen.queryByTestId('numpad_key_0')).toBeNull(),
+        )
 
-            expect(
-                await withBackupMnemonicIndices(i => Array.from(i)),
-            ).toBeNull()
-            expect(useCloudBackupStore.getState().isConfigured()).toBe(false)
-            expect(
-                screen.getByTestId(
-                    'cloud_backup_store_encryption_key_enable_button',
+        expect(await withBackupMnemonicIndices(i => Array.from(i))).toBeNull()
+        expect(useCloudBackupStore.getState().isConfigured()).toBe(false)
+        expect(
+            screen.getByTestId(
+                'cloud_backup_store_encryption_key_enable_button',
+            ),
+        ).toBeTruthy()
+    })
+
+    it('configures the backup once the correct PIN is entered', async () => {
+        server.use(buildRegisterHandler())
+        await seedPin()
+        seedDraft()
+        renderVerifyFlow()
+
+        await answerQuizCorrectly()
+        fireEvent.click(
+            screen.getByTestId('cloud_backup_verify_proceed_button'),
+        )
+        await enableFromStoreKeyScreen()
+        await waitFor(() =>
+            expect(screen.getByTestId('numpad_key_0')).toBeTruthy(),
+        )
+
+        await enterPin(TEST_PIN)
+
+        await waitFor(
+            () =>
+                expect(useCloudBackupStore.getState().isConfigured()).toBe(
+                    true,
                 ),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'configures the backup once the correct PIN is entered',
-        async () => {
-            server.use(buildRegisterHandler())
-            await seedPin()
-            seedDraft()
-            renderVerifyFlow()
-
-            await answerQuizCorrectly()
-            fireEvent.click(
-                screen.getByTestId('cloud_backup_verify_proceed_button'),
-            )
-            await enableFromStoreKeyScreen()
-            await waitFor(() =>
-                expect(screen.getByTestId('numpad_key_0')).toBeTruthy(),
-            )
-
-            await enterPin(TEST_PIN)
-
-            await waitFor(
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('cloud_backup_overview_screen'),
+            ).toBeTruthy(),
+        )
+        await expect(
+            waitFor(
                 () =>
-                    expect(useCloudBackupStore.getState().isConfigured()).toBe(
-                        true,
-                    ),
-                { timeout: SLOW_TEST_TIMEOUT_MS },
-            )
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('cloud_backup_overview_screen'),
-                ).toBeTruthy(),
-            )
-            await expect(
-                waitFor(
-                    () =>
-                        expect(
-                            screen.getByTestId(
-                                'store_backup_credentials_sheet',
-                            ),
-                        ).toBeTruthy(),
-                    { timeout: 2000 },
-                ),
-            ).rejects.toThrow()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                    expect(
+                        screen.getByTestId('store_backup_credentials_sheet'),
+                    ).toBeTruthy(),
+                { timeout: 2000 },
+            ),
+        ).rejects.toThrow()
+    })
 })

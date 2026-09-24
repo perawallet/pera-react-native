@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
@@ -107,7 +98,6 @@ const fillFormAndPickNationality = async () => {
 }
 
 describe('Flow: Card onboarding — personal details', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => {
         vi.mocked(Notifier.showNotification).mockClear()
         const store = useCardStore.getState()
@@ -138,8 +128,6 @@ describe('Flow: Card onboarding — personal details', () => {
             ),
         )
     })
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     it('Given a complete form, when Continue is pressed, then the details post with an ISO date of birth', async () => {
         let body: Record<string, unknown> | undefined

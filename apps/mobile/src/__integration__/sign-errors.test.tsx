@@ -17,15 +17,7 @@
 // (round-trip integrity) and a transport-stage failure (delivery callback
 // throws).
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -50,18 +42,11 @@ import {
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: signing error paths', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => {
-        server.resetHandlers()
-    })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -80,29 +65,25 @@ describe('Flow: signing error paths', () => {
         await seedAlgo25Signer()
     })
 
-    it(
-        'shows the signing-failed view when the round-trip integrity check rejects the request',
-        async () => {
-            // rawTransactionsBase64 that does not re-encode to the decoded txn
-            // trips validateTransactionRoundTrip in the analyzer → the machine
-            // fails before reaching the review controls.
-            const { request } = buildTransactionSignRequest({
-                sourceType: 'webview',
-                txs: [buildPaymentTransaction()],
-                overrides: { rawTransactionsBase64: ['AQID'] },
-            })
+    it('shows the signing-failed view when the round-trip integrity check rejects the request', async () => {
+        // rawTransactionsBase64 that does not re-encode to the decoded txn
+        // trips validateTransactionRoundTrip in the analyzer → the machine
+        // fails before reaching the review controls.
+        const { request } = buildTransactionSignRequest({
+            sourceType: 'webview',
+            txs: [buildPaymentTransaction()],
+            overrides: { rawTransactionsBase64: ['AQID'] },
+        })
 
-            renderSignReview(request)
+        renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByText('signing.signing_failed.title'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByText('signing.signing_failed.title'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+    })
 })

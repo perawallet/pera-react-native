@@ -18,16 +18,7 @@
 // import this module.
 import '../i18n'
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     fireEvent,
     renderHook,
@@ -36,7 +27,6 @@ import {
     within,
 } from '@testing-library/react'
 
-import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -71,11 +61,6 @@ import {
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
 } from './__fixtures__/onboarding'
-
-// Real BIP39 + xhd-wallet-api derivation runs end to end through the in-
-// memory keystore; under jsdom the first run can take a couple of seconds.
-// Give the slow tests headroom rather than mocking the crypto.
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Mint an algo25 key from the pinned `ALGO25_TEST_MNEMONIC` and register
 // the resulting WalletAccount in the store, returning the keyPairId the
@@ -275,10 +260,6 @@ const completeVerificationQuiz = async (
 }
 
 describe('Flow: Account backup', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
         // resetTestKeystore wipes both account keys AND the typed-secret
         // entries (PIN, biometric blob), so the PIN gate test starts from
@@ -289,238 +270,212 @@ describe('Flow: Account backup', () => {
         vi.clearAllMocks()
     })
 
-    it(
-        'Given an algo25 account, when the user walks the full backup flow and answers verification correctly, then the wallet root is marked backed up and the success screen renders',
-        async () => {
-            const account = await seedAlgo25Account()
-            expect(
-                useMnemonicBackupStore.getState().isBackedUp(account.keyPairId),
-            ).toBe(false)
+    it('Given an algo25 account, when the user walks the full backup flow and answers verification correctly, then the wallet root is marked backed up and the success screen renders', async () => {
+        const account = await seedAlgo25Account()
+        expect(
+            useMnemonicBackupStore.getState().isBackedUp(account.keyPairId),
+        ).toBe(false)
 
-            renderBackupStack(account.address)
+        renderBackupStack(account.address)
 
-            // Info → write-down → mnemonic.
-            fireEvent.click(await screen.findByTestId('backup_info_continue'))
-            fireEvent.click(
-                await screen.findByTestId('backup_write_down_begin'),
-            )
+        // Info → write-down → mnemonic.
+        fireEvent.click(await screen.findByTestId('backup_info_continue'))
+        fireEvent.click(await screen.findByTestId('backup_write_down_begin'))
 
-            // Mnemonic screen: the KMS decodes the original 25 words from
-            // the seeded key, the words grid mounts, and every word from
-            // ALGO25_TEST_MNEMONIC is on screen. No PIN was configured, so
-            // the gate is bypassed and the continue CTA renders directly.
-            await waitFor(
-                () =>
-                    expect(
-                        screen.getByTestId('backup_mnemonic_continue'),
-                    ).toBeTruthy(),
-                { timeout: 10_000 },
-            )
-            for (const word of ALGO25_TEST_MNEMONIC_WORDS) {
-                expect(screen.getAllByText(word).length).toBeGreaterThan(0)
-            }
-            fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
+        // Mnemonic screen: the KMS decodes the original 25 words from
+        // the seeded key, the words grid mounts, and every word from
+        // ALGO25_TEST_MNEMONIC is on screen. No PIN was configured, so
+        // the gate is bypassed and the continue CTA renders directly.
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('backup_mnemonic_continue'),
+                ).toBeTruthy(),
+            { timeout: 10_000 },
+        )
+        for (const word of ALGO25_TEST_MNEMONIC_WORDS) {
+            expect(screen.getAllByText(word).length).toBeGreaterThan(0)
+        }
+        fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
 
-            // Verification quiz: real picks from real entropy. We read the
-            // displayed position label from each item, look the correct
-            // word up in the source mnemonic, and click that option.
-            await completeVerificationQuiz(ALGO25_TEST_MNEMONIC_WORDS)
+        // Verification quiz: real picks from real entropy. We read the
+        // displayed position label from each item, look the correct
+        // word up in the source mnemonic, and click that option.
+        await completeVerificationQuiz(ALGO25_TEST_MNEMONIC_WORDS)
 
-            // The success screen mounts and the backup store reflects the
-            // completed backup keyed on the wallet root.
-            await waitFor(() => {
-                expect(screen.getByTestId('backup_success_done')).toBeTruthy()
-            })
-            expect(
-                useMnemonicBackupStore.getState().isBackedUp(account.keyPairId),
-            ).toBe(true)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The success screen mounts and the backup store reflects the
+        // completed backup keyed on the wallet root.
+        await waitFor(() => {
+            expect(screen.getByTestId('backup_success_done')).toBeTruthy()
+        })
+        expect(
+            useMnemonicBackupStore.getState().isBackedUp(account.keyPairId),
+        ).toBe(true)
+    })
 
-    it(
-        'Given an HD wallet root account, when the user walks the full backup flow, then the 24-word HD mnemonic renders and verification succeeds',
-        async () => {
-            const { rootAccount, rootKeyId } = await seedHDWalletAccounts()
+    it('Given an HD wallet root account, when the user walks the full backup flow, then the 24-word HD mnemonic renders and verification succeeds', async () => {
+        const { rootAccount, rootKeyId } = await seedHDWalletAccounts()
 
-            renderBackupStack(rootAccount.address)
+        renderBackupStack(rootAccount.address)
 
-            fireEvent.click(await screen.findByTestId('backup_info_continue'))
-            fireEvent.click(
-                await screen.findByTestId('backup_write_down_begin'),
-            )
+        fireEvent.click(await screen.findByTestId('backup_info_continue'))
+        fireEvent.click(await screen.findByTestId('backup_write_down_begin'))
 
-            await waitFor(
-                () =>
-                    expect(
-                        screen.getByTestId('backup_mnemonic_continue'),
-                    ).toBeTruthy(),
-                { timeout: 10_000 },
-            )
-            for (const word of HD_TEST_MNEMONIC_24_WORDS) {
-                expect(screen.getAllByText(word).length).toBeGreaterThan(0)
-            }
-            fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('backup_mnemonic_continue'),
+                ).toBeTruthy(),
+            { timeout: 10_000 },
+        )
+        for (const word of HD_TEST_MNEMONIC_24_WORDS) {
+            expect(screen.getAllByText(word).length).toBeGreaterThan(0)
+        }
+        fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
 
-            await completeVerificationQuiz(HD_TEST_MNEMONIC_24_WORDS)
+        await completeVerificationQuiz(HD_TEST_MNEMONIC_24_WORDS)
 
-            await waitFor(() => {
-                expect(screen.getByTestId('backup_success_done')).toBeTruthy()
-            })
-            expect(
-                useMnemonicBackupStore.getState().isBackedUp(rootKeyId),
-            ).toBe(true)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => {
+            expect(screen.getByTestId('backup_success_done')).toBeTruthy()
+        })
+        expect(useMnemonicBackupStore.getState().isBackedUp(rootKeyId)).toBe(
+            true,
+        )
+    })
 
-    it(
-        'Given an HD wallet root with two derived siblings sharing the same wallet root, when the user backs up the root, then `useRequiresMnemonicBackup` reads false for every sibling — derived accounts do not get their own backup prompt',
-        async () => {
-            const { rootAccount, sibling1, sibling2, rootKeyId } =
-                await seedHDWalletAccounts()
+    it('Given an HD wallet root with two derived siblings sharing the same wallet root, when the user backs up the root, then `useRequiresMnemonicBackup` reads false for every sibling — derived accounts do not get their own backup prompt', async () => {
+        const { rootAccount, sibling1, sibling2, rootKeyId } =
+            await seedHDWalletAccounts()
 
-            // Baseline: all three accounts surface the requires-backup
-            // signal because they share the root and nobody has been
-            // marked backed up yet.
-            const requires = renderHook(
-                ({ account }: { account: WalletAccount }) =>
-                    useRequiresMnemonicBackup(account),
-                { initialProps: { account: rootAccount } },
-            )
-            expect(requires.result.current).toBe(true)
-            requires.rerender({ account: sibling1 })
-            expect(requires.result.current).toBe(true)
-            requires.rerender({ account: sibling2 })
-            expect(requires.result.current).toBe(true)
+        // Baseline: all three accounts surface the requires-backup
+        // signal because they share the root and nobody has been
+        // marked backed up yet.
+        const requires = renderHook(
+            ({ account }: { account: WalletAccount }) =>
+                useRequiresMnemonicBackup(account),
+            { initialProps: { account: rootAccount } },
+        )
+        expect(requires.result.current).toBe(true)
+        requires.rerender({ account: sibling1 })
+        expect(requires.result.current).toBe(true)
+        requires.rerender({ account: sibling2 })
+        expect(requires.result.current).toBe(true)
 
-            renderBackupStack(rootAccount.address)
+        renderBackupStack(rootAccount.address)
 
-            fireEvent.click(await screen.findByTestId('backup_info_continue'))
-            fireEvent.click(
-                await screen.findByTestId('backup_write_down_begin'),
-            )
-            await waitFor(
-                () =>
-                    expect(
-                        screen.getByTestId('backup_mnemonic_continue'),
-                    ).toBeTruthy(),
-                { timeout: 10_000 },
-            )
-            fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
+        fireEvent.click(await screen.findByTestId('backup_info_continue'))
+        fireEvent.click(await screen.findByTestId('backup_write_down_begin'))
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('backup_mnemonic_continue'),
+                ).toBeTruthy(),
+            { timeout: 10_000 },
+        )
+        fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
 
-            await completeVerificationQuiz(HD_TEST_MNEMONIC_24_WORDS)
-            await waitFor(() => {
-                expect(screen.getByTestId('backup_success_done')).toBeTruthy()
-            })
+        await completeVerificationQuiz(HD_TEST_MNEMONIC_24_WORDS)
+        await waitFor(() => {
+            expect(screen.getByTestId('backup_success_done')).toBeTruthy()
+        })
 
-            // After the root is backed up, every account derived from the
-            // same root reads as no-longer-requiring-backup. This is the
-            // sibling-dedup invariant the old unit test pinned with a
-            // probe component.
-            expect(
-                useMnemonicBackupStore.getState().isBackedUp(rootKeyId),
-            ).toBe(true)
-            requires.rerender({ account: rootAccount })
-            expect(requires.result.current).toBe(false)
-            requires.rerender({ account: sibling1 })
-            expect(requires.result.current).toBe(false)
-            requires.rerender({ account: sibling2 })
-            expect(requires.result.current).toBe(false)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // After the root is backed up, every account derived from the
+        // same root reads as no-longer-requiring-backup. This is the
+        // sibling-dedup invariant the old unit test pinned with a
+        // probe component.
+        expect(useMnemonicBackupStore.getState().isBackedUp(rootKeyId)).toBe(
+            true,
+        )
+        requires.rerender({ account: rootAccount })
+        expect(requires.result.current).toBe(false)
+        requires.rerender({ account: sibling1 })
+        expect(requires.result.current).toBe(false)
+        requires.rerender({ account: sibling2 })
+        expect(requires.result.current).toBe(false)
+    })
 
-    it(
-        'Given the user submits a wrong answer in verification, when they tap continue, then the backup store stays clear and the success screen does not mount',
-        async () => {
-            const account = await seedAlgo25Account()
+    it('Given the user submits a wrong answer in verification, when they tap continue, then the backup store stays clear and the success screen does not mount', async () => {
+        const account = await seedAlgo25Account()
 
-            // Skip straight to verification — the wrong-answer path is the
-            // subject, the Info/WriteDown/Mnemonic legs are exercised by
-            // the happy-path tests above.
-            renderBackupStack(account.address, 'BackupVerification')
+        // Skip straight to verification — the wrong-answer path is the
+        // subject, the Info/WriteDown/Mnemonic legs are exercised by
+        // the happy-path tests above.
+        renderBackupStack(account.address, 'BackupVerification')
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('backup_verification_item_0'),
-                    ).toBeTruthy()
-                    expect(
-                        screen.getByTestId('backup_verification_item_2'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('backup_verification_item_0'),
+                ).toBeTruthy()
+                expect(
+                    screen.getByTestId('backup_verification_item_2'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            // For every item, pick the first option that is provably not
-            // the correct word for that position. The submit then routes
-            // through the wrong branch of `useBackupQuiz.onSubmit`, which
-            // rebuilds the items and fires `onWrong` rather than calling
-            // `onSuccess`.
-            for (let i = 0; i < 3; i++) {
-                const item = screen.getByTestId(`backup_verification_item_${i}`)
-                const correctWord = ALGO25_TEST_MNEMONIC_WORDS[positionOf(item)]
-                const wrong = optionWords(item).find(w => w !== correctWord)
-                if (!wrong) {
-                    throw new Error(
-                        `No incorrect option offered for item ${i}; quiz only generated the correct word`,
-                    )
-                }
-                fireEvent.click(
-                    within(item).getByTestId(
-                        `backup_verification_item_${i}_option_${wrong}`,
-                    ),
+        // For every item, pick the first option that is provably not
+        // the correct word for that position. The submit then routes
+        // through the wrong branch of `useBackupQuiz.onSubmit`, which
+        // rebuilds the items and fires `onWrong` rather than calling
+        // `onSuccess`.
+        for (let i = 0; i < 3; i++) {
+            const item = screen.getByTestId(`backup_verification_item_${i}`)
+            const correctWord = ALGO25_TEST_MNEMONIC_WORDS[positionOf(item)]
+            const wrong = optionWords(item).find(w => w !== correctWord)
+            if (!wrong) {
+                throw new Error(
+                    `No incorrect option offered for item ${i}; quiz only generated the correct word`,
                 )
             }
+            fireEvent.click(
+                within(item).getByTestId(
+                    `backup_verification_item_${i}_option_${wrong}`,
+                ),
+            )
+        }
 
-            fireEvent.click(screen.getByTestId('backup_verification_next'))
+        fireEvent.click(screen.getByTestId('backup_verification_next'))
 
-            // Let any pending state updates settle, then assert: the
-            // success screen never mounted, the verification screen is
-            // still on top, and the backup store stayed empty for this
-            // root.
-            await new Promise(resolve => setTimeout(resolve, 250))
-            expect(screen.queryByTestId('backup_success_done')).toBeNull()
-            expect(screen.getByTestId('backup_verification_next')).toBeTruthy()
-            expect(
-                useMnemonicBackupStore.getState().isBackedUp(account.keyPairId),
-            ).toBe(false)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Let any pending state updates settle, then assert: the
+        // success screen never mounted, the verification screen is
+        // still on top, and the backup store stayed empty for this
+        // root.
+        await new Promise(resolve => setTimeout(resolve, 250))
+        expect(screen.queryByTestId('backup_success_done')).toBeNull()
+        expect(screen.getByTestId('backup_verification_next')).toBeTruthy()
+        expect(
+            useMnemonicBackupStore.getState().isBackedUp(account.keyPairId),
+        ).toBe(false)
+    })
 
-    it(
-        'Given a PIN is configured, when the user lands on the BackupMnemonic screen, then the PIN gate mounts and the mnemonic stays hidden until the PIN is verified',
-        async () => {
-            const account = await seedAlgo25Account()
+    it('Given a PIN is configured, when the user lands on the BackupMnemonic screen, then the PIN gate mounts and the mnemonic stays hidden until the PIN is verified', async () => {
+        const account = await seedAlgo25Account()
 
-            // Configure the PIN before navigating to the screen.
-            // `BackupReminderMnemonicScreen` reads `checkPinEnabled()` on
-            // mount and shows the PinEditView before pulling the mnemonic
-            // into memory — defense-in-depth that doesn't rely on the
-            // upstream WriteDown step having gated first.
-            const TEST_PIN = '123456'
-            const { result: pinHook } = renderHook(() => usePinCode())
-            await waitFor(async () => {
-                await pinHook.current.savePin(TEST_PIN)
-                expect(await pinHook.current.checkPinEnabled()).toBe(true)
-            })
+        // Configure the PIN before navigating to the screen.
+        // `BackupReminderMnemonicScreen` reads `checkPinEnabled()` on
+        // mount and shows the PinEditView before pulling the mnemonic
+        // into memory — defense-in-depth that doesn't rely on the
+        // upstream WriteDown step having gated first.
+        const TEST_PIN = '123456'
+        const { result: pinHook } = renderHook(() => usePinCode())
+        await waitFor(async () => {
+            await pinHook.current.savePin(TEST_PIN)
+            expect(await pinHook.current.checkPinEnabled()).toBe(true)
+        })
 
-            renderBackupStack(account.address, 'BackupMnemonic')
+        renderBackupStack(account.address, 'BackupMnemonic')
 
-            // The PIN numpad mounts in front of the words grid. The
-            // continue CTA is absent (the grid renders only after the
-            // gate resolves), and no mnemonic word leaks through behind
-            // the gate.
-            await waitFor(() => {
-                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
-            })
-            expect(screen.queryByTestId('backup_mnemonic_continue')).toBeNull()
-            for (const word of ALGO25_TEST_MNEMONIC_WORDS) {
-                expect(screen.queryAllByText(word).length).toBe(0)
-            }
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The PIN numpad mounts in front of the words grid. The
+        // continue CTA is absent (the grid renders only after the
+        // gate resolves), and no mnemonic word leaks through behind
+        // the gate.
+        await waitFor(() => {
+            expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
+        })
+        expect(screen.queryByTestId('backup_mnemonic_continue')).toBeNull()
+        for (const word of ALGO25_TEST_MNEMONIC_WORDS) {
+            expect(screen.queryAllByText(word).length).toBe(0)
+        }
+    })
 })

@@ -14,17 +14,8 @@
 // meet threshold for must surface the "cannot sign" notice up front instead of
 // the slide-to-confirm control.
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -47,8 +38,6 @@ import {
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 // A multisig account whose participants the wallet holds no key for — so the
 // request is unsignable. The account's own address is the tx sender.
 const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
@@ -66,14 +55,9 @@ const unsignableMultisig: MultiSigAccount = {
 
 describe('Flow: multisig-unsignable transaction review', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => {
-        server.resetHandlers()
-    })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -86,25 +70,19 @@ describe('Flow: multisig-unsignable transaction review', () => {
         useAccountsStore.getState().setAccounts([unsignableMultisig])
     })
 
-    it(
-        'shows the cannot-sign notice and hides the slide-to-confirm control',
-        async () => {
-            const { request } = buildTransactionSignRequest({
-                txs: [buildPaymentTransaction({ sender: MSIG_ADDRESS })],
-            })
+    it('shows the cannot-sign notice and hides the slide-to-confirm control', async () => {
+        const { request } = buildTransactionSignRequest({
+            txs: [buildPaymentTransaction({ sender: MSIG_ADDRESS })],
+        })
 
-            renderSignReview(request)
+        renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('signing-cannot-sign'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
-            expect(screen.queryByTestId('signing-confirm-slide')).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-cannot-sign')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        expect(screen.queryByTestId('signing-confirm-slide')).toBeNull()
+    })
 })

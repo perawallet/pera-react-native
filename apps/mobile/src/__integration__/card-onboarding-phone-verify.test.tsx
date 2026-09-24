@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
@@ -53,7 +44,6 @@ const renderVerify = () =>
     )
 
 describe('card onboarding — phone verify', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => {
         vi.mocked(Notifier.showNotification).mockClear()
         const store = useCardStore.getState()
@@ -64,8 +54,6 @@ describe('card onboarding — phone verify', () => {
         // phone/verify needs is already set when the user reaches this screen.
         store.setOnboardingId('mock-onboarding-id')
     })
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     it('verifies the code (auto-submit) and advances to identity verification', async () => {
         const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))

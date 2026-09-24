@@ -10,21 +10,12 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
-import { server } from '@test-utils/msw-server'
 import { createTestQueryClient } from '@test-utils/render'
 import {
     resetTestDatabase,
@@ -90,12 +81,9 @@ const seedUnfunded = async (address: string, network: string = NETWORK) => {
 
 describe('Flow: backup badge reacts to funding and rekey without remount', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'bypass' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 

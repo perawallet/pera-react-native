@@ -13,7 +13,6 @@
 import { useEffect } from 'react'
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -66,8 +65,6 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Test host that mirrors what AddAssetView does for the "approve
 // opt-in" step: open the confirmation sheet via `requestBottomSheet`
@@ -157,12 +154,9 @@ const OptOutHost = ({
 
 describe('Flow: Opt into an asset', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -222,145 +216,133 @@ describe('Flow: Opt into an asset', () => {
         )
     })
 
-    it(
-        'Given the user approves the opt-in confirmation, when the mutation runs, then a zero-amount asset transfer is signed and POSTed to algod',
-        async () => {
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json(
-                    {
-                        txId: 'OPTINTESTTXID00000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderWithNavigation(
-                () => (
-                    <OptInHost
-                        sender={sender}
-                        assetId={USDC_TEST_ASSET_ID}
-                    />
-                ),
-                'OptInHost',
-            )
-
-            await waitFor(() => {
-                expect(screen.getByTestId('opt_in_confirm')).toBeTruthy()
-            })
-
-            fireEvent.click(screen.getByTestId('opt_in_confirm'))
-
-            // Pipeline: build → sign → submit. Once algod's POST has
-            // been called, the opt-in tx is on the wire.
-            await waitFor(
-                () => {
-                    expect(sendSpy).toHaveBeenCalled()
+    it('Given the user approves the opt-in confirmation, when the mutation runs, then a zero-amount asset transfer is signed and POSTed to algod', async () => {
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    txId: 'OPTINTESTTXID00000000000000000000000000000000000000',
                 },
-                { timeout: 10_000 },
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-    it(
-        'Given the account is already opted into the asset, when the user approves, then the mutation throws and no transaction is submitted',
-        async () => {
-            // Override the default account info so it reports the asset
-            // as already held. The mutation's pre-flight check should
-            // throw `AlreadyOptedInError` and skip submission.
-            server.use(
-                mockAlgodAccountInformation({
-                    address: ALGO25_TEST_ADDRESS,
-                    response: {
-                        amount: 5_000_000,
-                        'min-balance': 200_000,
-                        assets: [
-                            {
-                                'asset-id': Number(USDC_TEST_ASSET_ID),
-                                amount: 0,
-                                'is-frozen': false,
-                            },
-                        ],
-                    },
-                }),
-            )
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json({ txId: 'irrelevant' }, { status: 200 }),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
+        renderWithNavigation(
+            () => (
+                <OptInHost
+                    sender={sender}
+                    assetId={USDC_TEST_ASSET_ID}
+                />
+            ),
+            'OptInHost',
+        )
 
-            renderWithNavigation(
-                () => (
-                    <OptInHost
-                        sender={sender}
-                        assetId={USDC_TEST_ASSET_ID}
-                    />
-                ),
-                'OptInHost',
-            )
+        await waitFor(() => {
+            expect(screen.getByTestId('opt_in_confirm')).toBeTruthy()
+        })
 
-            await waitFor(() => {
-                expect(screen.getByTestId('opt_in_confirm')).toBeTruthy()
-            })
+        fireEvent.click(screen.getByTestId('opt_in_confirm'))
 
-            fireEvent.click(screen.getByTestId('opt_in_confirm'))
+        // Pipeline: build → sign → submit. Once algod's POST has
+        // been called, the opt-in tx is on the wire.
+        await waitFor(
+            () => {
+                expect(sendSpy).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+    })
 
-            // Give the mutation a chance to run. It should throw before
-            // reaching submit. We give the spy a couple of polling ticks
-            // and assert it never fires.
-            await new Promise(resolve => setTimeout(resolve, 500))
-            expect(sendSpy).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given the account is already opted into the asset, when the user approves, then the mutation throws and no transaction is submitted', async () => {
+        // Override the default account info so it reports the asset
+        // as already held. The mutation's pre-flight check should
+        // throw `AlreadyOptedInError` and skip submission.
+        server.use(
+            mockAlgodAccountInformation({
+                address: ALGO25_TEST_ADDRESS,
+                response: {
+                    amount: 5_000_000,
+                    'min-balance': 200_000,
+                    assets: [
+                        {
+                            'asset-id': Number(USDC_TEST_ASSET_ID),
+                            amount: 0,
+                            'is-frozen': false,
+                        },
+                    ],
+                },
+            }),
+        )
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json({ txId: 'irrelevant' }, { status: 200 }),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-    it(
-        'Given the account cannot cover the +0.1 ALGO MBR increase plus fee, when the user approves the opt-in, then the mutation throws InsufficientBalanceForOptInError before submitting',
-        async () => {
-            // The mutation's second pre-flight gate (after the already-opted-in
-            // check) requires
-            //   amount >= min-balance + ASSET_MBR (0.1 ALGO) + minFee.
-            // With min-balance 100_000 and fee 1_000 the threshold is 201_000;
-            // report a balance just under it so the gate throws
-            // InsufficientBalanceForOptInError without ever reaching submit.
-            server.use(
-                mockAlgodAccountInformation({
-                    address: ALGO25_TEST_ADDRESS,
-                    response: {
-                        amount: 150_000,
-                        'min-balance': 100_000,
-                        assets: [],
-                    },
-                }),
-            )
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json({ txId: 'irrelevant' }, { status: 200 }),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
+        renderWithNavigation(
+            () => (
+                <OptInHost
+                    sender={sender}
+                    assetId={USDC_TEST_ASSET_ID}
+                />
+            ),
+            'OptInHost',
+        )
 
-            renderWithNavigation(
-                () => (
-                    <OptInHost
-                        sender={sender}
-                        assetId={USDC_TEST_ASSET_ID}
-                    />
-                ),
-                'OptInHost',
-            )
+        await waitFor(() => {
+            expect(screen.getByTestId('opt_in_confirm')).toBeTruthy()
+        })
 
-            await waitFor(() => {
-                expect(screen.getByTestId('opt_in_confirm')).toBeTruthy()
-            })
+        fireEvent.click(screen.getByTestId('opt_in_confirm'))
 
-            fireEvent.click(screen.getByTestId('opt_in_confirm'))
+        // Give the mutation a chance to run. It should throw before
+        // reaching submit. We give the spy a couple of polling ticks
+        // and assert it never fires.
+        await new Promise(resolve => setTimeout(resolve, 500))
+        expect(sendSpy).not.toHaveBeenCalled()
+    })
 
-            // The balance gate throws before the build/sign/submit step.
-            await new Promise(resolve => setTimeout(resolve, 500))
-            expect(sendSpy).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given the account cannot cover the +0.1 ALGO MBR increase plus fee, when the user approves the opt-in, then the mutation throws InsufficientBalanceForOptInError before submitting', async () => {
+        // The mutation's second pre-flight gate (after the already-opted-in
+        // check) requires
+        //   amount >= min-balance + ASSET_MBR (0.1 ALGO) + minFee.
+        // With min-balance 100_000 and fee 1_000 the threshold is 201_000;
+        // report a balance just under it so the gate throws
+        // InsufficientBalanceForOptInError without ever reaching submit.
+        server.use(
+            mockAlgodAccountInformation({
+                address: ALGO25_TEST_ADDRESS,
+                response: {
+                    amount: 150_000,
+                    'min-balance': 100_000,
+                    assets: [],
+                },
+            }),
+        )
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json({ txId: 'irrelevant' }, { status: 200 }),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
+
+        renderWithNavigation(
+            () => (
+                <OptInHost
+                    sender={sender}
+                    assetId={USDC_TEST_ASSET_ID}
+                />
+            ),
+            'OptInHost',
+        )
+
+        await waitFor(() => {
+            expect(screen.getByTestId('opt_in_confirm')).toBeTruthy()
+        })
+
+        fireEvent.click(screen.getByTestId('opt_in_confirm'))
+
+        // The balance gate throws before the build/sign/submit step.
+        await new Promise(resolve => setTimeout(resolve, 500))
+        expect(sendSpy).not.toHaveBeenCalled()
+    })
 })
 
 // USDC's creator address (must be a real 58-char Algorand address —
@@ -372,12 +354,9 @@ const USDC_TEST_ASSET_CREATOR = HD_TEST_ADDRESS
 
 describe('Flow: Opt out of an asset', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -452,130 +431,118 @@ describe('Flow: Opt out of an asset', () => {
         )
     })
 
-    it(
-        'Given the sender holds zero of the asset, when the user approves opt-out, then a zero-amount asset transfer with closeAssetTo=creator is POSTed to algod',
-        async () => {
-            const accountBalance: AssetWithAccountBalance = {
-                assetId: USDC_TEST_ASSET_ID,
-                asset: USDC_TEST_ASSET,
-                amount: new Decimal(0),
-                algoValue: new Decimal(0),
-                isFrozen: false,
-            }
+    it('Given the sender holds zero of the asset, when the user approves opt-out, then a zero-amount asset transfer with closeAssetTo=creator is POSTed to algod', async () => {
+        const accountBalance: AssetWithAccountBalance = {
+            assetId: USDC_TEST_ASSET_ID,
+            asset: USDC_TEST_ASSET,
+            amount: new Decimal(0),
+            algoValue: new Decimal(0),
+            isFrozen: false,
+        }
 
-            // Pre-flight: confirm the seeded holding exists in the DB
-            // (this is what the mutation removes on success).
-            const before = await getAccountHoldings({
-                accountAddress: sender.address,
-                network: 'mainnet',
-            })
-            expect(before.some(h => h.assetId === USDC_TEST_ASSET_ID)).toBe(
-                true,
-            )
+        // Pre-flight: confirm the seeded holding exists in the DB
+        // (this is what the mutation removes on success).
+        const before = await getAccountHoldings({
+            accountAddress: sender.address,
+            network: 'mainnet',
+        })
+        expect(before.some(h => h.assetId === USDC_TEST_ASSET_ID)).toBe(true)
 
-            const onResolved = vi.fn()
-            const onRejected = vi.fn()
+        const onResolved = vi.fn()
+        const onRejected = vi.fn()
 
-            renderWithNavigation(
-                () => (
-                    <OptOutHost
-                        sender={sender}
-                        accountBalance={accountBalance}
-                        creator={USDC_TEST_ASSET_CREATOR}
-                        onResolved={onResolved}
-                        onRejected={onRejected}
-                    />
-                ),
-                'OptOutHost',
-            )
+        renderWithNavigation(
+            () => (
+                <OptOutHost
+                    sender={sender}
+                    accountBalance={accountBalance}
+                    creator={USDC_TEST_ASSET_CREATOR}
+                    onResolved={onResolved}
+                    onRejected={onRejected}
+                />
+            ),
+            'OptOutHost',
+        )
 
-            await waitFor(() => {
-                expect(screen.getByTestId('opt_out_confirm')).toBeTruthy()
-            })
+        await waitFor(() => {
+            expect(screen.getByTestId('opt_out_confirm')).toBeTruthy()
+        })
 
-            fireEvent.click(screen.getByTestId('opt_out_confirm'))
+        fireEvent.click(screen.getByTestId('opt_out_confirm'))
 
-            // The mutation resolves with the txIds from algod — that's
-            // the terminal signal we care about. The downstream
-            // `deleteAssetHoldings` write happens in the same tick,
-            // so a follow-up check on the DB confirms the persistence
-            // side-effect too.
-            await waitFor(
-                () => {
-                    expect(onResolved).toHaveBeenCalled()
+        // The mutation resolves with the txIds from algod — that's
+        // the terminal signal we care about. The downstream
+        // `deleteAssetHoldings` write happens in the same tick,
+        // so a follow-up check on the DB confirms the persistence
+        // side-effect too.
+        await waitFor(
+            () => {
+                expect(onResolved).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(onRejected).not.toHaveBeenCalled()
+
+        const after = await getAccountHoldings({
+            accountAddress: sender.address,
+            network: 'mainnet',
+        })
+        expect(after.some(h => h.assetId === USDC_TEST_ASSET_ID)).toBe(false)
+    })
+
+    it('Given the sender still holds a non-zero balance, when the user approves opt-out, then the mutation throws NonZeroBalanceError before submitting', async () => {
+        // Override the algod account-info handler to report a
+        // non-zero holding. The mutation reads `algod.accountInfo`
+        // (not the local DB) for its pre-flight check, so this
+        // override is what actually trips `NonZeroBalanceError`.
+        server.use(
+            mockAlgodAccountInformation({
+                address: ALGO25_TEST_ADDRESS,
+                response: {
+                    amount: 5_000_000,
+                    'min-balance': 200_000,
+                    assets: [
+                        {
+                            'asset-id': Number(USDC_TEST_ASSET_ID),
+                            amount: 1_500_000,
+                            'is-frozen': false,
+                        },
+                    ],
                 },
-                { timeout: 10_000 },
-            )
-            expect(onRejected).not.toHaveBeenCalled()
+            }),
+        )
 
-            const after = await getAccountHoldings({
-                accountAddress: sender.address,
-                network: 'mainnet',
-            })
-            expect(after.some(h => h.assetId === USDC_TEST_ASSET_ID)).toBe(
-                false,
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        const accountBalance: AssetWithAccountBalance = {
+            assetId: USDC_TEST_ASSET_ID,
+            asset: USDC_TEST_ASSET,
+            amount: new Decimal('1.5'),
+            algoValue: new Decimal(0),
+            isFrozen: false,
+        }
 
-    it(
-        'Given the sender still holds a non-zero balance, when the user approves opt-out, then the mutation throws NonZeroBalanceError before submitting',
-        async () => {
-            // Override the algod account-info handler to report a
-            // non-zero holding. The mutation reads `algod.accountInfo`
-            // (not the local DB) for its pre-flight check, so this
-            // override is what actually trips `NonZeroBalanceError`.
-            server.use(
-                mockAlgodAccountInformation({
-                    address: ALGO25_TEST_ADDRESS,
-                    response: {
-                        amount: 5_000_000,
-                        'min-balance': 200_000,
-                        assets: [
-                            {
-                                'asset-id': Number(USDC_TEST_ASSET_ID),
-                                amount: 1_500_000,
-                                'is-frozen': false,
-                            },
-                        ],
-                    },
-                }),
-            )
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json({ txId: 'unused' }, { status: 200 }),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            const accountBalance: AssetWithAccountBalance = {
-                assetId: USDC_TEST_ASSET_ID,
-                asset: USDC_TEST_ASSET,
-                amount: new Decimal('1.5'),
-                algoValue: new Decimal(0),
-                isFrozen: false,
-            }
+        renderWithNavigation(
+            () => (
+                <OptOutHost
+                    sender={sender}
+                    accountBalance={accountBalance}
+                    creator={USDC_TEST_ASSET_CREATOR}
+                />
+            ),
+            'OptOutHost',
+        )
 
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json({ txId: 'unused' }, { status: 200 }),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
+        await waitFor(() => {
+            expect(screen.getByTestId('opt_out_confirm')).toBeTruthy()
+        })
+        fireEvent.click(screen.getByTestId('opt_out_confirm'))
 
-            renderWithNavigation(
-                () => (
-                    <OptOutHost
-                        sender={sender}
-                        accountBalance={accountBalance}
-                        creator={USDC_TEST_ASSET_CREATOR}
-                    />
-                ),
-                'OptOutHost',
-            )
-
-            await waitFor(() => {
-                expect(screen.getByTestId('opt_out_confirm')).toBeTruthy()
-            })
-            fireEvent.click(screen.getByTestId('opt_out_confirm'))
-
-            // No POST should reach algod — the validation throws first.
-            await new Promise(resolve => setTimeout(resolve, 500))
-            expect(sendSpy).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // No POST should reach algod — the validation throws first.
+        await new Promise(resolve => setTimeout(resolve, 500))
+        expect(sendSpy).not.toHaveBeenCalled()
+    })
 })

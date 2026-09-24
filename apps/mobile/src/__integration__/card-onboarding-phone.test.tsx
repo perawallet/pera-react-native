@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
@@ -58,7 +49,6 @@ const renderPhone = () =>
     })
 
 describe('card onboarding — phone', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => {
         vi.mocked(Notifier.showNotification).mockClear()
         const store = useCardStore.getState()
@@ -72,8 +62,6 @@ describe('card onboarding — phone', () => {
             ),
         )
     })
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     it('preselects the residence calling code, sends the code (no leading +), and opens verify', async () => {
         let sendBody: Record<string, unknown> | undefined

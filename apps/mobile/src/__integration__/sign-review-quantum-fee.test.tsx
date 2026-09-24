@@ -59,14 +59,11 @@ import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/QuantumFeeExplainer'
-import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
+import { QUANTUM_TEST_ADDRESS, enableQuantumFlag } from './__fixtures__/quantum'
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
-
-const QUANTUM_FLAG = 'enable_quantum_accounts'
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 /**
  * Seed the real algo25 signer (mints the key + registers the account exactly as
@@ -154,29 +151,15 @@ const drainPendingSignRequests = (): void => {
     unmount()
 }
 
-/**
- * Turn the quantum-accounts flag on via the real remote-config override. The
- * store persists, so its async rehydration can otherwise land after the value
- * is set and wipe it — await hydration first so the override sticks for the
- * render under test.
- */
-const enableQuantumFlag = async (): Promise<void> => {
-    await useRemoteConfigStore.persist.rehydrate()
-    useRemoteConfigStore.getState().setConfigOverride(QUANTUM_FLAG, true)
-}
-
 describe('Flow: quantum-fee explainer on the signing review surface', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
     afterEach(() => {
-        server.resetHandlers()
         // Feature-flag override must not leak into other tests/files.
         useRemoteConfigStore.getState().resetState()
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -201,141 +184,111 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
         )
     })
 
-    it(
-        'renders the quantum-fee explainer when the resolved signer is a Quantum account',
-        async () => {
-            // Flag is off by default in tests (__DEV__ === false); enable it.
-            await enableQuantumFlag()
-            await seedQuantumSigner()
-            const { request } = buildTransactionSignRequest()
+    it('renders the quantum-fee explainer when the resolved signer is a Quantum account', async () => {
+        // Flag is off by default in tests (__DEV__ === false); enable it.
+        await enableQuantumFlag()
+        await seedQuantumSigner()
+        const { request } = buildTransactionSignRequest()
 
-            renderSignReview(request)
+        renderSignReview(request)
 
-            // The review sheet opened once the slide-to-confirm control mounts.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('signing-confirm-slide'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        // The review sheet opened once the slide-to-confirm control mounts.
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            expect(
-                await screen.findByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(
+            await screen.findByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
+        ).toBeTruthy()
+    })
 
-    it(
-        'does not render the quantum-fee explainer for a standard (algo25) signer',
-        async () => {
-            await enableQuantumFlag()
-            await seedAlgo25Signer()
-            const { request } = buildTransactionSignRequest()
+    it('does not render the quantum-fee explainer for a standard (algo25) signer', async () => {
+        await enableQuantumFlag()
+        await seedAlgo25Signer()
+        const { request } = buildTransactionSignRequest()
 
-            renderSignReview(request)
+        renderSignReview(request)
 
-            // Wait for the review to settle (FeeDisplay is on screen) before
-            // asserting the explainer's absence.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('signing-confirm-slide'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        // Wait for the review to settle (FeeDisplay is on screen) before
+        // asserting the explainer's absence.
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            expect(
-                screen.queryByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(screen.queryByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID)).toBeNull()
+    })
 
     // a rekey applied mid-session moves the effective signer across
     // the quantum boundary. The fee follows the rekeyed-to signer, so the
     // explainer has to follow the same hop or it describes the wrong signer.
-    it(
-        'does not render the quantum-fee explainer when the Quantum sender is rekeyed to a standard account',
-        async () => {
-            await enableQuantumFlag()
-            await seedQuantumRekeyedToStandard()
-            server.use(
-                mockAlgodAccountInformation({
-                    address: QUANTUM_TEST_ADDRESS,
-                    response: {
-                        amount: 5_000_000,
-                        'min-balance': 100_000,
-                        'auth-addr': REVIEW_SIGNER_ADDRESS,
-                    },
-                }),
-            )
-            const { request } = buildTransactionSignRequest({
-                txs: [
-                    buildPaymentTransaction({ sender: QUANTUM_TEST_ADDRESS }),
-                ],
-            })
-
-            renderSignReview(request)
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('signing-confirm-slide'),
-                    ).toBeTruthy()
+    it('does not render the quantum-fee explainer when the Quantum sender is rekeyed to a standard account', async () => {
+        await enableQuantumFlag()
+        await seedQuantumRekeyedToStandard()
+        server.use(
+            mockAlgodAccountInformation({
+                address: QUANTUM_TEST_ADDRESS,
+                response: {
+                    amount: 5_000_000,
+                    'min-balance': 100_000,
+                    'auth-addr': REVIEW_SIGNER_ADDRESS,
                 },
-                { timeout: 10_000 },
-            )
+            }),
+        )
+        const { request } = buildTransactionSignRequest({
+            txs: [buildPaymentTransaction({ sender: QUANTUM_TEST_ADDRESS })],
+        })
 
-            expect(
-                screen.queryByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        renderSignReview(request)
 
-    it(
-        'renders the quantum-fee explainer when a standard sender is rekeyed to a Quantum account',
-        async () => {
-            await enableQuantumFlag()
-            await seedStandardRekeyedToQuantum()
-            server.use(
-                mockAlgodAccountInformation({
-                    address: REVIEW_RECEIVER_ADDRESS,
-                    response: {
-                        amount: 5_000_000,
-                        'min-balance': 100_000,
-                        'auth-addr': REVIEW_SIGNER_ADDRESS,
-                    },
-                }),
-            )
-            const { request } = buildTransactionSignRequest({
-                txs: [
-                    buildPaymentTransaction({
-                        sender: REVIEW_RECEIVER_ADDRESS,
-                        receiver: REVIEW_SIGNER_ADDRESS,
-                    }),
-                ],
-            })
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            renderSignReview(request)
+        expect(screen.queryByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID)).toBeNull()
+    })
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('signing-confirm-slide'),
-                    ).toBeTruthy()
+    it('renders the quantum-fee explainer when a standard sender is rekeyed to a Quantum account', async () => {
+        await enableQuantumFlag()
+        await seedStandardRekeyedToQuantum()
+        server.use(
+            mockAlgodAccountInformation({
+                address: REVIEW_RECEIVER_ADDRESS,
+                response: {
+                    amount: 5_000_000,
+                    'min-balance': 100_000,
+                    'auth-addr': REVIEW_SIGNER_ADDRESS,
                 },
-                { timeout: 10_000 },
-            )
+            }),
+        )
+        const { request } = buildTransactionSignRequest({
+            txs: [
+                buildPaymentTransaction({
+                    sender: REVIEW_RECEIVER_ADDRESS,
+                    receiver: REVIEW_SIGNER_ADDRESS,
+                }),
+            ],
+        })
 
-            expect(
-                await screen.findByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        renderSignReview(request)
+
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+
+        expect(
+            await screen.findByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
+        ).toBeTruthy()
+    })
 })

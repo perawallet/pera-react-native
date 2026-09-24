@@ -32,10 +32,6 @@ import {
     HD_TEST_MNEMONIC_24_INDICES,
 } from './onboarding'
 
-// argon2 → HKDF → keystore reveal → AES-256-GCM on every round-trip, so the
-// 5s default is nowhere near enough.
-export const SLOW_TEST_TIMEOUT_MS = 30_000
-
 // Any twelve wordlist words: the cloud-backup KDF hashes the phrase and never
 // checks a BIP39 checksum, so these don't need to form a valid mnemonic.
 export const BACKUP_MNEMONIC = [

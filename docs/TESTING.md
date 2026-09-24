@@ -189,10 +189,6 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { USD_EUR_GBP } from './__fixtures__/currencies'
 
 describe('Flow: …', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     it('Given …, when …, then …', async () => {
         server.use(mockListCurrencies({ response: USD_EUR_GBP }))
         renderWithNavigation(SettingsCurrencyScreen, 'SettingsCurrency')
@@ -208,6 +204,23 @@ describe('Flow: …', () => {
 Files under `apps/mobile/src/__integration__/` are picked up by the integration Vitest project
 (configured in `apps/mobile/vitest.config.ts`). Files outside it belong to the unit project and keep
 the speed-oriented mocks intact.
+
+The harness owns the rest, so a flow file carries none of it:
+
+- **MSW lifecycle.** `vitest.integration-setup.ts` starts the shared server before a file's own
+  hooks, resets handlers after each test, and closes it after the file. Register per-test handlers
+  in the test or a `beforeEach`; anything added in `beforeAll` is reset after the first test.
+- **Unhandled requests warn** and still reach the network. A suite that deliberately leaves an
+  incidental background fetch unmocked calls `setSuiteUnhandledRequestMode('bypass')` from
+  `@test-utils/msw-server` in its `describe` body, with a comment naming the request; the mode
+  reverts when that suite ends. Prefer mocking the request.
+- **Timeouts.** The integration project sets `testTimeout: 30_000`, so tests take no timeout
+  argument unless they want a tighter one. `waitFor` still defaults to 1s; pass
+  `{ timeout: SLOW_WAIT_TIMEOUT_MS }` from `__fixtures__/timeouts.ts` for a step that runs real key
+  derivation.
+- **Hook tests.** `renderHook(…, { wrapper: createQueryClientWrapper() })` from
+  `@test-utils/render` gives a bare `QueryClientProvider` with the test client defaults; use
+  `render` when the screen needs the full `TestProviders` tree.
 
 If a flow test needs the real implementation of a package not yet in the unmock list, add a single
 line to `apps/mobile/vitest.integration-setup.ts` rather than putting `vi.unmock` in the test file.
@@ -281,6 +294,11 @@ To add a factory:
 Fixture data (named scenarios like `USD_EUR_GBP`, `JPY_ONLY`) lives in
 `apps/mobile/src/__integration__/__fixtures__/<domain>.ts`. Name a fixture after the shape it
 describes, not the test that uses it, so it stays reusable.
+
+Shared setup helpers live there too: `registerFakeLedgerProvider` (`ledger.ts`) registers a Ledger
+BLE transport, with an optional blocking signer for tests that assert the awaiting-approval UI, and
+`enableQuantumFlag` / `disableQuantumFlag` (`quantum.ts`) set the quantum-accounts override after
+awaiting the persisted store's rehydration.
 
 ## Locale tour (i18n screenshot QA)
 

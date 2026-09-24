@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
@@ -68,10 +59,7 @@ const openForgotPassword = async () => {
 }
 
 describe('Flow: Card forgot password', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => vi.mocked(Notifier.showNotification).mockClear())
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     it('Given a signed-out user, when they complete the reset flow, then they land back on sign-in with the email prefilled', async () => {
         server.use(

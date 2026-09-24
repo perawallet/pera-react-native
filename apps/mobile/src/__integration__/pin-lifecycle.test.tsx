@@ -19,7 +19,6 @@ import { usePinCode } from '@perawallet/wallet-core-security'
 import { SettingsSecurityScreen } from '@modules/security/routes'
 import { getSwitchControl } from '@test-utils/rnw'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
 const TEST_PIN = '123456'
 
 const renderSettingsSecurityScreen = () =>
@@ -56,143 +55,125 @@ describe('Flow: PIN lifecycle from Settings → Security', () => {
         resetTestKeystore()
     })
 
-    it(
-        'Given no PIN is configured, when the user flips the PIN toggle ON, then the PinEditView mounts in setup mode (the gate the user must complete to actually save a PIN)',
-        async () => {
-            renderSettingsSecurityScreen()
+    it('Given no PIN is configured, when the user flips the PIN toggle ON, then the PinEditView mounts in setup mode (the gate the user must complete to actually save a PIN)', async () => {
+        renderSettingsSecurityScreen()
 
-            const toggle = await waitForPinToggleHydration(false)
-            // The PinEditView's bottom-sheet host is hidden until
-            // `pinViewMode` becomes non-null. PWNumpad is only rendered
-            // inside the open sheet, so its absence is the proof the
-            // gate is closed.
-            expect(screen.queryByTestId('numpad_key_0')).toBeNull()
+        const toggle = await waitForPinToggleHydration(false)
+        // The PinEditView's bottom-sheet host is hidden until
+        // `pinViewMode` becomes non-null. PWNumpad is only rendered
+        // inside the open sheet, so its absence is the proof the
+        // gate is closed.
+        expect(screen.queryByTestId('numpad_key_0')).toBeNull()
 
-            fireEvent.click(toggle)
+        fireEvent.click(toggle)
 
-            // Toggle ON → `pinViewMode='setup'` → PinEditView mounts
-            // → PinEntry's title text reads the setup i18n key
-            // (translations fall back to keys under the integration
-            // setup, so we match by key rather than translated text).
-            await waitFor(() => {
-                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
-            })
-            expect(screen.getByText('security.pin.setup_title')).toBeTruthy()
+        // Toggle ON → `pinViewMode='setup'` → PinEditView mounts
+        // → PinEntry's title text reads the setup i18n key
+        // (translations fall back to keys under the integration
+        // setup, so we match by key rather than translated text).
+        await waitFor(() => {
+            expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
+        })
+        expect(screen.getByText('security.pin.setup_title')).toBeTruthy()
 
-            // Side-effect contract: the pin-record typed-secret is
-            // NOT yet committed — the user still has to enter the
-            // pin twice to confirm. This keeps the gate honest:
-            // flipping the toggle alone must never enable a PIN.
-            const { result: pinHook } = renderHook(() => usePinCode())
-            await waitFor(async () => {
-                expect(await pinHook.current.checkPinEnabled()).toBe(false)
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Side-effect contract: the pin-record typed-secret is
+        // NOT yet committed — the user still has to enter the
+        // pin twice to confirm. This keeps the gate honest:
+        // flipping the toggle alone must never enable a PIN.
+        const { result: pinHook } = renderHook(() => usePinCode())
+        await waitFor(async () => {
+            expect(await pinHook.current.checkPinEnabled()).toBe(false)
+        })
+    })
 
-    it(
-        'Given a PIN is already configured, when the user flips the PIN toggle OFF, then the PinEditView mounts in verify mode (so the user must prove they know the current PIN before disabling it)',
-        async () => {
-            const { result: pinHook } = renderHook(() => usePinCode())
-            await waitFor(async () => {
-                await pinHook.current.savePin(TEST_PIN)
-                expect(await pinHook.current.checkPinEnabled()).toBe(true)
-            })
-
-            renderSettingsSecurityScreen()
-            const toggle = await waitForPinToggleHydration(true)
-
-            fireEvent.click(toggle)
-
-            // Toggle OFF (with PIN already set) → `pinViewMode='verify'`
-            // → PinEditView mounts. Title proves we're in verify
-            // mode, not setup or change_old.
-            await waitFor(() => {
-                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
-            })
-            expect(screen.getByText('security.pin.verify_title')).toBeTruthy()
-
-            // The PIN record is still in place — disable doesn't
-            // happen until the verify flow completes successfully.
-            // The gate IS the protection.
-            expect(await pinHook.current.checkPinEnabled()).toBe(true)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a PIN is already configured, when the user taps the change-PIN row, then the PinEditView mounts in change_old mode (verify the existing PIN before swapping)',
-        async () => {
-            const { result: pinHook } = renderHook(() => usePinCode())
-            await waitFor(async () => {
-                await pinHook.current.savePin(TEST_PIN)
-                expect(await pinHook.current.checkPinEnabled()).toBe(true)
-            })
-
-            renderSettingsSecurityScreen()
-            await waitForPinToggleHydration(true)
-
-            // Change-PIN row only renders when isPinEnabled === true,
-            // so its presence in the DOM is itself a signal that the
-            // hydration finished correctly.
-            const changeButton = await waitFor(() =>
-                screen.getByTestId('settings_security_change_pin_button'),
-            )
-            fireEvent.click(changeButton)
-
-            await waitFor(() => {
-                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
-            })
-            expect(
-                screen.getByText('security.pin.change_old_title'),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the PIN hook is driven directly (bypassing the UI gate that fights React 19 numpad timing), when savePin then savePin(null) run, then checkPinEnabled and the keystore record both flip true → false in lockstep',
-        async () => {
-            // This test is the integration-level proof that the side
-            // effects backing the gates above actually persist
-            // correctly through the kms typed-secret store. The UI
-            // tests above stop at "the right gate appears"; this one
-            // closes the loop on "and when the gate completes, the
-            // keystore reflects it." Driving via the hook avoids the
-            // React 19 deferred-commit race we hit when typing
-            // through PWNumpad in view-passphrase.test.tsx.
-            const { result: pinHook } = renderHook(() => usePinCode())
-
-            // Initial state: no PIN.
-            await waitFor(async () => {
-                expect(await pinHook.current.checkPinEnabled()).toBe(false)
-            })
-
-            // Save a PIN → enabled.
+    it('Given a PIN is already configured, when the user flips the PIN toggle OFF, then the PinEditView mounts in verify mode (so the user must prove they know the current PIN before disabling it)', async () => {
+        const { result: pinHook } = renderHook(() => usePinCode())
+        await waitFor(async () => {
             await pinHook.current.savePin(TEST_PIN)
             expect(await pinHook.current.checkPinEnabled()).toBe(true)
+        })
 
-            // Verify with the correct PIN succeeds.
-            expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
-                kind: 'ok',
-            })
-            // Verify with the wrong PIN fails. This is the gate
-            // production code uses to reject disable / change /
-            // unlock attempts.
-            expect(await pinHook.current.verifyPin('000000')).toEqual({
-                kind: 'fail',
-            })
+        renderSettingsSecurityScreen()
+        const toggle = await waitForPinToggleHydration(true)
 
-            // Disable: save null → flag flips back, no record.
-            await pinHook.current.savePin(null)
+        fireEvent.click(toggle)
+
+        // Toggle OFF (with PIN already set) → `pinViewMode='verify'`
+        // → PinEditView mounts. Title proves we're in verify
+        // mode, not setup or change_old.
+        await waitFor(() => {
+            expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
+        })
+        expect(screen.getByText('security.pin.verify_title')).toBeTruthy()
+
+        // The PIN record is still in place — disable doesn't
+        // happen until the verify flow completes successfully.
+        // The gate IS the protection.
+        expect(await pinHook.current.checkPinEnabled()).toBe(true)
+    })
+
+    it('Given a PIN is already configured, when the user taps the change-PIN row, then the PinEditView mounts in change_old mode (verify the existing PIN before swapping)', async () => {
+        const { result: pinHook } = renderHook(() => usePinCode())
+        await waitFor(async () => {
+            await pinHook.current.savePin(TEST_PIN)
+            expect(await pinHook.current.checkPinEnabled()).toBe(true)
+        })
+
+        renderSettingsSecurityScreen()
+        await waitForPinToggleHydration(true)
+
+        // Change-PIN row only renders when isPinEnabled === true,
+        // so its presence in the DOM is itself a signal that the
+        // hydration finished correctly.
+        const changeButton = await waitFor(() =>
+            screen.getByTestId('settings_security_change_pin_button'),
+        )
+        fireEvent.click(changeButton)
+
+        await waitFor(() => {
+            expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
+        })
+        expect(screen.getByText('security.pin.change_old_title')).toBeTruthy()
+    })
+
+    it('Given the PIN hook is driven directly (bypassing the UI gate that fights React 19 numpad timing), when savePin then savePin(null) run, then checkPinEnabled and the keystore record both flip true → false in lockstep', async () => {
+        // This test is the integration-level proof that the side
+        // effects backing the gates above actually persist
+        // correctly through the kms typed-secret store. The UI
+        // tests above stop at "the right gate appears"; this one
+        // closes the loop on "and when the gate completes, the
+        // keystore reflects it." Driving via the hook avoids the
+        // React 19 deferred-commit race we hit when typing
+        // through PWNumpad in view-passphrase.test.tsx.
+        const { result: pinHook } = renderHook(() => usePinCode())
+
+        // Initial state: no PIN.
+        await waitFor(async () => {
             expect(await pinHook.current.checkPinEnabled()).toBe(false)
-            // After disable, even verifying the previously-correct
-            // PIN returns fail (the record is gone, not just hidden).
-            expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
-                kind: 'fail',
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
+
+        // Save a PIN → enabled.
+        await pinHook.current.savePin(TEST_PIN)
+        expect(await pinHook.current.checkPinEnabled()).toBe(true)
+
+        // Verify with the correct PIN succeeds.
+        expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
+            kind: 'ok',
+        })
+        // Verify with the wrong PIN fails. This is the gate
+        // production code uses to reject disable / change /
+        // unlock attempts.
+        expect(await pinHook.current.verifyPin('000000')).toEqual({
+            kind: 'fail',
+        })
+
+        // Disable: save null → flag flips back, no record.
+        await pinHook.current.savePin(null)
+        expect(await pinHook.current.checkPinEnabled()).toBe(false)
+        // After disable, even verifying the previously-correct
+        // PIN returns fail (the record is gone, not just hidden).
+        expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
+            kind: 'fail',
+        })
+    })
 })

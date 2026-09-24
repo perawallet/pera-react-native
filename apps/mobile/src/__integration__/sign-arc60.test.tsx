@@ -16,7 +16,6 @@
 
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -29,7 +28,6 @@ import { act, renderHook } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
 import { createTestQueryClient } from '@test-utils/render'
-import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -56,8 +54,6 @@ import {
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // The test keystore's ed25519 `sign()` returns a fixed-length stub regardless
 // of key, so which key signed is only observable by spying on the keystore
@@ -91,14 +87,9 @@ const drainPendingSignRequests = (): void => {
 
 describe('Flow: ARC-60 (SIWA) signing review', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => {
-        server.resetHandlers()
-    })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -111,265 +102,229 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         await seedAlgo25Signer()
     })
 
-    it(
-        'signs a valid SIWA request and delivers the signature, with no origin-mismatch warning',
-        async () => {
-            const { request, approve, reject } = buildArc60SignRequest({
-                domain: 'arc60.io',
-                verifiedOrigin: 'https://arc60.io/login',
-            })
+    it('signs a valid SIWA request and delivers the signature, with no origin-mismatch warning', async () => {
+        const { request, approve, reject } = buildArc60SignRequest({
+            domain: 'arc60.io',
+            verifiedOrigin: 'https://arc60.io/login',
+        })
 
-            const { confirm } = renderSignReview(request)
+        const { confirm } = renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('arc60-confirm-slide'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
-            // Origin matches the SIWA domain → no warning.
-            expect(
-                screen.queryByTestId('arc60-origin-mismatch-warning'),
-            ).toBeNull()
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('arc60-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        // Origin matches the SIWA domain → no warning.
+        expect(screen.queryByTestId('arc60-origin-mismatch-warning')).toBeNull()
 
-            confirm('arc60-confirm-slide')
+        confirm('arc60-confirm-slide')
 
-            await waitFor(
-                () => {
-                    expect(approve).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            const delivered = approve.mock.calls[0][0]
-            expect(delivered[0].signature).toBeInstanceOf(Uint8Array)
-            expect(delivered[0].signer).toBe(REVIEW_SIGNER_ADDRESS)
-            expect(reject).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(approve).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        const delivered = approve.mock.calls[0][0]
+        expect(delivered[0].signature).toBeInstanceOf(Uint8Array)
+        expect(delivered[0].signer).toBe(REVIEW_SIGNER_ADDRESS)
+        expect(reject).not.toHaveBeenCalled()
+    })
 
-    it(
-        'shows the origin-mismatch warning when the verified origin differs from the SIWA domain',
-        async () => {
-            const { request, reject } = buildArc60SignRequest({
-                domain: 'trusted-exchange.com',
-                verifiedOrigin: 'https://evil.example/phish',
-            })
+    it('shows the origin-mismatch warning when the verified origin differs from the SIWA domain', async () => {
+        const { request, reject } = buildArc60SignRequest({
+            domain: 'trusted-exchange.com',
+            verifiedOrigin: 'https://evil.example/phish',
+        })
 
-            const view = renderSignReview(request)
+        const view = renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('arc60-origin-mismatch-warning'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('arc60-origin-mismatch-warning'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            // Settle the request so the pipeline is clean for the next test.
-            view.reject()
-            await waitFor(
-                () => {
-                    expect(reject).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Settle the request so the pipeline is clean for the next test.
+        view.reject()
+        await waitFor(
+            () => {
+                expect(reject).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+    })
 
-    it(
-        'blocks a quantum signer with a terminal notice instead of the confirm control',
-        async () => {
-            const quantum = await seedQuantumSigner()
-            const { request, approve, reject } = buildArc60SignRequest({
-                signer: quantum.address,
-            })
+    it('blocks a quantum signer with a terminal notice instead of the confirm control', async () => {
+        const quantum = await seedQuantumSigner()
+        const { request, approve, reject } = buildArc60SignRequest({
+            signer: quantum.address,
+        })
 
-            renderSignReview(request)
+        renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('arc60-quantum-blocked'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
-            // The harness renders i18n keys verbatim, so assert on the key.
-            expect(
-                screen.getByText('quantum.data_signing_unsupported.title'),
-            ).toBeTruthy()
-            expect(screen.queryByTestId('arc60-confirm-slide')).toBeNull()
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('arc60-quantum-blocked')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        // The harness renders i18n keys verbatim, so assert on the key.
+        expect(
+            screen.getByText('quantum.data_signing_unsupported.title'),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('arc60-confirm-slide')).toBeNull()
 
-            fireEvent.click(screen.getByText('common.close.label'))
+        fireEvent.click(screen.getByText('common.close.label'))
 
-            await waitFor(
-                () => {
-                    expect(reject).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            expect(approve).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(reject).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(approve).not.toHaveBeenCalled()
+    })
 
-    it(
-        'Given a SIWA request whose signer is a keyless rekeyed account, when the review opens, then the wallet refuses the signer and never signs with the auth account',
-        async () => {
-            // An ARC-60 signature verifies against `signer`'s own public key.
-            // The auth account's key cannot stand in for a keyless signer: the
-            // dApp would receive a signature every verifier rejects.
-            const authSigner = await seedAlgo25Signer()
-            const rekeyedSigner: WalletAccount = {
-                id: 'rekeyed-arc60-signer',
-                type: AccountTypes.watch,
-                address: REKEYED_SIGNER_ADDRESS,
-                rekeyAddress: AUTH_ADDRESS,
-                name: 'Rekeyed SIWA signer',
-            }
-            useAccountsStore.getState().setAccounts([rekeyedSigner, authSigner])
+    it('Given a SIWA request whose signer is a keyless rekeyed account, when the review opens, then the wallet refuses the signer and never signs with the auth account', async () => {
+        // An ARC-60 signature verifies against `signer`'s own public key.
+        // The auth account's key cannot stand in for a keyless signer: the
+        // dApp would receive a signature every verifier rejects.
+        const authSigner = await seedAlgo25Signer()
+        const rekeyedSigner: WalletAccount = {
+            id: 'rekeyed-arc60-signer',
+            type: AccountTypes.watch,
+            address: REKEYED_SIGNER_ADDRESS,
+            rekeyAddress: AUTH_ADDRESS,
+            name: 'Rekeyed SIWA signer',
+        }
+        useAccountsStore.getState().setAccounts([rekeyedSigner, authSigner])
 
-            const { request, approve, error } = buildArc60SignRequest({
-                domain: 'arc60.io',
-                signer: REKEYED_SIGNER_ADDRESS,
-            })
+        const { request, approve, error } = buildArc60SignRequest({
+            domain: 'arc60.io',
+            signer: REKEYED_SIGNER_ADDRESS,
+        })
 
-            const signSpy = vi.spyOn(getProvider().key.store, 'sign')
+        const signSpy = vi.spyOn(getProvider().key.store, 'sign')
 
-            renderSignReview(request)
+        renderSignReview(request)
 
-            // The pipeline refuses the signer at dispatch, before any key is
-            // touched: the request's error callback fires and the overlay
-            // shows the failed view instead of a confirm control.
-            await waitFor(
-                () => {
-                    expect(error).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            expect(String(error.mock.calls[0][0])).toMatch(
-                /Cannot sign with account/,
-            )
-            expect(screen.queryByTestId('arc60-confirm-slide')).toBeNull()
-            expect(signSpy).not.toHaveBeenCalled()
-            expect(approve).not.toHaveBeenCalled()
+        // The pipeline refuses the signer at dispatch, before any key is
+        // touched: the request's error callback fires and the overlay
+        // shows the failed view instead of a confirm control.
+        await waitFor(
+            () => {
+                expect(error).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(String(error.mock.calls[0][0])).toMatch(
+            /Cannot sign with account/,
+        )
+        expect(screen.queryByTestId('arc60-confirm-slide')).toBeNull()
+        expect(signSpy).not.toHaveBeenCalled()
+        expect(approve).not.toHaveBeenCalled()
 
-            signSpy.mockRestore()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        signSpy.mockRestore()
+    })
 
-    it(
-        'Given a SIWA request whose signer is rekeyed but still holds its own key, when the user confirms, then the wallet refuses: control moved to the auth account',
-        async () => {
-            const authSigner = await seedAlgo25Signer()
-            const { result: kms } = renderHook(() => useKMS())
-            const ownKey = await kms.current.createAlgo25Key()
-            const rekeyedSigner: WalletAccount = {
-                id: 'rekeyed-with-own-key',
-                type: AccountTypes.algo25,
-                address: ownKey.address,
-                keyPairId: ownKey.seedKey.id ?? '',
-                rekeyAddress: AUTH_ADDRESS,
-                name: 'Rekeyed SIWA signer with key',
-            }
-            useAccountsStore.getState().setAccounts([rekeyedSigner, authSigner])
+    it('Given a SIWA request whose signer is rekeyed but still holds its own key, when the user confirms, then the wallet refuses: control moved to the auth account', async () => {
+        const authSigner = await seedAlgo25Signer()
+        const { result: kms } = renderHook(() => useKMS())
+        const ownKey = await kms.current.createAlgo25Key()
+        const rekeyedSigner: WalletAccount = {
+            id: 'rekeyed-with-own-key',
+            type: AccountTypes.algo25,
+            address: ownKey.address,
+            keyPairId: ownKey.seedKey.id ?? '',
+            rekeyAddress: AUTH_ADDRESS,
+            name: 'Rekeyed SIWA signer with key',
+        }
+        useAccountsStore.getState().setAccounts([rekeyedSigner, authSigner])
 
-            const { request, approve, error } = buildArc60SignRequest({
-                domain: 'arc60.io',
-                signer: ownKey.address,
-            })
+        const { request, approve, error } = buildArc60SignRequest({
+            domain: 'arc60.io',
+            signer: ownKey.address,
+        })
 
-            const signSpy = vi.spyOn(getProvider().key.store, 'sign')
+        const signSpy = vi.spyOn(getProvider().key.store, 'sign')
 
-            const { confirm } = renderSignReview(request)
+        const { confirm } = renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('arc60-confirm-slide'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('arc60-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            confirm('arc60-confirm-slide')
+        confirm('arc60-confirm-slide')
 
-            // The old key is refused at sign time as ERROR_INVALID_SIGNER; the
-            // dApp has to name the auth address as `signer` instead.
-            await waitFor(
-                () => {
-                    expect(error).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            expect(String(error.mock.calls[0][0])).toMatch(
-                /rekeyed to .* the SIWA signer must be that auth address/,
-            )
-            expect(signSpy).not.toHaveBeenCalled()
-            expect(approve).not.toHaveBeenCalled()
+        // The old key is refused at sign time as ERROR_INVALID_SIGNER; the
+        // dApp has to name the auth address as `signer` instead.
+        await waitFor(
+            () => {
+                expect(error).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(String(error.mock.calls[0][0])).toMatch(
+            /rekeyed to .* the SIWA signer must be that auth address/,
+        )
+        expect(signSpy).not.toHaveBeenCalled()
+        expect(approve).not.toHaveBeenCalled()
 
-            signSpy.mockRestore()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        signSpy.mockRestore()
+    })
 
-    it(
-        'Given a SIWA request naming the auth account as signer and the rekeyed account as account_address, when the user confirms, then the auth key signs',
-        async () => {
-            const authSigner = await seedAlgo25Signer()
-            const rekeyedAccount: WalletAccount = {
-                id: 'rekeyed-arc60-account',
-                type: AccountTypes.watch,
-                address: REKEYED_SIGNER_ADDRESS,
-                rekeyAddress: AUTH_ADDRESS,
-                name: 'Rekeyed SIWA account',
-            }
-            useAccountsStore
-                .getState()
-                .setAccounts([rekeyedAccount, authSigner])
+    it('Given a SIWA request naming the auth account as signer and the rekeyed account as account_address, when the user confirms, then the auth key signs', async () => {
+        const authSigner = await seedAlgo25Signer()
+        const rekeyedAccount: WalletAccount = {
+            id: 'rekeyed-arc60-account',
+            type: AccountTypes.watch,
+            address: REKEYED_SIGNER_ADDRESS,
+            rekeyAddress: AUTH_ADDRESS,
+            name: 'Rekeyed SIWA account',
+        }
+        useAccountsStore.getState().setAccounts([rekeyedAccount, authSigner])
 
-            const { request, approve, reject } = buildArc60SignRequest({
-                domain: 'arc60.io',
-                signer: AUTH_ADDRESS,
-                accountAddress: REKEYED_SIGNER_ADDRESS,
-            })
+        const { request, approve, reject } = buildArc60SignRequest({
+            domain: 'arc60.io',
+            signer: AUTH_ADDRESS,
+            accountAddress: REKEYED_SIGNER_ADDRESS,
+        })
 
-            const signSpy = vi.spyOn(getProvider().key.store, 'sign')
+        const signSpy = vi.spyOn(getProvider().key.store, 'sign')
 
-            const { confirm } = renderSignReview(request)
+        const { confirm } = renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('arc60-confirm-slide'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('arc60-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            confirm('arc60-confirm-slide')
+        confirm('arc60-confirm-slide')
 
-            await waitFor(
-                () => {
-                    expect(approve).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            expect(reject).not.toHaveBeenCalled()
+        await waitFor(
+            () => {
+                expect(approve).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(reject).not.toHaveBeenCalled()
 
-            const delivered = approve.mock.calls[0][0]
-            expect(delivered[0].signer).toBe(AUTH_ADDRESS)
-            expect(signSpy).toHaveBeenCalledTimes(1)
-            expect(signSpy.mock.calls[0][0]).toBe(authSigner.keyPairId)
+        const delivered = approve.mock.calls[0][0]
+        expect(delivered[0].signer).toBe(AUTH_ADDRESS)
+        expect(signSpy).toHaveBeenCalledTimes(1)
+        expect(signSpy.mock.calls[0][0]).toBe(authSigner.keyPairId)
 
-            signSpy.mockRestore()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        signSpy.mockRestore()
+    })
 })

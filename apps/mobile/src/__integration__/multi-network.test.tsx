@@ -151,13 +151,11 @@ describe.each(FIXTURES)(
         }
 
         beforeAll(() => {
-            server.listen({ onUnhandledRequest: 'bypass' })
             server.events.on('request:start', record)
         })
 
         afterAll(() => {
             server.events.removeListener('request:start', record)
-            server.close()
         })
 
         beforeEach(() => {
@@ -167,7 +165,6 @@ describe.each(FIXTURES)(
         })
 
         afterEach(() => {
-            server.resetHandlers()
             useNetworkStore.getState().setNetwork(Networks.mainnet)
             useCustomNetworkStore.getState().resetState()
         })

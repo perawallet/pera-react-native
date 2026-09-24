@@ -17,28 +17,16 @@
 // domain shape, not on SwapScreen's form and debounce flow, which is a
 // separate target.
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
-import React from 'react'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClientProvider } from '@tanstack/react-query'
 
 import { server } from '@test-utils/msw-server'
-import { createTestQueryClient } from '@test-utils/render'
+import { createQueryClientWrapper } from '@test-utils/render'
 import {
     mockCreateQuotes,
     mockSwapProviders,
 } from '@perawallet/wallet-core-swaps/test-handlers'
 import { useCreateQuotesMutation } from '@perawallet/wallet-core-swaps'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const SWAPPER_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -167,20 +155,7 @@ const ALGO_USDC_QUOTES = {
     ],
 }
 
-const buildWrapper = () => {
-    const queryClient = createTestQueryClient()
-    return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
-    )
-}
-
 describe('Flow: Swap quote (Pera DEX aggregator)', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
         // Providers must be available before the quote mutation runs —
         // the mutationFn reads them via `ensureQueryData` so it can
@@ -188,134 +163,122 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
         server.use(mockSwapProviders({ response: PROVIDERS }))
     })
 
-    it(
-        'Given the providers list and the quotes endpoint return data, when the user requests a swap quote, then the mutation resolves with both quotes including provider display names, slippage, and minimum-received amounts',
-        async () => {
-            server.use(mockCreateQuotes({ response: ALGO_USDC_QUOTES }))
+    it('Given the providers list and the quotes endpoint return data, when the user requests a swap quote, then the mutation resolves with both quotes including provider display names, slippage, and minimum-received amounts', async () => {
+        server.use(mockCreateQuotes({ response: ALGO_USDC_QUOTES }))
 
-            const { result } = renderHook(() => useCreateQuotesMutation(), {
-                wrapper: buildWrapper(),
-            })
+        const { result } = renderHook(() => useCreateQuotesMutation(), {
+            wrapper: createQueryClientWrapper(),
+        })
 
-            // Drive the mutation the way `useSwapForm` does after the
-            // user enters an amount and the debounce settles.
-            result.current.mutate({
-                swapper_address: SWAPPER_ADDRESS,
-                swap_type: 'fixed-input',
-                asset_in_id: 0,
-                asset_out_id: 31_566_704,
-                amount: '10000000',
-                slippage: '0.01',
-            })
+        // Drive the mutation the way `useSwapForm` does after the
+        // user enters an amount and the debounce settles.
+        result.current.mutate({
+            swapper_address: SWAPPER_ADDRESS,
+            swap_type: 'fixed-input',
+            asset_in_id: 0,
+            asset_out_id: 31_566_704,
+            amount: '10000000',
+            slippage: '0.01',
+        })
 
-            await waitFor(
-                () => {
-                    expect(result.current.isSuccess).toBe(true)
-                },
-                { timeout: 5000 },
-            )
+        await waitFor(
+            () => {
+                expect(result.current.isSuccess).toBe(true)
+            },
+            { timeout: 5000 },
+        )
 
-            const quotes = result.current.data!
-            expect(quotes).toHaveLength(2)
+        const quotes = result.current.data!
+        expect(quotes).toHaveLength(2)
 
-            // The Tinyman quote retains its provider name AND picks up
-            // the display name from the providers join. Without the
-            // providers fetch firing first, providerDisplayName would be
-            // undefined.
-            const tinyman = quotes.find(q => q.provider === 'tinyman_v2')!
-            expect(tinyman).toBeDefined()
-            expect(tinyman.providerDisplayName).toBe('Tinyman v2')
+        // The Tinyman quote retains its provider name AND picks up
+        // the display name from the providers join. Without the
+        // providers fetch firing first, providerDisplayName would be
+        // undefined.
+        const tinyman = quotes.find(q => q.provider === 'tinyman_v2')!
+        expect(tinyman).toBeDefined()
+        expect(tinyman.providerDisplayName).toBe('Tinyman v2')
 
-            const pact = quotes.find(q => q.provider === 'pact')!
-            expect(pact).toBeDefined()
-            expect(pact.providerDisplayName).toBe('Pact')
+        const pact = quotes.find(q => q.provider === 'pact')!
+        expect(pact).toBeDefined()
+        expect(pact.providerDisplayName).toBe('Pact')
 
-            // String → Decimal coercions land on the right fields. UI
-            // displays `amountOutWithSlippage` as the "minimum received"
-            // line; production reads that as a Decimal so it can be
-            // formatted at the asset's decimal precision.
-            expect(tinyman.amountOut?.toString()).toBe('2950000')
-            expect(tinyman.amountOutWithSlippage?.toString()).toBe('2920500')
-            expect(tinyman.slippage?.toString()).toBe('0.01')
-            expect(tinyman.priceImpact?.toString()).toBe('0.001')
-            expect(tinyman.peraFeeAmount?.toString()).toBe('15000')
+        // String → Decimal coercions land on the right fields. UI
+        // displays `amountOutWithSlippage` as the "minimum received"
+        // line; production reads that as a Decimal so it can be
+        // formatted at the asset's decimal precision.
+        expect(tinyman.amountOut?.toString()).toBe('2950000')
+        expect(tinyman.amountOutWithSlippage?.toString()).toBe('2920500')
+        expect(tinyman.slippage?.toString()).toBe('0.01')
+        expect(tinyman.priceImpact?.toString()).toBe('0.001')
+        expect(tinyman.peraFeeAmount?.toString()).toBe('15000')
 
-            // Asset metadata round-trips through `transformDexSwapAsset`
-            // — verification_tier survives so the UI can decorate
-            // suspicious assets.
-            expect(tinyman.assetIn.verificationTier).toBe('verified')
-            expect(tinyman.assetOut.unitName).toBe('USDC')
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Asset metadata round-trips through `transformDexSwapAsset`
+        // — verification_tier survives so the UI can decorate
+        // suspicious assets.
+        expect(tinyman.assetIn.verificationTier).toBe('verified')
+        expect(tinyman.assetOut.unitName).toBe('USDC')
+    })
 
-    it(
-        'Given the quotes endpoint returns an empty list, when the user requests a quote, then the mutation succeeds with an empty array (the UI surfaces "no route")',
-        async () => {
-            server.use(mockCreateQuotes({ response: { results: [] } }))
+    it('Given the quotes endpoint returns an empty list, when the user requests a quote, then the mutation succeeds with an empty array (the UI surfaces "no route")', async () => {
+        server.use(mockCreateQuotes({ response: { results: [] } }))
 
-            const { result } = renderHook(() => useCreateQuotesMutation(), {
-                wrapper: buildWrapper(),
-            })
+        const { result } = renderHook(() => useCreateQuotesMutation(), {
+            wrapper: createQueryClientWrapper(),
+        })
 
-            result.current.mutate({
-                swapper_address: SWAPPER_ADDRESS,
-                swap_type: 'fixed-input',
-                asset_in_id: 0,
-                asset_out_id: 31_566_704,
-                amount: '10000000',
-                slippage: '0.01',
-            })
+        result.current.mutate({
+            swapper_address: SWAPPER_ADDRESS,
+            swap_type: 'fixed-input',
+            asset_in_id: 0,
+            asset_out_id: 31_566_704,
+            amount: '10000000',
+            slippage: '0.01',
+        })
 
-            await waitFor(
-                () => {
-                    expect(result.current.isSuccess).toBe(true)
-                },
-                { timeout: 5000 },
-            )
-            // Empty results → empty array, not an error. The UI uses
-            // `length === 0` as the gate for the "no liquidity" empty
-            // state; an undefined here would crash the screen.
-            expect(result.current.data).toEqual([])
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(result.current.isSuccess).toBe(true)
+            },
+            { timeout: 5000 },
+        )
+        // Empty results → empty array, not an error. The UI uses
+        // `length === 0` as the gate for the "no liquidity" empty
+        // state; an undefined here would crash the screen.
+        expect(result.current.data).toEqual([])
+    })
 
-    it(
-        'Given the quotes endpoint returns an HTTP error, when the user requests a quote, then the mutation transitions to error state without throwing',
-        async () => {
-            server.use(
-                mockCreateQuotes({
-                    response: { results: [] },
-                    status: 500,
-                }),
-            )
+    it('Given the quotes endpoint returns an HTTP error, when the user requests a quote, then the mutation transitions to error state without throwing', async () => {
+        server.use(
+            mockCreateQuotes({
+                response: { results: [] },
+                status: 500,
+            }),
+        )
 
-            const { result } = renderHook(() => useCreateQuotesMutation(), {
-                wrapper: buildWrapper(),
-            })
+        const { result } = renderHook(() => useCreateQuotesMutation(), {
+            wrapper: createQueryClientWrapper(),
+        })
 
-            result.current.mutate({
-                swapper_address: SWAPPER_ADDRESS,
-                swap_type: 'fixed-input',
-                asset_in_id: 0,
-                asset_out_id: 31_566_704,
-                amount: '10000000',
-                slippage: '0.01',
-            })
+        result.current.mutate({
+            swapper_address: SWAPPER_ADDRESS,
+            swap_type: 'fixed-input',
+            asset_in_id: 0,
+            asset_out_id: 31_566_704,
+            amount: '10000000',
+            slippage: '0.01',
+        })
 
-            // The hook sets `throwOnError: false` so the consumer sees
-            // an error state instead of an unhandled rejection. This is
-            // the contract `useSwapForm` relies on when surfacing
-            // failures via toast.
-            await waitFor(
-                () => {
-                    expect(result.current.isError).toBe(true)
-                },
-                { timeout: 5000 },
-            )
-            expect(result.current.error).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The hook sets `throwOnError: false` so the consumer sees
+        // an error state instead of an unhandled rejection. This is
+        // the contract `useSwapForm` relies on when surfacing
+        // failures via toast.
+        await waitFor(
+            () => {
+                expect(result.current.isError).toBe(true)
+            },
+            { timeout: 5000 },
+        )
+        expect(result.current.error).toBeTruthy()
+    })
 })

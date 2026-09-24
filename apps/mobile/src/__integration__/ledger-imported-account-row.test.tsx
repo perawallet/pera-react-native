@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
@@ -44,18 +36,13 @@ import { LedgerSelectAccountsScreen } from '@modules/ledger'
 
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 const LEDGER_ADDRESS = HD_TEST_ADDRESS
 
 describe('Flow: Ledger imported account row checkbox', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -90,45 +77,41 @@ describe('Flow: Ledger imported account row checkbox', () => {
         )
     })
 
-    it(
-        'Given an already-imported Ledger account discovered on the select-accounts screen, the row shows the already-imported chip in place of a checkbox',
-        async () => {
-            renderWithNavigation(
-                LedgerSelectAccountsScreen,
-                'LedgerSelectAccounts',
-                {
-                    initialParams: {
-                        deviceId: 'test-device-id',
-                        deviceName: 'Ledger Nano X',
-                        transportType: 'ble',
-                        accounts: [
-                            {
-                                address: LEDGER_ADDRESS,
-                                publicKeyHex: '01',
-                                accountIndex: 0,
-                            },
-                        ],
-                    },
+    it('Given an already-imported Ledger account discovered on the select-accounts screen, the row shows the already-imported chip in place of a checkbox', async () => {
+        renderWithNavigation(
+            LedgerSelectAccountsScreen,
+            'LedgerSelectAccounts',
+            {
+                initialParams: {
+                    deviceId: 'test-device-id',
+                    deviceName: 'Ledger Nano X',
+                    transportType: 'ble',
+                    accounts: [
+                        {
+                            address: LEDGER_ADDRESS,
+                            publicKeyHex: '01',
+                            accountIndex: 0,
+                        },
+                    ],
                 },
-            )
+            },
+        )
 
-            await waitFor(
-                () =>
-                    // PWChip upper-cases its title.
-                    expect(
-                        screen.queryByText(
-                            'LEDGER.SELECT_ACCOUNTS.ALREADY_IMPORTED',
-                        ),
-                    ).not.toBeNull(),
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () =>
+                // PWChip upper-cases its title.
+                expect(
+                    screen.queryByText(
+                        'LEDGER.SELECT_ACCOUNTS.ALREADY_IMPORTED',
+                    ),
+                ).not.toBeNull(),
+            { timeout: 10_000 },
+        )
 
-            expect(
-                screen.queryByTestId(
-                    `ledger_select_row_${LEDGER_ADDRESS}-checkbox`,
-                ),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(
+            screen.queryByTestId(
+                `ledger_select_row_${LEDGER_ADDRESS}-checkbox`,
+            ),
+        ).toBeNull()
+    })
 })

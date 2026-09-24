@@ -17,15 +17,7 @@
 // request, and resetting the signing store mid-suite disrupts the actor
 // lifecycle — a fresh per-file module registry sidesteps both.
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -50,18 +42,11 @@ import {
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: balance-impact summary hidden when nothing moves', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => {
-        server.resetHandlers()
-    })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -79,38 +64,32 @@ describe('Flow: balance-impact summary hidden when nothing moves', () => {
         )
     })
 
-    it(
-        'hides the summary when no assets change hands in the group',
-        async () => {
-            await seedAlgo25Signer()
-            // Two self-payments: the signer is both sender and receiver, so each
-            // nets to zero and no spend/receive movement remains. The group
-            // still renders (transaction count), but the impact section — and
-            // its flanking divider — must not.
-            const selfPayment = () =>
-                buildPaymentTransaction({
-                    receiver: REVIEW_SIGNER_ADDRESS,
-                    amount: 1_000_000n,
-                })
-            const { request } = buildTransactionSignRequest({
-                txs: [selfPayment(), selfPayment()],
+    it('hides the summary when no assets change hands in the group', async () => {
+        await seedAlgo25Signer()
+        // Two self-payments: the signer is both sender and receiver, so each
+        // nets to zero and no spend/receive movement remains. The group
+        // still renders (transaction count), but the impact section — and
+        // its flanking divider — must not.
+        const selfPayment = () =>
+            buildPaymentTransaction({
+                receiver: REVIEW_SIGNER_ADDRESS,
+                amount: 1_000_000n,
             })
+        const { request } = buildTransactionSignRequest({
+            txs: [selfPayment(), selfPayment()],
+        })
 
-            renderSignReview(request)
+        renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByText(
-                            'signing.transactions.transactions_count',
-                        ),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByText('signing.transactions.transactions_count'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
 
-            expect(screen.queryByTestId('balance-impact-summary')).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(screen.queryByTestId('balance-impact-summary')).toBeNull()
+    })
 })

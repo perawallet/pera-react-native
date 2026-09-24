@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { server } from '@test-utils/msw-server'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
@@ -24,10 +24,6 @@ import {
 // indexer responses with handler factories like everywhere else.
 
 describe('algokit-utils + MSW interception', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     const TEST_ADDR =
         'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
 

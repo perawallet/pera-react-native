@@ -18,15 +18,7 @@
 // so the group review is what we exercise here. (Integration i18n returns keys
 // verbatim.)
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -51,18 +43,11 @@ import {
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: balance-impact summary in the review sheet', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => {
-        server.resetHandlers()
-    })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -80,33 +65,29 @@ describe('Flow: balance-impact summary in the review sheet', () => {
         )
     })
 
-    it(
-        'shows outgoing payments under the spend section',
-        async () => {
-            await seedAlgo25Signer()
-            // A multi-transaction group renders TransactionListScreen, whose
-            // header hosts the balance-impact summary.
-            const { request } = buildTransactionSignRequest({
-                txs: [
-                    buildPaymentTransaction({ amount: 2_000_000n }),
-                    buildPaymentTransaction({ amount: 1_000_000n }),
-                ],
-            })
+    it('shows outgoing payments under the spend section', async () => {
+        await seedAlgo25Signer()
+        // A multi-transaction group renders TransactionListScreen, whose
+        // header hosts the balance-impact summary.
+        const { request } = buildTransactionSignRequest({
+            txs: [
+                buildPaymentTransaction({ amount: 2_000_000n }),
+                buildPaymentTransaction({ amount: 1_000_000n }),
+            ],
+        })
 
-            renderSignReview(request)
+        renderSignReview(request)
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('balance-impact-summary'),
-                    ).toBeTruthy()
-                    expect(
-                        screen.getByText('signing.balance_impact.spend_title'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('balance-impact-summary'),
+                ).toBeTruthy()
+                expect(
+                    screen.getByText('signing.balance_impact.spend_title'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+    })
 })

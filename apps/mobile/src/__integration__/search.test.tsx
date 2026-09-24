@@ -23,7 +23,6 @@ import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import { server } from '@test-utils/msw-server'
 import {
     AccountTypes,
     insertAssetHolding,
@@ -42,8 +41,6 @@ import { SearchScreen } from '@modules/search/screens/SearchScreen'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Shared substring that matches both the seeded account name and the seeded
 // contact name, so a single typed query surfaces results across two scopes.
@@ -76,12 +73,9 @@ const typeQuery = (query: string) => {
 
 describe('Flow: Global search', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -99,155 +93,131 @@ describe('Flow: Global search', () => {
         resetTestContacts()
     })
 
-    it(
-        'Given a matching account and contact, when the user types a shared query, then results from both scopes surface',
-        async () => {
-            addTestContact(`${SHARED_QUERY} contact`, HD_TEST_ADDRESS)
+    it('Given a matching account and contact, when the user types a shared query, then results from both scopes surface', async () => {
+        addTestContact(`${SHARED_QUERY} contact`, HD_TEST_ADDRESS)
 
-            renderWithNavigation(SearchScreen, 'Search')
+        renderWithNavigation(SearchScreen, 'Search')
 
-            typeQuery(SHARED_QUERY)
+        typeQuery(SHARED_QUERY)
 
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(
-                        `search_result_account_${SEARCH_ACCOUNT.address}`,
-                    ),
-                ).toBeTruthy()
-            })
+        await waitFor(() => {
             expect(
-                screen.getByTestId(`search_result_contact_${HD_TEST_ADDRESS}`),
+                screen.getByTestId(
+                    `search_result_account_${SEARCH_ACCOUNT.address}`,
+                ),
             ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
+        expect(
+            screen.getByTestId(`search_result_contact_${HD_TEST_ADDRESS}`),
+        ).toBeTruthy()
+    })
 
-    it(
-        'Given a matching account result, when the user taps it, then it becomes the selected account',
-        async () => {
-            // Seed a second, currently-selected account so the tap produces an
-            // observable change in the selected address.
-            const otherAccount: WalletAccount = {
-                id: 'other-account-1',
-                type: AccountTypes.watch,
-                address: HD_TEST_ADDRESS,
-                name: 'unrelated',
-            }
-            useAccountsStore
-                .getState()
-                .setAccounts([otherAccount, SEARCH_ACCOUNT])
-            useAccountsStore
-                .getState()
-                .setSelectedAccountAddress(otherAccount.address)
+    it('Given a matching account result, when the user taps it, then it becomes the selected account', async () => {
+        // Seed a second, currently-selected account so the tap produces an
+        // observable change in the selected address.
+        const otherAccount: WalletAccount = {
+            id: 'other-account-1',
+            type: AccountTypes.watch,
+            address: HD_TEST_ADDRESS,
+            name: 'unrelated',
+        }
+        useAccountsStore.getState().setAccounts([otherAccount, SEARCH_ACCOUNT])
+        useAccountsStore
+            .getState()
+            .setSelectedAccountAddress(otherAccount.address)
 
-            renderWithNavigation(SearchScreen, 'Search')
+        renderWithNavigation(SearchScreen, 'Search')
 
-            typeQuery(SHARED_QUERY)
+        typeQuery(SHARED_QUERY)
 
-            const accountRow = await screen.findByTestId(
-                `search_result_account_${SEARCH_ACCOUNT.address}`,
+        const accountRow = await screen.findByTestId(
+            `search_result_account_${SEARCH_ACCOUNT.address}`,
+        )
+        fireEvent.click(accountRow)
+
+        await waitFor(() => {
+            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+                SEARCH_ACCOUNT.address,
             )
-            fireEvent.click(accountRow)
+        })
+    })
 
-            await waitFor(() => {
-                expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                    SEARCH_ACCOUNT.address,
-                )
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given a matching contact result, when the user taps it, then it becomes the selected contact', async () => {
+        addTestContact(`${SHARED_QUERY} contact`, HD_TEST_ADDRESS)
 
-    it(
-        'Given a matching contact result, when the user taps it, then it becomes the selected contact',
-        async () => {
-            addTestContact(`${SHARED_QUERY} contact`, HD_TEST_ADDRESS)
+        renderWithNavigation(SearchScreen, 'Search')
 
-            renderWithNavigation(SearchScreen, 'Search')
+        typeQuery(SHARED_QUERY)
 
-            typeQuery(SHARED_QUERY)
+        const contactRow = await screen.findByTestId(
+            `search_result_contact_${HD_TEST_ADDRESS}`,
+        )
+        fireEvent.click(contactRow)
 
-            const contactRow = await screen.findByTestId(
-                `search_result_contact_${HD_TEST_ADDRESS}`,
+        await waitFor(() => {
+            const { result } = renderHook(() => useContacts())
+            expect(result.current.selectedContact?.address).toBe(
+                HD_TEST_ADDRESS,
             )
-            fireEvent.click(contactRow)
+        })
+    })
 
-            await waitFor(() => {
-                const { result } = renderHook(() => useContacts())
-                expect(result.current.selectedContact?.address).toBe(
-                    HD_TEST_ADDRESS,
-                )
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given an NFT held by another account, when the user taps the result, then that account becomes selected', async () => {
+        // The asset scope spans every account, so searching from
+        // SEARCH_ACCOUNT surfaces an NFT that only NFT_HOLDER holds. Both
+        // detail screens read the selected account for the owner row, so
+        // the tap has to move the selection there.
+        const nftHolder: WalletAccount = {
+            id: 'nft-holder-1',
+            type: AccountTypes.watch,
+            address: HD_TEST_ADDRESS,
+            name: 'nft holder',
+        }
+        useAccountsStore.getState().setAccounts([SEARCH_ACCOUNT, nftHolder])
+        useAccountsStore
+            .getState()
+            .setSelectedAccountAddress(SEARCH_ACCOUNT.address)
+        await seedAlgoAsset()
+        await seedAssets([NFT_TEST_ASSET])
+        await insertAssetHolding({
+            accountAddress: nftHolder.address,
+            assetId: NFT_TEST_ASSET_ID,
+            network: 'mainnet',
+            amount: '1',
+        })
 
-    it(
-        'Given an NFT held by another account, when the user taps the result, then that account becomes selected',
-        async () => {
-            // The asset scope spans every account, so searching from
-            // SEARCH_ACCOUNT surfaces an NFT that only NFT_HOLDER holds. Both
-            // detail screens read the selected account for the owner row, so
-            // the tap has to move the selection there.
-            const nftHolder: WalletAccount = {
-                id: 'nft-holder-1',
-                type: AccountTypes.watch,
-                address: HD_TEST_ADDRESS,
-                name: 'nft holder',
-            }
-            useAccountsStore.getState().setAccounts([SEARCH_ACCOUNT, nftHolder])
-            useAccountsStore
-                .getState()
-                .setSelectedAccountAddress(SEARCH_ACCOUNT.address)
-            await seedAlgoAsset()
-            await seedAssets([NFT_TEST_ASSET])
-            await insertAssetHolding({
-                accountAddress: nftHolder.address,
-                assetId: NFT_TEST_ASSET_ID,
-                network: 'mainnet',
-                amount: '1',
-            })
+        renderWithNavigation(SearchScreen, 'Search')
 
-            renderWithNavigation(SearchScreen, 'Search')
+        typeQuery('Test Collectible')
 
-            typeQuery('Test Collectible')
+        const assetRow = await screen.findByTestId(
+            `search_result_asset_${NFT_TEST_ASSET_ID}`,
+        )
+        fireEvent.click(assetRow)
 
-            const assetRow = await screen.findByTestId(
-                `search_result_asset_${NFT_TEST_ASSET_ID}`,
+        await waitFor(() => {
+            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+                nftHolder.address,
             )
-            fireEvent.click(assetRow)
+        })
+    })
 
-            await waitFor(() => {
-                expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                    nftHolder.address,
-                )
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given a query that matches nothing, when the user types it, then no result rows render', async () => {
+        addTestContact(`${SHARED_QUERY} contact`, HD_TEST_ADDRESS)
 
-    it(
-        'Given a query that matches nothing, when the user types it, then no result rows render',
-        async () => {
-            addTestContact(`${SHARED_QUERY} contact`, HD_TEST_ADDRESS)
+        renderWithNavigation(SearchScreen, 'Search')
 
-            renderWithNavigation(SearchScreen, 'Search')
+        typeQuery('zzzznomatch')
 
-            typeQuery('zzzznomatch')
-
-            await waitFor(() => {
-                expect(
-                    screen.queryByTestId(
-                        `search_result_account_${SEARCH_ACCOUNT.address}`,
-                    ),
-                ).toBeNull()
-            })
+        await waitFor(() => {
             expect(
                 screen.queryByTestId(
-                    `search_result_contact_${HD_TEST_ADDRESS}`,
+                    `search_result_account_${SEARCH_ACCOUNT.address}`,
                 ),
             ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
+        expect(
+            screen.queryByTestId(`search_result_contact_${HD_TEST_ADDRESS}`),
+        ).toBeNull()
+    })
 })
