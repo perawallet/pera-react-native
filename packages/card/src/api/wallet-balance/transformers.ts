@@ -15,13 +15,11 @@ import {
     type CardWalletBalance,
     type CardWalletHistoryEntry,
     TransactionSign,
-    type WalletWithdrawEstimation,
     type WalletWithdrawResult,
 } from '../../models'
 import type {
     WalletBalanceApiResponse,
     WalletHistoryEntryApiResponse,
-    WalletWithdrawEstimationApiResponse,
     WalletWithdrawApiResponse,
 } from './schema'
 
@@ -32,13 +30,6 @@ export const transformWalletBalance = (
     balance: toDecimal(response.balance),
     currency: response.currency,
     isWithdrawable: response.isWithdrawable ?? false,
-})
-
-export const transformWalletWithdrawEstimation = (
-    response: WalletWithdrawEstimationApiResponse,
-): WalletWithdrawEstimation => ({
-    fee: toDecimal(response.fee),
-    gas: response.gas,
 })
 
 export const transformWalletWithdraw = (

@@ -71,12 +71,6 @@ export const cardQueryKeys = {
         ] as const,
     walletBalance: (network: Network, kind: CardWalletKind) =>
         [MODULE_PREFIX, 'wallet-balance', { network, kind }] as const,
-    walletWithdrawEstimation: (network: Network, kind: CardWalletKind) =>
-        [
-            MODULE_PREFIX,
-            'wallet-withdraw-estimation',
-            { network, kind },
-        ] as const,
     walletHistory: (network: Network, kind: CardWalletKind, walletId: string) =>
         [MODULE_PREFIX, 'wallet-history', { network, kind, walletId }] as const,
     // Prefix of `walletHistory` for invalidating every page of one wallet kind.

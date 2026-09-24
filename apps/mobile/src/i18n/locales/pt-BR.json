@@ -1240,8 +1240,6 @@
             "balance": "Saldo: {{amount}} USDC",
             "confirm_title": "Confirmar resgate",
             "confirm_button": "Confirmar",
-            "fee_label": "Taxa de rede",
-            "fee_loading": "Estimando...",
             "success_title": "Resgate enviado",
             "history_title": "Atividade"
         },

@@ -20,7 +20,6 @@ const mocks = vi.hoisted(() => ({
     withdrawMutateAsync: vi.fn(),
     withdrawPending: false,
     wallet: null as unknown,
-    estimation: null as unknown,
     resolve: vi.fn(),
     dismiss: vi.fn(),
     errorToast: vi.fn(),
@@ -29,7 +28,6 @@ const mocks = vi.hoisted(() => ({
     kinds: {
         mutation: [] as string[],
         balance: [] as string[],
-        estimation: [] as string[],
     },
 }))
 
@@ -68,14 +66,6 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 refetch: vi.fn(),
             }
         },
-        useWalletWithdrawEstimationQuery: (kind: string) => {
-            mocks.kinds.estimation.push(kind)
-            return {
-                estimation: mocks.estimation,
-                isLoading: mocks.estimation === null,
-                isError: false,
-            }
-        },
     }
 })
 
@@ -102,8 +92,7 @@ describe('useWalletWithdrawConfirmationSheet', () => {
         vi.clearAllMocks()
         mocks.withdrawPending = false
         mocks.wallet = wallet
-        mocks.estimation = { fee: new Decimal('0.000006219'), gas: '6219' }
-        mocks.kinds = { mutation: [], balance: [], estimation: [] }
+        mocks.kinds = { mutation: [], balance: [] }
     })
 
     it.each([CardWalletKind.Reward, CardWalletKind.Credit])(
@@ -118,7 +107,6 @@ describe('useWalletWithdrawConfirmationSheet', () => {
 
             expect(new Set(mocks.kinds.mutation)).toEqual(new Set([kind]))
             expect(new Set(mocks.kinds.balance)).toEqual(new Set([kind]))
-            expect(new Set(mocks.kinds.estimation)).toEqual(new Set([kind]))
             expect(result.current.copy.confirmBody).toBe(
                 kind === CardWalletKind.Reward
                     ? 'peraCard.rewards.confirm_body'
@@ -148,21 +136,6 @@ describe('useWalletWithdrawConfirmationSheet', () => {
             amount: '25.50',
         })
         expect(mocks.resolve).toHaveBeenCalledWith('confirm')
-    })
-
-    it('renders the fee quote and a loading label before it arrives', () => {
-        const { result, rerender } = renderHook(() =>
-            useWalletWithdrawConfirmationSheet({
-                kind: CardWalletKind.Reward,
-                amount: new Decimal('1'),
-            }),
-        )
-        expect(result.current.feeDisplay).toBe('0.000006219')
-
-        mocks.estimation = null
-        rerender()
-        expect(result.current.feeDisplay).toBeNull()
-        expect(result.current.isEstimating).toBe(true)
     })
 
     it('blocks the withdraw when the wallet is not withdrawable', async () => {

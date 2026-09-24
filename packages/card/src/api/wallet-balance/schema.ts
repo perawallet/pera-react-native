@@ -24,16 +24,6 @@ export type WalletBalanceApiResponse = z.infer<
     typeof walletBalanceResponseSchema
 >
 
-// GET /v1/wallet/{kind}/withdraw-estimation. The response also carries
-// deprecated `wei`/`eth` twins of these fields, deliberately not modelled.
-export const walletWithdrawEstimationResponseSchema = z.object({
-    gas: z.string(),
-    fee: z.string(),
-})
-export type WalletWithdrawEstimationApiResponse = z.infer<
-    typeof walletWithdrawEstimationResponseSchema
->
-
 // POST /v1/wallet/{kind}/withdraw
 export const walletWithdrawResponseSchema = z.object({
     txHash: z.string(),

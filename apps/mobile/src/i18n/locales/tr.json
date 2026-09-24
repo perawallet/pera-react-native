@@ -1240,8 +1240,6 @@
             "balance": "Bakiye: {{amount}} USDC",
             "confirm_title": "Talebi onayla",
             "confirm_button": "Onayla",
-            "fee_label": "Ağ ücreti",
-            "fee_loading": "Tahmin ediliyor...",
             "success_title": "Talep gönderildi",
             "history_title": "Hareketler"
         },

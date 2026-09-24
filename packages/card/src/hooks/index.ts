@@ -47,7 +47,6 @@ export * from './useCardUsdcCreditQuery'
 
 // Internal wallet (balance / withdraw)
 export * from './useCardWalletBalanceQuery'
-export * from './useWalletWithdrawEstimationQuery'
 export * from './useWithdrawWalletBalanceMutation'
 export * from './useCardWalletHistoryQuery'
 

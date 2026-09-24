@@ -1240,8 +1240,6 @@
             "balance": "Saldo: {{amount}} USDC",
             "confirm_title": "Confirmar reclamo",
             "confirm_button": "Confirmar",
-            "fee_label": "Comisión de red",
-            "fee_loading": "Estimando...",
             "success_title": "Reclamo enviado",
             "history_title": "Actividad"
         },

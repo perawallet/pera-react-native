@@ -1240,8 +1240,6 @@
             "balance": "Balance: {{amount}} USDC",
             "confirm_title": "Confirm claim",
             "confirm_button": "Confirm",
-            "fee_label": "Network fee",
-            "fee_loading": "Estimating...",
             "success_title": "Claim submitted",
             "history_title": "Activity"
         },
