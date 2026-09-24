@@ -22,7 +22,13 @@ export type UseForgotPasswordViewResult = {
     handleReset: () => Promise<void>
 }
 
-export const useForgotPasswordView = (): UseForgotPasswordViewResult => {
+export type UseForgotPasswordViewParams = {
+    onVaultReset: () => Promise<void>
+}
+
+export const useForgotPasswordView = ({
+    onVaultReset,
+}: UseForgotPasswordViewParams): UseForgotPasswordViewResult => {
     const { wipeAllUserData } = useDeleteAllData()
     const [isAcknowledged, setIsAcknowledged] = useState(false)
     const [isResetting, setIsResetting] = useState(false)
@@ -37,18 +43,19 @@ export const useForgotPasswordView = (): UseForgotPasswordViewResult => {
         setIsResetting(true)
         setHasError(false)
         try {
-            // The wipe ends by destroying the vault, which sends the shell to
-            // CreatePasswordScreen; this view unmounts on success.
             await wipeAllUserData()
             // The wipe keeps the accounts store for the settings flow's success
             // modal; there is none here, so drop it as the native lockout does.
             clearAccountsStore()
+            // The vault was already locked, so destroying it changes no lock
+            // state and fires no event; VaultGate has to be told to re-read it.
+            await onVaultReset()
         } catch (error) {
             logger.error('Forgot-password reset failed', { error })
             setHasError(true)
             setIsResetting(false)
         }
-    }, [isAcknowledged, isResetting, wipeAllUserData])
+    }, [isAcknowledged, isResetting, wipeAllUserData, onVaultReset])
 
     return {
         isAcknowledged,

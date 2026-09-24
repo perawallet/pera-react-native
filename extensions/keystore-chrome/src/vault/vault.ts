@@ -468,28 +468,14 @@ export const changePassword = async (
 export const onLockStateChanged = (
     listener: (isUnlocked: boolean) => void,
 ): (() => void) => {
-    // Destroying an unlocked vault clears both keys; report that once.
-    let lastReported: boolean | undefined
-    const report = (unlocked: boolean): void => {
-        if (unlocked === lastReported) return
-        lastReported = unlocked
-        listener(unlocked)
-    }
     const handler = (
         changes: Record<string, chrome.storage.StorageChange>,
         areaName: string,
     ): void => {
-        // Destroying an already-locked vault leaves the session key untouched,
-        // so its removal is reported as a lock or no surface would notice.
-        if (areaName === 'local') {
-            const vaultChange = changes[VAULT_STORAGE_KEY]
-            if (vaultChange && vaultChange.newValue === undefined) report(false)
-            return
-        }
         if (areaName !== 'session') return
         const change = changes[SESSION_MASTER_KEY]
         if (!change) return
-        report(change.newValue !== undefined)
+        listener(change.newValue !== undefined)
     }
     chrome.storage.onChanged.addListener(handler)
     return () => chrome.storage.onChanged.removeListener(handler)

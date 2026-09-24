@@ -14,9 +14,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useForgotPasswordView } from '../useForgotPasswordView'
 
-const { mockWipe, mockClearAccounts } = vi.hoisted(() => ({
+const { mockWipe, mockClearAccounts, mockVaultReset } = vi.hoisted(() => ({
     mockWipe: vi.fn(),
     mockClearAccounts: vi.fn(),
+    mockVaultReset: vi.fn(),
 }))
 
 vi.mock('@hooks/useDeleteAllData', () => ({
@@ -28,10 +29,13 @@ describe('useForgotPasswordView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockWipe.mockResolvedValue(undefined)
+        mockVaultReset.mockResolvedValue(undefined)
     })
 
     it('wipes nothing until the user acknowledges the loss', async () => {
-        const { result } = renderHook(() => useForgotPasswordView())
+        const { result } = renderHook(() =>
+            useForgotPasswordView({ onVaultReset: mockVaultReset }),
+        )
 
         await act(async () => {
             await result.current.handleReset()
@@ -39,10 +43,13 @@ describe('useForgotPasswordView', () => {
 
         expect(mockWipe).not.toHaveBeenCalled()
         expect(mockClearAccounts).not.toHaveBeenCalled()
+        expect(mockVaultReset).not.toHaveBeenCalled()
     })
 
     it('wipes all data, vault included, and drops the accounts once acknowledged', async () => {
-        const { result } = renderHook(() => useForgotPasswordView())
+        const { result } = renderHook(() =>
+            useForgotPasswordView({ onVaultReset: mockVaultReset }),
+        )
 
         act(() => {
             result.current.toggleAcknowledged()
@@ -53,11 +60,15 @@ describe('useForgotPasswordView', () => {
 
         expect(mockWipe).toHaveBeenCalledTimes(1)
         expect(mockClearAccounts).toHaveBeenCalledTimes(1)
+        // Destroying a locked vault fires no lock event, so the gate is told.
+        expect(mockVaultReset).toHaveBeenCalledTimes(1)
     })
 
     it('keeps the accounts and reports the failure when the wipe throws', async () => {
         mockWipe.mockRejectedValue(new Error('wipe failed'))
-        const { result } = renderHook(() => useForgotPasswordView())
+        const { result } = renderHook(() =>
+            useForgotPasswordView({ onVaultReset: mockVaultReset }),
+        )
 
         act(() => {
             result.current.toggleAcknowledged()
@@ -69,5 +80,6 @@ describe('useForgotPasswordView', () => {
         expect(result.current.hasError).toBe(true)
         expect(result.current.isResetting).toBe(false)
         expect(mockClearAccounts).not.toHaveBeenCalled()
+        expect(mockVaultReset).not.toHaveBeenCalled()
     })
 })

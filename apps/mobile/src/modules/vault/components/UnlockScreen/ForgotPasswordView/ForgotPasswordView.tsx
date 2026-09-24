@@ -24,10 +24,12 @@ import { useForgotPasswordView } from './useForgotPasswordView'
 
 export type ForgotPasswordViewProps = {
     onCancel: () => void
+    onVaultReset: () => Promise<void>
 }
 
 export const ForgotPasswordView = ({
     onCancel,
+    onVaultReset,
 }: ForgotPasswordViewProps): React.JSX.Element => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -37,7 +39,7 @@ export const ForgotPasswordView = ({
         hasError,
         toggleAcknowledged,
         handleReset,
-    } = useForgotPasswordView()
+    } = useForgotPasswordView({ onVaultReset })
 
     return (
         <PWView style={styles.container}>

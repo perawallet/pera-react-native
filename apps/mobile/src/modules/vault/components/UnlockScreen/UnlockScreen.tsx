@@ -27,7 +27,14 @@ import { useStyles } from './styles'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
 
-export const UnlockScreen = (): React.JSX.Element => {
+export type UnlockScreenProps = {
+    /** Re-reads the vault state once a forgot-password reset has destroyed it. */
+    onVaultReset: () => Promise<void>
+}
+
+export const UnlockScreen = ({
+    onVaultReset,
+}: UnlockScreenProps): React.JSX.Element => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -57,7 +64,10 @@ export const UnlockScreen = (): React.JSX.Element => {
             </PWView>
             <PWScreen scroll='auto'>
                 {isForgotPasswordOpen ? (
-                    <ForgotPasswordView onCancel={closeForgotPassword} />
+                    <ForgotPasswordView
+                        onCancel={closeForgotPassword}
+                        onVaultReset={onVaultReset}
+                    />
                 ) : (
                     <PWView style={styles.container}>
                         <PWText
