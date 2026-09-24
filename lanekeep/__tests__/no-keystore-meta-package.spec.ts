@@ -19,6 +19,8 @@ describe('pera/no-keystore-meta-package', () => {
             'meta.ts:2',
             'meta.ts:4',
             'meta.ts:5',
+            'meta.ts:6',
+            'meta.ts:7',
         ])
     })
 })
