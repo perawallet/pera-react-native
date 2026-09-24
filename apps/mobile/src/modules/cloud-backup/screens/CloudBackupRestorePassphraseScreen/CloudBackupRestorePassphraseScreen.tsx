@@ -13,7 +13,7 @@
 import { PWButton, PWScreen, PWView } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
-import { MnemonicSuggestionBar } from '@modules/onboarding/components/MnemonicSuggestionBar'
+import { MnemonicSuggestionBar } from '@modules/onboarding'
 
 import { PassphraseColumn } from './PassphraseColumn'
 import { useCloudBackupRestorePassphraseScreen } from './useCloudBackupRestorePassphraseScreen'

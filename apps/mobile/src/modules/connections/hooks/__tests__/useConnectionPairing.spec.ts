@@ -16,7 +16,7 @@ import type {
     ConnectionPairOptions,
     ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
-import { DEEPLINK_TIMEOUT_TAG } from '@hooks/deeplink/handlers/timeout'
+import { DEEPLINK_TIMEOUT_TAG } from '@modules/deeplink/handlers/timeout'
 
 const mockPair = vi.fn(
     async (_uri: string, _opts?: ConnectionPairOptions) => 'pairing-a',

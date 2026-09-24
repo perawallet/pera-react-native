@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import type { LayoutChangeEvent, TextLayoutEvent } from 'react-native'
-
 import type { GalleryEntry } from '@modules/settings/screens/developer/gallery-catalog/types'
 
 // Types only, no values: every `*.stub.ts` in this tour imports from here so
@@ -63,19 +61,6 @@ export type LocaleTourDeeplinkHandler = (params: {
     step?: string
     run?: 'all'
 }) => Promise<void>
-
-export type UseOverflowProbeParams = {
-    children: React.ReactNode
-    testID?: string
-    /** Already resolved by PWText (`truncate` collapses to 1). */
-    numberOfLines: number | undefined
-}
-
-/** Layout handlers PWText spreads onto the underlying Text. */
-export type OverflowProbe = {
-    onLayout?: (event: LayoutChangeEvent) => void
-    onTextLayout?: (event: TextLayoutEvent) => void
-}
 
 /** i18next `resources` fragment — empty when the tour is stubbed out. */
 export type PseudoResources = Record<

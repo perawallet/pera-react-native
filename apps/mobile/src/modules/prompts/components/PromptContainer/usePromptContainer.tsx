@@ -25,12 +25,13 @@ import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
 import type { PromptViewProps } from '@modules/prompts/models'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { useTermsAcceptance } from '@modules/onboarding/hooks/useTermsAcceptance'
 import {
+    useTermsAcceptance,
     TermsAcceptancePrompt,
     TERMS_ACCEPTANCE_PROMPT_ID,
-} from '@modules/onboarding/components/TermsAndConditionsSheet'
+} from '@modules/onboarding'
 import { UserPreferences } from '@constants/user-preferences'
+import { routeCapabilities } from '@routes/capabilities'
 import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 import { PromptPriority } from '@modules/prompts/constants'
 import { usePromptStore } from '@modules/prompts/store'
@@ -135,7 +136,9 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 priority: PromptPriority.securityPinSetup,
                 isGate: false,
                 component: PinSecurityPrompt,
-                isDue: !getPreference(UserPreferences._securityPinSetupPrompt),
+                isDue:
+                    routeCapabilities.pin &&
+                    !getPreference(UserPreferences._securityPinSetupPrompt),
             },
             {
                 id: UserPreferences._legacyQuantumNoticePrompt,

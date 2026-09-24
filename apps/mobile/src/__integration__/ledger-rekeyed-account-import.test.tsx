@@ -41,9 +41,9 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { LedgerSelectAccountsScreen } from '@modules/ledger/screens/LedgerSelectAccountsScreen'
-import { LedgerVerifyScreen } from '@modules/ledger/screens/LedgerVerifyScreen'
+import { LedgerSelectAccountsScreen, LedgerVerifyScreen } from '@modules/ledger'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import { HD_TEST_ADDRESS, ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
@@ -181,7 +181,7 @@ describe('Flow: Ledger rekeyed-account import', () => {
                     const btn = screen.getByTestId(
                         'ledger_verify_add_accounts_button',
                     ) as HTMLButtonElement
-                    expect(btn.disabled).toBe(false)
+                    expect(isElementDisabled(btn)).toBe(false)
                     return btn
                 },
                 { timeout: 10_000 },

@@ -64,6 +64,7 @@ import { RekeyToStandardSelectTargetScreen } from '@modules/rekey/screens/rekey-
 import { RekeyToStandardConfirmScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardConfirmScreen'
 import { RekeyToStandardSuccessScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSuccessScreen'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -226,13 +227,12 @@ describe('Flow: Rekey to standard account end-to-end', () => {
                     screen.getByTestId('rekey-to-standard-confirm-screen'),
                 ).toBeTruthy()
             })
-            const cta = screen.getByTestId(
-                'rekey-to-standard-confirm-cta',
-            ) as HTMLButtonElement
+            const cta = () =>
+                screen.getByTestId('rekey-to-standard-confirm-cta')
             await waitFor(() => {
-                expect(cta.disabled).toBe(false)
+                expect(isElementDisabled(cta())).toBe(false)
             })
-            fireEvent.click(cta)
+            fireEvent.click(cta())
 
             await waitFor(
                 () => {
@@ -286,13 +286,12 @@ describe('Flow: Rekey to standard account end-to-end', () => {
                     screen.getByTestId('rekey-to-standard-confirm-screen'),
                 ).toBeTruthy()
             })
-            const cta = screen.getByTestId(
-                'rekey-to-standard-confirm-cta',
-            ) as HTMLButtonElement
+            const cta = () =>
+                screen.getByTestId('rekey-to-standard-confirm-cta')
             await waitFor(() => {
-                expect(cta.disabled).toBe(false)
+                expect(isElementDisabled(cta())).toBe(false)
             })
-            fireEvent.click(cta)
+            fireEvent.click(cta())
 
             // The submission failure surfaces as an error toast via
             // `useHandleRekeyError` → `useErrorToast` → `Notifier`. algod

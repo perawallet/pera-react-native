@@ -43,11 +43,11 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
-import { CollectibleDetailScreen } from '@modules/assets/screens/CollectibleDetailScreen/CollectibleDetailScreen'
+import { CollectibleDetailScreen } from '@modules/assets/routes'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
-import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
-import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
+import { TransactionSuccessScreen } from '@modules/transactions/routes'
+import { useSendFundsStore } from '@modules/transactions'
 import {
     mockAssetDetails,
     mockIndexerAssetDetails,
@@ -61,6 +61,7 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -366,7 +367,7 @@ describe('Flow: View NFT collectible detail', () => {
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)

@@ -42,9 +42,8 @@ const collectScannedFiles = (): Promise<string[]> =>
 // and no package.json in the workspace depends on it — the catalog entry was
 // dropped once nothing consumed it (it resolved to nothing in the lockfile,
 // so Dependabot was bumping a spec no test could validate). keystore-chrome
-// vendors its
-// own copy of the flat canary.17 function API and key types locally under
-// `src/keystore/` instead of importing the package, so it is exempt below;
+// vendors the canary.17 key types and error class its WebAuthn signer uses
+// under `src/keystore/` instead of importing the package, so it is exempt below;
 // anywhere else the bare meta package would mean two incompatible type
 // universes for the same key data. Importing it fresh would be worse, not
 // better: canary.23 (the nearest copy on disk) is a thin meta re-export that

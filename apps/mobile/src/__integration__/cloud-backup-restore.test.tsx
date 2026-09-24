@@ -43,6 +43,7 @@ import {
     useCloudBackupRestoreDraftStore,
     useResolveHdSeedForBackup,
     useResolveMnemonicForBackup,
+    createBackupSyncStoreSources,
     initializeBackupSyncManager,
 } from '@perawallet/wallet-core-backup'
 import {
@@ -59,11 +60,13 @@ import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
-import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
+import {
+    CloudBackupRestorePassphraseScreen,
+    CloudBackupRestoreEncryptionKeyRoute,
+} from '@modules/cloud-backup/routes'
 import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
 // The stack's own registration, not the bare screen: the terminal exit lives
 // there, and a hand-rolled wrapper here would let it rot unnoticed.
-import { CloudBackupRestoreEncryptionKeyRoute } from '@modules/cloud-backup/routes'
 
 import {
     BACKUP_MNEMONIC,
@@ -273,6 +276,7 @@ describe('Flow: Cloud backup → Restore', () => {
                 useResolveMnemonicForBackup(),
             )
             await initializeBackupSyncManager({
+                sources: createBackupSyncStoreSources(),
                 importAccounts: importHook.current.importAccounts,
                 importContacts: contactImportHook.current.importContacts,
                 resolveMnemonic: mnemonicHook.current,

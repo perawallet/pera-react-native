@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import type { PWIconSize } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { RampToken } from '@perawallet/wallet-core-onramp'

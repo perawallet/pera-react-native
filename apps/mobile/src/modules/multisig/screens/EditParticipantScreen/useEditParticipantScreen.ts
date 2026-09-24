@@ -20,7 +20,7 @@ import {
     type Contact,
 } from '@perawallet/wallet-core-contacts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useContactForm } from '@modules/contacts/hooks'
+import { useContactForm } from '@modules/contacts'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import type { MultisigStackParamList } from '../../routes/types'
 import type { Optional } from '@perawallet/wallet-core-shared'

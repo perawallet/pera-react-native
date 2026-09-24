@@ -30,7 +30,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { USDC_RAMP_TOKEN_ID } from '@modules/onramp/constants'
+import { USDC_RAMP_TOKEN_ID } from '@modules/onramp'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
 import {
     useCardEscrowBalance,

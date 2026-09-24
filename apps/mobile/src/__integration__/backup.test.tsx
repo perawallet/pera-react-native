@@ -36,15 +36,6 @@ import {
     within,
 } from '@testing-library/react'
 
-// `vite-plugin-svgr` plus `assetsInclude: ['**/*.svg']` resolves these
-// imports to data URLs at module-load time, then the screens render them
-// as `<ShieldCheckImage />` (a component) — jsdom rejects the data URL as
-// an element tag with InvalidCharacterError. The vitest setup mocks the
-// algo icon and a handful of others the same way; do the same for the two
-// icons the backup stack pulls in.
-vi.mock('@assets/icons/shield-check.svg', () => ({ default: () => null }))
-vi.mock('@assets/icons/edit-pen.svg', () => ({ default: () => null }))
-
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -523,7 +514,7 @@ describe('Flow: Account backup', () => {
             // gate resolves), and no mnemonic word leaks through behind
             // the gate.
             await waitFor(() => {
-                expect(screen.getByTestId('PWNumpad')).toBeTruthy()
+                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
             })
             expect(screen.queryByTestId('backup_mnemonic_continue')).toBeNull()
             for (const word of ALGO25_TEST_MNEMONIC_WORDS) {

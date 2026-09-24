@@ -101,9 +101,7 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: vi.fn() }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('expo-haptics', () => ({
     notificationAsync: vi.fn(),

@@ -13,7 +13,7 @@
 import { config } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
-import { isSafeRelativePath } from '@modules/webview/hooks/handlers'
+import { isSafeRelativePath } from '@modules/webview'
 
 const joinDiscoverPath = (baseUrl: string, path?: string): string => {
     if (!path) return baseUrl

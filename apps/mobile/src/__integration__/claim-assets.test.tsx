@@ -60,10 +60,12 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { useClaimAssetsStore } from '@modules/transactions/hooks/claim-assets/useClaimAssets'
-import { AssetTransferRequestsScreen } from '@modules/transactions/screens/claim-assets/AssetTransferRequestsScreen/AssetTransferRequestsScreen'
-import { AssetClaimDetailScreen } from '@modules/transactions/screens/claim-assets/AssetClaimDetailScreen/AssetClaimDetailScreen'
-import { ClaimProcessingScreen } from '@modules/transactions/screens/claim-assets/ClaimProcessingScreen/ClaimProcessingScreen'
-import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
+import {
+    AssetTransferRequestsScreen,
+    AssetClaimDetailScreen,
+    ClaimProcessingScreen,
+    TransactionSuccessScreen,
+} from '@modules/transactions/routes'
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -580,9 +582,9 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
             )
 
             // The collectible's primaryImage renders as an actual image
-            // (PWImage mock), not the initials fallback.
+            // (expo-image's stub), not the initials fallback.
             const preview = screen.getByTestId('arc59_claim_asset_preview')
-            expect(within(preview).getByTestId('PWImage')).toBeTruthy()
+            expect(within(preview).getByTestId('expo-image')).toBeTruthy()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

@@ -50,7 +50,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError }),
 }))
 
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
     useWebView: () => ({ pushWebView }),
 }))
 
@@ -327,6 +327,7 @@ describe('useConnectionApprovalView', () => {
         act(() => result.current.handlePressUrl())
 
         expect(pushWebView).not.toHaveBeenCalled()
+        expect(result.current.canOpenPeerUrl).toBe(false)
     })
 
     it.each([
@@ -345,5 +346,18 @@ describe('useConnectionApprovalView', () => {
             id: expect.any(String),
             url: expected,
         })
+    })
+
+    it('labels the peer url without its scheme and marks it openable', () => {
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(
+                makeProposal({
+                    peer: { name: 'Tinyman', url: 'https://tinyman.org/pools' },
+                }) as never,
+            ),
+        )
+
+        expect(result.current.peerUrlLabel).toBe('tinyman.org/pools')
+        expect(result.current.canOpenPeerUrl).toBe(true)
     })
 })

@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useConnectionsStore } from '@perawallet/wallet-core-connections'
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
-import { getPreferredDappIcon } from '@modules/walletconnect/utils/dapp-icon'
+import { getPreferredDappIcon } from '@modules/walletconnect'
 import { SigningCompletedContent } from '../SigningCompletedContent'
 import type { SigningReturnToDapp } from '../SigningCompletedContent/useSigningCompletedContent'
 

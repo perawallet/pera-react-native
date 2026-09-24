@@ -143,6 +143,10 @@ the legacy blob only once every committed key reads back, and is crash-resumable
 set of imported ids: the blob outlives a partial pass, and the live store alone cannot tell a record
 that was never imported from one the user has since disconnected.
 
+The native-app upgrade path, `migrateWalletConnect` in `packages/migrate`, takes the store too,
+through `MigrationDeps.walletConnectSessionKeys`. All three writers build the record with
+`buildWalletConnectV1Connection` (`src/v1/connection.ts`), so the persisted shape has one definition.
+
 ## WalletConnect v2 key material
 
 The v2 record carries no `secretRef`. WalletKit owns the key material itself: every pairing and

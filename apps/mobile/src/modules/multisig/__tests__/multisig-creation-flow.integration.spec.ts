@@ -96,7 +96,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-multisig', () => ({
+vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-multisig')
+    >()),
     useCreateMultisigAccountMutation: () => ({
         mutateAsync: mockMutateAsync,
     }),

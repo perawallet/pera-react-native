@@ -14,7 +14,7 @@ import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockch
 import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { ApplicationDisplay } from '@modules/projects/components/ApplicationDisplay/ApplicationDisplay'
+import { ApplicationDisplay } from '@modules/projects'
 
 type AppCallSummaryHeaderProps = {
     transaction: PeraDisplayableTransaction

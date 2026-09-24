@@ -98,6 +98,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-background', () => ({
+    createSyncStorePorts: vi.fn(() => ({})),
     initializeSyncService: mocks.initializeSyncService,
 }))
 

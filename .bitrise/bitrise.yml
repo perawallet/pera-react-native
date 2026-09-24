@@ -953,6 +953,8 @@ workflows:
     - ENVIRONMENT: staging
     - APP_ENV: staging
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+    - WEB_INTEGRITY_MINT_ENABLED: 'true'
+    - WEB_INTEGRITY_ENROL_ENABLED: 'true'
     - VALIDATE_PROFILE: web
     - ROW_ID: WEB_STAGING
     after_run:

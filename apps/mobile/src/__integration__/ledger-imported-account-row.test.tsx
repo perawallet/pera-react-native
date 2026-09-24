@@ -40,7 +40,7 @@ import {
     mockAlgodStatus,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
-import { LedgerSelectAccountsScreen } from '@modules/ledger/screens/LedgerSelectAccountsScreen'
+import { LedgerSelectAccountsScreen } from '@modules/ledger'
 
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
@@ -114,9 +114,10 @@ describe('Flow: Ledger imported account row checkbox', () => {
 
             await waitFor(
                 () =>
+                    // PWChip upper-cases its title.
                     expect(
                         screen.queryByText(
-                            'ledger.select_accounts.already_imported',
+                            'LEDGER.SELECT_ACCOUNTS.ALREADY_IMPORTED',
                         ),
                     ).not.toBeNull(),
                 { timeout: 10_000 },

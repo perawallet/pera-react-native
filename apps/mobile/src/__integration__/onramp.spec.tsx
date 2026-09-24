@@ -66,7 +66,7 @@ import { Networks } from '@perawallet/wallet-core-config'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { useWebViewStore } from '@modules/webview'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
-import { OnrampScreen } from '@modules/onramp/screens/OnrampScreen'
+import { OnrampScreen } from '@modules/onramp/routes'
 import {
     mockRampPairs,
     mockRampRegion,
@@ -85,6 +85,7 @@ import {
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -594,12 +595,12 @@ describe('Flow: Onramp buy (native XO)', () => {
                 { timeout: 5000 },
             )
 
-            const buyButton = screen.getByTestId(
-                'onramp-buy-button',
-            ) as HTMLButtonElement
-            await waitFor(() => expect(buyButton.disabled).toBe(false))
+            const buyButton = () => screen.getByTestId('onramp-buy-button')
+            await waitFor(() =>
+                expect(isElementDisabled(buyButton())).toBe(false),
+            )
 
-            fireEvent.click(buyButton)
+            fireEvent.click(buyButton())
 
             // ALGO destination → ensureOptIn is a no-op → the order is created
             // and the XO order-review sheet renders the pay-in address.
@@ -669,12 +670,12 @@ describe('Flow: Onramp buy (native XO)', () => {
                 { timeout: 5000 },
             )
 
-            const buyButton = screen.getByTestId(
-                'onramp-buy-button',
-            ) as HTMLButtonElement
-            await waitFor(() => expect(buyButton.disabled).toBe(false))
+            const buyButton = () => screen.getByTestId('onramp-buy-button')
+            await waitFor(() =>
+                expect(isElementDisabled(buyButton())).toBe(false),
+            )
 
-            fireEvent.click(buyButton)
+            fireEvent.click(buyButton())
 
             // Reaching the order-review sheet proves opt-in did NOT block:
             // the already-opted-in branch returned without raising an
@@ -722,10 +723,8 @@ describe('Flow: Onramp buy (native XO)', () => {
             expect(screen.getByTestId('onramp-min-button')).toBeTruthy()
             expect(screen.getByTestId('onramp-max-button')).toBeTruthy()
 
-            const buyButton = screen.getByTestId(
-                'onramp-buy-button',
-            ) as HTMLButtonElement
-            expect(buyButton.disabled).toBe(true)
+            const buyButton = () => screen.getByTestId('onramp-buy-button')
+            expect(isElementDisabled(buyButton())).toBe(true)
 
             // Swap in a successful quote for the re-fetch, then tap MIN.
             server.use(
@@ -749,7 +748,9 @@ describe('Flow: Onramp buy (native XO)', () => {
             expect(
                 screen.queryByText('onramp.form.amount_below_min'),
             ).toBeNull()
-            await waitFor(() => expect(buyButton.disabled).toBe(false))
+            await waitFor(() =>
+                expect(isElementDisabled(buyButton())).toBe(false),
+            )
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -1038,11 +1039,9 @@ describe('Flow: Onramp buy (native XO)', () => {
                 ).toContain('999.5'),
             { timeout: 5000 },
         )
-        const buyButton = screen.getByTestId(
-            'onramp-buy-button',
-        ) as HTMLButtonElement
-        await waitFor(() => expect(buyButton.disabled).toBe(false))
-        fireEvent.click(buyButton)
+        const buyButton = () => screen.getByTestId('onramp-buy-button')
+        await waitFor(() => expect(isElementDisabled(buyButton())).toBe(false))
+        fireEvent.click(buyButton())
         await screen.findByTestId('opt_in_confirm', {}, { timeout: 5000 })
     }
 
@@ -1209,11 +1208,9 @@ describe('Flow: Onramp buy (native XO)', () => {
             await waitFor(
                 () =>
                     expect(
-                        (
-                            screen.getByTestId(
-                                'onramp-buy-button',
-                            ) as HTMLButtonElement
-                        ).disabled,
+                        isElementDisabled(
+                            screen.getByTestId('onramp-buy-button'),
+                        ),
                     ).toBe(false),
                 { timeout: 5000 },
             )

@@ -12,11 +12,11 @@
 
 import { describe, expect, it } from 'vitest'
 
-import * as deeplinkHandlerStub from '@hooks/deeplink/handlers/useLocaleTourDeeplink.stub'
-import * as parserStub from '@hooks/deeplink/dev-locale-tour-parser.stub'
+import * as deeplinkHandlerStub from '@modules/deeplink/handlers/useLocaleTourDeeplink.stub'
+import * as parserStub from '@modules/deeplink/dev-locale-tour-parser.stub'
 
 import * as pseudoResourcesStub from '../../../i18n/pseudoResources.stub'
-import * as overflowProbeStub from '../hooks/useOverflowProbe.stub'
+import * as overflowProbeStub from '@components/core/PWText/useOverflowProbe.stub'
 import * as tourStub from '../index.stub'
 import * as registerStub from '../register.stub'
 import { getLocaleTourRunner } from '../registry'
@@ -35,13 +35,13 @@ import { getLocaleTourRunner } from '../registry'
 // tests then call the stubs *through* those real signatures.
 
 const tour: typeof import('../index') = tourStub
-const overflowProbe: typeof import('../hooks/useOverflowProbe') =
+const overflowProbe: typeof import('@components/core/PWText/useOverflowProbe') =
     overflowProbeStub
 const pseudoResources: typeof import('../../../i18n/pseudoResources') =
     pseudoResourcesStub
-const parser: typeof import('@hooks/deeplink/dev-locale-tour-parser') =
+const parser: typeof import('@modules/deeplink/dev-locale-tour-parser') =
     parserStub
-const deeplinkHandler: typeof import('@hooks/deeplink/handlers/useLocaleTourDeeplink') =
+const deeplinkHandler: typeof import('@modules/deeplink/handlers/useLocaleTourDeeplink') =
     deeplinkHandlerStub
 const register: typeof import('../register') = registerStub
 

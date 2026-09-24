@@ -35,6 +35,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // Use the existing pinned algo25 address as the watch target. It's a
@@ -68,11 +69,13 @@ describe('Flow: Add Account → Watch address', () => {
                 ],
             })
 
-            // Info screen renders one PWButton (the "Continue" CTA), keyed
-            // under the default 'PWButton' testid because the production
-            // source doesn't pass an explicit one.
-            await waitFor(() => screen.getByTestId('PWButton'))
-            fireEvent.click(screen.getByTestId('PWButton'))
+            // The info screen's CTA carries no testID, so it is found by its label.
+            await waitFor(() =>
+                screen.getByText('onboarding.watch_account.info_button'),
+            )
+            fireEvent.click(
+                screen.getByText('onboarding.watch_account.info_button'),
+            )
 
             // WatchAccountScreen renders the address input.
             await waitFor(() =>
@@ -87,11 +90,9 @@ describe('Flow: Add Account → Watch address', () => {
             // button enables.
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'watch_account_submit_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(
+                        screen.getByTestId('watch_account_submit_button'),
+                    ),
                 ).toBe(false)
             })
             fireEvent.click(screen.getByTestId('watch_account_submit_button'))
@@ -150,8 +151,12 @@ describe('Flow: Add Account → Watch address', () => {
                 ],
             })
 
-            await waitFor(() => screen.getByTestId('PWButton'))
-            fireEvent.click(screen.getByTestId('PWButton'))
+            await waitFor(() =>
+                screen.getByText('onboarding.watch_account.info_button'),
+            )
+            fireEvent.click(
+                screen.getByText('onboarding.watch_account.info_button'),
+            )
 
             await waitFor(() =>
                 screen.getByTestId('watch_account_address_input'),
@@ -164,11 +169,9 @@ describe('Flow: Add Account → Watch address', () => {
             // The button never enables: the duplicate guard short-circuits
             // both the validity check and the submit handler.
             expect(
-                (
-                    screen.getByTestId(
-                        'watch_account_submit_button',
-                    ) as HTMLButtonElement
-                ).disabled,
+                isElementDisabled(
+                    screen.getByTestId('watch_account_submit_button'),
+                ),
             ).toBe(true)
 
             // Even if we somehow click it, the handler returns early —

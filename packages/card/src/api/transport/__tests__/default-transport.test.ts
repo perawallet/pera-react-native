@@ -12,13 +12,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { baanxDirectRequest, queryClient, getValidIntegrityToken, mockConfig } =
-    vi.hoisted(() => ({
+const { baanxDirectRequest, queryClient, buildIntegrityHeaders } = vi.hoisted(
+    () => ({
         baanxDirectRequest: vi.fn(),
         queryClient: vi.fn(),
-        getValidIntegrityToken: vi.fn(),
-        mockConfig: { appEnvironment: 'production' as string },
-    }))
+        buildIntegrityHeaders: vi.fn(),
+    }),
+)
 
 vi.mock('ky', () => ({
     isHTTPError: (error: unknown): boolean =>
@@ -27,9 +27,8 @@ vi.mock('ky', () => ({
 vi.mock('../baanx-client', () => ({ baanxDirectRequest }))
 vi.mock('@perawallet/wallet-core-shared', () => ({ queryClient }))
 vi.mock('@perawallet/wallet-core-app-integrity', () => ({
-    getValidIntegrityToken,
+    buildIntegrityHeaders,
 }))
-vi.mock('@perawallet/wallet-core-config', () => ({ config: mockConfig }))
 
 import { defaultTransport, setRefreshHandler } from '../default-transport'
 
@@ -40,8 +39,7 @@ describe('defaultTransport', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         setRefreshHandler(null)
-        getValidIntegrityToken.mockReturnValue(null)
-        mockConfig.appEnvironment = 'production'
+        buildIntegrityHeaders.mockReturnValue({})
     })
 
     it('routes direct requests to the Baanx client', async () => {
@@ -95,9 +93,11 @@ describe('defaultTransport', () => {
         )
     })
 
-    it('attaches the attestation token to proxy calls when one is valid', async () => {
+    it('applies the integrity policy to proxy calls', async () => {
         queryClient.mockResolvedValue(ok)
-        getValidIntegrityToken.mockReturnValue('attestation-token')
+        buildIntegrityHeaders.mockReturnValue({
+            'x-app-integrity-token': 'attestation-token',
+        })
 
         await defaultTransport.request({
             route: 'proxy',
@@ -113,46 +113,29 @@ describe('defaultTransport', () => {
         )
     })
 
-    it('falls back to the staging/dev bypass header on non-production builds', async () => {
-        queryClient.mockResolvedValue(ok)
-        mockConfig.appEnvironment = 'development'
-
-        await defaultTransport.request({
-            route: 'proxy',
-            network: 'testnet',
-            method: 'GET',
-            path: '/api/v3/baanx/oauth/initiate',
+    it('keeps integrity headers off direct Baanx calls', async () => {
+        baanxDirectRequest.mockResolvedValue(ok)
+        buildIntegrityHeaders.mockReturnValue({
+            'x-app-integrity-token': 'attestation-token',
         })
 
-        expect(queryClient).toHaveBeenCalledWith(
-            expect.objectContaining({
-                headers: {
-                    'x-bypass-integrity': 'DEVELOPMENT_AND_STAGING_ONLY',
-                },
-            }),
-        )
-    })
-
-    it('sends neither integrity header on production builds without a token', async () => {
-        // Production backends reject the bypass header; a missing token must
-        // surface as the backend's integrity error, not a client-side hack.
-        queryClient.mockResolvedValue(ok)
-
         await defaultTransport.request({
-            route: 'proxy',
-            network: 'testnet',
+            network: 'mainnet',
             method: 'GET',
-            path: '/api/v3/baanx/oauth/initiate',
+            path: '/v1/card/status',
         })
 
-        expect(queryClient).toHaveBeenCalledWith(
-            expect.objectContaining({ headers: {} }),
+        expect(buildIntegrityHeaders).not.toHaveBeenCalled()
+        expect(baanxDirectRequest).toHaveBeenCalledWith(
+            expect.not.objectContaining({ headers: expect.anything() }),
         )
     })
 
     it('lets per-request headers win over the integrity defaults', async () => {
         queryClient.mockResolvedValue(ok)
-        getValidIntegrityToken.mockReturnValue('attestation-token')
+        buildIntegrityHeaders.mockReturnValue({
+            'x-app-integrity-token': 'attestation-token',
+        })
 
         await defaultTransport.request({
             route: 'proxy',

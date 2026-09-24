@@ -13,16 +13,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
-const mockRequest = vi.fn()
-vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({ request: mockRequest }),
-}))
-
-const mockCheckPinEnabled = vi.fn()
-vi.mock('@perawallet/wallet-core-security', () => ({
-    usePinCode: () => ({ checkPinEnabled: mockCheckPinEnabled }),
-}))
-
 const mockRequireVaultPassword = vi.fn()
 vi.mock('@modules/vault', () => ({
     useRequireVaultPassword: () => ({
@@ -30,12 +20,11 @@ vi.mock('@modules/vault', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
-vi.mock('../../components/PinEditContent', () => ({
-    PinEditContent: () => null,
+const mockCheckPinEnabled = vi.fn()
+vi.mock('@perawallet/wallet-core-security', () => ({
+    usePinCode: () => ({ checkPinEnabled: mockCheckPinEnabled }),
 }))
 
 // Import the exact web filename — vitest has no Metro platform resolution, so
@@ -47,56 +36,36 @@ describe('useRequirePinVerification.web', () => {
         vi.clearAllMocks()
     })
 
-    // The native hook returns true here. On the extension a PIN is optional
-    // and off by default, so that branch made the gate a no-op and left the
-    // recovery passphrase reachable with no factor checked at all.
-    describe('when no PIN is configured (the extension default)', () => {
-        beforeEach(() => {
-            mockCheckPinEnabled.mockResolvedValue(false)
-        })
+    it('asks for the vault password', async () => {
+        mockRequireVaultPassword.mockResolvedValue(true)
 
-        it('falls back to the vault password instead of passing', async () => {
-            mockRequireVaultPassword.mockResolvedValue(true)
+        const { result } = renderHook(() => useRequirePinVerification())
+        const ok = await result.current.requirePinVerification()
 
-            const { result } = renderHook(() => useRequirePinVerification())
-            const ok = await result.current.requirePinVerification()
-
-            expect(ok).toBe(true)
-            expect(mockRequireVaultPassword).toHaveBeenCalled()
-            expect(mockRequest).not.toHaveBeenCalled()
-        })
-
-        it('resolves false when the password prompt is dismissed', async () => {
-            mockRequireVaultPassword.mockResolvedValue(false)
-
-            const { result } = renderHook(() => useRequirePinVerification())
-
-            expect(await result.current.requirePinVerification()).toBe(false)
-        })
+        expect(ok).toBe(true)
+        expect(mockRequireVaultPassword).toHaveBeenCalledWith(
+            'vault.reauth.confirm_description',
+        )
     })
 
-    describe('when a PIN is configured', () => {
-        beforeEach(() => {
-            mockCheckPinEnabled.mockResolvedValue(true)
-        })
+    it('resolves false when the password prompt is dismissed', async () => {
+        mockRequireVaultPassword.mockResolvedValue(false)
 
-        it('uses the PIN sheet and never asks for the vault password', async () => {
-            mockRequest.mockResolvedValue(true)
+        const { result } = renderHook(() => useRequirePinVerification())
 
-            const { result } = renderHook(() => useRequirePinVerification())
-            const ok = await result.current.requirePinVerification()
+        expect(await result.current.requirePinVerification()).toBe(false)
+    })
 
-            expect(ok).toBe(true)
-            expect(mockRequest).toHaveBeenCalledTimes(1)
-            expect(mockRequireVaultPassword).not.toHaveBeenCalled()
-        })
+    // Web cannot manage or remove a PIN, so one left by an older build must not
+    // take over the gate.
+    it('ignores a PIN written by an older build', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
+        mockRequireVaultPassword.mockResolvedValue(true)
 
-        it('resolves false when the PIN sheet is dismissed', async () => {
-            mockRequest.mockResolvedValue(undefined)
+        const { result } = renderHook(() => useRequirePinVerification())
+        await result.current.requirePinVerification()
 
-            const { result } = renderHook(() => useRequirePinVerification())
-
-            expect(await result.current.requirePinVerification()).toBe(false)
-        })
+        expect(mockCheckPinEnabled).not.toHaveBeenCalled()
+        expect(mockRequireVaultPassword).toHaveBeenCalled()
     })
 })

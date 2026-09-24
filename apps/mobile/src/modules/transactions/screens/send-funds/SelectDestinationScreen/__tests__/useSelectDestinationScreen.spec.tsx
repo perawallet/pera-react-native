@@ -65,9 +65,7 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),

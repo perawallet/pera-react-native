@@ -44,11 +44,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { View } from 'react-native'
-import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
+import { useSendFundsStore } from '@modules/transactions'
 import { AssetSelectionScreen } from '@modules/transactions/screens/send-funds/AssetSelectionScreen/AssetSelectionScreen'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
-import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
+import { TransactionSuccessScreen } from '@modules/transactions/routes'
 import {
     mockAlgodAccountInformation,
     mockAlgodSendRawTransaction,
@@ -57,6 +57,7 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -213,7 +214,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -310,7 +311,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -329,7 +330,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
                 },
                 { timeout: 10_000 },
             )
-            expect(screen.queryByTestId('PWResultView')).toBeNull()
+            expect(screen.queryByTestId('pw-result-view')).toBeNull()
             await waitFor(() => {
                 expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
             })
@@ -378,7 +379,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -397,7 +398,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
                 },
                 { timeout: 10_000 },
             )
-            expect(screen.queryByTestId('PWResultView')).toBeNull()
+            expect(screen.queryByTestId('pw-result-view')).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

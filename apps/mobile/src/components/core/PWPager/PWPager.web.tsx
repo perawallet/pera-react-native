@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-import { Children } from 'react'
+import { Children, useEffect } from 'react'
+import { withSpring } from 'react-native-reanimated'
 import { PWView } from '../PWView'
 
+import { PWPAGER_SPRING_CONFIG } from './constants'
 import type { PWPagerProps } from './types'
 import { useStyles } from './styles'
 
@@ -21,9 +23,15 @@ import { useStyles } from './styles'
  * extension popup offers — its tabs are driven by the header controls — so the
  * pager degrades to a plain container rather than shipping the drag to web.
  */
-export const PWPager = ({ children, index }: PWPagerProps) => {
+export const PWPager = ({ children, index, offset }: PWPagerProps) => {
     const pages = Children.toArray(children)
     const styles = useStyles({ pageWidth: 0, pageCount: pages.length })
+
+    // With no drag to drive it, `offset` must follow `index` here, or a tab bar
+    // reading it stays on the first tab.
+    useEffect(() => {
+        if (offset) offset.value = withSpring(index, PWPAGER_SPRING_CONFIG)
+    }, [index, offset])
 
     return (
         <PWView

@@ -42,9 +42,7 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: requestMock }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 beforeEach(() => {
     vi.clearAllMocks()

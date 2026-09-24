@@ -21,7 +21,7 @@ import {
     type PWFlatListRef,
 } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
-import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
+import { AccountAssetItemView } from '@modules/assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'

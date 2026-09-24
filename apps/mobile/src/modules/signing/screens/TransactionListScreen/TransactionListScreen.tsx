@@ -17,7 +17,7 @@ import { TransactionListHeader } from './TransactionListHeader'
 import { TransactionListFooter } from './TransactionListFooter'
 import { GroupPreviewItem } from './GroupPreviewItem'
 import { useTransactionListScreen } from './useTransactionListScreen'
-import { TransactionPreview } from '@modules/transactions/components/transaction-details'
+import { TransactionPreview } from '@modules/transactions'
 
 export const TransactionListScreen = () => {
     const {

@@ -40,7 +40,7 @@ import { useSettingsStore } from '@perawallet/wallet-core-settings'
 
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { useWebViewStore } from '@modules/webview'
-import { StakingScreen } from '@modules/staking/screens/StakingScreen'
+import { StakingScreen } from '@modules/staking'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 

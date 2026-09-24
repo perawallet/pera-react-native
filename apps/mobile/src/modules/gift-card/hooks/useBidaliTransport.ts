@@ -311,6 +311,7 @@ export const useBidaliTransport = (
             return
         }
 
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- http(s) check above
         void Linking.openURL(url)
     }, [])
 

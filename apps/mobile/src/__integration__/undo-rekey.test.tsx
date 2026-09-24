@@ -68,6 +68,7 @@ import {
 import { UndoRekeyConfirmScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeyConfirmScreen'
 import { UndoRekeySuccessScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeySuccessScreen'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -202,13 +203,11 @@ describe('Flow: Undo rekey end-to-end', () => {
                     screen.getByTestId('undo-rekey-confirm-screen'),
                 ).toBeTruthy()
             })
-            const cta = screen.getByTestId(
-                'undo-rekey-confirm-cta',
-            ) as HTMLButtonElement
+            const cta = () => screen.getByTestId('undo-rekey-confirm-cta')
             await waitFor(() => {
-                expect(cta.disabled).toBe(false)
+                expect(isElementDisabled(cta())).toBe(false)
             })
-            fireEvent.click(cta)
+            fireEvent.click(cta())
 
             const sheet = await waitFor(() =>
                 screen.getByTestId('undo-rekey-warning-sheet'),
@@ -269,13 +268,11 @@ describe('Flow: Undo rekey end-to-end', () => {
                     screen.getByTestId('undo-rekey-confirm-screen'),
                 ).toBeTruthy()
             })
-            const cta = screen.getByTestId(
-                'undo-rekey-confirm-cta',
-            ) as HTMLButtonElement
+            const cta = () => screen.getByTestId('undo-rekey-confirm-cta')
             await waitFor(() => {
-                expect(cta.disabled).toBe(false)
+                expect(isElementDisabled(cta())).toBe(false)
             })
-            fireEvent.click(cta)
+            fireEvent.click(cta())
 
             const sheet = await waitFor(() =>
                 screen.getByTestId('undo-rekey-warning-sheet'),

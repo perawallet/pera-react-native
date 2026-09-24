@@ -16,7 +16,8 @@ import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useStyles } from './styles'
 import { AssetAmount } from '@components/AssetAmount'
-import { AssetIcon, AssetNameBadge } from '@modules/assets/components'
+import { AssetIcon } from '@components/AssetIcon'
+import { AssetNameBadge } from '@modules/assets'
 import { PreferredAmount } from '@components/PreferredAmount'
 import {
     useSingleAssetDetailsQuery,

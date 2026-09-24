@@ -60,8 +60,9 @@ import {
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 import { CardWithdrawScreen } from '@modules/card/screens/CardWithdrawScreen'
 import { CardWithdrawStatusScreen } from '@modules/card/screens/CardWithdrawStatusScreen'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { SigningOverlays } from '@modules/signing/shell'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -372,10 +373,12 @@ describe('Flow: Card withdraw', () => {
             await waitFor(
                 () =>
                     expect(
-                        screen
-                            .getByTestId('card_withdraw_status_complete_button')
-                            .getAttribute('disabled'),
-                    ).toBeNull(),
+                        isElementDisabled(
+                            screen.getByTestId(
+                                'card_withdraw_status_complete_button',
+                            ),
+                        ),
+                    ).toBe(false),
                 { timeout: 10_000 },
             )
             expect(box.requestedNames).toContain(

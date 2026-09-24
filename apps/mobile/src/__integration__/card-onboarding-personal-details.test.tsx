@@ -31,6 +31,7 @@ import { CardOnboardingPersonalDetailsScreen } from '@modules/card/screens/CardO
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
 import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardingAddressScreen'
 import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
+import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
 
 const SETTINGS_RESPONSE = {
     countries: [
@@ -157,11 +158,10 @@ describe('Flow: Card onboarding — personal details', () => {
         renderFlow()
         await fillFormAndPickNationality()
 
-        const confirm = screen.getByTestId(
-            'card-onboarding-personal-details-confirm',
-        )
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-personal-details-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() => expect(submitSpy).toHaveBeenCalled())
         expect(body).toMatchObject({
@@ -197,11 +197,10 @@ describe('Flow: Card onboarding — personal details', () => {
         // No manual nationality pick — the residence country (GB) is preselected.
         await fillNameAndDob()
 
-        const confirm = screen.getByTestId(
-            'card-onboarding-personal-details-confirm',
-        )
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-personal-details-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() => expect(submitSpy).toHaveBeenCalled())
         expect(body).toMatchObject({ countryOfNationality: 'GB' })
@@ -252,11 +251,10 @@ describe('Flow: Card onboarding — personal details', () => {
         ).toBe('08/11/1997')
 
         // Prefill alone makes the form valid — no typing needed.
-        const confirm = screen.getByTestId(
-            'card-onboarding-personal-details-confirm',
-        )
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-personal-details-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() => expect(submitSpy).toHaveBeenCalled())
         expect(body).toMatchObject({
@@ -287,22 +285,21 @@ describe('Flow: Card onboarding — personal details', () => {
 
         // Nationality and birth country preselect from the residence (US), so
         // the SSN is the only thing holding Continue back.
-        const confirm = screen.getByTestId(
-            'card-onboarding-personal-details-confirm',
-        )
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-personal-details-confirm')
         await waitFor(() =>
             expect(
                 screen.getByTestId('card-onboarding-ssn-input'),
             ).toBeTruthy(),
         )
-        expect(confirm.getAttribute('disabled')).not.toBeNull()
+        expect(isElementDisabled(confirm())).toBe(true)
 
         // Typed without dashes; the mask inserts them.
         fireEvent.change(screen.getByTestId('card-onboarding-ssn-input'), {
             target: { value: '123456789' },
         })
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() =>
             expect(body).toMatchObject({
@@ -319,14 +316,14 @@ describe('Flow: Card onboarding — personal details', () => {
         // 31 Feb — masked into DD/MM/YYYY but rejected by the schema.
         fireEvent.change(dob, { target: { value: '31021990' } })
         // No error while still typing (showErrorOnBlur).
-        expect(dob.getAttribute('errormessage')).toBeFalsy()
+        expect(getInputErrorMessage(dob)).toBeFalsy()
 
         fireEvent.blur(dob)
         await waitFor(() =>
             expect(
-                screen
-                    .getByTestId('card-onboarding-dob-input')
-                    .getAttribute('errormessage'),
+                getInputErrorMessage(
+                    screen.getByTestId('card-onboarding-dob-input'),
+                ),
             ).toBe('peraCard.personal_details.dob_invalid'),
         )
     })
@@ -341,11 +338,10 @@ describe('Flow: Card onboarding — personal details', () => {
         renderFlow()
         await fillFormAndPickNationality()
 
-        const confirm = screen.getByTestId(
-            'card-onboarding-personal-details-confirm',
-        )
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-personal-details-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() =>
             expect(Notifier.showNotification).toHaveBeenCalled(),
@@ -366,11 +362,10 @@ describe('Flow: Card onboarding — personal details', () => {
         renderFlow()
         await fillFormAndPickNationality()
 
-        const confirm = screen.getByTestId(
-            'card-onboarding-personal-details-confirm',
-        )
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-personal-details-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() =>
             expect(
@@ -434,11 +429,10 @@ describe('Flow: Card onboarding — personal details', () => {
         renderFlow()
         await fillFormAndPickNationality()
 
-        const confirm = screen.getByTestId(
-            'card-onboarding-personal-details-confirm',
-        )
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-personal-details-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         expect(await screen.findByTestId('card-kyc-required')).toBeTruthy()
         expect(screen.queryByTestId('card-onboarding-address')).toBeNull()

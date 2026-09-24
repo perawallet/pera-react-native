@@ -16,7 +16,8 @@ import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen'
+import { SettingsSecurityScreen } from '@modules/security/routes'
+import { getSwitchControl } from '@test-utils/rnw'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 const TEST_PIN = '123456'
@@ -34,9 +35,9 @@ const waitForPinToggleHydration = async (
 ): Promise<HTMLInputElement> => {
     let toggle: HTMLInputElement | null = null
     await waitFor(() => {
-        toggle = screen.getByTestId(
-            'settings_security_pin_toggle',
-        ) as HTMLInputElement
+        toggle = getSwitchControl(
+            screen.getByTestId('settings_security_pin_toggle'),
+        )
         expect(toggle.checked).toBe(expectedChecked)
     })
     return toggle!
@@ -65,7 +66,7 @@ describe('Flow: PIN lifecycle from Settings → Security', () => {
             // `pinViewMode` becomes non-null. PWNumpad is only rendered
             // inside the open sheet, so its absence is the proof the
             // gate is closed.
-            expect(screen.queryByTestId('PWNumpad')).toBeNull()
+            expect(screen.queryByTestId('numpad_key_0')).toBeNull()
 
             fireEvent.click(toggle)
 
@@ -74,7 +75,7 @@ describe('Flow: PIN lifecycle from Settings → Security', () => {
             // (translations fall back to keys under the integration
             // setup, so we match by key rather than translated text).
             await waitFor(() => {
-                expect(screen.getByTestId('PWNumpad')).toBeTruthy()
+                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
             })
             expect(screen.getByText('security.pin.setup_title')).toBeTruthy()
 
@@ -108,7 +109,7 @@ describe('Flow: PIN lifecycle from Settings → Security', () => {
             // → PinEditView mounts. Title proves we're in verify
             // mode, not setup or change_old.
             await waitFor(() => {
-                expect(screen.getByTestId('PWNumpad')).toBeTruthy()
+                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
             })
             expect(screen.getByText('security.pin.verify_title')).toBeTruthy()
 
@@ -141,7 +142,7 @@ describe('Flow: PIN lifecycle from Settings → Security', () => {
             fireEvent.click(changeButton)
 
             await waitFor(() => {
-                expect(screen.getByTestId('PWNumpad')).toBeTruthy()
+                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
             })
             expect(
                 screen.getByText('security.pin.change_old_title'),

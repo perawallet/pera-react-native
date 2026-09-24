@@ -17,7 +17,7 @@ import { Linking } from 'react-native'
 const mockHandleDeepLink = vi.fn()
 const mockIsValidDeepLink = vi.fn()
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({
         handleDeepLink: mockHandleDeepLink,
         isValidDeepLink: mockIsValidDeepLink,
@@ -80,5 +80,35 @@ describe('useBannerLinkRouter', () => {
         )
         expect(Linking.openURL).toHaveBeenCalledWith('https://example.com')
         expect(mockHandleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it.each([
+        ['custom scheme', 'algorand://ATTACKER?amount=1'],
+        ['cleartext', 'http://example.com'],
+        ['protocol-relative', '//evil.example'],
+        ['script', 'javascript:alert(1)'],
+    ])('refuses to open a %s URL', (_label, url) => {
+        mockIsValidDeepLink.mockReturnValue(false)
+        const { result } = renderHook(() => useBannerLinkRouter())
+
+        act(() => result.current.route({ url, isExternal: true }))
+
+        expect(Linking.openURL).not.toHaveBeenCalled()
+    })
+
+    it('opens a scheme-less URL as absolute https, never relative to the current page', () => {
+        mockIsValidDeepLink.mockReturnValue(false)
+        const { result } = renderHook(() => useBannerLinkRouter())
+
+        act(() =>
+            result.current.route({
+                url: 'expanded.html?deeplink=x',
+                isExternal: false,
+            }),
+        )
+
+        expect(Linking.openURL).toHaveBeenCalledWith(
+            'https://expanded.html?deeplink=x',
+        )
     })
 })

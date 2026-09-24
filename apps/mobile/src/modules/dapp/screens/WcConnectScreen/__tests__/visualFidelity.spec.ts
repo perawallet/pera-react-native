@@ -72,8 +72,7 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
     })
 
     it('takes those styles from the shared approval stylesheet instead of redeclaring them', () => {
-        const shared =
-            "from '@modules/walletconnect/components/connection-approval/styles'"
+        const shared = "from '@components/ConnectionApproval/styles'"
         expect(twinHeader).toContain(shared)
         expect(twinView).toContain(shared)
 

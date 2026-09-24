@@ -12,34 +12,16 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                webauthn: resolve(__dirname, 'src/webauthn.ts'),
-                native: resolve(__dirname, 'src/native.ts'),
-                crypto: resolve(__dirname, 'src/crypto.ts'),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            webauthn: resolve(__dirname, 'src/webauthn.ts'),
+            native: resolve(__dirname, 'src/native.ts'),
+            crypto: resolve(__dirname, 'src/crypto.ts'),
         },
-        rollupOptions: {
-            external: [
-                'react',
-                'react/jsx-runtime',
-                'react-native',
-                'react-native-quick-crypto',
-                '@algorandfoundation/keystore-core',
-                '@algorandfoundation/react-native-keystore',
-                '@tanstack/react-query',
-                '@tanstack/store',
-                '@perawallet/wallet-core-kms',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-extension-passkey-autofill',
-                '@perawallet/wallet-extension-provider',
-            ],
-        },
-    },
-})
+    }),
+)

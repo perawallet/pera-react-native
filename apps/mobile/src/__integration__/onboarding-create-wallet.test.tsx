@@ -158,12 +158,12 @@ describe('Flow: Onboarding → Create wallet', () => {
                 screen.getByTestId('onboarding_create_wallet_button'),
             )
 
-            // The overlay mock renders a div with testid PWLoadingOverlay
-            // whenever `isVisible` is true (see vitest.setup.ts). The async work
-            // takes long enough that the overlay is observable before navigation
-            // takes us off OnboardingScreen.
+            // The async work takes long enough that the loading overlay is
+            // observable before navigation takes us off OnboardingScreen.
             await waitFor(() => {
-                expect(screen.getByTestId('PWLoadingOverlay')).toBeTruthy()
+                expect(
+                    screen.getByText('onboarding.create_account.processing'),
+                ).toBeTruthy()
             })
 
             // After the work completes, navigation transitions to NameAccount —

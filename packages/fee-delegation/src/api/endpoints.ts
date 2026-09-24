@@ -10,8 +10,8 @@
  limitations under the License
  */
 
+import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
 import {
-    addDeviceIntegrityHeader,
     logger,
     queryClient,
     type Network,
@@ -59,12 +59,10 @@ const logFeeDelegationFailure = (error: unknown): void => {
  * the account's MBR shortfall) for an unsigned transaction group. The backend prepends a
  * sponsor payment, RE-GROUPS the whole payload (new group id), signs only the
  * sponsor slot, and returns the ARC-0001 group for the wallet to sign its own
- * slots. The route sits behind the app-integrity guard, so a valid (non-
- * expired) attestation token is required.
+ * slots. The route sits behind the app-integrity guard.
  */
 export const requestFeeDelegation = async (
     request: FeeDelegationRequest,
-    integrityToken: string,
     network: Network,
     signal?: AbortSignal,
 ): Promise<FeeDelegationApiResponse> => {
@@ -76,9 +74,7 @@ export const requestFeeDelegation = async (
             method: 'POST',
             url: '/api/v3/fee-delegation',
             data: request,
-            headers: addDeviceIntegrityHeader({
-                'x-app-integrity-token': integrityToken,
-            }),
+            headers: buildIntegrityHeaders(),
             signal,
         })
     } catch (error) {

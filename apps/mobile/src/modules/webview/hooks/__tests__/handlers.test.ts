@@ -13,6 +13,7 @@
 // @vitest-environment node
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Linking } from 'react-native'
 import {
     BROWSER_FAVORITE_ACTION,
     generateBridgeToken,
@@ -21,10 +22,12 @@ import {
     isSafeRelativePath,
     isTrustedWebviewOrigin,
     JsonRpcErrorCode,
+    openValidatedBrowserUrl,
     requireSecure,
     sendActionToWebview,
     sendNotificationToWebview,
     toValidatedBrowserUrl,
+    toValidatedNativeUri,
 } from '../handlers'
 
 const mockLogger = { debug: vi.fn(), warn: vi.fn(), error: vi.fn() }
@@ -436,5 +439,64 @@ describe('hasValidBridgeToken', () => {
 
     it('rejects everything when the expected token is empty', () => {
         expect(hasValidBridgeToken({ token: '' }, '')).toBe(false)
+    })
+})
+
+describe('openValidatedBrowserUrl', () => {
+    beforeEach(() => {
+        vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+    })
+
+    it('opens the normalized absolute https URL', () => {
+        expect(openValidatedBrowserUrl('expanded.html?deeplink=x')).toBe(true)
+        expect(Linking.openURL).toHaveBeenCalledWith(
+            'https://expanded.html?deeplink=x',
+        )
+    })
+
+    it.each([
+        'algorand://ATTACKER?amount=1',
+        'http://example.com',
+        '//evil.example',
+        'javascript:alert(1)',
+        42,
+    ])('refuses %s', raw => {
+        expect(openValidatedBrowserUrl(raw)).toBe(false)
+        expect(Linking.openURL).not.toHaveBeenCalled()
+    })
+
+    it('swallows a missing OS handler', async () => {
+        vi.mocked(Linking.openURL).mockRejectedValueOnce(
+            new Error('no handler'),
+        )
+
+        expect(openValidatedBrowserUrl('https://perawallet.app')).toBe(true)
+        await Promise.resolve()
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+            'Failed to open external URL',
+            expect.objectContaining({ url: 'https://perawallet.app' }),
+        )
+    })
+})
+
+describe('toValidatedNativeUri', () => {
+    it.each(['algorand://ADDR?amount=1', 'mailto:a@b.co', 'https://x.app'])(
+        'passes through %s',
+        uri => {
+            expect(toValidatedNativeUri(uri)).toBe(uri)
+        },
+    )
+
+    it.each([
+        'expanded.html?deeplink=algorand://X',
+        '/expanded.html',
+        '//evil.example',
+        'chrome-extension://abc/expanded.html',
+        'JavaScript:alert(1)',
+        'data:text/html,x',
+        '',
+        undefined,
+    ])('refuses %s', raw => {
+        expect(toValidatedNativeUri(raw)).toBeNull()
     })
 })

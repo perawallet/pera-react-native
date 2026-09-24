@@ -25,9 +25,9 @@ import {
 } from '@components/core'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
+import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useLocalStyles } from './styles'
 import { WcConnectHeader } from './WcConnectHeader'
 import { useWcConnectScreen } from './useWcConnectScreen'
@@ -49,6 +49,8 @@ export const WcConnectScreen = (): React.JSX.Element => {
         isConnecting,
         handleConnect,
         handleCancel,
+        peerUrlLabel,
+        canOpenPeerUrl,
         handlePressUrl,
         deliveryError,
     } = useWcConnectScreen()
@@ -92,6 +94,8 @@ export const WcConnectScreen = (): React.JSX.Element => {
                         permissions={permissions}
                         requesterOrigin={requesterOrigin}
                         isRequesterOriginDistinct={isRequesterOriginDistinct}
+                        peerUrlLabel={peerUrlLabel}
+                        canOpenPeerUrl={canOpenPeerUrl}
                         onPressUrl={handlePressUrl}
                     />
                 }

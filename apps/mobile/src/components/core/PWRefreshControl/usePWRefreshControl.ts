@@ -11,7 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { useNetworkStatus, useOfflineFeedbackStore } from '@modules/network'
+import { useNetworkStatus } from '@hooks/useNetworkStatusStore'
+import { useOfflineFeedbackStore } from '@hooks/useOfflineFeedbackStore'
 
 type UsePWRefreshControlParams = {
     isRefreshing: boolean

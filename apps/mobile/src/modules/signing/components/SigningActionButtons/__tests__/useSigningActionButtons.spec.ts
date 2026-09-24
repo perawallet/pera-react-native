@@ -62,9 +62,7 @@ vi.mock('@hooks/useQuantumDappWarning', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // The global setup stubs toAlgodError to always return unknown_node_error;
 // the classification cases below need the real parser.

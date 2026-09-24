@@ -33,17 +33,17 @@ import { useLockScreen } from '@modules/security/components/AutoLockGuard/useLoc
 // through the guard's public hook seams, everything else stubbed inert.
 
 vi.mock('@routes/index', () => ({ MainRoutes: () => null }))
-vi.mock('@modules/webview', () => ({ WebViewOverlay: () => null }))
+vi.mock('@modules/webview/shell', () => ({ WebViewOverlay: () => null }))
 vi.mock('@components/OfflineBanner', () => ({ OfflineBanner: () => null }))
 // Marker wrappers, not passthroughs: the mount point is what the second
 // describe block below asserts, so the tree has to say which provider wrapped
 // the app content — the same reason PromptContainer is stubbed as a marker.
-vi.mock('@modules/connections', () => ({
+vi.mock('@modules/connections/shell', () => ({
     ConnectionsProvider: ({ children }: React.PropsWithChildren) => (
         <div data-testid='connections-provider'>{children}</div>
     ),
 }))
-vi.mock('@modules/walletconnect/components/PairingProgressOverlay', () => ({
+vi.mock('@modules/walletconnect/shell', () => ({
     PairingProgressOverlay: () => null,
 }))
 vi.mock('@modules/signing/components/SigningOverlays', () => ({
@@ -74,7 +74,7 @@ vi.mock('@modules/token', () => ({
 vi.mock('@hooks/useNotificationReceivedListener', () => ({
     useNotificationReceivedListener: vi.fn(),
 }))
-vi.mock('@hooks/useNotificationDeeplinkListener', () => ({
+vi.mock('@modules/deeplink/shell', () => ({
     useNotificationDeeplinkListener: vi.fn(),
 }))
 vi.mock('@hooks/useErrorToast', () => ({

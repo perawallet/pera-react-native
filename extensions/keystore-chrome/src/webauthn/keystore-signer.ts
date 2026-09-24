@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { InvalidKeyDataError, type Key, type KeyStoreState } from '../keystore'
 import type { Store } from '@tanstack/store'
 import {
     bytesToB64url,
@@ -19,12 +18,14 @@ import {
     splitP256PublicKey,
     type KeystoreSigner,
 } from '@perawallet/wallet-core-passkeys/webauthn'
+import { InvalidKeyDataError } from '../keystore/errors'
+import type { Key, KeyStoreState } from '../keystore/types'
 
 /**
- * TRAP — do not route this through `keystore-chrome`'s own `store.ts`
- * (`chrome.storage.local`, `keystore:` prefix). Web key storage moved to the
- * keystore-web engine (IndexedDB), leaving that bucket permanently empty, and
- * anything written there is invisible to Settings > Passkeys and `signP256`.
+ * TRAP — keys live only in the keystore-web engine (IndexedDB) behind the
+ * store passed in. Nothing reads `chrome.storage.local` for key material, so a
+ * credential written there would be invisible to Settings > Passkeys and
+ * `signP256`.
  *
  * The engine mints credentials only through `deriveDomainKey`, which rejects
  * any parent that is not an `hd-root-key` carrying

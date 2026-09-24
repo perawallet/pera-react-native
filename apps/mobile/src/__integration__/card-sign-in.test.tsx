@@ -31,6 +31,7 @@ import { mockOauthChain } from '@perawallet/wallet-core-card/test-handlers'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardSignInScreen } from '@modules/card/screens/CardSignInScreen'
+import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
 
 const VALID_EMAIL = 'john@example.com'
 const VALID_PASSWORD = 'Passw0rd!'
@@ -82,8 +83,8 @@ const fillCredentials = async () => {
     })
     await waitFor(() =>
         expect(
-            screen.getByTestId('card-sign-in-submit').getAttribute('disabled'),
-        ).toBeNull(),
+            isElementDisabled(screen.getByTestId('card-sign-in-submit')),
+        ).toBe(false),
     )
 }
 
@@ -396,7 +397,7 @@ describe('Flow: Card sign in', () => {
 
         const password = screen.getByTestId('card-sign-in-password-input')
         await waitFor(() =>
-            expect(password.getAttribute('errormessage')).toBe(
+            expect(getInputErrorMessage(password)).toBe(
                 'peraCard.sign_in.invalid_credentials',
             ),
         )

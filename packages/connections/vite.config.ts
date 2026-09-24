@@ -12,32 +12,16 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                // Its own entry so a consumer can read the pairing budgets
-                // without the barrel dragging in the signing adapter.
-                pairingOutcome: resolve(__dirname, 'src/pairingOutcome.ts'),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            // Its own entry so a consumer can read the pairing budgets
+            // without the barrel dragging in the signing adapter.
+            pairingOutcome: resolve(__dirname, 'src/pairingOutcome.ts'),
         },
-        rollupOptions: {
-            external: [
-                'react',
-                'react/jsx-runtime',
-                'zustand',
-                'zod',
-                'vitest',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-core-signing',
-                '@perawallet/wallet-core-accounts',
-                '@perawallet/wallet-core-blockchain',
-                '@perawallet/wallet-extension-connections',
-            ],
-        },
-    },
-})
+    }),
+)

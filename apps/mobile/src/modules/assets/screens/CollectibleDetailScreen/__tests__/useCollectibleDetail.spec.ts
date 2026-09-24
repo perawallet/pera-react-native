@@ -24,7 +24,7 @@ import { MediaPermissionDeniedError } from '@utils/mediaErrors'
 const mockCopyToClipboard = vi.fn()
 const mockShowToast = vi.fn()
 const mockShowError = vi.fn()
-const mockOpenURL = vi.fn()
+const mockOpenURL = vi.fn().mockResolvedValue(true)
 const mockOptOut = vi.fn()
 const mockGoBack = vi.fn()
 const mockCanGoBack = vi.fn(() => true)
@@ -95,9 +95,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // Mutable platform stub: mutate `mockPlatform` per test to simulate the
 // native (ios) and web builds without re-mocking.
@@ -737,6 +735,29 @@ describe('useCollectibleDetail', () => {
                     'https://example.com/m.glb',
                 )
             })
+
+            it('refuses a model URL that is not absolute https', () => {
+                Object.assign(mockCapabilities, { inAppWebView: false })
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'model',
+                            downloadUrl: 'algorand://ATTACKER?amount=1',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                act(() => {
+                    result.current.handleModelPress()
+                })
+
+                expect(mockOpenURL).not.toHaveBeenCalled()
+            })
         })
     })
 
@@ -814,6 +835,29 @@ describe('useCollectibleDetail', () => {
                 expect(mockOpenURL).toHaveBeenCalledWith(
                     'https://example.com/full.png',
                 )
+                expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+            })
+
+            it('refuses creator-supplied media that is not absolute https', () => {
+                Object.assign(mockPlatform, { OS: 'web' })
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'image',
+                            downloadUrl: '//evil.example/full.png',
+                            extension: 'png',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                result.current.handleFullScreenPress(0)
+
+                expect(mockOpenURL).not.toHaveBeenCalled()
                 expect(mockRequestBottomSheet).not.toHaveBeenCalled()
             })
         })

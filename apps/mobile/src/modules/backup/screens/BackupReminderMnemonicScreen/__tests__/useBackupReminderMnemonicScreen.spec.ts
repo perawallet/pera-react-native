@@ -43,6 +43,11 @@ const executeWithMnemonic = vi.hoisted(() =>
     }),
 )
 const checkPinEnabled = vi.hoisted(() => vi.fn(() => Promise.resolve(false)))
+const mockRouteCapabilities = vi.hoisted(() => ({ pin: true }))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockRouteCapabilities,
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => nav,
@@ -77,6 +82,28 @@ import { useBackupReminderMnemonicScreen } from '../useBackupReminderMnemonicScr
 describe('useBackupReminderMnemonicScreen', () => {
     beforeEach(() => {
         nav.reset()
+        mockRouteCapabilities.pin = true
+        checkPinEnabled.mockResolvedValue(false)
+    })
+
+    it('asks for the PIN before revealing when one is set', async () => {
+        checkPinEnabled.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useBackupReminderMnemonicScreen())
+
+        await waitFor(() => expect(result.current.isPinVisible).toBe(true))
+        expect(result.current.isPinGateResolved).toBe(false)
+    })
+
+    it('skips a leftover PIN where the platform has no PIN', async () => {
+        mockRouteCapabilities.pin = false
+        checkPinEnabled.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useBackupReminderMnemonicScreen())
+
+        await waitFor(() => expect(result.current.isPinGateResolved).toBe(true))
+        expect(result.current.isPinVisible).toBe(false)
+        expect(checkPinEnabled).not.toHaveBeenCalled()
     })
 
     it('re-reveals the mnemonic when the user returns from the verification screen', async () => {

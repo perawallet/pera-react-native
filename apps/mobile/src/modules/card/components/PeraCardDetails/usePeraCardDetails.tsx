@@ -338,6 +338,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         try {
             const session = await setPin.mutateAsync()
             if (!routeCapabilities.inAppWebView) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- httpsUrlSchema at the API boundary
                 void Linking.openURL(session.hostedPageUrl)
                 return
             }

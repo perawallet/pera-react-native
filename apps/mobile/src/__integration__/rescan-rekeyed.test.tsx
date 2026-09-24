@@ -49,6 +49,7 @@ import { RescanRekeyedSelectScreen } from '@modules/rekey/screens/rescan-rekeyed
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 
+import { closestPressable } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     HD_TEST_ADDRESS,
@@ -205,7 +206,7 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
             const scanLabel = await screen.findByText(
                 'account_options.scan_rekeyed',
             )
-            const scanRow = scanLabel.closest('button')
+            const scanRow = closestPressable(scanLabel)
             expect(scanRow).toBeTruthy()
             fireEvent.click(scanRow!)
 

@@ -24,7 +24,7 @@ import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnin
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { AssetAmount } from '@components/AssetAmount'
 import { LoadingView } from '@components/LoadingView'
-import { AssetTitle } from '@modules/assets/components/AssetTitle'
+import { AssetTitle } from '@modules/assets'
 import { ViewTextDetailsContent } from '../../ViewTextDetailsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useCallback } from 'react'

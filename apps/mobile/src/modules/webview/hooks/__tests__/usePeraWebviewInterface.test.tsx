@@ -24,8 +24,8 @@ import { usePeraWebviewInterface } from '../usePeraWebviewInterface'
 import { useWebView } from '..'
 import { Linking } from 'react-native'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { useDeepLink } from '@hooks/useDeepLink'
-import { parseDeeplink } from '@hooks/deeplink/parser'
+import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
+import { parseDeeplink } from '@modules/deeplink/parser'
 import {
     CONNECTION_LATE_PAIRING_GRACE_MS,
     resetConnectionPairingStateForTesting,
@@ -400,13 +400,13 @@ vi.mock('@hooks/useErrorToast', () => ({
     })),
 }))
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(() => ({
         handleDeepLink: vi.fn(),
     })),
 }))
 
-vi.mock('@hooks/deeplink/parser', () => ({
+vi.mock('@modules/deeplink/parser', () => ({
     parseDeeplink: vi.fn(() => null),
 }))
 
@@ -798,6 +798,35 @@ describe('usePeraWebviewInterface', () => {
 
         expect(Linking.openURL).toHaveBeenCalledWith('custom://uri')
     })
+
+    it.each([
+        ['scheme-less', 'expanded.html?deeplink=algorand://X'],
+        ['protocol-relative', '//evil.example'],
+        ['extension', 'chrome-extension://abc/expanded.html'],
+        ['script', 'javascript:alert(1)'],
+    ])(
+        'refuses a %s openNativeURI target instead of resolving it against the page',
+        async (_label, uri) => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            await act(async () => {
+                result.current.handleMessage({
+                    id: '4',
+                    jsonrpc: '2.0',
+                    method: 'openNativeURI',
+                    params: { uri },
+                })
+            })
+
+            expect(Linking.canOpenURL).not.toHaveBeenCalled()
+            expect(Linking.openURL).not.toHaveBeenCalled()
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"error"'),
+            )
+        },
+    )
 
     it('routes an openNativeURI Pera deeplink through the dispatcher with the in-app source', async () => {
         const handleDeepLink = vi.fn()

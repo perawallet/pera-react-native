@@ -49,6 +49,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { SettingsPasskeyScreen } from '@modules/settings/screens/SettingsPasskeysScreen'
+import { getAllPressables } from '@test-utils/rnw'
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
@@ -113,9 +114,9 @@ const setStrongBiometric = () => {
 // ConfirmActionContent's buttons carry no testID; under the integration setup
 // i18n falls back to the key string, so match the button by its label key.
 const tapButtonByLabel = (label: string) => {
-    const button = screen
-        .getAllByRole('button')
-        .find(b => (b.textContent ?? '').includes(label))
+    const button = getAllPressables().find(b =>
+        (b.textContent ?? '').includes(label),
+    )
     if (!button) throw new Error(`No button labelled "${label}"`)
     fireEvent.click(button)
 }
@@ -169,9 +170,7 @@ const seedFlaggedFlatRecord = async (id: string) => {
 }
 
 const hasButtonWithLabel = (label: string): boolean =>
-    screen
-        .getAllByRole('button')
-        .some(b => (b.textContent ?? '').includes(label))
+    getAllPressables().some(b => (b.textContent ?? '').includes(label))
 
 describe('Flow: Settings → Passkeys removal', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
@@ -210,7 +209,7 @@ describe('Flow: Settings → Passkeys removal', () => {
                 ).toBeTruthy(),
             )
 
-            fireEvent.click(screen.getByTestId('touchable-icon-trash'))
+            fireEvent.click(screen.getByTestId(/_remove$/))
             await waitFor(() =>
                 expect(
                     hasButtonWithLabel('settings.passkeys.remove_confirm'),
@@ -241,7 +240,7 @@ describe('Flow: Settings → Passkeys removal', () => {
                 ).toBeTruthy(),
             )
 
-            fireEvent.click(screen.getByTestId('touchable-icon-trash'))
+            fireEvent.click(screen.getByTestId(/_remove$/))
             await waitFor(() =>
                 expect(
                     hasButtonWithLabel('settings.passkeys.remove_cancel'),
@@ -285,7 +284,7 @@ describe('Flow: Settings → Passkeys removal', () => {
                 ).toBeTruthy(),
             )
 
-            fireEvent.click(screen.getByTestId('touchable-icon-trash'))
+            fireEvent.click(screen.getByTestId(/_remove$/))
             await waitFor(() =>
                 expect(
                     hasButtonWithLabel('settings.passkeys.remove_confirm'),
@@ -331,15 +330,13 @@ describe('Flow: Settings → Passkeys removal', () => {
             const flaggedRow = screen.getByTestId(
                 'settings_passkeys_item_flagged-cred',
             )
-            expect(
-                within(flaggedRow).queryByTestId('touchable-icon-trash'),
-            ).toBeFalsy()
+            expect(within(flaggedRow).queryByTestId(/_remove$/)).toBeFalsy()
 
             // The row renders before the migration read settles, and until it
             // does no row offers removal — so wait for the icon, not the row.
             const plainTrash = await within(
                 screen.getByTestId('settings_passkeys_item_plain-cred'),
-            ).findByTestId('touchable-icon-trash')
+            ).findByTestId(/_remove$/)
             fireEvent.click(plainTrash)
             await waitFor(() =>
                 expect(
@@ -393,22 +390,18 @@ describe('Flow: Settings → Passkeys removal', () => {
             // Exactly one trash icon on a two-row list: the flagged row has
             // none and the unflagged one is untouched.
             await waitFor(() =>
-                expect(
-                    screen.getAllByTestId('touchable-icon-trash'),
-                ).toHaveLength(1),
+                expect(screen.getAllByTestId(/_remove$/)).toHaveLength(1),
             )
             expect(
                 within(
                     screen.getByTestId('settings_passkeys_item_native-flagged'),
-                ).queryByTestId('touchable-icon-trash'),
+                ).queryByTestId(/_remove$/),
             ).toBeFalsy()
 
             // Drive the surviving icon all the way through the real removal, so
             // "the flagged credential was not deleted" is a statement about the
             // gate rather than about a screen where deletion is broken.
-            fireEvent.click(
-                within(plainRow).getByTestId('touchable-icon-trash'),
-            )
+            fireEvent.click(within(plainRow).getByTestId(/_remove$/))
             await waitFor(() =>
                 expect(
                     hasButtonWithLabel('settings.passkeys.remove_confirm'),
@@ -469,8 +462,8 @@ describe('Flow: Settings → Passkeys removal', () => {
         const plainKeystoreRow = screen.getByTestId(
             'settings_passkeys_item_plain-keystore',
         )
-        await within(plainKeystoreRow).findByTestId('touchable-icon-trash')
-        expect(screen.getAllByTestId('touchable-icon-trash')).toHaveLength(1)
+        await within(plainKeystoreRow).findByTestId(/_remove$/)
+        expect(screen.getAllByTestId(/_remove$/)).toHaveLength(1)
 
         for (const id of [
             'flagged-keystore',
@@ -480,16 +473,14 @@ describe('Flow: Settings → Passkeys removal', () => {
             expect(
                 within(
                     screen.getByTestId(`settings_passkeys_item_${id}`),
-                ).queryByTestId('touchable-icon-trash'),
+                ).queryByTestId(/_remove$/),
             ).toBeFalsy()
         }
 
         // Drive the surviving icon all the way through the real removal, so
         // "the flagged credentials were not deleted" is a statement about the
         // gate rather than about a screen where deletion is broken.
-        fireEvent.click(
-            within(plainKeystoreRow).getByTestId('touchable-icon-trash'),
-        )
+        fireEvent.click(within(plainKeystoreRow).getByTestId(/_remove$/))
         await waitFor(() =>
             expect(hasButtonWithLabel('settings.passkeys.remove_confirm')).toBe(
                 true,

@@ -27,7 +27,7 @@ import type { Decimal } from 'decimal.js'
 import {
     useAccountTypeLabel,
     type AccountTypeLabel,
-} from '@modules/accounts/hooks/useAccountTypeLabel'
+} from '@hooks/useAccountTypeLabel'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 

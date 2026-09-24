@@ -42,6 +42,7 @@ import {
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { useAsbImportFlowStore } from '@modules/onboarding/hooks/asbImportFlowStore'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC,
@@ -116,9 +117,7 @@ const typeRecoveryWords = (words: string[]) => {
 
 const waitForButtonEnabled = async (testID: string) => {
     await waitFor(() => {
-        expect((screen.getByTestId(testID) as HTMLButtonElement).disabled).toBe(
-            false,
-        )
+        expect(isElementDisabled(screen.getByTestId(testID))).toBe(false)
     })
 }
 
@@ -158,11 +157,11 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
             await waitFor(() => screen.getByTestId('asb_import_key_word_0'))
 
             for (let idx = 0; idx < ASB_RECOVERY_MNEMONIC_WORDS.length; idx++) {
-                expect(
-                    screen
-                        .getByTestId(`asb_import_key_word_${idx}`)
-                        .getAttribute('data-sensitive'),
-                ).toBe('true')
+                // Sensitive inputs opt out of autocorrect and spellcheck, which is
+                // what keeps the OS keyboard from caching the words.
+                const input = screen.getByTestId(`asb_import_key_word_${idx}`)
+                expect(input.getAttribute('autocorrect')).toBe('off')
+                expect(input.getAttribute('spellcheck')).toBe('false')
             }
         },
         SLOW_TEST_TIMEOUT_MS,
@@ -220,9 +219,6 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
             expect(account.address).toBe(ALGO25_TEST_ADDRESS)
             expect(account.name).toBe('Algo25 from ASB')
 
-            // Result screen rendered (the wrapper testID is reliable across
-            // the PWResultView mock; individual count lines are PWText
-            // children whose testID surfacing depends on the mock).
             await waitFor(() => screen.getByTestId('asb_import_result'))
         },
         SLOW_TEST_TIMEOUT_MS,
@@ -487,11 +483,9 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
             )
 
             expect(
-                (
-                    screen.getByTestId(
-                        'asb_import_backup_continue_button',
-                    ) as HTMLButtonElement
-                ).disabled,
+                isElementDisabled(
+                    screen.getByTestId('asb_import_backup_continue_button'),
+                ),
             ).toBe(true)
         },
         SLOW_TEST_TIMEOUT_MS,
@@ -612,11 +606,9 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
                 ).toBeNull()
             })
             expect(
-                (
-                    screen.getByTestId(
-                        'asb_import_backup_continue_button',
-                    ) as HTMLButtonElement
-                ).disabled,
+                isElementDisabled(
+                    screen.getByTestId('asb_import_backup_continue_button'),
+                ),
             ).toBe(true)
         },
         SLOW_TEST_TIMEOUT_MS,

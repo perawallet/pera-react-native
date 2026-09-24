@@ -93,9 +93,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // The web platform's balance-stamping builder, standing in for the
 // extensionless './bidali-url' the hook actually imports — see the file

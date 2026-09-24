@@ -19,7 +19,6 @@ import {
     type FundingAddressLink,
 } from '../api/card-creation'
 import { fetchUser } from '../api/user'
-import { getValidIntegrityToken } from './integrityToken'
 
 export type UseFundingAddressLinkMutationResult = {
     /**
@@ -55,7 +54,6 @@ export const useFundingAddressLinkMutation =
                     network,
                     address,
                     baanxUserId: user.id,
-                    integrityToken: getValidIntegrityToken() ?? '',
                 })
             },
             // Handled by the caller as an inconclusive preflight, so it must

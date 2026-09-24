@@ -26,9 +26,7 @@ vi.mock('@components/ConfirmActionContent', () => ({
     ConfirmActionContent: () => null,
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@modules/settings/hooks/useConnectionSettingsList', () => ({
     useConnectionSettingsList: vi.fn(),

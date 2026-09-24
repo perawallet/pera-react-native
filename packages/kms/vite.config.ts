@@ -12,6 +12,7 @@
 
 import { defineConfig, type Plugin } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
 const pq = (file: string) => resolve(__dirname, 'src/crypto/pq', file)
 
@@ -118,7 +119,8 @@ const pqProviderTarget = (target: 'default' | 'native'): Plugin => {
 export default defineConfig(({ mode }) => {
     const target = mode === 'native' ? 'native' : 'default'
 
-    return {
+    return defineLibraryConfig({
+        root: __dirname,
         plugins: [
             pqProviderTarget(target),
             // Both targets satisfy the same PQSignatureProvider contract, so one
@@ -132,51 +134,26 @@ export default defineConfig(({ mode }) => {
             // bundle out from under anything resolving kms from dist. The
             // `build` script clears dist once, up front, instead.
             emptyOutDir: false,
-            lib: {
-                // `constants.ts` imports nothing, so its own entry lets a
-                // service-worker bundle reach SIGNING_ACCESS_DOMAIN without the
-                // keystore graph. Default target only: the native pass exists
-                // for the Falcon override and asserts on every chunk it emits.
-                entry:
-                    target === 'native'
-                        ? resolve(__dirname, 'src/index.ts')
-                        : {
-                              index: resolve(__dirname, 'src/index.ts'),
-                              constants: resolve(__dirname, 'src/constants.ts'),
-                          },
-                formats: ['es'],
-                ...(target === 'native' ? { fileName: 'index.native' } : {}),
-            },
-            rollupOptions: {
-                external: [
-                    // Aliased to react-native-quick-crypto by the app's bundler;
-                    // bundling it here stubs the module out to `{}`.
-                    'crypto',
-                    'react',
-                    'react/jsx-runtime',
-                    'zustand',
-                    '@perawallet/wallet-extension-platform',
-                    '@perawallet/wallet-core-shared',
-                    '@algorandfoundation/keystore-core',
-                    '@algorandfoundation/react-native-keystore',
-                    '@algorandfoundation/xhd-wallet-api',
-                    '@algorandfoundation/algokit-utils',
-                    'algosdk',
-                    '@scure/bip39',
-                    '@scure/bip39/wordlists/english',
-                    'tweetnacl',
-                    'uuid',
-                    '@perawallet/wallet-extension-provider',
-                    // On-device Falcon-1024 nitro module (Seam A). Kept
-                    // external so the app's Metro bundler resolves it; bundling it
-                    // here would pull in react-native (Flow) and instantiate the
-                    // native HybridObject at load. rnFalconProvider requires it
-                    // lazily and only on-device.
-                    '@joe-p/react-native-falcon',
-                    'react-native-nitro-modules',
-                    'react-native',
-                ],
-            },
         },
-    }
+        // `constants.ts` imports nothing, so its own entry lets a
+        // service-worker bundle reach SIGNING_ACCESS_DOMAIN without the
+        // keystore graph. Default target only: the native pass exists
+        // for the Falcon override and asserts on every chunk it emits.
+        entry:
+            target === 'native'
+                ? resolve(__dirname, 'src/index.ts')
+                : {
+                      index: resolve(__dirname, 'src/index.ts'),
+                      constants: resolve(__dirname, 'src/constants.ts'),
+                  },
+        ...(target === 'native' ? { fileName: 'index.native' } : {}),
+        // Reached only through @joe-p/react-native-falcon; bundling either
+        // would pull in Flow source and instantiate the native HybridObject
+        // at load.
+        external: ['react-native', 'react-native-nitro-modules'],
+        // The off-device build carries falcon-1024's WASM glue so node, vitest
+        // and the web build get a working PQ provider without resolving it;
+        // tools/check-kms-pq-dist.mjs asserts it is present.
+        bundled: ['falcon-1024'],
+    })
 })

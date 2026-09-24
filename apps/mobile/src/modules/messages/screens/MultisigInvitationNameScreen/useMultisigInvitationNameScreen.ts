@@ -33,8 +33,8 @@ import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-mes
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
-import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
-import { getNextSharedAccountName } from '@modules/multisig/utils'
+import { useShouldPlayConfetti } from '@modules/onboarding'
+import { getNextSharedAccountName } from '@modules/multisig'
 import type { MessagesStackParamList } from '../../routes/types'
 import {
     generateOrderedUniqueId,

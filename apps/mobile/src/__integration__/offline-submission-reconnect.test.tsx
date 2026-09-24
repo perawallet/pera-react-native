@@ -61,7 +61,7 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 
-import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
+import { TransactionListItem } from '@modules/transactions'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,

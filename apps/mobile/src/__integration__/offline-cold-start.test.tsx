@@ -36,10 +36,11 @@ import React from 'react'
 import { Decimal } from 'decimal.js'
 import { renderHook, screen, waitFor } from '@testing-library/react'
 import { QueryClientProvider, onlineManager } from '@tanstack/react-query'
+import { ThemeProvider } from '@rneui/themed'
 import { http, HttpResponse } from 'msw'
 
 import { server } from '@test-utils/msw-server'
-import { createTestQueryClient } from '@test-utils/render'
+import { createTestQueryClient, getTestTheme } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -109,9 +110,11 @@ const CACHED_TX: TransactionHistoryItem = {
 const wrapperWithClient = () => {
     const queryClient = createTestQueryClient()
     return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
+        <ThemeProvider theme={getTestTheme()}>
+            <QueryClientProvider client={queryClient}>
+                {children}
+            </QueryClientProvider>
+        </ThemeProvider>
     )
 }
 

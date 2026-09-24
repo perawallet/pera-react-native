@@ -46,7 +46,7 @@ vi.mock('@modules/swap/hooks', () => ({
     }),
 }))
 
-vi.mock('@modules/swap/hooks/swapQuoteHelpers', () => ({
+vi.mock('@perawallet/wallet-core-swaps', () => ({
     pickBestByAmountOut: (quotes: { quoteIdStr: string }[]) =>
         quotes[0] ?? null,
     formatSwapRate: (quote: { quoteIdStr: string }) =>

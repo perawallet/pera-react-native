@@ -40,6 +40,7 @@ import {
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_WORDS,
@@ -95,11 +96,9 @@ const openImportOptionsSheet = async () => {
 const waitForImportButtonEnabled = async () => {
     await waitFor(() => {
         expect(
-            (
-                screen.getByTestId(
-                    'import_account_import_button',
-                ) as HTMLButtonElement
-            ).disabled,
+            isElementDisabled(
+                screen.getByTestId('import_account_import_button'),
+            ),
         ).toBe(false)
     })
 }
@@ -165,11 +164,9 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
 
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'import_account_import_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(
+                        screen.getByTestId('import_account_import_button'),
+                    ),
                 ).toBe(false)
             })
 
@@ -223,11 +220,13 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
             )
 
             for (let idx = 0; idx < 25; idx++) {
-                expect(
-                    screen
-                        .getByTestId(`import_account_word_input_${idx}`)
-                        .getAttribute('data-sensitive'),
-                ).toBe('true')
+                // Sensitive inputs opt out of autocorrect and spellcheck, which is
+                // what keeps the OS keyboard from caching the words.
+                const input = screen.getByTestId(
+                    `import_account_word_input_${idx}`,
+                )
+                expect(input.getAttribute('autocorrect')).toBe('off')
+                expect(input.getAttribute('spellcheck')).toBe('false')
             }
         },
         SLOW_TEST_TIMEOUT_MS,
@@ -253,11 +252,9 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
 
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'import_account_import_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(
+                        screen.getByTestId('import_account_import_button'),
+                    ),
                 ).toBe(false)
             })
 

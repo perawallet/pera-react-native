@@ -13,12 +13,12 @@
 import { useCallback, useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useCardIssuance, useCardStore } from '@perawallet/wallet-core-card'
-import type { AccountDisplayCard } from '@modules/accounts/components/AccountDisplay'
+import type { AccountDisplayCard } from '@components/AccountDisplay'
 import {
     useAccountDrawerPickerKind,
     useCardPicker,
     type AccountDrawerPickerProps,
-} from '@modules/accounts/components/AccountDrawer'
+} from '@modules/accounts'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'

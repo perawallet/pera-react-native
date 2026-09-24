@@ -55,7 +55,7 @@ Copy from an existing package:
 
 - `tsconfig.json`
 - `tsconfig.build.json` (declaration emit — `pnpm run check:dts-emit` fails without it)
-- `vite.config.ts` (update the `external` list to this package's dependencies)
+- `vite.config.ts` (built on `defineLibraryConfig` from `@perawallet/wallet-core-devtools/vite/library`, which externalizes everything in `dependencies`/`peerDependencies`; the build fails if anything else would be inlined, so declare every runtime import there)
 - `vitest.config.ts`
 
 ### 4. Create Index File

@@ -44,6 +44,7 @@ import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { isElementDisabled } from '@test-utils/rnw'
 
 const typeWordsIndividually = (words: string[]) => {
     words.forEach((word, idx) => {
@@ -139,11 +140,9 @@ describe('Flow: Onboarding → Import Algo25 (IME-capitalized passphrase)', () =
 
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'import_account_import_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(
+                        screen.getByTestId('import_account_import_button'),
+                    ),
                 ).toBe(false)
             })
 
@@ -169,11 +168,9 @@ describe('Flow: Onboarding → Import Algo25 (IME-capitalized passphrase)', () =
             )
 
             expect(
-                (
-                    screen.getByTestId(
-                        'import_account_import_button',
-                    ) as HTMLButtonElement
-                ).disabled,
+                isElementDisabled(
+                    screen.getByTestId('import_account_import_button'),
+                ),
             ).toBe(true)
 
             // Pressing a disabled button must not start an import.

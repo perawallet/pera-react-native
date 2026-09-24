@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import { AccountAssetItemView } from '@modules/assets/components'
+import { AccountAssetItemView } from '@modules/assets'
 import type { PWTouchableOpacityProps } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { RampToken } from '@perawallet/wallet-core-onramp'

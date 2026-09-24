@@ -12,17 +12,23 @@
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 // `vi.mock` factories are hoisted to the top of the module — top-level
-// imports aren't bound when they run. The SVG mocks below have to use
-// `require('react')` for the same reason vitest.setup.ts does.
+// imports aren't bound when they run, so the factories below `require('react')`.
 
 import { afterEach, beforeEach, vi } from 'vitest'
 
-// Inherit every RN runtime, native module, navigation, and PW component mock
-// from the unit setup. Integration tests need those — running real
-// react-native, native firebase, etc. under jsdom would explode.
+// Start from the unit setup's native-module, navigation and package mocks,
+// then opt back into the real code below. Running native firebase, keychain,
+// etc. under jsdom would explode.
 import './vitest.setup'
 
-import { useBottomSheetStore } from './src/modules/bottom-sheet'
+// The store module, not the bottom-sheet barrel: the barrel pulls in the real
+// PW components, whose imports would load the platform driver before a test
+// file's own vi.unmock of it could take effect.
+import { useBottomSheetStore } from './src/modules/bottom-sheet/store/bottomSheetStore'
+import { setTestTheme } from './src/test-utils/test-theme'
+import { getTheme } from './src/theme/theme'
+
+setTestTheme(getTheme('light'))
 
 // The bottom-sheet store is a module-scoped singleton, so requests opened in one
 // test survive into the next unless reset.
@@ -54,6 +60,21 @@ vi.unmock('@perawallet/wallet-core-background')
 vi.unmock('@perawallet/wallet-core-settings')
 vi.unmock('@perawallet/wallet-core-contacts')
 vi.unmock('@perawallet/wallet-core-staking')
+
+// Flows render the real design system on react-native-web: the unit setup's
+// PWIcon and @rneui stubs come off, and only the native-only react-native
+// APIs stay stubbed, so Platform still reads as iOS and Alert/Linking/AppState
+// remain spies.
+vi.unmock('@components/core/PWIcon/PWIcon')
+vi.unmock('@rneui/themed')
+vi.unmock('@rneui/base')
+vi.mock('react-native', async () => {
+    const reactNativeWeb =
+        await vi.importActual<typeof import('react-native')>('react-native')
+    const { createReactNativeApiMocks } =
+        await import('./src/test-utils/mocks/react-native-apis')
+    return { ...reactNativeWeb, ...createReactNativeApiMocks() }
+})
 
 // Pre-accept the default terms version so its blocking sheet doesn't pop over
 // unrelated onboarding tests. The literals mirror the app's constants without
@@ -111,79 +132,6 @@ vi.mock('@react-navigation/stack', async () => {
     }
 })
 
-// svgr emits real React SVG components, but jsdom throws `InvalidCharacterError`
-// on attributes holding a long data URL — it treats the value as an XML Name.
-// The factory is duplicated per call because `vi.mock` is hoisted, so any
-// top-level binding is undefined at that point.
-vi.mock('@assets/images/key.svg', () => {
-    const React = require('react')
-    return {
-        default: (props: Record<string, unknown>) =>
-            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
-    }
-})
-vi.mock('@assets/images/key-inverted.svg', () => {
-    const React = require('react')
-    return {
-        default: (props: Record<string, unknown>) =>
-            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
-    }
-})
-vi.mock('@assets/images/eye.svg', () => {
-    const React = require('react')
-    return {
-        default: (props: Record<string, unknown>) =>
-            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
-    }
-})
-vi.mock('@assets/images/eye-inverted.svg', () => {
-    const React = require('react')
-    return {
-        default: (props: Record<string, unknown>) =>
-            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
-    }
-})
-// Check glyph rendered on the rekey success screens.
-vi.mock('@assets/icons/check.svg', () => {
-    const React = require('react')
-    return {
-        default: (props: Record<string, unknown>) =>
-            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
-    }
-})
-// Shield glyph rendered on the ASB import info screen.
-vi.mock('@assets/icons/shield-check.svg', () => {
-    const React = require('react')
-    return {
-        default: (props: Record<string, unknown>) =>
-            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
-    }
-})
-vi.mock('@assets/icons/accounts/light/ledger-account.svg', () => {
-    const React = require('react')
-    return {
-        default: (props: Record<string, unknown>) =>
-            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
-    }
-})
-
-// `expo-modules-core` reads `__DEV__` at module-load time, which is undefined
-// under jsdom, so any expo-* package importing it crashes. This fixes the
-// parse-time failure only — deeper surfaces like `globalThis.expo.EventEmitter`
-// still need their consumer packages mocked individually.
-;(globalThis as { __DEV__?: boolean }).__DEV__ = false
-
-// expo-screen-capture's surface is intentionally stubbed (rather than
-// run for real) because the only mobile consumer is
-// `usePreventScreenCapture`, which has no behavior worth exercising in
-// a jsdom test.
-vi.mock('expo-screen-capture', () => ({
-    preventScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
-    allowScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
-    addScreenshotListener: vi.fn(() => ({ remove: vi.fn() })),
-    removeScreenshotListener: vi.fn(),
-}))
-
 // `lottie-react-native` ships Flow-typed source that vite's parser can't
 // read. Replace with a no-op view so screens that show animations (e.g.
 // TransactionProcessingScreen) mount cleanly under jsdom.
@@ -192,8 +140,7 @@ vi.mock('lottie-react-native', () => {
     return {
         default: (props: Record<string, unknown>) =>
             React.createElement('div', {
-                ...props,
-                'data-testid': 'LottieView',
+                'data-testid': props.testID ?? 'LottieView',
             }),
     }
 })

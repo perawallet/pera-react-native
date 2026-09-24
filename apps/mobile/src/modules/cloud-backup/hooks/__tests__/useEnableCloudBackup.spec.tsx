@@ -45,9 +45,7 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: showToastMock }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useEnableCloudBackup } from '../useEnableCloudBackup'
 

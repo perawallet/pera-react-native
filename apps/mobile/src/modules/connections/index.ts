@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export * from './providers'
-export * from './hooks'
+// ConnectionsProvider is mounted once by the app shell: `@modules/connections/shell`.
+export { useConnectionPairing, type UseConnectionPairingResult } from './hooks'

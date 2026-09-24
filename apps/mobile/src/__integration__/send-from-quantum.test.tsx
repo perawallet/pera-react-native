@@ -57,11 +57,11 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
-import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
+import { useSendFundsStore } from '@modules/transactions'
 import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/QuantumFeeExplainer'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
-import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
+import { TransactionSuccessScreen } from '@modules/transactions/routes'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 

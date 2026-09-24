@@ -20,9 +20,7 @@ const mockRequest = vi.fn()
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetAuthoritiesQuery: (assetId: string) => mockAuthorities(assetId),
 }))
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequest }),
 }))

@@ -29,6 +29,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPhoneScreen } from '@modules/card/screens/CardOnboardingPhoneScreen'
 import { CardOnboardingPhoneVerifyScreen } from '@modules/card/screens/CardOnboardingPhoneVerifyScreen'
+import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
 
 const PHONE_NUMBER = '7400846282'
 
@@ -91,9 +92,10 @@ describe('card onboarding — phone', () => {
             target: { value: PHONE_NUMBER },
         })
         // Preselect sets the calling code, so the form validates and enables.
-        const confirm = screen.getByTestId('card-onboarding-phone-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-phone-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() => expect(sendSpy).toHaveBeenCalled())
         // The dialing code is sent without the leading '+'.
@@ -121,9 +123,10 @@ describe('card onboarding — phone', () => {
         fireEvent.change(screen.getByTestId('card-onboarding-phone-input'), {
             target: { value: PHONE_NUMBER },
         })
-        const confirm = screen.getByTestId('card-onboarding-phone-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-phone-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() =>
             expect(Notifier.showNotification).toHaveBeenCalled(),
@@ -145,16 +148,17 @@ describe('card onboarding — phone', () => {
         const input = screen.getByTestId('card-onboarding-phone-input')
         fireEvent.change(input, { target: { value: PHONE_NUMBER } })
         fireEvent.blur(input)
-        const confirm = screen.getByTestId('card-onboarding-phone-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-phone-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         // The real Baanx message is attributed to the field, and the flow stays put.
         await waitFor(() =>
             expect(
-                screen
-                    .getByTestId('card-onboarding-phone-input')
-                    .getAttribute('errormessage'),
+                getInputErrorMessage(
+                    screen.getByTestId('card-onboarding-phone-input'),
+                ),
             ).toBe('That number is already in use'),
         )
         expect(screen.queryByTestId('card-onboarding-phone-verify')).toBeNull()
@@ -171,15 +175,16 @@ describe('card onboarding — phone', () => {
         const input = screen.getByTestId('card-onboarding-phone-input')
         fireEvent.change(input, { target: { value: PHONE_NUMBER } })
         fireEvent.blur(input)
-        const confirm = screen.getByTestId('card-onboarding-phone-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-phone-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() =>
             expect(
-                screen
-                    .getByTestId('card-onboarding-phone-input')
-                    .getAttribute('errormessage'),
+                getInputErrorMessage(
+                    screen.getByTestId('card-onboarding-phone-input'),
+                ),
             ).toBe('peraCard.verify_phone.phone_taken'),
         )
     })
@@ -190,14 +195,14 @@ describe('card onboarding — phone', () => {
 
         // Too short to be valid, but no error while still typing (not blurred).
         fireEvent.change(input, { target: { value: '7' } })
-        expect(input.getAttribute('errormessage')).toBeFalsy()
+        expect(getInputErrorMessage(input)).toBeFalsy()
 
         fireEvent.blur(input)
         await waitFor(() =>
             expect(
-                screen
-                    .getByTestId('card-onboarding-phone-input')
-                    .getAttribute('errormessage'),
+                getInputErrorMessage(
+                    screen.getByTestId('card-onboarding-phone-input'),
+                ),
             ).toBe('peraCard.verify_phone.phone_invalid'),
         )
     })

@@ -34,6 +34,7 @@ import {
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
+    createBackupSyncStoreSources,
     initializeBackupSyncManager,
     useBackupSyncStateStore,
     useCloudBackupContactImport,
@@ -59,6 +60,7 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useNetworkStatusStore } from '@modules/network'
 import { CloudBackupAccountsScreen } from '@modules/cloud-backup/screens/CloudBackupAccountsScreen'
 import { CloudBackupAccountsReviewScreen } from '@modules/cloud-backup/screens/CloudBackupAccountsReviewScreen'
+import { waitPastDoublePressGuard } from '@test-utils/rnw'
 import {
     BACKUP_MNEMONIC,
     BACKUP_SALT,
@@ -109,6 +111,7 @@ const setupBackup = async () => {
     const mnemonicHook = renderQueryHook(() => useResolveMnemonicForBackup())
 
     initializeBackupSyncManager({
+        sources: createBackupSyncStoreSources(),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,
@@ -209,6 +212,7 @@ describe('Flow: Cloud backup → review actions while offline', () => {
             expect(seenDeviceIds()).toEqual([])
 
             setConnected(true)
+            await waitPastDoublePressGuard()
             fireEvent.click(screen.getByTestId('cloud_backup_account_back_up'))
 
             await waitFor(() =>

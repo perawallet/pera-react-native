@@ -101,7 +101,12 @@ const {
 // AccountTypes / useRekeyTransition are needed because
 // useLedgerAccountInfoContent → AccountDisplay → useAccountTypeLabel pulls
 // these in at module evaluation time.
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    // Real enums (models/accounts has no runtime imports): components reached
+    // through module barrels read them at import time.
+    ...(await vi.importActual<object>(
+        '@packages/accounts/src/models/accounts',
+    )),
     useAllAccounts: () => mockAllAccounts(),
     prefetchLedgerAccountPreview: mockPrefetch,
     useLedgerAccountPreview: vi.fn(),

@@ -73,9 +73,7 @@ vi.mock('@modules/vault', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { usePasskeyApproval } from '../usePasskeyApproval.web'
 

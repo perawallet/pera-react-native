@@ -40,13 +40,14 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
-import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks/peraWebImportFlowStore'
+import { usePeraWebImportFlowStore } from '@modules/onboarding'
 import { parsePeraWebQrPayload } from '@perawallet/wallet-core-backup'
 import { config } from '@perawallet/wallet-core-config'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
 import React from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { createTestQueryClient } from '@test-utils/render'
+import { ThemeProvider } from '@rneui/themed'
+import { createTestQueryClient, getTestTheme } from '@test-utils/render'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
@@ -261,8 +262,6 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
             )
             // The result screen renders the "nothing new" variant because
             // the only account in the backup was already in the wallet.
-            // (The count chip is a PWResultView child that the test mock
-            // drops, so we assert on the variant via its title instead.)
             expect(
                 screen.getByText(
                     'onboarding.pera_web_import.result.nothing_new_title',
@@ -367,9 +366,11 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
     // its own tree so we wrap it with a QueryClientProvider.
     const hookQueryClient = createTestQueryClient()
     const HookWrapper = ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={hookQueryClient}>
-            {children}
-        </QueryClientProvider>
+        <ThemeProvider theme={getTestTheme()}>
+            <QueryClientProvider client={hookQueryClient}>
+                {children}
+            </QueryClientProvider>
+        </ThemeProvider>
     )
 
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))

@@ -14,7 +14,11 @@
     "**/*.generated.ts"
   ],
   "plugins": ["typescript", "unicorn", "react", "import"],
-  "jsPlugins": ["eslint-plugin-unused-imports", "eslint-plugin-react-native"],
+  "jsPlugins": [
+    "eslint-plugin-unused-imports",
+    "eslint-plugin-react-native",
+    "./scripts/oxlint-pera-plugin.mjs"
+  ],
   "globals": {
     "__DEV__": "readonly",
     "__dirname": "readonly",
@@ -50,6 +54,7 @@
     "no-var": "error",
     "import/no-duplicates": ["error", { "prefer-inline": true }],
     "unused-imports/no-unused-imports": "error",
+    "pera/no-unvalidated-open-url": "error",
     "max-lines": [
       "warn",
       {

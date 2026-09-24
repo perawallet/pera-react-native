@@ -15,7 +15,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { createMinFeeResolver, resolveMinFeeForSender } from '../minFeeResolver'
+import { resolveMinFeeForSender } from '../minFeeResolver'
 
 const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
     ({
@@ -145,18 +145,5 @@ describe('resolveMinFeeForSender', () => {
             pqMultiplier: 5n,
         })
         expect(fee).toBe(5000n)
-    })
-})
-
-describe('createMinFeeResolver', () => {
-    it('wires suggested params, config, and accounts into the pure resolver', async () => {
-        const resolver = createMinFeeResolver({
-            getAccounts: () => [quantum()],
-            getSuggestedParams: async () => ({ minFee: 1000n }),
-            getMinFeeConfig: () => ({ minTxnFee: 1000n, pqMultiplier: 3n }),
-        })
-
-        await expect(resolver('QADDR')).resolves.toBe(3000n)
-        await expect(resolver('EXTERNAL')).resolves.toBe(1000n)
     })
 })

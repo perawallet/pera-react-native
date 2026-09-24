@@ -20,9 +20,9 @@ import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
 import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
-import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
-import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
-import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
+import { ProjectVerificationIcon } from '@modules/projects'
+import { PermissionItem } from '@modules/walletconnect'
+import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useRequesterStyles } from './styles'
 
 export type WcConnectHeaderProps = {
@@ -32,6 +32,8 @@ export type WcConnectHeaderProps = {
     requesterOrigin?: string
     /** When true the badge alone cannot vouch for `peer.url`, so the origin is named. */
     isRequesterOriginDistinct?: boolean
+    peerUrlLabel?: string
+    canOpenPeerUrl: boolean
     onPressUrl: () => void
 }
 
@@ -40,6 +42,8 @@ export const WcConnectHeader = ({
     permissions,
     requesterOrigin,
     isRequesterOriginDistinct = false,
+    peerUrlLabel,
+    canOpenPeerUrl,
     onPressUrl,
 }: WcConnectHeaderProps): React.JSX.Element => {
     const styles = useStyles()
@@ -97,13 +101,22 @@ export const WcConnectHeader = ({
                         />
                     )}
                 </PWView>
-                {!!peer.url && (
-                    <PWButton
-                        variant='link'
-                        onPress={onPressUrl}
-                        title={peer.url}
-                    />
-                )}
+                {!!peerUrlLabel &&
+                    (canOpenPeerUrl ? (
+                        <PWButton
+                            variant='link'
+                            onPress={onPressUrl}
+                            title={peerUrlLabel}
+                        />
+                    ) : (
+                        <PWText
+                            variant='caption'
+                            style={styles.peerUrlText}
+                            testID='wc-connect-peer-url-text'
+                        >
+                            {peerUrlLabel}
+                        </PWText>
+                    ))}
                 {!!requesterOrigin && (
                     <PWView style={requesterStyles.verifiedRow}>
                         {/* A page CAN pair while asserting someone else's url; the badge

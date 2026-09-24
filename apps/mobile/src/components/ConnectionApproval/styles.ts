@@ -1,0 +1,121 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// Shared by walletconnect's ConnectionApprovalView and the extension's
+// WcConnectScreen twin (dapp module), so the two approval surfaces cannot drift.
+import { makeStyles } from '@rneui/themed'
+
+type StyleProps = {
+    bottomInset?: number
+}
+
+export const useStyles = makeStyles(
+    (theme, { bottomInset = 0 }: StyleProps = {}) => {
+        return {
+            container: {
+                flex: 1,
+                padding: theme.spacing.xl,
+            },
+            contentContainer: {
+                paddingBottom: theme.spacing.xl,
+            },
+            icon: {
+                width: theme.spacing['4xl'],
+                height: theme.spacing['4xl'],
+                borderRadius: theme.spacing['4xl'],
+                marginVertical: theme.spacing.md,
+            },
+            iconContainer: {
+                width: theme.spacing['4xl'],
+                height: theme.spacing['4xl'],
+                borderRadius: theme.spacing['4xl'],
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: theme.colors.layerGrayLighter,
+            },
+            headerContainer: {
+                alignItems: 'center',
+                gap: theme.spacing.xl,
+            },
+            titleContainer: {
+                alignItems: 'center',
+            },
+            nameRow: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: theme.spacing.xs,
+            },
+            title: {
+                textAlign: 'center',
+                flexShrink: 1,
+            },
+            // Unlinked: the peer url failed the https gate, so it is only named.
+            peerUrlText: {
+                color: theme.colors.textGray,
+                textAlign: 'center',
+            },
+            networksContainer: {
+                alignItems: 'center',
+                flexDirection: 'row',
+                gap: theme.spacing.sm,
+            },
+            permissionsContainer: {
+                backgroundColor: theme.colors.layerGrayLighter,
+                borderRadius: theme.spacing.lg,
+                paddingHorizontal: theme.spacing.lg,
+                paddingBottom: theme.spacing.lg,
+                width: '100%',
+            },
+            permissionsContent: {
+                gap: theme.spacing.md,
+                paddingTop: theme.spacing.md,
+            },
+            panelTitle: {
+                color: theme.colors.textGray,
+            },
+            accountSelectionContainer: {
+                marginTop: theme.spacing.lg,
+                alignSelf: 'flex-start',
+            },
+            permissionsTitle: {
+                color: theme.colors.textGray,
+                marginBottom: theme.spacing.md,
+            },
+            buttonContainer: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: theme.spacing.md,
+                // Footer sits outside the PWFlatList, so it doesn't get the list's
+                // sheet bottom inset — add the safe-area inset here so the buttons
+                // clear the home indicator / gesture bar.
+                marginBottom: theme.spacing.lg + bottomInset,
+                marginHorizontal: theme.spacing.xl,
+            },
+            cancelButton: {
+                flexGrow: 1,
+                flexBasis: 0,
+            },
+            connectButton: {
+                flexGrow: 1,
+                flexBasis: 0,
+            },
+            accountItem: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: theme.spacing.sm,
+                paddingVertical: theme.spacing.sm,
+            },
+        }
+    },
+)

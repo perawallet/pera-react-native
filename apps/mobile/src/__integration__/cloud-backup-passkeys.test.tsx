@@ -35,6 +35,7 @@ import {
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
+    createBackupSyncStoreSources,
     getBackupSyncManager,
     initializeBackupSyncManager,
     useBackupSyncStateStore,
@@ -147,6 +148,7 @@ const startRealSyncManager = () => {
     )
 
     return initializeBackupSyncManager({
+        sources: createBackupSyncStoreSources(),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveHd: hdHook.current,

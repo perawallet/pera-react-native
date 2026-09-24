@@ -36,6 +36,7 @@ import { CardSignInScreen } from '@modules/card/screens/CardSignInScreen'
 import { CardForgotPasswordScreen } from '@modules/card/screens/CardForgotPasswordScreen'
 import { CardForgotPasswordVerifyScreen } from '@modules/card/screens/CardForgotPasswordVerifyScreen'
 import { CardForgotPasswordNewPasswordScreen } from '@modules/card/screens/CardForgotPasswordNewPasswordScreen'
+import { isElementDisabled } from '@test-utils/rnw'
 
 const EMAIL = 'john@example.com'
 // Satisfies every PASSWORD_RULES entry (15+, upper, lower, digit, special).
@@ -86,10 +87,10 @@ describe('Flow: Card forgot password', () => {
         expect((emailInput as HTMLInputElement).value).toBe(EMAIL)
         await waitFor(() =>
             expect(
-                screen
-                    .getByTestId('card-forgot-password-submit')
-                    .getAttribute('disabled'),
-            ).toBeNull(),
+                isElementDisabled(
+                    screen.getByTestId('card-forgot-password-submit'),
+                ),
+            ).toBe(false),
         )
         fireEvent.click(screen.getByTestId('card-forgot-password-submit'))
 
@@ -110,10 +111,10 @@ describe('Flow: Card forgot password', () => {
         )
         await waitFor(() =>
             expect(
-                screen
-                    .getByTestId('card-forgot-password-confirm')
-                    .getAttribute('disabled'),
-            ).toBeNull(),
+                isElementDisabled(
+                    screen.getByTestId('card-forgot-password-confirm'),
+                ),
+            ).toBe(false),
         )
         fireEvent.click(screen.getByTestId('card-forgot-password-confirm'))
 

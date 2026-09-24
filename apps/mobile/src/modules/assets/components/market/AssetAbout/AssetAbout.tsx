@@ -20,7 +20,7 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@modules/webview/hooks'
+import { useWebView } from '@modules/webview'
 import { useClipboard } from '@hooks/useClipboard'
 
 export type AssetAboutProps = {

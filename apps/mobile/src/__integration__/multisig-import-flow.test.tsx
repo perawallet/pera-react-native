@@ -48,7 +48,7 @@ import {
 
 // Deeplink parsing (perawallet://app/shared-account-import/?address=X and the
 // joint-account-import alias) is unit-tested in
-// src/hooks/deeplink/__tests__/new-parser.test.ts. This flow test starts at
+// src/modules/deeplink/__tests__/new-parser.test.ts. This flow test starts at
 // the screen the deeplink navigates to.
 
 // `generateMultisigAddress` runs for real here and rejects non-base32 input,

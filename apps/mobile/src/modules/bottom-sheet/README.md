@@ -62,15 +62,16 @@ const { resolve, dismiss } = useBottomSheetResult<'confirm' | 'cancel'>()
 ## Deep-link triggers
 
 If a sheet needs to be opened from a deep link or other non-React code,
-register it in
-`apps/mobile/src/modules/bottom-sheet/registrations.ts`. That file is the
-single source of truth for the registry, like a route table. Add an
-import + a `registerBottomSheet(...)` call + a `BottomSheetRegistry`
-augmentation entry:
+register it in `apps/mobile/src/bootstrap/bottom-sheet-registrations.ts`.
+That file is the single source of truth for the registry, like a route
+table. It lives in the composition root, not in this module, so the sheet
+infrastructure never imports the features it hosts. Add an import from the
+feature's public entry + a `registerBottomSheet(...)` call + a
+`BottomSheetRegistry` augmentation entry:
 
 ```tsx
-import { registerBottomSheet } from './registry/registry'
-import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
+import { OptInConfirmationContent } from '@modules/assets'
+import { registerBottomSheet } from '@modules/bottom-sheet'
 
 registerBottomSheet('asset-opt-in', OptInConfirmationContent)
 
@@ -84,8 +85,8 @@ declare module '@modules/bottom-sheet' {
 }
 ```
 
-`registrations.ts` is imported once at app bootstrap from `RootComponent`,
-so every entry binds before any deep link can fire. Non-React callers
+`bottom-sheet-registrations.ts` is imported for effect by `App.tsx` and
+`AppShell.web.tsx` before the React tree mounts, so every entry binds before any deep link can fire. Non-React callers
 (deep-link handler, native event listeners, etc.) can then open the sheet
 imperatively:
 
@@ -102,7 +103,7 @@ Props are type-checked against the registry entry, so a typo or a missing field
 is a compile-time error.
 
 For a worked example, the `ASSET_OPT_IN` case in
-`apps/mobile/src/hooks/useDeepLink.ts` and `useAddAssetView`'s
+`apps/mobile/src/modules/deeplink/hooks/useDeepLink.ts` and `useAddAssetView`'s
 `handleRequestAdd` both open `OptInConfirmationContent` through
 `requestByType('asset-opt-in', { assetId, accountAddress })`, sharing one typed
 contract.

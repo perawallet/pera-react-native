@@ -29,6 +29,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingEmailScreen } from '@modules/card/screens/CardOnboardingEmailScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
+import { getInputErrorMessage } from '@test-utils/rnw'
 
 const DEVICE_ID = 'integration-test-device'
 
@@ -195,7 +196,7 @@ describe('Flow: Card onboarding — email + country', () => {
         // The real Baanx message is attributed to the field, and the flow stays
         // on the email screen.
         await waitFor(() =>
-            expect(input.getAttribute('errormessage')).toBe(
+            expect(getInputErrorMessage(input)).toBe(
                 'That email is already in use',
             ),
         )
@@ -221,7 +222,7 @@ describe('Flow: Card onboarding — email + country', () => {
         fireEvent.click(screen.getByTestId('card-onboarding-email-confirm'))
 
         await waitFor(() =>
-            expect(input.getAttribute('errormessage')).toBe(
+            expect(getInputErrorMessage(input)).toBe(
                 'peraCard.create_account.email_taken',
             ),
         )
@@ -278,11 +279,11 @@ describe('Flow: Card onboarding — email + country', () => {
 
         fireEvent.change(input, { target: { value: 'not-an-email' } })
         // While typing (field not yet blurred) → no error.
-        expect(input.getAttribute('errormessage')).toBeFalsy()
+        expect(getInputErrorMessage(input)).toBeFalsy()
 
         fireEvent.blur(input)
         await waitFor(() =>
-            expect(input.getAttribute('errormessage')).toBe(
+            expect(getInputErrorMessage(input)).toBe(
                 'peraCard.create_account.email_invalid',
             ),
         )

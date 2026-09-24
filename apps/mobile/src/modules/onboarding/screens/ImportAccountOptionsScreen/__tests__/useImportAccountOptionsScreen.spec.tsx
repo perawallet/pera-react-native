@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
-import { DeeplinkType } from '@hooks/deeplink/types'
+import { DeeplinkType } from '@modules/deeplink/types'
 import {
     useImportAccountOptionsScreen,
     type UseImportAccountOptionsScreenResult,
@@ -57,7 +57,7 @@ vi.mock('react-i18next', async () => {
 })
 
 const mockParseDeeplink = vi.fn()
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({
         parseDeeplink: mockParseDeeplink,
         handleDeepLink: vi.fn(),

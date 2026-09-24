@@ -45,29 +45,6 @@ import {
 import { SettingsPasskeyScreen } from '@modules/settings/screens/SettingsPasskeysScreen'
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-// The PasskeysHero illustration (rendered in the empty / disabled states)
-// imports svgr SVG components whose long data-URL attributes make jsdom throw
-// `InvalidCharacterError`. Stub them to inert divs — same approach the shared
-// integration setup uses for other SVGs. `vi.mock` is hoisted above the
-// imports, so the factory must `require('react')` rather than close over it.
-vi.mock('@assets/icons/passkey-hero-light.svg', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const React = require('react')
-    return {
-        default: (props: Record<string, unknown>) =>
-            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
-    }
-})
-
-vi.mock('@assets/icons/passkey-hero-dark.svg', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const React = require('react')
-    return {
-        default: (props: Record<string, unknown>) =>
-            React.createElement('div', { ...props, 'data-testid': 'SvgIcon' }),
-    }
-})
-
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const HD_ACCOUNT: WalletAccount = {
@@ -391,7 +368,7 @@ describe('Flow: Settings → Passkeys', () => {
             // The flagged credential is the only row on screen, so the list's
             // remove action must be gone too — otherwise the banner's blocked
             // note is contradicted two taps below it.
-            expect(screen.queryByTestId('touchable-icon-trash')).toBeFalsy()
+            expect(screen.queryByTestId(/_remove$/)).toBeFalsy()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

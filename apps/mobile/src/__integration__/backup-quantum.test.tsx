@@ -47,6 +47,7 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC,
@@ -145,7 +146,7 @@ const advanceToDisplayedWords = async (): Promise<void> => {
         'passphrase_acknowledge_bottom_sheet_reveal',
     ) as HTMLButtonElement
     await waitFor(() => {
-        expect(revealButton.disabled).toBe(false)
+        expect(isElementDisabled(revealButton)).toBe(false)
     })
     fireEvent.click(revealButton)
     await waitFor(

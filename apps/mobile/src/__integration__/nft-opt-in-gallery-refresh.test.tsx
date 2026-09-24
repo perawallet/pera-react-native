@@ -65,7 +65,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
-import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
+import { OptInConfirmationContent } from '@modules/assets'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAccountNfts'
 

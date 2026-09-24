@@ -25,7 +25,7 @@ import {
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import type { MessagesStackParamList } from '@modules/messages/routes/types'
+import type { MessagesStackParamList } from '@modules/messages'
 import {
     useAccountBalancesInvalidator,
     useFindAccountByAddress,

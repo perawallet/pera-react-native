@@ -43,6 +43,7 @@ import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
 
+import { closestPressable, isElementDisabled } from '@test-utils/rnw'
 import {
     deriveTestHDAddress,
     HD_TEST_ADDRESS,
@@ -66,10 +67,6 @@ const typeWordsIndividually = (words: string[]) => {
     })
 }
 
-// ImportInfoScreen renders a single PWButton (the "Recover" CTA). The
-// component mock keys it under the default 'PWButton' testid because the
-// production source doesn't pass an explicit one. This helper waits for it
-// to mount, then advances to ImportAccount.
 const advanceThroughImportInfo = async () => {
     await waitFor(() => screen.getByTestId('import_info_recover_button'))
     fireEvent.click(screen.getByTestId('import_info_recover_button'))
@@ -120,11 +117,9 @@ const openImportOptionsSheet = async () => {
 const waitForImportButtonEnabled = async () => {
     await waitFor(() => {
         expect(
-            (
-                screen.getByTestId(
-                    'import_account_import_button',
-                ) as HTMLButtonElement
-            ).disabled,
+            isElementDisabled(
+                screen.getByTestId('import_account_import_button'),
+            ),
         ).toBe(false)
     })
 }
@@ -201,11 +196,9 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'import_account_import_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(
+                        screen.getByTestId('import_account_import_button'),
+                    ),
                 ).toBe(false)
             })
 
@@ -274,11 +267,9 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'import_account_import_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(
+                        screen.getByTestId('import_account_import_button'),
+                    ),
                 ).toBe(false)
             })
 
@@ -339,11 +330,9 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'import_account_import_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(
+                        screen.getByTestId('import_account_import_button'),
+                    ),
                 ).toBe(false)
             })
 
@@ -508,7 +497,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
                 const checkbox = screen.getByTestId(
                     `import_select_addresses_item_checkbox_${address}`,
                 )
-                const row = checkbox.closest('button')
+                const row = closestPressable(checkbox)
                 if (!row) {
                     throw new Error(`Row button not found for ${address}`)
                 }

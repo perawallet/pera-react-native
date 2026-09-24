@@ -54,6 +54,7 @@ import {
     GET_DEVICE_ID_ACTION,
     JsonRpcErrorCode,
     toValidatedBrowserUrl,
+    toValidatedNativeUri,
     requireSecure,
     safeOrigin,
     sendActionToWebview,
@@ -67,10 +68,9 @@ import {
     logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useConnectionPairing } from '@modules/connections/hooks/useConnectionPairing'
+import { useConnectionPairing } from '@modules/connections'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { useDeepLink } from '@hooks/useDeepLink'
-import { parseDeeplink } from '@hooks/deeplink/parser'
+import { useDeepLink, parseDeeplink } from '@modules/deeplink'
 import { useNetworkStatus } from '@modules/network'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import { parseWalletConnectUri } from '@perawallet/wallet-core-walletconnect'
@@ -300,6 +300,7 @@ export const usePeraWebviewInterface = (
                     }
                     void Linking.canOpenURL(url).then(supported => {
                         if (supported) {
+                            // oxlint-disable-next-line pera/no-unvalidated-open-url -- toValidatedBrowserUrl above
                             void Linking.openURL(url)
                         } else {
                             sendErrorToWebview(
@@ -359,16 +360,30 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['uri'], message)) {
                         return
                     }
-                    const uri = message.params!.uri as string
+                    const rawUri = message.params!.uri
 
-                    if (parseDeeplink(uri)) {
-                        void handleDeepLink(uri, false, 'in-app')
+                    if (typeof rawUri === 'string' && parseDeeplink(rawUri)) {
+                        void handleDeepLink(rawUri, false, 'in-app')
+                        return
+                    }
+
+                    const uri = toValidatedNativeUri(rawUri)
+                    if (!uri) {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InvalidParams,
+                            t('errors.webview.unsupported_url', {
+                                url: String(rawUri),
+                            }),
+                            webview,
+                        )
                         return
                     }
 
                     void Linking.canOpenURL(uri)
                         .then(supported => {
                             if (supported) {
+                                // oxlint-disable-next-line pera/no-unvalidated-open-url -- toValidatedNativeUri above
                                 void Linking.openURL(uri)
                             } else {
                                 sendErrorToWebview(
