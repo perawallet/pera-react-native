@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { mockListCurrencies } from '@perawallet/wallet-core-currencies/test-handlers'
 import { server } from '@test-utils/msw-server'
@@ -30,10 +22,6 @@ import { JPY_ONLY, USD_EUR_GBP } from './__fixtures__/currencies'
 // @perawallet/wallet-core-* mocks — see apps/mobile/vitest.integration-setup.ts.
 
 describe('Flow: Settings → Currency selection', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     // Default scenario for tests that don't override: list returns USD/EUR/GBP.
     beforeEach(() => {
         server.use(mockListCurrencies({ response: USD_EUR_GBP }))

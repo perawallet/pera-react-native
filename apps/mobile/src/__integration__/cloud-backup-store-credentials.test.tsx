@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     act,
     fireEvent,
@@ -32,7 +23,6 @@ import { Notifier } from 'react-native-notifier'
 import { File } from 'expo-file-system'
 
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import {
@@ -85,9 +75,6 @@ const toastTitles = (): string[] =>
         .mocked(Notifier.showNotification)
         .mock.calls.map(call => String(call[0].title))
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-afterAll(() => server.close())
-
 beforeEach(async () => {
     resetTestKeystore()
     useDeviceStore.getState().setDeviceID('mainnet', 'device-integration')
@@ -107,7 +94,6 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-    server.resetHandlers()
     vi.restoreAllMocks()
     vi.clearAllMocks()
     await deleteBackupKeys()

@@ -12,7 +12,6 @@
 
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -66,7 +65,6 @@ import {
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Mint a real algo25 key + register the matching account, mirroring
 // `seedAlgo25Sender` from send-algo.test.tsx. Kept in-file rather than
@@ -109,12 +107,9 @@ const renderSendStack = () =>
 
 describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -157,93 +152,87 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         )
     })
 
-    it(
-        'Given a sender holding a USDC-like asset, when the user confirms a normal-mode send, then a signed asset-transfer is POSTed to algod and the success screen renders',
-        async () => {
-            const sender = await seedAlgo25Sender()
+    it('Given a sender holding a USDC-like asset, when the user confirms a normal-mode send, then a signed asset-transfer is POSTed to algod and the success screen renders', async () => {
+        const sender = await seedAlgo25Sender()
 
-            // The confirmation screen reads the sender's asset balance
-            // from the local DB (not algod). Seed both the holding row
-            // and the algo-balance row so the screen has data to render.
-            await insertAssetHolding({
-                accountAddress: sender.address,
-                assetId: USDC_TEST_ASSET_ID,
-                network: 'mainnet',
-                amount: '10000000',
-            })
-            await upsertAccountBalance({
-                accountAddress: sender.address,
-                network: 'mainnet',
-                algoBalance: new Decimal(5_000_000),
-                totalAssetsOptedIn: 1,
-                totalCreatedAssets: 0,
-                totalAppsOptedIn: 0,
-                minBalance: new Decimal(200_000),
-                status: 'Offline',
-                authAddress: null,
-            })
+        // The confirmation screen reads the sender's asset balance
+        // from the local DB (not algod). Seed both the holding row
+        // and the algo-balance row so the screen has data to render.
+        await insertAssetHolding({
+            accountAddress: sender.address,
+            assetId: USDC_TEST_ASSET_ID,
+            network: 'mainnet',
+            amount: '10000000',
+        })
+        await upsertAccountBalance({
+            accountAddress: sender.address,
+            network: 'mainnet',
+            algoBalance: new Decimal(5_000_000),
+            totalAssetsOptedIn: 1,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            minBalance: new Decimal(200_000),
+            status: 'Offline',
+            authAddress: null,
+        })
 
-            useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
-            useSendFundsStore.getState().setAmount(new Decimal('1.5'))
-            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
-            useSendFundsStore.getState().setSendMode('normal')
+        useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
+        useSendFundsStore.getState().setAmount(new Decimal('1.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+        useSendFundsStore.getState().setSendMode('normal')
 
-            // Capture the algod POST so we can inspect the encoded body
-            // and prove the right asset-transfer was built.
-            const sendSpy = vi.fn(async () =>
-                HttpResponse.json(
-                    {
-                        txId: 'ASATESTTXID000000000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderSendStack()
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('send_confirm_button'),
-                    ).toBeTruthy()
+        // Capture the algod POST so we can inspect the encoded body
+        // and prove the right asset-transfer was built.
+        const sendSpy = vi.fn(async () =>
+            HttpResponse.json(
+                {
+                    txId: 'ASATESTTXID000000000000000000000000000000000000000000',
                 },
-                { timeout: 5000 },
-            )
-            const confirmButton = screen.getByTestId(
-                'send_confirm_button',
-            ) as HTMLButtonElement
-            await waitFor(() => {
-                expect(isElementDisabled(confirmButton)).toBe(false)
-            })
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            fireEvent.click(confirmButton)
+        renderSendStack()
 
-            await waitFor(
-                () => {
-                    expect(screen.getByTestId('send_success')).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        const confirmButton = screen.getByTestId(
+            'send_confirm_button',
+        ) as HTMLButtonElement
+        await waitFor(() => {
+            expect(isElementDisabled(confirmButton)).toBe(false)
+        })
 
-            // Inspect the submitted body: msgpack-encoded signed group.
-            // We don't decode here (assertion at the byte level is
-            // brittle), but we can confirm the spy received a non-empty
-            // application/x-binary payload.
-            expect(sendSpy).toHaveBeenCalled()
-            // `vi.fn(() => ...)` infers the call args as `[]`; cast
-            // the whole calls array to the MSW handler shape that the
-            // runtime actually invokes the spy with.
-            const calls = sendSpy.mock.calls as unknown as Array<
-                [{ request: Request }]
-            >
-            const body = await calls[0][0].request.arrayBuffer()
-            // A signed asset-transfer group is well over 100 bytes;
-            // empty / placeholder bodies would be tiny.
-            expect(body.byteLength).toBeGreaterThan(50)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        fireEvent.click(confirmButton)
+
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_success')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+
+        // Inspect the submitted body: msgpack-encoded signed group.
+        // We don't decode here (assertion at the byte level is
+        // brittle), but we can confirm the spy received a non-empty
+        // application/x-binary payload.
+        expect(sendSpy).toHaveBeenCalled()
+        // `vi.fn(() => ...)` infers the call args as `[]`; cast
+        // the whole calls array to the MSW handler shape that the
+        // runtime actually invokes the spy with.
+        const calls = sendSpy.mock.calls as unknown as Array<
+            [{ request: Request }]
+        >
+        const body = await calls[0][0].request.arrayBuffer()
+        // A signed asset-transfer group is well over 100 bytes;
+        // empty / placeholder bodies would be tiny.
+        expect(body.byteLength).toBeGreaterThan(50)
+    })
 
     // Seed the local DB rows the confirmation screen reads (holding +
     // algo-balance) so the screen renders and the confirm button enables.
@@ -268,206 +257,184 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         })
     }
 
-    it(
-        'Given the recipient is not opted into the asset, when the user confirms, then algod rejects the asset transfer and the processing screen surfaces an error toast instead of success',
-        async () => {
-            const sender = await seedAlgo25Sender()
-            await seedAsaHolding(sender.address)
+    it('Given the recipient is not opted into the asset, when the user confirms, then algod rejects the asset transfer and the processing screen surfaces an error toast instead of success', async () => {
+        const sender = await seedAlgo25Sender()
+        await seedAsaHolding(sender.address)
 
-            useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
-            useSendFundsStore.getState().setAmount(new Decimal('1.5'))
-            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
-            useSendFundsStore.getState().setSendMode('normal')
+        useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
+        useSendFundsStore.getState().setAmount(new Decimal('1.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+        useSendFundsStore.getState().setSendMode('normal')
 
-            // A normal-mode ASA send builds a plain asset-transfer; nothing in
-            // the confirmation → processing stack pre-checks the receiver's
-            // opt-in (the opt-in gate lives on the upstream destination
-            // screen). The faithful failure is algod rejecting the submission
-            // with the "receiver not opted in" node error — the pipeline's
-            // submit step throws, `execute()` rejects, and the processing
-            // screen raises an error toast and navigates back.
-            const rejectSpy = vi.fn(() =>
-                HttpResponse.json(
-                    {
-                        message:
-                            'TransactionPool.Remember: transaction ABC: receiver error: must optin, asset 31566704 missing from receiver',
-                    },
-                    { status: 400 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', rejectSpy))
-
-            renderSendStack()
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('send_confirm_button'),
-                    ).toBeTruthy()
+        // A normal-mode ASA send builds a plain asset-transfer; nothing in
+        // the confirmation → processing stack pre-checks the receiver's
+        // opt-in (the opt-in gate lives on the upstream destination
+        // screen). The faithful failure is algod rejecting the submission
+        // with the "receiver not opted in" node error — the pipeline's
+        // submit step throws, `execute()` rejects, and the processing
+        // screen raises an error toast and navigates back.
+        const rejectSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    message:
+                        'TransactionPool.Remember: transaction ABC: receiver error: must optin, asset 31566704 missing from receiver',
                 },
-                { timeout: 5000 },
-            )
-            const confirmButton = screen.getByTestId(
-                'send_confirm_button',
-            ) as HTMLButtonElement
-            await waitFor(() => {
-                expect(isElementDisabled(confirmButton)).toBe(false)
-            })
+                { status: 400 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', rejectSpy))
 
-            fireEvent.click(confirmButton)
+        renderSendStack()
 
-            await waitFor(
-                () => {
-                    expect(rejectSpy).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            await waitFor(
-                () => {
-                    expect(
-                        vi.mocked(Notifier.showNotification),
-                    ).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            expect(screen.queryByTestId('pw-result-view')).toBeNull()
-            await waitFor(() => {
+        await waitFor(
+            () => {
                 expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+            },
+            { timeout: 5000 },
+        )
+        const confirmButton = screen.getByTestId(
+            'send_confirm_button',
+        ) as HTMLButtonElement
+        await waitFor(() => {
+            expect(isElementDisabled(confirmButton)).toBe(false)
+        })
 
-    it(
-        'Given the sender cannot cover the transaction fee, when the user confirms the asset transfer, then algod rejects the submission and the processing screen surfaces an error toast instead of success',
-        async () => {
-            const sender = await seedAlgo25Sender()
-            await seedAsaHolding(sender.address)
+        fireEvent.click(confirmButton)
 
-            useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
-            useSendFundsStore.getState().setAmount(new Decimal('1.5'))
-            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
-            useSendFundsStore.getState().setSendMode('normal')
+        await waitFor(
+            () => {
+                expect(rejectSpy).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        await waitFor(
+            () => {
+                expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(screen.queryByTestId('pw-result-view')).toBeNull()
+        await waitFor(() => {
+            expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+        })
+    })
 
-            // ASA amount is held in the asset, not ALGO; the fee is still paid
-            // in ALGO. There's no client-side ALGO-for-fee gate on this stack,
-            // so an under-funded account is caught only when algod rejects the
-            // group for underspending the fee. Same surface as above: error
-            // toast, no success screen.
-            const rejectSpy = vi.fn(() =>
-                HttpResponse.json(
-                    {
-                        message:
-                            'TransactionPool.Remember: transaction ABC: overspend (account ABC, data {raw 0})',
-                    },
-                    { status: 400 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', rejectSpy))
+    it('Given the sender cannot cover the transaction fee, when the user confirms the asset transfer, then algod rejects the submission and the processing screen surfaces an error toast instead of success', async () => {
+        const sender = await seedAlgo25Sender()
+        await seedAsaHolding(sender.address)
 
-            renderSendStack()
+        useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
+        useSendFundsStore.getState().setAmount(new Decimal('1.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+        useSendFundsStore.getState().setSendMode('normal')
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('send_confirm_button'),
-                    ).toBeTruthy()
+        // ASA amount is held in the asset, not ALGO; the fee is still paid
+        // in ALGO. There's no client-side ALGO-for-fee gate on this stack,
+        // so an under-funded account is caught only when algod rejects the
+        // group for underspending the fee. Same surface as above: error
+        // toast, no success screen.
+        const rejectSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    message:
+                        'TransactionPool.Remember: transaction ABC: overspend (account ABC, data {raw 0})',
                 },
-                { timeout: 5000 },
-            )
-            const confirmButton = screen.getByTestId(
-                'send_confirm_button',
-            ) as HTMLButtonElement
-            await waitFor(() => {
-                expect(isElementDisabled(confirmButton)).toBe(false)
-            })
+                { status: 400 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', rejectSpy))
 
-            fireEvent.click(confirmButton)
+        renderSendStack()
 
-            await waitFor(
-                () => {
-                    expect(rejectSpy).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            await waitFor(
-                () => {
-                    expect(
-                        vi.mocked(Notifier.showNotification),
-                    ).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-            expect(screen.queryByTestId('pw-result-view')).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+        const confirmButton = screen.getByTestId(
+            'send_confirm_button',
+        ) as HTMLButtonElement
+        await waitFor(() => {
+            expect(isElementDisabled(confirmButton)).toBe(false)
+        })
 
-    it(
-        'Given a frozen asset holding, when the user opens the send asset picker, then the frozen row is badged and not selectable',
-        async () => {
-            const sender = await seedAlgo25Sender()
-            await insertAssetHolding({
-                accountAddress: sender.address,
-                assetId: '0',
-                network: 'mainnet',
-                amount: '5000000',
-            })
-            await insertAssetHolding({
-                accountAddress: sender.address,
-                assetId: USDC_TEST_ASSET_ID,
-                network: 'mainnet',
-                amount: '10000000',
-                isFrozen: true,
-            })
-            await upsertAccountBalance({
-                accountAddress: sender.address,
-                network: 'mainnet',
-                algoBalance: new Decimal(5_000_000),
-                totalAssetsOptedIn: 1,
-                totalCreatedAssets: 0,
-                totalAppsOptedIn: 0,
-                minBalance: new Decimal(200_000),
-                status: 'Offline',
-                authAddress: null,
-            })
+        fireEvent.click(confirmButton)
 
-            const InputAmountStub = () => <View testID='input-amount-stub' />
-            renderWithNavigation(AssetSelectionScreen, 'SelectAsset', {
-                additionalScreens: [
-                    { name: 'InputAmount', component: InputAmountStub },
-                    { name: 'SelectDestination', component: InputAmountStub },
-                ],
-            })
+        await waitFor(
+            () => {
+                expect(rejectSpy).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        await waitFor(
+            () => {
+                expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(screen.queryByTestId('pw-result-view')).toBeNull()
+    })
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId(
-                            `asset-list-item-${USDC_TEST_ASSET_ID}`,
-                        ),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
+    it('Given a frozen asset holding, when the user opens the send asset picker, then the frozen row is badged and not selectable', async () => {
+        const sender = await seedAlgo25Sender()
+        await insertAssetHolding({
+            accountAddress: sender.address,
+            assetId: '0',
+            network: 'mainnet',
+            amount: '5000000',
+        })
+        await insertAssetHolding({
+            accountAddress: sender.address,
+            assetId: USDC_TEST_ASSET_ID,
+            network: 'mainnet',
+            amount: '10000000',
+            isFrozen: true,
+        })
+        await upsertAccountBalance({
+            accountAddress: sender.address,
+            network: 'mainnet',
+            algoBalance: new Decimal(5_000_000),
+            totalAssetsOptedIn: 1,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            minBalance: new Decimal(200_000),
+            status: 'Offline',
+            authAddress: null,
+        })
 
-            // The frozen holding is labeled (i18n renders raw keys in tests).
-            expect(
-                screen.getByText('transactions.asset_freeze.frozen'),
-            ).toBeTruthy()
+        const InputAmountStub = () => <View testID='input-amount-stub' />
+        renderWithNavigation(AssetSelectionScreen, 'SelectAsset', {
+            additionalScreens: [
+                { name: 'InputAmount', component: InputAmountStub },
+                { name: 'SelectDestination', component: InputAmountStub },
+            ],
+        })
 
-            // Tapping the frozen row must not advance to the amount screen.
-            fireEvent.click(
-                screen.getByTestId(`asset-list-item-${USDC_TEST_ASSET_ID}`),
-            )
-            expect(screen.queryByTestId('input-amount-stub')).toBeNull()
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId(`asset-list-item-${USDC_TEST_ASSET_ID}`),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
 
-            // The unfrozen ALGO row still navigates.
-            fireEvent.click(screen.getByTestId('asset-list-item-0'))
-            await waitFor(() => {
-                expect(screen.getByTestId('input-amount-stub')).toBeTruthy()
-            })
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The frozen holding is labeled (i18n renders raw keys in tests).
+        expect(
+            screen.getByText('transactions.asset_freeze.frozen'),
+        ).toBeTruthy()
+
+        // Tapping the frozen row must not advance to the amount screen.
+        fireEvent.click(
+            screen.getByTestId(`asset-list-item-${USDC_TEST_ASSET_ID}`),
+        )
+        expect(screen.queryByTestId('input-amount-stub')).toBeNull()
+
+        // The unfrozen ALGO row still navigates.
+        fireEvent.click(screen.getByTestId('asset-list-item-0'))
+        await waitFor(() => {
+            expect(screen.getByTestId('input-amount-stub')).toBeTruthy()
+        })
+    })
 })

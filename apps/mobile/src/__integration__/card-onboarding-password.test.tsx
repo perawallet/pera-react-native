@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { useCardStore } from '@perawallet/wallet-core-card'
@@ -76,7 +67,6 @@ const renderPassword = () =>
     )
 
 describe('card onboarding — password', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => {
         const store = useCardStore.getState()
         store.resetState()
@@ -85,8 +75,6 @@ describe('card onboarding — password', () => {
         store.setVerificationCode('123456')
         store.setContactVerificationId('mock-contact-id')
     })
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     it('submits email/verify and advances to the phone step', async () => {
         let verifyBody: Record<string, unknown> | undefined

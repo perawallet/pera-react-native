@@ -15,15 +15,7 @@
 // row unless Remote Config turns it on. The flag-on flow itself is covered
 // by gift-card.test.tsx.
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 
 // MenuScreen reaches PWWebView through the @modules/webview barrel; the real
@@ -34,17 +26,13 @@ vi.mock('@modules/webview/components/PWWebView', () => ({
 }))
 
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { MenuScreen } from '@modules/menu/routes'
 
 describe('gift-card flag gating on the Menu screen', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     afterEach(() => {
-        server.resetHandlers()
         useRemoteConfigStore.getState().resetState()
     })
-    afterAll(() => server.close())
 
     it('hides the Buy Gift Card row when the flag is unset (the default)', () => {
         renderWithNavigation(MenuScreen, 'Menu')

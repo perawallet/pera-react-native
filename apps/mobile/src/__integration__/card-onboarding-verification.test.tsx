@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Linking } from 'react-native'
@@ -74,7 +65,6 @@ const mockOnboardingDetails = (verificationState: string) =>
     )
 
 describe('Flow: Card onboarding — identity verification', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => {
         const store = useCardStore.getState()
         store.resetState()
@@ -94,10 +84,8 @@ describe('Flow: Card onboarding — identity verification', () => {
         )
     })
     afterEach(() => {
-        server.resetHandlers()
         vi.restoreAllMocks()
     })
-    afterAll(() => server.close())
 
     it('Given the KYC entry, when Verify is pressed, then the Veriff session URL opens in the browser', async () => {
         mockStartVerification()

@@ -44,8 +44,6 @@ const resetTestContacts = () => {
     }
 }
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 const SENDER_ACCOUNT: WalletAccount = {
     id: 'sender-1',
     type: AccountTypes.algo25,
@@ -103,47 +101,42 @@ describe('Flow: Contacts → use in send destination picker', () => {
         ).toBeGreaterThan(0)
     })
 
-    it(
-        'Given a contact is in the store, when AddressSearchView searches by name, then the matching contact surfaces and tapping it fires onSelected with the address',
-        async () => {
-            addTestContact('Alice', HD_TEST_ADDRESS)
+    it('Given a contact is in the store, when AddressSearchView searches by name, then the matching contact surfaces and tapping it fires onSelected with the address', async () => {
+        addTestContact('Alice', HD_TEST_ADDRESS)
 
-            const onSelected = vi.fn()
-            renderWithNavigation(
-                () => (
-                    <AddressSearchView
-                        onSelected={onSelected}
-                        showAllContactsWhenEmpty
-                    />
-                ),
-                'AddressSearchHost',
-            )
+        const onSelected = vi.fn()
+        renderWithNavigation(
+            () => (
+                <AddressSearchView
+                    onSelected={onSelected}
+                    showAllContactsWhenEmpty
+                />
+            ),
+            'AddressSearchHost',
+        )
 
-            // With `showAllContactsWhenEmpty`, contacts surface without
-            // typing. Each row renders an `AddressDisplay` with the
-            // contact's name as its label (when one is set) — match by
-            // the name, not the address.
-            await waitFor(() => {
-                expect(
-                    screen.queryAllByText(
-                        (_, node) => (node?.textContent ?? '') === 'Alice',
-                    ).length,
-                ).toBeGreaterThan(0)
-            })
+        // With `showAllContactsWhenEmpty`, contacts surface without
+        // typing. Each row renders an `AddressDisplay` with the
+        // contact's name as its label (when one is set) — match by
+        // the name, not the address.
+        await waitFor(() => {
+            expect(
+                screen.queryAllByText(
+                    (_, node) => (node?.textContent ?? '') === 'Alice',
+                ).length,
+            ).toBeGreaterThan(0)
+        })
 
-            const matches = screen.getAllByText(
-                (_, node) => (node?.textContent ?? '') === 'Alice',
-            )
-            const leaf =
-                matches.find(el => el.children.length === 0) ?? matches[0]
-            const row = closestPressable(leaf)
-            if (!row) {
-                throw new Error('Contact row button not found')
-            }
-            fireEvent.click(row)
+        const matches = screen.getAllByText(
+            (_, node) => (node?.textContent ?? '') === 'Alice',
+        )
+        const leaf = matches.find(el => el.children.length === 0) ?? matches[0]
+        const row = closestPressable(leaf)
+        if (!row) {
+            throw new Error('Contact row button not found')
+        }
+        fireEvent.click(row)
 
-            expect(onSelected).toHaveBeenCalledWith(HD_TEST_ADDRESS)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(onSelected).toHaveBeenCalledWith(HD_TEST_ADDRESS)
+    })
 })

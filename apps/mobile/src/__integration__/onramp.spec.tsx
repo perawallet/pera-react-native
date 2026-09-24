@@ -21,7 +21,6 @@
 
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -43,7 +42,7 @@ import {
     encodeSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 
-import { server } from '@test-utils/msw-server'
+import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -98,8 +97,6 @@ type RampPairApiResponse = MockRampPairsParams['response'][number]
 type RampQuoteApiResponse = MockCreateRampQuoteParams['response'][number]
 type RampOrderApiResponse = MockCreateRampOrderParams['response']
 type RampHistoryPageApiResponse = MockRampHistoryParams['response']
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // The intro-seen flag lives in the settings preferences store (read via
 // `useOnrampIntroduction`), not the onramp store. Set it so the screen renders
@@ -527,16 +524,17 @@ const enterPayAmount = (value: string) => {
 }
 
 describe('Flow: Onramp buy (native XO)', () => {
+    // Cases that don't exercise balances or history leave the background
+    // account-information and ramp-history fetches unmocked.
+    setSuiteUnhandledRequestMode('bypass')
+
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'bypass' })
         // The delegated opt-in flows render the asset opt-in confirmation
         // sheet, whose asset lookup goes through the sqlite-backed assets
         // query.
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -551,480 +549,428 @@ describe('Flow: Onramp buy (native XO)', () => {
         await seedAlgoAsset('mainnet')
     })
 
-    it(
-        'Given an ALGO-destination XO pair, when the user enters an amount and taps Buy, then no opt-in occurs and the XO order-review sheet shows the pay-in address',
-        async () => {
-            seedSelectedAccount()
-            // Mark the intro as seen so the screen renders the form directly.
-            markIntroSeen()
-            markXoTermsAccepted()
-            // The source is unset on entry now; seed the selection so a pair
-            // resolves (source_token.id is 'BTC' in buildPair, destination ALGO).
-            useOnrampStore.setState({
-                selectedSourceTokenId: 'BTC',
-                selectedDestinationTokenId: 'ALGO',
-            })
+    it('Given an ALGO-destination XO pair, when the user enters an amount and taps Buy, then no opt-in occurs and the XO order-review sheet shows the pay-in address', async () => {
+        seedSelectedAccount()
+        // Mark the intro as seen so the screen renders the form directly.
+        markIntroSeen()
+        markXoTermsAccepted()
+        // The source is unset on entry now; seed the selection so a pair
+        // resolves (source_token.id is 'BTC' in buildPair, destination ALGO).
+        useOnrampStore.setState({
+            selectedSourceTokenId: 'BTC',
+            selectedDestinationTokenId: 'ALGO',
+        })
 
-            server.use(
-                mockRampPairs({ response: [buildPair()] }),
-                mockRampRegion({ response: REGION_RESPONSE }),
-                mockCreateRampQuote({ response: [buildXoQuote('ALGO')] }),
-                mockCreateRampOrder({ response: buildXoOrder() }),
-            )
+        server.use(
+            mockRampPairs({ response: [buildPair()] }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            mockCreateRampQuote({ response: [buildXoQuote('ALGO')] }),
+            mockCreateRampOrder({ response: buildXoOrder() }),
+        )
 
-            renderWithNavigation(OnrampScreen, 'Fund')
+        renderWithNavigation(OnrampScreen, 'Fund')
 
-            // Pairs load → isReady flips → the pay input mounts.
-            const input = await screen.findByTestId(
-                'onramp-pay-input',
-                {},
-                { timeout: 5000 },
-            )
-            expect(input).toBeTruthy()
+        // Pairs load → isReady flips → the pay input mounts.
+        const input = await screen.findByTestId(
+            'onramp-pay-input',
+            {},
+            { timeout: 5000 },
+        )
+        expect(input).toBeTruthy()
 
-            enterPayAmount('1')
+        enterPayAmount('1')
 
-            // Debounced quote resolves → receive amount populates
-            // (1000 * 1 - 0.5 = 999.5, formatted to ALGO's 6 decimals).
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('onramp-receive-amount').textContent,
-                    ).toContain('999.5')
-                },
-                { timeout: 5000 },
-            )
+        // Debounced quote resolves → receive amount populates
+        // (1000 * 1 - 0.5 = 999.5, formatted to ALGO's 6 decimals).
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('onramp-receive-amount').textContent,
+                ).toContain('999.5')
+            },
+            { timeout: 5000 },
+        )
 
-            const buyButton = () => screen.getByTestId('onramp-buy-button')
-            await waitFor(() =>
-                expect(isElementDisabled(buyButton())).toBe(false),
-            )
+        const buyButton = () => screen.getByTestId('onramp-buy-button')
+        await waitFor(() => expect(isElementDisabled(buyButton())).toBe(false))
 
-            fireEvent.click(buyButton())
+        fireEvent.click(buyButton())
 
-            // ALGO destination → ensureOptIn is a no-op → the order is created
-            // and the XO order-review sheet renders the pay-in address.
-            expect(
-                await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
-            ).toBeTruthy()
-            expect(screen.getByTestId('onramp-cancel-order')).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // ALGO destination → ensureOptIn is a no-op → the order is created
+        // and the XO order-review sheet renders the pay-in address.
+        expect(
+            await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
+        ).toBeTruthy()
+        expect(screen.getByTestId('onramp-cancel-order')).toBeTruthy()
+    })
 
-    it(
-        'Given a USDC-destination XO pair and an account already opted into USDC, when the user buys, then opt-in is skipped and the order-review sheet is reached',
-        async () => {
-            const account = seedSelectedAccount()
-            markIntroSeen()
-            markXoTermsAccepted()
-            useOnrampStore.setState({
-                selectedSourceTokenId: 'BTC',
-                selectedDestinationTokenId: 'USDC_ALGORAND',
-            })
+    it('Given a USDC-destination XO pair and an account already opted into USDC, when the user buys, then opt-in is skipped and the order-review sheet is reached', async () => {
+        const account = seedSelectedAccount()
+        markIntroSeen()
+        markXoTermsAccepted()
+        useOnrampStore.setState({
+            selectedSourceTokenId: 'BTC',
+            selectedDestinationTokenId: 'USDC_ALGORAND',
+        })
 
-            // Account already holds USDC on-chain → ensureOptIn takes the
-            // "already opted in" branch (no attestation, no extra signing).
-            server.use(
-                mockAlgodAccountInformation({
-                    address: account.address,
-                    response: {
-                        amount: 5_000_000,
-                        'min-balance': 100_000,
-                        assets: [
-                            {
-                                'asset-id': USDC_MAINNET_ASSET_ID,
-                                amount: 1_000_000,
-                                'is-frozen': false,
-                            },
-                        ],
-                    },
-                }),
-                mockRampPairs({
-                    response: [
-                        buildPair({
-                            id: 'pair-btc-usdc',
-                            destinationId: 'USDC_ALGORAND',
-                            destinationSymbol: 'USDC',
-                        }),
+        // Account already holds USDC on-chain → ensureOptIn takes the
+        // "already opted in" branch (no attestation, no extra signing).
+        server.use(
+            mockAlgodAccountInformation({
+                address: account.address,
+                response: {
+                    amount: 5_000_000,
+                    'min-balance': 100_000,
+                    assets: [
+                        {
+                            'asset-id': USDC_MAINNET_ASSET_ID,
+                            amount: 1_000_000,
+                            'is-frozen': false,
+                        },
                     ],
-                }),
-                mockRampRegion({ response: REGION_RESPONSE }),
-                mockCreateRampQuote({
-                    response: [buildXoQuote('USDC_ALGORAND')],
-                }),
-                mockCreateRampOrder({ response: buildXoOrder() }),
-            )
-
-            renderWithNavigation(OnrampScreen, 'Fund')
-
-            await screen.findByTestId('onramp-pay-input', {}, { timeout: 5000 })
-            enterPayAmount('1')
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('onramp-receive-amount').textContent,
-                    ).toContain('999.5')
                 },
+            }),
+            mockRampPairs({
+                response: [
+                    buildPair({
+                        id: 'pair-btc-usdc',
+                        destinationId: 'USDC_ALGORAND',
+                        destinationSymbol: 'USDC',
+                    }),
+                ],
+            }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            mockCreateRampQuote({
+                response: [buildXoQuote('USDC_ALGORAND')],
+            }),
+            mockCreateRampOrder({ response: buildXoOrder() }),
+        )
+
+        renderWithNavigation(OnrampScreen, 'Fund')
+
+        await screen.findByTestId('onramp-pay-input', {}, { timeout: 5000 })
+        enterPayAmount('1')
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('onramp-receive-amount').textContent,
+                ).toContain('999.5')
+            },
+            { timeout: 5000 },
+        )
+
+        const buyButton = () => screen.getByTestId('onramp-buy-button')
+        await waitFor(() => expect(isElementDisabled(buyButton())).toBe(false))
+
+        fireEvent.click(buyButton())
+
+        // Reaching the order-review sheet proves opt-in did NOT block:
+        // the already-opted-in branch returned without raising an
+        // attestation error.
+        expect(
+            await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
+        ).toBeTruthy()
+        // No webview was pushed — XO orders render in-sheet, not a Meld
+        // widget.
+        expect(useWebViewStore.getState().openWebViews).toHaveLength(0)
+    })
+
+    it('Given a Meld pair whose seeded amount is below the provider minimum, when the user taps MIN, then the form re-quotes at the minimum and Proceed enables', async () => {
+        seedSelectedAccount()
+        markIntroSeen()
+        useOnrampStore.setState({
+            selectedSourceTokenId: 'USD',
+            selectedDestinationTokenId: 'ALGO',
+        })
+
+        server.use(
+            mockRampPairs({ response: [buildMeldPair()] }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            mockCreateRampQuoteError({
+                response: buildBelowMinQuoteErrorBody(),
+            }),
+        )
+
+        renderWithNavigation(OnrampScreen, 'Fund')
+
+        // Meld pairs seed the amount to 100, so the failing quote fires on
+        // entry without typing. i18n is uninitialized in the harness, so
+        // copy renders as raw keys.
+        expect(
+            await screen.findByText(
+                'onramp.form.amount_below_min',
+                {},
                 { timeout: 5000 },
-            )
+            ),
+        ).toBeTruthy()
+        expect(screen.getByTestId('onramp-min-button')).toBeTruthy()
+        expect(screen.getByTestId('onramp-max-button')).toBeTruthy()
 
-            const buyButton = () => screen.getByTestId('onramp-buy-button')
-            await waitFor(() =>
-                expect(isElementDisabled(buyButton())).toBe(false),
-            )
+        const buyButton = () => screen.getByTestId('onramp-buy-button')
+        expect(isElementDisabled(buyButton())).toBe(true)
 
-            fireEvent.click(buyButton())
+        // Swap in a successful quote for the re-fetch, then tap MIN.
+        server.use(
+            mockCreateRampQuote({ response: [buildMeldQuoteResponse()] }),
+        )
+        fireEvent.click(screen.getByTestId('onramp-min-button'))
 
-            // Reaching the order-review sheet proves opt-in did NOT block:
-            // the already-opted-in branch returned without raising an
-            // attestation error.
-            expect(
-                await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
-            ).toBeTruthy()
-            // No webview was pushed — XO orders render in-sheet, not a Meld
-            // widget.
-            expect(useWebViewStore.getState().openWebViews).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        const input = screen.getByTestId('onramp-pay-input') as HTMLInputElement
+        expect(input.value).toBe('600')
 
-    it(
-        'Given a Meld pair whose seeded amount is below the provider minimum, when the user taps MIN, then the form re-quotes at the minimum and Proceed enables',
-        async () => {
-            seedSelectedAccount()
-            markIntroSeen()
-            useOnrampStore.setState({
-                selectedSourceTokenId: 'USD',
-                selectedDestinationTokenId: 'ALGO',
-            })
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('onramp-receive-amount').textContent,
+                ).toContain('950.5')
+            },
+            { timeout: 5000 },
+        )
+        expect(screen.queryByText('onramp.form.amount_below_min')).toBeNull()
+        await waitFor(() => expect(isElementDisabled(buyButton())).toBe(false))
+    })
 
-            server.use(
-                mockRampPairs({ response: [buildMeldPair()] }),
-                mockRampRegion({ response: REGION_RESPONSE }),
-                mockCreateRampQuoteError({
-                    response: buildBelowMinQuoteErrorBody(),
-                }),
-            )
+    it('Given one provider quoting two payment methods, when the user opens the provider sheet, then that provider is listed once with the fiat value of what it pays out', async () => {
+        seedSelectedAccount()
+        markIntroSeen()
+        useOnrampStore.setState({
+            selectedSourceTokenId: 'USD',
+            selectedDestinationTokenId: 'ALGO',
+        })
 
-            renderWithNavigation(OnrampScreen, 'Fund')
+        // ALGO at $0.50 so the fiat value line cannot be confused with the
+        // ALGO amount (or with the quote's $6 fee, which it used to show).
+        const pair = buildMeldPair()
+        pair.destination_token.price_in_usd = '0.5'
 
-            // Meld pairs seed the amount to 100, so the failing quote fires on
-            // entry without typing. i18n is uninitialized in the harness, so
-            // copy renders as raw keys.
-            expect(
-                await screen.findByText(
-                    'onramp.form.amount_below_min',
-                    {},
-                    { timeout: 5000 },
+        server.use(
+            mockRampPairs({ response: [pair] }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            mockCreateRampQuote({
+                response: [
+                    buildMeldQuoteResponse({
+                        quoteId: 'quote-mercuryo-card',
+                        destinationAmount: 950.5,
+                    }),
+                    buildMeldQuoteResponse({
+                        quoteId: 'quote-mercuryo-apple',
+                        destinationAmount: 940,
+                        paymentMethodId: 'APPLE_PAY',
+                    }),
+                    buildMeldQuoteResponse({
+                        quoteId: 'quote-banxa-card',
+                        destinationAmount: 960,
+                        serviceProvider: 'BANXA',
+                    }),
+                ],
+            }),
+        )
+
+        renderWithNavigation(OnrampScreen, 'Fund')
+
+        // Wait for the quote to land — the row renders a skeleton first,
+        // and tapping it before then opens the sheet with no quotes.
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByTestId('onramp-receive-amount').textContent,
+                ).toContain('960')
+            },
+            { timeout: 5000 },
+        )
+        fireEvent.click(screen.getByTestId('onramp-provider-row'))
+
+        // The best card quote is auto-selected, so the sheet lists the two
+        // card providers — Mercuryo once, not once per payment method.
+        await screen.findByTestId(
+            'onramp-provider-option-quote-banxa-card',
+            {},
+            { timeout: 5000 },
+        )
+        expect(
+            screen.getByTestId('onramp-provider-option-quote-mercuryo-card'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByTestId('onramp-provider-option-quote-mercuryo-apple'),
+        ).toBeNull()
+
+        // 960 ALGO at $0.50 → $480, not the $6 fee.
+        expect(
+            screen.getByTestId('onramp-provider-option-quote-banxa-card')
+                .textContent,
+        ).toContain('480')
+    })
+
+    it('Given a min-only below-minimum error, when the pill renders, then only the MIN segment shows', async () => {
+        seedSelectedAccount()
+        markIntroSeen()
+        useOnrampStore.setState({
+            selectedSourceTokenId: 'USD',
+            selectedDestinationTokenId: 'ALGO',
+        })
+
+        server.use(
+            mockRampPairs({ response: [buildMeldPair()] }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            mockCreateRampQuoteError({
+                response: buildBelowMinQuoteErrorBody(
+                    "{'message': 'Too low.', 'min_amount': '600.00'}",
                 ),
-            ).toBeTruthy()
-            expect(screen.getByTestId('onramp-min-button')).toBeTruthy()
-            expect(screen.getByTestId('onramp-max-button')).toBeTruthy()
+            }),
+        )
 
-            const buyButton = () => screen.getByTestId('onramp-buy-button')
-            expect(isElementDisabled(buyButton())).toBe(true)
+        renderWithNavigation(OnrampScreen, 'Fund')
 
-            // Swap in a successful quote for the re-fetch, then tap MIN.
-            server.use(
-                mockCreateRampQuote({ response: [buildMeldQuoteResponse()] }),
-            )
-            fireEvent.click(screen.getByTestId('onramp-min-button'))
+        await screen.findByTestId('onramp-min-button', {}, { timeout: 5000 })
+        expect(screen.queryByTestId('onramp-max-button')).toBeNull()
+    })
 
-            const input = screen.getByTestId(
-                'onramp-pay-input',
-            ) as HTMLInputElement
-            expect(input.value).toBe('600')
+    it('Given a seeded history item, when the user opens the History tab and taps the row, then the Order Details sheet opens', async () => {
+        seedSelectedAccount()
+        seedDeviceId()
+        markIntroSeen()
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('onramp-receive-amount').textContent,
-                    ).toContain('950.5')
-                },
-                { timeout: 5000 },
-            )
-            expect(
-                screen.queryByText('onramp.form.amount_below_min'),
-            ).toBeNull()
-            await waitFor(() =>
-                expect(isElementDisabled(buyButton())).toBe(false),
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // The Fund tab still loads pairs/region on mount; stub them so the
+        // screen settles, then serve the history page for the History tab.
+        server.use(
+            mockRampPairs({ response: [buildPair()] }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            mockRampHistory({ response: buildMeldHistoryPage() }),
+        )
 
-    it(
-        'Given one provider quoting two payment methods, when the user opens the provider sheet, then that provider is listed once with the fiat value of what it pays out',
-        async () => {
-            seedSelectedAccount()
-            markIntroSeen()
-            useOnrampStore.setState({
-                selectedSourceTokenId: 'USD',
-                selectedDestinationTokenId: 'ALGO',
-            })
+        renderWithNavigation(OnrampScreen, 'Fund')
 
-            // ALGO at $0.50 so the fiat value line cannot be confused with the
-            // ALGO amount (or with the quote's $6 fee, which it used to show).
-            const pair = buildMeldPair()
-            pair.destination_token.price_in_usd = '0.5'
+        // Switch to the History tab (the inline header toggle).
+        const historyTab = await screen.findByTestId(
+            'onramp-tab-history',
+            {},
+            { timeout: 5000 },
+        )
+        fireEvent.click(historyTab)
 
-            server.use(
-                mockRampPairs({ response: [pair] }),
-                mockRampRegion({ response: REGION_RESPONSE }),
-                mockCreateRampQuote({
-                    response: [
-                        buildMeldQuoteResponse({
-                            quoteId: 'quote-mercuryo-card',
-                            destinationAmount: 950.5,
-                        }),
-                        buildMeldQuoteResponse({
-                            quoteId: 'quote-mercuryo-apple',
-                            destinationAmount: 940,
-                            paymentMethodId: 'APPLE_PAY',
-                        }),
-                        buildMeldQuoteResponse({
-                            quoteId: 'quote-banxa-card',
-                            destinationAmount: 960,
-                            serviceProvider: 'BANXA',
-                        }),
-                    ],
-                }),
-            )
+        // The seeded item renders as a row (testID keyed on the order id).
+        const row = await screen.findByTestId(
+            `onramp-history-item-${HISTORY_ORDER_ID}`,
+            {},
+            { timeout: 5000 },
+        )
+        expect(row).toBeTruthy()
 
-            renderWithNavigation(OnrampScreen, 'Fund')
+        fireEvent.click(row)
 
-            // Wait for the quote to land — the row renders a skeleton first,
-            // and tapping it before then opens the sheet with no quotes.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('onramp-receive-amount').textContent,
-                    ).toContain('960')
-                },
-                { timeout: 5000 },
-            )
-            fireEvent.click(screen.getByTestId('onramp-provider-row'))
-
-            // The best card quote is auto-selected, so the sheet lists the two
-            // card providers — Mercuryo once, not once per payment method.
+        // Tapping the row opens the Order Details sheet; the order id is
+        // surfaced both in the header and as the "Order ID" detail value.
+        expect(
             await screen.findByTestId(
-                'onramp-provider-option-quote-banxa-card',
+                'onramp-order-details',
                 {},
                 { timeout: 5000 },
-            )
-            expect(
-                screen.getByTestId(
-                    'onramp-provider-option-quote-mercuryo-card',
-                ),
-            ).toBeTruthy()
-            expect(
-                screen.queryByTestId(
-                    'onramp-provider-option-quote-mercuryo-apple',
-                ),
-            ).toBeNull()
+            ),
+        ).toBeTruthy()
+        expect(screen.getAllByText(HISTORY_ORDER_ID).length).toBeGreaterThan(0)
+    })
 
-            // 960 ALGO at $0.50 → $480, not the $6 fee.
-            expect(
-                screen.getByTestId('onramp-provider-option-quote-banxa-card')
-                    .textContent,
-            ).toContain('480')
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given mixed-status history, when the user filters by status and switches back to All, then the full list is restored', async () => {
+        seedSelectedAccount()
+        seedDeviceId()
+        markIntroSeen()
 
-    it(
-        'Given a min-only below-minimum error, when the pill renders, then only the MIN segment shows',
-        async () => {
-            seedSelectedAccount()
-            markIntroSeen()
-            useOnrampStore.setState({
-                selectedSourceTokenId: 'USD',
-                selectedDestinationTokenId: 'ALGO',
-            })
+        // Two items with distinct statuses; the handler honours the
+        // `status` query param so filtering happens server-side as in
+        // production.
+        const basePage = buildMeldHistoryPage()
+        const completedItem = {
+            ...basePage.results[0]!,
+            id: 'h-completed',
+            status: 'completed',
+        }
+        const pendingItem = {
+            ...basePage.results[0]!,
+            id: 'h-pending',
+            status: 'pending',
+        }
+        const allResults = [completedItem, pendingItem]
 
-            server.use(
-                mockRampPairs({ response: [buildMeldPair()] }),
-                mockRampRegion({ response: REGION_RESPONSE }),
-                mockCreateRampQuoteError({
-                    response: buildBelowMinQuoteErrorBody(
-                        "{'message': 'Too low.', 'min_amount': '600.00'}",
-                    ),
-                }),
-            )
+        server.use(
+            mockRampPairs({ response: [buildPair()] }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            http.get('*/v1/ramp/history/*', ({ request }) => {
+                const status = new URL(request.url).searchParams.get('status')
+                const results = status
+                    ? allResults.filter(item => item.status === status)
+                    : allResults
+                return HttpResponse.json({
+                    count: results.length,
+                    next: null,
+                    previous: null,
+                    results,
+                })
+            }),
+        )
 
-            renderWithNavigation(OnrampScreen, 'Fund')
-
-            await screen.findByTestId(
-                'onramp-min-button',
-                {},
-                { timeout: 5000 },
-            )
-            expect(screen.queryByTestId('onramp-max-button')).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a seeded history item, when the user opens the History tab and taps the row, then the Order Details sheet opens',
-        async () => {
-            seedSelectedAccount()
-            seedDeviceId()
-            markIntroSeen()
-
-            // The Fund tab still loads pairs/region on mount; stub them so the
-            // screen settles, then serve the history page for the History tab.
-            server.use(
-                mockRampPairs({ response: [buildPair()] }),
-                mockRampRegion({ response: REGION_RESPONSE }),
-                mockRampHistory({ response: buildMeldHistoryPage() }),
-            )
-
-            renderWithNavigation(OnrampScreen, 'Fund')
-
-            // Switch to the History tab (the inline header toggle).
-            const historyTab = await screen.findByTestId(
-                'onramp-tab-history',
-                {},
-                { timeout: 5000 },
-            )
-            fireEvent.click(historyTab)
-
-            // The seeded item renders as a row (testID keyed on the order id).
-            const row = await screen.findByTestId(
-                `onramp-history-item-${HISTORY_ORDER_ID}`,
-                {},
-                { timeout: 5000 },
-            )
-            expect(row).toBeTruthy()
-
-            fireEvent.click(row)
-
-            // Tapping the row opens the Order Details sheet; the order id is
-            // surfaced both in the header and as the "Order ID" detail value.
-            expect(
-                await screen.findByTestId(
-                    'onramp-order-details',
-                    {},
-                    { timeout: 5000 },
-                ),
-            ).toBeTruthy()
-            expect(
-                screen.getAllByText(HISTORY_ORDER_ID).length,
-            ).toBeGreaterThan(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given mixed-status history, when the user filters by status and switches back to All, then the full list is restored',
-        async () => {
-            seedSelectedAccount()
-            seedDeviceId()
-            markIntroSeen()
-
-            // Two items with distinct statuses; the handler honours the
-            // `status` query param so filtering happens server-side as in
-            // production.
-            const basePage = buildMeldHistoryPage()
-            const completedItem = {
-                ...basePage.results[0]!,
-                id: 'h-completed',
-                status: 'completed',
-            }
-            const pendingItem = {
-                ...basePage.results[0]!,
-                id: 'h-pending',
-                status: 'pending',
-            }
-            const allResults = [completedItem, pendingItem]
-
-            server.use(
-                mockRampPairs({ response: [buildPair()] }),
-                mockRampRegion({ response: REGION_RESPONSE }),
-                http.get('*/v1/ramp/history/*', ({ request }) => {
-                    const status = new URL(request.url).searchParams.get(
-                        'status',
-                    )
-                    const results = status
-                        ? allResults.filter(item => item.status === status)
-                        : allResults
-                    return HttpResponse.json({
-                        count: results.length,
-                        next: null,
-                        previous: null,
-                        results,
-                    })
-                }),
-            )
-
-            // Production QueryClient defaults (QueryProvider.tsx) — the
-            // staleTime/gcTime combination changes refetch-on-key-switch
-            // behaviour vs the zeroed test defaults.
-            const prodLikeQueryClient = new QueryClient({
-                defaultOptions: {
-                    queries: {
-                        gcTime: 60 * 60 * 1000,
-                        staleTime: 60 * 1000,
-                        retry: 0,
-                    },
+        // Production QueryClient defaults (QueryProvider.tsx) — the
+        // staleTime/gcTime combination changes refetch-on-key-switch
+        // behaviour vs the zeroed test defaults.
+        const prodLikeQueryClient = new QueryClient({
+            defaultOptions: {
+                queries: {
+                    gcTime: 60 * 60 * 1000,
+                    staleTime: 60 * 1000,
+                    retry: 0,
                 },
-            })
-            renderWithNavigation(OnrampScreen, 'Fund', {
-                queryClient: prodLikeQueryClient,
-            })
+            },
+        })
+        renderWithNavigation(OnrampScreen, 'Fund', {
+            queryClient: prodLikeQueryClient,
+        })
 
-            const historyTab = await screen.findByTestId(
-                'onramp-tab-history',
-                {},
-                { timeout: 5000 },
-            )
-            fireEvent.click(historyTab)
+        const historyTab = await screen.findByTestId(
+            'onramp-tab-history',
+            {},
+            { timeout: 5000 },
+        )
+        fireEvent.click(historyTab)
 
-            // Unfiltered: both rows visible.
+        // Unfiltered: both rows visible.
+        await screen.findByTestId(
+            'onramp-history-item-h-completed',
+            {},
+            { timeout: 5000 },
+        )
+        await screen.findByTestId('onramp-history-item-h-pending')
+
+        // Filter to Pending: only the pending row remains.
+        fireEvent.click(screen.getByTestId('onramp-history-filter-pending'))
+        await waitFor(
+            () =>
+                expect(
+                    screen.queryByTestId('onramp-history-item-h-completed'),
+                ).toBeNull(),
+            { timeout: 5000 },
+        )
+        // Async: the pending-filtered key loads fresh — the badge no
+        // longer pre-warms it with a duplicate pending-status query.
+        expect(
             await screen.findByTestId(
-                'onramp-history-item-h-completed',
+                'onramp-history-item-h-pending',
                 {},
                 { timeout: 5000 },
-            )
-            await screen.findByTestId('onramp-history-item-h-pending')
+            ),
+        ).toBeTruthy()
 
-            // Filter to Pending: only the pending row remains.
-            fireEvent.click(screen.getByTestId('onramp-history-filter-pending'))
-            await waitFor(
-                () =>
-                    expect(
-                        screen.queryByTestId('onramp-history-item-h-completed'),
-                    ).toBeNull(),
-                { timeout: 5000 },
-            )
-            // Async: the pending-filtered key loads fresh — the badge no
-            // longer pre-warms it with a duplicate pending-status query.
-            expect(
-                await screen.findByTestId(
-                    'onramp-history-item-h-pending',
-                    {},
-                    { timeout: 5000 },
-                ),
-            ).toBeTruthy()
-
-            // Back to All: both rows must return (regression: the list used
-            // to keep showing the last filtered set).
-            fireEvent.click(screen.getByTestId('onramp-history-filter-all'))
-            await waitFor(
-                () =>
-                    expect(
-                        screen.queryByTestId('onramp-history-item-h-completed'),
-                    ).toBeTruthy(),
-                { timeout: 5000 },
-            )
-            expect(
-                screen.getByTestId('onramp-history-item-h-pending'),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Back to All: both rows must return (regression: the list used
+        // to keep showing the last filtered set).
+        fireEvent.click(screen.getByTestId('onramp-history-filter-all'))
+        await waitFor(
+            () =>
+                expect(
+                    screen.queryByTestId('onramp-history-item-h-completed'),
+                ).toBeTruthy(),
+            { timeout: 5000 },
+        )
+        expect(screen.getByTestId('onramp-history-item-h-pending')).toBeTruthy()
+    })
 
     // Drives the shared front half of the delegated flows: render, quote,
     // tap Buy, and wait for the opt-in confirmation sheet.
@@ -1045,179 +991,165 @@ describe('Flow: Onramp buy (native XO)', () => {
         await screen.findByTestId('opt_in_confirm', {}, { timeout: 5000 })
     }
 
-    it(
-        'Given an underfunded un-opted-in account, when the user confirms the sponsored opt-in, then the MBR-funded delegated group is signed, submitted, and the order is placed',
-        async () => {
-            const account = await seedSignableAccount()
-            markIntroSeen()
-            markXoTermsAccepted()
-            seedDeviceId()
-            seedAttestation()
-            useOnrampStore.setState({
-                selectedSourceTokenId: 'BTC',
-                selectedDestinationTokenId: 'USDC_ALGORAND',
-            })
+    it('Given an underfunded un-opted-in account, when the user confirms the sponsored opt-in, then the MBR-funded delegated group is signed, submitted, and the order is placed', async () => {
+        const account = await seedSignableAccount()
+        markIntroSeen()
+        markXoTermsAccepted()
+        seedDeviceId()
+        seedAttestation()
+        useOnrampStore.setState({
+            selectedSourceTokenId: 'BTC',
+            selectedDestinationTokenId: 'USDC_ALGORAND',
+        })
 
-            let feeDelegationBody: CapturedFeeDelegationBody | null = null
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json(
-                    {
-                        txId: 'DELEGATEDTXID000000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            // Spendable balance below min-balance + MBR + fee → sponsored,
-            // and below the MBR requirement → the sponsor funds the MBR too.
-            installDelegatedOptInHandlers({
-                accountAddress: account.address,
-                accountAmount: 150_000,
-                sendSpy,
-            })
-            server.use(
-                mockFeeDelegationEcho(200_000n, body => {
-                    feeDelegationBody = body
-                }),
-            )
+        let feeDelegationBody: CapturedFeeDelegationBody | null = null
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    txId: 'DELEGATEDTXID000000000000000000000000000000000000000',
+                },
+                { status: 200 },
+            ),
+        )
+        // Spendable balance below min-balance + MBR + fee → sponsored,
+        // and below the MBR requirement → the sponsor funds the MBR too.
+        installDelegatedOptInHandlers({
+            accountAddress: account.address,
+            accountAmount: 150_000,
+            sendSpy,
+        })
+        server.use(
+            mockFeeDelegationEcho(200_000n, body => {
+                feeDelegationBody = body
+            }),
+        )
 
-            await driveToOptInConfirmation()
+        await driveToOptInConfirmation()
 
-            // Sponsored opt-in → the confirmation sheet shows a ZERO fee
-            // (vs '0.001' for a self-funded opt-in).
-            expect(screen.getByTestId('opt_in_fee').textContent).toBe('0.00')
-            // The Account row shows the receiving account (a second 'Buyer'
-            // beyond the header account selector).
-            expect(screen.getAllByText('Buyer').length).toBeGreaterThan(1)
+        // Sponsored opt-in → the confirmation sheet shows a ZERO fee
+        // (vs '0.001' for a self-funded opt-in).
+        expect(screen.getByTestId('opt_in_fee').textContent).toBe('0.00')
+        // The Account row shows the receiving account (a second 'Buyer'
+        // beyond the header account selector).
+        expect(screen.getAllByText('Buyer').length).toBeGreaterThan(1)
 
-            fireEvent.click(screen.getByTestId('opt_in_confirm'))
+        fireEvent.click(screen.getByTestId('opt_in_confirm'))
 
-            // The unsigned zero-fee opt-in goes up with MBR funding requested.
-            await waitFor(() => expect(feeDelegationBody).not.toBeNull(), {
-                timeout: 10_000,
-            })
-            expect(feeDelegationBody).toMatchObject({
-                account: account.address,
-                includeAssetOptInMbr: true,
-                optInAssetIds: [String(USDC_MAINNET_ASSET_ID)],
-            })
-            expect(feeDelegationBody!.txnGroup).toHaveLength(1)
+        // The unsigned zero-fee opt-in goes up with MBR funding requested.
+        await waitFor(() => expect(feeDelegationBody).not.toBeNull(), {
+            timeout: 10_000,
+        })
+        expect(feeDelegationBody).toMatchObject({
+            account: account.address,
+            includeAssetOptInMbr: true,
+            optInAssetIds: [String(USDC_MAINNET_ASSET_ID)],
+        })
+        expect(feeDelegationBody!.txnGroup).toHaveLength(1)
 
-            // Sponsor + wallet-signed opt-in are submitted to algod, then the
-            // order is created and the review sheet shows the pay-in address.
-            await waitFor(() => expect(sendSpy).toHaveBeenCalled(), {
-                timeout: 10_000,
-            })
-            expect(
-                await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Sponsor + wallet-signed opt-in are submitted to algod, then the
+        // order is created and the review sheet shows the pay-in address.
+        await waitFor(() => expect(sendSpy).toHaveBeenCalled(), {
+            timeout: 10_000,
+        })
+        expect(
+            await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
+        ).toBeTruthy()
+    })
 
-    it(
-        'Given an account that can cover MBR but not fees, when the user confirms the sponsored opt-in, then the fee-only delegated group is submitted and the order is placed',
-        async () => {
-            const account = await seedSignableAccount()
-            markIntroSeen()
-            markXoTermsAccepted()
-            seedDeviceId()
-            seedAttestation()
-            useOnrampStore.setState({
-                selectedSourceTokenId: 'BTC',
-                selectedDestinationTokenId: 'USDC_ALGORAND',
-            })
+    it('Given an account that can cover MBR but not fees, when the user confirms the sponsored opt-in, then the fee-only delegated group is submitted and the order is placed', async () => {
+        const account = await seedSignableAccount()
+        markIntroSeen()
+        markXoTermsAccepted()
+        seedDeviceId()
+        seedAttestation()
+        useOnrampStore.setState({
+            selectedSourceTokenId: 'BTC',
+            selectedDestinationTokenId: 'USDC_ALGORAND',
+        })
 
-            let feeDelegationBody: CapturedFeeDelegationBody | null = null
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json(
-                    {
-                        txId: 'DELEGATEDTXID000000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            // 200_500 covers min-balance (100k) + MBR (100k) but not the fee
-            // on top → still sponsored, but the sponsor only pools the fee
-            // (0-amount self-payment; no MBR transfer to the account).
-            installDelegatedOptInHandlers({
-                accountAddress: account.address,
-                accountAmount: 200_500,
-                sendSpy,
-            })
-            server.use(
-                mockFeeDelegationEcho(0n, body => {
-                    feeDelegationBody = body
-                }),
-            )
+        let feeDelegationBody: CapturedFeeDelegationBody | null = null
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    txId: 'DELEGATEDTXID000000000000000000000000000000000000000',
+                },
+                { status: 200 },
+            ),
+        )
+        // 200_500 covers min-balance (100k) + MBR (100k) but not the fee
+        // on top → still sponsored, but the sponsor only pools the fee
+        // (0-amount self-payment; no MBR transfer to the account).
+        installDelegatedOptInHandlers({
+            accountAddress: account.address,
+            accountAmount: 200_500,
+            sendSpy,
+        })
+        server.use(
+            mockFeeDelegationEcho(0n, body => {
+                feeDelegationBody = body
+            }),
+        )
 
-            await driveToOptInConfirmation()
-            expect(screen.getByTestId('opt_in_fee').textContent).toBe('0.00')
-            fireEvent.click(screen.getByTestId('opt_in_confirm'))
+        await driveToOptInConfirmation()
+        expect(screen.getByTestId('opt_in_fee').textContent).toBe('0.00')
+        fireEvent.click(screen.getByTestId('opt_in_confirm'))
 
-            await waitFor(() => expect(feeDelegationBody).not.toBeNull(), {
-                timeout: 10_000,
-            })
-            // MBR funding is always requested; the backend decides the amount
-            // (zero here) from the account's live balance.
-            expect(feeDelegationBody).toMatchObject({
-                account: account.address,
-                includeAssetOptInMbr: true,
-                optInAssetIds: [String(USDC_MAINNET_ASSET_ID)],
-            })
+        await waitFor(() => expect(feeDelegationBody).not.toBeNull(), {
+            timeout: 10_000,
+        })
+        // MBR funding is always requested; the backend decides the amount
+        // (zero here) from the account's live balance.
+        expect(feeDelegationBody).toMatchObject({
+            account: account.address,
+            includeAssetOptInMbr: true,
+            optInAssetIds: [String(USDC_MAINNET_ASSET_ID)],
+        })
 
-            await waitFor(() => expect(sendSpy).toHaveBeenCalled(), {
-                timeout: 10_000,
-            })
-            expect(
-                await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => expect(sendSpy).toHaveBeenCalled(), {
+            timeout: 10_000,
+        })
+        expect(
+            await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
+        ).toBeTruthy()
+    })
 
-    it(
-        'Given the sponsored opt-in confirmation is dismissed, when the sheet closes, then no delegation or order request is sent',
-        async () => {
-            const account = await seedSignableAccount()
-            markIntroSeen()
-            markXoTermsAccepted()
-            seedDeviceId()
-            seedAttestation()
-            useOnrampStore.setState({
-                selectedSourceTokenId: 'BTC',
-                selectedDestinationTokenId: 'USDC_ALGORAND',
-            })
+    it('Given the sponsored opt-in confirmation is dismissed, when the sheet closes, then no delegation or order request is sent', async () => {
+        const account = await seedSignableAccount()
+        markIntroSeen()
+        markXoTermsAccepted()
+        seedDeviceId()
+        seedAttestation()
+        useOnrampStore.setState({
+            selectedSourceTokenId: 'BTC',
+            selectedDestinationTokenId: 'USDC_ALGORAND',
+        })
 
-            const feeDelegationSpy = vi.fn()
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json({ txId: 'irrelevant' }, { status: 200 }),
-            )
-            installDelegatedOptInHandlers({
-                accountAddress: account.address,
-                accountAmount: 150_000,
-                sendSpy,
-            })
-            server.use(mockFeeDelegationEcho(200_000n, feeDelegationSpy))
+        const feeDelegationSpy = vi.fn()
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json({ txId: 'irrelevant' }, { status: 200 }),
+        )
+        installDelegatedOptInHandlers({
+            accountAddress: account.address,
+            accountAmount: 150_000,
+            sendSpy,
+        })
+        server.use(mockFeeDelegationEcho(200_000n, feeDelegationSpy))
 
-            await driveToOptInConfirmation()
+        await driveToOptInConfirmation()
 
-            // Dismiss the opt-in sheet instead of confirming — the order
-            // must not be sent and the form returns to an idle state.
-            useBottomSheetStore.getState().dismiss()
+        // Dismiss the opt-in sheet instead of confirming — the order
+        // must not be sent and the form returns to an idle state.
+        useBottomSheetStore.getState().dismiss()
 
-            await waitFor(
-                () =>
-                    expect(
-                        isElementDisabled(
-                            screen.getByTestId('onramp-buy-button'),
-                        ),
-                    ).toBe(false),
-                { timeout: 5000 },
-            )
-            expect(feeDelegationSpy).not.toHaveBeenCalled()
-            expect(sendSpy).not.toHaveBeenCalled()
-            expect(screen.queryByText(PAY_IN_ADDRESS)).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(
+            () =>
+                expect(
+                    isElementDisabled(screen.getByTestId('onramp-buy-button')),
+                ).toBe(false),
+            { timeout: 5000 },
+        )
+        expect(feeDelegationSpy).not.toHaveBeenCalled()
+        expect(sendSpy).not.toHaveBeenCalled()
+        expect(screen.queryByText(PAY_IN_ADDRESS)).toBeNull()
+    })
 })

@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
@@ -115,15 +106,7 @@ const startAlgo25ImportThroughMnemonic = async (words: string[]) => {
     fireEvent.click(screen.getByTestId('import_account_import_button'))
 }
 
-// Real algo25 key derivation (tweetnacl + algokit) plus several screen
-// transitions and an indexer round trip — bump above the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -136,220 +119,176 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         server.use(mockIndexerSearchForAccounts())
     })
 
-    it(
-        'Given a valid 25-word mnemonic, when the user advances through Algo25 import, then the derived account is persisted and onboarding completes',
-        async () => {
-            renderAlgo25ImportFromOnboarding()
+    it('Given a valid 25-word mnemonic, when the user advances through Algo25 import, then the derived account is persisted and onboarding completes', async () => {
+        renderAlgo25ImportFromOnboarding()
 
-            await openImportOptionsSheet()
-            await waitFor(() =>
-                screen.getByTestId('import_options_algo25_button'),
-            )
-            fireEvent.click(screen.getByTestId('import_options_algo25_button'))
+        await openImportOptionsSheet()
+        await waitFor(() => screen.getByTestId('import_options_algo25_button'))
+        fireEvent.click(screen.getByTestId('import_options_algo25_button'))
 
-            await advanceThroughImportInfo()
+        await advanceThroughImportInfo()
 
-            // Algo25 import uses 25 input slots.
-            await waitFor(() =>
-                screen.getByTestId('import_account_word_input_24'),
-            )
+        // Algo25 import uses 25 input slots.
+        await waitFor(() => screen.getByTestId('import_account_word_input_24'))
 
-            // The Quantum-only collision explainer must NOT appear on a
-            // standard algo25 import (it shares the ImportAccountScreen).
+        // The Quantum-only collision explainer must NOT appear on a
+        // standard algo25 import (it shares the ImportAccountScreen).
+        expect(screen.queryByTestId('import_account_quantum_note')).toBeNull()
+
+        typeWordsIndividually(ALGO25_TEST_MNEMONIC_WORDS)
+
+        await waitFor(() => {
             expect(
-                screen.queryByTestId('import_account_quantum_note'),
-            ).toBeNull()
+                isElementDisabled(
+                    screen.getByTestId('import_account_import_button'),
+                ),
+            ).toBe(false)
+        })
 
-            typeWordsIndividually(ALGO25_TEST_MNEMONIC_WORDS)
+        fireEvent.click(screen.getByTestId('import_account_import_button'))
 
-            await waitFor(() => {
+        // Algo25 differs from HD: useImportAccount creates the account
+        // immediately (not session-pending), so it lands in the store before
+        // SearchAccounts even runs. SearchAccounts then checks for rekeyed
+        // accounts and, finding none, routes to NameAccount for the user to
+        // confirm/customize the name before finishing.
+        await waitFor(() => screen.getByTestId('name_account_finish_button'))
+        fireEvent.click(screen.getByTestId('name_account_finish_button'))
+
+        await waitFor(
+            () => {
+                expect(useOnboardingStore.getState().isOnboarding).toBe(false)
+            },
+            { timeout: 5000 },
+        )
+
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].type).toBe(AccountTypes.algo25)
+        expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
+        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+            ALGO25_TEST_ADDRESS,
+        )
+    })
+
+    it('Given the Algo25 word slots are rendered, then every slot is a sensitive input so the keyboard neither learns the words nor composes them in an IME', async () => {
+        renderAlgo25ImportFromOnboarding()
+
+        await openImportOptionsSheet()
+        await waitFor(() => screen.getByTestId('import_options_algo25_button'))
+        fireEvent.click(screen.getByTestId('import_options_algo25_button'))
+
+        await advanceThroughImportInfo()
+
+        await waitFor(() => screen.getByTestId('import_account_word_input_24'))
+
+        for (let idx = 0; idx < 25; idx++) {
+            // Sensitive inputs opt out of autocorrect and spellcheck, which is
+            // what keeps the OS keyboard from caching the words.
+            const input = screen.getByTestId(`import_account_word_input_${idx}`)
+            expect(input.getAttribute('autocorrect')).toBe('off')
+            expect(input.getAttribute('spellcheck')).toBe('false')
+        }
+    })
+
+    it('Given an invalid 25-word mnemonic, when the user taps Import, then an error toast is raised and no account is persisted', async () => {
+        renderAlgo25ImportFromOnboarding()
+
+        await openImportOptionsSheet()
+        await waitFor(() => screen.getByTestId('import_options_algo25_button'))
+        fireEvent.click(screen.getByTestId('import_options_algo25_button'))
+
+        await advanceThroughImportInfo()
+
+        await waitFor(() => screen.getByTestId('import_account_word_input_24'))
+        typeWordsIndividually(INVALID_ALGO25_MNEMONIC_WORDS)
+
+        await waitFor(() => {
+            expect(
+                isElementDisabled(
+                    screen.getByTestId('import_account_import_button'),
+                ),
+            ).toBe(false)
+        })
+
+        fireEvent.click(screen.getByTestId('import_account_import_button'))
+
+        await waitFor(
+            () => {
+                expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalled()
+            },
+            { timeout: 5000 },
+        )
+
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+    })
+
+    it('Given the imported address has rekeyed accounts, when SearchAccounts runs, then the rekeyed addresses screen is shown', async () => {
+        // Override the default no-rekeys handler — indexer now reports a
+        // single watch candidate, so SearchAccounts navigates into the
+        // rekey selection screen instead of exiting the flow.
+        server.use(
+            mockIndexerSearchForAccounts({
+                response: { accounts: [{ address: REKEY_TARGET_ADDRESS }] },
+            }),
+        )
+
+        await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
+
+        await waitFor(
+            () => {
                 expect(
-                    isElementDisabled(
-                        screen.getByTestId('import_account_import_button'),
-                    ),
-                ).toBe(false)
-            })
+                    screen.getByTestId('import_rekeyed_addresses_screen'),
+                ).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
 
-            fireEvent.click(screen.getByTestId('import_account_import_button'))
+        // The algo25 import already persisted the master before rekey
+        // discovery ran (createAlgo25WalletAccount writes to the store
+        // synchronously); confirm it survived.
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
+        expect(accounts[0].type).toBe(AccountTypes.algo25)
+    })
 
-            // Algo25 differs from HD: useImportAccount creates the account
-            // immediately (not session-pending), so it lands in the store before
-            // SearchAccounts even runs. SearchAccounts then checks for rekeyed
-            // accounts and, finding none, routes to NameAccount for the user to
-            // confirm/customize the name before finishing.
-            await waitFor(() =>
-                screen.getByTestId('name_account_finish_button'),
-            )
-            fireEvent.click(screen.getByTestId('name_account_finish_button'))
+    it('Given the same algo25 address is already in the wallet, when the user re-imports the mnemonic, then a duplicate-account toast is raised and no second copy is stored', async () => {
+        // Pre-seed the accounts store with the address the test mnemonic
+        // would derive. The import flow should detect the duplicate and
+        // surface a tailored toast instead of silently appending a second
+        // copy.
+        useAccountsStore.getState().setAccounts([
+            {
+                id: 'existing-algo25-1',
+                type: AccountTypes.algo25,
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: 'pre-seeded',
+            },
+        ])
 
-            await waitFor(
-                () => {
-                    expect(useOnboardingStore.getState().isOnboarding).toBe(
-                        false,
-                    )
-                },
-                { timeout: 5000 },
-            )
+        await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
 
-            const accounts = useAccountsStore.getState().accounts
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0].type).toBe(AccountTypes.algo25)
-            expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                ALGO25_TEST_ADDRESS,
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // useImportAccount throws DuplicateAccountError, which the
+        // ImportAccountScreen's catch turns into the duplicate-account
+        // toast. The notifier mock records the call.
+        await waitFor(
+            () => {
+                expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalled()
+            },
+            { timeout: 5000 },
+        )
 
-    it(
-        'Given the Algo25 word slots are rendered, then every slot is a sensitive input so the keyboard neither learns the words nor composes them in an IME',
-        async () => {
-            renderAlgo25ImportFromOnboarding()
-
-            await openImportOptionsSheet()
-            await waitFor(() =>
-                screen.getByTestId('import_options_algo25_button'),
-            )
-            fireEvent.click(screen.getByTestId('import_options_algo25_button'))
-
-            await advanceThroughImportInfo()
-
-            await waitFor(() =>
-                screen.getByTestId('import_account_word_input_24'),
-            )
-
-            for (let idx = 0; idx < 25; idx++) {
-                // Sensitive inputs opt out of autocorrect and spellcheck, which is
-                // what keeps the OS keyboard from caching the words.
-                const input = screen.getByTestId(
-                    `import_account_word_input_${idx}`,
-                )
-                expect(input.getAttribute('autocorrect')).toBe('off')
-                expect(input.getAttribute('spellcheck')).toBe('false')
-            }
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given an invalid 25-word mnemonic, when the user taps Import, then an error toast is raised and no account is persisted',
-        async () => {
-            renderAlgo25ImportFromOnboarding()
-
-            await openImportOptionsSheet()
-            await waitFor(() =>
-                screen.getByTestId('import_options_algo25_button'),
-            )
-            fireEvent.click(screen.getByTestId('import_options_algo25_button'))
-
-            await advanceThroughImportInfo()
-
-            await waitFor(() =>
-                screen.getByTestId('import_account_word_input_24'),
-            )
-            typeWordsIndividually(INVALID_ALGO25_MNEMONIC_WORDS)
-
-            await waitFor(() => {
-                expect(
-                    isElementDisabled(
-                        screen.getByTestId('import_account_import_button'),
-                    ),
-                ).toBe(false)
-            })
-
-            fireEvent.click(screen.getByTestId('import_account_import_button'))
-
-            await waitFor(
-                () => {
-                    expect(
-                        vi.mocked(Notifier.showNotification),
-                    ).toHaveBeenCalled()
-                },
-                { timeout: 5000 },
-            )
-
-            expect(useAccountsStore.getState().accounts).toHaveLength(0)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the imported address has rekeyed accounts, when SearchAccounts runs, then the rekeyed addresses screen is shown',
-        async () => {
-            // Override the default no-rekeys handler — indexer now reports a
-            // single watch candidate, so SearchAccounts navigates into the
-            // rekey selection screen instead of exiting the flow.
-            server.use(
-                mockIndexerSearchForAccounts({
-                    response: { accounts: [{ address: REKEY_TARGET_ADDRESS }] },
-                }),
-            )
-
-            await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
-
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('import_rekeyed_addresses_screen'),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
-
-            // The algo25 import already persisted the master before rekey
-            // discovery ran (createAlgo25WalletAccount writes to the store
-            // synchronously); confirm it survived.
-            const accounts = useAccountsStore.getState().accounts
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
-            expect(accounts[0].type).toBe(AccountTypes.algo25)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given the same algo25 address is already in the wallet, when the user re-imports the mnemonic, then a duplicate-account toast is raised and no second copy is stored',
-        async () => {
-            // Pre-seed the accounts store with the address the test mnemonic
-            // would derive. The import flow should detect the duplicate and
-            // surface a tailored toast instead of silently appending a second
-            // copy.
-            useAccountsStore.getState().setAccounts([
-                {
-                    id: 'existing-algo25-1',
-                    type: AccountTypes.algo25,
-                    address: ALGO25_TEST_ADDRESS,
-                    keyPairId: 'pre-seeded',
-                },
-            ])
-
-            await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
-
-            // useImportAccount throws DuplicateAccountError, which the
-            // ImportAccountScreen's catch turns into the duplicate-account
-            // toast. The notifier mock records the call.
-            await waitFor(
-                () => {
-                    expect(
-                        vi.mocked(Notifier.showNotification),
-                    ).toHaveBeenCalled()
-                },
-                { timeout: 5000 },
-            )
-
-            // No duplicate of `ALGO25_TEST_ADDRESS` was added — the accounts
-            // store still contains a single entry for that address.
-            const matching = useAccountsStore
-                .getState()
-                .accounts.filter(a => a.address === ALGO25_TEST_ADDRESS)
-            expect(matching).toHaveLength(1)
-            // And only the original pre-seeded entry remains overall.
-            expect(useAccountsStore.getState().accounts).toHaveLength(1)
-            expect(useAccountsStore.getState().accounts[0].id).toBe(
-                'existing-algo25-1',
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // No duplicate of `ALGO25_TEST_ADDRESS` was added — the accounts
+        // store still contains a single entry for that address.
+        const matching = useAccountsStore
+            .getState()
+            .accounts.filter(a => a.address === ALGO25_TEST_ADDRESS)
+        expect(matching).toHaveLength(1)
+        // And only the original pre-seeded entry remains overall.
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        expect(useAccountsStore.getState().accounts[0].id).toBe(
+            'existing-algo25-1',
+        )
+    })
 })

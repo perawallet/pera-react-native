@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { View } from 'react-native'
 
@@ -54,15 +46,7 @@ const PARTICIPANTS = [
     REKEY_TARGET_ADDRESS,
 ]
 
-// Navigation transitions plus the bottom-sheet open/resolve cycle push the
-// wall-clock past the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: Create a multisig account from scratch', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -75,137 +59,118 @@ describe('Flow: Create a multisig account from scratch', () => {
         useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
     })
 
-    it(
-        'Given participants, when the user proceeds and raises the threshold to the participant count, then the threshold is committed and the warning gate hands off to the naming screen',
-        async () => {
-            renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
-                additionalScreens: [
-                    { name: 'SetThreshold', component: SetThresholdScreen },
-                    { name: 'NameMultisig', component: NameMultisigScreen },
-                ],
-            })
+    it('Given participants, when the user proceeds and raises the threshold to the participant count, then the threshold is committed and the warning gate hands off to the naming screen', async () => {
+        renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
+            additionalScreens: [
+                { name: 'SetThreshold', component: SetThresholdScreen },
+                { name: 'NameMultisig', component: NameMultisigScreen },
+            ],
+        })
 
-            // Seeded participants unlock "Continue" (the gate is >= 2).
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('create_multisig_continue_button'),
-                ).toBeTruthy(),
-            )
-            fireEvent.click(
+        // Seeded participants unlock "Continue" (the gate is >= 2).
+        await waitFor(() =>
+            expect(
                 screen.getByTestId('create_multisig_continue_button'),
-            )
+            ).toBeTruthy(),
+        )
+        fireEvent.click(screen.getByTestId('create_multisig_continue_button'))
 
-            // Threshold screen starts at the store default of 2; the stepper
-            // caps at the participant count (3), so two increments only raise
-            // it to 3 and the third is a no-op.
-            await waitFor(() =>
-                expect(screen.getByTestId('threshold_value')).toBeTruthy(),
-            )
-            fireEvent.click(screen.getByTestId('threshold_increment_button'))
-            fireEvent.click(screen.getByTestId('threshold_increment_button'))
-            expect(useMultisigCreationStore.getState().threshold).toBe(3)
+        // Threshold screen starts at the store default of 2; the stepper
+        // caps at the participant count (3), so two increments only raise
+        // it to 3 and the third is a no-op.
+        await waitFor(() =>
+            expect(screen.getByTestId('threshold_value')).toBeTruthy(),
+        )
+        fireEvent.click(screen.getByTestId('threshold_increment_button'))
+        fireEvent.click(screen.getByTestId('threshold_increment_button'))
+        expect(useMultisigCreationStore.getState().threshold).toBe(3)
 
-            fireEvent.click(screen.getByTestId('set_threshold_continue_button'))
+        fireEvent.click(screen.getByTestId('set_threshold_continue_button'))
 
-            // The "before you create" warning sheet gates the naming step.
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('before_create_proceed_button'),
-                ).toBeTruthy(),
-            )
-            fireEvent.click(screen.getByTestId('before_create_proceed_button'))
-
-            // Confirming the gate reaches the naming screen with the creation
-            // store still carrying the participants and committed threshold.
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('name_account_finish_button'),
-                ).toBeTruthy(),
-            )
-            const state = useMultisigCreationStore.getState()
-            expect(state.threshold).toBe(3)
-            expect(state.participants.map(p => p.address)).toEqual(PARTICIPANTS)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given seeded participants, when the user completes threshold → naming → finish, then a brand-new multisig account is created (not the import branch) and selected',
-        async () => {
-            // The create flow navigates to NameMultisig without route params,
-            // so useNameMultisigScreen takes the from-scratch branch (reads the
-            // creation store) rather than the import branch. The backend create
-            // call must succeed for the account to persist.
-            server.use(
-                mockCreateMultisigAccount({
-                    response: {
-                        custom_id: 'joint-create-1',
-                        creation_datetime: '2024-01-01T00:00:00Z',
-                        address: ALGO25_TEST_ADDRESS,
-                        version: 1,
-                        threshold: 2,
-                        participant_addresses: PARTICIPANTS,
-                    },
-                }),
-            )
-
-            renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
-                additionalScreens: [
-                    { name: 'SetThreshold', component: SetThresholdScreen },
-                    { name: 'NameMultisig', component: NameMultisigScreen },
-                    // exitAccountFlow resets to 'TabBar' once creation finishes.
-                    {
-                        name: 'TabBar',
-                        component: () => <View testID='create-flow-home' />,
-                    },
-                ],
-            })
-
-            await waitFor(() =>
-                screen.getByTestId('create_multisig_continue_button'),
-            )
-            fireEvent.click(
-                screen.getByTestId('create_multisig_continue_button'),
-            )
-
-            await waitFor(() =>
-                screen.getByTestId('set_threshold_continue_button'),
-            )
-            fireEvent.click(screen.getByTestId('set_threshold_continue_button'))
-
-            await waitFor(() =>
+        // The "before you create" warning sheet gates the naming step.
+        await waitFor(() =>
+            expect(
                 screen.getByTestId('before_create_proceed_button'),
-            )
-            fireEvent.click(screen.getByTestId('before_create_proceed_button'))
+            ).toBeTruthy(),
+        )
+        fireEvent.click(screen.getByTestId('before_create_proceed_button'))
 
-            await waitFor(() =>
+        // Confirming the gate reaches the naming screen with the creation
+        // store still carrying the participants and committed threshold.
+        await waitFor(() =>
+            expect(
                 screen.getByTestId('name_account_finish_button'),
-            )
-            fireEvent.change(screen.getByTestId('name_account_name_input'), {
-                target: { value: 'Team treasury' },
-            })
-            fireEvent.click(screen.getByTestId('name_account_finish_button'))
+            ).toBeTruthy(),
+        )
+        const state = useMultisigCreationStore.getState()
+        expect(state.threshold).toBe(3)
+        expect(state.participants.map(p => p.address)).toEqual(PARTICIPANTS)
+    })
 
-            await waitFor(() =>
-                expect(useAccountsStore.getState().accounts).toHaveLength(1),
-            )
-            const saved = useAccountsStore.getState()
-                .accounts[0] as MultiSigAccount
-            expect(saved.type).toBe('multisig')
-            expect(saved.name).toBe('Team treasury')
-            expect(saved.multisigDetails).toEqual({
-                threshold: 2,
-                addresses: PARTICIPANTS,
-                version: 1,
-            })
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                saved.address,
-            )
+    it('Given seeded participants, when the user completes threshold → naming → finish, then a brand-new multisig account is created (not the import branch) and selected', async () => {
+        // The create flow navigates to NameMultisig without route params,
+        // so useNameMultisigScreen takes the from-scratch branch (reads the
+        // creation store) rather than the import branch. The backend create
+        // call must succeed for the account to persist.
+        server.use(
+            mockCreateMultisigAccount({
+                response: {
+                    custom_id: 'joint-create-1',
+                    creation_datetime: '2024-01-01T00:00:00Z',
+                    address: ALGO25_TEST_ADDRESS,
+                    version: 1,
+                    threshold: 2,
+                    participant_addresses: PARTICIPANTS,
+                },
+            }),
+        )
 
-            await waitFor(() => screen.getByTestId('create-flow-home'))
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
+            additionalScreens: [
+                { name: 'SetThreshold', component: SetThresholdScreen },
+                { name: 'NameMultisig', component: NameMultisigScreen },
+                // exitAccountFlow resets to 'TabBar' once creation finishes.
+                {
+                    name: 'TabBar',
+                    component: () => <View testID='create-flow-home' />,
+                },
+            ],
+        })
+
+        await waitFor(() =>
+            screen.getByTestId('create_multisig_continue_button'),
+        )
+        fireEvent.click(screen.getByTestId('create_multisig_continue_button'))
+
+        await waitFor(() => screen.getByTestId('set_threshold_continue_button'))
+        fireEvent.click(screen.getByTestId('set_threshold_continue_button'))
+
+        await waitFor(() => screen.getByTestId('before_create_proceed_button'))
+        fireEvent.click(screen.getByTestId('before_create_proceed_button'))
+
+        await waitFor(() => screen.getByTestId('name_account_finish_button'))
+        fireEvent.change(screen.getByTestId('name_account_name_input'), {
+            target: { value: 'Team treasury' },
+        })
+        fireEvent.click(screen.getByTestId('name_account_finish_button'))
+
+        await waitFor(() =>
+            expect(useAccountsStore.getState().accounts).toHaveLength(1),
+        )
+        const saved = useAccountsStore.getState().accounts[0] as MultiSigAccount
+        expect(saved.type).toBe('multisig')
+        expect(saved.name).toBe('Team treasury')
+        expect(saved.multisigDetails).toEqual({
+            threshold: 2,
+            addresses: PARTICIPANTS,
+            version: 1,
+        })
+        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+            saved.address,
+        )
+
+        await waitFor(() => screen.getByTestId('create-flow-home'))
+    })
 
     it('Given fewer than two participants, when the create screen renders, then Continue is disabled', async () => {
         useMultisigCreationStore.getState().resetState()

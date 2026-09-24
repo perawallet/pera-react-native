@@ -16,25 +16,21 @@
 // onboarding-import-quantum.test.tsx and the AddAccountScreen quantum-create
 // option covered by useAddAccountScreen.spec.ts.
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { renderHook, screen } from '@testing-library/react'
 
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen'
 import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen/ImportAccountOptionsScreen'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 
 describe('quantum flag off', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     afterEach(() => {
-        server.resetHandlers()
         // Flag is off by default in this env, but guard against leakage from
         // other suites that override it via the remote-config store.
         useRemoteConfigStore.getState().resetState()
     })
-    afterAll(() => server.close())
 
     it('does not render the quantum create option on the Add Account screen', () => {
         expect(

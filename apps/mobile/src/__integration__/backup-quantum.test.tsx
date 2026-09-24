@@ -30,7 +30,6 @@ import {
 } from '@testing-library/react'
 
 import { render } from '@test-utils/render'
-import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -53,8 +52,6 @@ import {
     QUANTUM_TEST_MNEMONIC,
     QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Tiny host that drives the imperative `useViewPassphraseFlow` hook when the
 // trigger is tapped — mirrors the harness in `view-passphrase.test.tsx`
@@ -161,15 +158,12 @@ const advanceToDisplayedWords = async (): Promise<void> => {
 
 describe('backup quantum account', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
     afterEach(() => {
-        server.resetHandlers()
         useRemoteConfigStore.getState().resetState()
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -183,31 +177,25 @@ describe('backup quantum account', () => {
         vi.clearAllMocks()
     })
 
-    it(
-        'Given a quantum account, when the user opens the flow, acknowledges all warnings, and reveals the passphrase, then the original 25-word mnemonic is displayed',
-        async () => {
-            const account = await seedQuantumAccount()
+    it('Given a quantum account, when the user opens the flow, acknowledges all warnings, and reveals the passphrase, then the original 25-word mnemonic is displayed', async () => {
+        const account = await seedQuantumAccount()
 
-            render(<ViewPassphraseHost address={account.address} />)
+        render(<ViewPassphraseHost address={account.address} />)
 
-            expect(
-                screen.queryByTestId(
-                    'passphrase_acknowledge_bottom_sheet_reveal',
-                ),
-            ).toBeNull()
-            expect(
-                screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
-            ).toBeNull()
+        expect(
+            screen.queryByTestId('passphrase_acknowledge_bottom_sheet_reveal'),
+        ).toBeNull()
+        expect(
+            screen.queryByTestId('view_passphrase_bottom_sheet_grid'),
+        ).toBeNull()
 
-            await advanceToDisplayedWords()
+        await advanceToDisplayedWords()
 
-            // Every word from the original quantum mnemonic (same 25-word
-            // algo25-format phrase, different Falcon-derived address) is
-            // rendered inside the grid, in order.
-            expect(readMnemonicWordsFromGrid()).toEqual(
-                QUANTUM_TEST_MNEMONIC.split(' '),
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Every word from the original quantum mnemonic (same 25-word
+        // algo25-format phrase, different Falcon-derived address) is
+        // rendered inside the grid, in order.
+        expect(readMnemonicWordsFromGrid()).toEqual(
+            QUANTUM_TEST_MNEMONIC.split(' '),
+        )
+    })
 })

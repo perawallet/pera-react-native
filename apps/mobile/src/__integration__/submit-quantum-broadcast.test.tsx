@@ -68,18 +68,10 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
+    enableQuantumFlag,
 } from './__fixtures__/quantum'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
-const QUANTUM_FLAG_KEY = 'enable_quantum_accounts'
-
-const enableQuantumFlag = async (): Promise<void> => {
-    await useRemoteConfigStore.persist.rehydrate()
-    useRemoteConfigStore.getState().setConfigOverride(QUANTUM_FLAG_KEY, true)
-}
 
 // Mint a REAL quantum (Falcon-mock) key in the in-memory keystore from the
 // pinned quantum mnemonic and register the matching account in the accounts
@@ -108,15 +100,12 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
 
 describe('submit from quantum account over algod transport', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
     afterEach(() => {
-        server.resetHandlers()
         useRemoteConfigStore.getState().resetState()
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -145,49 +134,45 @@ describe('submit from quantum account over algod transport', () => {
         )
     })
 
-    it(
-        'Given a real quantum sender, when a payment is signed over the algod transport, then the Falcon group is broadcast to algod through the ordinary submission path',
-        async () => {
-            await enableQuantumFlag()
-            await seedQuantumSender()
+    it('Given a real quantum sender, when a payment is signed over the algod transport, then the Falcon group is broadcast to algod through the ordinary submission path', async () => {
+        await enableQuantumFlag()
+        await seedQuantumSender()
 
-            const payment = buildPaymentTransaction({
-                sender: QUANTUM_TEST_ADDRESS,
-                receiver: RECEIVER_ADDRESS,
-                amount: 1_000_000n,
-                fee: 1000n,
-            })
-            const { request, error: errorSpy } = buildTransactionSignRequest({
-                sourceType: 'local',
-                txs: [payment],
-                overrides: { transport: 'algod' },
-            })
+        const payment = buildPaymentTransaction({
+            sender: QUANTUM_TEST_ADDRESS,
+            receiver: RECEIVER_ADDRESS,
+            amount: 1_000_000n,
+            fee: 1000n,
+        })
+        const { request, error: errorSpy } = buildTransactionSignRequest({
+            sourceType: 'local',
+            txs: [payment],
+            overrides: { transport: 'algod' },
+        })
 
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json(
-                    {
-                        txId: 'REALQUANTUMTXID000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderSignReview(request)
-
-            // The load-bearing assertion: quantum bytes reached algod's
-            // send-raw-transaction endpoint — i.e. the group was broadcast for
-            // real, not routed to a synthetic/mock submission.
-            await waitFor(
-                () => {
-                    expect(sendSpy).toHaveBeenCalled()
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    txId: 'REALQUANTUMTXID000000000000000000000000000000000000',
                 },
-                { timeout: 15_000 },
-            )
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            // Signing/broadcast surfaced no error to the request originator.
-            expect(errorSpy).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        renderSignReview(request)
+
+        // The load-bearing assertion: quantum bytes reached algod's
+        // send-raw-transaction endpoint — i.e. the group was broadcast for
+        // real, not routed to a synthetic/mock submission.
+        await waitFor(
+            () => {
+                expect(sendSpy).toHaveBeenCalled()
+            },
+            { timeout: 15_000 },
+        )
+
+        // Signing/broadcast surfaced no error to the request originator.
+        expect(errorSpy).not.toHaveBeenCalled()
+    })
 })

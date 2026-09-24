@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
@@ -40,18 +32,13 @@ import { LedgerSelectAccountsScreen } from '@modules/ledger'
 
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 const LEDGER_ADDRESS = HD_TEST_ADDRESS
 
 describe('Flow: Ledger account info sheet', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -71,73 +58,69 @@ describe('Flow: Ledger account info sheet', () => {
         )
     })
 
-    it(
-        'Given a discovered Ledger account, when the user taps the ⓘ affordance, then the account info sheet opens and shows the Ledger title and account info list',
-        async () => {
-            renderWithNavigation(
-                LedgerSelectAccountsScreen,
-                'LedgerSelectAccounts',
-                {
-                    initialParams: {
-                        deviceId: 'test-device-id',
-                        deviceName: 'Ledger Nano X',
-                        transportType: 'ble',
-                        accounts: [
-                            {
-                                address: LEDGER_ADDRESS,
-                                publicKeyHex: '01',
-                                accountIndex: 0,
-                            },
-                        ],
-                    },
+    it('Given a discovered Ledger account, when the user taps the ⓘ affordance, then the account info sheet opens and shows the Ledger title and account info list', async () => {
+        renderWithNavigation(
+            LedgerSelectAccountsScreen,
+            'LedgerSelectAccounts',
+            {
+                initialParams: {
+                    deviceId: 'test-device-id',
+                    deviceName: 'Ledger Nano X',
+                    transportType: 'ble',
+                    accounts: [
+                        {
+                            address: LEDGER_ADDRESS,
+                            publicKeyHex: '01',
+                            accountIndex: 0,
+                        },
+                    ],
                 },
-            )
+            },
+        )
 
-            // Assert the ⓘ affordance renders for the discovered account
-            const infoButton = await screen.findByTestId(
-                `ledger_select_row_${LEDGER_ADDRESS}-info`,
-            )
+        // Assert the ⓘ affordance renders for the discovered account
+        const infoButton = await screen.findByTestId(
+            `ledger_select_row_${LEDGER_ADDRESS}-info`,
+        )
 
-            // Sheet should NOT be open initially
-            expect(screen.queryByTestId('ledger_account_info_list')).toBeNull()
+        // Sheet should NOT be open initially
+        expect(screen.queryByTestId('ledger_account_info_list')).toBeNull()
 
-            // Tap the ⓘ button to open the info sheet
-            fireEvent.click(infoButton)
+        // Tap the ⓘ button to open the info sheet
+        fireEvent.click(infoButton)
 
-            // Sheet opened and the list rendered
-            await waitFor(
-                () =>
-                    expect(
-                        screen.getByTestId('ledger_account_info_list'),
-                    ).toBeTruthy(),
-                { timeout: 10_000 },
-            )
+        // Sheet opened and the list rendered
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('ledger_account_info_list'),
+                ).toBeTruthy(),
+            { timeout: 10_000 },
+        )
 
-            // The sheet title is the i18n key (integration harness doesn't
-            // initialise i18n — t() returns the raw key, see comment below).
-            await waitFor(
-                () =>
-                    expect(
-                        screen.getByText('ledger.account_info.default_title'),
-                    ).toBeTruthy(),
-                { timeout: 10_000 },
-            )
+        // The sheet title is the i18n key (integration harness doesn't
+        // initialise i18n — t() returns the raw key, see comment below).
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByText('ledger.account_info.default_title'),
+                ).toBeTruthy(),
+            { timeout: 10_000 },
+        )
 
-            // Section headers should be rendered.
-            // Note: i18n is not initialised in the integration test harness,
-            // so t() returns the raw key — assert on what is actually rendered.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByText('ledger.account_info.account_details'),
-                    ).toBeTruthy()
-                    expect(
-                        screen.getByText('ledger.account_info.assets'),
-                    ).toBeTruthy()
-                },
-                { timeout: 10_000 },
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Section headers should be rendered.
+        // Note: i18n is not initialised in the integration test harness,
+        // so t() returns the raw key — assert on what is actually rendered.
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByText('ledger.account_info.account_details'),
+                ).toBeTruthy()
+                expect(
+                    screen.getByText('ledger.account_info.assets'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+    })
 })

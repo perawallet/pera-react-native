@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { View } from 'react-native'
 
@@ -59,15 +51,7 @@ const seedParticipants = (addresses: string[]) => {
     addresses.forEach(address => store.addParticipant({ address }))
 }
 
-// Navigation transitions plus a `requestAnimationFrame` inside `handleFinish`
-// push the wall-clock past the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('Flow: Create a multisig account from scratch', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
@@ -80,250 +64,212 @@ describe('Flow: Create a multisig account from scratch', () => {
         useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
     })
 
-    it(
-        'Given seeded participants, when the user advances from the create screen through the threshold step and confirms the info sheet, then the flow reaches the naming screen',
-        async () => {
-            seedParticipants([ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS])
+    it('Given seeded participants, when the user advances from the create screen through the threshold step and confirms the info sheet, then the flow reaches the naming screen', async () => {
+        seedParticipants([ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS])
 
-            renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
-                additionalScreens: [
-                    { name: 'SetThreshold', component: SetThresholdScreen },
-                    { name: 'NameMultisig', component: NameMultisigScreen },
-                ],
-            })
+        renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
+            additionalScreens: [
+                { name: 'SetThreshold', component: SetThresholdScreen },
+                { name: 'NameMultisig', component: NameMultisigScreen },
+            ],
+        })
 
-            // Two participants seeded → continue is enabled; advance to the
-            // threshold screen.
-            const continueButton = () =>
-                screen.getByTestId('create_multisig_continue_button')
-            expect(isElementDisabled(continueButton())).toBe(false)
-            fireEvent.click(continueButton())
+        // Two participants seeded → continue is enabled; advance to the
+        // threshold screen.
+        const continueButton = () =>
+            screen.getByTestId('create_multisig_continue_button')
+        expect(isElementDisabled(continueButton())).toBe(false)
+        fireEvent.click(continueButton())
 
-            await waitFor(() =>
-                screen.getByTestId('set_threshold_continue_button'),
-            )
-            // The threshold screen mirrors the seeded participant count.
+        await waitFor(() => screen.getByTestId('set_threshold_continue_button'))
+        // The threshold screen mirrors the seeded participant count.
+        expect(
+            screen.getByTestId('participant_count_value').textContent,
+        ).toContain('2')
+
+        // Continue opens the "Before you create" info sheet; proceeding
+        // hands off to the naming screen.
+        fireEvent.click(screen.getByTestId('set_threshold_continue_button'))
+        await waitFor(() => screen.getByTestId('before_create_proceed_button'))
+        fireEvent.click(screen.getByTestId('before_create_proceed_button'))
+
+        await waitFor(() =>
             expect(
-                screen.getByTestId('participant_count_value').textContent,
-            ).toContain('2')
-
-            // Continue opens the "Before you create" info sheet; proceeding
-            // hands off to the naming screen.
-            fireEvent.click(screen.getByTestId('set_threshold_continue_button'))
-            await waitFor(() =>
-                screen.getByTestId('before_create_proceed_button'),
-            )
-            fireEvent.click(screen.getByTestId('before_create_proceed_button'))
-
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('name_account_finish_button'),
-                ).toBeTruthy(),
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a built multisig composition, when the user names the account and finishes, then the create mutation fires and a multisig account is persisted and selected',
-        async () => {
-            const addresses = [ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS]
-            const threshold = 2
-            const expectedAddress = generateMultisigAddress(
-                VERSION,
-                threshold,
-                addresses,
-            )
-            seedParticipants(addresses)
-
-            const response = {
-                custom_id: 'created-1',
-                creation_datetime: '2024-01-01T00:00:00Z',
-                address: expectedAddress,
-                version: VERSION,
-                threshold,
-                participant_addresses: addresses,
-            }
-            // A recording handler (cleared by `server.resetHandlers()` in
-            // afterEach) captures the POST body to prove the create mutation
-            // actually fired with the built composition — not just that some
-            // request landed.
-            let createBody: Record<string, unknown> | undefined
-            server.use(
-                http.post(
-                    '*/v1/joint-accounts/accounts/',
-                    async ({ request }) => {
-                        createBody = (await request.json()) as Record<
-                            string,
-                            unknown
-                        >
-                        return HttpResponse.json(response, { status: 200 })
-                    },
-                ),
-            )
-
-            // The production create flow pushes `NameMultisig` with no params,
-            // so the screen sources the composition from the creation store. The
-            // integration test navigator coerces an absent params object to `{}`
-            // (truthy), which steers `useNameMultisigScreen` into its
-            // imported-account branch and reads `addresses` off the params —
-            // unreachable for the store path through navigation. We therefore
-            // enter `NameMultisig` directly with params mirroring exactly what
-            // the user built (the seeded participants + chosen threshold +
-            // version 1). `handleFinish`'s persist logic is identical either
-            // way, so this faithfully exercises derivation, the create mutation,
-            // and the account write.
-            renderWithNavigation(NameMultisigScreen, 'NameMultisig', {
-                initialParams: {
-                    address: expectedAddress,
-                    threshold,
-                    addresses,
-                    version: VERSION,
-                },
-                additionalScreens: [
-                    // exitAccountFlow resets to 'TabBar' after finishing — a
-                    // stub gives the reset a real, observable target.
-                    {
-                        name: 'TabBar',
-                        component: () => <View testID='create-flow-home' />,
-                    },
-                ],
-            })
-
-            await waitFor(() =>
                 screen.getByTestId('name_account_finish_button'),
-            )
+            ).toBeTruthy(),
+        )
+    })
 
-            // Name the account and finish.
-            fireEvent.change(screen.getByTestId('name_account_name_input'), {
-                target: { value: 'Ops treasury' },
-            })
-            fireEvent.click(screen.getByTestId('name_account_finish_button'))
+    it('Given a built multisig composition, when the user names the account and finishes, then the create mutation fires and a multisig account is persisted and selected', async () => {
+        const addresses = [ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS]
+        const threshold = 2
+        const expectedAddress = generateMultisigAddress(
+            VERSION,
+            threshold,
+            addresses,
+        )
+        seedParticipants(addresses)
 
-            // The create mutation fired with the built composition.
-            await waitFor(() => expect(createBody).toBeDefined())
-            expect(createBody).toMatchObject({
-                version: VERSION,
-                threshold,
-                participant_addresses: addresses,
-                device_id: 'test-device-id',
-            })
+        const response = {
+            custom_id: 'created-1',
+            creation_datetime: '2024-01-01T00:00:00Z',
+            address: expectedAddress,
+            version: VERSION,
+            threshold,
+            participant_addresses: addresses,
+        }
+        // A recording handler (cleared by the harness's per-test
+        // `server.resetHandlers()`) captures the POST body to prove the create mutation
+        // actually fired with the built composition — not just that some
+        // request landed.
+        let createBody: Record<string, unknown> | undefined
+        server.use(
+            http.post('*/v1/joint-accounts/accounts/', async ({ request }) => {
+                createBody = (await request.json()) as Record<string, unknown>
+                return HttpResponse.json(response, { status: 200 })
+            }),
+        )
 
-            // A multisig account is persisted with the derived address and
-            // selected.
-            await waitFor(() => {
-                expect(useAccountsStore.getState().accounts).toHaveLength(1)
-            })
-            const saved = useAccountsStore.getState().accounts[0]
-            expect(saved.type).toBe('multisig')
-            expect(saved.address).toBe(expectedAddress)
-            expect(saved.name).toBe('Ops treasury')
-            expect((saved as MultiSigAccount).multisigDetails).toEqual({
+        // The production create flow pushes `NameMultisig` with no params,
+        // so the screen sources the composition from the creation store. The
+        // integration test navigator coerces an absent params object to `{}`
+        // (truthy), which steers `useNameMultisigScreen` into its
+        // imported-account branch and reads `addresses` off the params —
+        // unreachable for the store path through navigation. We therefore
+        // enter `NameMultisig` directly with params mirroring exactly what
+        // the user built (the seeded participants + chosen threshold +
+        // version 1). `handleFinish`'s persist logic is identical either
+        // way, so this faithfully exercises derivation, the create mutation,
+        // and the account write.
+        renderWithNavigation(NameMultisigScreen, 'NameMultisig', {
+            initialParams: {
+                address: expectedAddress,
                 threshold,
                 addresses,
                 version: VERSION,
-            })
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                expectedAddress,
-            )
+            },
+            additionalScreens: [
+                // exitAccountFlow resets to 'TabBar' after finishing — a
+                // stub gives the reset a real, observable target.
+                {
+                    name: 'TabBar',
+                    component: () => <View testID='create-flow-home' />,
+                },
+            ],
+        })
 
-            // Finishing resets the navigator onto the wallet home stub.
-            await waitFor(() => screen.getByTestId('create-flow-home'))
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => screen.getByTestId('name_account_finish_button'))
 
-    it(
-        'Given three participants, when the user uses the threshold stepper, then it floors at 1 and ceils at the participant count',
-        async () => {
-            seedParticipants([
-                ALGO25_TEST_ADDRESS,
-                HD_TEST_ADDRESS,
-                REKEY_TARGET_ADDRESS,
-            ])
+        // Name the account and finish.
+        fireEvent.change(screen.getByTestId('name_account_name_input'), {
+            target: { value: 'Ops treasury' },
+        })
+        fireEvent.click(screen.getByTestId('name_account_finish_button'))
 
-            renderWithNavigation(SetThresholdScreen, 'SetThreshold')
+        // The create mutation fired with the built composition.
+        await waitFor(() => expect(createBody).toBeDefined())
+        expect(createBody).toMatchObject({
+            version: VERSION,
+            threshold,
+            participant_addresses: addresses,
+            device_id: 'test-device-id',
+        })
 
-            await waitFor(() =>
-                screen.getByTestId('set_threshold_continue_button'),
-            )
-            // The store seeds threshold at 2 by default.
-            expect(useMultisigCreationStore.getState().threshold).toBe(2)
+        // A multisig account is persisted with the derived address and
+        // selected.
+        await waitFor(() => {
+            expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        })
+        const saved = useAccountsStore.getState().accounts[0]
+        expect(saved.type).toBe('multisig')
+        expect(saved.address).toBe(expectedAddress)
+        expect(saved.name).toBe('Ops treasury')
+        expect((saved as MultiSigAccount).multisigDetails).toEqual({
+            threshold,
+            addresses,
+            version: VERSION,
+        })
+        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+            expectedAddress,
+        )
 
-            const decrement = () =>
-                screen.getByTestId('threshold_decrement_button')
-            const increment = () =>
-                screen.getByTestId('threshold_increment_button')
+        // Finishing resets the navigator onto the wallet home stub.
+        await waitFor(() => screen.getByTestId('create-flow-home'))
+    })
 
-            // Decrement floors at 1: stepping down past the minimum is a
-            // no-op and the control disables itself.
-            fireEvent.click(decrement())
-            await waitFor(() =>
-                expect(useMultisigCreationStore.getState().threshold).toBe(1),
-            )
-            expect(isElementDisabled(decrement())).toBe(true)
-            fireEvent.click(decrement())
-            expect(useMultisigCreationStore.getState().threshold).toBe(1)
+    it('Given three participants, when the user uses the threshold stepper, then it floors at 1 and ceils at the participant count', async () => {
+        seedParticipants([
+            ALGO25_TEST_ADDRESS,
+            HD_TEST_ADDRESS,
+            REKEY_TARGET_ADDRESS,
+        ])
 
-            // Increment ceils at the participant count (3).
-            fireEvent.click(increment())
-            fireEvent.click(increment())
-            await waitFor(() =>
-                expect(useMultisigCreationStore.getState().threshold).toBe(3),
-            )
-            expect(isElementDisabled(increment())).toBe(true)
-            fireEvent.click(increment())
-            expect(useMultisigCreationStore.getState().threshold).toBe(3)
+        renderWithNavigation(SetThresholdScreen, 'SetThreshold')
 
-            expect(screen.getByTestId('threshold_value').textContent).toContain(
-                '3',
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() => screen.getByTestId('set_threshold_continue_button'))
+        // The store seeds threshold at 2 by default.
+        expect(useMultisigCreationStore.getState().threshold).toBe(2)
 
-    it(
-        'Given fewer than two participants, when on the create screen, then continue is blocked until a second participant exists',
-        async () => {
-            seedParticipants([ALGO25_TEST_ADDRESS])
+        const decrement = () => screen.getByTestId('threshold_decrement_button')
+        const increment = () => screen.getByTestId('threshold_increment_button')
 
-            renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
-                additionalScreens: [
-                    {
-                        name: 'SetThreshold',
-                        component: () => (
-                            <View testID='reached-set-threshold' />
-                        ),
-                    },
-                ],
-            })
+        // Decrement floors at 1: stepping down past the minimum is a
+        // no-op and the control disables itself.
+        fireEvent.click(decrement())
+        await waitFor(() =>
+            expect(useMultisigCreationStore.getState().threshold).toBe(1),
+        )
+        expect(isElementDisabled(decrement())).toBe(true)
+        fireEvent.click(decrement())
+        expect(useMultisigCreationStore.getState().threshold).toBe(1)
 
-            // One participant: continue is disabled and tapping it does not
-            // advance the flow.
-            const continueButton = () =>
-                screen.getByTestId('create_multisig_continue_button')
-            expect(isElementDisabled(continueButton())).toBe(true)
-            fireEvent.click(continueButton())
-            expect(screen.queryByTestId('reached-set-threshold')).toBeNull()
+        // Increment ceils at the participant count (3).
+        fireEvent.click(increment())
+        fireEvent.click(increment())
+        await waitFor(() =>
+            expect(useMultisigCreationStore.getState().threshold).toBe(3),
+        )
+        expect(isElementDisabled(increment())).toBe(true)
+        fireEvent.click(increment())
+        expect(useMultisigCreationStore.getState().threshold).toBe(3)
 
-            // Adding a second participant enables continue and navigates to
-            // the threshold step.
-            useMultisigCreationStore
-                .getState()
-                .addParticipant({ address: HD_TEST_ADDRESS })
+        expect(screen.getByTestId('threshold_value').textContent).toContain('3')
+    })
 
-            await waitFor(() =>
-                expect(
-                    isElementDisabled(
-                        screen.getByTestId('create_multisig_continue_button'),
-                    ),
-                ).toBe(false),
-            )
-            fireEvent.click(
-                screen.getByTestId('create_multisig_continue_button'),
-            )
-            await waitFor(() => screen.getByTestId('reached-set-threshold'))
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('Given fewer than two participants, when on the create screen, then continue is blocked until a second participant exists', async () => {
+        seedParticipants([ALGO25_TEST_ADDRESS])
+
+        renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
+            additionalScreens: [
+                {
+                    name: 'SetThreshold',
+                    component: () => <View testID='reached-set-threshold' />,
+                },
+            ],
+        })
+
+        // One participant: continue is disabled and tapping it does not
+        // advance the flow.
+        const continueButton = () =>
+            screen.getByTestId('create_multisig_continue_button')
+        expect(isElementDisabled(continueButton())).toBe(true)
+        fireEvent.click(continueButton())
+        expect(screen.queryByTestId('reached-set-threshold')).toBeNull()
+
+        // Adding a second participant enables continue and navigates to
+        // the threshold step.
+        useMultisigCreationStore
+            .getState()
+            .addParticipant({ address: HD_TEST_ADDRESS })
+
+        await waitFor(() =>
+            expect(
+                isElementDisabled(
+                    screen.getByTestId('create_multisig_continue_button'),
+                ),
+            ).toBe(false),
+        )
+        fireEvent.click(screen.getByTestId('create_multisig_continue_button'))
+        await waitFor(() => screen.getByTestId('reached-set-threshold'))
+    })
 })

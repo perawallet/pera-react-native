@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { View } from 'react-native'
@@ -89,7 +80,6 @@ const fillCredentials = async () => {
 }
 
 describe('Flow: Card sign in', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     beforeEach(() => {
         vi.mocked(Notifier.showNotification).mockClear()
         // Default fixture: the account already created its on-chain card, so a
@@ -103,8 +93,6 @@ describe('Flow: Card sign in', () => {
             txId: 'TX',
         })
     })
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
 
     it('Given valid credentials and a ready account, when Sign In is pressed, then the OAuth exchange runs and the wallet home opens', async () => {
         const loginSpy = vi.fn(() =>

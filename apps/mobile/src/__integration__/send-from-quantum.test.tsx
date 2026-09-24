@@ -75,18 +75,10 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
+    enableQuantumFlag,
 } from './__fixtures__/quantum'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
-const QUANTUM_FLAG_KEY = 'enable_quantum_accounts'
-
-const enableQuantumFlag = async (): Promise<void> => {
-    await useRemoteConfigStore.persist.rehydrate()
-    useRemoteConfigStore.getState().setConfigOverride(QUANTUM_FLAG_KEY, true)
-}
 
 // Mint a REAL quantum (Falcon-mock) key in the in-memory keystore from the
 // pinned quantum mnemonic and register the matching account in the accounts
@@ -131,15 +123,12 @@ const renderSendConfirmationStack = () =>
 
 describe('send from quantum account', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
     afterEach(() => {
-        server.resetHandlers()
         useRemoteConfigStore.getState().resetState()
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -170,111 +159,101 @@ describe('send from quantum account', () => {
         )
     })
 
-    it(
-        'Given the quantum flag is on and a real quantum sender, when the send confirmation screen settles, then it shows the 0.003 ALGO quantum fee and the quantum-fee explainer',
-        async () => {
-            await enableQuantumFlag()
-            await seedQuantumSender()
+    it('Given the quantum flag is on and a real quantum sender, when the send confirmation screen settles, then it shows the 0.003 ALGO quantum fee and the quantum-fee explainer', async () => {
+        await enableQuantumFlag()
+        await seedQuantumSender()
 
-            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
-            useSendFundsStore.getState().setAmount(new Decimal(1))
-            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
-            useSendFundsStore.getState().setSendMode('normal')
+        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setAmount(new Decimal(1))
+        useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+        useSendFundsStore.getState().setSendMode('normal')
 
-            renderSendConfirmationStack()
+        renderSendConfirmationStack()
 
-            // The confirm button only mounts once isReady === true — the signal
-            // that the fee row has settled.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('send_confirm_button'),
-                    ).toBeTruthy()
+        // The confirm button only mounts once isReady === true — the signal
+        // that the fee row has settled.
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
+
+        // The fee shown to the user already reflects the PQ multiplier:
+        // 1000 µAlgo base fee × the remote-config pqMultiplier (fallback 3)
+        // = 3000 µAlgo = 0.003 ALGO, alongside the quantum-fee explainer.
+        expect(
+            await screen.findByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
+        ).toBeTruthy()
+        expect(await screen.findByText('0.003')).toBeTruthy()
+    })
+
+    it('Given a real quantum sender, when a local payment is signed, then the machine signs it via the ordinary local-key path into a pqsig-bearing SignedTransaction and delivers it via the callback transport with no algod broadcast', async () => {
+        await enableQuantumFlag()
+        await seedQuantumSender()
+
+        // A real payment from the quantum sender. Enqueued as a LOCAL
+        // callback request — the same transport the send-funds flow uses —
+        // so the machine signs headlessly (no review sheet) and then hits
+        // the callback delivery step.
+        const payment = buildPaymentTransaction({
+            sender: QUANTUM_TEST_ADDRESS,
+            receiver: RECEIVER_ADDRESS,
+            amount: 1_000_000n,
+            fee: 1000n,
+        })
+        const {
+            request,
+            approve: approveSpy,
+            error: errorSpy,
+        } = buildTransactionSignRequest({
+            sourceType: 'local',
+            txs: [payment],
+        })
+
+        // Any algod broadcast is a failure: a Falcon-signed group must
+        // never be POSTed to a node that cannot verify it — delivery here
+        // is via the callback transport's approve(), not submission.
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    txId: 'SHOULDNOTBEHIT00000000000000000000000000000000000000',
                 },
-                { timeout: 5000 },
-            )
+                { status: 200 },
+            ),
+        )
+        server.use(http.post('*/v2/transactions', sendSpy))
 
-            // The fee shown to the user already reflects the PQ multiplier:
-            // 1000 µAlgo base fee × the remote-config pqMultiplier (fallback 3)
-            // = 3000 µAlgo = 0.003 ALGO, alongside the quantum-fee explainer.
-            expect(
-                await screen.findByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
-            ).toBeTruthy()
-            expect(await screen.findByText('0.003')).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        renderSignReview(request)
 
-    it(
-        'Given a real quantum sender, when a local payment is signed, then the machine signs it via the ordinary local-key path into a pqsig-bearing SignedTransaction and delivers it via the callback transport with no algod broadcast',
-        async () => {
-            await enableQuantumFlag()
-            await seedQuantumSender()
+        // The machine signs the group through the ordinary local-key
+        // strategy (`useLocalKeyTransactionSigner` resolves the account's
+        // key scheme via `getPQSigningInfo`), and the callback delivery
+        // step hands the resulting pqsig-bearing `SignedTransaction`
+        // straight to the request's approve() — no dedicated quantum
+        // strategy or carrier gate in the path anymore.
+        await waitFor(
+            () => {
+                expect(approveSpy).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
 
-            // A real payment from the quantum sender. Enqueued as a LOCAL
-            // callback request — the same transport the send-funds flow uses —
-            // so the machine signs headlessly (no review sheet) and then hits
-            // the callback delivery step.
-            const payment = buildPaymentTransaction({
-                sender: QUANTUM_TEST_ADDRESS,
-                receiver: RECEIVER_ADDRESS,
-                amount: 1_000_000n,
-                fee: 1000n,
-            })
-            const {
-                request,
-                approve: approveSpy,
-                error: errorSpy,
-            } = buildTransactionSignRequest({
-                sourceType: 'local',
-                txs: [payment],
-            })
+        expect(errorSpy).not.toHaveBeenCalled()
 
-            // Any algod broadcast is a failure: a Falcon-signed group must
-            // never be POSTed to a node that cannot verify it — delivery here
-            // is via the callback transport's approve(), not submission.
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json(
-                    {
-                        txId: 'SHOULDNOTBEHIT00000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
+        // The `pqsig` field's presence in the delivered signed txn is the
+        // load-bearing proof that the quantum account signed the payment
+        // end-to-end through the machine — not just that some result was
+        // delivered.
+        const delivered = approveSpy.mock.calls[0]?.[0] as {
+            pqsig?: { sig?: Uint8Array }
+        }[]
+        expect(delivered.some(tx => tx?.pqsig?.sig instanceof Uint8Array)).toBe(
+            true,
+        )
 
-            renderSignReview(request)
-
-            // The machine signs the group through the ordinary local-key
-            // strategy (`useLocalKeyTransactionSigner` resolves the account's
-            // key scheme via `getPQSigningInfo`), and the callback delivery
-            // step hands the resulting pqsig-bearing `SignedTransaction`
-            // straight to the request's approve() — no dedicated quantum
-            // strategy or carrier gate in the path anymore.
-            await waitFor(
-                () => {
-                    expect(approveSpy).toHaveBeenCalled()
-                },
-                { timeout: 10_000 },
-            )
-
-            expect(errorSpy).not.toHaveBeenCalled()
-
-            // The `pqsig` field's presence in the delivered signed txn is the
-            // load-bearing proof that the quantum account signed the payment
-            // end-to-end through the machine — not just that some result was
-            // delivered.
-            const delivered = approveSpy.mock.calls[0]?.[0] as {
-                pqsig?: { sig?: Uint8Array }
-            }[]
-            expect(
-                delivered.some(tx => tx?.pqsig?.sig instanceof Uint8Array),
-            ).toBe(true)
-
-            // No node ever saw the Falcon-signed group: callback delivery,
-            // never algod submission.
-            expect(sendSpy).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // No node ever saw the Falcon-signed group: callback delivery,
+        // never algod submission.
+        expect(sendSpy).not.toHaveBeenCalled()
+    })
 })

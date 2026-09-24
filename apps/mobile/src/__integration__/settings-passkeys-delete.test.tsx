@@ -16,15 +16,7 @@
 // stub, and a failed removal surfaces an error toast while leaving the row in
 // place. (The state/notice rendering lives in `settings-passkeys.test.tsx`.)
 
-import {
-    afterAll,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
@@ -35,7 +27,6 @@ import {
     resetTestKeystore,
     storage,
 } from '@test-utils/algorand-keystore-test'
-import { server } from '@test-utils/msw-server'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
 import {
@@ -51,8 +42,6 @@ import {
 import { SettingsPasskeyScreen } from '@modules/settings/screens/SettingsPasskeysScreen'
 import { getAllPressables } from '@test-utils/rnw'
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
-
-const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const HD_ACCOUNT: WalletAccount = {
     id: 'hd-1',
@@ -173,9 +162,6 @@ const hasButtonWithLabel = (label: string): boolean =>
     getAllPressables().some(b => (b.textContent ?? '').includes(label))
 
 describe('Flow: Settings → Passkeys removal', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterAll(() => server.close())
-
     beforeEach(() => {
         vi.restoreAllMocks()
         resetTestKeystore()
@@ -195,113 +181,101 @@ describe('Flow: Settings → Passkeys removal', () => {
         vi.mocked(Notifier.showNotification).mockClear()
     })
 
-    it(
-        'confirms removal of a passkey and deletes it from the native autofill store',
-        async () => {
-            getAutofill().getStoredCredentials.mockResolvedValue([
-                NATIVE_CREDENTIAL,
-            ])
+    it('confirms removal of a passkey and deletes it from the native autofill store', async () => {
+        getAutofill().getStoredCredentials.mockResolvedValue([
+            NATIVE_CREDENTIAL,
+        ])
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('settings_passkeys_item_cred-123'),
-                ).toBeTruthy(),
-            )
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('settings_passkeys_item_cred-123'),
+            ).toBeTruthy(),
+        )
 
-            fireEvent.click(screen.getByTestId(/_remove$/))
-            await waitFor(() =>
-                expect(
-                    hasButtonWithLabel('settings.passkeys.remove_confirm'),
-                ).toBe(true),
-            )
-            tapButtonByLabel('settings.passkeys.remove_confirm')
+        fireEvent.click(screen.getByTestId(/_remove$/))
+        await waitFor(() =>
+            expect(hasButtonWithLabel('settings.passkeys.remove_confirm')).toBe(
+                true,
+            ),
+        )
+        tapButtonByLabel('settings.passkeys.remove_confirm')
 
-            await waitFor(() =>
-                expect(getAutofill().deleteCredential).toHaveBeenCalledWith(
-                    'cred-123',
-                ),
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await waitFor(() =>
+            expect(getAutofill().deleteCredential).toHaveBeenCalledWith(
+                'cred-123',
+            ),
+        )
+    })
 
-    it(
-        'leaves the passkey untouched when the confirmation sheet is cancelled',
-        async () => {
-            getAutofill().getStoredCredentials.mockResolvedValue([
-                NATIVE_CREDENTIAL,
-            ])
+    it('leaves the passkey untouched when the confirmation sheet is cancelled', async () => {
+        getAutofill().getStoredCredentials.mockResolvedValue([
+            NATIVE_CREDENTIAL,
+        ])
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('settings_passkeys_item_cred-123'),
-                ).toBeTruthy(),
-            )
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('settings_passkeys_item_cred-123'),
+            ).toBeTruthy(),
+        )
 
-            fireEvent.click(screen.getByTestId(/_remove$/))
-            await waitFor(() =>
-                expect(
-                    hasButtonWithLabel('settings.passkeys.remove_cancel'),
-                ).toBe(true),
-            )
-            tapButtonByLabel('settings.passkeys.remove_cancel')
+        fireEvent.click(screen.getByTestId(/_remove$/))
+        await waitFor(() =>
+            expect(hasButtonWithLabel('settings.passkeys.remove_cancel')).toBe(
+                true,
+            ),
+        )
+        tapButtonByLabel('settings.passkeys.remove_cancel')
 
-            // Sheet closes and no deletion is attempted.
-            await waitFor(() =>
-                expect(
-                    hasButtonWithLabel('settings.passkeys.remove_confirm'),
-                ).toBe(false),
-            )
-            expect(getAutofill().deleteCredential).not.toHaveBeenCalled()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        // Sheet closes and no deletion is attempted.
+        await waitFor(() =>
+            expect(hasButtonWithLabel('settings.passkeys.remove_confirm')).toBe(
+                false,
+            ),
+        )
+        expect(getAutofill().deleteCredential).not.toHaveBeenCalled()
+    })
 
-    it(
-        'surfaces an error toast and keeps the row when the keystore removal fails',
-        async () => {
-            // A keystore-backed passkey: only this source routes through the
-            // keystore remove, which is the call whose rejection propagates.
-            await getKeyStore().import({
-                id: 'keystore-cred',
-                type: 'hd-derived-p256',
-                metadata: {
-                    origin: 'example.com',
-                    userHandle: 'alice',
-                    createdAt: 1_700_000_000_000,
-                },
-            })
-            vi.spyOn(getKeyStore(), 'remove').mockRejectedValue(
-                new Error('keystore busy'),
-            )
+    it('surfaces an error toast and keeps the row when the keystore removal fails', async () => {
+        // A keystore-backed passkey: only this source routes through the
+        // keystore remove, which is the call whose rejection propagates.
+        await getKeyStore().import({
+            id: 'keystore-cred',
+            type: 'hd-derived-p256',
+            metadata: {
+                origin: 'example.com',
+                userHandle: 'alice',
+                createdAt: 1_700_000_000_000,
+            },
+        })
+        vi.spyOn(getKeyStore(), 'remove').mockRejectedValue(
+            new Error('keystore busy'),
+        )
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('settings_passkeys_item_keystore-cred'),
-                ).toBeTruthy(),
-            )
-
-            fireEvent.click(screen.getByTestId(/_remove$/))
-            await waitFor(() =>
-                expect(
-                    hasButtonWithLabel('settings.passkeys.remove_confirm'),
-                ).toBe(true),
-            )
-            tapButtonByLabel('settings.passkeys.remove_confirm')
-
-            await waitFor(() =>
-                expect(Notifier.showNotification).toHaveBeenCalled(),
-            )
-            // The removal failed, so the passkey is still listed.
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        await waitFor(() =>
             expect(
                 screen.getByTestId('settings_passkeys_item_keystore-cred'),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+            ).toBeTruthy(),
+        )
+
+        fireEvent.click(screen.getByTestId(/_remove$/))
+        await waitFor(() =>
+            expect(hasButtonWithLabel('settings.passkeys.remove_confirm')).toBe(
+                true,
+            ),
+        )
+        tapButtonByLabel('settings.passkeys.remove_confirm')
+
+        await waitFor(() =>
+            expect(Notifier.showNotification).toHaveBeenCalled(),
+        )
+        // The removal failed, so the passkey is still listed.
+        expect(
+            screen.getByTestId('settings_passkeys_item_keystore-cred'),
+        ).toBeTruthy()
+    })
 
     // R7: a flagged passkey can't be recovered from the recovery passphrase and
     // its replacement can only be registered while Pera is the active provider,
@@ -313,49 +287,45 @@ describe('Flow: Settings → Passkeys removal', () => {
     //
     // Both rows here are keystore-backed, the one source that carries the
     // marker on the row itself; the un-adopted majority is the case below.
-    it(
-        'withholds removal of a flagged passkey while the provider is off, without withholding it for the rest',
-        async () => {
-            getAutofill().isProviderActive.mockResolvedValue(false)
-            await importKeystorePasskey('flagged-cred', true)
-            await importKeystorePasskey('plain-cred', false)
+    it('withholds removal of a flagged passkey while the provider is off, without withholding it for the rest', async () => {
+        getAutofill().isProviderActive.mockResolvedValue(false)
+        await importKeystorePasskey('flagged-cred', true)
+        await importKeystorePasskey('plain-cred', false)
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('settings_passkeys_item_plain-cred'),
-                ).toBeTruthy(),
-            )
-
-            const flaggedRow = screen.getByTestId(
-                'settings_passkeys_item_flagged-cred',
-            )
-            expect(within(flaggedRow).queryByTestId(/_remove$/)).toBeFalsy()
-
-            // The row renders before the migration read settles, and until it
-            // does no row offers removal — so wait for the icon, not the row.
-            const plainTrash = await within(
-                screen.getByTestId('settings_passkeys_item_plain-cred'),
-            ).findByTestId(/_remove$/)
-            fireEvent.click(plainTrash)
-            await waitFor(() =>
-                expect(
-                    hasButtonWithLabel('settings.passkeys.remove_confirm'),
-                ).toBe(true),
-            )
-            tapButtonByLabel('settings.passkeys.remove_confirm')
-
-            await waitFor(() =>
-                expect(
-                    screen.queryByTestId('settings_passkeys_item_plain-cred'),
-                ).toBeFalsy(),
-            )
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        await waitFor(() =>
             expect(
-                screen.getByTestId('settings_passkeys_item_flagged-cred'),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+                screen.getByTestId('settings_passkeys_item_plain-cred'),
+            ).toBeTruthy(),
+        )
+
+        const flaggedRow = screen.getByTestId(
+            'settings_passkeys_item_flagged-cred',
+        )
+        expect(within(flaggedRow).queryByTestId(/_remove$/)).toBeFalsy()
+
+        // The row renders before the migration read settles, and until it
+        // does no row offers removal — so wait for the icon, not the row.
+        const plainTrash = await within(
+            screen.getByTestId('settings_passkeys_item_plain-cred'),
+        ).findByTestId(/_remove$/)
+        fireEvent.click(plainTrash)
+        await waitFor(() =>
+            expect(hasButtonWithLabel('settings.passkeys.remove_confirm')).toBe(
+                true,
+            ),
+        )
+        tapButtonByLabel('settings.passkeys.remove_confirm')
+
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId('settings_passkeys_item_plain-cred'),
+            ).toBeFalsy(),
+        )
+        expect(
+            screen.getByTestId('settings_passkeys_item_flagged-cred'),
+        ).toBeTruthy()
+    })
 
     // The case above is the minority one: a credential `repairs/0002` declined
     // to un-adopt, so its `k/` record survives and `usePasskeysQuery` can read
@@ -364,65 +334,61 @@ describe('Flow: Settings → Passkeys removal', () => {
     // identity store, whose shape carries no metadata bag, so `needsMigration`
     // is hardcoded `false` and gating on it alone leaves the trash icon on the
     // one row that must never offer it.
-    it(
-        'withholds removal of a flagged credential the passkey list reports unflagged, while the rest of the list still deletes',
-        async () => {
-            getAutofill().isProviderActive.mockResolvedValue(false)
-            await seedFlaggedFlatRecord('native-flagged')
-            getAutofill().getStoredCredentials.mockResolvedValue([
-                nativeCredential('native-flagged'),
-                nativeCredential('native-plain'),
-            ])
+    it('withholds removal of a flagged credential the passkey list reports unflagged, while the rest of the list still deletes', async () => {
+        getAutofill().isProviderActive.mockResolvedValue(false)
+        await seedFlaggedFlatRecord('native-flagged')
+        getAutofill().getStoredCredentials.mockResolvedValue([
+            nativeCredential('native-flagged'),
+            nativeCredential('native-plain'),
+        ])
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-            const plainRow = await screen.findByTestId(
-                'settings_passkeys_item_native-plain',
-            )
-            // The banner reads the same flat record, so its presence is what
-            // says the marker was found at all — without it this test would
-            // pass on a screen that simply never learned the credential exists.
-            await waitFor(() =>
-                expect(
-                    screen.getByTestId('settings_passkeys_migration_blocked'),
-                ).toBeTruthy(),
-            )
-
-            // Exactly one trash icon on a two-row list: the flagged row has
-            // none and the unflagged one is untouched.
-            await waitFor(() =>
-                expect(screen.getAllByTestId(/_remove$/)).toHaveLength(1),
-            )
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        const plainRow = await screen.findByTestId(
+            'settings_passkeys_item_native-plain',
+        )
+        // The banner reads the same flat record, so its presence is what
+        // says the marker was found at all — without it this test would
+        // pass on a screen that simply never learned the credential exists.
+        await waitFor(() =>
             expect(
-                within(
-                    screen.getByTestId('settings_passkeys_item_native-flagged'),
-                ).queryByTestId(/_remove$/),
-            ).toBeFalsy()
+                screen.getByTestId('settings_passkeys_migration_blocked'),
+            ).toBeTruthy(),
+        )
 
-            // Drive the surviving icon all the way through the real removal, so
-            // "the flagged credential was not deleted" is a statement about the
-            // gate rather than about a screen where deletion is broken.
-            fireEvent.click(within(plainRow).getByTestId(/_remove$/))
-            await waitFor(() =>
-                expect(
-                    hasButtonWithLabel('settings.passkeys.remove_confirm'),
-                ).toBe(true),
-            )
-            tapButtonByLabel('settings.passkeys.remove_confirm')
-
-            await waitFor(() =>
-                expect(getAutofill().deleteCredential).toHaveBeenCalledWith(
-                    'native-plain',
-                ),
-            )
-            expect(getAutofill().deleteCredential).not.toHaveBeenCalledWith(
-                'native-flagged',
-            )
-            expect(
+        // Exactly one trash icon on a two-row list: the flagged row has
+        // none and the unflagged one is untouched.
+        await waitFor(() =>
+            expect(screen.getAllByTestId(/_remove$/)).toHaveLength(1),
+        )
+        expect(
+            within(
                 screen.getByTestId('settings_passkeys_item_native-flagged'),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+            ).queryByTestId(/_remove$/),
+        ).toBeFalsy()
+
+        // Drive the surviving icon all the way through the real removal, so
+        // "the flagged credential was not deleted" is a statement about the
+        // gate rather than about a screen where deletion is broken.
+        fireEvent.click(within(plainRow).getByTestId(/_remove$/))
+        await waitFor(() =>
+            expect(hasButtonWithLabel('settings.passkeys.remove_confirm')).toBe(
+                true,
+            ),
+        )
+        tapButtonByLabel('settings.passkeys.remove_confirm')
+
+        await waitFor(() =>
+            expect(getAutofill().deleteCredential).toHaveBeenCalledWith(
+                'native-plain',
+            ),
+        )
+        expect(getAutofill().deleteCredential).not.toHaveBeenCalledWith(
+            'native-flagged',
+        )
+        expect(
+            screen.getByTestId('settings_passkeys_item_native-flagged'),
+        ).toBeTruthy()
+    })
 
     // The three ways the flat migration read can learn nothing. All of them
     // *resolve* — `readFlaggedPasskeyCredentials` catches each one and returns
@@ -501,58 +467,46 @@ describe('Flow: Settings → Passkeys removal', () => {
         }
     }
 
-    it(
-        'protects flagged credentials when the key listing itself cannot be read',
-        async () => {
-            await seedFailureModeScreen()
-            vi.spyOn(storage, 'getAllKeys').mockImplementation(() => {
-                throw new Error('mmkv unavailable')
-            })
+    it('protects flagged credentials when the key listing itself cannot be read', async () => {
+        await seedFailureModeScreen()
+        vi.spyOn(storage, 'getAllKeys').mockImplementation(() => {
+            throw new Error('mmkv unavailable')
+        })
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-            await screen.findByTestId('settings_passkeys_item_native-plain')
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        await screen.findByTestId('settings_passkeys_item_native-plain')
 
-            await expectFlaggedCredentialsProtected()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await expectFlaggedCredentialsProtected()
+    })
 
-    it(
-        'protects flagged credentials when the master key cannot be read',
-        async () => {
-            await seedFailureModeScreen()
-            // Seeded first: the flat record is sealed with the very key the
-            // scan is about to be denied.
-            await seedFlaggedFlatRecord('native-flagged')
-            vi.spyOn(keystore, 'readMasterKey').mockRejectedValue(
-                new Error('keychain locked'),
-            )
+    it('protects flagged credentials when the master key cannot be read', async () => {
+        await seedFailureModeScreen()
+        // Seeded first: the flat record is sealed with the very key the
+        // scan is about to be denied.
+        await seedFlaggedFlatRecord('native-flagged')
+        vi.spyOn(keystore, 'readMasterKey').mockRejectedValue(
+            new Error('keychain locked'),
+        )
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-            await screen.findByTestId('settings_passkeys_item_native-plain')
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        await screen.findByTestId('settings_passkeys_item_native-plain')
 
-            await expectFlaggedCredentialsProtected()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await expectFlaggedCredentialsProtected()
+    })
 
-    it(
-        'protects flagged credentials when a record cannot be opened',
-        async () => {
-            await seedFailureModeScreen()
-            await seedFlaggedFlatRecord('native-flagged')
-            // Envelope-shaped but sealed with something else, so the scan
-            // cannot rule out a marker inside it.
-            storage.set(
-                'sealed-elsewhere',
-                '{"iv":"AAAA","tag":"AAAA","content":"AAAA"}',
-            )
+    it('protects flagged credentials when a record cannot be opened', async () => {
+        await seedFailureModeScreen()
+        await seedFlaggedFlatRecord('native-flagged')
+        // Envelope-shaped but sealed with something else, so the scan
+        // cannot rule out a marker inside it.
+        storage.set(
+            'sealed-elsewhere',
+            '{"iv":"AAAA","tag":"AAAA","content":"AAAA"}',
+        )
 
-            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
-            await screen.findByTestId('settings_passkeys_item_native-plain')
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        await screen.findByTestId('settings_passkeys_item_native-plain')
 
-            await expectFlaggedCredentialsProtected()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        await expectFlaggedCredentialsProtected()
+    })
 })

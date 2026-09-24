@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { afterAll, beforeAll } from 'vitest'
+import { isCommonAssetRequest } from 'msw'
 import { setupServer } from 'msw/node'
 import {
     mockAlgodPendingTransaction,
@@ -18,9 +20,10 @@ import {
 import { mockGetCurrency } from '@perawallet/wallet-core-currencies/test-handlers'
 import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
 
-// Shared MSW server for integration tests. Starts with only the ambient
-// baseline handlers below — tests opt in per-scenario via `server.use(...)`,
-// importing factories from each domain package's `*/test-handlers` barrel and
+// Shared MSW server for integration tests. vitest.integration-setup.ts owns its
+// listen / resetHandlers / close lifecycle, so flow files never call those.
+// Starts with only the ambient baseline handlers below — tests opt in
+// per-scenario via `server.use(...)`, importing factories from each domain package's `*/test-handlers` barrel and
 // fixtures from `__integration__/__fixtures__/`. This keeps the contract
 // explicit: unhandled requests warn, surfacing missing mocks immediately.
 //
@@ -59,5 +62,35 @@ export const server = setupServer(
     mockAlgodPendingTransaction(),
     mockAlgodStatusAfterBlock(),
 )
+
+export type UnhandledRequestMode = 'warn' | 'bypass'
+
+let unhandledRequestMode: UnhandledRequestMode = 'warn'
+
+// Both modes let the request through to the network; 'bypass' only drops the
+// warning. Call inside a describe body; the mode reverts when that suite ends.
+export const setSuiteUnhandledRequestMode = (
+    mode: UnhandledRequestMode,
+): void => {
+    let previous: UnhandledRequestMode
+    beforeAll(() => {
+        previous = unhandledRequestMode
+        unhandledRequestMode = mode
+    })
+    afterAll(() => {
+        unhandledRequestMode = previous
+    })
+}
+
+export const onUnhandledRequest = (
+    request: Request,
+    print: { warning: () => void },
+): void => {
+    // A callback strategy skips MSW's own static-asset filter, so reapply it to
+    // warn exactly where the built-in 'warn' strategy would.
+    if (unhandledRequestMode === 'warn' && !isCommonAssetRequest(request)) {
+        print.warning()
+    }
+}
 
 export { http, HttpResponse } from 'msw'

@@ -64,8 +64,6 @@ import {
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 const QUANTUM_FLAG_KEY = 'enable_quantum_accounts'
 
 // Mint a real algo25 key in the in-memory keystore from the pinned
@@ -128,17 +126,14 @@ const renderSendConfirmationStack = () =>
 
 describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
     afterEach(() => {
-        server.resetHandlers()
         // The quantum feature flag is OFF by default in tests; clear any
         // per-test override so it does not leak into other suites.
         useRemoteConfigStore.getState().resetState()
     })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -176,73 +171,59 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
         )
     })
 
-    it(
-        'Given the quantum flag is on and a quantum sender, when the confirmation screen settles, then the quantum-fee explainer renders in the fee row',
-        async () => {
-            // Enable the flag through the real remote-config override so the
-            // whole useIsQuantumAccountsEnabled → useSignerFor chain is
-            // exercised, not a mocked hook.
-            useRemoteConfigStore
-                .getState()
-                .setConfigOverride(QUANTUM_FLAG_KEY, true)
+    it('Given the quantum flag is on and a quantum sender, when the confirmation screen settles, then the quantum-fee explainer renders in the fee row', async () => {
+        // Enable the flag through the real remote-config override so the
+        // whole useIsQuantumAccountsEnabled → useSignerFor chain is
+        // exercised, not a mocked hook.
+        useRemoteConfigStore
+            .getState()
+            .setConfigOverride(QUANTUM_FLAG_KEY, true)
 
-            seedQuantumSender()
-            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
-            useSendFundsStore.getState().setAmount(new Decimal(1))
-            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
-            useSendFundsStore.getState().setSendMode('normal')
+        seedQuantumSender()
+        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setAmount(new Decimal(1))
+        useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+        useSendFundsStore.getState().setSendMode('normal')
 
-            renderSendConfirmationStack()
+        renderSendConfirmationStack()
 
-            // The confirm button only mounts once isReady === true, so it is
-            // the signal that the fee row has settled. No confirm click / no
-            // signing needed for the explainer assertion.
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('send_confirm_button'),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
+        // The confirm button only mounts once isReady === true, so it is
+        // the signal that the fee row has settled. No confirm click / no
+        // signing needed for the explainer assertion.
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
 
-            expect(
-                await screen.findByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
-            ).toBeTruthy()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(
+            await screen.findByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
+        ).toBeTruthy()
+    })
 
-    it(
-        'Given a standard algo25 sender, when the confirmation screen settles with the quantum flag on, then the quantum-fee explainer is absent',
-        async () => {
-            // Flag on to prove the account type — not the flag alone — gates
-            // the explainer: a standard signer must never surface it.
-            useRemoteConfigStore
-                .getState()
-                .setConfigOverride(QUANTUM_FLAG_KEY, true)
+    it('Given a standard algo25 sender, when the confirmation screen settles with the quantum flag on, then the quantum-fee explainer is absent', async () => {
+        // Flag on to prove the account type — not the flag alone — gates
+        // the explainer: a standard signer must never surface it.
+        useRemoteConfigStore
+            .getState()
+            .setConfigOverride(QUANTUM_FLAG_KEY, true)
 
-            await seedAlgo25Sender()
-            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
-            useSendFundsStore.getState().setAmount(new Decimal(1))
-            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
-            useSendFundsStore.getState().setSendMode('normal')
+        await seedAlgo25Sender()
+        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setAmount(new Decimal(1))
+        useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+        useSendFundsStore.getState().setSendMode('normal')
 
-            renderSendConfirmationStack()
+        renderSendConfirmationStack()
 
-            await waitFor(
-                () => {
-                    expect(
-                        screen.getByTestId('send_confirm_button'),
-                    ).toBeTruthy()
-                },
-                { timeout: 5000 },
-            )
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+            },
+            { timeout: 5000 },
+        )
 
-            expect(
-                screen.queryByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID),
-            ).toBeNull()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        expect(screen.queryByTestId(QUANTUM_FEE_EXPLAINER_TEST_ID)).toBeNull()
+    })
 })

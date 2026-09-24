@@ -16,15 +16,7 @@
 // confirm instead of signing. i18n returns keys verbatim in tests, so
 // assertions match i18n keys.
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -50,8 +42,6 @@ import {
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 const expectWarningPanel = async () => {
     await waitFor(
         () => {
@@ -63,14 +53,9 @@ const expectWarningPanel = async () => {
 
 describe('Flow: signing review safety warnings', () => {
     beforeAll(async () => {
-        server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => {
-        server.resetHandlers()
-    })
     afterAll(async () => {
-        server.close()
         await teardownTestDatabase()
     })
 
@@ -89,50 +74,38 @@ describe('Flow: signing review safety warnings', () => {
         await seedAlgo25Signer()
     })
 
-    it(
-        'surfaces the warning panel for a close-account transaction',
-        async () => {
-            const { request } = buildTransactionSignRequest({
-                txs: [
-                    buildPaymentTransaction({
-                        closeRemainderTo: REVIEW_RECEIVER_ADDRESS,
-                    }),
-                ],
-            })
-            renderSignReview(request)
-            await expectWarningPanel()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('surfaces the warning panel for a close-account transaction', async () => {
+        const { request } = buildTransactionSignRequest({
+            txs: [
+                buildPaymentTransaction({
+                    closeRemainderTo: REVIEW_RECEIVER_ADDRESS,
+                }),
+            ],
+        })
+        renderSignReview(request)
+        await expectWarningPanel()
+    })
 
-    it(
-        'surfaces the warning panel for an unusually high fee',
-        async () => {
-            // 2 ALGO fee on a single payment — well over the 0.5 ALGO/tx budget.
-            const { request } = buildTransactionSignRequest({
-                txs: [buildPaymentTransaction({ fee: 2_000_000n })],
-            })
-            renderSignReview(request)
-            await expectWarningPanel()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('surfaces the warning panel for an unusually high fee', async () => {
+        // 2 ALGO fee on a single payment — well over the 0.5 ALGO/tx budget.
+        const { request } = buildTransactionSignRequest({
+            txs: [buildPaymentTransaction({ fee: 2_000_000n })],
+        })
+        renderSignReview(request)
+        await expectWarningPanel()
+    })
 
-    it(
-        'surfaces the warning panel for a rekey transaction',
-        async () => {
-            const { request } = buildTransactionSignRequest({
-                txs: [
-                    buildPaymentTransaction({
-                        rekeyTo: REVIEW_RECEIVER_ADDRESS,
-                    }),
-                ],
-            })
-            renderSignReview(request)
-            await expectWarningPanel()
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+    it('surfaces the warning panel for a rekey transaction', async () => {
+        const { request } = buildTransactionSignRequest({
+            txs: [
+                buildPaymentTransaction({
+                    rekeyTo: REVIEW_RECEIVER_ADDRESS,
+                }),
+            ],
+        })
+        renderSignReview(request)
+        await expectWarningPanel()
+    })
 
     // The security-guard *confirm* flow (rekey/asset-freeze → confirm → guard
     // sheet) passes in isolation but is suite-flaky: the signing-overlay driver

@@ -10,20 +10,10 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    afterEach,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
-import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen/WatchInfoScreen'
@@ -46,17 +36,10 @@ import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 // persist as AccountTypes.watch, NOT quantum.
 const WATCH_TARGET_ADDRESS = QUANTUM_TEST_ADDRESS
 
-// Per-test timeout: navigation transitions + a render frame inside
-// NameAccount's handleFinish push the wall-clock past the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
 describe('watch quantum address', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     afterEach(() => {
-        server.resetHandlers()
         useRemoteConfigStore.getState().resetState()
     })
-    afterAll(() => server.close())
 
     beforeEach(() => {
         resetTestKeystore()
@@ -65,135 +48,119 @@ describe('watch quantum address', () => {
         vi.mocked(Notifier.showNotification).mockClear()
     })
 
-    it(
-        'Given the watch info screen, when the user enters the quantum-derived address and finishes naming, then it persists as a watch account (not quantum)',
-        async () => {
-            renderWithNavigation(WatchInfoScreen, 'WatchInfo', {
-                additionalScreens: [
-                    { name: 'WatchAccount', component: WatchAccountScreen },
-                    { name: 'NameAccount', component: NameAccountScreen },
-                ],
-            })
+    it('Given the watch info screen, when the user enters the quantum-derived address and finishes naming, then it persists as a watch account (not quantum)', async () => {
+        renderWithNavigation(WatchInfoScreen, 'WatchInfo', {
+            additionalScreens: [
+                { name: 'WatchAccount', component: WatchAccountScreen },
+                { name: 'NameAccount', component: NameAccountScreen },
+            ],
+        })
 
-            // The info screen's CTA carries no testID, so it is found by its label.
-            await waitFor(() =>
-                screen.getByText('onboarding.watch_account.info_button'),
-            )
-            fireEvent.click(
-                screen.getByText('onboarding.watch_account.info_button'),
-            )
+        // The info screen's CTA carries no testID, so it is found by its label.
+        await waitFor(() =>
+            screen.getByText('onboarding.watch_account.info_button'),
+        )
+        fireEvent.click(
+            screen.getByText('onboarding.watch_account.info_button'),
+        )
 
-            // WatchAccountScreen renders the address input.
-            await waitFor(() =>
-                screen.getByTestId('watch_account_address_input'),
-            )
-            fireEvent.change(
-                screen.getByTestId('watch_account_address_input'),
-                { target: { value: WATCH_TARGET_ADDRESS } },
-            )
+        // WatchAccountScreen renders the address input.
+        await waitFor(() => screen.getByTestId('watch_account_address_input'))
+        fireEvent.change(screen.getByTestId('watch_account_address_input'), {
+            target: { value: WATCH_TARGET_ADDRESS },
+        })
 
-            // Once the address is valid (and not duplicate), the submit
-            // button enables.
-            await waitFor(() => {
-                expect(
-                    isElementDisabled(
-                        screen.getByTestId('watch_account_submit_button'),
-                    ),
-                ).toBe(false)
-            })
-            fireEvent.click(screen.getByTestId('watch_account_submit_button'))
-
-            // Watch flow inserts the new account immediately and navigates
-            // to NameAccount. Default name is auto-numbered (#1).
-            await waitFor(() =>
-                screen.getByTestId('name_account_finish_button'),
-            )
-            await waitFor(() => {
-                expect(useAccountsStore.getState().accounts).toHaveLength(1)
-            })
-            // The quantum-derived address has no quantum-specific branch in
-            // the watch flow — it persists as a plain watch account.
-            expect(useAccountsStore.getState().accounts[0].type).toBe(
-                AccountTypes.watch,
-            )
-            expect(useAccountsStore.getState().accounts[0].address).toBe(
-                WATCH_TARGET_ADDRESS,
-            )
-
-            // Override the default name and finish.
-            fireEvent.change(screen.getByTestId('name_account_name_input'), {
-                target: { value: 'Quantum watch' },
-            })
-            fireEvent.click(screen.getByTestId('name_account_finish_button'))
-
-            await waitFor(() => {
-                expect(useAccountsStore.getState().accounts[0].name).toBe(
-                    'Quantum watch',
-                )
-            })
-            expect(
-                useAccountsStore
-                    .getState()
-                    .accounts.find(
-                        account => account.address === WATCH_TARGET_ADDRESS,
-                    )?.type,
-            ).toBe(AccountTypes.watch)
-            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
-                WATCH_TARGET_ADDRESS,
-            )
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a watch account with the quantum-derived address already exists, when the user enters that address, then the submit button stays disabled',
-        async () => {
-            // Pre-seed the store with the address the user is about to
-            // type in. The watch flow shows the duplicate error inline and
-            // disables submit — see useWatchAccountScreen.
-            useAccountsStore.getState().setAccounts([
-                {
-                    id: 'existing-1',
-                    type: AccountTypes.watch,
-                    address: WATCH_TARGET_ADDRESS,
-                },
-            ])
-
-            renderWithNavigation(WatchInfoScreen, 'WatchInfo', {
-                additionalScreens: [
-                    { name: 'WatchAccount', component: WatchAccountScreen },
-                    { name: 'NameAccount', component: NameAccountScreen },
-                ],
-            })
-
-            await waitFor(() =>
-                screen.getByText('onboarding.watch_account.info_button'),
-            )
-            fireEvent.click(
-                screen.getByText('onboarding.watch_account.info_button'),
-            )
-
-            await waitFor(() =>
-                screen.getByTestId('watch_account_address_input'),
-            )
-            fireEvent.change(
-                screen.getByTestId('watch_account_address_input'),
-                { target: { value: WATCH_TARGET_ADDRESS } },
-            )
-
-            // The button never enables: the duplicate guard short-circuits
-            // both the validity check and the submit handler.
+        // Once the address is valid (and not duplicate), the submit
+        // button enables.
+        await waitFor(() => {
             expect(
                 isElementDisabled(
                     screen.getByTestId('watch_account_submit_button'),
                 ),
-            ).toBe(true)
+            ).toBe(false)
+        })
+        fireEvent.click(screen.getByTestId('watch_account_submit_button'))
 
-            // Even if we somehow click it, the handler returns early —
-            // assert no second account was added.
-            fireEvent.click(screen.getByTestId('watch_account_submit_button'))
+        // Watch flow inserts the new account immediately and navigates
+        // to NameAccount. Default name is auto-numbered (#1).
+        await waitFor(() => screen.getByTestId('name_account_finish_button'))
+        await waitFor(() => {
             expect(useAccountsStore.getState().accounts).toHaveLength(1)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
+        })
+        // The quantum-derived address has no quantum-specific branch in
+        // the watch flow — it persists as a plain watch account.
+        expect(useAccountsStore.getState().accounts[0].type).toBe(
+            AccountTypes.watch,
+        )
+        expect(useAccountsStore.getState().accounts[0].address).toBe(
+            WATCH_TARGET_ADDRESS,
+        )
+
+        // Override the default name and finish.
+        fireEvent.change(screen.getByTestId('name_account_name_input'), {
+            target: { value: 'Quantum watch' },
+        })
+        fireEvent.click(screen.getByTestId('name_account_finish_button'))
+
+        await waitFor(() => {
+            expect(useAccountsStore.getState().accounts[0].name).toBe(
+                'Quantum watch',
+            )
+        })
+        expect(
+            useAccountsStore
+                .getState()
+                .accounts.find(
+                    account => account.address === WATCH_TARGET_ADDRESS,
+                )?.type,
+        ).toBe(AccountTypes.watch)
+        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+            WATCH_TARGET_ADDRESS,
+        )
+    })
+
+    it('Given a watch account with the quantum-derived address already exists, when the user enters that address, then the submit button stays disabled', async () => {
+        // Pre-seed the store with the address the user is about to
+        // type in. The watch flow shows the duplicate error inline and
+        // disables submit — see useWatchAccountScreen.
+        useAccountsStore.getState().setAccounts([
+            {
+                id: 'existing-1',
+                type: AccountTypes.watch,
+                address: WATCH_TARGET_ADDRESS,
+            },
+        ])
+
+        renderWithNavigation(WatchInfoScreen, 'WatchInfo', {
+            additionalScreens: [
+                { name: 'WatchAccount', component: WatchAccountScreen },
+                { name: 'NameAccount', component: NameAccountScreen },
+            ],
+        })
+
+        await waitFor(() =>
+            screen.getByText('onboarding.watch_account.info_button'),
+        )
+        fireEvent.click(
+            screen.getByText('onboarding.watch_account.info_button'),
+        )
+
+        await waitFor(() => screen.getByTestId('watch_account_address_input'))
+        fireEvent.change(screen.getByTestId('watch_account_address_input'), {
+            target: { value: WATCH_TARGET_ADDRESS },
+        })
+
+        // The button never enables: the duplicate guard short-circuits
+        // both the validity check and the submit handler.
+        expect(
+            isElementDisabled(
+                screen.getByTestId('watch_account_submit_button'),
+            ),
+        ).toBe(true)
+
+        // Even if we somehow click it, the handler returns early —
+        // assert no second account was added.
+        fireEvent.click(screen.getByTestId('watch_account_submit_button'))
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+    })
 })
