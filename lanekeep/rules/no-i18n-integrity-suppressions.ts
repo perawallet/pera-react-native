@@ -16,7 +16,6 @@ const GUARDED = [
 
 export default defineRule({
     id: 'pera/no-i18n-integrity-suppressions',
-    language: ['typescript', 'tsx', 'javascript'],
     severity: 'error',
     card: {
         message: 'an i18n integrity finding is suppressed',
