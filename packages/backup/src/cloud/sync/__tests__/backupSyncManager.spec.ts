@@ -83,6 +83,7 @@ vi.mock('../pullBackupDeltas', () => ({
 vi.mock('../reviewActions', () => ({
     reviewActionDeps: (deps: unknown) => deps,
     markAccountForBackup: (state: unknown) => state,
+    markPasskeyForBackup: (state: unknown) => state,
     importFromBackup: ({ state }: { state: unknown }) => ({
         state,
         summary: { imported: 1, skippedDuplicate: 0, failed: [] },
@@ -179,9 +180,15 @@ import {
     initializeBackupSyncManager,
     getBackupSyncManager,
 } from '../backupSyncManager'
-import { BackupItemStatus, accountItemKey, secretsItemKey } from '../../models'
+import {
+    BackupItemStatus,
+    accountItemKey,
+    passkeyItemKey,
+    secretsItemKey,
+    type SyncState,
+} from '../../models'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
-import type { BackupSyncSources } from '../types'
+import type { BackupSyncSources, BackupSyncStatePort } from '../types'
 
 // Must match the key mockWithBackupItemKey hands the manager.
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
@@ -445,6 +452,64 @@ describe('BackupSyncManager', () => {
             const mgr = new BackupSyncManager(makeDeps())
 
             expect(await mgr.backUpAccount(ADDR)).toBe(false)
+            mgr.stop()
+        })
+    })
+
+    describe('backUpPasskey', () => {
+        const CREDENTIAL_ID = 'cred-1'
+
+        // The port holds its own copy of the state, apart from the mocked
+        // store module, so a read that bypassed it would find nothing.
+        const statePortAfterSync = (
+            item: Record<string, unknown>,
+        ): BackupSyncStatePort => {
+            let stored: SyncState | null = null
+            mockSyncBackup.mockResolvedValue({
+                backupId: 'backup-123',
+                lastSyncResult: 'SUCCESS',
+                items: {
+                    [passkeyItemKey(hashAddress(CREDENTIAL_ID))]: {
+                        address: CREDENTIAL_ID,
+                        ...item,
+                    },
+                },
+            })
+            return {
+                getBackupId: () => 'backup-123',
+                getDeviceId: () => 'dev-id',
+                getSyncState: () => stored,
+                setSyncState: next => {
+                    stored = next
+                },
+                setIsSyncing: vi.fn(),
+                reset: vi.fn(),
+            }
+        }
+
+        it('reports success once the server has versioned the passkey', async () => {
+            const mgr = new BackupSyncManager({
+                ...makeDeps(),
+                state: statePortAfterSync({
+                    status: BackupItemStatus.ACTIVE,
+                    knownVer: 1,
+                }),
+            })
+
+            expect(await mgr.backUpPasskey(CREDENTIAL_ID)).toBe(true)
+            mgr.stop()
+        })
+
+        it('reports failure when the passkey is still unversioned after the sync', async () => {
+            const mgr = new BackupSyncManager({
+                ...makeDeps(),
+                state: statePortAfterSync({
+                    status: BackupItemStatus.ACTIVE,
+                    knownVer: 0,
+                }),
+            })
+
+            expect(await mgr.backUpPasskey(CREDENTIAL_ID)).toBe(false)
             mgr.stop()
         })
     })
