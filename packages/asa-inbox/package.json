@@ -29,7 +29,6 @@
     "@tanstack/react-query": "catalog:",
     "decimal.js": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -41,6 +40,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "msw": "catalog:"
+    "msw": "catalog:",
+    "react-dom": "catalog:"
   }
 }

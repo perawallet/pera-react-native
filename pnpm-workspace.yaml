@@ -60,7 +60,6 @@ catalog:
   # encodes the namespace rules the relay and the dApp both enforce, so a copy
   # out of step with core's would build sessions core then rejects.
   "@walletconnect/utils": 2.23.10
-  "@xstate/react": ^6.1.0
   # 3.7.0 is a floor, not a preference: the `pqsig` field and the
   # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
   # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
