@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    addDeviceIntegrityHeader,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { getCardApiError, type CardApiError } from '../errors'
 import { getCardTransport } from '../transport'
 import {
@@ -56,8 +52,6 @@ export type CreateCardParams = {
     signData: CardSiwaSignData
     /** Base64 ed25519 signature over `sha256(data) || sha256(authData)`. */
     signature: string
-    /** Valid (non-expired) app-integrity attestation token. */
-    integrityToken: string
     signal?: AbortSignal
 }
 
@@ -87,7 +81,6 @@ export const createCard = async (
         currency,
         signData,
         signature,
-        integrityToken,
         signal,
     } = params
 
@@ -104,9 +97,6 @@ export const createCard = async (
                 signData,
                 signature,
             },
-            headers: addDeviceIntegrityHeader({
-                'x-app-integrity-token': integrityToken,
-            }),
             signal,
             timeoutMs: CARD_CREATE_TIMEOUT_MS,
         })
@@ -155,7 +145,6 @@ export type FetchFundingAddressLinkParams = {
     network: Network
     address: string
     baanxUserId: string
-    integrityToken: string
     signal?: AbortSignal
 }
 
@@ -170,7 +159,7 @@ export type FetchFundingAddressLinkParams = {
 export const fetchFundingAddressLink = async (
     params: FetchFundingAddressLinkParams,
 ): Promise<FundingAddressLink> => {
-    const { network, address, baanxUserId, integrityToken, signal } = params
+    const { network, address, baanxUserId, signal } = params
 
     const response = await getCardTransport().request({
         network,
@@ -178,9 +167,6 @@ export const fetchFundingAddressLink = async (
         method: 'GET',
         path: '/api/v3/baanx/card-address',
         params: { address, baanx_user_id: baanxUserId },
-        headers: addDeviceIntegrityHeader({
-            'x-app-integrity-token': integrityToken,
-        }),
         signal,
     })
     const parsed = fundingAddressLinkResponseSchema.parse(response.data)
