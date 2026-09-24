@@ -46,11 +46,14 @@ export default defineRule({
 
         const en = leafKeys(enRaw)
         const locale = leafKeys(localeRaw)
-        const enLines = keyLines(enRaw)
-        const localeLines = keyLines(localeRaw)
+        // keyLines walks the whole text, and every locale lands on this one file
+        // against a 1s per-file budget, so it runs only once a finding needs a line.
+        let enLines: Map<string, number> | undefined
+        let localeLines: Map<string, number> | undefined
 
         for (const key of en) {
             if (locale.has(key)) continue
+            enLines ??= keyLines(enRaw)
             ctx.emitFact({
                 kind: 'missing',
                 key,
@@ -71,6 +74,7 @@ export default defineRule({
             ) {
                 continue
             }
+            localeLines ??= keyLines(localeRaw)
             ctx.emitFact({
                 kind: 'extra',
                 key,

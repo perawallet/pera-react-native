@@ -100,9 +100,13 @@ export const keyLines = memo((raw): Map<string, number> => {
     const out = new Map<string, number>()
     let i = 0
     let line = 1
+    // JSON allows only these four whitespace characters; a char-code test keeps
+    // this loop cheap in lanekeep's interpreter, where it runs once per character.
+    const isSpace = (c: number): boolean =>
+        c === 32 || c === 10 || c === 13 || c === 9
     const skip = (): void => {
-        while (i < raw.length && /\s/.test(raw.charAt(i))) {
-            if (raw.charAt(i) === '\n') line++
+        while (i < raw.length && isSpace(raw.charCodeAt(i))) {
+            if (raw.charCodeAt(i) === 10) line++
             i++
         }
     }
