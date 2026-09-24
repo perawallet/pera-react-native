@@ -57,7 +57,7 @@ const keystore = createPeraKeystore({
     before: migrationsReady,
 })
 
-let instance: PeraProvider | null = new PeraProvider(
+const instance = new PeraProvider(
     {
         id: 'pera-wallet',
         name: 'Pera Wallet',
@@ -89,17 +89,10 @@ export const getMigrationsReady = (): Promise<MigrationReport> =>
     migrationsReady
 
 /**
- * Returns the provider singleton. Throws if called before `initializeProvider()`.
- * Use the generic parameter to cast to a provider type with extensions applied.
+ * The app-wide provider. It is constructed when this module first loads, so
+ * there is no initialisation step to call and it is never absent.
  */
-export const getProvider = (): PeraProvider => {
-    if (!instance) {
-        throw new Error(
-            'Provider not initialized. Call initializeProvider() during bootstrap.',
-        )
-    }
-    return instance
-}
+export const getProvider = (): PeraProvider => instance
 
 /**
  * The same instance the {@link KeyStoreExtension} holds, so it reflects every
@@ -120,16 +113,6 @@ export const getKeystore = (): ReactNativeKeyStore => keystore
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getKeystoreHooks = (): HookCollection<any> => keystoreHooks
-
-/**
- * Sets the provider singleton. Must be called exactly once during app bootstrap.
- */
-export const initializeProvider = (provider: PeraProvider): void => {
-    if (instance) {
-        throw new Error('Provider already initialized.')
-    }
-    instance = provider
-}
 
 /**
  * Clears all keys from the keystore's persistent storage and reactive store.
@@ -360,11 +343,4 @@ export const runKeystoreMaintenance = async (
     }
 
     return { repair, failedDecodeIds: [...failedDecodeIds] }
-}
-
-/**
- * Resets the provider singleton. Only for use in tests.
- */
-export const resetProvider = (): void => {
-    instance = null
 }

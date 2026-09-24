@@ -23,11 +23,9 @@ import {
 } from 'vitest'
 import { cleanup, screen, waitFor } from '@testing-library/react'
 
-// The real platform package carries the migration types + `StubMigrationService`
-// factory the payload builders below rely on; the unit setup replaces it with a
-// partial constants-only mock (see vitest.setup.ts). Unmock it here — mirrors
-// age-gate.spec.tsx — so the real driver, provider singleton, and test-utils
-// helpers all run against the genuine implementation.
+// The unit setup replaces the platform contract with a partially stubbed mock
+// (see vitest.setup.ts). Unmock it here — mirrors age-gate.spec.tsx — so the
+// real driver and provider singleton run against the genuine implementation.
 vi.unmock('@perawallet/wallet-extension-platform')
 
 // The default driver mock in vitest.setup.ts predates migration and exposes no
@@ -43,14 +41,16 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { getPlatformServices } from '@test-utils/platform-driver-test'
 import { Networks } from '@perawallet/wallet-core-config'
+import type {
+    LegacyAccount,
+    LegacyDeviceIdentifiers,
+    LegacyMigrationData,
+    MigrationService,
+} from '@perawallet/wallet-extension-platform'
 import {
     createStubMigrationService,
     createEmptyLegacyMigrationData,
-    type LegacyAccount,
-    type LegacyDeviceIdentifiers,
-    type LegacyMigrationData,
-    type MigrationService,
-} from '@perawallet/wallet-extension-platform'
+} from '@perawallet/wallet-extension-platform/test-utils'
 import {
     useAccountsStore,
     useAllAccounts,
@@ -150,8 +150,6 @@ const installStubMigrationService = (
         markMigrationComplete: platform => stub.markMigrationComplete(platform),
         clearMigrationComplete: () => stub.clearMigrationComplete(),
         getMigrationPlans: () => stub.getMigrationPlans(),
-        simulateLegacyDatabase: () => stub.simulateLegacyDatabase(),
-        simulatePreSixxAccounts: () => stub.simulatePreSixxAccounts(),
         resetLegacyData: () => stub.resetLegacyData(),
         getCompletedStepVersions: () => stub.getCompletedStepVersions(),
         setCompletedStepVersions: versions =>

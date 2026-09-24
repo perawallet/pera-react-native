@@ -20,7 +20,6 @@ export type {
 export * from './pera-provider'
 export * from './context'
 export * from './singleton'
-export * from './test-platform'
 export {
     PASSKEY_MAIN_KEY_SCHEME,
     passkeyMainKeyId,

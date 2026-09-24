@@ -37,6 +37,10 @@ describe('capability stubs', () => {
         ).resolves.toBe(false)
     })
 
+    it('exposes no migration dev tools, having no legacy store to write', () => {
+        expect(new ChromeMigrationService().devTools).toBeUndefined()
+    })
+
     it('refuses to arm or unwrap, having no OS biometric to bind to', async () => {
         const service = new ChromeBiometricsService()
 
