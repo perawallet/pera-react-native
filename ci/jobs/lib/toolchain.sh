@@ -32,8 +32,9 @@ install_pinned_pnpm() {
   npm install -g "pnpm@${version}"
 }
 
-# Bitrise installs Ruby via asdf from .tool-versions. The pin is exact
-# (unlike Node's major-only one), so no glob or sort is needed.
+# Bitrise installs Ruby via asdf from .tool-versions; a workstation may use
+# rbenv or mise instead. The pin is exact (unlike Node's major-only one), so no
+# glob or sort is needed.
 use_pinned_ruby() {
   local version bin
   version=$(awk '$1 == "ruby" { print $2 }' .tool-versions)
@@ -41,12 +42,16 @@ use_pinned_ruby() {
     echo "pera-ci: no \"ruby\" line found in .tool-versions" >&2
     return 1
   fi
-  bin="$HOME/.asdf/installs/ruby/${version}/bin"
-  if [ ! -d "$bin" ]; then
-    echo "pera-ci: no asdf ruby ${version} installed at $bin" >&2
-    return 1
-  fi
-  export PATH="$bin:$PATH"
+  for bin in "$HOME/.asdf/installs/ruby/${version}/bin" \
+    "$HOME/.rbenv/versions/${version}/bin" \
+    "$HOME/.local/share/mise/installs/ruby/${version}/bin"; do
+    if [ -x "$bin/ruby" ]; then
+      export PATH="$bin:$PATH"
+      return 0
+    fi
+  done
+  echo "pera-ci: ruby ${version} is not installed under asdf, rbenv or mise" >&2
+  return 1
 }
 
 # Mirrors bitrise.yml's "Resolve marketing version" step: the tag is the
