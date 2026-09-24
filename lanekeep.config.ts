@@ -48,6 +48,9 @@ export default defineConfig({
     // graze it). The global budget already covers a rule that's merely slow
     // across the whole run.
     timeouts: { rule: 1000, global: 60000 },
+    // Every existing exception is a single line with a reason; a whole-file
+    // directive would silence rules nobody reviewed it against.
+    suppressions: { forbidFileScope: true },
     namespaces: ['pera'],
     rules: [
         noPrimitiveRnComponents,

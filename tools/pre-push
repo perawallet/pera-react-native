@@ -45,13 +45,25 @@ record_failure() {
 # Run Oxlint checks
 echo "\n${YELLOW}Running code checks...${NC}"
 LINT_LOG=$(mktemp)
-if pnpm run lint > "$LINT_LOG" 2>&1; then
+if pnpm exec turbo run lint > "$LINT_LOG" 2>&1; then
     echo "${GREEN}✓ Code checks passed${NC}"
 else
     echo "${RED}Code checks failed.${NC}"
     record_failure "Lint" "$LINT_LOG" "${YELLOW}You can run 'pnpm lint:fix' to auto-fix some issues.${NC}"
 fi
 rm "$LINT_LOG"
+
+# Project conformance rules. Their own step, so an oxlint failure can't hide
+# their findings.
+echo "\n${YELLOW}Running lanekeep conformance rules...${NC}"
+LANEKEEP_LOG=$(mktemp)
+if pnpm run lint:lanekeep > "$LANEKEEP_LOG" 2>&1; then
+    echo "${GREEN}✓ Conformance rules passed${NC}"
+else
+    echo "${RED}Conformance rules failed.${NC}"
+    record_failure "lanekeep" "$LANEKEEP_LOG" "${YELLOW}You can run 'pnpm lint:fix' to apply its safe fixes.${NC}"
+fi
+rm "$LANEKEEP_LOG"
 
 # Run type-aware lint (no-floating-promises / no-misused-promises).
 # These rules require full type information and are much slower than the

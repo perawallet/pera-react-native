@@ -133,8 +133,12 @@ jobs:
       - name: Install dependencies on cache miss
         run: test -d node_modules || pnpm install --frozen-lockfile
 
-      - name: ESLint
-        run: pnpm run lint
+      - name: oxlint
+        run: pnpm exec turbo run lint
+
+      # Its own step, so an oxlint failure can't hide its findings.
+      - name: lanekeep
+        run: pnpm run lint:lanekeep
 
       - name: Prettier
         run: pnpm run format --check
