@@ -153,6 +153,28 @@ describe('ChromePushNotificationService notification open', () => {
         expect(listener).toHaveBeenCalledWith({ url: 'perawallet://asset/0' })
     })
 
+    it('strips the deeplink param so a reload cannot re-fire it', () => {
+        const href =
+            'chrome-extension://abc/expanded.html?deeplink=perawallet%3A%2F%2Fhome&x=1'
+        Object.defineProperty(globalThis, 'location', {
+            configurable: true,
+            value: { search: new URL(href).search, href },
+        })
+        const replaceState = vi.fn()
+        Object.defineProperty(globalThis, 'history', {
+            configurable: true,
+            value: { state: null, replaceState },
+        })
+
+        new ChromePushNotificationService().addNotificationOpenListener(vi.fn())
+
+        expect(replaceState).toHaveBeenCalledWith(
+            null,
+            '',
+            'chrome-extension://abc/expanded.html?x=1',
+        )
+    })
+
     it('does not fire without a deeplink param', () => {
         setSearch('?requestId=abc')
         const listener = vi.fn()
