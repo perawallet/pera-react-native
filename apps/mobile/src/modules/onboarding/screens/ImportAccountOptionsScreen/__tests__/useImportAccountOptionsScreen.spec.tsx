@@ -643,7 +643,7 @@ describe('useImportAccountOptionsScreen', () => {
         ) => result.current.options.find(o => o.testID === testID)!
 
         beforeEach(() => {
-            Platform.OS = 'web'
+            mockCapabilities.ledgerUsb = true
         })
 
         it('keeps both Ledger rows enabled until the browser check resolves', () => {
