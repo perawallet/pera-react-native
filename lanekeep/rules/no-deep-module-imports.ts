@@ -3,6 +3,7 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { withoutTests } from '../shared/scope.js'
 
 const MODULES_DIR = 'apps/mobile/src/modules/'
 
@@ -83,9 +84,7 @@ export default defineRule({
             good: "// in src/modules/card/...\nimport { AccountPicker } from '@modules/accounts'",
         },
     },
-    gates: {
-        pathMatches: ['**/apps/mobile/src/**'],
-    },
+    gates: withoutTests({ pathMatches: ['**/apps/mobile/src/**'] }),
     // Every form that creates the dependency: static, `export … from`, and a
     // deferred `import()`.
     query: `

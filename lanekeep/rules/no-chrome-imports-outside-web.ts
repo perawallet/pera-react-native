@@ -3,6 +3,7 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { productionSource } from '../shared/scope.js'
 
 // These packages touch the ambient `chrome` global in their module bodies.
 // Importing one for its VALUE pulls that code into the importer's bundle.
@@ -23,7 +24,7 @@ export default defineRule({
             good: "import { getProvider } from '@perawallet/wallet-extension-platform'",
         },
     },
-    gates: {
+    gates: productionSource({
         fileContains: ['-chrome'],
         // apps/browser is web-only by construction, so chrome exists there.
         // extensions/** is mostly non-chrome platform/native packages, but it's
@@ -38,7 +39,7 @@ export default defineRule({
             '**/*.web.ts',
             '**/*.web.tsx',
         ],
-    },
+    }),
     query: '(import_statement (string (string_fragment) @src) @str) @stmt',
     check(ctx, m) {
         const src = m.src

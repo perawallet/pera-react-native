@@ -11,6 +11,7 @@ import {
     styleEntries,
     webVariant,
 } from '../shared/make-styles.js'
+import { productionSource } from '../shared/scope.js'
 
 const IMPORTS_QUERY = `
     (import_statement
@@ -38,11 +39,11 @@ export default defineRule({
             good: "row: { flexDirection: 'row' } // read as styles.row",
         },
     },
-    // Every other rule uses `gates` to skip files its query can't match; this
-    // one can't — the reduce pass below needs a keydef/usage fact from every
-    // file that might import a styles hook, not just files that declare one,
-    // so it deliberately reads the whole corpus and gates internally instead
-    // (see `mayDeclare` below). Do not "fix" this by adding a `gates` clause.
+    // A path gate only. The reduce pass below needs a keydef/usage fact from
+    // every shipped file that might import a styles hook, not just files that
+    // declare one, so a content gate would drop consumers; it gates on content
+    // internally instead (see `mayDeclare` below).
+    gates: productionSource(),
     query: '(program) @prog',
     check(ctx, m) {
         const prog = m.prog

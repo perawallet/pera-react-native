@@ -8,6 +8,7 @@ import {
     isRneuiMakeStyles,
     styleEntries,
 } from '../shared/make-styles.js'
+import { productionSource } from '../shared/scope.js'
 
 const TYPOGRAPHY_PROPS = new Set([
     'fontSize',
@@ -29,7 +30,7 @@ export default defineRule({
             good: "title: { ...getTypography(theme, 'h2') }",
         },
     },
-    gates: { fileContains: ['makeStyles'] },
+    gates: productionSource({ fileContains: ['makeStyles'] }),
     query: MAKE_STYLES_QUERY,
     check(ctx, m) {
         const call = m.call

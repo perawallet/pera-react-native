@@ -18,25 +18,27 @@ import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
 import noWcImportsInConnectionsModule from './lanekeep/rules/no-wc-imports-in-connections-module.js'
 
 export default defineConfig({
-    // Every workspace member lives one level under apps/, packages/ or
-    // extensions/, matching the pnpm-workspace.yaml globs.
-    include: [
-        'apps/*/src/**/*.{ts,tsx}',
-        'packages/*/src/**/*.{ts,tsx}',
-        'extensions/*/src/**/*.{ts,tsx}',
-    ],
+    // Every TS/JS file in the repo. A rule about shipped source narrows itself
+    // with lanekeep/shared/scope.ts; the repo-wide rules need tests and
+    // tooling in view.
+    include: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
     // lanekeep also skips gitignored files on top of the excludes below, so a generated
     // file like packages/config/src/generated-env.ts can match `include` and still never
     // appear here — expected, not a glob bug.
     exclude: [
-        '**/__tests__/**',
-        '**/*.spec.{ts,tsx}',
-        '**/*.test.{ts,tsx}',
         '**/node_modules/**',
         '**/dist/**',
         '**/build/**',
+        '**/coverage/**',
         '**/.expo/**',
-        'packages/devtools/**',
+        'apps/mobile/ios/**',
+        'apps/mobile/android/**',
+        // They break the rules on purpose; each spec runs them with its own
+        // config.
+        'lanekeep/__tests__/fixtures/**',
+        // Worktrees are full repo copies, hidden only by a local
+        // .git/info/exclude.
+        '.claude/**',
     ],
     // The per-rule budget is a MAXIMUM over every file in the corpus, not an
     // average like the global budget — one slow file trips it regardless of

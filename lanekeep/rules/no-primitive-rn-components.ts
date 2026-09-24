@@ -3,6 +3,7 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { productionSource } from '../shared/scope.js'
 
 const BANNED: Record<string, string> = {
     Text: 'PWText',
@@ -26,11 +27,11 @@ export default defineRule({
             good: "import { PWView } from '@components/core'",
         },
     },
-    gates: {
+    gates: productionSource({
         fileContains: ['react-native'],
         // The wrappers themselves must import the primitives they wrap.
         pathNotMatches: ['apps/mobile/src/components/core/**'],
-    },
+    }),
     query: `
         (import_statement
           (import_clause (named_imports (import_specifier) @spec))

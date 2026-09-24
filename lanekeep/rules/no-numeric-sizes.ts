@@ -8,6 +8,7 @@ import {
     isRneuiMakeStyles,
     styleEntries,
 } from '../shared/make-styles.js'
+import { productionSource } from '../shared/scope.js'
 
 const SPACING_PROPS = new Set([
     'padding',
@@ -61,7 +62,7 @@ export default defineRule({
             good: 'container: { padding: theme.spacing.md }',
         },
     },
-    gates: { fileContains: ['makeStyles'] },
+    gates: productionSource({ fileContains: ['makeStyles'] }),
     query: MAKE_STYLES_QUERY,
     check(ctx, m) {
         const call = m.call
