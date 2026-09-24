@@ -33,7 +33,7 @@ export default defineRule({
     card: {
         message: 'style key is never referenced',
         remediation:
-            'Remove the unused style key, or reference it as styles.<key>. If it is reached dynamically (styles[variant]), suppress it with an ignore directive and a reason.',
+            'Remove the unused style key, or reference it as styles.<key>. If it is reached dynamically (styles[variant]), suppress it with an ignore directive and a reason (lanekeep/README.md, "Suppressing").',
         examples: {
             bad: 'unused: { flex: 1 } // nothing reads styles.unused',
             good: "row: { flexDirection: 'row' } // read as styles.row",

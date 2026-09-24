@@ -1,7 +1,7 @@
 # Architectural conformance rules
 
 Project-specific conventions enforced by [lanekeep](https://github.com/fmsouza/lanekeep),
-run as part of `pnpm lint`. Rules are registered in `lanekeep.config.ts`. A project rule
+run as part of `pnpm lint`. Rules are registered in `lanekeep.config.ts`. A new project rule
 that is per-file syntax over files oxlint already lints belongs in oxlint instead: a
 built-in, or the `pera` plugin in `apps/mobile/scripts/oxlint-pera-plugin.mjs`. lanekeep
 takes the rest: rules that need tests or tooling in view, another file's content
@@ -31,7 +31,7 @@ takes the rest: rules that need tests or tooling in view, another file's content
 | `pera/copyright-header`                    | Every `.ts`/`.tsx` file under `apps/*/src`, `packages/*/src`, `extensions/*/src` and `conformance/src`, tests included, opens with the Apache licence header in `shared/copyright.ts`. `pnpm lint:fix` writes it. |
 | `pera/no-work-item-refs`                   | No ticket, milestone or task reference in a code comment, in any TS/JS file. Markdown, shell and YAML are `pnpm lint:docs`'s.                                                                                     |
 
-This is the complete set of `pera/*` rules; none were deliberately excluded.
+This is the complete set of lanekeep's `pera/*` rules.
 
 ## Scope
 
