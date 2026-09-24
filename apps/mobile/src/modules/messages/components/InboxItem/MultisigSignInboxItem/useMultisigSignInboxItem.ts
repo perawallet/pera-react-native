@@ -25,7 +25,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { getSignedResponseCount } from '@modules/multisig/utils'
+import { getSignedResponseCount } from '@modules/multisig'
 
 type MultisigSignItem = Extract<InboxItemModel, { type: 'multisig_sign' }>
 

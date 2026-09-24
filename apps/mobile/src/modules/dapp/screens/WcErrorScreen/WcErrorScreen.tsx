@@ -15,7 +15,7 @@
 import React from 'react'
 import { PWScreen } from '@components/core'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
-import { WalletConnectErrorContent } from '@modules/walletconnect/components/WalletConnectErrorContent'
+import { WalletConnectErrorContent } from '@modules/walletconnect'
 import { useWcErrorScreen } from './useWcErrorScreen'
 
 export const WcErrorScreen = (): React.JSX.Element => {

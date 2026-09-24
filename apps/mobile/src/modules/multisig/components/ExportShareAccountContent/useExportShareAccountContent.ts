@@ -13,7 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { bottomSheetNotifier } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { buildDeeplink } from '@hooks/deeplink/builders'
 import { useLanguage } from '@hooks/useLanguage'
 import { DeeplinkType } from '@hooks/deeplink/types'
 import { shareText } from '@utils/shareText'
@@ -36,7 +36,6 @@ export const useExportShareAccountContent = ({
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const { copyToClipboard } = useClipboard()
-    const { buildDeeplink } = useDeepLink()
 
     const exportUrl = useMemo(
         () =>
@@ -44,7 +43,7 @@ export const useExportShareAccountContent = ({
                 type: DeeplinkType.SHARED_ACCOUNT_IMPORT,
                 address: accountAddress,
             }),
-        [accountAddress, buildDeeplink],
+        [accountAddress],
     )
 
     const handleCopyUrl = useCallback(() => {

@@ -55,7 +55,7 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMenu'
-import { AccountSelection } from '@modules/accounts/components/AccountSelection'
+import { AccountSelection } from '@modules/accounts'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 

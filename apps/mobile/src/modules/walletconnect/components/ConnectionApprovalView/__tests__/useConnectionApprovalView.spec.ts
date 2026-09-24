@@ -50,7 +50,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError }),
 }))
 
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
     useWebView: () => ({ pushWebView }),
 }))
 

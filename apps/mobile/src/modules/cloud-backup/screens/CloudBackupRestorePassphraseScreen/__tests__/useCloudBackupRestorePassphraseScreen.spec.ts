@@ -16,7 +16,8 @@ import { renderHook, act } from '@testing-library/react'
 const navigate = vi.fn()
 const setMnemonic = vi.fn()
 let routeParams: unknown
-vi.mock('@react-navigation/native', () => ({
+vi.mock('@react-navigation/native', async importOriginal => ({
+    ...(await importOriginal<typeof import('@react-navigation/native')>()),
     useNavigation: () => ({ navigate }),
     useRoute: () => ({ params: routeParams }),
 }))

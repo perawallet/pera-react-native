@@ -21,7 +21,7 @@ import {
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
-import { AccountIcon } from '../AccountIcon'
+import { AccountIcon } from '@components/AccountIcon'
 import type { useStyles } from './styles'
 
 type RekeyedToRowProps = {

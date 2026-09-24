@@ -11,7 +11,7 @@
  */
 
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'

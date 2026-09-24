@@ -13,7 +13,7 @@
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 
-import { AssetIcon } from '../AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 
 export type AssetSelectionProps = {

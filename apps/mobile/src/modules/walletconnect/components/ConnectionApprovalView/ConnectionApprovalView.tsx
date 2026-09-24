@@ -21,7 +21,7 @@ import {
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import { PWButton, PWFlatList, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
+import { useStyles } from '@components/ConnectionApproval/styles'
 import { ConnectionApprovalAccountRow } from './ConnectionApprovalAccountRow'
 import { ConnectionApprovalViewHeader } from './ConnectionApprovalViewHeader'
 import { useConnectionApprovalView } from './useConnectionApprovalView'

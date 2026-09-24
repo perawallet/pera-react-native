@@ -29,7 +29,7 @@
 import React, { useEffect, useRef } from 'react'
 import { createHash } from 'crypto'
 import { expect, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, renderHook } from '@testing-library/react'
 import { Address, Transaction, TransactionType } from 'algosdk'
 import {
     useSigningRequest,
@@ -55,8 +55,7 @@ import {
     decodeFromBase64,
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
-import { renderHook } from '@testing-library/react'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { SigningOverlays } from '@modules/signing/shell'
 import { renderWithNavigation } from './renderWithNavigation'
 import {
     ALGO25_TEST_ADDRESS,

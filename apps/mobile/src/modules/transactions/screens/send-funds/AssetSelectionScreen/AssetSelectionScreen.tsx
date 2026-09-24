@@ -19,7 +19,7 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
+import { AccountAssetSelectionList } from '@modules/assets'
 
 const hasBalanceFilter = (item: AssetWithAccountBalance) => {
     return item.amount.gt(Decimal(0))

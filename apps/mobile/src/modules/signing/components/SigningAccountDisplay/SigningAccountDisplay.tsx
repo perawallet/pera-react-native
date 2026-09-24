@@ -18,7 +18,7 @@ import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { PWView, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
+import { AccountWithBalance } from '@components/AccountWithBalance'
 
 type SigningAccountDisplayProps = {
     transaction: PeraDisplayableTransaction

@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BOTTOM_TAB_HEIGHT_ANDROID, BOTTOM_TAB_HEIGHT_IOS } from '@constants/ui'
 import { tabScreens } from './tab-screens'
 import { getWebTabTransition } from './tab-transitions'
-import { AccountDrawer } from '@modules/accounts/components/AccountDrawer'
+import { AccountDrawer } from '@modules/accounts'
 import type { TabBarStackParamList } from './tab-types'
 
 export type { TabBarStackParamList } from './tab-types'

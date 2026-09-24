@@ -14,7 +14,7 @@ import { useCallback, useMemo } from 'react'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useSendFundsStore } from '@modules/transactions/hooks'
+import { useSendFundsStore } from '@modules/transactions'
 
 type UseAccountActionsParams = {
     address: string

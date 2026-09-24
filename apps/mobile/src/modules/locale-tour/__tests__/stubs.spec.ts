@@ -16,7 +16,7 @@ import * as deeplinkHandlerStub from '@hooks/deeplink/handlers/useLocaleTourDeep
 import * as parserStub from '@hooks/deeplink/dev-locale-tour-parser.stub'
 
 import * as pseudoResourcesStub from '../../../i18n/pseudoResources.stub'
-import * as overflowProbeStub from '../hooks/useOverflowProbe.stub'
+import * as overflowProbeStub from '@components/core/PWText/useOverflowProbe.stub'
 import * as tourStub from '../index.stub'
 import * as registerStub from '../register.stub'
 import { getLocaleTourRunner } from '../registry'
@@ -35,7 +35,7 @@ import { getLocaleTourRunner } from '../registry'
 // tests then call the stubs *through* those real signatures.
 
 const tour: typeof import('../index') = tourStub
-const overflowProbe: typeof import('../hooks/useOverflowProbe') =
+const overflowProbe: typeof import('@components/core/PWText/useOverflowProbe') =
     overflowProbeStub
 const pseudoResources: typeof import('../../../i18n/pseudoResources') =
     pseudoResourcesStub

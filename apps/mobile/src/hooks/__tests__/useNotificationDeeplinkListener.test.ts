@@ -55,7 +55,7 @@ vi.mock('../useDeepLink', () => ({
     }),
 }))
 
-vi.mock('@modules/messages/hooks', () => ({
+vi.mock('@modules/messages', () => ({
     getMultisigIntentKind: (type: string | undefined) =>
         type === 'multisig-new-sign-request'
             ? 'sign'

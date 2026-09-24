@@ -19,10 +19,7 @@ import {
 import { BackupAccountType } from '@perawallet/wallet-core-backup'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWRoundIcon, PWText, PWView } from '@components/core'
-import {
-    AccountIcon,
-    accountGlyphForType,
-} from '@modules/accounts/components/AccountIcon'
+import { AccountIcon, accountGlyphForType } from '@components/AccountIcon'
 import { AccountSummaryLine } from './AccountSummaryLine'
 import { useStyles } from './styles'
 

@@ -12,7 +12,7 @@
 
 import { ActivityIndicator } from 'react-native'
 import { PWScreen, PWView } from '@components/core'
-import { PWWebView } from '@modules/webview/components/PWWebView'
+import { PWWebView } from '@modules/webview/browser'
 import { useDiscoverScreen } from './useDiscoverScreen'
 import { useStyles } from './styles'
 

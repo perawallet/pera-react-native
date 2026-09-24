@@ -19,13 +19,13 @@ import { AccountHistoryTitleBar } from './AccountHistoryTitleBar'
 import { HistorySkeleton } from './HistorySkeleton'
 import { useStyles } from './styles'
 import { useAccountHistory } from './useAccountHistory'
-import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
-import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
 import {
+    TransactionListItem,
+    TransactionDateHeader,
     getTransactionRowKey,
     getTransactionRowType,
     type TransactionListRow,
-} from '@modules/transactions/utils/transactionListRows'
+} from '@modules/transactions'
 
 export type AccountHistoryProps = {
     scrollEnabled?: boolean

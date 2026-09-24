@@ -27,8 +27,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
-import { useWebView } from '@modules/webview'
-import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
+import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
 
 export type UseConnectionApprovalViewResult = {
     selectedAccounts: string[]

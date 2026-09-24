@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-asa-inbox'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import type { MessagesStackParamList } from '@modules/messages/routes/types'
+import type { MessagesStackParamList } from '@modules/messages'
 
 type UseAssetTransferRequestsScreenResult = {
     assetRequests: Arc59AssetRequest[]

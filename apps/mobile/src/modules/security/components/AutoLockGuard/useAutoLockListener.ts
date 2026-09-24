@@ -13,10 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePinCode, useSecurityStore } from '@perawallet/wallet-core-security'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
-import {
-    clearAccountsStore,
-    useDeleteAllData,
-} from '@modules/settings/hooks/useDeleteAllData'
+import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
 import { AppState, type AppStateStatus } from 'react-native'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {

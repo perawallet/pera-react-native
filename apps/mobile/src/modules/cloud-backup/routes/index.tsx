@@ -178,3 +178,8 @@ export const CloudBackupStackNavigator = () => {
         </CloudBackupStack.Navigator>
     )
 }
+
+// Restore screens the onboarding import flow mounts in its own stack.
+export { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
+export { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
+export { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'

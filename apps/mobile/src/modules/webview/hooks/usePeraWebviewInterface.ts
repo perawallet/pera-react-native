@@ -67,7 +67,7 @@ import {
     logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useConnectionPairing } from '@modules/connections/hooks/useConnectionPairing'
+import { useConnectionPairing } from '@modules/connections'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'

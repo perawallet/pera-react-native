@@ -104,9 +104,9 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useDeepLink } from '@hooks/useDeepLink'
-import { ConnectionsProvider } from '@modules/connections'
+import { ConnectionsProvider } from '@modules/connections/shell'
 import { BottomSheetManager } from '@modules/bottom-sheet'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { SigningOverlays } from '@modules/signing/shell'
 import { UserPreferences } from '@constants/user-preferences'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'

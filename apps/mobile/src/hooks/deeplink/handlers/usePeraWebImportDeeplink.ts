@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks'
+import { usePeraWebImportFlowStore } from '@modules/onboarding'
 import { navigateToScreen } from '../navigateToScreen'
 import type { LinkSource, PeraWebImportDeeplink } from '../types'
 

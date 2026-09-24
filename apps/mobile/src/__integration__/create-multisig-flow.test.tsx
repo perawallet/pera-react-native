@@ -28,7 +28,7 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { CreateMultisigScreen } from '@modules/multisig/screens/CreateMultisigScreen/CreateMultisigScreen'
 import { SetThresholdScreen } from '@modules/multisig/screens/SetThresholdScreen/SetThresholdScreen'
 import { NameMultisigScreen } from '@modules/multisig/screens/NameMultisigScreen/NameMultisigScreen'
-import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
+import { useMultisigCreationStore } from '@modules/multisig'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import {
     useAccountsStore,

@@ -12,3 +12,5 @@
 
 export { BidaliRoutes } from './BidaliRoutes'
 export type { BidaliStackParamList, BidaliStackScreenProps } from './types'
+// Hosts the Bidali navigator inside a sheet.
+export { BidaliContent } from '../components/BidaliContent'

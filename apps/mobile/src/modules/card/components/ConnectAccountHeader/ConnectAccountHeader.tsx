@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { PWButton, PWText, PWView } from '@components/core'
-import type { AccountMenuContentResult } from '@modules/accounts/components/AccountMenuContent'
+import type { AccountMenuContentResult } from '@modules/accounts'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'

@@ -40,7 +40,7 @@ import {
     mockAlgodStatus,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
-import { LedgerSelectAccountsScreen } from '@modules/ledger/screens/LedgerSelectAccountsScreen'
+import { LedgerSelectAccountsScreen } from '@modules/ledger'
 
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 

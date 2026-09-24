@@ -10,6 +10,18 @@
  limitations under the License
  */
 
-export { useWebViewStore, useWebView, useWebViewStack } from './hooks'
-export type { WebViewRequest } from './hooks'
-export { WebViewOverlay } from './components'
+// PWWebView (`@modules/webview/browser`) and WebViewOverlay (`@modules/webview/shell`)
+// mount the dApp bridge, which reaches signing, connections and deep links; the
+// many consumers that only open a URL through `useWebView` must not pull that in.
+export {
+    useWebView,
+    useWebViewStack,
+    useWebViewStore,
+    type WebViewRequest,
+} from './hooks/useWebViewStore'
+export {
+    isSafeBrowserUrl,
+    isSafeRelativePath,
+    isTrustedWebviewOrigin,
+    toValidatedBrowserUrl,
+} from './hooks/handlers'

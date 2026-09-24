@@ -36,7 +36,7 @@ vi.mock('@modules/webview/components/PWWebView', () => ({
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { MenuScreen } from '@modules/menu/screens/MenuScreen/MenuScreen'
+import { MenuScreen } from '@modules/menu/routes'
 
 describe('gift-card flag gating on the Menu screen', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))

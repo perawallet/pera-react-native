@@ -105,9 +105,10 @@ import {
 } from '@perawallet/wallet-core-connections'
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { ConnectionsProvider, useConnectionPairing } from '@modules/connections'
+import { useConnectionPairing } from '@modules/connections'
+import { ConnectionsProvider } from '@modules/connections/shell'
 import { BottomSheetManager } from '@modules/bottom-sheet'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { SigningOverlays } from '@modules/signing/shell'
 import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/QuantumFeeExplainer'
 import { UserPreferences } from '@constants/user-preferences'
 

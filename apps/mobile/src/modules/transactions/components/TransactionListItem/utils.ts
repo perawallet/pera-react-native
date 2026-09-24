@@ -15,7 +15,7 @@ import {
     getTransactionType,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
+import type { TransactionIconType } from '@components/TransactionIcon'
 
 /**
  * Determines the icon type for a transaction based on its type and direction.

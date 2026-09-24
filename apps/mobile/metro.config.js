@@ -174,7 +174,7 @@ const localeTourStubs = toStubMap(projectRoot, [
     // gallery gate below decides whether it ships.
     'src/modules/locale-tour/index',
     // Overflow instrumentation, called from PWText on every render.
-    'src/modules/locale-tour/hooks/useOverflowProbe',
+    'src/components/core/PWText/useOverflowProbe',
     // Deeplink parse boundary: the stub returns null, so the tour URL
     // falls through to a harmless HOME like any unrecognized path.
     'src/hooks/deeplink/dev-locale-tour-parser',

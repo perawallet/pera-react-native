@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
 import { routeCapabilities } from '@routes/capabilities'
-import { isSafeRelativePath } from '@modules/webview/hooks/handlers'
+import { isSafeRelativePath } from '@modules/webview'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { navigateToScreen } from '../navigateToScreen'

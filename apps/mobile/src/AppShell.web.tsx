@@ -18,7 +18,7 @@ import React from 'react'
 import './i18n'
 // Side-effect import: binds the bottom-sheet registry before the React tree
 // mounts so non-React callers (deep links) can request sheets from boot.
-import '@modules/bottom-sheet/registrations'
+import './bootstrap/bottom-sheet-registrations'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { ThemeProvider, makeStyles } from '@rneui/themed'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'

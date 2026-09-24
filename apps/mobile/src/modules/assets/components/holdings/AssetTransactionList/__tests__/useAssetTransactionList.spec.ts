@@ -21,7 +21,7 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { shareFile } from '@utils/shareFile'
 import { useToast } from '@hooks/useToast'
-import { TransactionFilter } from '../../../../../accounts/components/TransactionsFilterContent/types'
+import { TransactionFilter } from '@modules/accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
