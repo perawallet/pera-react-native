@@ -80,3 +80,15 @@ for dsym in apps/mobile/build/ios/*.dSYM.zip; do
   [ -f "$dsym" ] || continue
   cp "$dsym" "$CI_ARTIFACT_DIR/${NAME}-$(basename "$dsym")"
 done
+
+# The copy the smoke-ios job sends to BrowserStack. Patched here because the
+# patch re-signs, and the signing keychain exists only inside this job. A
+# failure is left to the gate to report rather than failing a build that
+# already shipped.
+if [ "${SMOKE_PATCH_IPA:-false}" = "true" ]; then
+  if ./tools/patch-ipa-for-browserstack.sh "$CI_ARTIFACT_DIR/${NAME}.ipa" "$CI_ARTIFACT_DIR/${NAME}-browserstack.ipa" >/dev/null; then
+    echo "smoke_ipa=$CI_ARTIFACT_DIR/${NAME}-browserstack.ipa" >>"$CI_OUTPUT"
+  else
+    echo "pera-ci: patching the IPA for BrowserStack failed; smoke-ios will fail"
+  fi
+fi
