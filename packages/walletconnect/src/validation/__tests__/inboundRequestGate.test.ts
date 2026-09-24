@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { z } from 'zod'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { AlgorandChainId } from '../../models'
+import { AlgorandWalletConnectChainId } from '../../models'
 import { gateSignTxnRequest, gateSignDataRequest } from '../inboundRequestGate'
 
 // `../schema` re-exports `arc60WireSchema`/`assertArc60RequestWithinLimits`
@@ -56,7 +56,7 @@ const signTxnPayload = (params: unknown) => ({ id: 1, params })
 
 const baseInput = {
     network: Networks.mainnet,
-    sessionChainId: AlgorandChainId.mainnet as number | undefined,
+    sessionChainId: AlgorandWalletConnectChainId.mainnet as number | undefined,
     knownAddresses: KNOWN,
 }
 
@@ -114,7 +114,7 @@ describe('gateSignTxnRequest', () => {
     it('rejects a chain id for the other network', () => {
         const result = gateSignTxnRequest({
             ...baseInput,
-            sessionChainId: AlgorandChainId.testnet,
+            sessionChainId: AlgorandWalletConnectChainId.testnet,
             payload: signTxnPayload([[{ txn: 'dHhu' }]]),
         })
         expect(result.ok).toBe(false)
@@ -186,7 +186,7 @@ describe('gateSignDataRequest', () => {
         const result = gateSignDataRequest({
             payload: { id: 1, params: arc60Payload() },
             network: Networks.mainnet,
-            sessionChainId: AlgorandChainId.mainnet,
+            sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
         expect(result).toEqual({ ok: true })
     })
@@ -195,7 +195,7 @@ describe('gateSignDataRequest', () => {
         const result = gateSignDataRequest({
             payload: { params: arc60Payload() },
             network: Networks.mainnet,
-            sessionChainId: AlgorandChainId.mainnet,
+            sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
         expect(result.ok).toBe(false)
     })
@@ -204,7 +204,7 @@ describe('gateSignDataRequest', () => {
         const result = gateSignDataRequest({
             payload: { id: 1, params: [arc60Payload()] },
             network: Networks.mainnet,
-            sessionChainId: AlgorandChainId.mainnet,
+            sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
         expect(result.ok).toBe(false)
     })
@@ -213,7 +213,7 @@ describe('gateSignDataRequest', () => {
         const result = gateSignDataRequest({
             payload: { id: 1, params: arc60Payload() },
             network: Networks.mainnet,
-            sessionChainId: AlgorandChainId.testnet,
+            sessionChainId: AlgorandWalletConnectChainId.testnet,
         })
         expect(result.ok).toBe(false)
         expect(result).toMatchObject({
@@ -238,7 +238,7 @@ describe('gateSignDataRequest', () => {
         const result = gateSignDataRequest({
             payload: { id: 1, params: {} },
             network: Networks.mainnet,
-            sessionChainId: AlgorandChainId.mainnet,
+            sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
         expect(result.ok).toBe(false)
     })
@@ -250,7 +250,7 @@ describe('gateSignDataRequest', () => {
         const result = gateSignDataRequest({
             payload: { id: 1, params: arc60Payload() },
             network: Networks.mainnet,
-            sessionChainId: AlgorandChainId.mainnet,
+            sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
         // `../schema`'s assertArc60RequestWithinLimits wraps the underlying
         // signing-package error in a WalletConnectSignRequestError with a

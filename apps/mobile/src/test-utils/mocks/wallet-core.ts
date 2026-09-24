@@ -43,7 +43,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => {
         isWalletConnectFocusHint,
         isWalletConnectScheme,
         parseWalletConnectUri,
-        AlgorandChainId: {
+        AlgorandWalletConnectChainId: {
             MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
             TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
         },

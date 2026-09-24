@@ -32,7 +32,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
+import { AlgorandWalletConnectChainId } from '@perawallet/wallet-core-walletconnect'
 import {
     useConnectionRegistry,
     type ConnectionRegistryClient,
@@ -136,7 +136,7 @@ const pairAndHandshake = async (peerName: string, origin: ConnectionOrigin) => {
                         url: 'https://origin-dapp.example',
                         icons: [],
                     },
-                    chainId: AlgorandChainId.mainnet,
+                    chainId: AlgorandWalletConnectChainId.mainnet,
                     permissions: ['algo_signTxn'],
                 },
             ],

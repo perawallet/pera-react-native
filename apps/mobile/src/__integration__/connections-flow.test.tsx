@@ -88,7 +88,7 @@ import {
     useSettingsStore,
 } from '@perawallet/wallet-core-settings'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
+import { AlgorandWalletConnectChainId } from '@perawallet/wallet-core-walletconnect'
 import {
     resetConnectionPairingStateForTesting,
     useConnectionRegistry,
@@ -283,7 +283,7 @@ const pairAndHandshake = async (
                         url: opts?.url ?? 'https://connections-dapp.example',
                         icons: [],
                     },
-                    chainId: AlgorandChainId.mainnet,
+                    chainId: AlgorandWalletConnectChainId.mainnet,
                     permissions: ['algo_signTxn'],
                 },
             ],
@@ -411,7 +411,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                 expect(connector.approveSessionCalls).toHaveLength(1)
             })
             const call = connector.approveSessionCalls[0]
-            expect(call.chainId).toBe(AlgorandChainId.mainnet)
+            expect(call.chainId).toBe(AlgorandWalletConnectChainId.mainnet)
             expect(call.accounts).toEqual([SIGNING_ACCOUNT.address])
 
             const stored = await getProvider().connections.store.list()
