@@ -126,6 +126,7 @@ vi.mock('@perawallet/wallet-core-background', () => ({
     createSyncStorePorts: vi.fn(() => ({})),
     getSyncService: vi.fn(() => ({ start: vi.fn() })),
     initializeSyncService: vi.fn(),
+    usePollingStore: { persist: { rehydrate: vi.fn() } },
 }))
 // The stores are only read through `.getState()` or stashed for
 // `.persist.rehydrate()`, so the app-wide selector-hook mocks are replaced
@@ -150,9 +151,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
     importLegacyDappPermissions,
-}))
-vi.mock('@perawallet/wallet-core-polling', () => ({
-    usePollingStore: { persist: { rehydrate: vi.fn() } },
 }))
 vi.mock('@perawallet/wallet-core-connections', () => ({
     createConnectionRegistry,

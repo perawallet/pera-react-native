@@ -15,8 +15,8 @@ import {
     ADULT_AGE,
     RemoteConfigKeys,
 } from '@perawallet/wallet-extension-platform'
-import type { AgeGateStatus } from '../models'
-import { useAgeGateStore } from '../store'
+import type { AgeGateStatus } from './models'
+import { useAgeGateStore } from './store'
 
 export type ResolveAgeGateResult =
     | { kind: 'resolved'; status: AgeGateStatus }

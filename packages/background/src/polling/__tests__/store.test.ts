@@ -15,6 +15,21 @@ import { renderHook, act } from '@testing-library/react'
 
 const registerStoreMock = vi.hoisted(() => vi.fn())
 
+vi.mock('@perawallet/wallet-extension-provider', () => {
+    const store = new Map<string, string>()
+    return {
+        getProvider: () => ({
+            keyValueStorage: {
+                getItem: (key: string) => store.get(key) ?? null,
+                setItem: (key: string, value: string) => store.set(key, value),
+                removeItem: (key: string) => {
+                    store.delete(key)
+                },
+            },
+        }),
+    }
+})
+
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
@@ -93,6 +108,12 @@ describe('services/polling/store', () => {
             mainnet: null,
             testnet: null,
         })
+    })
+
+    test('persists under the polling-store key so existing installs rehydrate', async () => {
+        const { usePollingStore } = await import('../store')
+
+        expect(usePollingStore.persist.getOptions().name).toBe('polling-store')
     })
 
     test('registers resetState and clearStorage callbacks with the store registry', async () => {

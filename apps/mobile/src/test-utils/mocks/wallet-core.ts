@@ -66,18 +66,6 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-polling', () => ({
-    usePollingStore: {
-        getState: vi.fn(() => ({
-            lastRefreshedRound: null,
-            setLastRefreshedRound: vi.fn(),
-        })),
-    },
-    sendShouldRefreshRequest: vi.fn(() =>
-        Promise.resolve({ refresh: false, round: null }),
-    ),
-}))
-
 vi.mock('@perawallet/wallet-core-background', () => ({
     createSyncStorePorts: vi.fn(() => ({})),
     initializeSyncService: vi.fn(() => ({

@@ -15,7 +15,7 @@ import {
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import type { ShouldRefreshResponse } from '../models'
+import type { ShouldRefreshResponse } from './models'
 
 export const getShouldRefreshEndpoint = () => {
     return '/v1/accounts/should-refresh/'

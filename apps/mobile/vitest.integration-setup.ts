@@ -64,7 +64,6 @@ vi.unmock('@perawallet/wallet-core-assets')
 vi.unmock('@perawallet/wallet-core-projects')
 vi.unmock('@perawallet/wallet-core-walletconnect')
 vi.unmock('@perawallet/wallet-core-swaps')
-vi.unmock('@perawallet/wallet-core-polling')
 vi.unmock('@perawallet/wallet-core-background')
 vi.unmock('@perawallet/wallet-core-settings')
 vi.unmock('@perawallet/wallet-core-contacts')
@@ -102,7 +101,6 @@ vi.unmock('@perawallet/wallet-extension-provider')
 vi.unmock('@perawallet/wallet-core-kms')
 vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-blockchain')
-vi.unmock('@perawallet/wallet-core-age-gate')
 
 // The send/swap pipelines fire a background task that awaits chain confirmation
 // after submission returns. Against MSW that poll never resolves, so it logs

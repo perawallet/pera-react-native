@@ -10,10 +10,18 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-analytics'
+import { http, HttpResponse, type HttpHandler } from 'msw'
+import type { ShouldRefreshResponse } from './models'
 
-// App-agnostic base logging primitive. Each client app (mobile, future cash
-// app, extension, …) owns its own type-safe event catalog and tracking wrappers
-// and forwards to these base functions, so the shared package stays free of any
-// single app's events.
-export { logEvent, createBaseLogger, type LogEventFn } from './log'
+export type MockShouldRefreshParams = {
+    response: ShouldRefreshResponse
+    status?: number
+}
+
+export const mockShouldRefresh = ({
+    response,
+    status = 200,
+}: MockShouldRefreshParams): HttpHandler =>
+    http.post('*/v1/accounts/should-refresh/', () =>
+        HttpResponse.json(response, { status }),
+    )

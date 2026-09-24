@@ -32,6 +32,7 @@ import {
     createSyncStorePorts,
     getSyncService,
     initializeSyncService,
+    usePollingStore,
 } from '@perawallet/wallet-core-background'
 import { canSignWith, useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
@@ -46,7 +47,6 @@ import {
     createDappConnectionHandler,
     importLegacyDappPermissions,
 } from '@perawallet/wallet-core-dapp'
-import { usePollingStore } from '@perawallet/wallet-core-polling'
 import {
     createStorageSessionKeyStore,
     createWalletConnectV1Handler,
