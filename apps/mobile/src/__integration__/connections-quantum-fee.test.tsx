@@ -97,7 +97,7 @@ import {
     useSigningRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
+import { AlgorandWalletConnectChainId } from '@perawallet/wallet-core-walletconnect'
 import {
     useConnectionRegistry,
     type ConnectionPairingResult,
@@ -253,7 +253,7 @@ const fireSessionRequest = (
                         url: 'https://quantum.example',
                         icons: [],
                     },
-                    chainId: AlgorandChainId.mainnet,
+                    chainId: AlgorandWalletConnectChainId.mainnet,
                     permissions: ['algo_signTxn'],
                 },
             ],

@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { AlgorandChainId } from '../../models'
+import { AlgorandWalletConnectChainId } from '../../models'
 import { isChainIdAcceptable } from '../chain'
 
 // The per-network chain-id table lives in `./expectedChainId` and is tested
@@ -20,23 +20,35 @@ import { isChainIdAcceptable } from '../chain'
 // wildcard, the missing-id rejection, and the exact-match comparison.
 describe('isChainIdAcceptable', () => {
     it('accepts the wildcard chain id on any network', () => {
-        expect(isChainIdAcceptable(AlgorandChainId.all, Networks.mainnet)).toBe(
-            true,
-        )
-        expect(isChainIdAcceptable(AlgorandChainId.all, Networks.testnet)).toBe(
-            true,
-        )
+        expect(
+            isChainIdAcceptable(
+                AlgorandWalletConnectChainId.all,
+                Networks.mainnet,
+            ),
+        ).toBe(true)
+        expect(
+            isChainIdAcceptable(
+                AlgorandWalletConnectChainId.all,
+                Networks.testnet,
+            ),
+        ).toBe(true)
     })
 
     it('accepts a chain id matching the active network', () => {
         expect(
-            isChainIdAcceptable(AlgorandChainId.testnet, Networks.testnet),
+            isChainIdAcceptable(
+                AlgorandWalletConnectChainId.testnet,
+                Networks.testnet,
+            ),
         ).toBe(true)
     })
 
     it('rejects a chain id for the other network', () => {
         expect(
-            isChainIdAcceptable(AlgorandChainId.mainnet, Networks.testnet),
+            isChainIdAcceptable(
+                AlgorandWalletConnectChainId.mainnet,
+                Networks.testnet,
+            ),
         ).toBe(false)
     })
 
