@@ -134,10 +134,12 @@ jobs:
         run: test -d node_modules || pnpm install --frozen-lockfile
 
       - name: oxlint
+        id: oxlint
         run: pnpm exec turbo run lint
 
-      # Its own step, so an oxlint failure can't hide its findings.
+      # Runs even when oxlint fails, so an oxlint failure can't hide lanekeep's findings.
       - name: lanekeep
+        if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
         run: pnpm run lint:lanekeep
 
       - name: Prettier
