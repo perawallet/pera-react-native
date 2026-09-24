@@ -80,4 +80,29 @@ describe('pera/copyright-header', () => {
             },
         )
     })
+
+    it('leaves a leading-whitespace file alone under --fix and reports why', async () => {
+        await withScratch(
+            {
+                'apps/demo/src/lead.ts': '\nexport const lead = 1\n',
+            },
+            async dir => {
+                const runner = await createRunner(RULE, `${dir}/**/*.ts`)
+                try {
+                    await runner.fix()
+                    const content = await readFile(
+                        join(REPO_ROOT, dir, 'apps/demo/src/lead.ts'),
+                        'utf8',
+                    )
+                    expect(content).toBe('\nexport const lead = 1\n')
+
+                    const found = await runner.run()
+                    expect(found).toHaveLength(1)
+                    expect(found[0]?.message).toContain('leading blank space')
+                } finally {
+                    await runner.dispose()
+                }
+            },
+        )
+    })
 })

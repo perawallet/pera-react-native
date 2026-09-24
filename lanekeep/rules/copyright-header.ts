@@ -33,6 +33,17 @@ export default defineRule({
         if (file === undefined) return
         if (ctx.fileText.startsWith(COPYRIGHT_HEADER)) return
 
+        // A fix only replaces a node's text, and leading whitespace belongs to
+        // no node, so no fix can land the header at byte 0 here.
+        if (/^\s/.test(ctx.fileText)) {
+            const [leading] = ctx.namedChildren(file)
+            ctx.report(leading ?? file, {
+                message:
+                    'licence header is missing; remove the leading blank space so the fix can add it',
+            })
+            return
+        }
+
         const [first] = ctx.namedChildren(file)
         if (first === undefined) {
             ctx.report(file, {
