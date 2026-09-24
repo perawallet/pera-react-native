@@ -13,8 +13,7 @@
 // The tour driver's only entry point. Reaching past it (importing utils/runTour
 // or utils/steps directly) re-attaches the driver to builds metro.config.js
 // means to exclude it from — see index.stub.ts. The gallery catalog it reads is
-// a separate matter: that already ships in release builds via the developer
-// settings screens, and this swap does not change that.
+// gated separately, with the developer gallery (see metro-build-gates.js).
 export { runTour } from './utils/runTour'
 export { runTourStep } from './utils/runTourStep'
 export { getTourSteps } from './utils/steps'

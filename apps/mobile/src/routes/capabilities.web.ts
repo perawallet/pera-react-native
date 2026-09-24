@@ -11,6 +11,7 @@
  */
 
 import type { RouteCapabilities } from './capabilities-types'
+import { isDeveloperGalleryIncluded } from './developer-gallery'
 
 export type { RouteCapabilities } from './capabilities-types'
 
@@ -39,6 +40,7 @@ export const routeCapabilities: RouteCapabilities = {
     // awkward with a mouse), so the slide/tap choice would be a no-op here.
     confirmationModeSetting: false,
     developerSettings: true, // internal builds need network/debug toggles
+    developerGallery: isDeveloperGalleryIncluded,
     vaultSecuritySettings: true,
     // Off: the vault password already locks the extension, and web has no PIN
     // lock screen, so shake to lock and duress PIN would do nothing.

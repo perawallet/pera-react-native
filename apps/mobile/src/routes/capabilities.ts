@@ -11,6 +11,7 @@
  */
 
 import type { RouteCapabilities } from './capabilities-types'
+import { isDeveloperGalleryIncluded } from './developer-gallery'
 
 export type { RouteCapabilities } from './capabilities-types'
 
@@ -32,6 +33,7 @@ export const routeCapabilities: RouteCapabilities = {
     storeRating: true,
     confirmationModeSetting: true,
     developerSettings: true,
+    developerGallery: isDeveloperGalleryIncluded,
     vaultSecuritySettings: false,
     pin: true,
     quantum: true,

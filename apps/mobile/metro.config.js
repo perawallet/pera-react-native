@@ -17,6 +17,14 @@ const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('fs');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const buildGates = require('./metro-build-gates');
+const {
+    DEVELOPER_GALLERY_MODULES,
+    isDeveloperGalleryIncluded,
+    readBakedAppEnvironment,
+    toStubMap,
+} = buildGates;
 
 // Find the monorepo root (2 levels up from apps/mobile)
 const projectRoot = __dirname;
@@ -154,38 +162,55 @@ const localeTourEnabled = process.env.NODE_ENV === 'development';
 // and a bare directory import that lands on index.ts. Matching after
 // resolution covers all three; matching specifiers would need one rule each
 // and silently miss the next one someone writes.
-const localeTourStubs = Object.fromEntries(
-    [
-        // The load-bearing one. register.ts is the tour driver's only importer
-        // (App.tsx pulls it in for effect), so stubbing it is what detaches
-        // runTour/runTourStep/steps from the graph. The deeplink handler
-        // reaches the driver through locale-tour/registry.ts instead, which
-        // imports nothing — see that file for the cycle this avoids.
-        'src/modules/locale-tour/register',
-        // Backstop for anything that reaches the barrel directly. The gallery
-        // catalog steps.ts reads is NOT detached by any of this: it already
-        // ships in release via the developer settings screens.
-        'src/modules/locale-tour/index',
-        // Overflow instrumentation, called from PWText on every render.
-        'src/modules/locale-tour/hooks/useOverflowProbe',
-        // Deeplink parse boundary: the stub returns null, so the tour URL
-        // falls through to a harmless HOME like any unrecognized path.
-        'src/hooks/deeplink/dev-locale-tour-parser',
-        // Deeplink dispatch. Belt-and-braces since the registry inversion: it
-        // no longer imports the driver, and with register.ts stubbed it would
-        // find no runner and no-op anyway.
-        'src/hooks/deeplink/handlers/useLocaleTourDeeplink',
-        // Pseudolocale bundle (~180 KB generated from `en`).
-        'src/i18n/pseudoResources',
-    ].map(modulePath => [
-        path.resolve(projectRoot, `${modulePath}.ts`),
-        path.resolve(projectRoot, `${modulePath}.stub.ts`),
-    ]),
-);
+const localeTourStubs = toStubMap(projectRoot, [
+    // The load-bearing one. register.ts is the tour driver's only importer
+    // (App.tsx pulls it in for effect), so stubbing it is what detaches
+    // runTour/runTourStep/steps from the graph. The deeplink handler
+    // reaches the driver through locale-tour/registry.ts instead, which
+    // imports nothing — see that file for the cycle this avoids.
+    'src/modules/locale-tour/register',
+    // Backstop for anything that reaches the barrel directly. The gallery
+    // catalog steps.ts reads is not detached by any of this; the developer
+    // gallery gate below decides whether it ships.
+    'src/modules/locale-tour/index',
+    // Overflow instrumentation, called from PWText on every render.
+    'src/modules/locale-tour/hooks/useOverflowProbe',
+    // Deeplink parse boundary: the stub returns null, so the tour URL
+    // falls through to a harmless HOME like any unrecognized path.
+    'src/hooks/deeplink/dev-locale-tour-parser',
+    // Deeplink dispatch. Belt-and-braces since the registry inversion: it
+    // no longer imports the driver, and with register.ts stubbed it would
+    // find no runner and no-op anyway.
+    'src/hooks/deeplink/handlers/useLocaleTourDeeplink',
+    // Pseudolocale bundle (~180 KB generated from `en`).
+    'src/i18n/pseudoResources',
+]);
 
 console.log(
     `[metro] locale tour: ${localeTourEnabled ? 'enabled' : 'stubbed'} (NODE_ENV=${process.env.NODE_ENV ?? 'unset'})`,
 );
+
+// The developer screen gallery ships in every build except production, keyed
+// on the channel baked into generated-env.ts rather than NODE_ENV: staging
+// release builds are NODE_ENV=production too, and QA uses the gallery there.
+const bakedAppEnvironment = readBakedAppEnvironment(
+    path.resolve(monorepoRoot, 'packages/config/src/generated-env.ts'),
+);
+const developerGalleryIncluded = isDeveloperGalleryIncluded({
+    bakedAppEnvironment,
+    appEnv: process.env.APP_ENV,
+});
+
+console.log(
+    `[metro] developer gallery: ${developerGalleryIncluded ? 'included' : 'stubbed'} (appEnvironment=${bakedAppEnvironment ?? 'unset'}, APP_ENV=${process.env.APP_ENV ?? 'unset'})`,
+);
+
+const buildStubs = {
+    ...(localeTourEnabled ? {} : localeTourStubs),
+    ...(developerGalleryIncluded
+        ? {}
+        : toStubMap(projectRoot, DEVELOPER_GALLERY_MODULES)),
+};
 
 // AsyncStorage is not a Pera dependency and must never become one: it would
 // be a second, unencrypted persistence layer beside MMKV. The specifier
@@ -521,8 +546,8 @@ const customResolveRequest = (context, moduleName, platform) => {
 // branch in particular) re-enter Metro's own resolver, not this one.
 const resolveRequest = (context, moduleName, platform) => {
     const resolved = customResolveRequest(context, moduleName, platform);
-    if (localeTourEnabled || resolved?.type !== 'sourceFile') return resolved;
-    const stub = localeTourStubs[resolved.filePath];
+    if (resolved?.type !== 'sourceFile') return resolved;
+    const stub = buildStubs[resolved.filePath];
     return stub ? { type: 'sourceFile', filePath: stub } : resolved;
 };
 

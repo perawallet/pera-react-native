@@ -102,6 +102,20 @@ Anything off on web is off for one of three reasons, and the comment says which.
 Keeping the reason at the flag rather than in a separate document is deliberate: the next person to
 consider flipping it is already reading that line.
 
+### Keeping code out of a build
+
+A capability hides a feature but still ships its code. Code that must not be in a bundle at all is
+dropped by Metro instead: `apps/mobile/metro.config.js` resolves the feature's entry modules to
+sibling `.stub.ts` files, so nothing behind them enters the graph. Two features use this. The locale
+tour exists only when `NODE_ENV` is `development`. The developer screen gallery (settings, developer
+menu) is left out of production builds and kept in development and staging; the decision reads the
+`appEnvironment` baked into `packages/config/src/generated-env.ts` (or `APP_ENV`), not `NODE_ENV`,
+because a staging release bundles with `NODE_ENV=production` too. Its UI entry points read
+`routeCapabilities.developerGallery`, and its screens must be imported only through
+`modules/settings/routes/developer-gallery.ts`, which a test in
+`apps/mobile/__tests__/metro-build-gates.spec.ts` enforces. Metro logs both decisions at startup
+(`[metro] developer gallery: included|stubbed`).
+
 ## Networks without a Pera backend
 
 Only MainNet and TestNet are Pera-backed (`PERA_BACKED_NETWORKS` in
