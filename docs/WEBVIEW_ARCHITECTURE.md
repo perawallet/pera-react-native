@@ -14,7 +14,11 @@ Source of truth in code:
   (`PERA_WEBVIEW_BRIDGE_METHODS`), pinned by
   `apps/mobile/src/modules/webview/hooks/__tests__/bridge-methods.spec.ts`.
   **Changing the method set requires updating this doc and that test.**
-- Handlers: `apps/mobile/src/modules/webview/hooks/usePeraWebviewInterface.ts`
+- Dispatch and the `requireSecure` gate:
+  `apps/mobile/src/modules/webview/hooks/usePeraWebviewInterface.ts`, whose route table is typed
+  against the method set and states each method's trust requirement
+- Handlers: one hook per method or cohesive group under
+  `apps/mobile/src/modules/webview/hooks/bridge/`
 - Page-side injected API:
   `apps/mobile/src/modules/webview/components/PWWebView/injected-scripts.ts`
 - JSON-RPC codec and error codes: `packages/dapp/src/codec.ts`, imported through that package's
