@@ -132,9 +132,9 @@ vi.mock('@hooks/useToast', () => ({
 vi.mock('@modules/webview', async () => ({
     useWebView: () => ({ pushWebView: vi.fn(), removeWebView: vi.fn() }),
     openValidatedBrowserUrl: (
-        await vi.importActual<
-            typeof import('@modules/webview/hooks/handlers')
-        >('@modules/webview/hooks/handlers')
+        await vi.importActual<typeof import('@modules/webview/hooks/handlers')>(
+            '@modules/webview/hooks/handlers',
+        )
     ).openValidatedBrowserUrl,
 }))
 

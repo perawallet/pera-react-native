@@ -18,7 +18,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { stripUrlScheme } from '@perawallet/wallet-core-shared'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
-import { openValidatedBrowserUrl, toValidatedBrowserUrl } from '@modules/webview'
+import {
+    openValidatedBrowserUrl,
+    toValidatedBrowserUrl,
+} from '@modules/webview'
 import { useApprovalArming } from '../../hooks/useApprovalArming.web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
