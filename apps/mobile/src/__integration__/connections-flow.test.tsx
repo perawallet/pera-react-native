@@ -103,7 +103,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SigningOverlays } from '@modules/signing/shell'

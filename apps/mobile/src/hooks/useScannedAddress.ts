@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
-import { parseDeeplink } from '@hooks/deeplink/parser'
+import { parseDeeplink } from '@modules/deeplink/core'
 import { useToast } from '@hooks/useToast'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'

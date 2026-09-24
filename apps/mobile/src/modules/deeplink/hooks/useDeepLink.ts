@@ -12,11 +12,11 @@
 
 import { useCallback, useRef } from 'react'
 import { Linking } from 'react-native'
-import { useToast } from './useToast'
+import { useToast } from '@hooks/useToast'
 import { ALGO_ASSET_ID, logger } from '@perawallet/wallet-core-shared'
-import { parseDeeplink } from './deeplink/parser'
-import { isDevLocaleTourDeeplink } from './deeplink/dev-locale-tour-parser'
-import { DeeplinkType, type LinkSource } from './deeplink/types'
+import { parseDeeplink } from '../parser'
+import { isDevLocaleTourDeeplink } from '../dev-locale-tour-parser'
+import { DeeplinkType, type LinkSource } from '../types'
 import {
     AccountTypes,
     useAccountsStore,
@@ -33,17 +33,17 @@ import {
     getBiometricSecurityLevel,
     hasStrongBiometricOrCredential,
 } from '@perawallet/wallet-core-security'
-import { useLanguage } from './useLanguage'
-import { useIsPeraCardEnabled } from './useIsPeraCardEnabled'
-import { useIsGiftCardsEnabled } from './useIsGiftCardsEnabled'
+import { useLanguage } from '@hooks/useLanguage'
+import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
+import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
 import { routeCapabilities } from '@routes/capabilities'
-import { navigateToScreen } from './deeplink/navigateToScreen'
-import { isPeraOwnedDeeplink } from './deeplink/utils'
+import { navigateToScreen } from '../navigateToScreen'
+import { isPeraOwnedDeeplink } from '../utils'
 import {
     buildAccountDeeplink,
     buildDeeplink,
     type BuildDeeplinkInput,
-} from './deeplink/builders'
+} from '../builders'
 import {
     useAssetOptInDeeplink,
     useBrowserDeeplink,
@@ -54,8 +54,8 @@ import {
     useRecoverAddressDeeplink,
     useSendFundsDeeplink,
     useWalletConnectDeeplink,
-} from './deeplink/handlers'
-import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
+} from '../handlers'
+import { useDeeplinkErrorHandler } from '../handlers/useDeeplinkErrorHandler'
 
 type HandleDeepLink = (
     url: string,

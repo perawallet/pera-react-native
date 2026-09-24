@@ -16,7 +16,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import type { ConnectionOriginSource } from '@perawallet/wallet-extension-connections'
 import { useConnectionPairing } from '@modules/connections'
 import { usePairingProgressStore } from '@modules/walletconnect'
-import { useToast } from '../../useToast'
+import { useToast } from '@hooks/useToast'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 import type { LinkSource, WalletConnectDeeplink } from '../types'
 

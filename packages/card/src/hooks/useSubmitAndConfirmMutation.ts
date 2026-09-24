@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import {
     useAlgorandClient,
     waitForTransactionConfirmation,
@@ -26,14 +26,12 @@ import {
  * balance, pending withdrawal box) right after submitting, and those reads
  * only change once the transaction has landed.
  */
-export const useSubmitAndConfirm = () => {
+export const useSubmitAndConfirmMutation = () => {
     const algokit = useAlgorandClient()
     const { submit } = useSignAndSubmitGroup()
 
-    return useCallback(
-        async (
-            params: SignAndSubmitGroupParams,
-        ): Promise<{ txIds: string[] }> => {
+    return useMutation<{ txIds: string[] }, Error, SignAndSubmitGroupParams>({
+        mutationFn: async params => {
             const result = await submit(params)
             const [txId] = result.txIds
             if (txId !== undefined) {
@@ -41,6 +39,8 @@ export const useSubmitAndConfirm = () => {
             }
             return result
         },
-        [submit, algokit],
-    )
+        // A retry would sign and broadcast the group a second time.
+        retry: false,
+        throwOnError: false,
+    })
 }

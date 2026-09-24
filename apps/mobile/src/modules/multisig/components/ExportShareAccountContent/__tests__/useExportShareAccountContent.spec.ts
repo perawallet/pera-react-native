@@ -24,7 +24,7 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
 }))
 
-vi.mock('@hooks/deeplink/builders', () => ({
+vi.mock('@modules/deeplink/builders', () => ({
     buildDeeplink: ({ address }: { address: string }) =>
         `perawallet://app/shared-account-import/?address=${encodeURIComponent(address)}`,
 }))

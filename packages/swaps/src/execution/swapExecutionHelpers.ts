@@ -20,7 +20,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
-import type { SwapStatusUpdateRequest } from '@perawallet/wallet-core-swaps'
+import type { SwapStatusUpdateRequest } from '../api'
 import {
     generateOrderedUniqueId,
     logger,
@@ -58,8 +58,8 @@ export const QUANTUM_SWAP_PROPOSE_BLOCKED_KEY =
 
 /**
  * A quantum signer was blocked before signing. Carries the i18n key rather
- * than an English sentence: the swap error path displays `error.message`
- * verbatim to the user (see `useSwapExecution`), so a hardcoded English
+ * than an English sentence: the swap error path displays the failure copy
+ * verbatim to the user, so a hardcoded English
  * string there would reach non-English users untranslated — defeating the
  * whole point of these guards, which is that the failure is loud AND
  * correctly attributed. `message` stays English for logs/crash reports.
@@ -250,7 +250,7 @@ export const requestSwapProposal = (
     })
 }
 
-type UpdateSwapStatusFn = (params: {
+export type UpdateSwapStatusFn = (params: {
     swapId: string
     data: SwapStatusUpdateRequest
 }) => Promise<unknown>

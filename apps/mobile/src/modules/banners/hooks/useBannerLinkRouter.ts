@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink'
 import { openValidatedBrowserUrl } from '@modules/webview'
 
 type RouteInput = {

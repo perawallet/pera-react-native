@@ -51,7 +51,7 @@ vi.mock('../useDeepLink', () => ({
     }),
 }))
 
-vi.mock('../deeplink/handlers/useDeeplinkErrorHandler', () => ({
+vi.mock('../../handlers/useDeeplinkErrorHandler', () => ({
     useDeeplinkErrorHandler: () => mockShowError,
 }))
 

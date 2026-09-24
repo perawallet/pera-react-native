@@ -2,7 +2,7 @@
  * Copyright (c) Pera Wallet. All rights reserved.
  */
 
-// Fixture stands in for apps/mobile/src/hooks/deeplink/handlers/useWalletConnectDeeplink.ts
+// Fixture stands in for apps/mobile/src/modules/deeplink/handlers/useWalletConnectDeeplink.ts
 import { walletConnectLogContext } from '@perawallet/wallet-core-walletconnect'
 import type { WalletConnectPairingResult } from '@perawallet/wallet-core-walletconnect'
 

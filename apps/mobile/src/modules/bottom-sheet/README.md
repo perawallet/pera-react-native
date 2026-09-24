@@ -103,7 +103,7 @@ Props are type-checked against the registry entry, so a typo or a missing field
 is a compile-time error.
 
 For a worked example, the `ASSET_OPT_IN` case in
-`apps/mobile/src/hooks/useDeepLink.ts` and `useAddAssetView`'s
+`apps/mobile/src/modules/deeplink/hooks/useDeepLink.ts` and `useAddAssetView`'s
 `handleRequestAdd` both open `OptInConfirmationContent` through
 `requestByType('asset-opt-in', { assetId, accountAddress })`, sharing one typed
 contract.

@@ -177,11 +177,11 @@ const localeTourStubs = toStubMap(projectRoot, [
     'src/components/core/PWText/useOverflowProbe',
     // Deeplink parse boundary: the stub returns null, so the tour URL
     // falls through to a harmless HOME like any unrecognized path.
-    'src/hooks/deeplink/dev-locale-tour-parser',
+    'src/modules/deeplink/dev-locale-tour-parser',
     // Deeplink dispatch. Belt-and-braces since the registry inversion: it
     // no longer imports the driver, and with register.ts stubbed it would
     // find no runner and no-op anyway.
-    'src/hooks/deeplink/handlers/useLocaleTourDeeplink',
+    'src/modules/deeplink/handlers/useLocaleTourDeeplink',
     // Pseudolocale bundle (~180 KB generated from `en`).
     'src/i18n/pseudoResources',
 ]);

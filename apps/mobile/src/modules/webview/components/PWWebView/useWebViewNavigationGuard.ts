@@ -14,10 +14,12 @@ import { useCallback, useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
 
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { PERAWALLET_UNIVERSAL_LINK_HOST } from '@hooks/deeplink/constants'
-import { isOriginGatedDeeplinkType } from '@hooks/deeplink/page-initiated-policy'
-import { parseDeeplink } from '@hooks/deeplink/parser'
-import { useDeepLink } from '@hooks/useDeepLink'
+import {
+    useDeepLink,
+    PERAWALLET_UNIVERSAL_LINK_HOST,
+    isOriginGatedDeeplinkType,
+    parseDeeplink,
+} from '@modules/deeplink'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { isTrustedWebviewOrigin } from '@modules/webview/hooks/handlers'

@@ -59,7 +59,7 @@ vi.mock('@assets/images/camera-overlay.svg', () => {
     }
 })
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(() => ({
         handleDeepLink: vi.fn(),
         isValidDeepLink: vi.fn(() => true),

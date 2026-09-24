@@ -21,10 +21,10 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
+    sortQuotesByAmountOutDesc,
     useProvidersQuery,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
-import { sortQuotesByAmountOutDesc } from '../../hooks/swapQuoteHelpers'
 
 type UseSwapProviderContentParams = {
     quotes: SwapQuote[]

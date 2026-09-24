@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
     handleDeepLink: vi.fn(),
 }))
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({
         isValidDeepLink: mocks.isValidDeepLink,
         handleDeepLink: mocks.handleDeepLink,

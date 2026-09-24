@@ -2493,6 +2493,9 @@ importers:
       '@perawallet/wallet-core-app-integrity':
         specifier: workspace:*
         version: link:../app-integrity
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
@@ -4139,6 +4142,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
@@ -14932,7 +14938,9 @@ snapshots:
       metro-runtime: 0.84.5
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

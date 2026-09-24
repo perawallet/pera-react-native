@@ -17,7 +17,7 @@ import { Linking } from 'react-native'
 const mockHandleDeepLink = vi.fn()
 const mockIsValidDeepLink = vi.fn()
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({
         handleDeepLink: mockHandleDeepLink,
         isValidDeepLink: mockIsValidDeepLink,

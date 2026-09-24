@@ -25,7 +25,7 @@ vi.mock('react-native-vision-camera', () => ({
     }),
 }))
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(() => ({
         handleDeepLink: mockHandleDeepLink,
         isValidDeepLink: mockIsValidDeepLink,
