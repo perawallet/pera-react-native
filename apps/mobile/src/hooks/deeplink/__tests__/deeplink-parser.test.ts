@@ -180,6 +180,51 @@ describe('Deeplink Parser - Main Parser', () => {
     })
 })
 
+describe('Deeplink Parser - universal-link origin', () => {
+    it('matches an upper-case scheme and host, keeping the query case', () => {
+        expect(
+            parseDeeplink(
+                `HTTPS://PERAWALLET.APP/qr/perawallet/asset/opt-in?account=${TEST_ADDRESS}&asset=31566704`,
+            ),
+        ).toMatchObject({
+            type: DeeplinkType.ASSET_OPT_IN,
+            assetId: '31566704',
+            address: TEST_ADDRESS,
+        })
+    })
+
+    it('keeps the case of the path it rewrites', () => {
+        expect(
+            parseDeeplink(
+                `HTTPS://perawallet.app/qr/perawallet/${TEST_ADDRESS}`,
+            ),
+        ).toMatchObject({
+            type: DeeplinkType.ADDRESS_ACTIONS,
+            address: TEST_ADDRESS,
+        })
+    })
+
+    it('matches an upper-case WalletConnect universal link', () => {
+        const result = parseDeeplink(
+            'HTTPS://PERAWALLET.APP/qr/perawallet-wc/wc?uri=wc%3A7f6e504bfad60b485450578e05678ed3e8e8c4751d3c6160be17160d63ec90f9%402%3Frelay-protocol%3Dirn%26symKey%3D587d5484ce2a2a6ee3ba1962fdd7e8588e06200c46823bd18fbd67def96ad303',
+        )
+        expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
+    })
+
+    it('matches the /qr/ prefix only at the start of the path and case-sensitively', () => {
+        expect(
+            parseDeeplink(
+                `https://perawallet.app/x/qr/perawallet/app/swap/?address=${TEST_ADDRESS}`,
+            ),
+        ).toBeNull()
+        expect(
+            parseDeeplink(
+                `https://perawallet.app/QR/perawallet/${TEST_ADDRESS}`,
+            ),
+        ).toBeNull()
+    })
+})
+
 describe('Deeplink Parser - WalletConnect routing', () => {
     it('parses WalletConnect URI', () => {
         const result = parseDeeplink(
