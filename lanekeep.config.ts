@@ -4,6 +4,7 @@
 
 import { defineConfig } from 'lanekeep'
 
+import copyrightHeader from './lanekeep/rules/copyright-header.js'
 import errorMessageKeyExists from './lanekeep/rules/error-message-key-exists.js'
 import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
 import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outside-web.js'
@@ -36,6 +37,7 @@ export default defineConfig({
         // They break the rules on purpose; each spec runs them with its own
         // config.
         'lanekeep/__tests__/fixtures/**',
+        'lanekeep/__tests__/scratch-*/**',
         // Worktrees are full repo copies, hidden only by a local
         // .git/info/exclude.
         '.claude/**',
@@ -65,5 +67,6 @@ export default defineConfig({
         errorMessageKeyExists,
         errorParamsMatchCopy,
         noUnusedStyleKeys,
+        copyrightHeader,
     ],
 })
