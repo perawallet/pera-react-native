@@ -34,6 +34,10 @@ describe('lanekeep/shared/locale', () => {
         })
     })
 
+    it('fails fast instead of hanging on an unterminated string', () => {
+        expect(() => keyLines('{"a": "x')).toThrow()
+    })
+
     it('lists every leaf whatever its value type, not just strings', () => {
         expect([...leafKeys(RAW)].sort()).toEqual([
             'a.b',

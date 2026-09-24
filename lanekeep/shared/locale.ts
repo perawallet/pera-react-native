@@ -109,7 +109,8 @@ export const keyLines = memo((raw): Map<string, number> => {
     const readString = (): string => {
         const start = i
         i++
-        while (raw.charAt(i) !== '"') i += raw.charAt(i) === '\\' ? 2 : 1
+        while (i < raw.length && raw.charAt(i) !== '"')
+            i += raw.charAt(i) === '\\' ? 2 : 1
         i++
         return JSON.parse(raw.slice(start, i)) as string
     }

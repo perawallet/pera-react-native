@@ -69,8 +69,9 @@ export default defineRule({
             )
             const raw = ctx.readFile(enPath)
             if (raw === undefined) return
+            const keys = leafKeys(raw)
             const lines = keyLines(raw)
-            for (const key of leafKeys(raw)) {
+            for (const key of keys) {
                 ctx.emitFact({
                     kind: 'key',
                     key,
