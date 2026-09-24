@@ -36,6 +36,7 @@ takes the rest: rules that need tests or tooling in view, another file's content
 | `pera/no-i18n-integrity-suppressions`      | The i18n integrity rules above can't be suppressed: a missing, extra or unused key has no legitimate exception.                                                                                                   |
 | `pera/pq-library-seam`                     | Only `packages/kms/src/crypto/pq` imports `falcon-1024` or `@joe-p/react-native-falcon`, in any import form; build configs, tests, e2e and `tools/` are out of scope.                                             |
 | `pera/no-keystore-meta-package`            | Nothing imports the `@algorandfoundation/keystore` meta-package, in any import form; use the specific keystore package.                                                                                           |
+| `pera/no-retired-quantum-custody`          | The names of the pre-keystore quantum custody design don't reappear, in code, comments or strings.                                                                                                                |
 
 This is the complete set of lanekeep's `pera/*` rules.
 

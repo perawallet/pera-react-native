@@ -17,6 +17,7 @@ import noI18nIntegritySuppressions from './lanekeep/rules/no-i18n-integrity-supp
 import noKeystoreMetaPackage from './lanekeep/rules/no-keystore-meta-package.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
+import noRetiredQuantumCustody from './lanekeep/rules/no-retired-quantum-custody.js'
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
 import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
 import noUnusedTranslationKeys from './lanekeep/rules/no-unused-translation-keys.js'
@@ -82,5 +83,6 @@ export default defineConfig({
         noI18nIntegritySuppressions,
         pqLibrarySeam,
         noKeystoreMetaPackage,
+        noRetiredQuantumCustody,
     ],
 })
