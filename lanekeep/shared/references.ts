@@ -27,6 +27,17 @@ const asQueryString = (source: string): string =>
 export const referencesQuery = (
     pattern: RegExp,
 ): { typescript: string; tsx: string } => {
+    // The prefilter runs `pattern.source` through tree-sitter's Rust regex
+    // engine (Unicode-aware `\b`/`\d`, no JS regex flags reach it), so `check`
+    // re-tests every candidate token with the real JS regex via ownText.
+    // Flags such as `i` would silently stop applying at the prefilter while
+    // still applying in `check`, so refuse them here rather than let a
+    // pattern match inconsistently between the two passes.
+    if (pattern.flags !== '') {
+        throw new Error(
+            `referencesQuery: flags on ${String(pattern)} don't reach the query's prefilter`,
+        )
+    }
     const build = (kinds: string[]): string =>
         `([${kinds.join(' ')}] @token (#match? @token "${asQueryString(pattern.source)}"))`
     return {
