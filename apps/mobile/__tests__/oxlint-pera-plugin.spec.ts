@@ -150,10 +150,11 @@ describe('pera/dev-gallery-entry-points', () => {
     const lintIn = (file: string, visitor: string, node: Node) => {
         const report = vi.fn()
         const rule = plugin.rules['dev-gallery-entry-points']
-        const visitors = rule.create({
-            report,
-            filename: `/repo/apps/mobile/${file}`,
-        })
+        const visitors: Partial<Record<string, (node: Node) => void>> =
+            rule.create({
+                report,
+                filename: `/repo/apps/mobile/${file}`,
+            })
         visitors[visitor]?.(node)
         return report
     }
