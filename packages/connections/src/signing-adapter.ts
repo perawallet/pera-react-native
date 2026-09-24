@@ -187,64 +187,25 @@ const handoffPayloadId = (correlationId: string): number | undefined => {
     return Number.isSafeInteger(parsed) ? parsed : undefined
 }
 
-/**
- * use-wallet v5 dApps set the ARC-60 signer to the connected account's auth
- * address, which is never in `authorizedAccounts` itself, so the rekey hop is
- * accepted here; the pipeline's SIWA validation re-checks the binding.
- */
-const isArc60AuthorizedSigner = (
-    signer: string,
-    authorizedAccounts: string[],
-    accounts: WalletAccount[],
-): boolean =>
-    authorizedAccounts.includes(signer) ||
-    accounts.some(
-        account =>
-            account.rekeyAddress === signer &&
-            authorizedAccounts.includes(account.address),
-    )
+type DataSignPayload =
+    | Pick<Arc60SignRequest, 'type' | 'stdSigData' | 'metadata'>
+    | Pick<ArbitraryDataSignRequest, 'type' | 'data'>
 
-// ARC-60 deep validation (scope, domain binding, SIWA) is not repeated here;
-// the signing pipeline runs it for every ARC-60 request regardless of transport.
-const enqueueArc60Request = (
+// ARC-60 and legacy arbitrary-data requests share one wire answer.
+const enqueueDataSignRequest = (
     message: RequestMessage,
-    payload: Arc60SignableData,
+    payload: DataSignPayload,
     deps: EnqueueInboundRequestDeps,
 ): void => {
-    const { accounts, addSignRequest, removeSignRequest, onError } = deps
-    const { stdSigData, metadata } = payload
-    const { signer } = stdSigData
-
-    if (
-        !isArc60AuthorizedSigner(signer, message.authorizedAccounts, accounts)
-    ) {
-        declineRequest(message, new Error('Invalid signer'), onError)
-        return
-    }
-
-    const account = accounts.find(a => a.address === signer)
-    // Account-local: an ARC-60 signature verifies against the signer's own
-    // key, so a keyless rekeyed signer is refused rather than signed for by
-    // its auth account. Watch and multisig accounts fail it too.
-    if (!account || !canSignArc60(account)) {
-        declineRequest(
-            message,
-            new Error('Signer cannot sign ARC-60 payloads'),
-            onError,
-        )
-        return
-    }
-
-    const signRequest: Arc60SignRequest = {
+    const { addSignRequest, removeSignRequest, onError } = deps
+    const signRequest: Arc60SignRequest | ArbitraryDataSignRequest = {
+        ...payload,
         id: generateOrderedUniqueId(),
-        type: 'arc60',
         transport: 'callback',
         sourceType: message.sourceType,
         transportId: message.connectionId,
         sourceMetadata: message.peer,
         verifiedOrigin: message.verifiedOrigin,
-        stdSigData,
-        metadata,
         approve: async (signed: PeraArbitraryDataSignResult[]) => {
             await message.respond({
                 type: 'sign-data',
@@ -270,6 +231,61 @@ const enqueueArc60Request = (
     }
     addSignRequest(signRequest)
     trackRequest(deps, message, () => removeSignRequest(signRequest))
+}
+
+/**
+ * use-wallet v5 dApps set the ARC-60 signer to the connected account's auth
+ * address, which is never in `authorizedAccounts` itself, so the rekey hop is
+ * accepted here; the pipeline's SIWA validation re-checks the binding.
+ */
+const isArc60AuthorizedSigner = (
+    signer: string,
+    authorizedAccounts: string[],
+    accounts: WalletAccount[],
+): boolean =>
+    authorizedAccounts.includes(signer) ||
+    accounts.some(
+        account =>
+            account.rekeyAddress === signer &&
+            authorizedAccounts.includes(account.address),
+    )
+
+// ARC-60 deep validation (scope, domain binding, SIWA) is not repeated here;
+// the signing pipeline runs it for every ARC-60 request regardless of transport.
+const enqueueArc60Request = (
+    message: RequestMessage,
+    payload: Arc60SignableData,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const { accounts, onError } = deps
+    const { stdSigData, metadata } = payload
+    const { signer } = stdSigData
+
+    if (
+        !isArc60AuthorizedSigner(signer, message.authorizedAccounts, accounts)
+    ) {
+        declineRequest(message, new Error('Invalid signer'), onError)
+        return
+    }
+
+    const account = accounts.find(a => a.address === signer)
+    // Account-local: an ARC-60 signature verifies against the signer's own
+    // key, so a keyless rekeyed signer is refused rather than signed for by
+    // its auth account. Watch and multisig accounts fail it too.
+    if (!account || !canSignArc60(account)) {
+        declineRequest(
+            message,
+            new Error('Signer cannot sign ARC-60 payloads'),
+            onError,
+        )
+        return
+    }
+
+    enqueueDataSignRequest(
+        message,
+        { type: 'arc60', stdSigData, metadata },
+        deps,
+    )
 }
 
 // Chain id is out of scope: a v1 wire concept only the legacy v1 hook path
@@ -297,7 +313,7 @@ const enqueueLegacyDataRequest = (
     items: PeraArbitraryDataMessage[],
     deps: EnqueueInboundRequestDeps,
 ): void => {
-    const { accounts, addSignRequest, removeSignRequest, onError } = deps
+    const { accounts, onError } = deps
     if (items.length === 0) {
         declineRequest(message, new Error('Invalid data found'), onError)
         return
@@ -322,40 +338,11 @@ const enqueueLegacyDataRequest = (
         }
     }
 
-    const signRequest: ArbitraryDataSignRequest = {
-        id: generateOrderedUniqueId(),
-        type: 'arbitrary-data',
-        transport: 'callback',
-        sourceType: message.sourceType,
-        transportId: message.connectionId,
-        sourceMetadata: message.peer,
-        verifiedOrigin: message.verifiedOrigin,
-        data: items,
-        approve: async (signed: PeraArbitraryDataSignResult[]) => {
-            await message.respond({
-                type: 'sign-data',
-                signatures: signed.map(item => item.signature),
-            })
-            forgetRequest(deps, message)
-        },
-        reject: async (reason: RejectReason = { kind: 'user' }) => {
-            forgetRequest(deps, message)
-            if (reason.kind === 'softReject') {
-                await message.reject(reason.error)
-                removeSignRequest(signRequest)
-                return
-            }
-            rejectInBackground(message, new Error('User rejected'))
-        },
-        error: async (error: Error) => {
-            if (failRequest(message, error, onError)) {
-                forgetRequest(deps, message)
-                removeSignRequest(signRequest)
-            }
-        },
-    }
-    addSignRequest(signRequest)
-    trackRequest(deps, message, () => removeSignRequest(signRequest))
+    enqueueDataSignRequest(
+        message,
+        { type: 'arbitrary-data', data: items },
+        deps,
+    )
 }
 
 // ARC-60 payloads are objects and the legacy shape is an array; Array.isArray is the whole discriminator.
