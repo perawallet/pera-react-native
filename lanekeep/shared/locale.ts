@@ -2,14 +2,17 @@
  * Copyright (c) Pera Wallet. All rights reserved.
  */
 
+import type { EmittedFact, ReduceLocation } from 'lanekeep'
+
 export const EN_JSON = 'apps/mobile/src/i18n/locales/en.json'
 
-/**
- * Whether a reduce-phase finding can point at a key's own line in a locale
- * JSON file, which lanekeep never discovers. When it can't, findings fall back
- * to the locale's import line in locales.ts.
- */
-export const REPORT_IN_JSON = true
+/** A reduce finding on a key's own line in a locale JSON file, which lanekeep never discovers. */
+// lanekeep's runtime rejects a reduce location without a column, whatever its type says.
+export const jsonLocation = (fact: EmittedFact): ReduceLocation => ({
+    file: String(fact.json),
+    line: Number(fact.jsonLine),
+    column: 1,
+})
 
 /** i18next plural suffixes. */
 export const PLURAL_SUFFIXES: readonly string[] = [
@@ -30,6 +33,7 @@ export const pluralBase = (key: string): string | undefined => {
 // A rule re-reads its file through ctx.readFile on every call, so the cache
 // records the dependency; only the derived value is shared, keyed by the exact
 // text. Length first, a cheap reject before the full comparison.
+// Callers share the returned value; treat it as read-only.
 const memo = <T>(compute: (raw: string) => T): ((raw: string) => T) => {
     const slots: { raw: string; value: T }[] = []
     return raw => {
