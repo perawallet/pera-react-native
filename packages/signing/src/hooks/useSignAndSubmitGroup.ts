@@ -21,6 +21,9 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
     generateOrderedUniqueId,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -33,9 +36,12 @@ import { useSigningRequest } from './useSigningRequest'
  * signing sheet for a headless request. Callers should treat this
  * as a non-fatal cancellation rather than a backend failure.
  */
-export class UserRejectedSigningError extends Error {
+export class UserRejectedSigningError extends AppError {
     constructor() {
-        super('User rejected signing')
+        super('User rejected signing', {
+            severity: ErrorSeverity.LOW,
+            category: ErrorCategory.TRANSACTIONS,
+        })
         this.name = 'UserRejectedSigningError'
     }
 }

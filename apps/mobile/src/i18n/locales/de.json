@@ -1032,13 +1032,6 @@
                 "body": "Der Server hatte ein Problem bei der Verarbeitung deiner Anfrage. Bitte versuche es erneut."
             }
         },
-        "validation": {
-            "generic": "Die Daten scheinen ungültig zu sein.",
-            "invalid_address": "Die Adresse scheint ungültig zu sein: {{address}}",
-            "invalid_amount": "Der Betrag scheint ungültig zu sein: {{amount}}",
-            "invalid_mnemonic": "Die Wiederherstellungsphrase scheint ungültig zu sein.",
-            "required_field": "Ein Pflichtfeld fehlt: {{field}}"
-        },
         "transaction": {
             "title": "Bei der Verarbeitung dieser Transaktion ist ein Fehler aufgetreten",
             "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht."

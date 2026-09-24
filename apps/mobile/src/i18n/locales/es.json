@@ -1040,13 +1040,6 @@
                 "body": "El servidor tuvo un problema al procesar tu solicitud. Inténtalo de nuevo."
             }
         },
-        "validation": {
-            "generic": "Los datos no parecen ser válidos.",
-            "invalid_address": "La dirección no parece ser válida: {{address}}",
-            "invalid_amount": "El cantidad no parece ser válido: {{amount}}",
-            "invalid_mnemonic": "La passphrase de recuperación no parece ser válida.",
-            "required_field": "Falta un campo obligatorio: {{field}}"
-        },
         "transaction": {
             "title": "Error al procesar esta transacción",
             "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa."

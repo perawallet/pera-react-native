@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import { HTTPError, TimeoutError } from 'ky'
 import { isTransientNetworkError } from '../query-client'
-import { PeraNetworkError } from '../../errors/network'
+import { NoConnectionError, PeraNetworkError } from '../../errors/network'
 
 const makeHttpError = (status: number): HTTPError => {
     const response = new Response(null, { status })
@@ -74,5 +74,9 @@ describe('isTransientNetworkError — PeraNetworkError delegation', () => {
         expect(isTransientNetworkError(new PeraNetworkError('unknown'))).toBe(
             false,
         )
+    })
+
+    it('is false for the fail-fast NoConnectionError, so it is still logged', () => {
+        expect(isTransientNetworkError(new NoConnectionError())).toBe(false)
     })
 })

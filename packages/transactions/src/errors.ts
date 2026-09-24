@@ -125,15 +125,22 @@ export type RekeyErrorReason =
  * caught values are not guaranteed to be `Error` instances, and downstream
  * consumers rely on it being one.
  */
-export class RekeyError extends Error {
+export class RekeyError extends AppError {
     readonly reason: RekeyErrorReason
-    readonly originalError?: Error
 
     constructor(reason: RekeyErrorReason, originalError?: unknown) {
-        super(`Rekey failed: ${reason}`)
+        super(
+            `Rekey failed: ${reason}`,
+            {
+                severity:
+                    reason === 'user_rejected'
+                        ? ErrorSeverity.LOW
+                        : ErrorSeverity.MEDIUM,
+                category: ErrorCategory.TRANSACTIONS,
+            },
+            originalError === undefined ? undefined : toError(originalError),
+        )
         this.name = 'RekeyError'
         this.reason = reason
-        this.originalError =
-            originalError === undefined ? undefined : toError(originalError)
     }
 }

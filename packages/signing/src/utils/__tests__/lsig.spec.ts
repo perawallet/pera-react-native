@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import {
     LogicSig,
     LogicSigAccount,
@@ -89,5 +90,23 @@ describe('encodeDelegatedLsigAccount', () => {
         expect(() =>
             encodeDelegatedLsigAccount(program, sig, signer.addr.toString()),
         ).toThrow(LsigSignatureVerificationError)
+    })
+})
+
+describe('LsigSignatureVerificationError', () => {
+    it('is a non-recoverable AppError with no user-facing key', () => {
+        const error = new LsigSignatureVerificationError('ADDR')
+
+        expect(error).toBeInstanceOf(AppError)
+        expect(error.name).toBe('LsigSignatureVerificationError')
+        expect(error.message).toBe(
+            'Delegated LogicSig signature failed verification for ADDR',
+        )
+        expect(error.metadata).toMatchObject({
+            category: ErrorCategory.TRANSACTIONS,
+            recoverable: false,
+            retryable: false,
+        })
+        expect(error.metadata.messageKey).toBeUndefined()
     })
 })
