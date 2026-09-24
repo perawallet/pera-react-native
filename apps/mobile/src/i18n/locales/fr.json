@@ -2031,6 +2031,7 @@
             "pair_ledger_description": "Je souhaite récupérer un compte Algorand sécurisé par mon hardware wallet Ledger via Bluetooth",
             "pair_ledger_usb_title": "Associer un Ledger via USB",
             "pair_ledger_usb_description": "Je souhaite récupérer un compte Algorand sécurisé par mon hardware wallet Ledger via un câble USB",
+            "pair_ledger_unsupported_description": "Non pris en charge par ce navigateur ou cet appareil",
             "pera_web_title": "Importer depuis Pera Web",
             "pera_web_description": "Je souhaite importer des comptes Algorand depuis Pera Web",
             "cloud_backup_title": "Importer depuis la sauvegarde cloud",
