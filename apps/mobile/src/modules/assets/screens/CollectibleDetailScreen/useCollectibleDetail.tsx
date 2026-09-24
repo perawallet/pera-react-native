@@ -43,7 +43,7 @@ import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { routeCapabilities } from '@routes/capabilities'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { openValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
+import { openValidatedBrowserUrl } from '@modules/webview'
 import { OptOutConfirmationContent } from '@modules/accounts'
 import {
     SendFundsContent,

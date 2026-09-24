@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useDeepLink } from '@hooks/useDeepLink'
-import { openValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
+import { openValidatedBrowserUrl } from '@modules/webview'
 
 type RouteInput = {
     url: string | null

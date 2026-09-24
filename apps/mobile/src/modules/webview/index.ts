@@ -23,5 +23,6 @@ export {
     isSafeBrowserUrl,
     isSafeRelativePath,
     isTrustedWebviewOrigin,
+    openValidatedBrowserUrl,
     toValidatedBrowserUrl,
 } from './hooks/handlers'

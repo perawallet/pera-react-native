@@ -33,7 +33,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { trackEvent, OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { openValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
+import { openValidatedBrowserUrl } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { OptInConfirmationContent } from '@modules/assets'

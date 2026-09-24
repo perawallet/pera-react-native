@@ -99,8 +99,13 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 // Shadow the webview barrel so its transitive `AccountTypes` import (via
 // usePeraWebviewInterface) doesn't load against the partial accounts mock.
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview', async () => ({
     useWebView: () => ({ pushWebView: vi.fn(), removeWebView: vi.fn() }),
+    openValidatedBrowserUrl: (
+        await vi.importActual<
+            typeof import('@modules/webview/hooks/handlers')
+        >('@modules/webview/hooks/handlers')
+    ).openValidatedBrowserUrl,
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
