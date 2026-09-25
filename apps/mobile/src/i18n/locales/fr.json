@@ -2613,8 +2613,9 @@
         },
         "close_account": {
             "title": "Fermer le compte",
-            "body": "Ce compte ne contient aucun actif ajouté. Envoyer la totalité du solde fermera le compte sur le réseau Algorand.",
+            "body": "Ce compte ne contient aucun actif ajouté : vous pouvez donc le fermer et envoyer la totalité du solde. Certaines plateformes d’échange n’acceptent pas les transactions qui ferment un compte. Si vous gardez le compte ouvert, le solde minimum de {{minBalance}} ALGO y reste.",
             "confirm": "Fermer le compte et envoyer",
+            "keep_open": "Envoyer sans fermer",
             "warning": "Cette transaction fermera votre compte sur le réseau Algorand.",
             "success_title": "Compte fermé",
             "success_subtitle": "Votre compte a été fermé sur le réseau Algorand."

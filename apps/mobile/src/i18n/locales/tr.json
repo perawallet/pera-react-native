@@ -2613,8 +2613,9 @@
         },
         "close_account": {
             "title": "Hesabı kapat",
-            "body": "Bu hesapta eklenmiş varlık yok. Bakiyenin tamamını göndermek, hesabı Algorand ağında kapatır.",
+            "body": "Bu hesapta eklenmiş varlık olmadığından hesabı kapatıp bakiyenin tamamını gönderebilirsin. Bazı borsalar hesap kapatan işlemleri kabul etmez. Hesabı açık tutarsan minimum bakiye olan {{minBalance}} ALGO hesapta kalır.",
             "confirm": "Hesabı kapat ve gönder",
+            "keep_open": "Kapatmadan gönder",
             "warning": "Bu işlem, hesabını Algorand ağında kapatacak.",
             "success_title": "Hesap kapatıldı",
             "success_subtitle": "Hesabın Algorand ağında kapatıldı."
