@@ -10,23 +10,27 @@
  limitations under the License
  */
 
-/**
- * Platform-neutral on purpose: this file has no `.web` twin, unlike
- * `useSettingsDeveloperNodeSettingsScreen(.web).ts`. A bare import of THAT
- * pair resolves to whichever platform variant Metro/webpack pick for the
- * importing bundle, which is exactly why `isValidEndpoint` used to be
- * duplicated three times (once per file that needed it) instead of shared
- * via a cross-import between the two screen-hook variants. Importing this
- * module instead is unambiguous on every platform.
- */
+import { config } from '@perawallet/wallet-core-config'
+
+// Mirrors the extension CSP's connect-src (apps/browser/scripts/csp.mjs), which
+// blocks any other http: request, so a node saved here would silently fail.
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1'])
+
 export const isValidEndpoint = (value: string): boolean => {
     try {
-        const { protocol } = new URL(value)
-        return protocol === 'http:' || protocol === 'https:'
+        const { protocol, hostname } = new URL(value)
+        if (protocol === 'https:') {
+            return true
+        }
+        return (
+            protocol === 'http:' &&
+            LOOPBACK_HOSTS.has(hostname) &&
+            config.appEnvironment !== 'production'
+        )
     } catch {
         return false
     }
 }
 
 export const INVALID_ENDPOINT_MESSAGE_KEY =
-    'settings.developer.node_settings.invalid_url'
+    'settings.developer.node_settings.invalid_https_url'
