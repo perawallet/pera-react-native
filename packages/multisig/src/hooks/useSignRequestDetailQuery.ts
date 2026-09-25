@@ -14,10 +14,9 @@ import { useCallback } from 'react'
 import {
     useQuery,
     useQueryClient,
-    type FetchStatus,
     type RefetchOptions,
 } from '@tanstack/react-query'
-import type { Nullable, Network } from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
 import type { MultisigSignRequest } from '../models'
 import { getSignRequestDetail, type SignRequestDetailResponse } from '../api'
 import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '../constants'
@@ -47,10 +46,7 @@ const PENDING_POLL_INTERVAL = 5000
 export type UseSignRequestDetailQueryResult = {
     data: MultisigSignRequest | undefined
     isLoading: boolean
-    isSuccess: boolean
     isError: boolean
-    error: Nullable<Error>
-    fetchStatus: FetchStatus
     refetch: (options?: RefetchOptions) => unknown
 }
 
@@ -110,10 +106,7 @@ export const useSignRequestDetailQuery = ({
     return {
         data: query.data,
         isLoading: query.isLoading,
-        isSuccess: query.isSuccess,
         isError: query.isError,
-        error: query.error,
-        fetchStatus: query.fetchStatus,
         refetch: query.refetch,
     }
 }

@@ -53,8 +53,7 @@ describe('useIsMultisigAddressQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(result.current.data?.isMultisig).toBe(true)
+        await waitFor(() => expect(result.current.data?.isMultisig).toBe(true))
     })
 
     test('returns isMultisig=false when endpoint resolves false', async () => {
@@ -69,8 +68,7 @@ describe('useIsMultisigAddressQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(result.current.data?.isMultisig).toBe(false)
+        await waitFor(() => expect(result.current.data?.isMultisig).toBe(false))
     })
 
     test('does not fetch when address is empty', () => {
@@ -83,7 +81,7 @@ describe('useIsMultisigAddressQuery', () => {
             { wrapper },
         )
 
-        expect(result.current.fetchStatus).toBe('idle')
+        expect(result.current.isFetching).toBe(false)
         expect(mocks.checkIsMultisigAddress).not.toHaveBeenCalled()
     })
 
@@ -98,7 +96,7 @@ describe('useIsMultisigAddressQuery', () => {
             { wrapper },
         )
 
-        expect(result.current.fetchStatus).toBe('idle')
+        expect(result.current.isFetching).toBe(false)
         expect(mocks.checkIsMultisigAddress).not.toHaveBeenCalled()
     })
 })

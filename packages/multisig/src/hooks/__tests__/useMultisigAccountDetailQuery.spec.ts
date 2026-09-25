@@ -66,9 +66,10 @@ describe('useMultisigAccountDetailQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() =>
+            expect(result.current.data?.customId).toBe('msig-1'),
+        )
 
-        expect(result.current.data?.customId).toBe('msig-1')
         expect(result.current.data?.address).toBe('MSIG_ADDR_ABC')
         expect(result.current.data?.threshold).toBe(2)
         expect(result.current.data?.participantAddresses).toEqual([
@@ -115,7 +116,9 @@ describe('useMultisigAccountDetailQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
 
-        expect(result.current.error?.message).toBe('Network error')
+        await expect(
+            mocks.getMultisigAccountDetail.mock.results[0]?.value,
+        ).rejects.toThrow('Network error')
     })
 
     test('does not fetch when enabled is false', async () => {
@@ -132,7 +135,6 @@ describe('useMultisigAccountDetailQuery', () => {
         )
 
         expect(result.current.isLoading).toBe(false)
-        expect(result.current.fetchStatus).toBe('idle')
         expect(mocks.getMultisigAccountDetail).not.toHaveBeenCalled()
     })
 
@@ -148,7 +150,7 @@ describe('useMultisigAccountDetailQuery', () => {
             { wrapper },
         )
 
-        expect(result.current.fetchStatus).toBe('idle')
+        expect(result.current.isLoading).toBe(false)
         expect(mocks.getMultisigAccountDetail).not.toHaveBeenCalled()
     })
 
