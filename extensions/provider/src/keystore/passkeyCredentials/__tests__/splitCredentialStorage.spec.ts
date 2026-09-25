@@ -21,12 +21,15 @@ import { base64, base64url } from '@scure/base'
 vi.mock('@algorandfoundation/react-native-keystore', async () => {
     const driver =
         await import('../../../../node_modules/@algorandfoundation/react-native-keystore/dist/storage/driver.js')
+    const errors =
+        await import('../../../../node_modules/@algorandfoundation/react-native-keystore/dist/errors.js')
     const formats =
         await import('../../migrations/__fixtures__/keystoreFormats')
     return {
         MATERIAL_PREFIX: driver.MATERIAL_PREFIX,
         METADATA_PREFIX: driver.METADATA_PREFIX,
         serializeKey: driver.serializeKey,
+        MasterKeyNotFoundError: errors.MasterKeyNotFoundError,
         sealData: formats.sealData,
         openData: formats.openData,
         decode: formats.decode,
@@ -35,6 +38,7 @@ vi.mock('@algorandfoundation/react-native-keystore', async () => {
 
 import { fakeStorage } from '../../migrations/__fixtures__/fakeStorage'
 import {
+    decode,
     openData,
     sealData,
 } from '../../migrations/__fixtures__/keystoreFormats'
@@ -48,6 +52,7 @@ import {
     verifySplitProviderCredential,
     writeSplitProviderCredential,
 } from '../splitCredentialStorage'
+import { splitFlatPasskeyCredentials } from '../splitFlatPasskeyCredentials'
 
 const MASTER_KEY = new Uint8Array(32).fill(7)
 const subtle = globalThis.crypto.subtle
@@ -92,6 +97,13 @@ const decoded = (
     metadata: { ...metadata },
     ...overrides,
 })
+
+/**
+ * `k/` as Pera's patch of the Android provider writes it: org.json output of
+ * `saveCredential` then `recordCredentialUsage`, which escapes `/` as `\/`.
+ */
+const ANDROID_K_RECORD = String.raw`{"id":"+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/8=","type":"hd-derived-p256","algorithm":"P256","extractable":false,"keyUsages":["sign"],"name":"Passkey: https:\/\/webauthn.io","publicKey":{"$u8":"BAQEBA=="},"metadata":{"origin":"https:\/\/webauthn.io","userHandle":"alice","userId":"dXNlcg","count":3,"parentKeyId":"hd-1-passkey-main","scheme":"pbkdf2-p256","derivationVersion":1,"lastUsedAt":1727259000000},"privateKeyEnc":{"iv":"AAAAAAAAAAAAAAAA"}}`
+const ANDROID_ID = (JSON.parse(ANDROID_K_RECORD) as { id: string }).id
 
 const base64urlJson = (json: object): string =>
     base64url.encode(new TextEncoder().encode(JSON.stringify(json)))
@@ -263,5 +275,63 @@ describe('verifySplitProviderCredential', () => {
                 otherMaterial,
             ),
         ).toBe(false)
+    })
+})
+
+// A `k/` record JS cannot read fails hydration at the next cold start, so the
+// provider's own output is pinned from the JS side.
+describe('the k/ record the Android provider writes', () => {
+    it('decodes to the fields JS reads', () => {
+        const record = decode(
+            ANDROID_K_RECORD,
+        ) as unknown as FlatProviderCredential
+
+        expect(record.publicKey).toEqual(new Uint8Array([4, 4, 4, 4]))
+        expect(record.metadata?.origin).toBe('https://webauthn.io')
+        expect(record.metadata?.lastUsedAt).toBe(1727259000000)
+        expect(record.privateKeyEnc?.iv).toBe(IV)
+    })
+
+    it('is left as written by the split pass', async () => {
+        const storage = fakeStorage({ [`k/${ANDROID_ID}`]: ANDROID_K_RECORD })
+
+        const result = await splitFlatPasskeyCredentials({
+            storage,
+            subtle,
+            masterKeyForRead: async () => Uint8Array.from(MASTER_KEY),
+        })
+
+        expect(result.normalized).toEqual([])
+        expect(storage.entries()).toEqual({
+            [`k/${ANDROID_ID}`]: ANDROID_K_RECORD,
+        })
+    })
+
+    it('verifies against the split JS builds for the same credential', async () => {
+        const storage = fakeStorage({
+            [`k/${ANDROID_ID}`]: ANDROID_K_RECORD,
+            [`m/${ANDROID_ID}`]: await sealData(
+                subtle,
+                MASTER_KEY,
+                base64.encode(CIPHERTEXT),
+            ),
+        })
+        const split = splitProviderCredential(
+            ANDROID_ID,
+            decoded({
+                id: ANDROID_ID,
+                privateKey: undefined,
+                privateKeyEnc: { iv: IV, data: base64.encode(CIPHERTEXT) },
+            }),
+        )!
+
+        expect(
+            await verifySplitProviderCredential(
+                { storage, subtle },
+                MASTER_KEY,
+                ANDROID_ID,
+                split,
+            ),
+        ).toBe(true)
     })
 })
