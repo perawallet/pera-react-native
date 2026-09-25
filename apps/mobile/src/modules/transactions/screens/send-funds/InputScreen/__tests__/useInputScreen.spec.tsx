@@ -441,6 +441,55 @@ describe('useInputScreen', () => {
         expect(mockSetAmount).not.toHaveBeenCalled()
     })
 
+    describe('handlePaste', () => {
+        it.each([
+            ['12.5', '12.5'],
+            ['12,5', '12.5'],
+            [' 0.000001 ', '0.000001'],
+            ['.5', '0.5'],
+            ['007', '7'],
+        ])('accepts %j as %j', (pasted, expected) => {
+            const { result } = renderHook(() => useInputScreen())
+
+            act(() => {
+                result.current.handlePaste(pasted)
+            })
+
+            expect(result.current.cryptoValue).toBe(expected)
+        })
+
+        it.each(['abc', '1.2.3', '1,234.56', '1.0000001', '-1', '1e3', '.'])(
+            'ignores %j and keeps the current amount',
+            pasted => {
+                const { result } = renderHook(() => useInputScreen())
+                act(() => {
+                    result.current.handleKey('4')
+                })
+
+                act(() => {
+                    result.current.handlePaste(pasted)
+                })
+
+                expect(result.current.cryptoValue).toBe('4')
+            },
+        )
+
+        it('rejects a decimal for an asset without decimals', () => {
+            mockSendFundsState.selectedAssetId = '1'
+            const { result } = renderHook(() => useInputScreen())
+
+            act(() => {
+                result.current.handlePaste('2.5')
+            })
+            expect(result.current.cryptoValue).toBeUndefined()
+
+            act(() => {
+                result.current.handlePaste('3')
+            })
+            expect(result.current.cryptoValue).toBe('3')
+        })
+    })
+
     it('treats leading decimal point as 0.', () => {
         const { result } = renderHook(() => useInputScreen())
         act(() => {

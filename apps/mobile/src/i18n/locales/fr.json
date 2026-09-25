@@ -2562,6 +2562,7 @@
         "input": {
             "max": "MAX",
             "next": "Suivant",
+            "amount_label": "Montant",
             "error_title": "Montant invalide",
             "error_body": "Veuillez saisir un montant supérieur à {{min}}.",
             "exceeds_max_title": "Solde insuffisant",

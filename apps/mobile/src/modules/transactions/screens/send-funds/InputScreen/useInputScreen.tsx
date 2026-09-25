@@ -471,6 +471,33 @@ export const useInputScreen = () => {
         [setValueAndRef],
     )
 
+    // A pasted amount replaces the current one, but only when it reads one way:
+    // digits with at most one '.' or ',' and no more decimals than the asset
+    // has. Anything else (letters, "1,234.56", "1.2.3") is dropped, never guessed.
+    const handlePaste = useCallback(
+        (text: string) => {
+            const match = /^(\d*)(?:[.,](\d*))?$/.exec(text.trim())
+            if (!match || !/\d/.test(text)) return
+            const [, whole, fraction] = match
+            const decimals = assetDecimalsRef.current
+            if (fraction !== undefined && decimals === 0) return
+            if (
+                fraction !== undefined &&
+                decimals != null &&
+                fraction.length > decimals
+            ) {
+                return
+            }
+            const integerPart = (whole || '0').replace(/^0+(?=\d)/, '')
+            setValueAndRef(
+                fraction === undefined
+                    ? integerPart
+                    : `${integerPart}.${fraction}`,
+            )
+        },
+        [setValueAndRef],
+    )
+
     return {
         asset,
         accountAssetBalance,
@@ -480,6 +507,7 @@ export const useInputScreen = () => {
         setMax,
         handleNext,
         handleKey,
+        handlePaste,
         // True while a deeplink-prefilled external receiver's opt-in status is
         // being resolved on-chain after the user confirms the amount — the
         // screen shows a spinner until the router navigates onward.
