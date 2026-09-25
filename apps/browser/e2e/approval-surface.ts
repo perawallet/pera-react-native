@@ -177,13 +177,15 @@ const TAP_TO_CONFIRM_GAP_MS = 400 + 100
 /**
  * Arms an approval-window action: input inside the window, then the delay.
  * A bare `click()` would deadlock, as Playwright waits for the control to be
- * enabled before it moves the pointer that enables it.
+ * enabled before it moves the pointer that enables it. `force` for the same
+ * reason: a disabled react-native-web touchable is `pointer-events: none`, so
+ * hover's hit-test never passes, while the move still reaches the window.
  */
 export const armApprovalAction = async (
     approvalPage: Page,
     control: Locator,
 ): Promise<void> => {
-    await control.hover()
+    await control.hover({ force: true })
     await approvalPage.waitForTimeout(APPROVAL_ARMING_DELAY_MS)
     await expect(control).not.toHaveAttribute('aria-disabled', 'true')
 }
