@@ -1,5 +1,5 @@
 {
-  "name": "@perawallet/wallet-core-blockchain",
+  "name": "@perawallet/wallet-core-chain-shared",
   "version": "0.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,10 +8,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./arc0001/limits": {
-      "types": "./dist/arc0001/limits.d.ts",
-      "default": "./dist/arc0001/limits.js"
     }
   },
   "scripts": {
@@ -22,22 +18,11 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@algorandfoundation/algokit-utils": "catalog:",
-    "algosdk": "catalog:",
-    "@babel/runtime": "catalog:",
-    "@noble/hashes": "catalog:",
-    "@perawallet/wallet-core-chain-shared": "workspace:*",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
-    "@perawallet/wallet-core-database": "workspace:*",
-    "@perawallet/wallet-core-remote-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
-    "@tanstack/react-query": "catalog:",
-    "decimal.js": "catalog:",
-    "drizzle-orm": "catalog:",
     "react": "catalog:",
-    "tweetnacl": "catalog:",
-    "zod": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {
@@ -45,11 +30,9 @@
     "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
-    "falcon-1024": "catalog:",
+    "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "msw": "catalog:",
-    "react-dom": "catalog:"
+    "vitest": "catalog:"
   }
 }

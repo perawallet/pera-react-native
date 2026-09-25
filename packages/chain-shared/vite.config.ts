@@ -10,15 +10,14 @@
  limitations under the License
  */
 
-export * from './store'
-export {
-    useNetworkStore,
-    getCustomNetworkConfig,
-    isCustomNetworkConfigured,
-    setCustomNetwork,
-    clearCustomNetwork,
-    mergePersistedNetwork,
-    selectAlgorandCustomNetwork,
-    type CustomNetworkConfig,
-    type CustomNetwork,
-} from '@perawallet/wallet-core-chain-shared'
+import { defineConfig } from 'vite'
+import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
+
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: resolve(__dirname, 'src/index.ts'),
+        fileName: () => 'index.js',
+    }),
+)

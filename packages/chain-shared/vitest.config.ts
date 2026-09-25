@@ -28,19 +28,9 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
         alias: {
-            // Source, not dist: chain-shared's dist would import the provider's
-            // dist and call a different getProvider() than the one mocked here.
-            '@perawallet/wallet-core-chain-shared': path.resolve(
-                __dirname,
-                '../chain-shared/src/index.ts',
-            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',
-            ),
-            '@perawallet/wallet-extension-platform-driver': path.resolve(
-                __dirname,
-                '../../extensions/platform-driver/src/index.ts',
             ),
         },
     },

@@ -38,6 +38,20 @@ describe('hooks/useNetwork', () => {
         vi.resetModules()
     })
 
+    test('a persisted v1 selection reaches useNetwork through the re-export', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        getProvider().keyValueStorage.setItem(
+            'network-store',
+            JSON.stringify({ state: { network: 'testnet' }, version: 1 }),
+        )
+        const { useNetwork } = await import('../useNetwork')
+
+        const { result } = renderHook(() => useNetwork())
+
+        expect(result.current.network).toBe('testnet')
+    })
+
     test('should return current network and setter', async () => {
         const { useNetworkStore } = await import('../../store')
         const { useNetwork } = await import('../useNetwork')

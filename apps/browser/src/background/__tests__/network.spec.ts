@@ -63,7 +63,52 @@ describe('parseActiveNetwork', () => {
     })
 })
 
+describe('parseActiveNetwork across store versions', () => {
+    const v1 = (network: string) =>
+        JSON.stringify({ state: { network }, version: 1 })
+    const v2 = (network: string) =>
+        JSON.stringify({
+            state: {
+                selectedNetworkByChain: { algorand: network },
+                customNetworksByChain: { algorand: [] },
+            },
+            version: 2,
+        })
+
+    it.each([
+        ['mainnet', 'mainnet'],
+        ['testnet', 'testnet'],
+        ['betanet', 'betanet'],
+        ['custom', 'custom'],
+        ['fnet', 'mainnet'],
+        ['nope', 'mainnet'],
+    ])('%s resolves to %s from either shape', (persisted, expected) => {
+        expect(parseActiveNetwork(v1(persisted))).toBe(expected)
+        expect(parseActiveNetwork(v2(persisted))).toBe(expected)
+    })
+
+    it('falls back to state.network when the v2 map is missing', () => {
+        const raw = JSON.stringify({
+            state: { network: 'testnet', customNetworksByChain: {} },
+            version: 2,
+        })
+
+        expect(parseActiveNetwork(raw)).toBe('testnet')
+    })
+})
+
 describe('readActiveNetwork', () => {
+    it('reads a v2 envelope from chrome.storage.local', async () => {
+        const fake = createLocalChromeFake()
+        globalThis.chrome = fake.chrome
+        fake.local.set(
+            'kv:network-store',
+            '{"state":{"selectedNetworkByChain":{"algorand":"betanet"}},"version":2}',
+        )
+
+        expect(await readActiveNetwork()).toBe('betanet')
+    })
+
     it('reads the active network from chrome.storage.local', async () => {
         const fake = createLocalChromeFake()
         globalThis.chrome = fake.chrome

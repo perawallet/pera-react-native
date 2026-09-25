@@ -10,15 +10,18 @@
  limitations under the License
  */
 
-export * from './store'
-export {
-    useNetworkStore,
-    getCustomNetworkConfig,
-    isCustomNetworkConfigured,
-    setCustomNetwork,
-    clearCustomNetwork,
-    mergePersistedNetwork,
-    selectAlgorandCustomNetwork,
-    type CustomNetworkConfig,
-    type CustomNetwork,
-} from '@perawallet/wallet-core-chain-shared'
+import { useMemo } from 'react'
+import type {
+    ChainId,
+    ChainScope,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '../store/network-store'
+
+export const useSelectedNetworkId = (chainId: ChainId): NetworkId =>
+    useNetworkStore(state => state.selectedNetworkByChain[chainId])
+
+export const useSelectedScope = (chainId: ChainId): ChainScope => {
+    const networkId = useSelectedNetworkId(chainId)
+    return useMemo(() => ({ chainId, networkId }), [chainId, networkId])
+}
