@@ -171,6 +171,36 @@ export const expectApprovalSurfaceUrl = (approvalPage: Page): void => {
  */
 const APPROVAL_ARMING_DELAY_MS = 500
 
+/** Mirrors `TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY` in `constants/ui.ts`, plus slack. */
+const TAP_TO_CONFIRM_GAP_MS = 400 + 100
+
+/**
+ * Arms an approval-window action: input inside the window, then the delay.
+ * A bare `click()` would deadlock, as Playwright waits for the control to be
+ * enabled before it moves the pointer that enables it. `force` for the same
+ * reason: a disabled react-native-web touchable is `pointer-events: none`, so
+ * hover's hit-test never passes, while the move still reaches the window.
+ */
+export const armApprovalAction = async (
+    approvalPage: Page,
+    control: Locator,
+): Promise<void> => {
+    await control.hover({ force: true })
+    await approvalPage.waitForTimeout(APPROVAL_ARMING_DELAY_MS)
+    await expect(control).not.toHaveAttribute('aria-disabled', 'true')
+}
+
+/** Arms the web tap-to-confirm, then taps twice with the required gap. */
+export const tapToConfirm = async (
+    approvalPage: Page,
+    control: Locator,
+): Promise<void> => {
+    await armApprovalAction(approvalPage, control)
+    await control.click()
+    await approvalPage.waitForTimeout(TAP_TO_CONFIRM_GAP_MS)
+    await control.click()
+}
+
 /**
  * Arms Connect, then selects the first account unless one is already selected.
  * Connect stays disabled until the arming delay passes and input lands inside

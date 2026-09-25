@@ -1116,9 +1116,6 @@
             "overview_tab": "Aperçu",
             "card_details_tab": "Détails de la carte",
             "balance": "Solde",
-            "spendable_per_tx": "≈{{amount}} {{currency}} disponible",
-            "spendable_info_title": "Disponible par transaction",
-            "spendable_info_body": "Le montant maximum d'un seul achat : le solde de votre carte plus votre solde de remboursements et, avec le financement automatique, jusqu'à {{limit}} depuis votre compte lié.",
             "withdraw": "Retirer",
             "add_funds": "Ajouter des fonds",
             "credits_title": "Crédits",
@@ -1243,8 +1240,6 @@
             "balance": "Solde : {{amount}} USDC",
             "confirm_title": "Confirmer la réclamation",
             "confirm_button": "Confirmer",
-            "fee_label": "Frais de réseau",
-            "fee_loading": "Estimation...",
             "success_title": "Réclamation envoyée",
             "history_title": "Activité"
         },
@@ -2618,8 +2613,9 @@
         },
         "close_account": {
             "title": "Fermer le compte",
-            "body": "Ce compte ne contient aucun actif ajouté. Envoyer la totalité du solde fermera le compte sur le réseau Algorand.",
+            "body": "Ce compte ne contient aucun actif ajouté : vous pouvez donc le fermer et envoyer la totalité du solde. Certaines plateformes d’échange n’acceptent pas les transactions qui ferment un compte. Si vous gardez le compte ouvert, le solde minimum de {{minBalance}} ALGO y reste.",
             "confirm": "Fermer le compte et envoyer",
+            "keep_open": "Envoyer sans fermer",
             "warning": "Cette transaction fermera votre compte sur le réseau Algorand.",
             "success_title": "Compte fermé",
             "success_subtitle": "Votre compte a été fermé sur le réseau Algorand."
@@ -2751,6 +2747,7 @@
                 "fetch_from_node": "Récupérer depuis le nœud",
                 "fetch_failed": "Nœud injoignable. Saisissez les valeurs manuellement.",
                 "invalid_url": "Saisissez une URL http:// ou https:// valide",
+                "invalid_https_url": "Saisissez une URL https:// valide",
                 "genesis_required": "Récupérez ou saisissez le hash genesis",
                 "genesis_id_required": "Récupérez ou saisissez l’ID genesis",
                 "save": "Enregistrer et basculer",
@@ -4047,9 +4044,6 @@
         },
         "approval": {
             "placeholder": "Surface d’approbation — à venir dans M4."
-        },
-        "expanded": {
-            "redirecting": "Ouverture d’un nouvel onglet…"
         },
         "reauth": {
             "title": "Confirmez votre identité",

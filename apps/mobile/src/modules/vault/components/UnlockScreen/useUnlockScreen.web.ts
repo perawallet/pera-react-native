@@ -80,7 +80,8 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
     // Absolute end time (not exposed) drives the countdown below — mirrors
     // useLockScreen.ts, which keys the single interval off lockoutEndTime
     // rather than the tick count, so it isn't torn down and recreated
-    // every second.
+    // every second. On performance.now(), like the vault's own lockout, so
+    // moving the system clock can't clear the countdown.
     const [lockoutEndTime, setLockoutEndTime] = useState<number | null>(null)
     const [lockoutSeconds, setLockoutSeconds] = useState(0)
 
@@ -116,7 +117,7 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
         void getLockoutRemainingSeconds().then(seconds => {
             if (cancelled) return
             if (seconds > 0) {
-                setLockoutEndTime(Date.now() + seconds * 1000)
+                setLockoutEndTime(performance.now() + seconds * 1000)
                 // Set lockoutSeconds directly, in the same batch as
                 // isLockoutChecked below — otherwise it only gets its first
                 // value from the countdown effect below reacting to
@@ -143,7 +144,7 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
         const updateRemaining = (): void => {
             const remaining = Math.max(
                 0,
-                Math.ceil((lockoutEndTime - Date.now()) / 1000),
+                Math.ceil((lockoutEndTime - performance.now()) / 1000),
             )
             setLockoutSeconds(remaining)
             if (remaining === 0) setLockoutEndTime(null)
@@ -164,7 +165,9 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
             setPassword('')
         } catch (error) {
             if (error instanceof VaultLockedOutError) {
-                setLockoutEndTime(Date.now() + error.remainingSeconds * 1000)
+                setLockoutEndTime(
+                    performance.now() + error.remainingSeconds * 1000,
+                )
                 setPassword('')
             } else if (error instanceof VaultCorruptedError) {
                 setHasCorruptedVaultError(true)
@@ -173,7 +176,8 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
                 setHasError(true)
                 setPassword('')
                 const seconds = await getLockoutRemainingSeconds()
-                if (seconds > 0) setLockoutEndTime(Date.now() + seconds * 1000)
+                if (seconds > 0)
+                    setLockoutEndTime(performance.now() + seconds * 1000)
             } else {
                 throw error
             }
@@ -192,7 +196,9 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
             await unlockWithPasskey()
         } catch (error) {
             if (error instanceof VaultLockedOutError) {
-                setLockoutEndTime(Date.now() + error.remainingSeconds * 1000)
+                setLockoutEndTime(
+                    performance.now() + error.remainingSeconds * 1000,
+                )
             } else if (error instanceof VaultCorruptedError) {
                 setHasCorruptedVaultError(true)
             } else if (

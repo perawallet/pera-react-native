@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { argon2id } from '@noble/hashes/argon2.js'
 import { base64 } from '@scure/base'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import {
@@ -172,13 +173,13 @@ describe('vault', () => {
         const blob = JSON.parse(String(raw))
         expect(blob.version).toBe(2)
         expect(blob.kdf).toBe('Argon2id')
-        // Pinned against OWASP's baseline (19 MiB, t=2, p=1). Memory-hardness
-        // is the point — see the constants' doc comment.
-        expect(blob.m).toBe(19_456)
-        expect(blob.t).toBe(2)
+        // Pinned at 64 MiB, t=3, p=1. Memory-hardness is the point; see the
+        // constants' doc comment.
+        expect(blob.m).toBe(65_536)
+        expect(blob.t).toBe(3)
         expect(blob.p).toBe(1)
-        expect(ARGON2_MEMORY_KIB).toBe(19_456)
-        expect(ARGON2_ITERATIONS).toBe(2)
+        expect(ARGON2_MEMORY_KIB).toBe(65_536)
+        expect(ARGON2_ITERATIONS).toBe(3)
         expect(ARGON2_PARALLELISM).toBe(1)
         expect(base64.decode(blob.salt)).toHaveLength(16)
         expect(base64.decode(blob.iv)).toHaveLength(12)
@@ -280,6 +281,76 @@ describe('vault', () => {
                 String(fake.data.get('vault:wrapped-master-key')),
             )
             expect(untouched.version).toBe(1)
+        })
+    })
+
+    // Vaults created before the cost was raised hold 19 MiB / t=2 blobs.
+    describe('Argon2id blobs below the current cost', () => {
+        const OLD_MASTER_KEY = new Uint8Array(32).fill(7)
+
+        const writeOldCostBlob = async (password: string): Promise<void> => {
+            const salt = new Uint8Array(16).fill(4)
+            const iv = new Uint8Array(12).fill(6)
+            const kek = await crypto.subtle.importKey(
+                'raw',
+                argon2id(new TextEncoder().encode(password), salt, {
+                    m: 19_456,
+                    t: 2,
+                    p: 1,
+                    dkLen: 32,
+                }) as BufferSource,
+                'AES-GCM',
+                false,
+                ['encrypt'],
+            )
+            const ciphertext = new Uint8Array(
+                await crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv },
+                    kek,
+                    OLD_MASTER_KEY,
+                ),
+            )
+            fake.data.set(
+                'vault:wrapped-master-key',
+                JSON.stringify({
+                    version: 2,
+                    kdf: 'Argon2id',
+                    m: 19_456,
+                    t: 2,
+                    p: 1,
+                    salt: base64.encode(salt),
+                    iv: base64.encode(iv),
+                    ciphertext: base64.encode(ciphertext),
+                }),
+            )
+        }
+
+        it('are re-wrapped at the current cost on unlock, preserving the master key', async () => {
+            await writeOldCostBlob('old-cost-password')
+
+            await unlockVault('old-cost-password')
+
+            const rewrapped = JSON.parse(
+                String(fake.data.get('vault:wrapped-master-key')),
+            )
+            expect(rewrapped.m).toBe(ARGON2_MEMORY_KIB)
+            expect(rewrapped.t).toBe(ARGON2_ITERATIONS)
+            await lockVault()
+            await unlockVault('old-cost-password')
+            expect(await getSessionMasterKey()).toEqual(OLD_MASTER_KEY)
+        })
+
+        it('stay untouched after a wrong password', async () => {
+            await writeOldCostBlob('old-cost-password')
+
+            await expect(unlockVault('wrong-password')).rejects.toBeInstanceOf(
+                InvalidPasswordError,
+            )
+
+            const untouched = JSON.parse(
+                String(fake.data.get('vault:wrapped-master-key')),
+            )
+            expect(untouched.m).toBe(19_456)
         })
     })
 

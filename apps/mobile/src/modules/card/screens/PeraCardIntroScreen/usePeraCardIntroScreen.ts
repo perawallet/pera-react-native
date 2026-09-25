@@ -16,7 +16,8 @@ import { config } from '@perawallet/wallet-core-config'
 import { useCardStore } from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useWebView } from '@modules/webview'
+import { useLanguage } from '@hooks/useLanguage'
+import { useWebView, withLanguageParam } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 
 type UsePeraCardIntroScreenResult = {
@@ -28,6 +29,7 @@ type UsePeraCardIntroScreenResult = {
 export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
     const { pushWebView } = useWebView()
     const navigation = useAppNavigation()
+    const { currentLanguage } = useLanguage()
 
     const handleCreateAccount = useCallback(() => {
         trackEvent(CardEvent.OnboardingCreate)
@@ -46,12 +48,17 @@ export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
     }, [navigation])
 
     const handleLearnMore = useCallback(() => {
+        const url = withLanguageParam(
+            config.peraCardLearnMoreUrl,
+            currentLanguage,
+        )
         if (!routeCapabilities.inAppWebView) {
-            void Linking.openURL(config.peraCardLearnMoreUrl)
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config plus a lang param
+            void Linking.openURL(url)
             return
         }
-        pushWebView({ url: config.peraCardLearnMoreUrl })
-    }, [pushWebView])
+        pushWebView({ url })
+    }, [pushWebView, currentLanguage])
 
     return {
         handleCreateAccount,

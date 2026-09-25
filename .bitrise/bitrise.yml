@@ -1118,6 +1118,10 @@ workflows:
             NAME="pera-extension-web-${ENVIRONMENT:-unknown}-${BITRISE_GIT_TAG:-b$BITRISE_BUILD_NUMBER}-${SHA:-b$BITRISE_BUILD_NUMBER}.zip"
             DEST="${BITRISE_DEPLOY_DIR}/${NAME}"
             (cd apps/browser/dist && zip -r "$DEST" .)
+            # Deployed next to the zip, so a downloaded copy can be checked
+            # against the build before a store upload.
+            (cd "$BITRISE_DEPLOY_DIR" && sha256sum "$NAME" > "${NAME}.sha256")
+            cat "${DEST}.sha256"
             envman add --key BITRISE_EXTENSION_ZIP_PATH --value "$DEST"
     - deploy-to-bitrise-io@2:
         is_always_run: true

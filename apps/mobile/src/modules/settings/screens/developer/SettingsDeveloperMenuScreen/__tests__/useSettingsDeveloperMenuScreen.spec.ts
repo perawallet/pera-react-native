@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Linking } from 'react-native'
 import { config } from '@perawallet/wallet-core-config'
+import { areConfigOverridesIgnored } from '@perawallet/wallet-core-remote-config'
 
 import { useSettingsDeveloperMenuScreen } from '../useSettingsDeveloperMenuScreen'
 
@@ -32,6 +33,10 @@ vi.mock('@modules/webview/hooks', () => ({
     useWebView: () => ({ pushWebView: mockPushWebView }),
 }))
 
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    areConfigOverridesIgnored: vi.fn(() => false),
+}))
+
 vi.mock('@routes/capabilities', () => ({
     routeCapabilities: mockCapabilities,
 }))
@@ -41,6 +46,7 @@ describe('useSettingsDeveloperMenuScreen', () => {
         vi.clearAllMocks()
         mockCapabilities.developerGallery = true
         mockCapabilities.inAppWebView = true
+        vi.mocked(areConfigOverridesIgnored).mockReturnValue(false)
     })
 
     it('offers the gallery where the build includes it', () => {
@@ -55,6 +61,20 @@ describe('useSettingsDeveloperMenuScreen', () => {
         const { result } = renderHook(() => useSettingsDeveloperMenuScreen())
 
         expect(result.current.isGalleryAvailable).toBe(false)
+    })
+
+    it('offers Feature Flags where saved overrides take effect', () => {
+        const { result } = renderHook(() => useSettingsDeveloperMenuScreen())
+
+        expect(result.current.isFeatureFlagsAvailable).toBe(true)
+    })
+
+    it('hides Feature Flags where saved overrides are ignored', () => {
+        vi.mocked(areConfigOverridesIgnored).mockReturnValue(true)
+
+        const { result } = renderHook(() => useSettingsDeveloperMenuScreen())
+
+        expect(result.current.isFeatureFlagsAvailable).toBe(false)
     })
 
     it('pushes the requested developer screen', () => {

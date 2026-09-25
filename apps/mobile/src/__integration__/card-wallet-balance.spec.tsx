@@ -24,7 +24,6 @@ import {
 import {
     mockGetWalletBalance,
     mockGetWalletHistory,
-    mockGetWalletWithdrawEstimation,
 } from '@perawallet/wallet-core-card/test-handlers'
 import { CardWalletBalanceScreen } from '@modules/card/screens/CardWalletBalanceScreen'
 import { CardWalletBalanceWithdrawScreen } from '@modules/card/screens/CardWalletBalanceWithdrawScreen'
@@ -78,16 +77,10 @@ describe('Flow: card wallet balance claim', () => {
         '%s wallet',
         kind => {
             beforeEach(() => {
-                server.use(
-                    mockGetWalletWithdrawEstimation({
-                        kind,
-                        response: { gas: '6219123007416', fee: '0.000006219' },
-                    }),
-                    mockGetWalletHistory({ kind }),
-                )
+                server.use(mockGetWalletHistory({ kind }))
             })
 
-            it('shows the balance and claims through the fee-quoted confirmation sheet', async () => {
+            it('shows the balance and claims through the confirmation sheet', async () => {
                 server.use(walletHandler(kind))
                 let withdrawBody: Record<string, unknown> | null = null
                 server.use(
@@ -127,13 +120,6 @@ describe('Flow: card wallet balance claim', () => {
                 fireEvent.click(screen.getByText('5'))
                 fireEvent.click(
                     screen.getByTestId('card_wallet_balance_withdraw_button'),
-                )
-
-                // The sheet fetched and rendered the fee quote.
-                await waitFor(() =>
-                    expect(
-                        screen.getByTestId('wallet-withdraw-fee').textContent,
-                    ).toContain('0.000006219'),
                 )
 
                 fireEvent.click(

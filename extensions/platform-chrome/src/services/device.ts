@@ -100,10 +100,7 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
     }
 
     getAppEnvironment(): AppEnvironment {
-        // EXPO_PUBLIC_* vars are inlined at build time (Metro bundles this package for the extension's UI surfaces via expo export).
-        const env = process.env.EXPO_PUBLIC_APP_ENV
-        if (env === 'staging' || env === 'production') return env
-        return 'development'
+        return config.appEnvironment
     }
 
     isStoreBuild(): boolean {

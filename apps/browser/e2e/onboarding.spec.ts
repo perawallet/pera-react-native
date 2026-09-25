@@ -189,10 +189,12 @@ test('locked popup shows unlock; wrong password errors; right password unlocks',
     await expect(async () => {
         await page.getByTestId('unlock-password-input').fill(PASSWORD)
         await page.getByTestId('unlock-submit').click()
+        // Wide enough for one Argon2id derivation on a CI runner: a retry
+        // that starts after the unlock landed finds no password input.
         await expect(page.getByTestId('account_screen')).toBeVisible({
-            timeout: 1000,
+            timeout: 10_000,
         })
-    }).toPass({ timeout: 15_000 })
+    }).toPass({ timeout: 30_000 })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
     await page.close()
 })

@@ -28,6 +28,11 @@ import {
     assertExtensionPagesCsp,
     buildExtensionPagesCsp,
 } from './csp.mjs'
+import {
+    assertReleaseEnv,
+    assertStampedManifest,
+    stampManifest,
+} from './manifest.mjs'
 
 const requireFromHere = createRequire(import.meta.url)
 
@@ -122,7 +127,14 @@ const generatedEnv = readFileSync(
 // generate-config.sh only emits a key's line when the source env var is
 // non-empty (see its append_config helper), so a missing/blank
 // BACKEND_API_KEY leaves this line out entirely rather than writing "".
-if (!/backendAPIKey:\s*"[^"]+"/.test(generatedEnv)) {
+// A missing appEnvironment line means config's own default, development.
+const hasBackendApiKey = /backendAPIKey:\s*"[^"]+"/.test(generatedEnv)
+assertReleaseEnv({
+    appEnvironment:
+        generatedEnv.match(/appEnvironment:\s*"([^"]+)"/)?.[1] ?? 'development',
+    hasBackendApiKey,
+})
+if (!hasBackendApiKey) {
     console.warn(
         '\n⚠ BACKEND_API_KEY is empty — Pera backend calls will 401. ' +
             'Add it to the repo-root .env (see apps/browser/README.md).\n',
@@ -248,6 +260,21 @@ cpSync(
     path.join(dist, 'sqlite3.wasm'),
 )
 
+// 2b'. The vault's Argon2id worker, spawned by name from the extension pages
+// (ARGON2_WORKER_URL in keystore-chrome's vault/argon2.ts).
+await build({
+    entryPoints: [
+        path.join(
+            root,
+            '../../extensions/keystore-chrome/src/vault/argon2-worker.ts',
+        ),
+    ],
+    outfile: path.join(dist, 'argon2-worker.js'),
+    bundle: true,
+    format: 'esm',
+    target: 'chrome120',
+})
+
 // 2c. Content scripts. MAIN world (inject-main) and isolated world (relay) are
 // separate bundles so Chrome can load each into its declared world.
 for (const [entry, outfile] of [
@@ -346,9 +373,14 @@ assertExtensionPagesCsp(extensionPagesCsp, {
     appEnvironment: config.appEnvironment,
     requiredFrameOrigins: frameOrigins,
 })
-const manifest = JSON.parse(
-    readFileSync(path.join(root, 'manifest.json'), 'utf8'),
+const { version: packageVersion } = JSON.parse(
+    readFileSync(path.join(root, 'package.json'), 'utf8'),
 )
+const manifest = stampManifest(
+    JSON.parse(readFileSync(path.join(root, 'manifest.json'), 'utf8')),
+    { packageVersion, appEnvironment: config.appEnvironment },
+)
+assertStampedManifest(manifest, { appEnvironment: config.appEnvironment })
 manifest.content_security_policy = { extension_pages: extensionPagesCsp }
 writeFileSync(
     path.join(dist, 'manifest.json'),

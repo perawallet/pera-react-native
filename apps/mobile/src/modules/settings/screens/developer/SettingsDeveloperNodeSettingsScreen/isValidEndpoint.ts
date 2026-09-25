@@ -27,3 +27,6 @@ export const isValidEndpoint = (value: string): boolean => {
         return false
     }
 }
+
+export const INVALID_ENDPOINT_MESSAGE_KEY =
+    'settings.developer.node_settings.invalid_url'
