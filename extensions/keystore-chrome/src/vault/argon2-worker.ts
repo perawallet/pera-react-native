@@ -15,6 +15,9 @@ import { computeArgon2id, type Argon2Request } from './argon2'
 // One derivation per worker: the page terminates it after the reply, which
 // also frees the 64 MiB Argon2 working memory.
 self.onmessage = (event: MessageEvent<Argon2Request>) => {
+    // Same guard as db-worker.ts: a dedicated worker's messages carry an empty
+    // origin, so only a non-empty foreign one is refused.
+    if (event.origin && event.origin !== location.origin) return
     const key = computeArgon2id(event.data)
     self.postMessage(key, { transfer: [key.buffer] })
 }
