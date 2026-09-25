@@ -138,4 +138,16 @@ describe('useNfdForAddressQuery', () => {
         renderHook(() => useNfdForAddressQuery('not-an-address'), { wrapper })
         expect(mockEnqueue).not.toHaveBeenCalled()
     })
+    it('returns one stable empty array while disabled', () => {
+        const { result, rerender } = renderHook(
+            () => useNfdForAddressQuery(VALID_ADDRESS, { enabled: false }),
+            { wrapper },
+        )
+        const initialData = result.current.data
+
+        rerender()
+
+        expect(initialData).toEqual([])
+        expect(result.current.data).toBe(initialData)
+    })
 })
