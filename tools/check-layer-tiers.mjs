@@ -15,7 +15,8 @@
  * member's package.json (every dependency field, because a devDependency still
  * orders the turbo graph and a type-only import still needs a declared edge):
  *
- * - The bottom tier (`packages/config`, `packages/shared`) depends only on itself.
+ * - The bottom tier (`packages/config`, `packages/shared`,
+ *   `packages/chain-contract`) depends only on itself.
  * - `extensions/platform`, the contract, depends only on the bottom tier.
  * - Other `extensions/*` depend only on extensions and the bottom tier.
  * - Only apps and other transports depend on a hardware-wallet transport
@@ -38,7 +39,11 @@ import { fileURLToPath } from 'node:url'
 const repoRoot =
     process.argv[2] ?? join(dirname(fileURLToPath(import.meta.url)), '..')
 
-const BOTTOM_TIER = new Set(['packages/config', 'packages/shared'])
+const BOTTOM_TIER = new Set([
+    'packages/config',
+    'packages/shared',
+    'packages/chain-contract',
+])
 const CONTRACT = 'extensions/platform'
 const TOOLING = 'packages/devtools'
 const isTransport = dir =>

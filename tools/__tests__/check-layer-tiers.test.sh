@@ -62,6 +62,20 @@ baseline "$BOTTOM"
 member "$BOTTOM" packages/shared "$(dep accounts)"
 check "rejects the bottom tier depending on a business package" "1" "$(run "$BOTTOM")"
 
+# chain-contract depends on nothing, so the bottom tier and the platform
+# contract can take its scope types.
+CHAIN_CONTRACT=$WORK/chain-contract
+baseline "$CHAIN_CONTRACT"
+member "$CHAIN_CONTRACT" packages/chain-contract
+member "$CHAIN_CONTRACT" packages/config "$(dep chain-contract)"
+member "$CHAIN_CONTRACT" extensions/platform "$(dep chain-contract)" "$(dep devtools)"
+check "accepts the bottom tier and the platform contract depending on chain-contract" "0" "$(run "$CHAIN_CONTRACT")"
+
+CHAIN_CONTRACT_UP=$WORK/chain-contract-up
+baseline "$CHAIN_CONTRACT_UP"
+member "$CHAIN_CONTRACT_UP" packages/chain-contract "$(dep accounts)"
+check "rejects chain-contract depending on a business package" "1" "$(run "$CHAIN_CONTRACT_UP")"
+
 CONTRACT_PKG=$WORK/contract-pkg
 baseline "$CONTRACT_PKG"
 member "$CONTRACT_PKG" extensions/platform "$(dep accounts)"

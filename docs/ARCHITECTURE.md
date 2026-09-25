@@ -31,7 +31,8 @@ Pera Wallet is a monorepo that keeps UI and business logic in separate layers.
 └────────────────────────┬────────────────────────────┘
                          ▼
 ┌─────────────────────────────────────────────────────┐
-│    bottom tier: packages/config, packages/shared     │
+│    bottom tier: packages/config, packages/shared,    │
+│             packages/chain-contract                  │
 │             (usable from every tier)                 │
 └─────────────────────────────────────────────────────┘
 ```
@@ -45,18 +46,20 @@ tested without React Native, and what let the browser extension reuse it.
 Dependencies point down the diagram and never up. `tools/check-layer-tiers.mjs` enforces this on
 every workspace `package.json` (all dependency fields) in pre-push and CI:
 
-| Tier                                                             | May depend on                                                   |
-| ---------------------------------------------------------------- | --------------------------------------------------------------- |
-| `apps/*`                                                         | anything                                                        |
-| `packages/*` (business)                                          | other packages, and extensions other than the Ledger transports |
-| `extensions/*`                                                   | other extensions and the bottom tier                            |
-| `extensions/platform` (the contract)                             | the bottom tier only                                            |
-| Ledger transports (`extensions/ledger-*` except `ledger-shared`) | depended on only by apps and each other                         |
-| bottom tier (`packages/config`, `packages/shared`)               | the bottom tier only                                            |
+| Tier                                                                          | May depend on                                                   |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `apps/*`                                                                      | anything                                                        |
+| `packages/*` (business)                                                       | other packages, and extensions other than the Ledger transports |
+| `extensions/*`                                                                | other extensions and the bottom tier                            |
+| `extensions/platform` (the contract)                                          | the bottom tier only                                            |
+| Ledger transports (`extensions/ledger-*` except `ledger-shared`)              | depended on only by apps and each other                         |
+| bottom tier (`packages/config`, `packages/shared`, `packages/chain-contract`) | the bottom tier only                                            |
 
 The bottom tier lives under `packages/` but is not business logic, so the directory alone does not
 tell you the tier. `packages/devtools` is build and test tooling, allowed anywhere as a
 devDependency.
+`packages/chain-contract` is in the bottom tier because it depends on nothing, and `config` and
+`shared` key their configuration and requests by its chain scope.
 
 The app is the composition root. It picks the platform driver (a bundler alias, below) and registers
 the concrete Ledger transports into `getProvider().hardwareWalletRegistry`
