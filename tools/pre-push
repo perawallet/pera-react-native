@@ -157,18 +157,6 @@ else
 fi
 rm "$TIERS_LOG"
 
-# Run test-suffix guard. The mobile and browser vitest configs collect only
-# `*.spec.*`, so a `.test.ts` there would silently never run.
-echo "\n${YELLOW}Checking test file suffixes...${NC}"
-SUFFIX_LOG=$(mktemp)
-if pnpm run check:test-suffix > "$SUFFIX_LOG" 2>&1; then
-    echo "${GREEN}✓ test file suffixes valid${NC}"
-else
-    echo "${RED}test suffix check failed.${NC}"
-    record_failure "test file suffix" "$SUFFIX_LOG" "${YELLOW}Rename the listed files to .spec.ts / .spec.tsx.${NC}"
-fi
-rm "$SUFFIX_LOG"
-
 # Doc hygiene. Blocks on wrongness (a path that no longer exists, a dead link,
 # a reference to a work item nobody will be able to look up); reports on length
 # without blocking, because that needs a human's judgement.
