@@ -170,7 +170,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 const keystoreBranch = runKeystoreMaintenance({
                     deriveKeygenSeed: derivePQKeygenSeed,
                 })
-                    .then(({ repair, failedDecodeIds }) => {
+                    .then(({ repair, passkeySplit, failedDecodeIds }) => {
                         if (failedDecodeIds.length > 0) {
                             // Non-fatal this session, but these exact records
                             // will fail the strict hydration at the next cold
@@ -181,6 +181,13 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                         }
                         if (repair.repaired > 0 || repair.failed > 0) {
                             logger.info('Quantum key material repaired', repair)
+                        }
+                        if (passkeySplit.failed.length > 0) {
+                            // Hidden from the Android chooser until a later
+                            // launch splits them; the pass retries every launch.
+                            logger.warn(
+                                `Passkey credentials left flat: ${passkeySplit.failed.join(', ')}`,
+                            )
                         }
                     })
                     .catch(err => {

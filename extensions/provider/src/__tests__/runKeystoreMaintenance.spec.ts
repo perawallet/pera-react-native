@@ -22,6 +22,7 @@ const calls: string[] = []
 const mocks = vi.hoisted(() => ({
     runMaterialRepair: vi.fn(),
     readPersistedKeys: vi.fn(),
+    runPasskeyCredentialSplit: vi.fn(),
 }))
 
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
@@ -36,6 +37,7 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
 vi.mock('../keystore/maintenance', () => ({
     runMaterialRepair: mocks.runMaterialRepair,
     readPersistedKeys: mocks.readPersistedKeys,
+    runPasskeyCredentialSplit: mocks.runPasskeyCredentialSplit,
 }))
 
 vi.mock('@tanstack/store', () => ({
@@ -59,7 +61,7 @@ vi.mock('before-after-hook', () => ({
     default: { Collection: class {} },
 }))
 
-import { runKeystoreMaintenance } from '../singleton'
+import { getProvider, runKeystoreMaintenance } from '../singleton'
 
 const NO_REPAIR = { repaired: 0, failed: 0 }
 
@@ -70,6 +72,7 @@ describe('runKeystoreMaintenance', () => {
         calls.length = 0
         mocks.runMaterialRepair.mockReset()
         mocks.readPersistedKeys.mockReset()
+        mocks.runPasskeyCredentialSplit.mockReset()
 
         mocks.runMaterialRepair.mockImplementation(async () => {
             calls.push('repair')
@@ -80,13 +83,21 @@ describe('runKeystoreMaintenance', () => {
             calls.push('reconcile')
             return { keys: [{ id: 'k1' }], failedIds: [] }
         })
+        mocks.runPasskeyCredentialSplit.mockImplementation(async () => {
+            calls.push('split')
+            return { split: [], normalized: [], failed: [] }
+        })
     })
 
     test('reconciles once after ready, then runs the quantum repair', async () => {
         const result = await runKeystoreMaintenance(deps)
 
         expect(calls).toEqual(['reconcile', 'repair'])
-        expect(result).toEqual({ repair: NO_REPAIR, failedDecodeIds: [] })
+        expect(result).toEqual({
+            repair: NO_REPAIR,
+            passkeySplit: { split: [], normalized: [], failed: [] },
+            failedDecodeIds: [],
+        })
     })
 
     // A record the reconcile could not decode is invisible in the reactive
@@ -154,5 +165,62 @@ describe('runKeystoreMaintenance', () => {
             'master key unreadable',
         )
         expect(calls).toEqual(['reconcile', 'repair'])
+    })
+
+    test('does not split passkey credentials off Android', async () => {
+        await runKeystoreMaintenance(deps)
+
+        expect(mocks.runPasskeyCredentialSplit).not.toHaveBeenCalled()
+    })
+
+    // A split writes k/ records the reactive store has not seen yet.
+    test('splits passkey credentials on Android and reconciles when something moved', async () => {
+        vi.spyOn(
+            getProvider().deviceInfo,
+            'getDevicePlatform',
+        ).mockReturnValueOnce('android')
+        mocks.runPasskeyCredentialSplit.mockImplementation(async () => {
+            calls.push('split')
+            return { split: ['cred-1'], normalized: [], failed: [] }
+        })
+
+        const result = await runKeystoreMaintenance(deps)
+
+        expect(calls).toEqual(['reconcile', 'split', 'repair', 'reconcile'])
+        expect(result.passkeySplit.split).toEqual(['cred-1'])
+    })
+
+    test('does not reconcile again when the Android split moved nothing', async () => {
+        vi.spyOn(
+            getProvider().deviceInfo,
+            'getDevicePlatform',
+        ).mockReturnValueOnce('android')
+
+        await runKeystoreMaintenance(deps)
+
+        expect(calls).toEqual(['reconcile', 'split', 'repair'])
+    })
+
+    // The split must never block startup; the rest of maintenance still runs.
+    test('keeps maintenance going when the Android split throws', async () => {
+        vi.spyOn(
+            getProvider().deviceInfo,
+            'getDevicePlatform',
+        ).mockReturnValueOnce('android')
+        mocks.runPasskeyCredentialSplit.mockImplementation(async () => {
+            calls.push('split')
+            throw new Error('split failed')
+        })
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+        const result = await runKeystoreMaintenance(deps)
+
+        expect(calls).toEqual(['reconcile', 'split', 'repair'])
+        expect(result.passkeySplit).toEqual({
+            split: [],
+            normalized: [],
+            failed: [],
+        })
+        warn.mockRestore()
     })
 })
