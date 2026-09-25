@@ -76,6 +76,7 @@ export const useAmountKeyboardInput = ({
             const text = event.clipboardData?.getData('text')
             if (!text) return
             event.preventDefault()
+            // Raw text on purpose: onPaste validates it against the asset's decimals.
             latest.current.onPaste(text)
         }
         document.addEventListener('keydown', handleKeyDown)

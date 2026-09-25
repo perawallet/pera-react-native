@@ -16,6 +16,10 @@ import type { View } from 'react-native'
 export type UseAmountKeyboardInputParams = {
     /** Same contract as the on-screen keypad: a digit or '.', undefined deletes. */
     onKey: (key?: string) => void
+    /**
+     * Gets the raw clipboard text, unchecked; the handler must validate it
+     * (useInputScreen's handlePaste ignores anything that isn't a plain amount).
+     */
     onPaste: (text: string) => void
     onSubmit: () => void
     /** Focused once rendered, so Tab walks on from the amount to the controls below. */
