@@ -32,7 +32,7 @@ on:
             # Aspirational: ARC-59 is out of scope today, so the suite doesn't
             # import this one yet. Left in so the filter is ready once that
             # coverage lands, rather than a mistake to prune.
-            - 'packages/asa-inbox/**'
+            - 'packages/chain-algorand/**'
 
 # Least-privilege default, matching ci-pre-merge.yml.
 permissions:

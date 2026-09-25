@@ -4,9 +4,6 @@
     "@perawallet/wallet-core-devtools/tsconfig/emit.json"
   ],
   "compilerOptions": {
-    // Arc59Client.generated.ts ships unused imports and is reached through the
-    // import graph, so `exclude` cannot keep it out of the emit program.
-    "noUnusedLocals": false,
     "rootDir": "./src",
     "outDir": "./dist"
   },
@@ -18,8 +15,6 @@
     "dist",
     "**/__tests__/**",
     "**/*.spec.ts",
-    "**/*.spec.tsx",
-    "**/handlers.ts",
-    "**/*-handlers.ts"
+    "**/*.spec.tsx"
   ]
 }

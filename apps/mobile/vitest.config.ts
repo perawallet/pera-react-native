@@ -146,7 +146,6 @@ const singletons: AliasEntry[] = [
 // on purpose and run the full suite.
 const distResolvedPackages = new Set([
     '@perawallet/wallet-core-app-integrity',
-    '@perawallet/wallet-core-asa-inbox',
     '@perawallet/wallet-core-background',
     '@perawallet/wallet-core-dapp',
     '@perawallet/wallet-core-database',

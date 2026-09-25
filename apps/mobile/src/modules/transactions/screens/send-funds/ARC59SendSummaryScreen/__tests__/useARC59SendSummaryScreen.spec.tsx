@@ -60,7 +60,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     })),
 }))
 
-vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
     useArc59SendSummaryQuery: vi.fn(() => ({
         data: null,
         isLoading: true,
@@ -163,7 +163,7 @@ describe('useARC59SendSummaryScreen', () => {
         // Reset query mocks to known defaults — `vi.clearAllMocks()` clears
         // call history but not return values set via `mockReturnValue`
         const { useArc59SendSummaryQuery } =
-            await import('@perawallet/wallet-core-asa-inbox')
+            await import('@perawallet/wallet-core-chain-algorand/asa-inbox')
         const { useAccountInformationQuery } =
             await import('@perawallet/wallet-core-accounts')
         ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
@@ -249,7 +249,7 @@ describe('useARC59SendSummaryScreen', () => {
 
     it('computes fee from summary', async () => {
         const { useArc59SendSummaryQuery } =
-            await import('@perawallet/wallet-core-asa-inbox')
+            await import('@perawallet/wallet-core-chain-algorand/asa-inbox')
         ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
             data: mockSummary,
             isLoading: false,
@@ -263,7 +263,7 @@ describe('useARC59SendSummaryScreen', () => {
 
     it('forwards isUnavailableOnNetwork from the summary query', async () => {
         const { useArc59SendSummaryQuery } =
-            await import('@perawallet/wallet-core-asa-inbox')
+            await import('@perawallet/wallet-core-chain-algorand/asa-inbox')
         ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
             data: null,
             isLoading: false,
@@ -277,7 +277,7 @@ describe('useARC59SendSummaryScreen', () => {
 
     it('redirects to InsufficientBalance when sender lacks ALGO for the inbox fees', async () => {
         const { useArc59SendSummaryQuery } =
-            await import('@perawallet/wallet-core-asa-inbox')
+            await import('@perawallet/wallet-core-chain-algorand/asa-inbox')
         const { useAccountInformationQuery } =
             await import('@perawallet/wallet-core-accounts')
         ;(useArc59SendSummaryQuery as Mock).mockReturnValue({

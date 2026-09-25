@@ -15,11 +15,11 @@ import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
+import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import {
     useArc59SendTransaction,
     useArc59ClaimTransaction,
-} from '@perawallet/wallet-core-asa-inbox'
+} from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import {
     displayUnitsToBaseUnits,
     useAlgorandClient,

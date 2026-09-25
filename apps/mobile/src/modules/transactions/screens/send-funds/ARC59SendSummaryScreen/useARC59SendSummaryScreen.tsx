@@ -17,7 +17,7 @@ import {
     getArc59SignedFundingAmount,
     useArc59SendSummaryQuery,
     type Arc59SendSummaryResponse,
-} from '@perawallet/wallet-core-asa-inbox'
+} from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import {
     useAccountInformationQuery,
     useSelectedAccount,

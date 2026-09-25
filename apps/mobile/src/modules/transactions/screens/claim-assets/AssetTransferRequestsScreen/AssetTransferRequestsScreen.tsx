@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import { PWDivider, PWFlatList, PWScreen, PWText } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
