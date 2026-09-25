@@ -18,15 +18,14 @@
  * The provider is a **separate process** that shares this app's keystore MMKV
  * instance (`PASSKEYS_MMKV_ID = "keystore"`) and master key. As of autofill
  * canary.23/.24 the derivation **parent/root** is read from the keystore's own
- * `k/`+`m/` split on both platforms — but **credential records are still
- * bare-id only, on both platforms**. iOS's only credential-from-keystore path,
- * `allKeystoreCredentials()`, guards on `dataArray(keyData["publicKey"])` and
- * `dataArray(keyData["privateKey"])`, both of which require a JSON number
- * array; a split `k/` record's `publicKey` is `{"$u8": …}` and it carries no
- * `privateKey` at all, so the guard fails silently. Android's
- * `credentialFromMetadataRecord` re-derives on demand instead of reading a
- * persisted key, which cannot reproduce a migrated Pera 6 credential. See
- * `packages/passkeys/src/native/README.md` for the full split.
+ * `k/`+`m/` split on both platforms
+ * — and on iOS **credential records are still bare-id only**. iOS's only
+ * credential-from-keystore path, `allKeystoreCredentials()`, guards on
+ * `dataArray(keyData["publicKey"])` and `dataArray(keyData["privateKey"])`,
+ * both of which require a JSON number array; a split `k/` record's
+ * `publicKey` is `{"$u8": …}` and it carries no `privateKey` at all, so the
+ * guard fails silently. Android credentials live in `k/`+`m/` instead, and
+ * never pass through this module. See `packages/passkeys/src/native/README.md`.
  *
  * This module is the single place the **credential** contract is expressed,
  * because two separate things need it and a third still will:
@@ -48,10 +47,10 @@
  *    `sealNativeProviderRecord` for the same input. The last catches the two
  *    writers diverging from each other; only the golden pin — a frozen
  *    literal, with no writer to agree with — catches them drifting together.
- * 3. **A still-pending phase 3** — reading credential records back, if and
- *    when the provider ever moves credentials to `k/`+`m/` too, so they can be
- *    migrated into the keystore's own layout without loss. Not started: see
- *    "What a credential migration would have to handle" below.
+ * 3. Reading iOS credential records back, when the iOS provider learns to
+ *    read `k/`+`m/`. Not started; see "What a credential migration would have
+ *    to handle" below. Android's equivalent is `splitFlatPasskeyCredentials`
+ *    in `extensions/provider`.
  *
  * ## Why `sealData`/`encode` from the keystore cannot be used
  *
@@ -72,7 +71,7 @@
  *
  * ## What a credential migration would have to handle
  *
- * Not started, but recorded here rather than left to be rediscovered — this is
+ * Not started for iOS, but recorded here rather than left to be rediscovered — this is
  * what the fixture corpus in `__tests__/nativeProviderRecord.spec.ts` pins:
  *
  * - Both envelope shapes: sealed `{iv, tag, content}` **and** the unsealed
