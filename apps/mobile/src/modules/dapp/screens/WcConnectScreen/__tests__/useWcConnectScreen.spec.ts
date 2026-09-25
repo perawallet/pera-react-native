@@ -27,7 +27,7 @@ vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
 }))
 
-vi.mock('../../../hooks/useApprovalArming.web', () => ({
+vi.mock('@hooks/useApprovalArming.web', () => ({
     useApprovalArming: mocks.useApprovalArming,
 }))
 

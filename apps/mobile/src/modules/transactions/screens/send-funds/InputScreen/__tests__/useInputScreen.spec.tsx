@@ -211,7 +211,7 @@ describe('useInputScreen', () => {
                 assets: [],
             },
         })
-        mockRequestBottomSheet.mockResolvedValue(true)
+        mockRequestBottomSheet.mockResolvedValue('close')
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
@@ -517,7 +517,7 @@ describe('useInputScreen', () => {
                 assets: [],
             },
         })
-        mockRequestBottomSheet.mockResolvedValue(true)
+        mockRequestBottomSheet.mockResolvedValue('close')
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
@@ -571,7 +571,7 @@ describe('useInputScreen', () => {
         expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
     })
 
-    it('confirms close account when confirm resolves true', async () => {
+    it('sends max without closing when the user keeps the account open', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
                 amount: 100_000_000n,
@@ -579,7 +579,32 @@ describe('useInputScreen', () => {
                 assets: [],
             },
         })
-        mockRequestBottomSheet.mockResolvedValue(true)
+        mockRequestBottomSheet.mockResolvedValue('keepOpen')
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('100')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+        // maxAmount = 100 - 0.1 - 0.001 = 99.899
+        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
+        expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
+        expect(result.current.cryptoValue).toBe('99.899')
+        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
+    })
+
+    it('confirms close account when the user chooses to close', async () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 100_000n,
+                assets: [],
+            },
+        })
+        mockRequestBottomSheet.mockResolvedValue('close')
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {

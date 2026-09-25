@@ -2605,8 +2605,9 @@
         },
         "close_account": {
             "title": "Konto schließen",
-            "body": "Dieses Konto hat keine angemeldeten Assets. Durch das Senden des gesamten Guthabens wird das Konto im Algorand-Netzwerk geschlossen.",
+            "body": "Dieses Konto hat keine angemeldeten Assets. Du kannst es daher schließen und das gesamte Guthaben senden. Manche Börsen akzeptieren keine Transaktionen, die ein Konto schließen. Wenn du das Konto offen lässt, verbleibt das Mindestguthaben von {{minBalance}} ALGO darin.",
             "confirm": "Konto schließen & senden",
+            "keep_open": "Senden, ohne zu schließen",
             "warning": "Diese Transaktion schließt dein Konto im Algorand-Netzwerk.",
             "success_title": "Konto geschlossen",
             "success_subtitle": "Dein Konto wurde im Algorand-Netzwerk geschlossen."
@@ -2738,6 +2739,7 @@
                 "fetch_from_node": "Vom Node abrufen",
                 "fetch_failed": "Dieser Node konnte nicht erreicht werden. Gib die Werte manuell ein.",
                 "invalid_url": "Gib eine gültige http:// oder https:// URL ein",
+                "invalid_https_url": "Gib eine gültige https:// URL ein",
                 "genesis_required": "Genesis-Hash abrufen oder eingeben",
                 "genesis_id_required": "Genesis-ID abrufen oder eingeben",
                 "save": "Speichern und wechseln",
@@ -4034,9 +4036,6 @@
         },
         "approval": {
             "placeholder": "Genehmigungsoberfläche — kommt in M4."
-        },
-        "expanded": {
-            "redirecting": "Wird in einem neuen Tab fortgesetzt…"
         },
         "reauth": {
             "title": "Bestätige, dass du es bist",

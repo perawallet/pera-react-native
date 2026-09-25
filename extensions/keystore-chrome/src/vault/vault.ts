@@ -10,13 +10,11 @@
  limitations under the License
  */
 
-import { argon2id } from '@noble/hashes/argon2.js'
 import { base64 } from '@scure/base'
 import {
     InvalidPasswordError,
     VaultCorruptedError,
     VaultExistsError,
-    VaultLockedOutError,
     VaultNotInitializedError,
 } from '../errors'
 import {
@@ -26,12 +24,9 @@ import {
     PRF_CRED_ID_KEY,
     VAULT_STORAGE_KEY,
 } from '../storage-keys'
+import { deriveArgon2id, type Argon2Params } from './argon2'
 import { armAutoLock, disarmAutoLock } from './autolock'
-import {
-    clearFailedAttempts,
-    getLockoutRemainingSeconds,
-    recordFailedAttempt,
-} from './lockout'
+import { runThrottledAttempt } from './lockout'
 import {
     clearSessionMasterKey,
     hasSessionMasterKey,
@@ -50,8 +45,8 @@ export const PBKDF2_ITERATIONS = 600_000
 export const PBKDF2_MAX_ITERATIONS = 10_000_000
 
 /**
- * Argon2id parameters for `version: 2` blobs — OWASP's baseline recommendation
- * (19 MiB, t=2, p=1).
+ * Argon2id parameters every `version: 2` blob is written with (64 MiB, t=3,
+ * p=1), well above OWASP's 19 MiB / t=2 baseline.
  *
  * Why this replaced PBKDF2: the wrapped master key sits in
  * `chrome.storage.local`, i.e. a readable file in the browser profile. An
@@ -62,12 +57,18 @@ export const PBKDF2_MAX_ITERATIONS = 10_000_000
  * Argon2id is memory-hard, which is what actually blunts GPU and ASIC
  * parallelism.
  *
- * Measured ~260ms in node and comfortably under a second in-browser — the
- * cost lands on unlock, once per session.
+ * A GPU attacker's guess rate falls with memory, so the cost is set as high as
+ * an unlock can bear; it is paid once per session.
  */
-export const ARGON2_MEMORY_KIB = 19_456
-export const ARGON2_ITERATIONS = 2
+export const ARGON2_MEMORY_KIB = 65_536
+export const ARGON2_ITERATIONS = 3
 export const ARGON2_PARALLELISM = 1
+
+// The lowest cost a stored blob may claim: OWASP's baseline, which is what
+// vaults were first written with. Those still open, and are re-wrapped at the
+// parameters above on that unlock (see rewrapIfWeaker).
+const ARGON2_MIN_MEMORY_KIB = 19_456
+const ARGON2_MIN_ITERATIONS = 2
 
 // Same DoS reasoning as PBKDF2_MAX_ITERATIONS, and more acute: `m` is a real
 // memory allocation, so an unbounded value from a corrupted or maliciously
@@ -125,9 +126,9 @@ const isValidV2 = (x: Record<string, unknown>): x is WrappedMasterKeyV2 =>
     Number.isSafeInteger(x.m) &&
     Number.isSafeInteger(x.t) &&
     Number.isSafeInteger(x.p) &&
-    (x.m as number) >= ARGON2_MEMORY_KIB &&
+    (x.m as number) >= ARGON2_MIN_MEMORY_KIB &&
     (x.m as number) <= ARGON2_MAX_MEMORY_KIB &&
-    (x.t as number) >= ARGON2_ITERATIONS &&
+    (x.t as number) >= ARGON2_MIN_ITERATIONS &&
     (x.t as number) <= ARGON2_MAX_ITERATIONS &&
     (x.p as number) >= ARGON2_PARALLELISM &&
     (x.p as number) <= 4
@@ -178,20 +179,19 @@ const deriveKekPbkdf2 = async (
 const deriveKekArgon2 = async (
     password: string,
     salt: Uint8Array,
-    params: { m: number; t: number; p: number },
+    params: Argon2Params,
 ): Promise<CryptoKey> => {
-    const passwordBytes = new TextEncoder().encode(password)
     let derived: Uint8Array | undefined
     try {
-        derived = argon2id(passwordBytes, salt, {
+        derived = await deriveArgon2id({
+            password: new TextEncoder().encode(password),
+            salt,
             m: params.m,
             t: params.t,
             p: params.p,
-            dkLen: 32,
         })
         return await importAesKey(derived)
     } finally {
-        passwordBytes.fill(0)
         derived?.fill(0)
     }
 }
@@ -232,8 +232,8 @@ const writeWrappedMasterKey = async (
 ): Promise<void> => {
     const salt = crypto.getRandomValues(new Uint8Array(16))
     const iv = crypto.getRandomValues(new Uint8Array(12))
-    // Always v2: v1 is read-only legacy, migrated on the next successful
-    // unlock (see migrateBlobIfLegacy).
+    // Always v2 at the current cost: older blobs are read-only, re-wrapped on
+    // the next successful unlock (see rewrapIfWeaker).
     const kek = await deriveKekArgon2(password, salt, {
         m: ARGON2_MEMORY_KIB,
         t: ARGON2_ITERATIONS,
@@ -273,24 +273,13 @@ const writeWrappedMasterKey = async (
  *
  * On success the caller owns the returned key and MUST zero it.
  */
-const unwrapMasterKeyThrottled = async (
-    password: string,
-): Promise<Uint8Array> => {
-    const remainingSeconds = await getLockoutRemainingSeconds()
-    if (remainingSeconds > 0) throw new VaultLockedOutError(remainingSeconds)
-
-    let masterKey: Uint8Array
-    try {
-        masterKey = await unwrapMasterKey(password)
-    } catch (error) {
-        // Only a genuine wrong password counts — VaultCorruptedError must not
-        // burn attempts, or a corrupt blob would lock the user out for good.
-        if (error instanceof InvalidPasswordError) await recordFailedAttempt()
-        throw error
-    }
-    await clearFailedAttempts()
-    return masterKey
-}
+const unwrapMasterKeyThrottled = (password: string): Promise<Uint8Array> =>
+    // Only a genuine wrong password counts — VaultCorruptedError must not burn
+    // attempts, or a corrupt blob would lock the user out for good.
+    runThrottledAttempt(
+        () => unwrapMasterKey(password),
+        error => error instanceof InvalidPasswordError,
+    )
 
 // Exported for use by passkey.ts to verify the password and obtain the master
 // key when enabling passkey unlock. Not part of the public package API.
@@ -305,7 +294,7 @@ export const unwrapMasterKeyWithPassword = async (
  * before a high-consequence action — revealing a recovery phrase, or asserting
  * a WebAuthn credential to a relying party that asked for user verification.
  *
- * Returns false on a wrong password; throws {@link VaultLockedOutError} while
+ * Returns false on a wrong password; throws `VaultLockedOutError` while
  * throttled so the caller can show the remaining time rather than a bare
  * "incorrect".
  */
@@ -386,21 +375,25 @@ export const createVault = async (password: string): Promise<void> => {
 }
 
 /**
- * Re-wraps a legacy PBKDF2 blob under Argon2id, now that a correct password
- * has produced the master key.
+ * Re-wraps a legacy PBKDF2 blob, or an Argon2id one below the current cost,
+ * now that a correct password has produced the master key.
  *
  * Unlock is the only moment both halves are in hand, so migration rides along
  * with it rather than needing a separate prompt. Best-effort by design: a
  * storage failure here must not turn a successful unlock into a failed one —
  * the user keeps a working (if weaker) vault and the next unlock retries.
  */
-const migrateBlobIfLegacy = async (
+const rewrapIfWeaker = async (
     password: string,
     masterKey: Uint8Array,
 ): Promise<void> => {
     try {
         const blob = await readWrappedMasterKey()
-        if (blob.version === 2) return
+        const isCurrent =
+            blob.version === 2 &&
+            blob.m >= ARGON2_MEMORY_KIB &&
+            blob.t >= ARGON2_ITERATIONS
+        if (isCurrent) return
         await writeWrappedMasterKey(password, masterKey)
     } catch {
         // Intentionally swallowed — see the doc comment.
@@ -412,7 +405,7 @@ export const unlockVault = async (password: string): Promise<void> => {
     try {
         await putSessionMasterKey(masterKey)
         await armAutoLock()
-        await migrateBlobIfLegacy(password, masterKey)
+        await rewrapIfWeaker(password, masterKey)
     } finally {
         masterKey.fill(0)
     }
