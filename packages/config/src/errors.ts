@@ -10,11 +10,15 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
-export * from './main'
-export * from './build-flags'
-export * from './constants'
-export * from './errors'
-export * from './network-config'
-export * from './models/network'
+export class UnconfiguredScopeError extends Error {
+    readonly scope: ChainScope
+
+    constructor(scope: ChainScope) {
+        // Plain interpolation, not toScopeKey: building this error must never throw.
+        super(`No chain configuration for ${scope.chainId}/${scope.networkId}`)
+        this.name = 'UnconfiguredScopeError'
+        this.scope = scope
+    }
+}

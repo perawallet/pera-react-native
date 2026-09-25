@@ -2434,6 +2434,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       zod:
         specifier: 'catalog:'
         version: 4.4.3
