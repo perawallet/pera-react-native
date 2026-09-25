@@ -7,11 +7,11 @@ packages:
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.2
   "@algorandfoundation/dp256": 1.1.0
-  "@algorandfoundation/keystore-core": 1.0.0-canary.3
-  "@algorandfoundation/keystore-web": 1.0.0-canary.3
+  "@algorandfoundation/keystore-core": 1.0.0-canary.4
+  "@algorandfoundation/keystore-web": 1.0.0-canary.4
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
   "@algorandfoundation/provider-migrations": 1.0.0-canary.1
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.19
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.20
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.27
   "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
@@ -200,7 +200,7 @@ patchedDependencies:
   # the intermittent half of apps/browser/e2e/dapp-sign.spec.ts. Creation now
   # happens under a Web Lock with a re-read once held, so the first caller
   # creates and the rest read what it wrote. Drop once upstream takes it.
-  "@algorandfoundation/keystore-web@1.0.0-canary.3": patches/@algorandfoundation__keystore-web@1.0.0-canary.3.patch
+  "@algorandfoundation/keystore-web@1.0.0-canary.4": patches/@algorandfoundation__keystore-web@1.0.0-canary.4.patch
   # Three unrelated reasons, none configurable through plugin options:
   # - The Android credential provider keeps the legacy native app's service
   #   class name, so Credential Manager carries the user's enablement across
@@ -252,9 +252,9 @@ overrides:
   # dropped because it resolved to nothing in the lockfile — no importer, no
   # resolution — leaving Dependabot to bump a spec no consumer used and no test
   # could validate.
-  '@algorandfoundation/keystore-core': 1.0.0-canary.3
-  '@algorandfoundation/keystore-web': 1.0.0-canary.3
-  '@algorandfoundation/react-native-keystore': 1.0.0-canary.19
+  '@algorandfoundation/keystore-core': 1.0.0-canary.4
+  '@algorandfoundation/keystore-web': 1.0.0-canary.4
+  '@algorandfoundation/react-native-keystore': 1.0.0-canary.20
   # Four upstream packages (keystore-core, keystore@canary.17,
   # provider-migrations, react-native-keystore) pin `wallet-provider` at exact
   # `1.0.0-canary.5`, so bumping the catalog alone can't drag them forward and
