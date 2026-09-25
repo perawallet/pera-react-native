@@ -28,8 +28,8 @@ export default defineRule({
             `((call_expression function: (member_expression property: (property_identifier) @fn)) @acquire @key (#match? @fn "${ACQUIRE}"))`,
         ],
         release: [
-            '((call_expression function: (member_expression object: (_) @key property: (property_identifier) @method) arguments: (arguments (number) @zero)) @release (#eq? @method "fill") (#eq? @zero "0"))',
-            '((call_expression function: (identifier) @fn arguments: (arguments . (_) @key)) @release (#eq? @fn "zeroBytes"))',
+            '((call_expression function: (member_expression object: (_) @key property: (property_identifier) @method) arguments: (arguments . (number) @zero .)) @release (#eq? @method "fill") (#eq? @zero "0"))',
+            '((call_expression function: (identifier) @fn arguments: (arguments (_) @key)) @release (#eq? @fn "zeroBytes"))',
         ],
         scope: 'function',
         // A release discharges only the buffer it zeroes, not every

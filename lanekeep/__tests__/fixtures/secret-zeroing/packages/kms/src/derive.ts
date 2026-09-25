@@ -34,3 +34,18 @@ export const unrelated = (phrase: string) => {
     scratch.fill(0)
     return sign(seed)
 }
+
+export const zeroedAmongOthers = (phrase: string, other: Uint8Array) => {
+    const seed = seedFromMnemonic(phrase)
+    try {
+        return sign(seed)
+    } finally {
+        zeroBytes(other, seed)
+    }
+}
+
+export const filledNonZero = (phrase: string) => {
+    const seed = seedFromMnemonic(phrase)
+    seed.fill(1, 0)
+    return sign(seed)
+}

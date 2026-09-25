@@ -14,6 +14,7 @@ describe('pera/secret-buffer-zeroed', () => {
             'derive.ts:3',
             'derive.ts:8',
             'derive.ts:35',
+            'derive.ts:50',
         ])
     })
 })
