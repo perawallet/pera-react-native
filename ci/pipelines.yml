@@ -147,11 +147,12 @@ pipelines:
           VALIDATE_PROFILE: android
           ENVIRONMENT: production
           APP_ENV: production
-          # Raise past Bitrise's last BITRISE_BUILD_NUMBER before
-          # CI_UPLOADS_ENABLED is turned on for this pipeline — CI_RUN_ID
-          # starts at 1 here, and an unraised offset makes versionCode go
-          # backwards, which Play rejects as a non-increasing upload.
-          BUILD_NUMBER_OFFSET: '0'
+          # CI_RUN_ID starts at 1 here, and a versionCode below what is live
+          # is rejected by Play as a non-increasing upload. 1000 clears
+          # Bitrise's BITRISE_BUILD_NUMBER (424 on 2026-09-24, a handful a
+          # day) with months of room; confirm it still does before
+          # CI_UPLOADS_ENABLED is turned on for this pipeline.
+          BUILD_NUMBER_OFFSET: '1000'
         secrets: *android_secrets
         timeout_minutes: 90
       # No changelog: TestFlight takes no release notes from this lane.
@@ -163,9 +164,8 @@ pipelines:
           ENVIRONMENT: production
           APP_ENV: production
           IOS_SCHEME: PeraAlgoWallet
-          # As android's: raise past Bitrise's last BITRISE_BUILD_NUMBER
-          # before uploads are enabled, or TestFlight rejects the build number.
-          BUILD_NUMBER_OFFSET: '0'
+          # As android's: TestFlight rejects a non-increasing build number.
+          BUILD_NUMBER_OFFSET: '1000'
         secrets: *ios_secrets
         timeout_minutes: 120
       web-production:
@@ -181,6 +181,7 @@ pipelines:
         script: ci/jobs/notify.sh
         needs: [test, changelog, android-production, ios-production, web-production]
         always_run: true
+        secrets: [SLACK_WEBHOOK_URL]
 
   nightly:
     on_tag: '^v\d+\.\d+\.\d+-alpha\.\d+$'
@@ -196,11 +197,12 @@ pipelines:
           ENVIRONMENT: staging
           APP_ENV: staging
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
-          # Raise past Bitrise's last BITRISE_BUILD_NUMBER before
-          # CI_UPLOADS_ENABLED is turned on for this pipeline — CI_RUN_ID
-          # starts at 1 here, and an unraised offset makes versionCode go
-          # backwards, which Play rejects as a non-increasing upload.
-          BUILD_NUMBER_OFFSET: '0'
+          # CI_RUN_ID starts at 1 here, and a versionCode below what is live
+          # is rejected by Play as a non-increasing upload. 1000 clears
+          # Bitrise's BITRISE_BUILD_NUMBER (424 on 2026-09-24, a handful a
+          # day) with months of room; confirm it still does before
+          # CI_UPLOADS_ENABLED is turned on for this pipeline.
+          BUILD_NUMBER_OFFSET: '1000'
         secrets: *android_secrets
         timeout_minutes: 90
       ios-staging:
@@ -213,7 +215,8 @@ pipelines:
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
           IOS_SCHEME: Pera7Staging
           # See ios-production.
-          BUILD_NUMBER_OFFSET: '0'
+          BUILD_NUMBER_OFFSET: '1000'
+          SMOKE_PATCH_IPA: 'true'
         secrets: *ios_secrets
         timeout_minutes: 120
       web-staging:
@@ -226,7 +229,28 @@ pipelines:
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
         secrets: *web_secrets
         timeout_minutes: 30
+      # The release gate, nightly-only as on Bitrise: only the staging builds
+      # bake DISABLE_SCREEN_CAPTURE_PREVENTION, and Appium cannot drive a
+      # FLAG_SECURE surface. allow_failure: a red gate shows on the card
+      # without failing builds that already shipped. 30 minutes bounds the
+      # wait behind a BrowserStack queue — see bitrise.yml's _smoke-ios.
+      smoke-ios:
+        script: ci/jobs/smoke.sh
+        needs: [ios-staging]
+        env: { SMOKE_PLATFORM: ios }
+        secrets: &smoke_secrets [BROWSERSTACK_USERNAME, BROWSERSTACK_ACCESS_KEY, SMOKE_HARNESS_GITHUB_TOKEN]
+        allow_failure: true
+        timeout_minutes: 30
+      smoke-android:
+        script: ci/jobs/smoke.sh
+        needs: [android-staging]
+        env: { SMOKE_PLATFORM: android }
+        secrets: *smoke_secrets
+        allow_failure: true
+        timeout_minutes: 30
       notify:
         script: ci/jobs/notify.sh
-        needs: [test, changelog, android-staging, ios-staging, web-staging]
+        needs: [test, changelog, android-staging, ios-staging, web-staging, smoke-ios, smoke-android]
         always_run: true
+        env: { CARD_ROWS: staging }
+        secrets: [SLACK_WEBHOOK_URL]
