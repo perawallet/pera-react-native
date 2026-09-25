@@ -296,7 +296,7 @@ index 0000000000000000000000000000000000000000..ce791746dc698f345dc5176c47882605
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-index c0b23c0c1c5de2e32ed94b442125c56f7660b347..150ba1401c1388025da2f7927b0109dcab281a46 100644
+index c0b23c0c1c5de2e32ed94b442125c56f7660b347..87e6ace83bfc2a83369842fdac27d69ae2b25c20 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 @@ -4,7 +4,10 @@ import expo.modules.kotlin.exception.CodedException
@@ -326,7 +326,14 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..150ba1401c1388025da2f7927b0109dc
      // NoOp on Android. iOS exposes diagnostics from the shared App Group
      // store; there is no equivalent on Android yet.
      AsyncFunction("getDiagnostics") {
-@@ -178,8 +173,6 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -172,14 +167,13 @@ class ReactNativePasskeyAutofillModule : Module() {
+     AsyncFunction("getStoredCredentials") {
+       val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
+         ?: return@AsyncFunction emptyList<Map<String, Any>>()
++      // PERA LOCAL PATCH: maps the key-free summary; JS never read `publicKey` or `derivationScheme`.
+       credentialRepository.getAllCredentials(context).map { credential ->
+         mapOf(
+           "credentialId" to credential.credentialId,
            "relyingPartyIdentifier" to credential.origin,
            "userName" to credential.userHandle,
            "userHandle" to credential.userHandle,
@@ -335,7 +342,7 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..150ba1401c1388025da2f7927b0109dc
          )
        }
      }
-@@ -194,7 +187,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -194,7 +188,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    }
  
    /**
@@ -344,7 +351,7 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..150ba1401c1388025da2f7927b0109dc
     * is registered as an active credential provider for the current user.
     *
     * On API 34+ (UpsideDownCake) we use the official
-@@ -209,7 +202,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -209,7 +203,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    private fun isProviderEnabled(context: Context): Boolean {
      val component = ComponentName(
        context.packageName,
@@ -353,7 +360,7 @@ index c0b23c0c1c5de2e32ed94b442125c56f7660b347..150ba1401c1388025da2f7927b0109dc
      )
      val expected = component.flattenToString()
  
-@@ -260,7 +253,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -260,7 +254,7 @@ class ReactNativePasskeyAutofillModule : Module() {
      // Manager screen isn't a directly launchable activity.
      val component = ComponentName(
        context.packageName,
@@ -408,7 +415,7 @@ index 0ba3046c9820bdc7cda11d2e0f279fedd99156af..f7dcd2a16813e82293becfc15514fe2c
              skipItem(c)
          }
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt
-index e1b86733f4537225cfb079a594c10b28308762bf..dbc96c5176af9bf38f1733f47245de8b438bbb37 100644
+index e1b86733f4537225cfb079a594c10b28308762bf..a42f220881e4e6b1592f8b7e609411cbeae02610 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt
 @@ -8,10 +8,10 @@ data class Credential(
@@ -426,13 +433,15 @@ index e1b86733f4537225cfb079a594c10b28308762bf..dbc96c5176af9bf38f1733f47245de8b
       */
      val privateKey: String,
      val count: Int,
-@@ -37,4 +37,18 @@ data class Credential(
+@@ -37,4 +37,20 @@ data class Credential(
       * unchanged.
       */
      val derivationVersion: Int = PasskeyDerivation.VERSION_LEGACY_LABEL,
 +)
 +
 +/**
++ * PERA LOCAL PATCH — listing hands the chooser metadata only, never private material.
++ *
 + * What the credential chooser needs to offer a credential, and nothing more.
 + * Enumeration runs before the user has picked or verified anything, so it
 + * never carries private material. [biometricIv] is the GCM IV of a
@@ -447,10 +456,10 @@ index e1b86733f4537225cfb079a594c10b28308762bf..dbc96c5176af9bf38f1733f47245de8b
  )
 \ No newline at end of file
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
-index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab70c3744ac 100644
+index 49afb9fb795c00548c79951016f56b0c6700e175..891aeeb71bf16ac970513f7e88bdbb6c7daec5ff 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
-@@ -126,20 +126,16 @@ interface CredentialRepository {
+@@ -126,20 +126,18 @@ interface CredentialRepository {
       */
      fun getCredentialMetadata(context: Context, credentialId: ByteArray): Credential?
  
@@ -465,6 +474,8 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
 -     * records the user may never select. A legacy flat record still has to be
 -     * opened to read its metadata — that is the record format — but its
 -     * material is not decoded. Load exactly one credential's key afterwards
++     * PERA LOCAL PATCH — listing must not decrypt anything before the user picks a credential.
++     *
 +     * Every credential this module owns, as the chooser needs it and nothing
 +     * more. Enumeration runs before the user has picked a credential or
 +     * verified anything, so it reads only the plaintext `k/` metadata records:
@@ -478,7 +489,11 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
      fun getPublicKeyFromKeyPair(keyPair: KeyPair?): ByteArray
      fun sign(keyPair: KeyPair, payload: ByteArray): ByteArray
      /**
-@@ -272,32 +268,21 @@ class Repository() : CredentialRepository {
+@@ -269,35 +267,25 @@ class Repository() : CredentialRepository {
+         return MMKV.mmkvWithID(CredentialRepository.PASSKEY_AUTOFILL_MMKV_ID, MMKV.MULTI_PROCESS_MODE)
+     }
+ 
++    // PERA LOCAL PATCH: writes plaintext `k/` plus sealed `m/`, so listing never needs to decrypt.
      override fun saveCredential(context: Context, credential: Credential, biometricCipher: Cipher?) {
          PasskeyLog.d(CredentialRepository.TAG, "saveCredential started")
          val mmkv = getPasskeysMMKV(context)
@@ -525,17 +540,17 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
          val metadata = JSONObject()
          metadata.put("origin", credential.origin)
          metadata.put("userHandle", credential.userHandle)
-@@ -309,122 +294,66 @@ class Repository() : CredentialRepository {
+@@ -309,122 +297,69 @@ class Repository() : CredentialRepository {
          credential.parentKeyId?.let { metadata.put("parentKeyId", it) }
          credential.derivationScheme?.let { metadata.put("scheme", it) }
          metadata.put("derivationVersion", credential.derivationVersion)
 -        keyData.put("metadata", metadata)
--
++        record.put("metadata", metadata)
+ 
 -        // 2. Encode matching react-native-keystore's encode()
 -        val jsonString = keyData.toString()
 -        val base64urlJson = AndroidBase64.encodeToString(jsonString.toByteArray(Charsets.UTF_8), AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP)
-+        record.put("metadata", metadata)
- 
+-
 -        // 3. Seal matching react-native-keystore's commit(). There is deliberately
 -        // no unsealed fallback: without the master key the record — which carries
 -        // the P-256 private key — is not written at all and creation aborts.
@@ -572,6 +587,7 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
      }
  
 -    override fun getAllCredentials(context: Context): List<Credential> {
++    // PERA LOCAL PATCH: lists plaintext `k/` records only, so no envelope is opened before selection.
 +    override fun getAllCredentials(context: Context): List<CredentialSummary> {
          val mmkv = getPasskeysMMKV(context)
          val allKeys = mmkv.allKeys() ?: return emptyList()
@@ -625,11 +641,13 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
              }
          }
 -        return credentials
--    }
--
--    /**
++        return summaries
+     }
+ 
+     /**
 -     * Builds a [Credential] from a decoded legacy flat record (`KeyData` JSON).
--     *
++     * PERA LOCAL PATCH — the biometric IV lives in plaintext `k/`, so the chooser can build its `CryptoObject`.
+      *
 -     * @param includeMaterial whether to materialise the private key. `false`
 -     *   for enumeration and pre-signing lookups; `true` only for the single
 -     *   credential the user selected and verified for.
@@ -674,10 +692,9 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
 -            derivationVersion = metadata?.optInt("derivationVersion", PasskeyDerivation.VERSION_LEGACY_LABEL)
 -                ?: PasskeyDerivation.VERSION_LEGACY_LABEL,
 -        )
-+        return summaries
-     }
- 
-     /**
+-    }
+-
+-    /**
 -     * Builds a [Credential] from a split-layout `k/<id>` metadata record.
 -     *
 -     * These carry no material: a domain key is defined by its parent plus its
@@ -691,7 +708,7 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
       */
      private fun credentialFromMetadataRecord(json: JSONObject): Credential? {
          val id = json.optString("id").takeUnless { it.isEmpty() } ?: return null
-@@ -439,20 +368,13 @@ class Repository() : CredentialRepository {
+@@ -439,20 +374,13 @@ class Repository() : CredentialRepository {
              publicKey = AndroidBase64.encodeToString(publicKey, AndroidBase64.DEFAULT),
              privateKey = "",
              count = metadata.optInt("count", 0),
@@ -713,7 +730,15 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
      override fun generateCredentialId(keyPair: KeyPair): ByteArray {
          val publicKeyBytes = keyPair.public.encoded
          val messageDigest = MessageDigest.getInstance("SHA-256")
-@@ -475,38 +397,56 @@ class Repository() : CredentialRepository {
+@@ -465,6 +393,7 @@ class Repository() : CredentialRepository {
+     override fun getCredentialMetadata(context: Context, credentialId: ByteArray): Credential? =
+         readCredential(context, credentialId, biometricCipher = null, includeMaterial = false)
+ 
++    // PERA LOCAL PATCH: reads `k/` only, and opens `m/` for the one credential the user selected.
+     private fun readCredential(
+         context: Context,
+         credentialId: ByteArray,
+@@ -475,38 +404,59 @@ class Repository() : CredentialRepository {
          PasskeyLog.d(CredentialRepository.TAG, "readCredential started (includeMaterial=$includeMaterial)")
          val mmkv = getPasskeysMMKV(context)
  
@@ -728,17 +753,19 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
 -                credentialFromMetadataRecord(JSONObject(plaintext))?.let { return it }
 +            val credential = try {
 +                credentialFromMetadataRecord(JSONObject(plaintext))
-             } catch (e: Exception) {
-                 PasskeyLog.w(CredentialRepository.TAG, "Unreadable metadata record for a credential id candidate", e)
++            } catch (e: Exception) {
++                // Class name only: an org.json exception quotes the record it failed on.
++                PasskeyLog.w(CredentialRepository.TAG, "Unreadable metadata record for a credential id candidate (${e.javaClass.simpleName})")
 +                null
 +            } ?: continue
 +            if (!includeMaterial) return credential
 +            return try {
 +                credential.copy(privateKey = readCredentialMaterial(context, candidate, credential.biometricIv, biometricCipher))
-+            } catch (e: Exception) {
+             } catch (e: Exception) {
+-                PasskeyLog.w(CredentialRepository.TAG, "Unreadable metadata record for a credential id candidate", e)
 +                // A key that will not open signs nothing: the assertion fails
 +                // rather than falling back to re-derivation.
-+                PasskeyLog.w(CredentialRepository.TAG, "Credential material could not be opened", e)
++                PasskeyLog.w(CredentialRepository.TAG, "Credential material could not be opened (${e.javaClass.simpleName})")
 +                null
              }
          }
@@ -755,6 +782,8 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
 -            return null
 -        }
 +    /**
++     * PERA LOCAL PATCH — the only place a credential's sealed material is opened.
++     *
 +     * Opens `m/<id>` for the one credential the user selected, unwrapping it
 +     * with [biometricCipher] when the record is biometric-wrapped. Returns
 +     * `""` when there is no stored material, or when a wrapped record is read
@@ -791,7 +820,7 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
      fun getKeyPairFromCredential(credential: Credential): KeyPair? {
          if (credential.privateKey.isEmpty()) return null
          val publicKeyBytes = AndroidBase64.decode(credential.publicKey, AndroidBase64.DEFAULT)
-@@ -580,8 +520,8 @@ class Repository() : CredentialRepository {
+@@ -580,8 +530,8 @@ class Repository() : CredentialRepository {
  
          // A credential the wallet derived itself carries no material at all (a
          // domain key is metadata plus a public key: it is re-derivable by
@@ -802,7 +831,7 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
          if (credential.origin.isEmpty() || credential.userHandle.isEmpty()) return null
          return try {
              createDomainKeyPair(
-@@ -723,47 +663,6 @@ class Repository() : CredentialRepository {
+@@ -723,47 +673,6 @@ class Repository() : CredentialRepository {
          (resolveParentSecret(context) as? ParentSecretResult.Available)?.secret?.bytes
  
  
@@ -850,7 +879,12 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
      override fun saveMasterKey(context: Context, secret: ByteArray) {
          // Reject a key that could never seal anything BEFORE touching storage, so
          // a bad key does not replace a working one.
-@@ -938,20 +837,18 @@ class Repository() : CredentialRepository {
+@@ -934,26 +843,28 @@ class Repository() : CredentialRepository {
+         }
+     }
+ 
++    // PERA LOCAL PATCH: counts a use in plaintext `k/`, with no decrypt.
+     override fun recordCredentialUsage(context: Context, credentialId: ByteArray) {
          val id = AndroidBase64.encodeToString(credentialId, AndroidBase64.DEFAULT).trim()
          try {
              val mmkv = getPasskeysMMKV(context)
@@ -873,6 +907,8 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
 +                val key = KeystoreRecords.metadataKey(candidate)
 +                val plaintext = mmkv.decodeString(key) ?: continue
 +                val json = JSONObject(plaintext)
++                // `k/` is shared with the wallet's own keys; count only a passkey.
++                if (!KeystoreRecords.isPasskeyRecordType(json.optString("type", ""))) continue
 +                val metadata = json.optJSONObject("metadata") ?: JSONObject()
 +                metadata.put("lastUsedAt", System.currentTimeMillis())
 +                metadata.put("count", metadata.optInt("count", 0) + 1)
@@ -881,8 +917,12 @@ index 49afb9fb795c00548c79951016f56b0c6700e175..405964a1580126dfeb0d4d7bda214ab7
 +                return
 +            }
          } catch (e: Exception) {
-             PasskeyLog.e(CredentialRepository.TAG, "Failed to record credential usage", e)
+-            PasskeyLog.e(CredentialRepository.TAG, "Failed to record credential usage", e)
++            // Class name only: an org.json exception quotes the record it failed on.
++            PasskeyLog.e(CredentialRepository.TAG, "Failed to record credential usage (${e.javaClass.simpleName})")
          }
+     }
+ 
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
 index b9b8648117fe1f9d4d0495eea99bcb7186e7a604..10c041051b705ba2d427ff8d01e4df5f80e9dec6 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
