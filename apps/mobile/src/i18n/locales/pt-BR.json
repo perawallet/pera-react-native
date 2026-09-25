@@ -2634,8 +2634,9 @@
         },
         "close_account": {
             "title": "Encerrar conta",
-            "body": "Esta conta não tem ativos adicionados. Enviar todo o saldo encerrará a conta na rede Algorand.",
+            "body": "Esta conta não tem ativos adicionados, então você pode encerrá-la e enviar todo o saldo. Algumas exchanges não aceitam transações que encerram uma conta. Se você mantiver a conta aberta, o saldo mínimo de {{minBalance}} ALGO permanece nela.",
             "confirm": "Encerrar conta e enviar",
+            "keep_open": "Enviar sem encerrar",
             "warning": "Esta transação encerrará sua conta na rede Algorand.",
             "success_title": "Conta encerrada",
             "success_subtitle": "Sua conta foi encerrada na rede Algorand."

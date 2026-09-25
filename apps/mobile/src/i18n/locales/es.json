@@ -2618,8 +2618,9 @@
         },
         "close_account": {
             "title": "Cerrar cuenta",
-            "body": "Esta cuenta no tiene ningún activo añadido. Enviar todo el saldo cerrará la cuenta en la red de Algorand.",
+            "body": "Esta cuenta no tiene ningún activo añadido, así que puedes cerrarla y enviar todo el saldo. Algunos exchanges no aceptan transacciones que cierran una cuenta. Si mantienes la cuenta abierta, el saldo mínimo de {{minBalance}} ALGO se queda en ella.",
             "confirm": "Cerrar cuenta y enviar",
+            "keep_open": "Enviar sin cerrar",
             "warning": "Esta transacción cerrará tu cuenta en la red de Algorand.",
             "success_title": "Cuenta cerrada",
             "success_subtitle": "Tu cuenta se ha cerrado en la red de Algorand."

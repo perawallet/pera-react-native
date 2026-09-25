@@ -2618,8 +2618,9 @@
         },
         "close_account": {
             "title": "Close Account",
-            "body": "This account has no opted-in assets. Sending the full balance will close the account on the Algorand network.",
+            "body": "This account has no opted-in assets, so you can close it and send the full balance. Some exchanges don't accept transactions that close an account. If you keep the account open, the minimum balance of {{minBalance}} ALGO stays in it.",
             "confirm": "Close Account & Send",
+            "keep_open": "Send Without Closing",
             "warning": "This transaction will close your account on the Algorand network.",
             "success_title": "Account Closed",
             "success_subtitle": "Your account has been closed on the Algorand network."
