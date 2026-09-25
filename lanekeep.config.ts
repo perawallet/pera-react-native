@@ -4,6 +4,7 @@
 
 import { defineConfig } from 'lanekeep'
 
+import amountTypes from './lanekeep/rules/amount-types.js'
 import copyrightHeader from './lanekeep/rules/copyright-header.js'
 import errorMessageKeyExists from './lanekeep/rules/error-message-key-exists.js'
 import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
@@ -94,5 +95,6 @@ export default defineConfig({
         localePlaceholderSuffix,
         noSnapshotTests,
         noAssertionlessTest,
+        amountTypes,
     ],
 })

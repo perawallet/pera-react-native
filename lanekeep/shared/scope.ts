@@ -45,3 +45,15 @@ export const withoutTests = (own: Gates): Gates => ({
     ...own,
     pathNotMatches: [...TEST_FILES, ...(own.pathNotMatches ?? [])],
 })
+
+/**
+ * Test support that isn't named as a test: integration fixtures, mocks, test
+ * utilities and MSW handlers. Rules about shipped runtime behaviour skip it.
+ */
+export const TEST_SUPPORT: readonly string[] = [
+    '**/__integration__/**',
+    '**/__mocks__/**',
+    '**/test-utils/**',
+    '**/msw-handlers.ts',
+    '**/test-handlers.ts',
+]
