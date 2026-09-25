@@ -2578,6 +2578,7 @@
         "input": {
             "max": "MÁX",
             "next": "Avançar",
+            "amount_label": "Valor",
             "error_title": "Valor inválido",
             "error_body": "Digite um valor maior que {{min}}.",
             "exceeds_max_title": "Saldo insuficiente",

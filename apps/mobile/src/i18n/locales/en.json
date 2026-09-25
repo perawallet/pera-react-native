@@ -2562,6 +2562,7 @@
         "input": {
             "max": "MAX",
             "next": "Next",
+            "amount_label": "Amount",
             "error_title": "Invalid Amount",
             "error_body": "Please enter an amount greater than {{min}}.",
             "exceeds_max_title": "Insufficient Balance",

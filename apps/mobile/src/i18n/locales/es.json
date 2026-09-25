@@ -2562,6 +2562,7 @@
         "input": {
             "max": "MÁX",
             "next": "Siguiente",
+            "amount_label": "Importe",
             "error_title": "Cantidad no válida",
             "error_body": "Introduce una cantidad mayor que {{min}}.",
             "exceeds_max_title": "Saldo insuficiente",

@@ -2562,6 +2562,7 @@
         "input": {
             "max": "MAKS",
             "next": "İleri",
+            "amount_label": "Tutar",
             "error_title": "Geçersiz miktar",
             "error_body": "Lütfen {{min}} değerinden büyük bir miktar gir.",
             "exceeds_max_title": "Yetersiz bakiye",

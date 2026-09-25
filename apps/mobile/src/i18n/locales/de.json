@@ -2554,6 +2554,7 @@
         "input": {
             "max": "MAX",
             "next": "Weiter",
+            "amount_label": "Betrag",
             "error_title": "Ungültiger Betrag",
             "error_body": "Bitte gib einen Betrag größer als {{min}} ein.",
             "exceeds_max_title": "Unzureichendes Guthaben",
