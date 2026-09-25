@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
     useNetwork,
     isValidAlgorandAddress,
@@ -33,15 +33,23 @@ import type { NfdName } from '../models'
  * results still flow back through the executor's `getNfdsByAddresses`
  * re-read, so the hook gets the right value either way.
  */
+export type UseNfdForAddressQueryResult = {
+    data: NfdName[]
+    isPending: boolean
+}
+
+// One stable empty array, so memos that depend on `data` don't re-run every render.
+const NO_RESULTS: NfdName[] = []
+
 export const useNfdForAddressQuery = (
     address: string,
     options?: { enabled?: boolean },
-): UseQueryResult<NfdName[], Error> => {
+): UseNfdForAddressQueryResult => {
     const { network } = useNetwork()
     const enabled =
         (options?.enabled ?? true) && isValidAlgorandAddress(address)
 
-    return useQuery({
+    const query = useQuery({
         queryKey: nfdQueryKeys.forAddress(address, network),
         queryFn: () => {
             const valuePromise = nfdBatchQueue.enqueue(address, network)
@@ -51,4 +59,9 @@ export const useNfdForAddressQuery = (
         staleTime: config.reactQueryLongLivedStaleTime,
         gcTime: config.reactQueryLongLivedGCTime,
     })
+
+    return {
+        data: query.data ?? NO_RESULTS,
+        isPending: query.isPending,
+    }
 }
