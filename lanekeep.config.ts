@@ -79,7 +79,6 @@ export default defineConfig({
         errorParamsMatchCopy,
         noUnusedStyleKeys,
         copyrightHeader,
-        specFileSuffix,
         noWorkItemRefs,
         localeKeyParity,
         translationKeyExists,
@@ -88,5 +87,6 @@ export default defineConfig({
         pqLibrarySeam,
         noKeystoreMetaPackage,
         noRetiredQuantumCustody,
+        specFileSuffix,
     ],
 })
