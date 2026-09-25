@@ -49,7 +49,6 @@ const NETWORK_DISPLAY_ORDER: Network[] = [
 
 // A custom node serves balances and transaction previews, so a store-installed
 // production extension doesn't let a user be talked into pointing it anywhere.
-// Not deviceInfo.getAppEnvironment(): on Chrome it reads an env var no build sets.
 const isCustomNetworkOffered = (): boolean =>
     !(
         config.appEnvironment === 'production' &&
