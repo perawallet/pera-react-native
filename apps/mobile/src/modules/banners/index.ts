@@ -18,6 +18,9 @@
 // how react-native-pager-view once leaked into the web bundle. The carousels
 // live in `@modules/banners/carousel` and the modal screen in
 // `@modules/banners/routes`.
-export * from './components/HomeBannersStrip'
-export * from './hooks'
+export {
+    HomeBannersStrip,
+    useHomeBannersStrip,
+} from './components/HomeBannersStrip'
+export { useBannerLinkRouter } from './hooks'
 export { BANNER_REVEAL_EASING } from './components/animations'

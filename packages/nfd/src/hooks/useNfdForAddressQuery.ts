@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
     useNetwork,
     isValidAlgorandAddress,
@@ -19,6 +19,14 @@ import { config } from '@perawallet/wallet-core-config'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdName } from '../models'
+
+export type UseNfdForAddressQueryResult = {
+    data: NfdName[]
+    isPending: boolean
+}
+
+// One stable empty array, so memos that depend on `data` don't re-run every render.
+const NO_RESULTS: NfdName[] = []
 
 /**
  * The batch queue coalesces enqueues that land in the same microtask.
@@ -36,12 +44,12 @@ import type { NfdName } from '../models'
 export const useNfdForAddressQuery = (
     address: string,
     options?: { enabled?: boolean },
-): UseQueryResult<NfdName[], Error> => {
+): UseNfdForAddressQueryResult => {
     const { network } = useNetwork()
     const enabled =
         (options?.enabled ?? true) && isValidAlgorandAddress(address)
 
-    return useQuery({
+    const query = useQuery({
         queryKey: nfdQueryKeys.forAddress(address, network),
         queryFn: () => {
             const valuePromise = nfdBatchQueue.enqueue(address, network)
@@ -51,4 +59,9 @@ export const useNfdForAddressQuery = (
         staleTime: config.reactQueryLongLivedStaleTime,
         gcTime: config.reactQueryLongLivedGCTime,
     })
+
+    return {
+        data: query.data ?? NO_RESULTS,
+        isPending: query.isPending,
+    }
 }

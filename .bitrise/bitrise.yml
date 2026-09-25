@@ -434,6 +434,16 @@ workflows:
             envman add --key APP_VERSION --value "$VERSION"
             envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
     - script@1:
+        title: Verify iOS production identity
+        run_if: '{{enveq "ENVIRONMENT" "production"}}'
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # Before the build's own prebuild: the check generates a clean
+            # production project to assert against, which the next step replaces.
+            pnpm --filter mobile verify:ios-identity
+    - script@1:
         title: Expo Prebuild
         inputs:
         - content: |
@@ -836,6 +846,19 @@ workflows:
               exit 1
             fi
             envman add --key ANDROID_NDK_HOME --value "$NDK_DIR"
+    - script@1:
+        title: Verify Android production identity
+        run_if: '{{enveq "ENVIRONMENT" "production"}}'
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # Needs Java and the SDK for the Gradle manifest merger. The check
+            # regenerates android/ without BUILD_NUMBER, so prebuild the build's
+            # project again afterwards or the release ships the base versionCode.
+            pnpm --filter mobile verify:android-identity
+            export APP_ENV=$ENVIRONMENT
+            pnpm --filter mobile expo:prebuild
     - script@1:
         title: Android KeyStore
         inputs:

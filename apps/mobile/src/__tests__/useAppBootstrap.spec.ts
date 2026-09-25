@@ -160,7 +160,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('./i18n', () => ({
-    default: {
+    i18n: {
         get language() {
             return mocks.i18nLanguage
         },
@@ -168,7 +168,7 @@ vi.mock('./i18n', () => ({
     },
 }))
 vi.mock('../i18n', () => ({
-    default: {
+    i18n: {
         get language() {
             return mocks.i18nLanguage
         },

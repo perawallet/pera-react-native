@@ -25,12 +25,16 @@ If a doc and a module doc both explain something, one is the source and the othe
 
 ## Enforcement
 
-`pnpm lint:docs` (`tools/check-doc-hygiene.mjs`, part of pre-push) fails on work-item references,
-dead links and paths that are not in the repo, and reports over-long `docs/` files without failing.
-Record a genuine exception with its reason on the line above:
+`pnpm lint:docs` (`tools/check-doc-hygiene.mjs`, in pre-push and CI) checks Markdown, shell and
+YAML: it fails on work-item references, dead links and paths that are not in the repo, and reports
+over-long `docs/` files without failing. Record a genuine exception with its reason on the line
+above:
 
 ```
 <!-- doc-hygiene-ignore-next-line stale-path reason: written by CI at build time -->
 ```
+
+Code comments are checked by the lanekeep rule `pera/no-work-item-refs`, part of `pnpm lint`; an
+exception there is a `lanekeep-ignore-next-line` directive naming that rule, with a reason.
 
 The `writing-docs` skill carries the full guidance, with worked examples.

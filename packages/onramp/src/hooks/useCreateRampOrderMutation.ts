@@ -10,25 +10,38 @@
  limitations under the License
  */
 
-import { useMutation, type UseMutationResult } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 import { createRampOrder, type CreateRampOrderParams } from '../api'
 import type { RampOrder } from '../models'
 
-export const useCreateRampOrderMutation = (): UseMutationResult<
-    RampOrder,
-    Error,
-    CreateRampOrderParams
-> => {
-    const { network } = useNetwork()
-
-    return useMutation({
-        mutationFn: (params: CreateRampOrderParams) =>
-            createRampOrder(params, network),
-        // Handled inline by the form's confirm flow (toast). Mirrors
-        // `mutationDefaults` (@perawallet/wallet-core-shared), which already
-        // sets throwOnError: false.
-        throwOnError: false,
-    })
+export type UseCreateRampOrderMutationResult = {
+    mutate: (params: CreateRampOrderParams) => void
+    mutateAsync: (params: CreateRampOrderParams) => Promise<RampOrder>
+    isSuccess: boolean
+    isError: boolean
+    isPaused: boolean
 }
+
+export const useCreateRampOrderMutation =
+    (): UseCreateRampOrderMutationResult => {
+        const { network } = useNetwork()
+
+        const mutation = useMutation({
+            mutationFn: (params: CreateRampOrderParams) =>
+                createRampOrder(params, network),
+            // Handled inline by the form's confirm flow (toast). Mirrors
+            // `mutationDefaults` (@perawallet/wallet-core-shared), which already
+            // sets throwOnError: false.
+            throwOnError: false,
+        })
+
+        return {
+            mutate: mutation.mutate,
+            mutateAsync: mutation.mutateAsync,
+            isSuccess: mutation.isSuccess,
+            isError: mutation.isError,
+            isPaused: mutation.isPaused,
+        }
+    }

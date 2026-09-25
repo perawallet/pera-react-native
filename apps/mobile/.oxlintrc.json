@@ -17,7 +17,7 @@
   "jsPlugins": [
     "eslint-plugin-unused-imports",
     "eslint-plugin-react-native",
-    "./scripts/oxlint-pera-plugin.mjs"
+    "@perawallet/wallet-core-devtools/oxlint"
   ],
   "globals": {
     "__DEV__": "readonly",
@@ -85,6 +85,110 @@
           }
         ]
       }
+    },
+    {
+      "files": ["src/**/*.tsx"],
+      "excludeFiles": [
+        "src/modules/settings/screens/developer/**",
+        "src/**/__tests__/**",
+        "src/**/*.{spec,test}.tsx"
+      ],
+      "rules": {
+        "pera/no-hardcoded-ui-strings": "warn"
+      }
+    },
+    {
+      "files": ["src/**/*.{ts,tsx}"],
+      "excludeFiles": ["src/**/__tests__/**"],
+      "rules": {
+        "pera/dev-gallery-entry-points": "error"
+      }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": [
+        "src/**/__tests__/**",
+        "src/**/__mocks__/**",
+        "src/**/test-utils/**",
+        "src/**/__integration__/**",
+        "src/**/*.spec.{ts,tsx}",
+        "src/**/*.test.{ts,tsx}"
+      ],
+      "rules": {
+        "pera/wc-connector-ownership": "error"
+      }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}", "src/modules/settings/screens/developer/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "StyleSheet",
+            "property": "create",
+            "message": "Style with makeStyles from @rneui/themed, in a styles.ts beside the component."
+          },
+          {
+            "object": "Alert",
+            "property": "alert",
+            "message": "Show a bottom sheet, or the error toast for failures; only developer screens use a native alert."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/modules/settings/screens/developer/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "StyleSheet",
+            "property": "create",
+            "message": "Style with makeStyles from @rneui/themed, in a styles.ts beside the component."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "decimal.js",
+                "importNames": ["default"],
+                "message": "Import the named { Decimal } from decimal.js."
+              }
+            ]
+          }
+        ],
+        "pera/decimal-construction": "error"
+      }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}", "src/**/*.d.ts"],
+      "rules": { "import/no-default-export": "error" }
+    },
+    {
+      "files": [
+        "src/modules/*/index.ts",
+        "src/modules/*/routes/index.ts",
+        "src/modules/*/routes/index.tsx",
+        "src/modules/*/shell.ts",
+        "src/modules/*/web.ts"
+      ],
+      "rules": { "pera/module-entry-named-exports": "error" }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/hook-result-type": "error" }
     }
   ]
 }

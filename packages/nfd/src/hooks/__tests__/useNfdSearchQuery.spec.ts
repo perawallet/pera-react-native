@@ -66,4 +66,16 @@ describe('useNfdSearchQuery', () => {
 
         expect(mockFetchNfdSearch).not.toHaveBeenCalled()
     })
+    it('returns one stable empty array while disabled', () => {
+        const { result, rerender } = renderHook(
+            () => useNfdSearchQuery('bruno.algo', { enabled: false }),
+            { wrapper },
+        )
+        const initialData = result.current.data
+
+        rerender()
+
+        expect(initialData).toEqual([])
+        expect(result.current.data).toBe(initialData)
+    })
 })

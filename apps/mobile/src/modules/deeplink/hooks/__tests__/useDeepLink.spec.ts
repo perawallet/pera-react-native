@@ -1227,7 +1227,10 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case, pushWebView should have been called
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            id: 'test-id',
+            url: 'https://example.com',
+        })
     })
 
     it('opens INTERNAL_BROWSER deeplink via Linking when inAppWebView is off', async () => {
@@ -1556,7 +1559,16 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case (infoPost called)
+        expect(mockNavigate).toHaveBeenCalledWith('Messages', {
+            screen: 'AssetTransferRequests',
+            params: {
+                item: {
+                    address: 'addr1',
+                    inboxAddress: 'addr1',
+                    requestCount: 1,
+                },
+            },
+        })
     })
 
     it('navigates to Pera Card for a CARDS deeplink when enabled', async () => {
@@ -1783,12 +1795,16 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case
+        expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'WatchAccount',
+            params: { prefillAddress: undefined },
+        })
     })
 
     it('should handle RECEIVER_ACCOUNT_SELECTION deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
+            address: 'addr1',
         })
         const { result } = renderHook(() => useDeepLink())
 
@@ -1800,7 +1816,16 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'send-funds',
+            { assetId: undefined },
+            {
+                size: 'modal',
+                enablePanDownToClose: false,
+                enableCloseOnBackdropPress: false,
+                autoCreateContainer: false,
+            },
+        )
     })
 
     it('should open account-actions bottom sheet for ADDRESS_ACTIONS deeplink', async () => {
@@ -2011,7 +2036,9 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case (logger.error called)
+        expect(logger.error).toHaveBeenCalledWith(expect.any(Error), {
+            type: DeeplinkType.HOME,
+        })
     })
 
     it('should handle SWAP deeplink without address', async () => {
@@ -2170,7 +2197,10 @@ describe('useDeeplinkListener', () => {
             vi.runAllTimers()
         })
 
-        // Success case
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'AccountDetails' },
+        })
     })
 
     it('should handle initial URL error', async () => {
@@ -2184,10 +2214,16 @@ describe('useDeeplinkListener', () => {
             await Promise.resolve() // Wait for useEffect
         })
 
-        // Success case (logger.debug called)
+        expect(logger.debug).toHaveBeenCalledWith(
+            'Deeplink: Error getting initial URL',
+            { error: expect.any(Error) },
+        )
     })
 
     it('should handle URL events', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.HOME,
+        })
         const mockAddListener = Linking.addEventListener as Mock
         renderHook(() => useDeeplinkListener())
 
@@ -2197,7 +2233,10 @@ describe('useDeeplinkListener', () => {
             callback({ url: 'perawallet://app' })
         })
 
-        // Success case
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'AccountDetails' },
+        })
     })
 
     it('should not handle null initial URL', async () => {
@@ -2243,7 +2282,7 @@ describe('useDeeplinkListener', () => {
             callback({ url: 'invalid://url' })
         })
 
-        // parseDeeplink returns null, so deeplink is not handled
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     describe('PERA_WEB_IMPORT', () => {

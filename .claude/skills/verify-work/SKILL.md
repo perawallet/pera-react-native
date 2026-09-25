@@ -46,6 +46,4 @@ Work is NOT complete until all checks pass. If any check fails:
 pnpm lint           # Check for linting errors
 pnpm lint:fix       # Auto-fix linting issues
 pnpm format         # Format code
-pnpm lint:copyright # Validate/add copyright headers
-pnpm lint:i18n      # Validate i18n strings
 ```

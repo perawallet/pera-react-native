@@ -14,13 +14,10 @@
     "pre-push": "./tools/pre-push",
     "lint": "turbo run lint && pnpm lint:lanekeep",
     "lint:types": "oxlint --config .oxlintrc.types.json --type-aware apps packages extensions conformance lanekeep",
-    "lint:fix": "turbo run lint -- --fix",
-    "lint:lanekeep": "lanekeep check",
-    "lint:i18n": "node tools/i18n-lint.cjs",
+    "lint:fix": "pnpm lint:lanekeep --fix; turbo run lint -- --fix",
+    "lint:lanekeep": "lanekeep check --report-unused-suppressions",
     "lint:docs": "node tools/check-doc-hygiene.mjs",
     "lint:docs:warn": "node tools/check-doc-hygiene.mjs --warn-only",
-    "lint:copyright": "node tools/copyright-header.mjs --fix",
-    "lint:copyright:check": "node tools/copyright-header.mjs --check",
     "format": "oxfmt \"**/*.{ts,tsx,md}\"",
     "test": "bash tools/rebuild-native.sh && bash tools/generate-config.sh && turbo run test && pnpm test:lanekeep",
     "test:lanekeep": "vitest run lanekeep/__tests__",
@@ -45,7 +42,6 @@
     "check:kms-pq-dist": "node tools/check-kms-pq-dist.mjs",
     "check:dts-emit": "node tools/check-dts-emit.mjs",
     "check:layer-tiers": "node tools/check-layer-tiers.mjs",
-    "check:test-suffix": "node tools/check-test-suffix.mjs",
     "fallow": "fallow --skip health"
   },
   "devDependencies": {

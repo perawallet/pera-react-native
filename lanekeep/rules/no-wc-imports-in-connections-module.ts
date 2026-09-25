@@ -3,6 +3,7 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { withoutTests } from '../shared/scope.js'
 
 const WALLETCONNECT_PACKAGE = '@perawallet/wallet-core-walletconnect'
 
@@ -19,7 +20,7 @@ export default defineRule({
             good: '// in src/modules/connections/hooks/useConnectionPairing.ts\nregistry.abandonPairing(pairingId)',
         },
     },
-    gates: {
+    gates: withoutTests({
         // The deeplink handlers are in the lane too: they are a pairing entry
         // point that reaches the registry, so the same protocol-agnosticism
         // applies to them as to the module itself.
@@ -28,7 +29,7 @@ export default defineRule({
             '**/apps/mobile/src/modules/deeplink/handlers/**',
         ],
         fileContains: [WALLETCONNECT_PACKAGE],
-    },
+    }),
     // Every form that creates the dependency: static, `export … from`, and
     // a deferred `import()` — which still puts the module in the bundle.
     query: `

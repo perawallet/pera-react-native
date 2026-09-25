@@ -157,7 +157,7 @@ consider flipping it is already reading that line.
 
 A web difference that is not a product decision (a focus-ring reset, a browser API that needs a user
 gesture) goes in a small `.web.ts` twin of a constant or function instead of a flag.
-`pera/no-platform-os-web` (`apps/mobile/scripts/oxlint-pera-plugin.mjs`) fails any
+`pera/no-platform-os-web` (`packages/devtools/oxlint/rules/no-platform-os-web.js`) fails any
 `Platform.OS === 'web'` comparison in `apps/mobile/src`, so one of the two is the only way to branch.
 Native-only iOS/Android splits read `isIOS()`/`isAndroid()` from `@utils/platform`; a capability that
 differs between them computes its native value there (`ledgerUsb` is `isAndroid()`).
@@ -172,8 +172,8 @@ menu) is left out of production builds and kept in development and staging; the 
 `appEnvironment` baked into `packages/config/src/generated-env.ts` (or `APP_ENV`), not `NODE_ENV`,
 because a staging release bundles with `NODE_ENV=production` too. Its UI entry points read
 `routeCapabilities.developerGallery`, and its screens must be imported only through
-`modules/settings/routes/developer-gallery.ts`, which a test in
-`apps/mobile/__tests__/metro-build-gates.spec.ts` enforces. Metro logs both decisions at startup
+`modules/settings/routes/developer-gallery.ts`, which the oxlint rule
+`pera/dev-gallery-entry-points` enforces. Metro logs both decisions at startup
 (`[metro] developer gallery: included|stubbed`).
 
 ## Networks without a Pera backend

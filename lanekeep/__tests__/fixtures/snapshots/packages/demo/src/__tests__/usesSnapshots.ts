@@ -1,0 +1,5 @@
+expect(value).toMatchSnapshot()
+expect(value).toMatchInlineSnapshot(`"x"`)
+expect(() => run()).toThrowErrorMatchingSnapshot()
+expect(() => run()).toThrowErrorMatchingInlineSnapshot(`"boom"`)
+expect(value).toEqual({ a: 1 })

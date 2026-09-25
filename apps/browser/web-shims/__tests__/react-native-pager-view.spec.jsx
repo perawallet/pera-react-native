@@ -146,8 +146,7 @@ describe('react-native-pager-view web shim', () => {
         // are 100% of the frame, otherwise a page's flex:1 (and any vertical
         // ScrollView inside it) resolves against an auto-height wrapper,
         // grows to content, and gets clipped unscrollably by the frame
-        // (PERA-4948: the Fund form's Proceed button was unreachable in the
-        // 600px popup).
+        // (the Fund form's Proceed button was unreachable in the 600px popup).
         const { getByText } = render(
             <PagerView>
                 <div>Page 0</div>

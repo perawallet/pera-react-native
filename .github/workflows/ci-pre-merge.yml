@@ -133,17 +133,24 @@ jobs:
       - name: Install dependencies on cache miss
         run: test -d node_modules || pnpm install --frozen-lockfile
 
-      - name: ESLint
-        run: pnpm run lint
+      - name: oxlint
+        id: oxlint
+        run: pnpm exec turbo run lint
+
+      # Runs even when oxlint fails, so an oxlint failure can't hide lanekeep's findings.
+      - name: lanekeep
+        if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
+        run: pnpm run lint:lanekeep
+
+      # Markdown, shell and YAML; code comments are pera/no-work-item-refs in
+      # the lanekeep step. Runs even when a lint step above fails.
+      - name: Doc hygiene
+        if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
+        run: pnpm run lint:docs
 
       - name: Prettier
+        if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
         run: pnpm run format --check
-
-      - name: Copyright Check
-        run: pnpm run lint:copyright
-
-      - name: i18n Check
-        run: pnpm run lint:i18n
 
       # Lockfile-only, so it belongs on the cheap job. Two resolved algosdk
       # copies break `instanceof Transaction`/`instanceof Address` and msgpack
@@ -152,12 +159,8 @@ jobs:
       # the ability to sign. Until now this ran only in tools/pre-push, which
       # the documented `--no-fail-on-error` invocation makes non-blocking.
       - name: Single algosdk resolution
+        if: ${{ !cancelled() && steps.oxlint.outcome != 'skipped' }}
         run: pnpm run check:single-algosdk
-
-      # The mobile and browser vitest configs collect only `*.spec.*`, so a
-      # `.test.ts` there would silently never run.
-      - name: Test file suffix
-        run: pnpm run check:test-suffix
 
   # Blocking static analysis: unused code, circular dependencies, and code
   # duplication via fallow. Findings are surfaced in the job summary and fail
@@ -273,6 +276,12 @@ jobs:
 
       - name: Check no test-only modules leaked into prod bundles
         run: pnpm run lint:bundle
+
+      # Needs the build: the bundle assertions skip when packages/kms/dist is
+      # missing, and a regression here makes mobile sign with WASM Falcon while
+      # every test stays green.
+      - name: Check kms ships the on-device PQ provider
+        run: pnpm run check:kms-pq-dist
 
       - name: Expo Prebuild
         run: pnpm --filter mobile expo:prebuild

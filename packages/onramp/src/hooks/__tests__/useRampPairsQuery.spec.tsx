@@ -75,10 +75,21 @@ describe('onramp/useRampPairsQuery', () => {
             wrapper: createWrapper(),
         })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.data).toHaveLength(1))
 
-        expect(result.current.data).toHaveLength(1)
         expect(result.current.data?.[0].id).toBe('pair-1')
         expect(result.current.data?.[0].sourceToken.symbol).toBe('USD')
+    })
+    test('returns one stable empty array while disabled', () => {
+        const { result, rerender } = renderHook(
+            () => useRampPairsQuery(false),
+            { wrapper: createWrapper() },
+        )
+        const initialData = result.current.data
+
+        rerender()
+
+        expect(initialData).toEqual([])
+        expect(result.current.data).toBe(initialData)
     })
 })

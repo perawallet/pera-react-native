@@ -24,7 +24,7 @@ export type NetworkRow = {
     isSelected: boolean
 }
 
-// Static keys: pnpm lint:i18n cannot verify an interpolated key.
+// Static keys: the i18n lint rules cannot verify an interpolated key.
 const LABEL_KEYS: Record<Network, string> = {
     [Networks.mainnet]: 'settings.developer.node_settings.mainnet_label',
     [Networks.testnet]: 'settings.developer.node_settings.testnet_label',

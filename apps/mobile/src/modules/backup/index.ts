@@ -10,6 +10,19 @@
  limitations under the License
  */
 
-export * from './routes'
-export * from './components/BackupQuizItem'
-export * from './hooks'
+export { BackupStackNavigator } from './routes'
+export type { BackupStackParamList } from './routes'
+export { BackupQuizItem } from './components/BackupQuizItem'
+export {
+    useBackupFlowLauncher,
+    useBackupQuiz,
+    useMnemonicForAddress,
+    useRandomMnemonicForAddress,
+} from './hooks'
+export type {
+    BackupQuizQuestion,
+    UseBackupFlowLauncherResult,
+    UseBackupQuizResult,
+    UseMnemonicForAddressResult,
+    UseRandomMnemonicForAddressResult,
+} from './hooks'

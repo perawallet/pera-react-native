@@ -64,6 +64,7 @@ export type AccountBalanceResponse = {
 
 export type AccountAssetBalanceResponse = {
     asset_id: string
+    // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
     amount: string
     fraction_decimals: number
     balance_usd_value: string
@@ -102,6 +103,7 @@ export type AccountAssetsBalanceHistory = AccountAssetBalanceHistoryItem[]
 export type AccountAssetBalanceHistoryResponseItem = {
     datetime: string
     /** Asset amount in display units — this endpoint has no algo_value field */
+    // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
     amount: string
     usd_value: string
     round: number

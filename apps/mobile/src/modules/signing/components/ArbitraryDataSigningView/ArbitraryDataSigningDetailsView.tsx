@@ -76,7 +76,7 @@ export const ArbitraryDataSigningDetailsView = ({
                 <KeyValueRow title={t('signing.arbitrary_data_details.amount')}>
                     <AssetAmount
                         asset={ALGO_ASSET}
-                        value={Decimal(0)}
+                        value={new Decimal(0)}
                         showSymbol
                         density='compact'
                         ignorePrivacyMode
@@ -85,7 +85,7 @@ export const ArbitraryDataSigningDetailsView = ({
                 <KeyValueRow title={t('signing.arbitrary_data_details.fee')}>
                     <AssetAmount
                         asset={ALGO_ASSET}
-                        value={Decimal(0)}
+                        value={new Decimal(0)}
                         showSymbol
                         density='compact'
                         ignorePrivacyMode

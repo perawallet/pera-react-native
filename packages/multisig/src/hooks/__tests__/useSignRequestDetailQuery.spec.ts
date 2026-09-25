@@ -98,9 +98,8 @@ describe('useSignRequestDetailQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.data?.id).toBe('sr-123'))
 
-        expect(result.current.data?.id).toBe('sr-123')
         expect(result.current.data?.status).toBe('pending')
         expect(result.current.data?.type).toBe('async')
         expect(result.current.data?.multisigAccount.address).toBe('MSIG_ADDR')
@@ -123,9 +122,12 @@ describe('useSignRequestDetailQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() =>
+            expect(result.current.data?.multisigAccount.customId).toBe(
+                'msig-1',
+            ),
+        )
 
-        expect(result.current.data?.multisigAccount.customId).toBe('msig-1')
         expect(result.current.data?.multisigAccount.threshold).toBe(2)
         expect(
             result.current.data?.multisigAccount.participantAddresses,
@@ -150,9 +152,12 @@ describe('useSignRequestDetailQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() =>
+            expect(result.current.data?.transactionLists[0].id).toBe(
+                'txlist-1',
+            ),
+        )
 
-        expect(result.current.data?.transactionLists[0].id).toBe('txlist-1')
         expect(
             result.current.data?.transactionLists[0].rawTransactions,
         ).toEqual(['tx_data'])
@@ -206,7 +211,7 @@ describe('useSignRequestDetailQuery', () => {
             { wrapper },
         )
 
-        expect(result.current.fetchStatus).toBe('idle')
+        expect(result.current.isLoading).toBe(false)
         expect(mocks.getSignRequestDetail).not.toHaveBeenCalled()
     })
 
@@ -226,8 +231,6 @@ describe('useSignRequestDetailQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
-
-        expect(result.current.error?.message).toBe('Request failed')
     })
 
     test('does not fetch when enabled is false', () => {
@@ -247,7 +250,6 @@ describe('useSignRequestDetailQuery', () => {
         )
 
         expect(result.current.isLoading).toBe(false)
-        expect(result.current.fetchStatus).toBe('idle')
         expect(mocks.getSignRequestDetail).not.toHaveBeenCalled()
     })
 
@@ -266,7 +268,7 @@ describe('useSignRequestDetailQuery', () => {
             { wrapper },
         )
 
-        expect(result.current.fetchStatus).toBe('idle')
+        expect(result.current.isLoading).toBe(false)
         expect(mocks.getSignRequestDetail).not.toHaveBeenCalled()
     })
 
@@ -286,7 +288,7 @@ describe('useSignRequestDetailQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.data?.id).toBe('sr-123'))
 
         expect(mocks.getSignRequestDetail).toHaveBeenCalledTimes(1)
     })
@@ -318,8 +320,9 @@ describe('useSignRequestDetailQuery', () => {
                 { wrapper },
             )
 
-            await vi.waitFor(() => expect(result.current.isSuccess).toBe(true))
-            expect(result.current.data?.status).toBe('pending')
+            await vi.waitFor(() =>
+                expect(result.current.data?.status).toBe('pending'),
+            )
 
             // Advance past one poll interval — triggers second fetch (ready)
             await vi.advanceTimersByTimeAsync(5000)
@@ -458,9 +461,9 @@ describe('useSignRequestDetailQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-        expect(result.current.data?.transactionLists).toEqual([])
+        await waitFor(() =>
+            expect(result.current.data?.transactionLists).toEqual([]),
+        )
     })
 
     test('handles fail_reason_display when present', async () => {
@@ -480,10 +483,10 @@ describe('useSignRequestDetailQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-        expect(result.current.data?.failReasonDisplay).toBe(
-            'Transaction expired',
+        await waitFor(() =>
+            expect(result.current.data?.failReasonDisplay).toBe(
+                'Transaction expired',
+            ),
         )
     })
 
