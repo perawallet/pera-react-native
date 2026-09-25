@@ -36,7 +36,7 @@ describe('usePeraServiceUnavailableToast', () => {
         vi.clearAllMocks()
     })
 
-    it('registers a handler that toasts once per network, deduped', () => {
+    it('registers a handler that toasts once per scope, deduped', () => {
         let capturedHandler:
             | ((error: PeraServiceUnavailableError) => void)
             | undefined
@@ -53,13 +53,21 @@ describe('usePeraServiceUnavailableToast', () => {
 
         const betanet = new PeraServiceUnavailableError('betanet')
         const custom = new PeraServiceUnavailableError('custom')
+        // Same network id on another chain: a different scope, so it gets its
+        // own toast.
+        const fixtureBetanet = new PeraServiceUnavailableError({
+            chainId:
+                'fixture' as unknown as PeraServiceUnavailableError['scope']['chainId'],
+            networkId: 'betanet',
+        })
 
         capturedHandler?.(betanet)
         capturedHandler?.(betanet)
         capturedHandler?.(custom)
+        capturedHandler?.(fixtureBetanet)
         capturedHandler?.(betanet)
 
-        expect(mockShowError).toHaveBeenCalledTimes(2)
+        expect(mockShowError).toHaveBeenCalledTimes(3)
         expect(mockShowError).toHaveBeenNthCalledWith(
             1,
             betanet,
@@ -68,6 +76,11 @@ describe('usePeraServiceUnavailableToast', () => {
         expect(mockShowError).toHaveBeenNthCalledWith(
             2,
             custom,
+            'common.network_unavailable.title',
+        )
+        expect(mockShowError).toHaveBeenNthCalledWith(
+            3,
+            fixtureBetanet,
             'common.network_unavailable.title',
         )
     })
