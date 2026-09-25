@@ -175,6 +175,28 @@
       "rules": {
         "pera/wc-connector-ownership": "error"
       }
+    },
+    {
+      "files": [
+        "packages/kms/src/**",
+        "packages/signing/src/**",
+        "packages/passkeys/src/**",
+        "packages/backup/src/**",
+        "extensions/keystore-chrome/src/**",
+        "extensions/provider/src/**",
+        "extensions/passkey-autofill/src/**"
+      ],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "Math",
+            "property": "random",
+            "message": "Key-handling code draws randomness from crypto.getRandomValues, as packages/kms/src/crypto/random.ts does, never Math.random."
+          }
+        ]
+      }
     }
   ]
 }

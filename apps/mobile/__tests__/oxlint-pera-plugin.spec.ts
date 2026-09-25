@@ -485,3 +485,69 @@ describe('pera/no-platform-os-web', () => {
         expect(lintWeb(node)).not.toHaveBeenCalled()
     })
 })
+
+type OxlintOverride = {
+    files: string[]
+    excludeFiles?: string[]
+    rules: Record<string, unknown>
+}
+type OxlintConfig = { plugins?: string[]; overrides: OxlintOverride[] }
+
+const readOxlintConfig = (path: string): OxlintConfig =>
+    JSON.parse(
+        readFileSync(join(__dirname, '../../..', path), 'utf8'),
+    ) as OxlintConfig
+const overridesWith = (config: OxlintConfig, rule: string): OxlintOverride[] =>
+    config.overrides.filter(o => o.rules[rule] !== undefined)
+
+describe('no-restricted-properties', () => {
+    const restricted = (override: OxlintOverride): string[] =>
+        (override.rules['no-restricted-properties'] as unknown[])
+            .slice(1)
+            .map(entry => {
+                const { object, property } = entry as {
+                    object: string
+                    property: string
+                }
+                return `${object}.${property}`
+            })
+
+    it('keeps Math.random out of the key-handling packages', () => {
+        const root = readOxlintConfig('.oxlintrc.json')
+        expect(
+            overridesWith(root, 'no-restricted-properties').map(o => [
+                o.files,
+                restricted(o),
+            ]),
+        ).toEqual([
+            [
+                [
+                    'packages/kms/src/**',
+                    'packages/signing/src/**',
+                    'packages/passkeys/src/**',
+                    'packages/backup/src/**',
+                    'extensions/keystore-chrome/src/**',
+                    'extensions/provider/src/**',
+                    'extensions/passkey-autofill/src/**',
+                ],
+                ['Math.random'],
+            ],
+        ])
+    })
+
+    it('bans StyleSheet.create in mobile source, and Alert.alert outside developer screens', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        expect(
+            overridesWith(mobile, 'no-restricted-properties').map(o => [
+                o.files,
+                restricted(o),
+            ]),
+        ).toEqual([
+            [['src/**'], ['StyleSheet.create', 'Alert.alert']],
+            [
+                ['src/modules/settings/screens/developer/**'],
+                ['StyleSheet.create'],
+            ],
+        ])
+    })
+})

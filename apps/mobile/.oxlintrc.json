@@ -117,6 +117,39 @@
       "rules": {
         "pera/wc-connector-ownership": "error"
       }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}", "src/modules/settings/screens/developer/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "StyleSheet",
+            "property": "create",
+            "message": "Style with makeStyles from @rneui/themed, in a styles.ts beside the component."
+          },
+          {
+            "object": "Alert",
+            "property": "alert",
+            "message": "Show a bottom sheet, or the error toast for failures; only developer screens use a native alert."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/modules/settings/screens/developer/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "StyleSheet",
+            "property": "create",
+            "message": "Style with makeStyles from @rneui/themed, in a styles.ts beside the component."
+          }
+        ]
+      }
     }
   ]
 }
