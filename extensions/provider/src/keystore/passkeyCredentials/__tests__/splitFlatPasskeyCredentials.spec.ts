@@ -64,6 +64,9 @@ const IV = 'AAAAAAAAAAAAAAAA'
 const CRED_ID = base64.encode(
     Uint8Array.from({ length: 32 }, (_, i) => [0xfb, 0xff, 0xbf][i % 3]),
 )
+/** Another id shaped like the provider's: standard base64 of 32 bytes. */
+const credentialId = (fill: number): string =>
+    base64.encode(new Uint8Array(32).fill(fill))
 const EMPTY = { split: [], normalized: [], failed: [] }
 
 const credentialJson = (overrides: Record<string, unknown> = {}) => ({
@@ -405,5 +408,30 @@ describe('splitFlatPasskeyCredentials', () => {
         await expect(
             splitFlatPasskeyCredentials({ ...deps(fakeStorage()), storage }),
         ).resolves.toEqual(EMPTY)
+    })
+
+    it('reports a key that cannot be read and carries on with the rest', async () => {
+        const unreadable = credentialId(1)
+        const backing = fakeStorage({
+            [unreadable]: await provider(credentialJson({ id: unreadable })),
+            [CRED_ID]: await provider(credentialJson()),
+        })
+        const storage = {
+            ...backing,
+            getString: (key: string) => {
+                if (key === unreadable) throw new Error('mmkv read failed')
+                return backing.getString(key)
+            },
+        }
+
+        const result = await splitFlatPasskeyCredentials({
+            ...deps(backing),
+            storage,
+        })
+
+        expect(result.split).toEqual([CRED_ID])
+        expect(result.failed).toEqual([unreadable])
+        expect(backing.getString(CRED_ID)).toBeUndefined()
+        expect(backing.getString(`k/${CRED_ID}`)).toBeDefined()
     })
 })

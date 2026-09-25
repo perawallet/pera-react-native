@@ -99,9 +99,6 @@ const splitOne = async (
     key: string,
     result: PasskeySplitResult,
 ): Promise<void> => {
-    const payload = deps.storage.getString(key)
-    if (payload === undefined) return
-
     const fail = (reason: string): void => {
         result.failed.push(key)
         safeWarn(`${LOG_PREFIX}: ${key} left flat: ${reason}`)
@@ -110,6 +107,9 @@ const splitOne = async (
     let flat: FlatProviderCredential | undefined
     let material: Uint8Array | undefined
     try {
+        const payload = deps.storage.getString(key)
+        if (payload === undefined) return
+
         try {
             flat = await openFlatProviderRecord(deps.subtle, masterKey, payload)
         } catch {
