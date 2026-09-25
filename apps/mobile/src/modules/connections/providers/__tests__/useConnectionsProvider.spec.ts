@@ -24,7 +24,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { FeeAdjustmentDeliveryError } from '@perawallet/wallet-core-signing'
 import type { Connection } from '@perawallet/wallet-extension-connections'
-import i18n from '@i18n/index'
+import { i18n } from '@i18n/index'
 import type { ReactElement } from 'react'
 
 /** Just enough of `ConnectionProposal` for the subscription-wiring tests. */

@@ -59,4 +59,4 @@ void i18n.use(initReactI18next).init({
         : undefined,
 })
 
-export default i18n
+export { i18n }

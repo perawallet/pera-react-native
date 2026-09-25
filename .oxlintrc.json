@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "react"],
+  "plugins": ["typescript", "unicorn", "react", "import"],
   "jsPlugins": ["eslint-plugin-unused-imports", "./apps/mobile/scripts/oxlint-pera-plugin.mjs"],
   "categories": {
     "correctness": "off"
@@ -216,6 +216,11 @@
         ],
         "pera/decimal-construction": "error"
       }
+    },
+    {
+      "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}", "**/*.d.ts"],
+      "rules": { "import/no-default-export": "error" }
     }
   ]
 }

@@ -597,3 +597,19 @@ describe('pera/decimal-construction', () => {
         }
     })
 })
+
+describe('import/no-default-export', () => {
+    it('runs over production source in both configs, ambient declarations aside', () => {
+        const root = readOxlintConfig('.oxlintrc.json')
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+
+        expect(root.plugins).toContain('import')
+        for (const config of [root, mobile]) {
+            const overrides = overridesWith(config, 'import/no-default-export')
+            expect(overrides).toHaveLength(1)
+            expect(overrides[0].excludeFiles).toEqual(
+                expect.arrayContaining([expect.stringMatching(/\*\.d\.ts$/)]),
+            )
+        }
+    })
+})
