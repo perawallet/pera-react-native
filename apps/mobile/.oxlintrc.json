@@ -184,6 +184,11 @@
         "src/modules/*/web.ts"
       ],
       "rules": { "pera/module-entry-named-exports": "error" }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/hook-result-type": "error" }
     }
   ]
 }

@@ -221,6 +221,11 @@
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}", "**/*.d.ts"],
       "rules": { "import/no-default-export": "error" }
+    },
+    {
+      "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "pera/hook-result-type": "error" }
     }
   ]
 }

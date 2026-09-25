@@ -16,6 +16,7 @@ import { describe, expect, it, vi } from 'vitest'
 import plugin, {
     DAPP_SIGNING_PATHS,
     GALLERY_ENTRY_PATHS,
+    LEAKY_RESULT_TYPES,
     WC_CONNECTOR_OWNERS,
 } from '../scripts/oxlint-pera-plugin.mjs'
 
@@ -624,5 +625,103 @@ describe('import/no-default-export', () => {
                 expect.arrayContaining([expect.stringMatching(/\*\.d\.ts$/)]),
             )
         }
+    })
+})
+
+describe('pera/hook-result-type', () => {
+    const typeRef = (name: string, ...params: Node[]): Node => ({
+        type: 'TSTypeReference',
+        typeName: id(name),
+        ...(params.length > 0
+            ? {
+                  typeArguments: {
+                      type: 'TSTypeParameterInstantiation',
+                      params,
+                  },
+              }
+            : {}),
+    })
+    const annotation = (typeAnnotation: Node): Node => ({
+        type: 'TSTypeAnnotation',
+        typeAnnotation,
+    })
+    const exportedFunction = (name: string, returnType: Node): Node => ({
+        type: 'ExportNamedDeclaration',
+        declaration: {
+            type: 'FunctionDeclaration',
+            id: id(name),
+            returnType: annotation(returnType),
+        },
+    })
+    const exportedConst = (
+        name: string,
+        init: Node,
+        typeAnnotation?: Node,
+    ): Node => ({
+        type: 'ExportNamedDeclaration',
+        declaration: {
+            type: 'VariableDeclaration',
+            declarations: [
+                {
+                    type: 'VariableDeclarator',
+                    id:
+                        typeAnnotation === undefined
+                            ? id(name)
+                            : {
+                                  ...id(name),
+                                  typeAnnotation: annotation(typeAnnotation),
+                              },
+                    init,
+                },
+            ],
+        },
+    })
+    const arrow = (returnType: Node): Node => ({
+        type: 'ArrowFunctionExpression',
+        returnType: annotation(returnType),
+    })
+    const lintExport = (node: Node) => {
+        const report = vi.fn()
+        plugin.rules['hook-result-type']
+            .create({ report })
+            .ExportNamedDeclaration(node)
+        return report
+    }
+
+    it.each(LEAKY_RESULT_TYPES)('reports a hook returning %s', type => {
+        expect(
+            lintExport(exportedFunction('useThing', typeRef(type))),
+        ).toHaveBeenCalledOnce()
+    })
+
+    it('reports an arrow hook whose union return leaks the query object', () => {
+        const union: Node = {
+            type: 'TSUnionType',
+            types: [typeRef('UseQueryResult'), { type: 'TSUndefinedKeyword' }],
+        }
+        expect(
+            lintExport(exportedConst('useThing', arrow(union))),
+        ).toHaveBeenCalledOnce()
+    })
+
+    it.each([
+        [
+            'a hook with its own result type',
+            exportedFunction('useThing', typeRef('UseThingResult')),
+        ],
+        [
+            'a non-hook returning a query result',
+            exportedFunction('getThing', typeRef('UseQueryResult')),
+        ],
+        [
+            'a zustand store typed on its variable',
+            exportedConst(
+                'useThingStore',
+                call(id('create'), []),
+                typeRef('UseBoundStore', typeRef('StoreApi')),
+            ),
+        ],
+    ])('allows %s', (_label, node) => {
+        expect(lintExport(node)).not.toHaveBeenCalled()
     })
 })
