@@ -31,6 +31,20 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     updateNodeEndpoints: mocks.updateNodeEndpoints,
 }))
 
+// Spy on createTimeoutBoundedAlgorandClient while still delegating to the
+// real implementation, so getAlgorandClient's assertions below can inspect
+// what it was called with without breaking the real chain through to it.
+vi.mock('../createAlgorandClient', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('../createAlgorandClient')>()
+    return {
+        ...actual,
+        createTimeoutBoundedAlgorandClient: vi.fn(
+            actual.createTimeoutBoundedAlgorandClient,
+        ),
+    }
+})
+
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     Networks,
@@ -38,9 +52,8 @@ import {
     getNetworkConfig,
 } from '@perawallet/wallet-core-config'
 import { useCustomNetworkStore } from '../../store'
-// Registers the module-level custom-network subscription the second describe
-// below exercises.
-import '../algorandClient'
+import { getAlgorandClient } from '../algorandClient'
+import { createTimeoutBoundedAlgorandClient } from '../createAlgorandClient'
 
 const CUSTOM_SCOPE = scopeForLegacyNetwork(Networks.custom)
 
@@ -157,6 +170,24 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
         useCustomNetworkStore.getState().clearCustomNetwork()
 
         expect(getChainConfig(CUSTOM_SCOPE).algodUrl).toBe('')
+    })
+
+    test('getAlgorandClient builds against the saved node', () => {
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+        })
+
+        getAlgorandClient(Networks.custom)
+
+        expect(createTimeoutBoundedAlgorandClient).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                algodUrl: 'http://10.0.0.5:4001',
+                indexerUrl: 'http://10.0.0.5:8980',
+            }),
+        )
     })
 })
 
