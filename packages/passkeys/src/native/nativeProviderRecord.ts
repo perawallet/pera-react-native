@@ -16,22 +16,23 @@
  * `PasskeyCredentialStore` on iOS).
  *
  * The provider is a **separate process** that shares this app's keystore MMKV
- * instance (`PASSKEYS_MMKV_ID = "keystore"`) and master key. As of autofill
- * canary.23/.24 the derivation **parent/root** is read from the keystore's own
- * `k/`+`m/` split on both platforms
- * — and on iOS **credential records are still bare-id only**. iOS's only
+ * instance (`PASSKEYS_MMKV_ID = "keystore"`) and master key. On both platforms
+ * it reads the derivation **parent/root** from the keystore's own `k/`+`m/`
+ * split — and on iOS **credential records are still bare-id only**. iOS's only
  * credential-from-keystore path, `allKeystoreCredentials()`, guards on
  * `dataArray(keyData["publicKey"])` and `dataArray(keyData["privateKey"])`,
  * both of which require a JSON number array; a split `k/` record's
  * `publicKey` is `{"$u8": …}` and it carries no `privateKey` at all, so the
- * guard fails silently. Android credentials live in `k/`+`m/` instead, and
- * never pass through this module. See `packages/passkeys/src/native/README.md`.
+ * guard fails silently. Android credentials live in `k/`+`m/` instead; one
+ * not split yet still passes through this module, via
+ * `readFlaggedPasskeyCredentials`. See `packages/passkeys/src/native/README.md`.
  *
  * This module is the single place the **credential** contract is expressed,
  * because two separate things need it and a third still will:
  *
- * 1. Writing credentials migrated from Pera 6 so the provider can read them
- *    (`packages/migrate/.../writeNativePasskeyEntry.ts`).
+ * 1. Writing credentials migrated from Pera 6 so the iOS provider can read
+ *    them (`packages/migrate/.../writeNativePasskeyEntry.ts`). Android imports
+ *    are written split, through the provider's `writePasskeyCredential`.
  * 2. Un-adopting a credential upstream's own `adopt-flat-records` revision
  *    wrongly split into `k/`+`m/`
  *    (`extensions/provider/.../repairs/0002-rematerialize-passkey-credentials.ts`,
@@ -54,20 +55,26 @@
  *
  * ## Why `sealData`/`encode` from the keystore cannot be used
  *
- * Under canary.14 they are wrong on two independent axes, and both fail
- * silently:
+ * The only provider that signs from a flat credential record is iOS's. Its
+ * reader, `PasskeyCredentialStore.decodeKeystorePayload`, opens a JSON object
+ * carrying both `iv` and `content` with the master key through `decryptData`,
+ * whether the GCM tag sits in its own `tag` field or is appended to
+ * `content`, and takes any other JSON object as the record itself. The opened
+ * or unsealed payload is read as base64url of the record JSON, padded or not,
+ * or else as the JSON text.
  *
  * - `sealData` emits `{iv, content}` with the GCM tag appended to the
- *   ciphertext. The provider's `decodeKeyData` only takes its decrypt branch
- *   when the envelope has `iv` **and** `tag` **and** `content`; otherwise it
- *   returns the envelope object itself, which has no key material in it.
- * - `encode` serialises a `Uint8Array` as `{"$u8": "<base64>"}`. The provider
- *   does `getJSONArray("privateKey")` / `optJSONArray("seed")` and expects a
- *   **JSON array of byte values**.
+ *   ciphertext. The iOS provider opens that, but this module's own
+ *   {@link openNativeProviderRecord} takes only `{iv, tag, content}`: a
+ *   two-field envelope under a bare id is the keystore's own legacy writer's,
+ *   never a credential record, so the migration-banner scan skips it.
+ * - `encode` serialises a `Uint8Array` as `{"$u8": "<base64>"}`. The iOS
+ *   provider reads `publicKey` and `privateKey` through `dataArray`, which
+ *   accepts only a **JSON array of byte values**, and skips the record
+ *   otherwise.
  *
- * Neither throws. A record written with the keystore's own helpers is simply
- * invisible to the provider, which is exactly the failure this module exists to
- * prevent.
+ * Neither raises an error. A record written with the keystore's own helpers is
+ * simply skipped, which is exactly the failure this module exists to prevent.
  *
  * ## What a credential migration would have to handle
  *

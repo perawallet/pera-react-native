@@ -11,10 +11,11 @@
  */
 
 /**
- * Writes the flat bare-id record the native Android/iOS passkey credential
- * provider reads — byte-for-byte the same on-disk contract
+ * Writes the flat bare-id record the iOS passkey credential provider reads —
+ * byte-for-byte the same on-disk contract
  * `packages/passkeys/src/native/nativeProviderRecord.ts`'s
- * `sealNativeProviderRecord` produces.
+ * `sealNativeProviderRecord` produces. Android's provider lists `k/` and opens
+ * `m/` instead; see `packages/passkeys/src/native/README.md`.
  *
  * Restated here rather than imported: `packages/passkeys` already depends on
  * `@perawallet/wallet-extension-provider` (this package), so importing back

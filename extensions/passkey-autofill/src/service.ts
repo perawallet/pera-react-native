@@ -155,7 +155,7 @@ export class PasskeyAutofillService {
         )
     }
 
-    /** iOS-only — no-ops on Android, where the provider reads MMKV directly. */
+    /** A no-op on Android, which has no identity store to fill. */
     refreshCredentialIdentities(): Promise<void> {
         return this.invoke('refreshCredentialIdentities', [], undefined)
     }
