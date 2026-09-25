@@ -11,6 +11,7 @@
  */
 
 import type { RemoteConfigService } from '@perawallet/wallet-extension-platform'
+import { areConfigOverridesIgnored } from './areConfigOverridesIgnored'
 
 /**
  * Layers dev-only persisted overrides (set via the Feature Flags screen) on
@@ -22,28 +23,32 @@ import type { RemoteConfigService } from '@perawallet/wallet-extension-platform'
  */
 export const readRemoteConfigWithOverrides = (
     remoteConfigService: RemoteConfigService,
-    configOverrides: Record<string, string | boolean | number>,
-): RemoteConfigService => ({
-    initializeRemoteConfig: () => remoteConfigService.initializeRemoteConfig(),
-    getStringValue: (key, fallback) => {
-        const override = configOverrides[key]
-        if (override !== undefined && typeof override === 'string') {
-            return override
-        }
-        return remoteConfigService.getStringValue(key, fallback)
-    },
-    getBooleanValue: (key, fallback) => {
-        const override = configOverrides[key]
-        if (override !== undefined && typeof override === 'boolean') {
-            return override
-        }
-        return remoteConfigService.getBooleanValue(key, fallback)
-    },
-    getNumberValue: (key, fallback) => {
-        const override = configOverrides[key]
-        if (override !== undefined && typeof override === 'number') {
-            return override
-        }
-        return remoteConfigService.getNumberValue(key, fallback)
-    },
-})
+    savedOverrides: Record<string, string | boolean | number>,
+): RemoteConfigService => {
+    const configOverrides = areConfigOverridesIgnored() ? {} : savedOverrides
+    return {
+        initializeRemoteConfig: () =>
+            remoteConfigService.initializeRemoteConfig(),
+        getStringValue: (key, fallback) => {
+            const override = configOverrides[key]
+            if (override !== undefined && typeof override === 'string') {
+                return override
+            }
+            return remoteConfigService.getStringValue(key, fallback)
+        },
+        getBooleanValue: (key, fallback) => {
+            const override = configOverrides[key]
+            if (override !== undefined && typeof override === 'boolean') {
+                return override
+            }
+            return remoteConfigService.getBooleanValue(key, fallback)
+        },
+        getNumberValue: (key, fallback) => {
+            const override = configOverrides[key]
+            if (override !== undefined && typeof override === 'number') {
+                return override
+            }
+            return remoteConfigService.getNumberValue(key, fallback)
+        },
+    }
+}

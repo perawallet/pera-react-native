@@ -2746,6 +2746,7 @@
                 "fetch_from_node": "Node’dan al",
                 "fetch_failed": "Bu node’a ulaşılamadı. Değerleri elle gir.",
                 "invalid_url": "Geçerli bir http:// veya https:// URL gir",
+                "invalid_https_url": "Geçerli bir https:// URL gir",
                 "genesis_required": "Genesis hash’i al veya gir",
                 "genesis_id_required": "Genesis ID’yi al veya gir",
                 "save": "Kaydet ve geç",

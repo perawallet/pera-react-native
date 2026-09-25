@@ -2746,6 +2746,7 @@
                 "fetch_from_node": "Récupérer depuis le nœud",
                 "fetch_failed": "Nœud injoignable. Saisissez les valeurs manuellement.",
                 "invalid_url": "Saisissez une URL http:// ou https:// valide",
+                "invalid_https_url": "Saisissez une URL https:// valide",
                 "genesis_required": "Récupérez ou saisissez le hash genesis",
                 "genesis_id_required": "Récupérez ou saisissez l’ID genesis",
                 "save": "Enregistrer et basculer",

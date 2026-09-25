@@ -2762,6 +2762,7 @@
                 "fetch_from_node": "Buscar do nó",
                 "fetch_failed": "Não foi possível acessar esse nó. Digite os valores manualmente.",
                 "invalid_url": "Digite uma URL http:// ou https:// válida",
+                "invalid_https_url": "Digite uma URL https:// válida",
                 "genesis_required": "Busque ou digite o hash do genesis",
                 "genesis_id_required": "Busque ou digite o ID do genesis",
                 "save": "Salvar e trocar",

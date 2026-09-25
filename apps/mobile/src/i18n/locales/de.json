@@ -2738,6 +2738,7 @@
                 "fetch_from_node": "Vom Node abrufen",
                 "fetch_failed": "Dieser Node konnte nicht erreicht werden. Gib die Werte manuell ein.",
                 "invalid_url": "Gib eine gültige http:// oder https:// URL ein",
+                "invalid_https_url": "Gib eine gültige https:// URL ein",
                 "genesis_required": "Genesis-Hash abrufen oder eingeben",
                 "genesis_id_required": "Genesis-ID abrufen oder eingeben",
                 "save": "Speichern und wechseln",

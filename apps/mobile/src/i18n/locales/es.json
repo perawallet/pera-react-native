@@ -2746,6 +2746,7 @@
                 "fetch_from_node": "Obtener del nodo",
                 "fetch_failed": "No se pudo conectar con ese nodo. Introduce los valores manualmente.",
                 "invalid_url": "Introduce una URL http:// o https:// válida",
+                "invalid_https_url": "Introduce una URL https:// válida",
                 "genesis_required": "Obtén o introduce el hash génesis",
                 "genesis_id_required": "Obtén o introduce el ID génesis",
                 "save": "Guardar y cambiar",
