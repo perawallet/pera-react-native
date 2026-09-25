@@ -27,6 +27,7 @@ import {
 } from '../migrations/sealing'
 import type {
     FlatProviderCredential,
+    SplitCredentialRecord,
     SplitProviderCredential,
 } from './splitProviderCredential'
 
@@ -61,6 +62,72 @@ export const openFlatProviderRecord = async (
 }
 
 /**
+ * `k/<id>` parsed, when it names the same credential as `record` the way the
+ * Android provider reads it: the same id and type, `publicKey` as
+ * `{"$u8": …}` holding the same bytes, and the same non-empty
+ * `metadata.origin`. `undefined` when it is missing, unreadable or different.
+ */
+const readSameCredentialMetadata = (
+    deps: SplitStorageDeps,
+    id: string,
+    record: SplitCredentialRecord,
+): Record<string, unknown> | undefined => {
+    const raw = deps.storage.getString(METADATA_PREFIX + id)
+    if (raw === undefined) return undefined
+
+    try {
+        const written = JSON.parse(raw) as Record<string, unknown>
+        const wrapped = (written.publicKey as { $u8?: unknown } | undefined)
+            ?.$u8
+        const metadata = written.metadata as Record<string, unknown> | undefined
+
+        if (written.id !== id || written.type !== record.type) return undefined
+        if (
+            typeof wrapped !== 'string' ||
+            !bytesEqual(base64.decode(wrapped), record.publicKey)
+        ) {
+            return undefined
+        }
+        if (
+            typeof metadata?.origin !== 'string' ||
+            metadata.origin !== record.metadata.origin
+        ) {
+            return undefined
+        }
+        return written
+    } catch {
+        return undefined
+    }
+}
+
+/**
+ * True when `k/<id>` describes the credential `split` holds, and, for a
+ * credential with material, `m/<id>` exists and opens with the master key.
+ * The sealed content may differ: a credential wrapped again under a fresh
+ * biometric IV is still the same credential.
+ */
+export const describesSameCredential = async (
+    deps: SplitStorageDeps,
+    masterKey: Uint8Array,
+    id: string,
+    split: SplitProviderCredential,
+): Promise<boolean> => {
+    if (readSameCredentialMetadata(deps, id, split.record) === undefined) {
+        return false
+    }
+    if (split.material === undefined) return true
+
+    const sealed = deps.storage.getString(MATERIAL_PREFIX + id)
+    if (sealed === undefined) return false
+    try {
+        await openData(deps.subtle, masterKey, sealed)
+        return true
+    } catch {
+        return false
+    }
+}
+
+/**
  * True when `k/<id>` (and `m/<id>`, for a credential with material) hold
  * exactly `split`, read the way the Android provider reads them: `publicKey`
  * as `{"$u8": …}`, a non-empty `metadata.origin`, the biometric IV under
@@ -72,34 +139,11 @@ export const verifySplitProviderCredential = async (
     id: string,
     split: SplitProviderCredential,
 ): Promise<boolean> => {
-    const raw = deps.storage.getString(METADATA_PREFIX + id)
-    if (raw === undefined) return false
+    const written = readSameCredentialMetadata(deps, id, split.record)
+    if (written === undefined) return false
 
-    try {
-        const written = JSON.parse(raw) as Record<string, unknown>
-        const wrapped = (written.publicKey as { $u8?: unknown } | undefined)
-            ?.$u8
-        const metadata = written.metadata as Record<string, unknown> | undefined
-        const enc = written.privateKeyEnc as { iv?: unknown } | undefined
-        const { record } = split
-
-        if (written.id !== id || written.type !== record.type) return false
-        if (
-            typeof wrapped !== 'string' ||
-            !bytesEqual(base64.decode(wrapped), record.publicKey)
-        ) {
-            return false
-        }
-        if (
-            typeof metadata?.origin !== 'string' ||
-            metadata.origin !== record.metadata.origin
-        ) {
-            return false
-        }
-        if (enc?.iv !== record.privateKeyEnc?.iv) return false
-    } catch {
-        return false
-    }
+    const enc = written.privateKeyEnc as { iv?: unknown } | undefined
+    if (enc?.iv !== split.record.privateKeyEnc?.iv) return false
 
     return split.material === undefined
         ? true

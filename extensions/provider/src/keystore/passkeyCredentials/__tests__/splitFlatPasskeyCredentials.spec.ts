@@ -50,7 +50,10 @@ import {
     sealData,
 } from '../../migrations/__fixtures__/keystoreFormats'
 import { sealNativeCredentialRecord } from '../../migrations/nativeCredentialRecord'
-import { splitProviderCredential } from '../splitProviderCredential'
+import {
+    splitProviderCredential,
+    type FlatProviderCredential,
+} from '../splitProviderCredential'
 import { writeSplitProviderCredential } from '../splitCredentialStorage'
 import { splitFlatPasskeyCredentials } from '../splitFlatPasskeyCredentials'
 
@@ -87,6 +90,16 @@ const credentialJson = (overrides: Record<string, unknown> = {}) => ({
     ...overrides,
 })
 
+/** `credentialJson` as `decode` hands it back: byte fields as `Uint8Array`. */
+const decodedCredential = (
+    overrides: Partial<FlatProviderCredential> = {},
+): FlatProviderCredential => ({
+    ...credentialJson(),
+    publicKey: new Uint8Array(PUBLIC_KEY),
+    privateKey: new Uint8Array(PRIVATE_KEY),
+    ...overrides,
+})
+
 const provider = (json: object) =>
     sealNativeCredentialRecord(subtle, MASTER_KEY, json)
 
@@ -103,6 +116,37 @@ const deps = (storage: FakeKeychainStorage) => ({
 
 const readK = (storage: FakeKeychainStorage, id = CRED_ID) =>
     JSON.parse(storage.getString(`k/${id}`)!) as Record<string, unknown>
+
+/**
+ * A flat biometric-wrapped credential, plus the `k/`+`m/` the provider wrote
+ * when the same passkey was created again: same derived key, so the same id,
+ * wrapped under a fresh IV.
+ */
+const recreatedCredential = async () => {
+    const flat = await provider(
+        credentialJson({
+            privateKey: undefined,
+            privateKeyEnc: { iv: IV, data: base64.encode(CIPHERTEXT) },
+        }),
+    )
+    const storage = fakeStorage({ [CRED_ID]: flat })
+    await writeSplitProviderCredential(
+        { storage, subtle },
+        MASTER_KEY,
+        CRED_ID,
+        splitProviderCredential(
+            CRED_ID,
+            decodedCredential({
+                privateKey: undefined,
+                privateKeyEnc: {
+                    iv: 'BBBBBBBBBBBBBBBB',
+                    data: base64.encode(new Uint8Array(48).fill(12)),
+                },
+            }),
+        )!,
+    )
+    return { flat, storage }
+}
 
 beforeEach(() => {
     resetDecoded()
@@ -330,6 +374,34 @@ describe('splitFlatPasskeyCredentials', () => {
 
         expect(result.split).toEqual([CRED_ID])
         expect(storage.getString(CRED_ID)).toBeUndefined()
+    })
+
+    it('finishes the split for a credential re-created while its flat copy was hidden', async () => {
+        const { storage } = await recreatedCredential()
+        const metadata = storage.getString(`k/${CRED_ID}`)
+        const material = storage.getString(`m/${CRED_ID}`)
+
+        const result = await splitFlatPasskeyCredentials(deps(storage))
+
+        expect(result).toEqual({ split: [CRED_ID], normalized: [], failed: [] })
+        expect(storage.entries()).toEqual({
+            [`k/${CRED_ID}`]: metadata,
+            [`m/${CRED_ID}`]: material,
+        })
+    })
+
+    it('keeps the flat copy when the re-created credential has no m/ material', async () => {
+        const { flat, storage } = await recreatedCredential()
+        storage.remove(`m/${CRED_ID}`)
+        const metadata = storage.getString(`k/${CRED_ID}`)
+
+        const result = await splitFlatPasskeyCredentials(deps(storage))
+
+        expect(result.failed).toEqual([CRED_ID])
+        expect(storage.entries()).toEqual({
+            [CRED_ID]: flat,
+            [`k/${CRED_ID}`]: metadata,
+        })
     })
 
     it('leaves both copies alone when a different k/ record holds the id', async () => {

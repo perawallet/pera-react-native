@@ -28,6 +28,7 @@ import {
     type FlatProviderCredential,
 } from './splitProviderCredential'
 import {
+    describesSameCredential,
     openFlatProviderRecord,
     verifySplitProviderCredential,
     writeSplitProviderCredential,
@@ -150,15 +151,21 @@ const splitOne = async (
         material = split.material
 
         if (deps.storage.getString(METADATA_PREFIX + key) !== undefined) {
-            if (
-                !(await verifySplitProviderCredential(
+            // A passkey created again while this copy was hidden derives the
+            // same id under a fresh biometric IV. Same public key, same private
+            // key: `k/`+`m/` already serve it and nothing reads the flat copy.
+            const served =
+                (await verifySplitProviderCredential(
                     deps,
                     masterKey,
                     key,
                     split,
-                ))
-            ) {
-                return fail('a different k/ record already holds its id')
+                )) ||
+                (await describesSameCredential(deps, masterKey, key, split))
+            if (!served) {
+                return fail(
+                    'an existing k/ record for its id holds a different credential',
+                )
             }
             removeFlat(deps.storage, key)
             result.split.push(key)
