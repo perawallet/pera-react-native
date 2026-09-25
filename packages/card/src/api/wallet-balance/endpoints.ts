@@ -17,19 +17,16 @@ import type {
     CardWalletBalance,
     CardWalletHistoryPage,
     CardWalletKind,
-    WalletWithdrawEstimation,
     WalletWithdrawResult,
 } from '../../models'
 import {
     walletBalanceResponseSchema,
     walletHistoryResponseSchema,
-    walletWithdrawEstimationResponseSchema,
     walletWithdrawResponseSchema,
 } from './schema'
 import {
     transformWalletBalance,
     transformWalletHistoryEntry,
-    transformWalletWithdrawEstimation,
     transformWalletWithdraw,
 } from './transformers'
 
@@ -73,21 +70,6 @@ export const fetchWalletBalance = async (
         if (isHTTPError(error) && error.response?.status === 404) return null
         throw error
     }
-}
-
-export const fetchWalletWithdrawEstimation = async (
-    params: WalletParams,
-): Promise<WalletWithdrawEstimation> => {
-    const response = await getCardTransport().request({
-        network: params.network,
-        method: 'GET',
-        path: `${walletPath(params.kind)}/withdraw-estimation`,
-        authenticated: true,
-        signal: params.signal,
-    })
-    return transformWalletWithdrawEstimation(
-        walletWithdrawEstimationResponseSchema.parse(response.data),
-    )
 }
 
 export type WithdrawWalletBalanceParams = WalletParams & {

@@ -14,6 +14,11 @@ import { describe, test, expect, vi } from 'vitest'
 import type { RemoteConfigService } from '@perawallet/wallet-extension-platform'
 import type { RemoteConfigKey } from '../../models'
 import { readRemoteConfigWithOverrides } from '../readRemoteConfigWithOverrides'
+import { areConfigOverridesIgnored } from '../areConfigOverridesIgnored'
+
+vi.mock('../areConfigOverridesIgnored', () => ({
+    areConfigOverridesIgnored: vi.fn(() => false),
+}))
 
 const makeService = (): RemoteConfigService => ({
     initializeRemoteConfig: vi.fn(),
@@ -64,6 +69,18 @@ describe('readRemoteConfigWithOverrides', () => {
         expect(wrapped.getStringValue('string_key' as RemoteConfigKey)).toBe(
             'original',
         )
+        expect(wrapped.getBooleanValue('bool_key' as RemoteConfigKey)).toBe(
+            false,
+        )
+    })
+
+    test('reads the real service when saved overrides are ignored', () => {
+        vi.mocked(areConfigOverridesIgnored).mockReturnValueOnce(true)
+        const service = makeService()
+        const wrapped = readRemoteConfigWithOverrides(service, {
+            bool_key: true,
+        })
+
         expect(wrapped.getBooleanValue('bool_key' as RemoteConfigKey)).toBe(
             false,
         )

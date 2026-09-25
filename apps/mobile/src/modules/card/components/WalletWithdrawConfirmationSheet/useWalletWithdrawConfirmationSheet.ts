@@ -15,10 +15,8 @@ import type { Decimal } from 'decimal.js'
 import {
     type CardWalletKind,
     useCardWalletBalanceQuery,
-    useWalletWithdrawEstimationQuery,
     useWithdrawWalletBalanceMutation,
 } from '@perawallet/wallet-core-card'
-import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useCardErrorToast } from '../../hooks'
 import {
@@ -37,9 +35,6 @@ type UseWalletWithdrawConfirmationSheetResult = {
     copy: CardWalletCopy
     /** Amount formatted for display, e.g. "12.34". */
     amountDisplay: string
-    /** Network fee quote, formatted; null while loading or unavailable. */
-    feeDisplay: Nullable<string>
-    isEstimating: boolean
     /** True while the withdraw request is in flight; drives the confirm button. */
     isWithdrawing: boolean
     onConfirm: () => void
@@ -48,9 +43,8 @@ type UseWalletWithdrawConfirmationSheetResult = {
 
 /**
  * Owns the withdraw request so the pending state lives on the sheet's button.
- * The fee quote is fetched on mount: the sheet is only mounted while open,
- * which is exactly the confirm step the quote belongs to. On success it
- * resolves the sheet; on failure it surfaces the error and stays open.
+ * On success it resolves the sheet; on failure it surfaces the error and stays
+ * open.
  */
 export const useWalletWithdrawConfirmationSheet = ({
     kind,
@@ -59,20 +53,11 @@ export const useWalletWithdrawConfirmationSheet = ({
     const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
     const withdraw = useWithdrawWalletBalanceMutation(kind)
     const { wallet } = useCardWalletBalanceQuery(kind)
-    const { estimation, isLoading: isEstimating } =
-        useWalletWithdrawEstimationQuery(kind, true)
     const showError = useCardErrorToast()
 
     const amountDisplay = useMemo(
         () => amount.toFixed(USDC_DISPLAY_PRECISION),
         [amount],
-    )
-
-    // The payout-network fee arrives in that network's native currency
-    // (payout rail TBC with Baanx), so it renders as an opaque quantity.
-    const feeDisplay = useMemo(
-        () => (estimation ? estimation.fee.toString() : null),
-        [estimation],
     )
 
     const confirm = useCallback(async () => {
@@ -105,8 +90,6 @@ export const useWalletWithdrawConfirmationSheet = ({
     return {
         copy: CARD_WALLET_PRESENTATION[kind].copy,
         amountDisplay,
-        feeDisplay,
-        isEstimating,
         isWithdrawing: withdraw.isPending,
         onConfirm,
         onClose: dismiss,

@@ -47,7 +47,6 @@ export * from './useCardUsdcCreditQuery'
 
 // Internal wallet (balance / withdraw)
 export * from './useCardWalletBalanceQuery'
-export * from './useWalletWithdrawEstimationQuery'
 export * from './useWithdrawWalletBalanceMutation'
 export * from './useCardWalletHistoryQuery'
 
@@ -56,6 +55,7 @@ export * from './useCardExternalWalletsQuery'
 export * from './useSignCardOwnershipMutation'
 export * from './useCreateAndApproveCardMutation'
 export * from './useFundingAddressLinkMutation'
+export * from './useRestoreEscrowCardMutation'
 export * from './useKillswitchAutoDraw'
 export * from './useEscrowWithdrawal'
 export * from './useCardPendingWithdrawalQuery'

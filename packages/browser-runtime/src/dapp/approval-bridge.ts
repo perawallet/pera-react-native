@@ -121,18 +121,6 @@ export const POPUP_OPEN_TIMEOUT_MS = 4000
 export const APPROVAL_WINDOW_WIDTH = 360
 export const APPROVAL_WINDOW_HEIGHT = 600
 
-// Masked rejection sampling: a bare modulo would favour low offsets whenever
-// the range does not divide 2^32.
-const randomUpTo = (maxInclusive: number): number => {
-    const mask = 2 ** (32 - Math.clz32(maxInclusive)) - 1
-    const draw = new Uint32Array(1)
-    for (;;) {
-        crypto.getRandomValues(draw)
-        const candidate = (draw[0] & mask) >>> 0
-        if (candidate <= maxInclusive) return candidate
-    }
-}
-
 // Which approval kinds each decision message may settle. `get-approval` and the
 // universal rejects are omitted: valid for every kind.
 const DECISION_KINDS: Record<string, readonly PendingApproval['kind'][]> = {
@@ -398,7 +386,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
             width: APPROVAL_WINDOW_WIDTH,
             height: APPROVAL_WINDOW_HEIGHT,
             focused: true,
-            ...(await this.randomApprovalWindowPosition()),
+            ...(await this.approvalWindowPosition()),
         })
         const entry = this.pending.get(requestId)
         if (entry && typeof win?.id === 'number') {
@@ -407,33 +395,27 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         }
     }
 
-    // Chrome's default cascade is predictable, and so is anything derived from
-    // the page's own window, whose screen rect the page can read: either lets
-    // it park a decoy under the confirm button. A random spot inside the
-    // focused window cannot be. Empty falls back to the cascade.
-    private async randomApprovalWindowPosition(): Promise<{
+    // Top-right of the focused browser window, next to the toolbar icon the
+    // popup path anchors to (MetaMask places its window the same way). Empty
+    // falls back to Chrome's default cascade.
+    private async approvalWindowPosition(): Promise<{
         left?: number
         top?: number
     }> {
         try {
             const anchor = await this.chromeLike.windows.getLastFocused()
-            const { left, top, width, height } = anchor
+            const { left, top, width } = anchor
             if (
                 anchor.state === 'minimized' ||
                 left === undefined ||
                 top === undefined ||
-                width === undefined ||
-                height === undefined
+                width === undefined
             ) {
                 return {}
             }
             return {
-                left:
-                    left +
-                    randomUpTo(Math.max(0, width - APPROVAL_WINDOW_WIDTH)),
-                top:
-                    top +
-                    randomUpTo(Math.max(0, height - APPROVAL_WINDOW_HEIGHT)),
+                left: left + Math.max(0, width - APPROVAL_WINDOW_WIDTH),
+                top,
             }
         } catch {
             return {}
