@@ -240,7 +240,7 @@ export interface SignableGroup {
     originalIndices?: number[]
 }
 
-export interface TransactionSummary {
+export interface AlgorandTransactionSummary {
     type: PeraTransactionType
     sender: string
     receiver?: string
@@ -264,7 +264,7 @@ export interface AnalysisWarning {
 export interface SignableAnalysis {
     totalFees: bigint
 
-    transactionSummaries: TransactionSummary[]
+    transactionSummaries: AlgorandTransactionSummary[]
 
     warnings: AnalysisWarning[]
 
