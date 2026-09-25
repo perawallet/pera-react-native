@@ -16,12 +16,12 @@ import {
     isMainnet as isMainnetHelper,
     isTestnet as isTestnetHelper,
 } from '@perawallet/wallet-core-config'
-import { useCustomNetworkStore, useNetworkStore } from '../store'
+import { selectAlgorandCustomNetwork, useNetworkStore } from '../store'
 
 export const useNetwork = () => {
     const network = useNetworkStore(state => state.network)
     const setNetwork = useNetworkStore(state => state.setNetwork)
-    const customNetwork = useCustomNetworkStore(state => state.customNetwork)
+    const customNetwork = useNetworkStore(selectAlgorandCustomNetwork)
 
     const isMainnet = isMainnetHelper(network)
     const isTestnet = isTestnetHelper(network)

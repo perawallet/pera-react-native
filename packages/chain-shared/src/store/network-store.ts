@@ -14,10 +14,16 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     isNetworkId,
+    scopeForLegacyNetwork,
     type ChainId,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { config, Networks, type Network } from '@perawallet/wallet-core-config'
+import {
+    config,
+    Networks,
+    registerCustomNetworkSource,
+    type Network,
+} from '@perawallet/wallet-core-config'
 import {
     registerStore,
     type BaseStoreState,
@@ -101,8 +107,8 @@ const findCustomNetwork = (
  * Validates a persisted v2 state on every hydrate.
  *
  * An unknown selection (a device that picked 'fnet' before the custom slot
- * replaced it) would reach `getNetworkConfig`, miss, and throw far away at
- * client construction. A `'custom'` selection with no record has no baked
+ * replaced it) would reach `getNetworkConfig`, which throws
+ * `UnconfiguredScopeError` in every render that reads it, far from the cause. A `'custom'` selection with no record has no baked
  * fallback, so every endpoint resolves to `''` and `useAlgorandClient` throws
  * during render. Both fall back to `config.defaultNetwork`.
  */
@@ -133,15 +139,18 @@ export const mergePersistedNetwork = (
     }
 }
 
-const readLegacyCustomNetwork = (): unknown => {
+const readLegacyCustomNetworks = (): unknown[] => {
     const raw = getProvider().keyValueStorage.getItem(LEGACY_CUSTOM_NETWORK_KEY)
-    if (raw === null) return undefined
+    if (raw === null) return []
     try {
-        return (
+        const legacy = (
             JSON.parse(raw) as { state?: { customNetwork?: unknown } } | null
         )?.state?.customNetwork
+        return typeof legacy === 'object' && legacy !== null
+            ? [{ ...legacy, id: CUSTOM_NETWORK_ID }]
+            : []
     } catch {
-        return undefined
+        return []
     }
 }
 
@@ -155,17 +164,11 @@ export const migrateNetworkState = (
 ): unknown => {
     if (version >= STORE_VERSION) return persisted
 
-    const legacy = readLegacyCustomNetwork()
-    const legacyEntry =
-        typeof legacy === 'object' && legacy !== null
-            ? [{ ...legacy, id: CUSTOM_NETWORK_ID }]
-            : []
-
     return {
         selectedNetworkByChain: {
             algorand: (persisted as { network?: unknown } | null)?.network,
         },
-        customNetworksByChain: { algorand: legacyEntry },
+        customNetworksByChain: { algorand: readLegacyCustomNetworks() },
     }
 }
 
@@ -225,9 +228,21 @@ export const useNetworkStore: UseBoundStore<
             merge: (persisted, current) => {
                 // zustand calls `merge` even when storage held nothing and
                 // applies the result with replace:true, so an empty read must
-                // leave the current state alone.
+                // leave the selection alone. `migrate` never runs without a
+                // blob, so a wallet that saved a custom network but never
+                // switched still needs the legacy record folded in here.
                 if (persisted === undefined || persisted === null) {
-                    return current
+                    const legacy =
+                        readLegacyCustomNetworks().filter(isCustomNetwork)
+                    return legacy.length === 0
+                        ? current
+                        : {
+                              ...current,
+                              customNetworksByChain: {
+                                  ...current.customNetworksByChain,
+                                  algorand: legacy,
+                              },
+                          }
                 }
 
                 // Spread over `current`: the validator returns data only, and
@@ -268,4 +283,28 @@ registerStore({
         getProvider().keyValueStorage.removeItem(LEGACY_CUSTOM_NETWORK_KEY)
     },
     resetState: () => useNetworkStore.getState().resetState(),
+})
+
+// A literal, not Networks.custom: module load must not touch the config enum.
+const CUSTOM_SCOPE = scopeForLegacyNetwork('custom')
+
+// config resolves chain endpoints but cannot import this store, so the saved
+// node reaches getChainConfig through this reader.
+registerCustomNetworkSource(scope => {
+    const saved = getCustomNetworkConfig()
+    if (
+        saved === undefined ||
+        scope.chainId !== CUSTOM_SCOPE.chainId ||
+        scope.networkId !== CUSTOM_SCOPE.networkId
+    ) {
+        return undefined
+    }
+    return {
+        algodUrl: saved.algodUrl,
+        indexerUrl: saved.indexerUrl,
+        algodToken: saved.algodToken ?? '',
+        indexerToken: saved.indexerToken ?? '',
+        genesisHash: saved.genesisHash,
+        genesisId: saved.genesisId,
+    }
 })

@@ -12,7 +12,7 @@
 
 import { useEffect, useRef } from 'react'
 import {
-    useCustomNetworkStore,
+    getCustomNetworkConfig,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
 import {
@@ -58,8 +58,7 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
                     transport: createNoopDappTransport(),
                     getNetwork: () => useNetworkStore.getState().network,
                     getCustomNetworkGenesisHash: () =>
-                        useCustomNetworkStore.getState().customNetwork
-                            ?.genesisHash,
+                        getCustomNetworkConfig()?.genesisHash,
                     // Descriptor-only in UI realms; the offscreen host owns the live handler.
                     getAccounts: () => [],
                 }),

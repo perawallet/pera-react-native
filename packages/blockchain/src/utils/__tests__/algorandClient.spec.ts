@@ -17,7 +17,6 @@ const mocks = vi.hoisted(() => ({
     registerErrorTransformer: vi.fn(),
     getChainConfig: vi.fn(),
     registerCustomNetworkSource: vi.fn(() => () => undefined),
-    getNetwork: vi.fn(),
     updateNodeEndpoints: vi.fn(),
     toAlgodError: vi.fn((e: unknown) => e),
     Algodv2: vi.fn(),
@@ -77,18 +76,9 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     updateNodeEndpoints: mocks.updateNodeEndpoints,
 }))
 
-// Only useNetworkStore is swapped out — useCustomNetworkStore stays the REAL
-// store: algorandClient.ts subscribes to it as a module-level side effect at
-// import time below (needs a real `.subscribe`), and beforeEach's
-// resetState() needs a real store to write into.
-vi.mock('../../store', async importOriginal => ({
-    ...(await importOriginal<typeof import('../../store')>()),
-    useNetworkStore: { getState: () => ({ network: mocks.getNetwork() }) },
-}))
-
 vi.mock('../../errors', () => ({ toAlgodError: mocks.toAlgodError }))
 
-import { useCustomNetworkStore } from '../../store'
+import { useNetworkStore } from '../../store'
 import { getAlgorandClient } from '../algorandClient'
 
 beforeEach(() => {
@@ -97,7 +87,7 @@ beforeEach(() => {
         registerErrorTransformer: mocks.registerErrorTransformer,
     })
     // getChainConfig's mock implementation MUST be (re-)established before
-    // resetState() below: useCustomNetworkStore.subscribe(...) in
+    // resetState() below: useNetworkStore.subscribe(...) in
     // algorandClient.ts fires SYNCHRONOUSLY on resetState/setCustomNetwork,
     // which synchronously calls getChainConfig() for every network.
     // Clearing the mock's calls (vi.clearAllMocks, above) doesn't touch its
@@ -123,12 +113,12 @@ beforeEach(() => {
                   indexerToken: `indexer-token-${scope.networkId}`,
               },
     )
-    mocks.getNetwork.mockReturnValue('mainnet')
     mocks.Algodv2.mockImplementation(function Algodv2() {})
     mocks.Indexer.mockImplementation(function Indexer() {})
     mocks.TimeoutHttpClient.mockImplementation(function TimeoutHttpClient() {})
     // Safe now that getChainConfig has a real implementation above.
-    useCustomNetworkStore.getState().resetState()
+    useNetworkStore.getState().resetState()
+    useNetworkStore.getState().setNetwork('mainnet')
 })
 
 describe('getAlgorandClient', () => {
