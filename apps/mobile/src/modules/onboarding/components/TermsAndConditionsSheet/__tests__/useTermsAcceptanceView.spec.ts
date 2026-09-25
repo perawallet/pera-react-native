@@ -15,12 +15,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     currentVersion: '1',
+    currentLanguage: 'en',
     acceptCurrentTerms: vi.fn(),
     onAccepted: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { termsOfServiceUrl: 'https://perawallet.app/terms-and-services/' },
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
+        currentLanguage: mocks.currentLanguage,
+    }),
 }))
 
 vi.mock('../../../hooks/useTermsAcceptance', () => ({
@@ -33,36 +41,89 @@ vi.mock('../../../hooks/useTermsAcceptance', () => ({
 import { useTermsAcceptanceView } from '../useTermsAcceptanceView'
 import embeddedTerms from '../embedded-terms.json'
 
+const render = () =>
+    renderHook(() => useTermsAcceptanceView(mocks.onAccepted))
+
+const htmlOf = (source: { html: string } | { uri: string }) =>
+    'html' in source ? source.html : undefined
+
 describe('useTermsAcceptanceView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.currentVersion = embeddedTerms.version
+        mocks.currentLanguage = 'en'
     })
 
-    it('serves the bundled copy (no spinner) when the version matches', () => {
-        const { result } = renderHook(() =>
-            useTermsAcceptanceView(mocks.onAccepted),
-        )
+    it('serves the bundled copy (no spinner, agree enabled) when the version matches', () => {
+        const { result } = render()
 
-        expect('html' in result.current.source).toBe(true)
+        expect(htmlOf(result.current.source)).toContain('<html lang="en">')
         expect(result.current.showLoading).toBe(false)
+        expect(result.current.isAgreeDisabled).toBe(false)
     })
 
-    it('falls back to the remote URL (with spinner) when the version differs', () => {
+    it.each(['de', 'es', 'fr', 'tr', 'pt-BR'])(
+        'serves the %s bundled copy in that locale',
+        locale => {
+            mocks.currentLanguage = locale
+
+            const { result } = render()
+
+            expect(htmlOf(result.current.source)).toContain(
+                `<html lang="${locale}">`,
+            )
+        },
+    )
+
+    it.each(['en-XA', '', 'xx'])(
+        'falls back to the English copy for locale %j',
+        locale => {
+            mocks.currentLanguage = locale
+
+            const { result } = render()
+
+            expect(htmlOf(result.current.source)).toContain('<html lang="en">')
+        },
+    )
+
+    it('loads the localized remote URL with agree disabled until it renders', () => {
         mocks.currentVersion = 'version-not-bundled'
+        mocks.currentLanguage = 'fr'
 
-        const { result } = renderHook(() =>
-            useTermsAcceptanceView(mocks.onAccepted),
-        )
+        const { result } = render()
 
-        expect('uri' in result.current.source).toBe(true)
+        expect(result.current.source).toEqual({
+            uri: 'https://perawallet.app/terms-and-services/?lang=fr',
+        })
         expect(result.current.showLoading).toBe(true)
+        expect(result.current.isAgreeDisabled).toBe(true)
+
+        act(() => result.current.onLoad())
+
+        expect(result.current.isAgreeDisabled).toBe(false)
     })
 
-    it('records acceptance and invokes onAccepted on agree', () => {
-        const { result } = renderHook(() =>
-            useTermsAcceptanceView(mocks.onAccepted),
-        )
+    it('swaps to the bundled copy in the user locale when the remote load fails', () => {
+        mocks.currentVersion = 'version-not-bundled'
+        mocks.currentLanguage = 'de'
+
+        const { result } = render()
+        act(() => result.current.onError())
+        // The bundled html then loads; that must not re-arm the remote path.
+        act(() => result.current.onLoad())
+
+        expect(htmlOf(result.current.source)).toContain('<html lang="de">')
+        expect(result.current.showLoading).toBe(false)
+        expect(result.current.isAgreeDisabled).toBe(false)
+
+        act(() => result.current.onAgree())
+
+        expect(mocks.acceptCurrentTerms).toHaveBeenCalledTimes(1)
+    })
+
+    it('records acceptance and invokes onAccepted on agree in a non-English locale', () => {
+        mocks.currentLanguage = 'tr'
+        const { result } = render()
 
         act(() => {
             result.current.onAgree()

@@ -10,19 +10,27 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { config } from '@perawallet/wallet-core-config'
+import { useLanguage } from '@hooks/useLanguage'
+import { withLanguageParam } from '@modules/webview'
 import { useTermsAcceptance } from '../../hooks/useTermsAcceptance'
-import embeddedTerms from './embedded-terms.json'
+import { getEmbeddedTerms } from './embeddedTerms'
 
 type TermsWebViewSource = { html: string; baseUrl: string } | { uri: string }
 
+type RemoteStatus = 'loading' | 'loaded' | 'failed'
+
 export type UseTermsAcceptanceViewResult = {
-    /** Bundled HTML when the embedded copy matches the required version (no
-     * spinner); otherwise the remote URL. */
+    /** Bundled HTML in the user's locale when it matches the required version,
+     * or when the remote copy failed to load; otherwise the remote URL. */
     source: TermsWebViewSource
     /** Whether to show the WebView's loading state — only for the remote copy. */
     showLoading: boolean
+    /** Blocks "I Agree" until the remote copy has actually rendered. */
+    isAgreeDisabled: boolean
+    onLoad: () => void
+    onError: () => void
     onAgree: () => void
 }
 
@@ -38,11 +46,29 @@ export const useTermsAcceptanceView = (
     onAccepted: () => void,
 ): UseTermsAcceptanceViewResult => {
     const { acceptCurrentTerms, currentVersion } = useTermsAcceptance()
+    const { currentLanguage } = useLanguage()
+    const [remoteStatus, setRemoteStatus] = useState<RemoteStatus>('loading')
 
-    const useEmbedded = currentVersion === embeddedTerms.version
+    const embedded = getEmbeddedTerms(currentLanguage)
+    const termsUrl = withLanguageParam(
+        config.termsOfServiceUrl,
+        currentLanguage,
+    )
+    // A failed remote load shows the older bundled copy rather than leaving
+    // the user on an error page they cannot read or accept.
+    const useEmbedded =
+        currentVersion === embedded.version || remoteStatus === 'failed'
     const source: TermsWebViewSource = useEmbedded
-        ? { html: embeddedTerms.html, baseUrl: config.termsOfServiceUrl }
-        : { uri: config.termsOfServiceUrl }
+        ? { html: embedded.html, baseUrl: termsUrl }
+        : { uri: termsUrl }
+
+    const onLoad = useCallback(() => {
+        setRemoteStatus(status => (status === 'failed' ? status : 'loaded'))
+    }, [])
+
+    const onError = useCallback(() => {
+        setRemoteStatus('failed')
+    }, [])
 
     const onAgree = useCallback(() => {
         acceptCurrentTerms()
@@ -52,6 +78,9 @@ export const useTermsAcceptanceView = (
     return {
         source,
         showLoading: !useEmbedded,
+        isAgreeDisabled: !useEmbedded && remoteStatus !== 'loaded',
+        onLoad,
+        onError,
         onAgree,
     }
 }

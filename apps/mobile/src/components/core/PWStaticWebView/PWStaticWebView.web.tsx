@@ -15,7 +15,7 @@
 // renders in a sandboxed iframe (srcdoc for bundled HTML, src for URLs).
 // MV3 default CSP (script-src 'self') blocks scripts inside srcdoc — fine
 // for static terms/policy documents.
-import React from 'react'
+import React, { useEffect } from 'react'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import type { PWStaticWebViewProps } from './PWStaticWebView.types'
@@ -28,13 +28,23 @@ const IFrame = 'iframe' as unknown as React.ComponentType<{
     sandbox?: string
     title: string
     style?: Record<string, string | number>
+    onLoad?: () => void
 }>
 
 export const PWStaticWebView = ({
     source,
+    onLoad,
+    onError,
 }: PWStaticWebViewProps): React.JSX.Element => {
     const styles = useStyles()
     const isBundled = 'html' in source
+    // A cross-origin iframe exposes no error event, and fires `load` even on
+    // the browser's own error page; offline is the one failure we can detect.
+    const isOfflineRemote = !isBundled && navigator.onLine === false
+
+    useEffect(() => {
+        if (isOfflineRemote) onError?.()
+    }, [isOfflineRemote, onError])
     const frameProps = isBundled ? { srcDoc: source.html } : { src: source.uri }
     // Bundled HTML never needs scripts, so it gets the maximal sandbox (no
     // allowances, null origin). A remote `uri` (e.g. the perawallet.app terms
@@ -54,6 +64,7 @@ export const PWStaticWebView = ({
                 {...frameProps}
                 sandbox={sandbox}
                 title='static-content'
+                onLoad={onLoad}
                 // Raw DOM element rendered via react-dom, not an RN View:
                 // makeStyles produces RN stylesheet ids that a host
                 // <iframe> can't consume.
