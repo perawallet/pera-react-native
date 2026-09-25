@@ -21,7 +21,7 @@ export default defineRule({
             good: 'useWallet.spec.ts',
         },
     },
-    gates: { pathMatches: ['**/*.test.{ts,tsx,js,jsx,mjs,cjs}'] },
+    gates: { pathMatches: ['**/*.test.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'] },
     // A tree-sitter misparse can make the root ERROR rather than program.
     query: '[(program) (ERROR)] @file',
     check(ctx, m) {

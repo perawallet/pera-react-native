@@ -31,13 +31,17 @@ describe('pera/spec-file-suffix', () => {
                 'packages/demo/src/__tests__/errorRoot.test.ts': ERROR_ROOT,
                 'packages/demo/src/__tests__/e.spec.ts': 'export const e = 1\n',
                 'packages/demo/src/test-utils/latest.ts':
+                    'export const notATest = 1\n',
+                'packages/demo/src/test.ts': 'export const alsoNotATest = 1\n',
+                'packages/demo/src/__tests__/f.test.mts':
                     'export const f = 1\n',
-                'packages/demo/src/test.ts': 'export const g = 1\n',
+                'packages/demo/src/__tests__/g.test.cts':
+                    'export const g = 1\n',
             },
             async dir => {
                 const runner = await createRunner(
                     RULE,
-                    `${dir}/**/*.{ts,tsx,js,mjs}`,
+                    `${dir}/**/*.{ts,tsx,mts,cts,js,mjs}`,
                 )
                 try {
                     const found = await runner.run()
@@ -49,6 +53,8 @@ describe('pera/spec-file-suffix', () => {
                         'c.test.js',
                         'd.test.mjs',
                         'errorRoot.test.ts',
+                        'f.test.mts',
+                        'g.test.cts',
                     ])
                 } finally {
                     await runner.dispose()

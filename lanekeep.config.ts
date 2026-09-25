@@ -32,7 +32,7 @@ export default defineConfig({
     // Every TS/JS file in the repo. A rule about shipped source narrows itself
     // with lanekeep/shared/scope.ts; the repo-wide rules need tests and
     // tooling in view.
-    include: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
+    include: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
     // lanekeep also skips gitignored files on top of the excludes below, so a generated
     // file like packages/config/src/generated-env.ts can match `include` and still never
     // appear here — expected, not a glob bug.
