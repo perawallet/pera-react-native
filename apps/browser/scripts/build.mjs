@@ -96,7 +96,7 @@ rmSync(dist, { recursive: true, force: true })
 // to already exist on disk (nothing, on a clean CI checkout — this job runs
 // on its own runner with no access to the separate "Build" job's output).
 const monorepoRoot = path.resolve(root, '../..')
-execSync('bash tools/generate-config.sh', {
+execSync('bash tools/dev/generate-config.sh', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })

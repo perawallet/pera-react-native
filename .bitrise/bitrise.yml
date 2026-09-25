@@ -88,7 +88,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev/validate-env.sh
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
@@ -184,16 +184,16 @@ workflows:
             #
             # Which tag to diff against is one rule shared with the delivered-
             # ticket list, so it lives in a script rather than being spelled out
-            # here — see tools/release-range-start.sh for why alpha and rc need
+            # here — see tools/release/range-start.sh for why alpha and rc need
             # per-channel ranges and why a store release must not fall back.
-            LAST_TAG=$(./tools/release-range-start.sh "${BITRISE_GIT_TAG:-}" || echo "")
+            LAST_TAG=$(./tools/release/range-start.sh "${BITRISE_GIT_TAG:-}" || echo "")
             if [ -n "$LAST_TAG" ]; then
               echo "Generating changelog since tag: $LAST_TAG"
-              CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+              CHANGELOG=$(./tools/release/generate-changelog.sh "$LAST_TAG" || echo "")
               # Same range, unabridged and without Slack markup: the card only
               # ever shows a summary, so this file is the record of what
               # actually shipped and is what the card's link points at.
-              FULL=$(LINK_FORMAT=plain MAX_COUNT=0 ./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+              FULL=$(LINK_FORMAT=plain MAX_COUNT=0 ./tools/release/generate-changelog.sh "$LAST_TAG" || echo "")
             fi
             if [ -z "${CHANGELOG:-}" ]; then
               echo "No previous tag / empty changelog; using fallback"
@@ -207,8 +207,8 @@ workflows:
             # Slack drops the whole payload with `invalid_attachments` once a
             # section block passes 3000 chars, which is what killed the RC
             # cards. Cap before the escape below — cutting escaped text can
-            # split a \n or \" in half. See tools/cap-changelog.sh.
-            CHANGELOG=$(printf '%s' "$CHANGELOG" | ./tools/cap-changelog.sh 2500)
+            # split a \n or \" in half. See tools/release/cap-changelog.sh.
+            CHANGELOG=$(printf '%s' "$CHANGELOG" | ./tools/release/cap-changelog.sh 2500)
 
             # JSON-escape (newlines -> \n, quotes) so the changelog embeds
             # cleanly in the Slack payload "text" field; without it the raw
@@ -296,7 +296,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev/validate-env.sh
     - script@1:
         title: Install Ruby via asdf
         inputs:
@@ -379,7 +379,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/setup-env-secrets.sh
+            ./tools/dev/setup-env-secrets.sh
     - script@1:
         title: Generate Config
         inputs:
@@ -583,7 +583,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev/validate-env.sh
     - script@1:
         title: Generate Changelog (if not from pipeline)
         inputs:
@@ -604,7 +604,7 @@ workflows:
             LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
             if [ -n "$LAST_TAG" ]; then
               echo "Generating changelog since tag: $LAST_TAG"
-              CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+              CHANGELOG=$(./tools/release/generate-changelog.sh "$LAST_TAG" || echo "")
             fi
             if [ -z "${CHANGELOG:-}" ]; then
               echo "No previous tag / empty changelog; using fallback"
@@ -699,7 +699,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/setup-env-secrets.sh
+            ./tools/dev/setup-env-secrets.sh
     - script@1:
         title: Generate Config
         inputs:
@@ -850,9 +850,9 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # Channel logic lives in tools/resolve-distribution.sh so the
+            # Channel logic lives in tools/release/resolve-distribution.sh so the
             # validate step and this step can't drift (see that script).
-            envman add --key DISTRIBUTION --value "$(./tools/resolve-distribution.sh)"
+            envman add --key DISTRIBUTION --value "$(./tools/release/resolve-distribution.sh)"
     - script@1:
         title: Setup distribution credentials
         inputs:
@@ -985,7 +985,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev/validate-env.sh
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
@@ -1045,7 +1045,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/setup-env-secrets.sh
+            ./tools/dev/setup-env-secrets.sh
     - script@1:
         title: Generate Config
         inputs:
@@ -1133,7 +1133,7 @@ workflows:
             # stderr and only the output path on stdout, so this captures the
             # path directly; pipefail is what makes a codesign failure fail the
             # step rather than assigning its last stdout line to SMOKE_ARTIFACT.
-            PATCHED="$(./tools/patch-ipa-for-browserstack.sh "$BITRISE_IPA_PATH")"
+            PATCHED="$(./tools/qa/patch-ipa-for-browserstack.sh "$BITRISE_IPA_PATH")"
             envman add --key SMOKE_ARTIFACT --value "$PATCHED"
     - script@1:
         title: Run smoke gate
@@ -1142,7 +1142,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -eo pipefail
-            ./tools/smoke-test.sh ios "$SMOKE_ARTIFACT"
+            ./tools/qa/smoke-test.sh ios "$SMOKE_ARTIFACT"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:
@@ -1186,7 +1186,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -eo pipefail
-            ./tools/smoke-test.sh android "$BITRISE_APK_PATH"
+            ./tools/qa/smoke-test.sh android "$BITRISE_APK_PATH"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:

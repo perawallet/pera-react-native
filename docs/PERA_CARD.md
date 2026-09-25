@@ -98,7 +98,7 @@ environment, because staging builds sign real keys too:
   the app ids and genesis hash, and is the only check that covers a node
   returning different bytes than the source it was given.
 
-Both pins are Bitrise secrets baked in by `tools/generate-config.sh`, never
+Both pins are Bitrise secrets baked in by `tools/dev/generate-config.sh`, never
 remote config, so a change to the repo cannot supply its own expected value.
 Changing the template or redeploying a card app means running
 `pnpm check:autodraw-hash --print` and updating the matching secrets in the same
