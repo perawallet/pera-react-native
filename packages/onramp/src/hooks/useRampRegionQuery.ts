@@ -19,7 +19,6 @@ import { onrampQueryKeys } from './querykeys'
 
 export type UseRampRegionQueryResult = {
     data: RampRegion | undefined
-    isSuccess: boolean
 }
 
 export const useRampRegionQuery = (
@@ -35,6 +34,5 @@ export const useRampRegionQuery = (
 
     return {
         data: query.data,
-        isSuccess: query.isSuccess,
     }
 }

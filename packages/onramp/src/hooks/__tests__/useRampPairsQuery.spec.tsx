@@ -75,9 +75,8 @@ describe('onramp/useRampPairsQuery', () => {
             wrapper: createWrapper(),
         })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.data).toHaveLength(1))
 
-        expect(result.current.data).toHaveLength(1)
         expect(result.current.data?.[0].id).toBe('pair-1')
         expect(result.current.data?.[0].sourceToken.symbol).toBe('USD')
     })

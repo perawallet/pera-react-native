@@ -25,7 +25,6 @@ import { onrampQueryKeys } from './querykeys'
 export type UseRampPairsQueryResult = {
     data: RampPair[]
     isLoading: boolean
-    isSuccess: boolean
     isError: boolean
     fetchStatus: FetchStatus
     refetch: (options?: RefetchOptions) => unknown
@@ -50,7 +49,6 @@ export const useRampPairsQuery = (
     return {
         data: query.data ?? NO_RESULTS,
         isLoading: query.isLoading,
-        isSuccess: query.isSuccess,
         isError: query.isError,
         fetchStatus: query.fetchStatus,
         refetch: query.refetch,
