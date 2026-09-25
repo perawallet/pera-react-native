@@ -69,7 +69,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockUseAllAccounts(),
 }))
 
-vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
     useArc59SendTransaction: () => ({
         buildSendViaInboxTxs: mockBuildSendViaInbox,
     }),
