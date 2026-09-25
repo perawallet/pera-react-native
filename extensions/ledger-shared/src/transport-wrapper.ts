@@ -15,15 +15,19 @@ import type { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type {
     HardwareWalletArbitrarySignRequest,
     HardwareWalletTransport,
-} from '@perawallet/wallet-core-hardware-wallet'
+} from '@perawallet/wallet-extension-hardware-wallet'
 import { buildLedgerAccountPath } from './constants'
-import { classifyLedgerError, LedgerSigningError } from './errors'
+import {
+    classifyLedgerError,
+    LedgerSigningError,
+    type LedgerErrorClassifier,
+} from './errors'
 
 /**
  * Minimal transport shape this wrapper needs — deliberately NOT
- * `@ledgerhq/hw-transport`'s `Transport` class, so this file (loaded via the
- * `/protocol` subpath by `@perawallet/wallet-core-ledger` and by the web
- * transport packages) never pulls in any concrete transport module.
+ * `@ledgerhq/hw-transport`'s `Transport` class, so this file (loaded by
+ * `@perawallet/wallet-core-ledger` and by the web transport packages) never
+ * pulls in any concrete transport module.
  */
 export type LedgerAppTransport = {
     close: () => Promise<void>
@@ -42,10 +46,14 @@ export type LedgerAppTransport = {
  * platform-agnostic HardwareWalletTransport interface. The APDU layer is
  * transport-independent — this is shared by every transport package
  * (native BLE/USB, web BLE/USB) instead of being duplicated per package.
+ *
+ * `classifyError` lets a transport map its own error shapes, which APDU
+ * exchanges surface as well as `connect`.
  */
 export const createLedgerTransportWrapper = (
     transport: LedgerAppTransport,
     algorandApp: AlgorandApp,
+    classifyError: LedgerErrorClassifier = classifyLedgerError,
 ): HardwareWalletTransport => ({
     async getAddress(accountIndex, verify = false) {
         try {
@@ -59,7 +67,7 @@ export const createLedgerTransportWrapper = (
                 accountIndex,
             }
         } catch (error) {
-            throw classifyLedgerError(error)
+            throw classifyError(error)
         }
     },
 
@@ -90,7 +98,7 @@ export const createLedgerTransportWrapper = (
             }
             return signature
         } catch (error) {
-            throw classifyLedgerError(error)
+            throw classifyError(error)
         }
     },
 
@@ -99,7 +107,7 @@ export const createLedgerTransportWrapper = (
             const { major, minor, patch } = await algorandApp.getVersion()
             return { major, minor, patch }
         } catch (error) {
-            throw classifyLedgerError(error)
+            throw classifyError(error)
         }
     },
 
@@ -124,7 +132,7 @@ export const createLedgerTransportWrapper = (
             }
             return signature
         } catch (error) {
-            throw classifyLedgerError(error)
+            throw classifyError(error)
         }
     },
 

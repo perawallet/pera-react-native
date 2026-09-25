@@ -12,9 +12,11 @@
 
 import * as SplashScreen from 'expo-splash-screen'
 import { initDecimalConfig } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { initNetworkStatus } from '@modules/network'
 import { registerAppBottomSheets } from './bottom-sheet-registrations'
 import { registerLocaleTour } from '@modules/locale-tour/register'
+import { registerHardwareWalletTransports } from './hardware-wallet-transports'
 
 /**
  * Process-wide setup that has to land before the React tree mounts. Called by
@@ -27,6 +29,7 @@ export const initRuntime = (): void => {
     registerAppBottomSheets()
     // Resolves to a no-op stub in every non-dev bundle (see metro.config.js).
     registerLocaleTour()
+    registerHardwareWalletTransports(getProvider().hardwareWalletRegistry)
     // Seeds onlineManager before QueryProvider mounts, so early queries never
     // fire-and-fail against a dead link.
     void initNetworkStatus()

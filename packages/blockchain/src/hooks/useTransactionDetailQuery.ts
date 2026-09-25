@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useQuery, type RefetchOptions } from '@tanstack/react-query'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getTransactionDetailQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
@@ -22,8 +23,17 @@ type UseTransactionDetailQueryParams = {
     isEnabled?: boolean
 }
 
-type UseTransactionDetailQueryResult =
-    UseQueryResult<PeraDisplayableTransaction>
+export type UseTransactionDetailQueryResult = {
+    /** `undefined` until loaded; callers fall back to other sources on it. */
+    data: Optional<PeraDisplayableTransaction>
+    isPending: boolean
+    isLoading: boolean
+    isSuccess: boolean
+    isError: boolean
+    isPaused: boolean
+    error: Nullable<Error>
+    refetch: (options?: RefetchOptions) => unknown
+}
 
 export const useTransactionDetailQuery = ({
     transactionId,
@@ -32,7 +42,7 @@ export const useTransactionDetailQuery = ({
     const algokit = useAlgorandClient()
     const { network } = useNetwork()
 
-    return useQuery({
+    const query = useQuery({
         queryKey: getTransactionDetailQueryKey(transactionId, network),
         queryFn: async () => {
             const response = await algokit.client.indexer
@@ -42,4 +52,15 @@ export const useTransactionDetailQuery = ({
         },
         enabled: isEnabled && !!transactionId,
     })
+
+    return {
+        data: query.data,
+        isPending: query.isPending,
+        isLoading: query.isLoading,
+        isSuccess: query.isSuccess,
+        isError: query.isError,
+        isPaused: query.isPaused,
+        error: query.error,
+        refetch: query.refetch,
+    }
 }

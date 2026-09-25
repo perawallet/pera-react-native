@@ -21,6 +21,7 @@ import type { PeraCollectible } from './collectibles'
 import {
     ALGO_ASSET_ID,
     ALGO_ASSET_NAME,
+    ALGO_DECIMALS,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
@@ -143,7 +144,7 @@ export const ALGO_ASSET: PeraAsset = {
     assetId: ALGO_ASSET_ID,
     name: 'Algo',
     unitName: ALGO_ASSET_NAME,
-    decimals: 6,
+    decimals: ALGO_DECIMALS,
     totalSupply: new Decimal('10000000000000000'), // 10B ALGO in microAlgos
     creator: {
         address: '',

@@ -20,6 +20,7 @@ import {
     LedgerDeviceLockedError,
     LedgerDeviceNotFoundError,
     LedgerDisconnectedError,
+    LedgerError,
     LedgerLocationServicesDisabledError,
     LedgerNetworkError,
     LedgerNoAccountsFoundError,
@@ -39,38 +40,6 @@ import {
 import type { LedgerErrorPresetKind } from '../types/ledgerErrorPresetKind'
 
 /**
- * Every typed Ledger error class. Kept in one place so both the
- * UI-preset classifier ({@link classifyLedgerErrorKind}) and the
- * device-error predicate ({@link isLedgerError}) stay in sync.
- */
-const LEDGER_ERROR_CLASSES = [
-    LedgerBluetoothDisabledError,
-    LedgerPermissionDeniedError,
-    LedgerScanTimeoutError,
-    LedgerUserRejectedError,
-    LedgerAppNotOpenError,
-    LedgerAddressMismatchError,
-    LedgerSigningError,
-    LedgerSigningFailedError,
-    LedgerTransmissionError,
-    LedgerPublicKeyReadError,
-    LedgerNetworkError,
-    LedgerAppOutdatedError,
-    LedgerUnsupportedDeviceError,
-    LedgerDisconnectedError,
-    LedgerTimeoutError,
-    LedgerDeviceLockedError,
-    LedgerDeviceNotFoundError,
-    LedgerDeviceBusyError,
-    LedgerUsbNoDeviceError,
-    LedgerUsbMultipleDevicesError,
-    LedgerNoAccountsFoundError,
-    LedgerLocationServicesDisabledError,
-    LedgerProviderNotFoundError,
-    LedgerConnectionError,
-] as const
-
-/**
  * True only for genuine Ledger device/transport errors (the typed classes
  * thrown by the Ledger extension). Used to decide whether a thrown error
  * should drive the hardware-signing overlay/troubleshooting surface
@@ -80,8 +49,8 @@ const LEDGER_ERROR_CLASSES = [
  * `SigningError` wrapping one — return `false` so they surface inline in the
  * sign-request sheet rather than masquerading as a connection problem.
  */
-export const isLedgerError = (error: unknown): boolean =>
-    LEDGER_ERROR_CLASSES.some(LedgerError => error instanceof LedgerError)
+export const isLedgerError = (error: unknown): error is LedgerError =>
+    error instanceof LedgerError
 
 /**
  * Strategy-agnostic classifier that turns a thrown error into the

@@ -11,10 +11,11 @@
  */
 
 // Platform-agnostic Ledger protocol surface: types, errors, APDU codes,
-// timeout constants, classification helpers. Loaded by the business-logic
-// `@perawallet/wallet-core-ledger` package *without* pulling in
-// `@ledgerhq/react-native-hw-transport-ble` or other RN-only modules
-// (which carry Flow-typed source that vitest can't parse).
+// timeout constants, classification helpers. Shared by every transport and
+// loaded by the business-logic `@perawallet/wallet-core-ledger` package
+// *without* pulling in `@ledgerhq/react-native-hw-transport-ble` or other
+// RN-only modules (which carry Flow-typed source that vitest can't parse), so
+// transport-specific error mapping belongs in the transport package.
 export * from './types'
 export * from './errors'
 export * from './constants'

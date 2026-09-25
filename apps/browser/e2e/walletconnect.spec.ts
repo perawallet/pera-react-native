@@ -333,7 +333,7 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
                 icons: [],
             },
         })
-        // Wildcard chainId (4160, AlgorandChainId.all) so pairing doesn't depend
+        // Wildcard chainId (4160, AlgorandWalletConnectChainId.all) so pairing doesn't depend
         // on which network the extension is running against.
         await dappConnector.createSession({ chainId: 4160 })
         const uri = dappConnector.uri

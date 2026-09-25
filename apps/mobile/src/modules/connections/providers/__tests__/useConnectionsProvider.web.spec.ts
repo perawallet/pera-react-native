@@ -49,10 +49,10 @@ const onLocalStorageKeyChanged = vi.fn(
     },
 )
 
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     onLocalStorageKeyChanged,
 }))
-vi.mock('@perawallet/wallet-extension-platform-chrome/remote-registry', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime/remote-registry', () => ({
     createRemoteConnectionRegistry,
 }))
 

@@ -86,8 +86,15 @@ import {
     LedgerTimeoutError,
     LedgerBluetoothDisabledError,
     LedgerPermissionDeniedError,
+    LedgerDeviceNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-extension-ledger-shared'
+
+const createHwTransportError = (originCode: number): Error => {
+    const error = new Error(`BleError. Origin: ${originCode}`)
+    error.name = 'HwTransportError'
+    return error
+}
 
 describe('RNLedgerService', () => {
     beforeEach(() => {
@@ -246,6 +253,27 @@ describe('RNLedgerService', () => {
                 expect.any(LedgerConnectionError),
             )
         })
+
+        test('maps ble-plx origin codes on scan errors', () => {
+            let observer: { error: (err: unknown) => void } = {
+                error: () => {},
+            }
+            transportListenMock.mockImplementation(subscription => {
+                observer = subscription
+                return { unsubscribe: vi.fn() }
+            })
+
+            const onError = vi.fn()
+            new RNLedgerService()
+                .createTransportProvider()
+                .scan(() => {}, onError)
+
+            observer.error(createHwTransportError(102))
+
+            expect(onError).toHaveBeenCalledWith(
+                expect.any(LedgerBluetoothDisabledError),
+            )
+        })
     })
 
     describe('createTransportProvider().connect', () => {
@@ -271,6 +299,16 @@ describe('RNLedgerService', () => {
                     .createTransportProvider()
                     .connect('device-id'),
             ).rejects.toThrow()
+        })
+
+        test('maps ble-plx origin codes from TransportBLE.open', async () => {
+            transportOpenMock.mockRejectedValue(createHwTransportError(204))
+
+            await expect(
+                new RNLedgerService()
+                    .createTransportProvider()
+                    .connect('device-id'),
+            ).rejects.toBeInstanceOf(LedgerDeviceNotFoundError)
         })
     })
 
@@ -347,6 +385,17 @@ describe('RNLedgerService', () => {
 
             await expect(transport.getAddress(0)).rejects.toBeInstanceOf(
                 LedgerUserRejectedError,
+            )
+        })
+
+        test('getAddress maps ble-plx origin codes from the APDU exchange', async () => {
+            algorandGetAddressMock.mockRejectedValue(
+                createHwTransportError(201),
+            )
+            const transport = await mountTransport()
+
+            await expect(transport.getAddress(0)).rejects.toBeInstanceOf(
+                LedgerDisconnectedError,
             )
         })
 

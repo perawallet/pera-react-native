@@ -90,6 +90,8 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-device', () => ({
+    logEvent: vi.fn(),
+    createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => mockUseDeviceID(),
     DeviceAccountTypes: {
         algo25: 'algo25',

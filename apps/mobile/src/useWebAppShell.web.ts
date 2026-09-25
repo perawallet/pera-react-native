@@ -11,10 +11,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import {
-    getCurrentApproval,
-    getSurface,
-} from '@perawallet/wallet-extension-platform-chrome'
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+import { getCurrentApproval } from '@perawallet/wallet-core-browser-runtime'
 import { requireSessionMasterKey } from '@perawallet/wallet-extension-keystore-chrome'
 import { useVaultLockState } from '@modules/vault'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'

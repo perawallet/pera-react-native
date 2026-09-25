@@ -14,14 +14,16 @@ import { useCallback, useEffect, useRef, type RefObject } from 'react'
 import { config } from '@perawallet/wallet-core-config'
 import {
     getSurface,
+    type ExtensionSurface,
+} from '@perawallet/wallet-extension-platform-chrome'
+import {
     holdIntegrityCheckHost,
     onHostedCheckEnded,
     onIntegrityEnrolmentNeeded,
     parseIntegrityFrameMessage,
     requestIntegrityEnrolment,
-    type ExtensionSurface,
     type IntegrityEnrolReason,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { useIntegrityCheckFrameStore } from './useIntegrityCheckFrameStore.web'
 

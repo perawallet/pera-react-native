@@ -43,7 +43,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     return {
         ...actual,
         // The poll mechanics (give-up limits, restart) are unit-tested in the
-        // card package's useOnboardingKycPoll.test — here only the wiring matters.
+        // card package's useOnboardingKycPoll.spec — here only the wiring matters.
         useOnboardingKycPoll: () => ({
             verificationState: mockVerificationState,
             isStateUnknown: mockIsStateUnknown,

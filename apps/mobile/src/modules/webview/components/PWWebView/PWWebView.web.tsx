@@ -31,7 +31,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import {
     createDiscoverBridgeHost,
     openExternalTab,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { PWView } from '@components/core/PWView'
 import { PWButton } from '@components/core/PWButton'
 import { EmptyView } from '@components/EmptyView/EmptyView'

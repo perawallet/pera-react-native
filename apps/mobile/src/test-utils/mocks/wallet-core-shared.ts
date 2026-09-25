@@ -50,6 +50,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('@packages/shared/src/errors/expected')
     >('@packages/shared/src/errors/expected')
 
+    // Real money math, not a stub: unit-conversion.ts imports only constants
+    // and decimal-config. Blockchain re-exports these from shared, so a spec
+    // that spreads the actual blockchain module resolves them through here.
+    const unitConversion = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+
     // Mirrors packages/shared/src/errors/base.ts: the metadata defaulting, the
     // third `originalError` argument, and the instance members consumers reach
     // for (`timestamp`, `toJSON`, `isMinor`, `shouldReport`). `name` comes from
@@ -263,6 +270,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     return {
         ALGO_ASSET_ID: '0',
         ALGO_ASSET_NAME: 'ALGO',
+        ALGO_DECIMALS: 6,
+        ...unitConversion,
         isAlgoAssetId: (assetId: string | number | bigint) =>
             String(assetId) === '0',
         isAlgoAssetName: (value: string) => value === 'ALGO',

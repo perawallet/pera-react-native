@@ -18,12 +18,8 @@ import {
 import type { ConnectionId } from '@perawallet/wallet-extension-connections'
 import { createHandlerKit } from '@perawallet/wallet-core-connections/handlerKit'
 import {
-    abandonPairing as abandonConnectorPairing,
-    clearConnectorHandlerBinder,
+    createConnectorRegistry,
     createWalletConnectConnector,
-    getConnector,
-    registerConnector,
-    setConnectorHandlerBinder,
 } from '../connection'
 import { isChainIdAcceptable } from '../shared/chain'
 import { redactWalletConnectUri, walletConnectLogContext } from '../shared/uri'
@@ -45,6 +41,7 @@ import {
     type WalletConnectV1SessionKeyStore,
 } from './secrets'
 import { startReconnectSweep } from './reconnectSweep'
+import { createWalletConnectV1Delivery } from './deliver'
 
 export type CreateWalletConnectV1HandlerOptions = {
     /**
@@ -74,16 +71,25 @@ export const createWalletConnectV1Handler = (
     })
     const { store } = kit
     let stopSweep: Nullable<() => void> = null
+    // Instance state, not module state: a UI realm constructs this handler
+    // for its descriptors alone and must never see another realm's sockets.
+    // Declared before `bindHandlers` exists, so the binder is deferred.
+    const connectors = createConnectorRegistry({
+        bindHandlers: connector => bindHandlers(connector),
+    })
+    const delivery = createWalletConnectV1Delivery(connectors)
 
-    const requests = createV1RequestHandlers({ kit, getNetwork })
+    const requests = createV1RequestHandlers({ kit, connectors, getNetwork })
     const proposals = createV1ProposalHandlers({
         kit,
+        connectors,
         getNetwork,
         sessionKeys,
         connectionFor: requests.connectionFor,
     })
     const { bindHandlers, forgetSession } = createV1ConnectorBinding({
         kit,
+        connectors,
         sessionKeys,
         handleSessionRequest: proposals.handleSessionRequest,
         handleSignTxn: requests.handleSignTxn,
@@ -91,12 +97,13 @@ export const createWalletConnectV1Handler = (
     })
     const { restore } = createV1SessionRestorer({
         kit,
+        connectors,
         sessionKeys,
         bindHandlers,
     })
 
     const disconnect = async (id: ConnectionId): Promise<void> => {
-        const connector = getConnector(id)
+        const connector = connectors.get(id)
         if (connector?.connected) {
             try {
                 await connector.killSession({ message: 'User disconnected' })
@@ -121,12 +128,10 @@ export const createWalletConnectV1Handler = (
 
         initialize: async next => {
             kit.attach(next)
-            // The handler outlives every connector, so it owns re-binding after a socket recovery.
-            setConnectorHandlerBinder(bindHandlers)
             // The sweep reads the connector registry when a trigger fires, so
             // it is safe before `restore()`; replaced, never stacked.
             stopSweep?.()
-            stopSweep = startReconnectSweep()
+            stopSweep = startReconnectSweep(() => connectors.reconnectAll())
         },
 
         // Leaves live sockets alone: teardown is a provider remount, not a user
@@ -135,7 +140,6 @@ export const createWalletConnectV1Handler = (
             stopSweep?.()
             stopSweep = null
             proposals.clear()
-            clearConnectorHandlerBinder(bindHandlers)
             kit.detach()
         },
 
@@ -161,7 +165,7 @@ export const createWalletConnectV1Handler = (
             // The shared factory keeps the SDK from adopting its own localStorage session.
             const connector = createWalletConnectConnector({ uri })
             bindHandlers(connector)
-            registerConnector(connector.clientId, connector)
+            connectors.register(connector.clientId, connector)
             if (opts?.origin)
                 kit.pendingOrigins.remember(connector.clientId, opts.origin)
             // One connector per pairing: the clientId is the pairing id and the eventual `Connection.id`.
@@ -170,8 +174,12 @@ export const createWalletConnectV1Handler = (
 
         abandonPairing: pairingId => {
             proposals.forgetPairing(pairingId)
-            abandonConnectorPairing(pairingId)
+            connectors.abandonPairing(pairingId)
         },
+
+        reconnect: () => connectors.reconnectAll(),
+
+        ...delivery,
 
         disconnect,
 

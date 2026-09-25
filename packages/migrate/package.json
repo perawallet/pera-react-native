@@ -41,8 +41,6 @@
         "@perawallet/wallet-extension-platform": "workspace:*",
         "@perawallet/wallet-extension-provider": "workspace:*",
         "react": "catalog:",
-        "react-native": "catalog:",
-        "react-native-quick-crypto": "catalog:",
         "zustand": "catalog:"
     },
     "devDependencies": {

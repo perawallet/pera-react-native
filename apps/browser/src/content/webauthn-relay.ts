@@ -21,7 +21,7 @@
 import {
     WEBAUTHN_RELAY_SCOPE,
     type WebauthnCeremonyResponse,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import {
     WEBAUTHN_CHANNEL_HANDSHAKE_EVENT,
     WEBAUTHN_CHANNEL_RELAY_READY_EVENT,

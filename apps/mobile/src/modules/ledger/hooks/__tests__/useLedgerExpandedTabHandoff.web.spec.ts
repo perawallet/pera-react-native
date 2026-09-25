@@ -20,6 +20,8 @@ const { surfaceState, mockOpenExpandedTab } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     getSurface: () => surfaceState.current,
+}))
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     openExpandedTab: (flow: string) => mockOpenExpandedTab(flow),
 }))
 

@@ -12,9 +12,9 @@
 
 import { requireOptionalNativeModule } from 'expo'
 import { Platform, PermissionsAndroid } from 'react-native'
-import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
+import type { HardwareWalletService } from '@perawallet/wallet-extension-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { HardwareWalletAdapterState } from '@perawallet/wallet-core-hardware-wallet'
+import type { HardwareWalletAdapterState } from '@perawallet/wallet-extension-hardware-wallet'
 import TransportBLE from '@ledgerhq/react-native-hw-transport-ble'
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type {
@@ -23,12 +23,12 @@ import type {
     LedgerDevice,
 } from '@perawallet/wallet-extension-ledger-shared'
 import {
-    classifyLedgerError,
     LedgerBluetoothDisabledError,
     LedgerPermissionDeniedError,
+    createLedgerTransportWrapper,
+    resolveDeviceModel,
 } from '@perawallet/wallet-extension-ledger-shared'
-import { resolveDeviceModel } from '@perawallet/wallet-extension-ledger-shared'
-import { createLedgerTransportWrapper } from '@perawallet/wallet-extension-ledger-shared'
+import { classifyBleLedgerError } from './classifyBleLedgerError'
 
 /** Unrecognized values fall back to `unknown`. */
 const BLE_STATE_MAP: Record<string, HardwareWalletAdapterState> = {
@@ -204,7 +204,7 @@ export class RNLedgerService implements HardwareWalletService {
                     },
                     error: (err: unknown) => {
                         if (onError) {
-                            onError(classifyLedgerError(err))
+                            onError(classifyBleLedgerError(err))
                         }
                     },
                     complete: () => {},
@@ -246,9 +246,10 @@ export class RNLedgerService implements HardwareWalletService {
                     return createLedgerTransportWrapper(
                         bleTransport,
                         algorandApp,
+                        classifyBleLedgerError,
                     )
                 } catch (error) {
-                    throw classifyLedgerError(error)
+                    throw classifyBleLedgerError(error)
                 }
             },
 

@@ -87,8 +87,8 @@ const polyfillMap = {
 
 // Native modules that leak into the web bundle through shared screens get
 // same-shaped no-op stubs. (Ledger's native transports are handled instead
-// by pera-provider.web.ts importing the real Web Bluetooth/WebHID packages
-// directly — see extensions/provider/src/pera-provider.web.ts.)
+// by src/bootstrap/hardware-wallet-transports.web.ts importing the real Web
+// Bluetooth/WebHID packages directly.)
 const webStubs = {
     // Native credential provider: requireNativeModule('ReactNativePasskeyAutofill') throws on web.
     '@algorandfoundation/react-native-passkey-autofill': 'react-native-passkey-autofill.js',
@@ -362,8 +362,8 @@ const customResolveRequest = (context, moduleName, platform) => {
     }
     // Subpath: App.web.tsx statically imports only the platform-chrome
     // bootstrap (getSurface/hydratePlatform/installOffscreenStorageShim) to
-    // avoid pulling ChromeDatabaseService (drizzle-orm) and the
-    // hardware-wallet registry into the pre-hydration web bundle. Native
+    // avoid pulling ChromeDatabaseService (drizzle-orm) into the
+    // pre-hydration web bundle. Native
     // keeps the real react-native platform driver, so this subpath must only
     // resolve on web.
     if (
@@ -376,23 +376,6 @@ const customResolveRequest = (context, moduleName, platform) => {
             'platform-chrome',
             'src',
             'bootstrap.ts',
-        );
-        return context.resolveRequest(context, sourcePath, platform);
-    }
-    // Subpath: the remote registry is the one platform-chrome module with a
-    // runtime dependency on the connections package; kept off the main barrel
-    // so the service worker never loads that graph.
-    if (
-        platform === 'web' &&
-        moduleName ===
-            '@perawallet/wallet-extension-platform-chrome/remote-registry'
-    ) {
-        const sourcePath = path.resolve(
-            monorepoRoot,
-            'extensions',
-            'platform-chrome',
-            'src',
-            'remote-registry.ts',
         );
         return context.resolveRequest(context, sourcePath, platform);
     }

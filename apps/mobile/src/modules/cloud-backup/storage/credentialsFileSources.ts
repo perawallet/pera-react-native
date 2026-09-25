@@ -10,16 +10,15 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { isAndroid, isIOS } from '@utils/platform'
 
 import type { CredentialsFileSource } from './types'
 
 // Neither the file picker nor either cloud SDK ships outside the two mobile
 // builds, so anywhere else offers nothing rather than a row that throws the
 // moment it is tapped. The extension gets its own twin.
-const MOBILE_OS = new Set<string>(['ios', 'android'])
-
+//
 // Which cloud drives exist is the platform's answer, since it owns both SDKs.
 // Resolved once and kept: neither the OS nor the linked SDKs change at runtime,
 // and callers memoize on this array's identity. Not at module scope, because
@@ -27,9 +26,10 @@ const MOBILE_OS = new Set<string>(['ios', 'android'])
 let resolved: CredentialsFileSource[] | null = null
 
 const sources = (): CredentialsFileSource[] =>
-    (resolved ??= MOBILE_OS.has(Platform.OS)
-        ? ['device', ...getProvider().cloudFileStorage.getAvailableStores()]
-        : [])
+    (resolved ??=
+        isIOS() || isAndroid()
+            ? ['device', ...getProvider().cloudFileStorage.getAvailableStores()]
+            : [])
 
 export const getCredentialsFileSaveSources = sources
 

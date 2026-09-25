@@ -28,8 +28,8 @@ import {
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the web composition root names the handler so the remote registry can answer URI claims locally
 import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconnect'
 import { CONNECTIONS_STORAGE_KEY } from '@perawallet/wallet-extension-connections'
-import { onLocalStorageKeyChanged } from '@perawallet/wallet-extension-platform-chrome'
-import { createRemoteConnectionRegistry } from '@perawallet/wallet-extension-platform-chrome/remote-registry'
+import { onLocalStorageKeyChanged } from '@perawallet/wallet-core-browser-runtime'
+import { createRemoteConnectionRegistry } from '@perawallet/wallet-core-browser-runtime/remote-registry'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import type { ProposalQueueHandle } from './useProposalQueue'

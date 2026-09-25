@@ -10,29 +10,55 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import {
     useAlgorandClient,
     useNetwork,
+    type AccountInformation,
 } from '@perawallet/wallet-core-blockchain'
 import { fetchOnChainAccountInformation } from './endpoints'
 import { mapOnChainAccountInformation } from './mappers'
 import { getOnChainAccountInformationQueryKey } from './querykeys'
+
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 // Short freshness window instead of refetch-on-every-mount: send-flow
 // navigation remounts consumers several times back-to-back, and each remount
 // was a guaranteed algod hit.
 const ON_CHAIN_ACCOUNT_INFO_STALE_TIME_MS = 15_000
 
-export const useOnChainAccountInformationQuery = (address: string) => {
+export type UseOnChainAccountInformationQueryResult = {
+    /** `undefined` until loaded; callers gate on it, so no default. */
+    data: Optional<AccountInformation>
+    isPending: boolean
+    isLoading: boolean
+    isFetching: boolean
+    isSuccess: boolean
+    isError: boolean
+    refetch: (options?: RefetchOptions) => unknown
+}
+
+export const useOnChainAccountInformationQuery = (
+    address: string,
+): UseOnChainAccountInformationQueryResult => {
     const { network } = useNetwork()
     const algokit = useAlgorandClient()
 
-    return useQuery({
+    const query = useQuery({
         queryKey: getOnChainAccountInformationQueryKey(address, network),
         queryFn: () => fetchOnChainAccountInformation(algokit, address),
         select: mapOnChainAccountInformation,
         enabled: !!address,
         staleTime: ON_CHAIN_ACCOUNT_INFO_STALE_TIME_MS,
     })
+
+    return {
+        data: query.data,
+        isPending: query.isPending,
+        isLoading: query.isLoading,
+        isFetching: query.isFetching,
+        isSuccess: query.isSuccess,
+        isError: query.isError,
+        refetch: query.refetch,
+    }
 }

@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     LegacyMigrationData,
     MigrationService,
     MigrationStepName,
 } from '@perawallet/wallet-extension-platform'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     runExtrasMigration,
     type ExtrasMigrationResult,
@@ -264,7 +264,10 @@ const runMigrationWithLegacyData = async (
         }
     }
 
-    const sourcePlatform = Platform.OS === 'ios' ? 'ios' : 'android'
+    const sourcePlatform =
+        getProvider().deviceInfo.getDevicePlatform() === 'ios'
+            ? 'ios'
+            : 'android'
     try {
         await migration.markMigrationComplete(sourcePlatform)
     } catch (err) {

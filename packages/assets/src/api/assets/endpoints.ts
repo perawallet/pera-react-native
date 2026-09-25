@@ -65,17 +65,6 @@ export const fetchAssets = async (
     return assetsResponseSchema.parse(response.data)
 }
 
-export const fetchAccountAssets = async (address: string, network: Network) => {
-    const response = await queryClient<AssetsResponse, string>({
-        backend: 'pera',
-        network,
-        method: 'GET',
-        url: `/v2/accounts/${address}/assets/`,
-    })
-
-    return assetsResponseSchema.parse(response.data)
-}
-
 export const fetchAssetDetails = async (assetID: string, network: Network) => {
     const response = await queryClient<AssetResponse, string>({
         backend: 'pera',

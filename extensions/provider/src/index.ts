@@ -29,6 +29,12 @@ export {
     type EngineKeySource,
 } from './keystore/engineKeySource'
 export type { ResealReport } from './keystore/resealTypes'
+/**
+ * The `SubtleCrypto` the keystore engine runs on. Packages that seal records
+ * for the native keystore take it from here rather than importing
+ * react-native-quick-crypto themselves.
+ */
+export { subtle as keystoreSubtle } from './keystore/subtle'
 export {
     readKeystoreMigrationLedger,
     resetKeystoreMigrationModule,

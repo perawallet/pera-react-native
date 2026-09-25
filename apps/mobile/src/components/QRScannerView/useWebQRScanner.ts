@@ -66,7 +66,7 @@ export type UseWebQRScannerOptions = {
      * stays in a dormant, paste-only state. Used in the popup surface: the
      * `getUserMedia` permission prompt is a focus-stealing OS dialog, and
      * Chrome tears down the 360x600 toolbar popup the instant it loses
-     * focus (see `extensions/platform-chrome/src/navigation.ts`). Defaults
+     * focus (see `packages/browser-runtime/src/navigation.ts`). Defaults
      * to `true`.
      */
     autoStart?: boolean

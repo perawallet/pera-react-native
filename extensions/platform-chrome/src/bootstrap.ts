@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-// Pre-hydration entry for App.web.tsx's static import path: none of the
-// platformServices deps the full index eagerly constructs
-// (ChromeDatabaseService, hardware-wallet registry).
+// Pre-hydration entry for App.web.tsx's static import path, mirroring
+// keystore-chrome/src/bootstrap.ts: none of the platformServices deps the full
+// index eagerly constructs (ChromeDatabaseService).
 // The full index stays available to the dynamically-imported graph.
 //
 // The reference below is duplicated from index.ts because this is a separate

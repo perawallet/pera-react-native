@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { Platform } from 'react-native'
 import { shareText } from '@utils/shareText'
 import { getImageBase64 } from '@utils/getImageBase64'
 import { saveImageToDevice } from '@utils/saveImageToDevice'
@@ -391,11 +390,7 @@ export const useCollectibleDetail = (
             const matchIndex = fullScreenMedia.findIndex(m => m.uri === uri)
             const targetIndex = matchIndex >= 0 ? matchIndex : 0
 
-            // A bottom sheet is a fine stand-in for a full-screen native
-            // modal, but it's not "full screen" in a 360x600 popup (or even
-            // the expanded tab) — open the raw media in a real browser tab
-            // instead, which is what actually fills the screen there.
-            if (Platform.OS === 'web') {
+            if (!routeCapabilities.fullScreenMediaViewer) {
                 const targetUri = fullScreenMedia[targetIndex]?.uri
                 if (targetUri) openValidatedBrowserUrl(targetUri)
                 return

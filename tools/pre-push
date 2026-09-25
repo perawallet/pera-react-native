@@ -154,6 +154,31 @@ else
 fi
 rm "$DTS_LOG"
 
+# Run layer-tier guard. Holds package.json dependencies to the tiers in
+# docs/ARCHITECTURE.md; a wrong-direction edge builds and runs fine, it just
+# drags a driver or business graph into everything above it.
+echo "\n${YELLOW}Checking layer tiers...${NC}"
+TIERS_LOG=$(mktemp)
+if pnpm run check:layer-tiers > "$TIERS_LOG" 2>&1; then
+    echo "${GREEN}✓ layer tiers hold${NC}"
+else
+    echo "${RED}layer tier check failed.${NC}"
+    record_failure "layer tiers" "$TIERS_LOG" "${YELLOW}A workspace dependency points the wrong way — see the log below.${NC}"
+fi
+rm "$TIERS_LOG"
+
+# Run test-suffix guard. The mobile and browser vitest configs collect only
+# `*.spec.*`, so a `.test.ts` there would silently never run.
+echo "\n${YELLOW}Checking test file suffixes...${NC}"
+SUFFIX_LOG=$(mktemp)
+if pnpm run check:test-suffix > "$SUFFIX_LOG" 2>&1; then
+    echo "${GREEN}✓ test file suffixes valid${NC}"
+else
+    echo "${RED}test suffix check failed.${NC}"
+    record_failure "test file suffix" "$SUFFIX_LOG" "${YELLOW}Rename the listed files to .spec.ts / .spec.tsx.${NC}"
+fi
+rm "$SUFFIX_LOG"
+
 # Run i18n check
 echo "\n${YELLOW}Checking i18n...${NC}"
 I18N_LOG=$(mktemp)

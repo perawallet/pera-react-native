@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SuggestedParams } from 'algosdk'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useAlgorandClient } from './useAlgorandClient'
 import { useNetwork } from './useNetwork'
 import { getSuggestedParametersQueryKey } from './querykeys'
@@ -22,20 +23,42 @@ import { getSuggestedParametersQueryKey } from './querykeys'
 // later.
 const SUGGESTED_PARAMS_STALE_TIME_MS = 10_000
 
-export const useSuggestedParametersQuery = () => {
-    const algokit = useAlgorandClient()
-    const { network } = useNetwork()
-
-    return useQuery({
-        queryKey: getSuggestedParametersQueryKey(network),
-        queryFn: async () => await algokit.getSuggestedParams(),
-        staleTime: SUGGESTED_PARAMS_STALE_TIME_MS,
-        // Run the fetch even while offline so consumers get a fast typed
-        // rejection instead of a silent pause — a paused query kept the
-        // whole Send input screen on a spinner.
-        networkMode: 'always',
-    })
+export type UseSuggestedParametersQueryResult = {
+    /** `undefined` until loaded; there is no safe default for a validity window. */
+    data: Optional<SuggestedParams>
+    isPending: boolean
+    isFetching: boolean
+    isSuccess: boolean
+    isError: boolean
+    isPaused: boolean
+    error: Nullable<Error>
 }
+
+export const useSuggestedParametersQuery =
+    (): UseSuggestedParametersQueryResult => {
+        const algokit = useAlgorandClient()
+        const { network } = useNetwork()
+
+        const query = useQuery({
+            queryKey: getSuggestedParametersQueryKey(network),
+            queryFn: async () => await algokit.getSuggestedParams(),
+            staleTime: SUGGESTED_PARAMS_STALE_TIME_MS,
+            // Run the fetch even while offline so consumers get a fast typed
+            // rejection instead of a silent pause — a paused query kept the
+            // whole Send input screen on a spinner.
+            networkMode: 'always',
+        })
+
+        return {
+            data: query.data,
+            isPending: query.isPending,
+            isFetching: query.isFetching,
+            isSuccess: query.isSuccess,
+            isError: query.isError,
+            isPaused: query.isPaused,
+            error: query.error,
+        }
+    }
 
 export type FetchSuggestedParameters = () => Promise<SuggestedParams>
 

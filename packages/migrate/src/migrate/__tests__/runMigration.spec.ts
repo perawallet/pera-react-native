@@ -11,13 +11,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Platform } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     LegacyMigrationData,
     MigrationService,
     MigrationStepVersions,
 } from '@perawallet/wallet-extension-platform'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const emptyLegacyData = (): LegacyMigrationData =>
     ({
@@ -221,8 +221,8 @@ describe('runMigration', () => {
     it('sets the sentinel only when both phases succeed', async () => {
         const migration = buildMigrationService()
         const platformSpy = vi
-            .spyOn(Platform, 'OS', 'get')
-            .mockReturnValue('ios' as typeof Platform.OS)
+            .spyOn(getProvider().deviceInfo, 'getDevicePlatform')
+            .mockReturnValue('ios')
 
         const result = await runMigration(migration, buildDeps())
 
@@ -237,6 +237,23 @@ describe('runMigration', () => {
 
         platformSpy.mockRestore()
     })
+
+    it.each(['android', 'web'] as const)(
+        'records android as the source platform on %s',
+        async platform => {
+            const migration = buildMigrationService()
+            const platformSpy = vi
+                .spyOn(getProvider().deviceInfo, 'getDevicePlatform')
+                .mockReturnValue(platform)
+
+            await runMigration(migration, buildDeps())
+
+            expect(migration.markMigrationComplete).toHaveBeenCalledWith(
+                'android',
+            )
+            platformSpy.mockRestore()
+        },
+    )
 
     it('passes accounts + hdWallets + deps into runMigrationLoop', async () => {
         const data: LegacyMigrationData = emptyLegacyData()

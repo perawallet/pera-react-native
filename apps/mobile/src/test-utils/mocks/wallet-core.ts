@@ -43,7 +43,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => {
         isWalletConnectFocusHint,
         isWalletConnectScheme,
         parseWalletConnectUri,
-        AlgorandChainId: {
+        AlgorandWalletConnectChainId: {
             MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
             TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
         },
@@ -65,18 +65,6 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
     }
 })
-
-vi.mock('@perawallet/wallet-core-polling', () => ({
-    usePollingStore: {
-        getState: vi.fn(() => ({
-            lastRefreshedRound: null,
-            setLastRefreshedRound: vi.fn(),
-        })),
-    },
-    sendShouldRefreshRequest: vi.fn(() =>
-        Promise.resolve({ refresh: false, round: null }),
-    ),
-}))
 
 vi.mock('@perawallet/wallet-core-background', () => ({
     createSyncStorePorts: vi.fn(() => ({})),
@@ -391,15 +379,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 : { kind: 'watch', account },
         ),
         useCanSignWith: vi.fn((account: any) => !!account?.keyPairId),
-        useCanSignArbitraryData: vi.fn(
-            (account: any) =>
-                !!account?.keyPairId && account?.type !== 'hardware',
-        ),
-        useIsRekeyedUnsignable: vi.fn(() => false),
-        useCanInitiateRekey: vi.fn((account: any) => !!account?.keyPairId),
         useRekeyAccount: vi.fn(() => null),
         useSignerFor: vi.fn(() => null),
-        useSignerResolution: vi.fn(() => ({ kind: 'accountNotFound' })),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
             isPending: false,
@@ -587,7 +568,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             },
         ),
         // Error-translation exports. Tests that need the real parser should use
-        // `vi.importActual` in their own file (see useAlgodErrorMessage.test.ts).
+        // `vi.importActual` in their own file (see useAlgodErrorMessage.spec.ts).
         AlgodError: MockAlgodError,
         AlgodErrorCode: {
             OVERSPEND: 'overspend',
@@ -612,8 +593,12 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             const { Decimal } = require('decimal.js')
             return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
         }),
-        toBigInt: vi.fn((decimal: { toFixed: (dp: number) => string }) =>
-            BigInt(decimal.toFixed(0)),
+        toBigInt: vi.fn(
+            (decimal: { toFixed: (dp: number, rm: number) => string }) => {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
+                const { Decimal } = require('decimal.js')
+                return BigInt(decimal.toFixed(0, Decimal.ROUND_DOWN))
+            },
         ),
         baseUnitsToDisplayUnits: vi.fn(
             (baseUnits: bigint | number | string, decimals: number) => {

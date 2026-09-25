@@ -14,8 +14,7 @@ import { Provider } from '@algorandfoundation/wallet-provider'
 import { WithKeyStore } from '@algorandfoundation/react-native-keystore'
 import { WithMigrations } from '@algorandfoundation/provider-migrations'
 import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-driver'
-import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
-import { WithLedgerUsbExtension } from '@perawallet/wallet-extension-ledger-react-native-usb'
+import { WithHardwareWalletExtension } from '@perawallet/wallet-extension-hardware-wallet'
 import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
 import { WithConnections } from '@perawallet/wallet-extension-connections'
 import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
@@ -42,8 +41,9 @@ export const PeraProvider: {
     // through `provider.migrations`, which does not exist until this has run.
     WithMigrations,
     WithPlatformExtension,
-    WithLedgerExtension,
-    WithLedgerUsbExtension,
+    // Before the app's composition root runs, which registers the concrete
+    // transports into the `hardwareWalletRegistry` this supplies.
+    WithHardwareWalletExtension,
     // Immediately before WithKeyStore, and load-bearing: modules migrate in
     // registration order, so this is the only thing that gets revision 0001
     // ahead of upstream's `adopt-flat-records`.

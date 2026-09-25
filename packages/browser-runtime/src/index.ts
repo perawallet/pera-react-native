@@ -1,0 +1,144 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// This package's source uses the ambient `chrome` global directly (no local
+// imports) — its own tsconfig lists "chrome" in `types`, but downstream
+// consumers whose tsconfig does NOT (e.g. apps/mobile) still pull
+// this source into their tsc program via path-aliased imports. A `types`
+// list is program-wide, but an explicit triple-slash reference is honored
+// regardless of the consuming project's `types` list, so this keeps the
+// package self-contained without forcing "chrome" back onto every consumer.
+/// <reference types="chrome" />
+
+export const name = '@perawallet/wallet-core-browser-runtime'
+
+export {
+    openExpandedTab,
+    closeCurrentTab,
+    consumeInitialExpandedFlow,
+    openExternalTab,
+    type ExpandedFlow,
+} from './navigation'
+export {
+    INSTALL_KEY_DB_NAME,
+    clearInstallKey,
+    clearEnrolmentMarker,
+    exportInstallPublicKey,
+    getEnrolmentMarker,
+    getInstallKeyId,
+    getOrCreateInstallKey,
+    putEnrolmentMarker,
+    signChallenge,
+    type EnrolmentMarker,
+} from './integrity/device-key'
+export {
+    INTEGRITY_TOKEN_SESSION_KEY,
+    clearSessionIntegrityToken,
+    getSessionIntegrityToken,
+    putSessionIntegrityToken,
+    type SessionIntegrityToken,
+} from './integrity/session-token'
+export {
+    INTEGRITY_BACKOFF_SESSION_KEY,
+    INTEGRITY_ENROL_ATTEMPT_SESSION_KEY,
+    INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
+    INTEGRITY_ENROL_NEEDED_SESSION_KEY,
+} from './integrity/storage-keys'
+export * from './integrity/check-wire'
+export {
+    holdIntegrityCheckHost,
+    onHostedCheckEnded,
+    onIntegrityEnrolmentNeeded,
+    requestIntegrityEnrolment,
+} from './integrity/enrol-client'
+export {
+    CONNECTIONS_CONTROL_SCOPE,
+    CONNECTIONS_REQUEST_SCOPE,
+    CONNECTIONS_EVENT_SCOPE,
+    isConnectionsControlMessage,
+    isConnectionsControlResponse,
+    isConnectionApprovalRequest,
+    isConnectionApprovalRequestMessage,
+    isConnectionsAck,
+    isConnectionsEvent,
+    isConnectionsEventMessage,
+    isWireWalletOperation,
+    isWireWalletOperationResult,
+    encodeWalletOperation,
+    decodeWalletOperation,
+    encodeWalletOperationResult,
+    decodeWalletOperationResult,
+    type ConnectionsControlMessage,
+    type ConnectionsControlKind,
+    type ConnectionsControlResult,
+    type ConnectionsControlResultByKind,
+    type ConnectionsControlResponse,
+    type ConnectionApprovalRequest,
+    type ConnectionApprovalRequestMessage,
+    type ConnectionErrorReason,
+    type ConnectionsAck,
+    type ConnectionsEvent,
+    type ConnectionsEventMessage,
+    type ConnectionProposalSummary,
+    type WireWalletOperation,
+    type WireWalletOperationResult,
+} from './connections/protocol'
+export {
+    WC_PAGE_PAIR_SCOPE,
+    isWcPagePairMessage,
+    type WcPagePairMessage,
+} from './connections/page-pair'
+export {
+    sendConnectionsControlMessage,
+    onConnectionsControlMessage,
+    sendConnectionApprovalRequest,
+    broadcastConnectionsEvent,
+    onConnectionsEvent,
+    type ConnectionsControlCommand,
+    type ConnectionsControlHandler,
+} from './connections/client'
+export {
+    onLocalStorageKeyChanged,
+    onSessionStorageKeyChanged,
+} from './storage-events'
+export * from './dapp/passkey-opener'
+export * from './dapp/approval-bridge'
+export * from './dapp/dapp-wire'
+export * from './dapp/transport'
+export * from './dapp/host-client'
+export * from './dapp/secure-origin'
+// The same codec subset content-wire.ts serves: content scripts import these
+// from this package name (aliased to content-wire.ts at bundle time), and the
+// vitest runs resolve the real barrel, so both must provide them.
+export {
+    DAPP_METHODS,
+    DAPP_NOTIFICATIONS,
+    DAPP_PAGE_TIMEOUT_MS,
+    DAPP_PROVIDER_VERSION,
+    JsonRpcErrorCode,
+    isJsonRpcNotification,
+    isJsonRpcResponse,
+    type DappMethod,
+    type JsonRpcErrorObject,
+    type JsonRpcId,
+    type JsonRpcNotification,
+    type JsonRpcRequest,
+    type JsonRpcResponse,
+} from '@perawallet/wallet-core-dapp/wire'
+export * from './dapp/approval-client'
+export * from './dapp/webauthn-router-protocol'
+export * from './dapp/passkey-router'
+export {
+    createDiscoverBridgeHost,
+    type DiscoverBridgeHost,
+} from './webview/bridge-host'
+export * from './webview/bridge-wire'

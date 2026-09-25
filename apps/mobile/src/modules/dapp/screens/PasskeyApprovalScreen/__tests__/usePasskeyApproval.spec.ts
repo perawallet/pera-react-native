@@ -62,7 +62,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: mocks.getKeystoreStore,
 }))
 
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     resolvePasskey: mocks.resolvePasskey,
     rejectPasskey: mocks.rejectPasskey,
 }))

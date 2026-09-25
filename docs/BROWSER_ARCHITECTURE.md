@@ -5,9 +5,10 @@
 >
 > Sources of truth: `apps/browser/manifest.json` (realms, permissions), `apps/browser/scripts/csp.mjs` (CSP),
 > `apps/browser/src/{background,content,offscreen}` (realm entry points),
-> `extensions/platform-chrome` (message routing, storage, dApp/WC/passkey plumbing),
-> `extensions/keystore-chrome` (vault, WebAuthn signer), `extensions/provider/src/keystore/*.web.ts`
-> (the keystore engine).
+> `extensions/platform-chrome` (the `PlatformServices` driver: storage, DB host, offscreen storage
+> proxy, trusted-sender gate), `packages/browser-runtime` (message routing, dApp/WC/passkey/integrity
+> plumbing, extension-tab navigation), `extensions/keystore-chrome` (vault, WebAuthn signer),
+> `extensions/provider/src/keystore/*.web.ts` (the keystore engine).
 
 ---
 
@@ -61,16 +62,35 @@ graph TD
     UI -->|unlock → sign| VAULT[Vault master key · session storage]
 ```
 
-**Message scopes** (the routing table — each is a `*_SCOPE` constant in `platform-chrome`):
+**Message scopes** (the routing table — each is a `*_SCOPE` constant, in `platform-chrome` for
+`pera-db*` and `pera-storage-*`, in `browser-runtime` for the rest):
 
-| Scope                                                                                                     | Between              | Purpose                                                           |
-| --------------------------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------------------------------- |
-| `pera-db`, `pera-db-control`                                                                              | UI/offscreen ↔ SW    | DB exec proxy; `ensure-offscreen` lifecycle                       |
-| `pera-storage-proxy`, `pera-storage-event`                                                                | offscreen ↔ SW       | `chrome.storage` served to the offscreen doc + `onChanged` relay  |
-| `pera-dapp-approval`                                                                                      | SW ↔ approval window | ARC-0027 connect/sign approval                                    |
-| `pera-wc-control`, `pera-wc-request`, `pera-wc-error-notice`, `pera-wc-pair-outcome`, `pera-wc-page-pair` | SW ↔ offscreen ↔ UI  | WalletConnect control, sign requests, errors, pairing             |
-| `pera-webauthn-relay`                                                                                     | content ↔ SW         | Intercepted `navigator.credentials` ceremonies → passkey approval |
-| `pera-integrity-enrol`                                                                                    | UI → SW              | An extension page asks whether it should host the integrity check |
+| Scope                                                                                                 | Between              | Purpose                                                           |
+| ----------------------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------------------------------- |
+| `pera-db`, `pera-db-control`                                                                          | UI/offscreen ↔ SW    | DB exec proxy; `ensure-offscreen` lifecycle                       |
+| `pera-storage-proxy`, `pera-storage-event`                                                            | offscreen ↔ SW       | `chrome.storage` served to the offscreen doc + `onChanged` relay  |
+| `pera-dapp-approval`                                                                                  | SW ↔ approval window | ARC-0027 connect/sign approval                                    |
+| `pera-connections-control`, `pera-connections-request`, `pera-connections-event`, `pera-wc-page-pair` | SW ↔ offscreen ↔ UI  | WalletConnect control, sign requests, errors, pairing             |
+| `pera-webauthn-relay`                                                                                 | content ↔ SW         | Intercepted `navigator.credentials` ceremonies → passkey approval |
+| `pera-integrity-enrol`                                                                                | UI → SW              | An extension page asks whether it should host the integrity check |
+
+### Driver and runtime
+
+`extensions/platform-chrome` is only the `PlatformServices` driver that the web build aliases
+`platform-driver` to (see [Architecture](ARCHITECTURE.md)), plus what that driver needs itself: the
+DB host and its wire protocol, the offscreen `chrome.storage` proxy, `getSurface`, and the
+trusted-sender gate. It depends on no business package.
+
+Everything the realms use to talk to each other is `packages/browser-runtime`: the connections and
+dApp message protocols and clients, the approval bridge, the WebAuthn relay router, the integrity
+key store and enrolment client, the Discover webview bridge, and extension-tab navigation. It depends
+on the connections, dapp and passkeys packages, which is why it sits under `packages/` rather than
+`extensions/`. It reaches the driver only through `@perawallet/wallet-extension-platform-chrome/messaging`,
+because the driver's main barrel constructs every platform service at import.
+
+Two narrower entries keep bundles small. Content scripts get `browser-runtime/src/dapp/content-wire.ts`
+through a build alias (`apps/browser/scripts/build.mjs`), never the runtime barrel. The sqlite
+worker's executor lives beside the worker, in `apps/browser/src/offscreen/`.
 
 ---
 
@@ -84,7 +104,7 @@ Content scripts are injected into **every https page** (`matches: https://*/*`).
 - **Randomized per-load event channel** (`content/channel.ts`): MAIN↔ISOLATED event names are
   generated per document load via a one-shot handshake, so page code cannot forge relay
   traffic or responses.
-- **`isTrustedExtensionPageSender`** (`platform-chrome/trusted-sender.ts`): gates on
+- **`isTrustedExtensionPageSender`** (`extensions/platform-chrome/src/trusted-sender.ts`): gates on
   `sender.id === runtime.id` **and** `sender.url` starting with `chrome-extension://<id>/`.
   A content script's `sender.url` is the _web page_, never an extension URL — this is what
   separates "one of our own pages" from "a script we shipped into every tab."

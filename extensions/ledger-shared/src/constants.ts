@@ -16,7 +16,7 @@ import {
     getInfosForServiceUuid,
 } from '@ledgerhq/devices'
 import { StatusCodes } from '@ledgerhq/errors'
-import type { HardwareWalletAppVersion } from '@perawallet/wallet-core-hardware-wallet'
+import type { HardwareWalletAppVersion } from '@perawallet/wallet-extension-hardware-wallet'
 import type { LedgerDeviceModel } from './types'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -48,6 +48,25 @@ export const resolveDeviceModel = (
 
     return 'nanoX'
 }
+
+/** USB product IDs (vendor 0x2C97) from https://developers.ledger.com. */
+const USB_PRODUCT_ID_MODELS: ReadonlyMap<number, LedgerDeviceModel> = new Map([
+    [0x00_01, 'nanoS'],
+    [0x00_04, 'nanoX'],
+    [0x40_11, 'nanoSPlus'],
+    [0x60_11, 'stax'],
+    [0x70_11, 'flex'],
+])
+
+/** Shown in place of a model for an unrecognized USB product ID. */
+export const UNKNOWN_USB_LEDGER_MODEL = 'ledger'
+
+export const resolveUsbDeviceModel = (
+    productId: Nullable<number> | undefined,
+): LedgerDeviceModel | typeof UNKNOWN_USB_LEDGER_MODEL =>
+    (typeof productId === 'number'
+        ? USB_PRODUCT_ID_MODELS.get(productId)
+        : undefined) ?? UNKNOWN_USB_LEDGER_MODEL
 
 /** Full path: 44'/283'/{accountIndex}'/0/0 — the device derives internally. */
 export const ALGORAND_BIP44_PREFIX = "44'/283'"

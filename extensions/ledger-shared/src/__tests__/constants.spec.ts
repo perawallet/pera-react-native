@@ -18,7 +18,27 @@ import {
     LEDGER_BLE_SERVICE_UUIDS,
     MIN_ARBITRARY_SIGN_APP_VERSION,
     isAppVersionAtLeast,
+    resolveUsbDeviceModel,
 } from '../constants'
+
+describe('resolveUsbDeviceModel', () => {
+    test.each([
+        [0x0001, 'nanoS'],
+        [0x0004, 'nanoX'],
+        [0x4011, 'nanoSPlus'],
+        [0x6011, 'stax'],
+        [0x7011, 'flex'],
+    ])('maps product id %i to %s', (productId, model) => {
+        expect(resolveUsbDeviceModel(productId)).toBe(model)
+    })
+
+    test.each([0x9999, null, undefined])(
+        'labels %s as a generic ledger',
+        productId => {
+            expect(resolveUsbDeviceModel(productId)).toBe('ledger')
+        },
+    )
+})
 
 describe('resolveDeviceModel', () => {
     test('defaults to nanoX when serviceUUIDs is null', () => {

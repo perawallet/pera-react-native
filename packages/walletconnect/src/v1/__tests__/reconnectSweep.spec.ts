@@ -10,25 +10,23 @@
  limitations under the License
  */
 
-import {
-    describe,
-    it,
-    expect,
-    beforeEach,
-    afterEach,
-    vi,
-    type Mock,
-} from 'vitest'
-import { AppState, type AppStateStatus } from 'react-native'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import type { AppLifecycleState } from '@perawallet/wallet-extension-platform'
 import { onlineManager } from '@tanstack/react-query'
 import WalletConnect from '@perawallet/walletconnect'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { startReconnectSweep } from '../reconnectSweep'
 import {
-    __resetRegistryForTests,
-    getConnector,
-    registerConnector,
+    createConnectorRegistry,
+    type WalletConnectConnectorRegistry,
 } from '../../connection/connectorRegistry'
+
+// This spec's import graph reaches the platform provider, whose native
+// adapters don't resolve under jsdom.
+const appLifecycle = vi.hoisted(() => ({
+    getCurrentState: vi.fn(() => 'active'),
+    addChangeListener: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -37,12 +35,14 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             setItem: () => {},
             removeItem: () => {},
         },
+        appLifecycle,
+        deviceInfo: { getDevicePlatform: () => 'android' },
     }),
 }))
 
 // A recreated connector starts with a closed socket; `_transport.connected`
 // is the field the registry reads (and tests flip) to simulate it opening —
-// same stand-in as connection/__tests__/connectorRegistry.test.ts.
+// same stand-in as connection/__tests__/connectorRegistry.spec.ts.
 vi.mock('@perawallet/walletconnect', () => ({
     default: vi.fn(function (
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,14 +60,6 @@ vi.mock('@perawallet/walletconnect', () => ({
             rejectRequest: vi.fn(),
         }
     }),
-}))
-
-vi.mock('react-native', () => ({
-    AppState: {
-        currentState: 'active',
-        addEventListener: vi.fn(() => ({ remove: vi.fn() })),
-    },
-    Platform: { OS: 'android' },
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -90,18 +82,21 @@ const makeConnector = (
 })
 
 describe('startReconnectSweep', () => {
-    let appStateChangeHandler: Nullable<(next: AppStateStatus) => void> = null
+    let appStateChangeHandler: Nullable<(next: AppLifecycleState) => void> =
+        null
     const removeListener = vi.fn()
+    let registry: WalletConnectConnectorRegistry
+    const startSweep = () => startReconnectSweep(() => registry.reconnectAll())
 
     beforeEach(() => {
         vi.clearAllMocks()
         vi.useFakeTimers()
-        __resetRegistryForTests()
+        registry = createConnectorRegistry({ bindHandlers: vi.fn() })
         appStateChangeHandler = null
-        ;(AppState.addEventListener as Mock).mockImplementation(
-            (_event, handler: (next: AppStateStatus) => void) => {
+        appLifecycle.addChangeListener.mockImplementation(
+            (handler: (next: AppLifecycleState) => void) => {
                 appStateChangeHandler = handler
-                return { remove: removeListener }
+                return removeListener
             },
         )
         onlineManager.setOnline(true)
@@ -113,8 +108,8 @@ describe('startReconnectSweep', () => {
     })
 
     it('revives a disconnected connector on a background→foreground transition', async () => {
-        registerConnector('c1', makeConnector('c1', 'peer-1'))
-        const teardown = startReconnectSweep()
+        registry.register('c1', makeConnector('c1', 'peer-1'))
+        const teardown = startSweep()
 
         appStateChangeHandler?.('background')
         appStateChangeHandler?.('active')
@@ -125,29 +120,29 @@ describe('startReconnectSweep', () => {
         fresh._transport.connected = true
         await vi.advanceTimersByTimeAsync(100)
 
-        expect(getConnector('c1')).toBe(fresh)
+        expect(registry.get('c1')).toBe(fresh)
         teardown()
     })
 
     it('leaves an already-connected socket alone', () => {
         const healthy = makeConnector('c1', 'peer-1')
         healthy._transport.connected = true
-        registerConnector('c1', healthy)
-        const teardown = startReconnectSweep()
+        registry.register('c1', healthy)
+        const teardown = startSweep()
 
         appStateChangeHandler?.('background')
         appStateChangeHandler?.('active')
 
         expect(WalletConnect).not.toHaveBeenCalled()
-        expect(getConnector('c1')).toBe(healthy)
+        expect(registry.get('c1')).toBe(healthy)
         teardown()
     })
 
     it('does not throw when a revival fails', async () => {
-        // No peerId: recreateConnector has nothing to deliver to and
+        // No peerId: the registry has nothing to deliver to and
         // rejects immediately — the sweep must swallow that, not surface it.
-        registerConnector('c1', makeConnector('c1', null))
-        const teardown = startReconnectSweep()
+        registry.register('c1', makeConnector('c1', null))
+        const teardown = startSweep()
 
         expect(() => {
             appStateChangeHandler?.('background')
@@ -160,8 +155,8 @@ describe('startReconnectSweep', () => {
     })
 
     it('also revives on a debounced offline→online edge', async () => {
-        registerConnector('c1', makeConnector('c1', 'peer-1'))
-        const teardown = startReconnectSweep()
+        registry.register('c1', makeConnector('c1', 'peer-1'))
+        const teardown = startSweep()
 
         onlineManager.setOnline(false)
         onlineManager.setOnline(true)
@@ -171,9 +166,20 @@ describe('startReconnectSweep', () => {
         teardown()
     })
 
+    it('treats the lifecycle state at start as the prior state', () => {
+        appLifecycle.getCurrentState.mockReturnValueOnce('background')
+        registry.register('c1', makeConnector('c1', 'peer-1'))
+        const teardown = startSweep()
+
+        appStateChangeHandler?.('active')
+
+        expect(WalletConnect).toHaveBeenCalledTimes(1)
+        teardown()
+    })
+
     it('tears down both subscriptions and cancels a pending debounce on teardown', () => {
-        registerConnector('c1', makeConnector('c1', 'peer-1'))
-        const teardown = startReconnectSweep()
+        registry.register('c1', makeConnector('c1', 'peer-1'))
+        const teardown = startSweep()
 
         onlineManager.setOnline(false)
         onlineManager.setOnline(true)

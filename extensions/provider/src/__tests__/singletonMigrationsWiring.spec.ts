@@ -32,14 +32,6 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     storage: { getAllKeys: vi.fn(() => []), getString: vi.fn() },
 }))
 
-vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
-    WithLedgerExtension: () => ({}),
-}))
-
-vi.mock('@perawallet/wallet-extension-ledger-react-native-usb', () => ({
-    WithLedgerUsbExtension: () => ({}),
-}))
-
 // Overrides the global mock from `vitest.setup.ts` for this file only, so
 // individual tests can make it throw to simulate an unrelated extension
 // failing during construction.
