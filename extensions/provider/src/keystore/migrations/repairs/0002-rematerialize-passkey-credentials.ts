@@ -42,8 +42,8 @@ import { PASSKEY_CREDENTIAL_TYPES } from '../../passkeyCredentials/passkeyCreden
  * from `k/` without decrypting anything and opens `m/` only after the user
  * picks one, and `splitFlatPasskeyCredentials` moves every flat credential
  * there. So this returns immediately on Android. An unknown platform still
- * runs it: skipping it on iOS would strand credentials where the provider
- * cannot see them.
+ * runs it, because it may be iOS: skipping it there would strand credentials
+ * where the iOS provider cannot see them.
  *
  * Removing the pair rather than dual-writing leaves one sealed copy of each
  * private key, not a second one in `m/` that the iOS provider never reads.
