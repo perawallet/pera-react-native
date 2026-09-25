@@ -134,8 +134,8 @@ const {
 
     // Only MainNet and TestNet have real Pera backend deployments. BetaNet
     // and `custom` are absent from this table entirely — mirrored below by
-    // getNetworkConfig's `?? ''`, which is exactly what createPeraClient
-    // branches on.
+    // getPeraServicesConfig's `?? ''`, which is what buildClientsFor reads to
+    // decide whether a scope has a Pera deployment.
     const backendUrlByNetwork: Record<string, string> = {
         mainnet: 'https://mainnet.pera.algo',
         testnet: 'https://testnet.pera.algo',
@@ -912,6 +912,7 @@ describe('queryClient', () => {
         }
 
         test('a scope with no configuration is refused before ky, whether or not it names a service', async () => {
+            vi.resetModules()
             mockKy.mockClear()
             const { queryClient } = await import('../query-client')
             // Imported here for the same stale-class reason as the betanet test above.
@@ -1039,6 +1040,30 @@ describe('queryClient', () => {
                 }),
             ).rejects.toBeInstanceOf(FreshPeraServiceUnavailableError)
             expect(mockKy).not.toHaveBeenCalled()
+        })
+
+        test('a scope target reaches the same algod client as its legacy network', async () => {
+            vi.resetModules()
+            mockKy.create.mockClear()
+            const { queryClient } = await import('../query-client')
+            mockJson.mockResolvedValue({ version: '1.0' })
+
+            await queryClient({
+                backend: 'algod',
+                network: 'mainnet',
+                method: 'GET',
+                url: '/v2/status',
+            })
+            await queryClient({
+                backend: 'algod',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                method: 'GET',
+                url: '/v2/status',
+            })
+
+            expect(
+                findClientInstance(chainUrlsByNetwork.mainnet.algodUrl),
+            ).toHaveBeenCalledTimes(2)
         })
     })
 
