@@ -247,6 +247,7 @@ export const useInputScreen = () => {
                     cancelLabel={t('common.cancel.label')}
                     tertiaryLabel={t('send_funds.close_account.confirm')}
                     tertiaryValue='close'
+                    tertiaryVariant='destructiveLight'
                     confirmTestID='close_account_keep_open_button'
                     tertiaryTestID='close_account_confirm_button'
                 />
