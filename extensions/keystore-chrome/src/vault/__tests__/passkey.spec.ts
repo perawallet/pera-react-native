@@ -29,7 +29,16 @@ import {
 import { getSessionMasterKey } from '../session'
 import { createVault, unlockVault, lockVault } from '../vault'
 import { InvalidPasswordError } from '../../errors'
-import { getLockoutRemainingSeconds, recordFailedAttempt } from '../lockout'
+import { getLockoutRemainingSeconds, runThrottledAttempt } from '../lockout'
+
+// Records one wrong-password attempt the way a password check would.
+const recordFailedAttempt = (): Promise<void> =>
+    runThrottledAttempt(
+        async () => {
+            throw new Error('wrong password')
+        },
+        () => true,
+    ).catch(() => {})
 import { AUTO_LOCK_ALARM } from '../autolock'
 
 // 32 deterministic bytes used as the fake PRF output.

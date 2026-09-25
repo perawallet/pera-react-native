@@ -16,7 +16,6 @@ import {
     InvalidPasswordError,
     VaultCorruptedError,
     VaultExistsError,
-    VaultLockedOutError,
     VaultNotInitializedError,
 } from '../errors'
 import {
@@ -27,11 +26,7 @@ import {
     VAULT_STORAGE_KEY,
 } from '../storage-keys'
 import { armAutoLock, disarmAutoLock } from './autolock'
-import {
-    clearFailedAttempts,
-    getLockoutRemainingSeconds,
-    recordFailedAttempt,
-} from './lockout'
+import { runThrottledAttempt } from './lockout'
 import {
     clearSessionMasterKey,
     hasSessionMasterKey,
@@ -273,24 +268,13 @@ const writeWrappedMasterKey = async (
  *
  * On success the caller owns the returned key and MUST zero it.
  */
-const unwrapMasterKeyThrottled = async (
-    password: string,
-): Promise<Uint8Array> => {
-    const remainingSeconds = await getLockoutRemainingSeconds()
-    if (remainingSeconds > 0) throw new VaultLockedOutError(remainingSeconds)
-
-    let masterKey: Uint8Array
-    try {
-        masterKey = await unwrapMasterKey(password)
-    } catch (error) {
-        // Only a genuine wrong password counts — VaultCorruptedError must not
-        // burn attempts, or a corrupt blob would lock the user out for good.
-        if (error instanceof InvalidPasswordError) await recordFailedAttempt()
-        throw error
-    }
-    await clearFailedAttempts()
-    return masterKey
-}
+const unwrapMasterKeyThrottled = (password: string): Promise<Uint8Array> =>
+    // Only a genuine wrong password counts — VaultCorruptedError must not burn
+    // attempts, or a corrupt blob would lock the user out for good.
+    runThrottledAttempt(
+        () => unwrapMasterKey(password),
+        error => error instanceof InvalidPasswordError,
+    )
 
 // Exported for use by passkey.ts to verify the password and obtain the master
 // key when enabling passkey unlock. Not part of the public package API.
@@ -305,7 +289,7 @@ export const unwrapMasterKeyWithPassword = async (
  * before a high-consequence action — revealing a recovery phrase, or asserting
  * a WebAuthn credential to a relying party that asked for user verification.
  *
- * Returns false on a wrong password; throws {@link VaultLockedOutError} while
+ * Returns false on a wrong password; throws `VaultLockedOutError` while
  * throttled so the caller can show the remaining time rather than a bare
  * "incorrect".
  */
