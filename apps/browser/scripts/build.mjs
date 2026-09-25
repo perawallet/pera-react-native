@@ -248,6 +248,21 @@ cpSync(
     path.join(dist, 'sqlite3.wasm'),
 )
 
+// 2b'. The vault's Argon2id worker, spawned by name from the extension pages
+// (ARGON2_WORKER_URL in keystore-chrome's vault/argon2.ts).
+await build({
+    entryPoints: [
+        path.join(
+            root,
+            '../../extensions/keystore-chrome/src/vault/argon2-worker.ts',
+        ),
+    ],
+    outfile: path.join(dist, 'argon2-worker.js'),
+    bundle: true,
+    format: 'esm',
+    target: 'chrome120',
+})
+
 // 2c. Content scripts. MAIN world (inject-main) and isolated world (relay) are
 // separate bundles so Chrome can load each into its declared world.
 for (const [entry, outfile] of [
