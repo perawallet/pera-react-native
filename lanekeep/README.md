@@ -39,6 +39,7 @@ takes the rest: rules that need tests or tooling in view, another file's content
 | `pera/pq-library-seam`                     | Only `packages/kms/src/crypto/pq` imports `falcon-1024` or `@joe-p/react-native-falcon`, in any import form, scoped to `apps/` and `packages/`; build configs, tests, e2e and `tools/` are out of scope.          |
 | `pera/no-keystore-meta-package`            | Nothing imports the `@algorandfoundation/keystore` meta-package, in any import form; use the specific keystore package.                                                                                           |
 | `pera/no-retired-quantum-custody`          | The names of the pre-keystore quantum custody design don't reappear, in code, comments or strings.                                                                                                                |
+| `pera/locale-placeholder-suffix`           | No `tr.json` value attaches a suffix to a `{{placeholder}}` (apostrophe forms included); the suffix depends on the value. Cross-file: skipped under `--staged`.                                                   |
 
 This is the complete set of lanekeep's `pera/*` rules.
 
