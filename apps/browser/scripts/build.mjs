@@ -24,10 +24,7 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
-import {
-    assertExtensionPagesCsp,
-    buildExtensionPagesCsp,
-} from './csp.mjs'
+import { assertExtensionPagesCsp, buildExtensionPagesCsp } from './csp.mjs'
 
 const requireFromHere = createRequire(import.meta.url)
 
@@ -100,11 +97,13 @@ execSync('bash tools/generate-config.sh', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })
-// packages/config specifically must be rebuilt right after generate-config.sh
-// (not just picked up by the broader turbo build below) so the freshly
-// generated generated-env.ts is what's baked into its dist, not a stale
-// cache from a previous run with different secrets.
-execSync('pnpm --filter ./packages/config build', {
+// packages/config and the workspace packages it depends on (e.g.
+// chain-contract, whose dist/index.d.ts config's types resolve to) must be
+// rebuilt right after generate-config.sh (not just picked up by the broader
+// turbo build below) so the freshly generated generated-env.ts is what's
+// baked into config's dist, not a stale cache from a previous run with
+// different secrets.
+execSync('pnpm --filter "@perawallet/wallet-core-config..." build', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })
@@ -317,9 +316,8 @@ rmSync(path.join(dist, 'index.html'))
 // 4. Manifest. The CSP is generated rather than committed so each build only
 // trusts its own environment's frame origins. Imported here, not at the top,
 // because packages/config is rebuilt against the fresh generated-env above.
-const { config, getIframeOrigins, getNetworkConfig, Networks } = await import(
-    '@perawallet/wallet-core-config'
-)
+const { config, getIframeOrigins, getNetworkConfig, Networks } =
+    await import('@perawallet/wallet-core-config')
 const frameUrls = [
     config.discoverBaseUrl,
     config.integrityCheckOrigin,
