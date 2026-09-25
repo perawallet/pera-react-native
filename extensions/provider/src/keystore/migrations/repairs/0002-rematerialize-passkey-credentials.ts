@@ -29,22 +29,24 @@ import {
     sealNativeCredentialRecord,
     toNativeByteArray,
 } from '../nativeCredentialRecord'
+import { PASSKEY_CREDENTIAL_TYPES } from '../../passkeyCredentials/passkeyCredentialTypes'
 
 /**
- * Un-adopts passkey credentials: rewrites the flat bare-id record the native
- * provider reads, then removes the `k/`+`m/` pair upstream's
- * `adopt-flat-records` revision just split them into. That revision runs
- * immediately before this one and destroys every migrated credential's
- * provider-visible copy, because neither provider can read a credential from
- * the split layout. See `packages/passkeys/src/native/README.md` for why.
+ * Un-adopts passkey credentials on iOS: rewrites the flat bare-id record the
+ * iOS provider reads, then removes the `k/`+`m/` pair upstream's
+ * `adopt-flat-records` revision split them into. That revision runs
+ * immediately before this one, and the iOS provider cannot read a credential
+ * from the split layout (see `packages/passkeys/src/native/README.md`).
  *
- * A dual-write is not enough. Android's `CredentialRepository.getCredential`
- * tries the split layout first and returns on a hit, so a surviving `k/` record
- * shadows a correct flat copy beside it. Removing the pair also dissolves two
- * dependent symptoms: `getAllCredentials()` listing a credential twice (it
- * appends from both branches with no dedup by `credentialId`), and
- * `deleteCredential` only removing bare-id candidates, so a deleted credential
- * reappears from its orphaned pair.
+ * Android is the opposite. Pera's patch of the provider lists credentials
+ * from `k/` without decrypting anything and opens `m/` only after the user
+ * picks one, and `splitFlatPasskeyCredentials` moves every flat credential
+ * there. So this returns immediately on Android. An unknown platform still
+ * runs it: skipping it on iOS would strand credentials where the provider
+ * cannot see them.
+ *
+ * Removing the pair rather than dual-writing leaves one sealed copy of each
+ * private key, not a second one in `m/` that the iOS provider never reads.
  *
  * The layout does not need to survive but its content does. Upstream's
  * `migrateLegacyPasskeys` stamps `metadata.migration` onto a legacy
@@ -68,11 +70,6 @@ import {
  * first, and the master key is touched only if a credential is pending.
  */
 
-const PASSKEY_CREDENTIAL_TYPES: ReadonlySet<string> = new Set([
-    'hd-derived-p256',
-    'xhd-derived-p256',
-])
-
 const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean =>
     a.length === b.length && a.every((byte, index) => byte === b[index])
 
@@ -83,6 +80,10 @@ export const migration: Migration<PeraMigrationContext> = {
         context: PeraMigrationContext,
         utils: MigrationUtils,
     ): Promise<void> => {
+        // Android's provider reads credentials from `k/`+`m/`, and keystore
+        // maintenance moves them there; un-adopting here would undo that.
+        if (context.platform === 'android') return
+
         const { storage, subtle } = context
 
         // Must not reject `up`: this is a scan, not even a single record.
