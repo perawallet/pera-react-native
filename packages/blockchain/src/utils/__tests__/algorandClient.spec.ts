@@ -16,7 +16,6 @@ const mocks = vi.hoisted(() => ({
     fromClients: vi.fn(),
     registerErrorTransformer: vi.fn(),
     getNetworkConfig: vi.fn(),
-    getNetwork: vi.fn(),
     updateNodeEndpoints: vi.fn(),
     toAlgodError: vi.fn((e: unknown) => e),
     Algodv2: vi.fn(),
@@ -75,19 +74,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     updateNodeEndpoints: mocks.updateNodeEndpoints,
 }))
 
-// Only useNetworkStore is swapped out — useCustomNetworkStore stays the REAL
-// store: algorandClient.ts subscribes to it as a module-level side effect at
-// import time below (needs a real `.subscribe`), and the resolveChainEndpoints
-// tests further down need a real store to write into.
-vi.mock('../../store', async importOriginal => ({
-    ...(await importOriginal<typeof import('../../store')>()),
-    useNetworkStore: { getState: () => ({ network: mocks.getNetwork() }) },
-}))
-
 vi.mock('../../errors', () => ({ toAlgodError: mocks.toAlgodError }))
 
 import { Networks, getNetworkConfig } from '@perawallet/wallet-core-config'
-import { useCustomNetworkStore } from '../../store'
+import { setCustomNetwork, useNetworkStore } from '../../store'
 import { getAlgorandClient, resolveChainEndpoints } from '../algorandClient'
 
 beforeEach(() => {
@@ -96,7 +86,7 @@ beforeEach(() => {
         registerErrorTransformer: mocks.registerErrorTransformer,
     })
     // getNetworkConfig's mock implementation MUST be (re-)established before
-    // resetState() below: useCustomNetworkStore.subscribe(...) in
+    // resetState() below: useNetworkStore.subscribe(...) in
     // algorandClient.ts fires SYNCHRONOUSLY on resetState/setCustomNetwork,
     // which synchronously calls resolveChainEndpoints -> getNetworkConfig()
     // for every network. Clearing the mock's calls (vi.clearAllMocks, above)
@@ -124,12 +114,12 @@ beforeEach(() => {
                   indexerToken: `indexer-token-${network}`,
               },
     )
-    mocks.getNetwork.mockReturnValue('mainnet')
     mocks.Algodv2.mockImplementation(function Algodv2() {})
     mocks.Indexer.mockImplementation(function Indexer() {})
     mocks.TimeoutHttpClient.mockImplementation(function TimeoutHttpClient() {})
     // Safe now that getNetworkConfig has a real implementation above.
-    useCustomNetworkStore.getState().resetState()
+    useNetworkStore.getState().resetState()
+    useNetworkStore.getState().setNetwork('mainnet')
 })
 
 describe('getAlgorandClient', () => {
@@ -244,7 +234,7 @@ describe('getAlgorandClient', () => {
 
 describe('resolveChainEndpoints', () => {
     test('custom endpoints come from the custom-network store', () => {
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             algodToken: 'a'.repeat(64),
             indexerUrl: 'http://10.0.0.5:8980',
@@ -262,13 +252,13 @@ describe('resolveChainEndpoints', () => {
     })
 
     test('an unconfigured custom slot yields the empty placeholder', () => {
-        useCustomNetworkStore.getState().resetState()
+        useNetworkStore.getState().resetState()
 
         expect(resolveChainEndpoints(Networks.custom).algodUrl).toBe('')
     })
 
     test('the three real networks ignore the custom store entirely', () => {
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
             genesisHash: 'HASH',

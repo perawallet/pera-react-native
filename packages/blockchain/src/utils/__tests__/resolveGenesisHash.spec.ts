@@ -12,12 +12,12 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { Networks, getNetworkConfig } from '@perawallet/wallet-core-config'
-import { useCustomNetworkStore } from '../../store'
+import { setCustomNetwork, useNetworkStore } from '../../store'
 import { getExpectedGenesisHash } from '../resolveGenesisHash'
 
 describe('getExpectedGenesisHash', () => {
     beforeEach(() => {
-        useCustomNetworkStore.getState().resetState()
+        useNetworkStore.getState().resetState()
         vi.restoreAllMocks()
     })
 
@@ -39,7 +39,7 @@ describe('getExpectedGenesisHash', () => {
         const fetchSpy = vi
             .spyOn(globalThis, 'fetch')
             .mockRejectedValue(new Error('no network in unit tests'))
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
             genesisHash: 'MvoAmMBVQX32w2gqkfMKShsYCbYio8wyepw6Zk5CgOw=',

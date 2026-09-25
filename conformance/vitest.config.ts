@@ -22,6 +22,7 @@ export default defineConfig({
     resolve: {
         alias: Object.fromEntries([
             pkg('wallet-core-blockchain', 'blockchain'),
+            pkg('wallet-core-chain-shared', 'chain-shared'),
             pkg('wallet-core-accounts', 'accounts'),
             pkg('wallet-core-config', 'config'),
             pkg('wallet-core-kms', 'kms'),

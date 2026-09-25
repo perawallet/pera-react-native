@@ -36,7 +36,7 @@ const {
     createStorageSessionKeyStore,
     importLegacyConnections,
     canSignWith,
-    customNetworkGetState,
+    getCustomNetworkConfig,
     dappTransport,
     createChromeDappTransport,
     dappHandler,
@@ -74,7 +74,7 @@ const {
             skipped: 0,
         })),
         canSignWith: vi.fn((_account: { address: string }) => true),
-        customNetworkGetState: vi.fn(),
+        getCustomNetworkConfig: vi.fn(),
         dappTransport,
         createChromeDappTransport: vi.fn(() => dappTransport),
         dappHandler,
@@ -141,10 +141,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         getState: networkGetState,
         persist: { rehydrate: vi.fn() },
     },
-    useCustomNetworkStore: {
-        getState: customNetworkGetState,
-        persist: { rehydrate: vi.fn() },
-    },
+    getCustomNetworkConfig,
 }))
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
@@ -172,8 +169,8 @@ describe('runOffscreenApp connections wiring', () => {
             accounts: [{ address: 'ADDR1' }, { address: 'ADDR2' }],
         })
         networkGetState.mockReturnValue({ network: 'mainnet' })
-        customNetworkGetState.mockReturnValue({
-            customNetwork: { genesisHash: 'custom-genesis' },
+        getCustomNetworkConfig.mockReturnValue({
+            genesisHash: 'custom-genesis',
         })
         canSignWith.mockReturnValue(true)
     })

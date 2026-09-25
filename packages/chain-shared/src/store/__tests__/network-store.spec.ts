@@ -117,6 +117,16 @@ describe('chain-shared network-store', () => {
             },
         )
 
+        test('a legacy record with no network-store blob is still folded in', async () => {
+            storage().setItem('custom-network-store', legacyEnvelope(CONFIG))
+
+            const { useNetworkStore, isCustomNetworkConfigured } =
+                await loadStore()
+
+            expect(isCustomNetworkConfigured()).toBe(true)
+            expect(useNetworkStore.getState().network).toBe('mainnet')
+        })
+
         test('a malformed legacy record is ignored', async () => {
             seedV1('custom', '{not json')
 
@@ -189,7 +199,10 @@ describe('chain-shared network-store', () => {
         test.each([
             ['null', null],
             ['an empty object', {}],
-            ['a non-string selection', { selectedNetworkByChain: { algorand: 7 } }],
+            [
+                'a non-string selection',
+                { selectedNetworkByChain: { algorand: 7 } },
+            ],
         ])('%s falls back to the default', async (_label, persisted) => {
             const { mergePersistedNetwork } = await loadStore()
 

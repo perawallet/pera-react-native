@@ -27,8 +27,16 @@ export const parseActiveNetwork = (raw: string | undefined): ActiveNetwork => {
     } catch {
         return Networks.mainnet
     }
-    const network = (envelope as { state?: { network?: unknown } } | null)
-        ?.state?.network
+    const state = (
+        envelope as {
+            state?: {
+                selectedNetworkByChain?: { algorand?: unknown }
+                network?: unknown
+            }
+        } | null
+    )?.state
+    // v1 blobs survive until a UI or offscreen context rewrites them, which may be after the worker runs.
+    const network = state?.selectedNetworkByChain?.algorand ?? state?.network
     return typeof network === 'string' && SUPPORTED.has(network)
         ? (network as ActiveNetwork)
         : Networks.mainnet

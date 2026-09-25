@@ -20,8 +20,8 @@ const mocks = vi.hoisted(() => ({
 // otherwise call the REAL updateNodeEndpoints on every setCustomNetwork/
 // clearCustomNetwork/resetState below, building real ky clients as a side
 // effect of unrelated tests. Only updateNodeEndpoints is swapped out —
-// everything else (registerStore, logger, etc., which ../store's
-// custom-network-store.ts needs at import time) stays real via
+// everything else (registerStore, logger, etc., which the network
+// store needs at import time) stays real via
 // importOriginal, or the store import below would crash with "registerStore
 // is not a function".
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
@@ -32,12 +32,16 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 }))
 
 import { Networks, getNetworkConfig } from '@perawallet/wallet-core-config'
-import { useCustomNetworkStore } from '../../store'
+import {
+    setCustomNetwork,
+    clearCustomNetwork,
+    useNetworkStore,
+} from '../../store'
 import { resolveChainEndpoints } from '../algorandClient'
 
 describe('resolveChainEndpoints', () => {
     beforeEach(() => {
-        useCustomNetworkStore.getState().resetState()
+        useNetworkStore.getState().resetState()
     })
 
     test('uses the baked chain config when custom is not configured', () => {
@@ -50,7 +54,7 @@ describe('resolveChainEndpoints', () => {
     })
 
     test('the custom network resolves from the real custom-network store, end-to-end', () => {
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
             genesisHash: 'HASH',
@@ -69,7 +73,7 @@ describe('resolveChainEndpoints', () => {
         // baked entry is `''` by design, so the store is the ONLY source: if
         // these are dropped anywhere between here and the ky client, indexer
         // history and asset lookups 401 while balance reads keep working.
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             algodToken: 'a'.repeat(64),
             indexerUrl: 'http://10.0.0.5:8980',
@@ -87,12 +91,12 @@ describe('resolveChainEndpoints', () => {
 
 describe('custom-network store subscription (real store, end-to-end)', () => {
     beforeEach(() => {
-        useCustomNetworkStore.getState().resetState()
+        useNetworkStore.getState().resetState()
         mocks.updateNodeEndpoints.mockClear()
     })
 
     test('saving a custom config re-syncs every network, not just custom', () => {
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
             genesisHash: 'HASH',
@@ -130,7 +134,7 @@ describe('custom-network store subscription (real store, end-to-end)', () => {
     })
 
     test('clearing the custom config re-syncs it back to the empty baked placeholder, not the stale custom endpoints', () => {
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
             genesisHash: 'HASH',
@@ -140,7 +144,7 @@ describe('custom-network store subscription (real store, end-to-end)', () => {
         // setCustomNetwork above already did.
         mocks.updateNodeEndpoints.mockClear()
 
-        useCustomNetworkStore.getState().clearCustomNetwork()
+        clearCustomNetwork()
 
         expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
             Networks.custom,
@@ -171,8 +175,8 @@ describe('initial push of a persisted custom config on module load', () => {
         // Simulates a previous session's persisted custom config already on
         // disk BEFORE the module ever loads — no `setCustomNetwork` /
         // `clearCustomNetwork` / `resetState` call happens anywhere in this
-        // test, only a raw write to the underlying storage
-        // `custom-network-store.ts` reads from. zustand's `persist` hydration
+        // test, only a raw write of the legacy custom-network record the
+        // network store folds in on hydrate. zustand's `persist` hydration
         // is synchronous (MMKV's `getString` is sync in production; the
         // in-memory Map this package's vitest.setup.ts backs it with is sync
         // too), so the store created as part of the fresh import below has
@@ -193,9 +197,8 @@ describe('initial push of a persisted custom config on module load', () => {
             }),
         )
 
-        // Fresh import — pulls in a fresh `../store` (and therefore a fresh
-        // `custom-network-store`) transitively, which hydrates from the
-        // storage seeded above.
+        // Fresh import — pulls in a fresh network store transitively, which
+        // hydrates from the storage seeded above.
         await import('../algorandClient')
 
         // The push is deferred past module evaluation (see the comment in
