@@ -13,3 +13,10 @@ export const safe = (phrase: string) => {
     logger.info('imported')
     return seed
 }
+
+export const reported = async (id: string) => {
+    const secret = await resolveMnemonic(id)
+    trackEvent('import', { secret })
+    Sentry.captureException(secret)
+    crashReporting.recordNonFatalError(secret)
+}

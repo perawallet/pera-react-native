@@ -12,14 +12,23 @@ const SECRET_CALLS =
     '^(seedFromMnemonic|mnemonicToSeed|mnemonicToEntropy|derivePQKeygenSeed|resolveMnemonic|consumePendingImportMnemonic)$'
 const SECRET_FIELDS = '^(privateKey|secretKey|mnemonic)$'
 
+// Analytics and crash reports leave the device, so they are sinks like logs.
+// `recordError` is crashlytics' modular API, which takes the instance first.
+const BARE_REPORTERS = '^(trackEvent|trackScreen|recordError)$'
+const REPORTER_OBJECTS =
+    '^(Sentry|crashlytics|crashReporting|analyticsService|analytics)$'
+const REPORTER_METHODS =
+    '^(logEvent|captureException|captureMessage|recordError|recordNonFatalError|logBreadcrumb|log)$'
+
 export default defineRule({
     id: 'pera/no-secret-in-logs',
     severity: 'error',
     requires: ['dataflow'],
     card: {
-        message: 'secret key material reaches a log, analytics or error sink',
+        message:
+            'secret key material reaches a log, analytics, crash-report or error sink',
         remediation:
-            'Log that the operation happened, never the material. Mnemonics, seeds and entropy must not reach a logger, the console, an analytics event or an Error message, which crash reports carry off the device.',
+            'Log that the operation happened, never the material. Mnemonics, seeds and entropy must not reach a logger, the console, an analytics event, a crash report or an Error message, all of which leave the device.',
         examples: {
             bad: "logger.error('import failed', seed)",
             good: "logger.error('import failed')",
@@ -38,7 +47,8 @@ export default defineRule({
         sinks: [
             '((call_expression function: (member_expression object: (identifier) @object) arguments: (arguments (_) @sink)) (#match? @object "^(logger|console)$"))',
             '((call_expression function: (member_expression object: (identifier) @object) arguments: (arguments (template_string (template_substitution (_) @sink)))) (#match? @object "^(logger|console)$"))',
-            '((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments (_) @sink)) (#eq? @object "analytics") (#eq? @method "logEvent"))',
+            `((call_expression function: (identifier) @fn arguments: (arguments (_) @sink)) (#match? @fn "${BARE_REPORTERS}"))`,
+            `((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments (_) @sink)) (#match? @object "${REPORTER_OBJECTS}") (#match? @method "${REPORTER_METHODS}"))`,
             '((new_expression constructor: (identifier) @ctor arguments: (arguments (_) @sink)) (#match? @ctor "Error$"))',
             '((new_expression constructor: (identifier) @ctor arguments: (arguments (template_string (template_substitution (_) @sink)))) (#match? @ctor "Error$"))',
         ],

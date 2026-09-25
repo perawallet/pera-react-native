@@ -43,7 +43,7 @@ takes the rest: rules that need tests or tooling in view, another file's content
 | `pera/no-snapshot-tests`                   | No snapshot matcher in a test file; assert the specific fields instead.                                                                                                                                           |
 | `pera/no-assertionless-test`               | A test in a test file asserts something: a call starting `expect` or `assert`, or a listed helper. lanekeep's built-in, gated to test files.                                                                      |
 | `pera/amount-types`                        | Amounts, balances, prices and fees are never typed `number` or `string` (type-aware; arrays and return types are not checked). Ships as `warn`: existing string amounts are listed for migration.                 |
-| `pera/no-secret-in-logs`                   | Mnemonic-derived key material never reaches a logger, the console, an analytics event or an Error message (dataflow, per function).                                                                               |
+| `pera/no-secret-in-logs`                   | Mnemonic-derived key material never reaches a logger, the console, an analytics event, a crash report or an Error message (dataflow, per function).                                                               |
 | `pera/secret-buffer-zeroed`                | Mnemonic-derived buffers are zeroed on every path out of the function that derives them (dataflow).                                                                                                               |
 
 This is the complete set of lanekeep's `pera/*` rules.
