@@ -11,6 +11,7 @@
  */
 
 import {
+    METADATA_PREFIX,
     readMasterKey,
     storage,
 } from '@algorandfoundation/react-native-keystore'
@@ -22,10 +23,12 @@ import { zeroBytes } from '@perawallet/wallet-core-kms'
 import {
     getProvider,
     keystoreSubtle,
+    writePasskeyCredential,
 } from '@perawallet/wallet-extension-provider'
 
 export const nativePasskeyEntryExists = (credentialId: string): boolean =>
-    storage.getString(credentialId) != null
+    storage.getString(credentialId) !== undefined ||
+    storage.getString(METADATA_PREFIX + credentialId) !== undefined
 
 export type WriteNativePasskeyEntryParams = {
     /** Standard-base64 SHA-256(SPKI DER) — also the MMKV key. */
@@ -64,8 +67,8 @@ const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
     extractable: false,
     keyUsages: ['sign'],
     name: `Passkey: ${params.origin}`,
-    privateKey: toNativeByteArray(params.privateKey),
-    publicKey: toNativeByteArray(params.publicKeySpkiDer),
+    privateKey: params.privateKey,
+    publicKey: params.publicKeySpkiDer,
     metadata: {
         origin: params.origin,
         // userHandle is platform-overloaded: Android's picker renders it as the
@@ -101,15 +104,12 @@ export type NativePasskeyWriter = ((
  * secure-storage round-trips into a single fetch keeps that wait short when a
  * user has many passkeys.
  *
- * Persists each credential into the native autofill module's own encrypted MMKV
- * envelope — the module has no JS create-bridge, but its `CredentialRepository`
- * reads the same envelope back under the credentialId key. We bypass the
- * keystore's `importKey`/`generate` helpers: both force a random key id and
- * re-derive a different keypair instead of persisting the one we supply.
- *
- * The envelope comes from `sealNativeProviderRecord`, never the keystore's own
- * `sealData`/`encode` — under canary.14 those are wrong on two axes and both
- * fail silently. See `packages/passkeys/src/native/nativeProviderRecord.ts`.
+ * Persists each credential where the platform's provider reads it. On Android
+ * that is a `k/`+`m/` split record written through the provider's
+ * `writePasskeyCredential`: the chooser lists `k/` without decrypting anything.
+ * On iOS it is the flat bare-id envelope from `sealNativeProviderRecord`,
+ * never the keystore's own `sealData`/`encode`, both of which fail silently
+ * against the iOS reader. See `packages/passkeys/src/native/nativeProviderRecord.ts`.
  *
  * A failed fetch isn't cached, so a later write retries rather than inheriting a
  * poisoned key.
@@ -131,13 +131,22 @@ export const createNativePasskeyWriter = (
 
     const write: NativePasskeyWriter = async params => {
         const masterKey = await resolveMasterKey()
+        const record = buildKeystoreKeyData(params)
+
+        if (getProvider().deviceInfo.getDevicePlatform() === 'android') {
+            // The Android provider lists `k/` without decrypting and opens `m/`
+            // only after the user picks the credential.
+            await writePasskeyCredential(masterKey, params.credentialId, record)
+            return
+        }
+
         storage.set(
             params.credentialId,
-            await sealNativeProviderRecord(
-                subtle,
-                masterKey,
-                buildKeystoreKeyData(params),
-            ),
+            await sealNativeProviderRecord(subtle, masterKey, {
+                ...record,
+                privateKey: toNativeByteArray(record.privateKey),
+                publicKey: toNativeByteArray(record.publicKey),
+            }),
         )
     }
 
