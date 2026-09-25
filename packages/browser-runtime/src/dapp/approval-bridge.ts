@@ -121,8 +121,17 @@ export const POPUP_OPEN_TIMEOUT_MS = 4000
 export const APPROVAL_WINDOW_WIDTH = 360
 export const APPROVAL_WINDOW_HEIGHT = 600
 
-const randomUpTo = (maxInclusive: number): number =>
-    crypto.getRandomValues(new Uint32Array(1))[0] % (maxInclusive + 1)
+// Masked rejection sampling: a bare modulo would favour low offsets whenever
+// the range does not divide 2^32.
+const randomUpTo = (maxInclusive: number): number => {
+    const mask = 2 ** (32 - Math.clz32(maxInclusive)) - 1
+    const draw = new Uint32Array(1)
+    for (;;) {
+        crypto.getRandomValues(draw)
+        const candidate = (draw[0] & mask) >>> 0
+        if (candidate <= maxInclusive) return candidate
+    }
+}
 
 // Which approval kinds each decision message may settle. `get-approval` and the
 // universal rejects are omitted: valid for every kind.

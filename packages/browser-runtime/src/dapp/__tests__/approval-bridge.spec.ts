@@ -134,32 +134,41 @@ describe('ApprovalWindowBridge', () => {
             vi.restoreAllMocks()
         })
 
-        it('places the window at a random spot inside the focused window', async () => {
-            const draws = [0, 0xffffffff]
+        const mockDraws = (draws: number[]) =>
             vi.spyOn(crypto, 'getRandomValues').mockImplementation(array => {
                 ;(array as Uint32Array)[0] = draws.shift() ?? 0
                 return array
             })
 
+        it('places the window at a random spot inside the focused window', async () => {
+            mockDraws([40, 7])
+
             const opts = await openAndCapture(FOCUSED)
 
-            expect(opts.left).toBe(100)
-            expect(opts.top).toBe(50 + (0xffffffff % (900 - 600 + 1)))
-            expect(opts.top + 600).toBeLessThanOrEqual(50 + 900)
+            expect(opts.left).toBe(100 + 40)
+            expect(opts.top).toBe(50 + 7)
         })
 
-        it('keeps the window inside the focused window for any draw', async () => {
-            vi.spyOn(crypto, 'getRandomValues').mockImplementation(array => {
-                ;(array as Uint32Array)[0] = 0xfffffffe
-                return array
-            })
+        // Top's range is 0..300, masked to 0..511: 511 falls outside and must
+        // be redrawn rather than folded back in with a modulo.
+        it('redraws an offset that falls outside the range', async () => {
+            const getRandomValues = mockDraws([0, 511, 300])
 
             const opts = await openAndCapture(FOCUSED)
 
-            expect(opts.left).toBeGreaterThanOrEqual(100)
-            expect(opts.left + 360).toBeLessThanOrEqual(100 + 1400)
-            expect(opts.top).toBeGreaterThanOrEqual(50)
-            expect(opts.top + 600).toBeLessThanOrEqual(50 + 900)
+            expect(opts.top).toBe(50 + 300)
+            expect(getRandomValues).toHaveBeenCalledTimes(3)
+        })
+
+        it('keeps the window inside the focused window', async () => {
+            for (let i = 0; i < 20; i++) {
+                const opts = await openAndCapture(FOCUSED)
+
+                expect(opts.left).toBeGreaterThanOrEqual(100)
+                expect(opts.left + 360).toBeLessThanOrEqual(100 + 1400)
+                expect(opts.top).toBeGreaterThanOrEqual(50)
+                expect(opts.top + 600).toBeLessThanOrEqual(50 + 900)
+            }
         })
 
         it('pins to the focused window origin when it is smaller than the popup', async () => {
