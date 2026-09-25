@@ -11,8 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import {
+    useQuery,
+    type FetchStatus,
+    type RefetchOptions,
+} from '@tanstack/react-query'
+import type { Nullable, Network } from '@perawallet/wallet-core-shared'
 import type { MultiSigAccount } from '../models'
 import { getMultisigAccountDetail } from '../api/endpoints'
 import { mapMultiSigAccount } from '../mappers'
@@ -24,18 +28,37 @@ type UseMultisigAccountDetailQueryParams = {
     enabled?: boolean
 }
 
+export type UseMultisigAccountDetailQueryResult = {
+    data: MultiSigAccount | undefined
+    isLoading: boolean
+    isFetching: boolean
+    isSuccess: boolean
+    isError: boolean
+    error: Nullable<Error>
+    fetchStatus: FetchStatus
+    refetch: (options?: RefetchOptions) => unknown
+}
+
 export const useMultisigAccountDetailQuery = ({
     network,
     address,
     enabled = true,
-}: UseMultisigAccountDetailQueryParams): UseQueryResult<
-    MultiSigAccount,
-    Error
-> => {
-    return useQuery({
+}: UseMultisigAccountDetailQueryParams): UseMultisigAccountDetailQueryResult => {
+    const query = useQuery({
         queryKey: getMultisigAccountDetailQueryKey(network, address),
         queryFn: () => getMultisigAccountDetail(network, address),
         enabled: enabled && !!address,
         select: useCallback(mapMultiSigAccount, []),
     })
+
+    return {
+        data: query.data,
+        isLoading: query.isLoading,
+        isFetching: query.isFetching,
+        isSuccess: query.isSuccess,
+        isError: query.isError,
+        error: query.error,
+        fetchStatus: query.fetchStatus,
+        refetch: query.refetch,
+    }
 }
