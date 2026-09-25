@@ -118,6 +118,12 @@ const POPUP_CLAIM_TIMEOUT_MS = 5000
 // a cold popup boot so a slow-but-working popup is not pre-empted; a late resolve is ignored.
 export const POPUP_OPEN_TIMEOUT_MS = 4000
 
+export const APPROVAL_WINDOW_WIDTH = 360
+export const APPROVAL_WINDOW_HEIGHT = 600
+
+const randomUpTo = (maxInclusive: number): number =>
+    crypto.getRandomValues(new Uint32Array(1))[0] % (maxInclusive + 1)
+
 // Which approval kinds each decision message may settle. `get-approval` and the
 // universal rejects are omitted: valid for every kind.
 const DECISION_KINDS: Record<string, readonly PendingApproval['kind'][]> = {
@@ -380,14 +386,48 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         const win = await this.chromeLike.windows.create({
             url,
             type: 'popup',
-            width: 360,
-            height: 600,
+            width: APPROVAL_WINDOW_WIDTH,
+            height: APPROVAL_WINDOW_HEIGHT,
             focused: true,
+            ...(await this.randomApprovalWindowPosition()),
         })
         const entry = this.pending.get(requestId)
         if (entry && typeof win?.id === 'number') {
             entry.windowId = win.id
             this.windowToRequest.set(win.id, requestId)
+        }
+    }
+
+    // Chrome's default cascade is predictable, and so is anything derived from
+    // the page's own window, whose screen rect the page can read: either lets
+    // it park a decoy under the confirm button. A random spot inside the
+    // focused window cannot be. Empty falls back to the cascade.
+    private async randomApprovalWindowPosition(): Promise<{
+        left?: number
+        top?: number
+    }> {
+        try {
+            const anchor = await this.chromeLike.windows.getLastFocused()
+            const { left, top, width, height } = anchor
+            if (
+                anchor.state === 'minimized' ||
+                left === undefined ||
+                top === undefined ||
+                width === undefined ||
+                height === undefined
+            ) {
+                return {}
+            }
+            return {
+                left:
+                    left +
+                    randomUpTo(Math.max(0, width - APPROVAL_WINDOW_WIDTH)),
+                top:
+                    top +
+                    randomUpTo(Math.max(0, height - APPROVAL_WINDOW_HEIGHT)),
+            }
+        } catch {
+            return {}
         }
     }
 

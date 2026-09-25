@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 /** Long enough to outlast a click that began before the window opened. */
 export const APPROVAL_ARMING_DELAY_MS = 500
@@ -30,6 +30,10 @@ const INTENT_EVENTS = ['pointermove', 'pointerdown', 'keydown'] as const
  * happened in this window. `keydown` and `pointerdown` count too, so keyboard
  * and touch users are not locked out by a pointer-movement requirement.
  *
+ * Losing focus or visibility disarms, and arming starts over once the window
+ * is back: a page that hides the window and raises it again under the cursor
+ * gets the same treatment as a freshly opened one.
+ *
  * The press that arms is itself swallowed: the button remounts on the
  * `disabled` flip, so a touch user's first tap arms and the second acts. The
  * empty selection, not this delay, is what defeats a two-click decoy.
@@ -37,8 +41,47 @@ const INTENT_EVENTS = ['pointermove', 'pointerdown', 'keydown'] as const
 export const useApprovalArming = (): boolean => {
     const [hasDelayElapsed, setHasDelayElapsed] = useState(false)
     const [hasLocalIntent, setHasLocalIntent] = useState(false)
+    const [isSuspended, setIsSuspended] = useState(false)
+    // Bumped on each resume so the arming effect restarts even when a blur and
+    // focus land in the same render batch and `isSuspended` never flips.
+    const [armingCycle, setArmingCycle] = useState(0)
+    // `focus` also fires for a window that never lost it (e.g. on first load);
+    // only a real suspension may restart arming, or it would discard intent.
+    const isSuspendedRef = useRef(false)
 
     useEffect(() => {
+        const suspend = () => {
+            isSuspendedRef.current = true
+            setIsSuspended(true)
+            setHasDelayElapsed(false)
+            setHasLocalIntent(false)
+        }
+        const resume = () => {
+            if (!isSuspendedRef.current) return
+            isSuspendedRef.current = false
+            setIsSuspended(false)
+            setArmingCycle(cycle => cycle + 1)
+        }
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') suspend()
+            else resume()
+        }
+        window.addEventListener('blur', suspend)
+        window.addEventListener('focus', resume)
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+
+        return () => {
+            window.removeEventListener('blur', suspend)
+            window.removeEventListener('focus', resume)
+            document.removeEventListener(
+                'visibilitychange',
+                handleVisibilityChange,
+            )
+        }
+    }, [])
+
+    useEffect(() => {
+        if (isSuspended) return
         const timer = setTimeout(
             () => setHasDelayElapsed(true),
             APPROVAL_ARMING_DELAY_MS,
@@ -54,7 +97,7 @@ export const useApprovalArming = (): boolean => {
                 window.removeEventListener(type, markIntent),
             )
         }
-    }, [])
+    }, [isSuspended, armingCycle])
 
-    return hasDelayElapsed && hasLocalIntent
+    return !isSuspended && hasDelayElapsed && hasLocalIntent
 }

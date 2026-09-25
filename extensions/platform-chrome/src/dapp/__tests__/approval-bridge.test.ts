@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     APPROVAL_WITHDRAWN,
     ApprovalWindowBridge,
@@ -30,6 +30,7 @@ import {
 const makeChrome = (
     idOverrides?: number[],
     actionOpenPopup?: 'resolve' | 'reject' | 'manual',
+    lastFocused?: Partial<chrome.windows.Window>,
 ) => {
     let onMessage: Function = () => {}
     let onRemoved: Function = () => {}
@@ -66,6 +67,9 @@ const makeChrome = (
                 }),
                 remove: vi.fn(async () => {}),
                 onRemoved: { addListener: (fn: Function) => (onRemoved = fn) },
+                ...(lastFocused
+                    ? { getLastFocused: vi.fn(async () => lastFocused) }
+                    : {}),
             },
             ...(actionOpenPopup ? { action: { openPopup } } : {}),
         } as unknown as typeof chrome,
@@ -106,6 +110,85 @@ const proposalCtx = (
 })
 
 describe('ApprovalWindowBridge', () => {
+    describe('approval window position', () => {
+        const FOCUSED = { left: 100, top: 50, width: 1400, height: 900 }
+
+        const openAndCapture = async (
+            lastFocused?: Partial<chrome.windows.Window>,
+        ) => {
+            const { chromeLike, created } = makeChrome(
+                undefined,
+                undefined,
+                lastFocused,
+            )
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            void bridge.openConnectionProposal(
+                proposalCtx('pos', 'https://x.com'),
+            )
+            await flush()
+            return created[0]
+        }
+
+        afterEach(() => {
+            vi.restoreAllMocks()
+        })
+
+        it('places the window at a random spot inside the focused window', async () => {
+            const draws = [0, 0xffffffff]
+            vi.spyOn(crypto, 'getRandomValues').mockImplementation(array => {
+                ;(array as Uint32Array)[0] = draws.shift() ?? 0
+                return array
+            })
+
+            const opts = await openAndCapture(FOCUSED)
+
+            expect(opts.left).toBe(100)
+            expect(opts.top).toBe(50 + (0xffffffff % (900 - 600 + 1)))
+            expect(opts.top + 600).toBeLessThanOrEqual(50 + 900)
+        })
+
+        it('keeps the window inside the focused window for any draw', async () => {
+            vi.spyOn(crypto, 'getRandomValues').mockImplementation(array => {
+                ;(array as Uint32Array)[0] = 0xfffffffe
+                return array
+            })
+
+            const opts = await openAndCapture(FOCUSED)
+
+            expect(opts.left).toBeGreaterThanOrEqual(100)
+            expect(opts.left + 360).toBeLessThanOrEqual(100 + 1400)
+            expect(opts.top).toBeGreaterThanOrEqual(50)
+            expect(opts.top + 600).toBeLessThanOrEqual(50 + 900)
+        })
+
+        it('pins to the focused window origin when it is smaller than the popup', async () => {
+            const opts = await openAndCapture({
+                left: 10,
+                top: 20,
+                width: 300,
+                height: 400,
+            })
+
+            expect(opts.left).toBe(10)
+            expect(opts.top).toBe(20)
+        })
+
+        it.each([
+            ['no focused window is available', undefined],
+            [
+                'the focused window is minimised',
+                { ...FOCUSED, state: 'minimized' as const },
+            ],
+            ['the focused window has no bounds', { state: 'normal' as const }],
+        ])('leaves placement to Chrome when %s', async (_, lastFocused) => {
+            const opts = await openAndCapture(lastFocused)
+
+            expect(opts.left).toBeUndefined()
+            expect(opts.top).toBeUndefined()
+        })
+    })
+
     it('opens a 360x600 popup at approval.html?requestId and resolves on approve', async () => {
         const { chromeLike, created, fireMessage } = makeChrome()
         const bridge = new ApprovalWindowBridge(chromeLike)
