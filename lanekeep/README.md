@@ -42,7 +42,7 @@ takes the rest: rules that need tests or tooling in view, another file's content
 | `pera/locale-placeholder-suffix`           | No `tr.json` value attaches a suffix to a `{{placeholder}}` (apostrophe forms included); the suffix depends on the value. Cross-file: skipped under `--staged`.                                                   |
 | `pera/no-snapshot-tests`                   | No snapshot matcher in a test file; assert the specific fields instead.                                                                                                                                           |
 | `pera/no-assertionless-test`               | A test in a test file asserts something: a call starting `expect` or `assert`, or a listed helper. lanekeep's built-in, gated to test files.                                                                      |
-| `pera/amount-types`                        | Amounts, balances, prices and fees are never typed `number` or `string` (type-aware; arrays and return types are not checked).                                                                                    |
+| `pera/amount-types`                        | Amounts, balances, prices and fees are never typed `number` or `string` (type-aware; arrays and return types are not checked). Ships as `warn`: existing string amounts are listed for migration.                 |
 
 This is the complete set of lanekeep's `pera/*` rules.
 
