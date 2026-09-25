@@ -1,0 +1,96 @@
+{
+  "name": "@perawallet/wallet-core-chain-algorand",
+  "private": true,
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./blockchain": {
+      "types": "./dist/blockchain/index.d.ts",
+      "default": "./dist/blockchain/index.js"
+    },
+    "./signing": {
+      "types": "./dist/signing/index.d.ts",
+      "default": "./dist/signing/index.js"
+    },
+    "./accounts": {
+      "types": "./dist/accounts/index.d.ts",
+      "default": "./dist/accounts/index.js"
+    },
+    "./assets": {
+      "types": "./dist/assets/index.d.ts",
+      "default": "./dist/assets/index.js"
+    },
+    "./transactions": {
+      "types": "./dist/transactions/index.d.ts",
+      "default": "./dist/transactions/index.js"
+    },
+    "./swaps": {
+      "types": "./dist/swaps/index.d.ts",
+      "default": "./dist/swaps/index.js"
+    },
+    "./staking": {
+      "types": "./dist/staking/index.d.ts",
+      "default": "./dist/staking/index.js"
+    },
+    "./asa-inbox": {
+      "types": "./dist/asa-inbox/index.d.ts",
+      "default": "./dist/asa-inbox/index.js"
+    },
+    "./nfd": {
+      "types": "./dist/nfd/index.d.ts",
+      "default": "./dist/nfd/index.js"
+    },
+    "./arc0027": {
+      "types": "./dist/arc0027/index.d.ts",
+      "default": "./dist/arc0027/index.js"
+    },
+    "./fee-delegation": {
+      "types": "./dist/fee-delegation/index.d.ts",
+      "default": "./dist/fee-delegation/index.js"
+    },
+    "./multisig": {
+      "types": "./dist/multisig/index.d.ts",
+      "default": "./dist/multisig/index.js"
+    },
+    "./card": {
+      "types": "./dist/card/index.d.ts",
+      "default": "./dist/card/index.js"
+    },
+    "./onramp": {
+      "types": "./dist/onramp/index.d.ts",
+      "default": "./dist/onramp/index.js"
+    },
+    "./ledger": {
+      "types": "./dist/ledger/index.d.ts",
+      "default": "./dist/ledger/index.js"
+    },
+    "./backup": {
+      "types": "./dist/backup/index.d.ts",
+      "default": "./dist/backup/index.js"
+    },
+    "./connect": {
+      "types": "./dist/connect/index.d.ts",
+      "default": "./dist/connect/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "dev": "vite build --watch & tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "devDependencies": {
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}
