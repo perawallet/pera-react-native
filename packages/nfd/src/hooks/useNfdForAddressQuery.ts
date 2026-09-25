@@ -20,6 +20,14 @@ import { nfdBatchQueue } from '../services/nfdBatchQueue'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdName } from '../models'
 
+export type UseNfdForAddressQueryResult = {
+    data: NfdName[]
+    isPending: boolean
+}
+
+// One stable empty array, so memos that depend on `data` don't re-run every render.
+const NO_RESULTS: NfdName[] = []
+
 /**
  * The batch queue coalesces enqueues that land in the same microtask.
  * Putting an `await` (e.g. an SQLite cache check) BEFORE `enqueue` would
@@ -33,14 +41,6 @@ import type { NfdName } from '../models'
  * results still flow back through the executor's `getNfdsByAddresses`
  * re-read, so the hook gets the right value either way.
  */
-export type UseNfdForAddressQueryResult = {
-    data: NfdName[]
-    isPending: boolean
-}
-
-// One stable empty array, so memos that depend on `data` don't re-run every render.
-const NO_RESULTS: NfdName[] = []
-
 export const useNfdForAddressQuery = (
     address: string,
     options?: { enabled?: boolean },
