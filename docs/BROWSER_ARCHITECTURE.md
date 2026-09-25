@@ -115,8 +115,9 @@ Content scripts are injected into **every https page** (`matches: https://*/*`).
 
 ### 3.2 The vault (key custody)
 
-Password → **Argon2id** KEK (`ARGON2_MEMORY_KIB=19456, ITERATIONS=2`; OWASP baseline) → unwrap
-the master key. Legacy PBKDF2 blobs (`600k` iters) are re-wrapped as Argon2id on next unlock.
+Password → **Argon2id** KEK (`ARGON2_MEMORY_KIB=65536, ITERATIONS=3`, derived in `argon2-worker.js`
+so the page keeps painting) → unwrap the master key. Legacy PBKDF2 blobs (`600k` iters) and Argon2id
+blobs below that cost (down to the OWASP 19 MiB / t=2 floor) are re-wrapped on the next unlock.
 
 - **Wrapped** master key blob → `chrome.storage.local` (`vault:wrapped-master-key`, survives restart).
 - **Unwrapped** master key → `chrome.storage.session` (`vault:master-key`), `TRUSTED_CONTEXTS`,
