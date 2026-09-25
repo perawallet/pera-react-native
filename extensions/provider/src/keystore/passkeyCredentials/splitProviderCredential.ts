@@ -11,7 +11,6 @@
  */
 
 import { base64 } from '@scure/base'
-import { SECRET_FIELDS } from '../migrations/canary13'
 import { isPasskeyCredentialType } from './passkeyCredentialTypes'
 
 /**
@@ -64,24 +63,25 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     !Array.isArray(value) &&
     !isBytes(value)
 
-/**
- * True when a field named in `SECRET_FIELDS` holds bytes anywhere in `value`,
- * at any depth. The split already pulls its own top-level `privateKey`/`seed`
- * out before this runs, so a hit here is material found somewhere else — a
- * nested `metadata.rootKey.privateKey`, a top-level `key` — that would
- * otherwise be copied straight into the plaintext `k/` record.
- */
-const carriesSecretBytes = (value: unknown): boolean => {
-    if (isBytes(value) || value === null) return false
-    if (Array.isArray(value)) return value.some(carriesSecretBytes)
-    if (typeof value !== 'object') return false
-
-    return Object.entries(value as Record<string, unknown>).some(
-        ([field, nested]) =>
-            (SECRET_FIELDS.has(field) && isBytes(nested)) ||
-            carriesSecretBytes(nested),
-    )
+const carriesBytes = (value: unknown): boolean => {
+    if (isBytes(value)) return true
+    if (typeof value !== 'object' || value === null) return false
+    return Object.values(value).some(carriesBytes)
 }
+
+/**
+ * True when the would-be `k/` record holds bytes anywhere but its own
+ * top-level `publicKey`. A field's name says nothing about whether it is
+ * secret: `decode` turns a number array under any `*Key` name into bytes, so a
+ * `metadata.rootKey` or a top-level `masterKey` would otherwise be copied
+ * straight into the plaintext `k/` record.
+ */
+const carriesBytesBesidesPublicKey = (
+    record: Record<string, unknown>,
+): boolean =>
+    Object.entries(record).some(
+        ([field, value]) => field !== 'publicKey' && carriesBytes(value),
+    )
 
 /**
  * Moves `origin`/`userHandle`/`userId`/`count` from the top level into
@@ -109,9 +109,9 @@ export const liftCredentialMetadata = <T extends Record<string, unknown>>(
  * Shapes a decoded flat credential record into its `k/` and `m/` halves.
  * Returns `undefined` for a record that cannot be stored in the split layout:
  * not a passkey type, no public key, no origin, a `seed` field, a `privateKey`
- * present but not usable bytes, a secret-named field holding bytes anywhere
- * else in the record, or a biometric-wrapped key in a shape the provider would
- * not accept. Throws when `privateKeyEnc.data` is not base64.
+ * present but not usable bytes, bytes anywhere else in the record but its
+ * top-level `publicKey`, or a biometric-wrapped key in a shape the provider
+ * would not accept. Throws when `privateKeyEnc.data` is not base64.
  */
 export const splitProviderCredential = (
     id: string,
@@ -147,10 +147,7 @@ export const splitProviderCredential = (
         metadata: { ...metadata, origin },
     } as SplitCredentialRecord
 
-    // Anything else named like a secret carrier — a nested
-    // `metadata.rootKey.privateKey`, a top-level `key` — would otherwise be
-    // serialized into plaintext `k/` verbatim.
-    if (carriesSecretBytes(record)) return undefined
+    if (carriesBytesBesidesPublicKey(record)) return undefined
 
     if (isBytes(privateKey) && privateKey.length > 0) {
         return { record, material: privateKey }

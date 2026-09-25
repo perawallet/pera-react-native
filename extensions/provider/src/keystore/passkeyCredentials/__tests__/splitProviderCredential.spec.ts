@@ -210,6 +210,47 @@ describe('splitProviderCredential', () => {
             ),
         ).toBeUndefined()
     })
+
+    // `decode` turns a number array under any `*Key` name into bytes, so a
+    // field name says nothing about whether it is secret.
+    it('keeps a record with bytes under metadata.rootKey flat', () => {
+        expect(
+            splitProviderCredential(
+                'cred-1',
+                flat({
+                    metadata: {
+                        origin: 'https://webauthn.io',
+                        userHandle: 'alice',
+                        rootKey: new Uint8Array(32).fill(2),
+                    },
+                }),
+            ),
+        ).toBeUndefined()
+    })
+
+    it('keeps a record with a top-level masterKey flat', () => {
+        expect(
+            splitProviderCredential(
+                'cred-1',
+                flat({ masterKey: new Uint8Array(32).fill(2) }),
+            ),
+        ).toBeUndefined()
+    })
+
+    it('allows bytes only in the top-level publicKey, not in a nested one', () => {
+        expect(
+            splitProviderCredential(
+                'cred-1',
+                flat({
+                    metadata: {
+                        origin: 'https://webauthn.io',
+                        userHandle: 'alice',
+                        publicKey: new Uint8Array(4).fill(4),
+                    },
+                }),
+            ),
+        ).toBeUndefined()
+    })
 })
 
 describe('liftCredentialMetadata', () => {
