@@ -186,7 +186,41 @@ describe('splitFlatPasskeyCredentials', () => {
         expect(storage.getString(CRED_ID)).toBeUndefined()
     })
 
+    it('also moves a credential stored under the url-safe, unpadded form of its id', async () => {
+        const id = base64url.encode(base64.decode(CRED_ID)).replace(/=+$/, '')
+        expect(id).toMatch(/[-_]/)
+        expect(id).not.toMatch(/=/)
+        const storage = fakeStorage({
+            [id]: await provider(credentialJson({ id })),
+        })
+
+        const result = await splitFlatPasskeyCredentials(deps(storage))
+
+        expect(result.split).toEqual([id])
+        expect(storage.getString(id)).toBeUndefined()
+        expect(readK(storage, id)).toMatchObject({ id })
+    })
+
     it('leaves a flat record that is not a passkey where it is, wiped from memory', async () => {
+        // Keyed like a credential, so the pass has to open it to find out.
+        const id = credentialId(9)
+        const sealed = await sealCanary13Record(subtle, MASTER_KEY, {
+            id,
+            type: 'hd-root-key',
+            privateKey: new Uint8Array(32).fill(5),
+        })
+        const storage = fakeStorage({ [id]: sealed })
+
+        const result = await splitFlatPasskeyCredentials(deps(storage))
+
+        expect(result).toEqual(EMPTY)
+        expect(storage.entries()).toEqual({ [id]: sealed })
+        expect(decodedRecords[0]?.privateKey?.every(byte => byte === 0)).toBe(
+            true,
+        )
+    })
+
+    it('never opens a flat record whose key is not shaped like a credential id', async () => {
         const sealed = await sealCanary13Record(subtle, MASTER_KEY, {
             id: 'seed-1',
             type: 'hd-root-key',
@@ -197,10 +231,9 @@ describe('splitFlatPasskeyCredentials', () => {
         const result = await splitFlatPasskeyCredentials(deps(storage))
 
         expect(result).toEqual(EMPTY)
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+        expect(decodedRecords).toEqual([])
         expect(storage.entries()).toEqual({ 'seed-1': sealed })
-        expect(decodedRecords[0]?.privateKey?.every(byte => byte === 0)).toBe(
-            true,
-        )
     })
 
     it('keeps a credential carrying a seed field flat', async () => {

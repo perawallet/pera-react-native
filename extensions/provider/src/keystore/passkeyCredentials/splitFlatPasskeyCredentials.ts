@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { base64, base64url } from '@scure/base'
 import {
     MasterKeyNotFoundError,
     METADATA_PREFIX,
@@ -53,6 +54,25 @@ export const emptyPasskeySplit = (): PasskeySplitResult => ({
 })
 
 const LOG_PREFIX = '[provider] passkey credential split'
+
+const CREDENTIAL_ID_BYTES = 32
+
+/**
+ * Every Android credential writer keys a credential by the base64 SHA-256 of
+ * its public key: the provider's `generateCredentialId`, and the legacy
+ * import's standard-base64 SHA-256(SPKI DER). A bare key of any other shape is
+ * not a credential, so the pass never opens it.
+ */
+const isCredentialIdShaped = (key: string): boolean => {
+    const padded = key + '='.repeat((4 - (key.length % 4)) % 4)
+    return [base64, base64url].some(coder => {
+        try {
+            return coder.decode(padded).length === CREDENTIAL_ID_BYTES
+        } catch {
+            return false
+        }
+    })
+}
 
 /**
  * Upstream's `adopt-flat-records` carries fields through as found, so a
@@ -167,10 +187,15 @@ const splitOne = async (
  * Runs on every launch instead of as a ledgered revision. A revision is marked
  * applied even when it declines, so a transient failure (the master key not
  * readable at that moment) would hide every passkey for good; here the next
- * launch retries. A launch with nothing flat costs one key scan. A device that
- * still holds a flat record that is not a passkey pays one master-key read per
- * launch. Pera's master key has no user-authentication binding, so that read
- * never prompts; binding it would turn this into a prompt on every launch.
+ * launch retries.
+ *
+ * A launch with nothing flat scans the key list and parses each `k/` record:
+ * it decrypts nothing and reads no master key. Only a flat key shaped like a
+ * credential id is opened, so a flat record the keystore declined to adopt (a
+ * seed or root) is never decrypted here, and the master key is read only
+ * while a credential-shaped flat key exists. Pera's master key has no
+ * user-authentication binding, so that read never prompts; binding it would
+ * prompt on every launch that still finds such a key.
  *
  * Never throws.
  */
@@ -181,7 +206,9 @@ export const splitFlatPasskeyCredentials = async (
     try {
         result.normalized = normalizeSplitCredentials(deps.storage)
 
-        const candidates = deps.storage.getAllKeys().filter(isFlatCandidate)
+        const candidates = deps.storage
+            .getAllKeys()
+            .filter(key => isFlatCandidate(key) && isCredentialIdShaped(key))
         if (candidates.length === 0) return result
 
         let masterKey: Uint8Array
