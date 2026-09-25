@@ -4045,9 +4045,6 @@
         "approval": {
             "placeholder": "Interfaz de aprobación — próximamente en M4."
         },
-        "expanded": {
-            "redirecting": "Continuando en una pestaña nueva…"
-        },
         "reauth": {
             "title": "Confirma que eres tú",
             "confirm_button": "Confirmar",

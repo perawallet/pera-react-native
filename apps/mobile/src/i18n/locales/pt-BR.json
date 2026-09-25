@@ -4073,9 +4073,6 @@
         "approval": {
             "placeholder": "Área de aprovação — chegando no M4."
         },
-        "expanded": {
-            "redirecting": "Continuando em uma nova aba…"
-        },
         "reauth": {
             "title": "Confirme que é você",
             "confirm_button": "Confirmar",

@@ -4037,9 +4037,6 @@
         "approval": {
             "placeholder": "Genehmigungsoberfläche — kommt in M4."
         },
-        "expanded": {
-            "redirecting": "Wird in einem neuen Tab fortgesetzt…"
-        },
         "reauth": {
             "title": "Bestätige, dass du es bist",
             "confirm_button": "Bestätigen",

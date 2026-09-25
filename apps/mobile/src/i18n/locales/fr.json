@@ -4045,9 +4045,6 @@
         "approval": {
             "placeholder": "Surface d’approbation — à venir dans M4."
         },
-        "expanded": {
-            "redirecting": "Ouverture d’un nouvel onglet…"
-        },
         "reauth": {
             "title": "Confirmez votre identité",
             "confirm_button": "Confirmer",
