@@ -21,8 +21,8 @@
  * `@perawallet/wallet-extension-provider` (this package), so importing back
  * from here would be a circular workspace dependency. See that module's doc
  * for the full contract (why `sealData`/`encode` from this package's own
- * `crypto.ts`/`state.ts` cannot be used — both fail silently against the
- * provider) and for the credential-record field shapes this must match.
+ * `crypto.ts`/`state.ts` cannot be used — each fails silently, but against a
+ * different reader) and for the credential-record field shapes this must match.
  *
  * `__tests__/nativeCredentialRecord.spec.ts` guards this three ways: a live
  * round trip through the real `openNativeProviderRecord` (imported by deep

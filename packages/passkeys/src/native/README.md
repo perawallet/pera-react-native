@@ -24,15 +24,15 @@ split records directly. A credential that is still flat is not offered in the ch
 because the chooser never decrypts to list.
 
 **iOS credentials are still bare-id only.** iOS's only path that builds a credential from the
-keystore, `allKeystoreCredentials()`, guards on `dataArray(keyData["publicKey"])` _and_
-`dataArray(keyData["privateKey"])`. `dataArray` accepts only a JSON number array, so a split `k/`
-record fails the guard silently: its `publicKey` is `{"$u8": …}` and it carries no `privateKey` at
-all. iOS has no credential-from-metadata path.
+keystore, `allKeystoreCredentials()`, guards on `dataArray(keyData["publicKey"])` and a non-nil
+`keyData["privateKey"]` — only the former requires a JSON number array. A split `k/` record fails
+the guard silently: its `publicKey` is `{"$u8": …}` and it carries no `privateKey` key at all. iOS
+has no credential-from-metadata path.
 
 So on iOS, `nativeProviderRecord.ts` is the single expression of the credential contract. Read its
 module doc before changing anything here, in particular why the keystore's own `sealData` and
-`encode` cannot be used (both fail _silently_ against the provider), and why credentials are written
-as a flat bare-id record with `privateKey` as a JSON number array.
+`encode` cannot be used (each fails silently, but against a different reader), and why credentials
+are written as a flat bare-id record with `privateKey` as a JSON number array.
 
 ## Upstream's adoption revision and `0002`
 

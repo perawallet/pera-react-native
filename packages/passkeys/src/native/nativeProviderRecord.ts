@@ -20,10 +20,10 @@
  * it reads the derivation **parent/root** from the keystore's own `k/`+`m/`
  * split — and on iOS **credential records are still bare-id only**. iOS's only
  * credential-from-keystore path, `allKeystoreCredentials()`, guards on
- * `dataArray(keyData["publicKey"])` and `dataArray(keyData["privateKey"])`,
- * both of which require a JSON number array; a split `k/` record's
- * `publicKey` is `{"$u8": …}` and it carries no `privateKey` at all, so the
- * guard fails silently. Android credentials live in `k/`+`m/` instead; one
+ * `dataArray(keyData["publicKey"])` and a non-nil `keyData["privateKey"]`;
+ * only the former requires a JSON number array. A split `k/` record's
+ * `publicKey` is `{"$u8": …}` and it carries no `privateKey` key at all, so
+ * the guard fails silently. Android credentials live in `k/`+`m/` instead; one
  * not split yet still passes through this module, via
  * `readFlaggedPasskeyCredentials`. See `packages/passkeys/src/native/README.md`.
  *
@@ -57,11 +57,11 @@
  *
  * The only provider that signs from a flat credential record is iOS's. Its
  * reader, `PasskeyCredentialStore.decodeKeystorePayload`, opens a JSON object
- * carrying both `iv` and `content` with the master key through `decryptData`,
- * whether the GCM tag sits in its own `tag` field or is appended to
- * `content`, and takes any other JSON object as the record itself. The opened
- * or unsealed payload is read as base64url of the record JSON, padded or not,
- * or else as the JSON text.
+ * carrying both `iv` and `content` with the master key through the store's
+ * own AES-GCM open, whether the GCM tag sits in its own `tag` field or is
+ * appended to `content`, and takes any other JSON object as the record
+ * itself. The opened or unsealed payload is read as base64url of the record
+ * JSON, padded or not, or else as the JSON text.
  *
  * - `sealData` emits `{iv, content}` with the GCM tag appended to the
  *   ciphertext. The iOS provider opens that, but this module's own

@@ -115,8 +115,8 @@ export type NativePasskeyWriter = ((
  * that is a `k/`+`m/` split record written through the provider's
  * `writePasskeyCredential`: the chooser lists `k/` without decrypting anything.
  * On iOS it is the flat bare-id envelope from `sealNativeProviderRecord`,
- * never the keystore's own `sealData`/`encode`, both of which fail silently
- * against the iOS reader. See `packages/passkeys/src/native/nativeProviderRecord.ts`.
+ * never the keystore's own `sealData`/`encode` — each fails silently, but
+ * against a different reader. See `packages/passkeys/src/native/nativeProviderRecord.ts`.
  *
  * A failed fetch isn't cached, so a later write retries rather than inheriting a
  * poisoned key.

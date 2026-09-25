@@ -119,8 +119,8 @@ describe('writeNativePasskeyEntry provider contract', () => {
             string,
         ]
         expect(key).toBe('cred-1')
-        // `decodeKeyData` only takes its decrypt branch on all three fields;
-        // canary.14's two-field `{iv, content}` silently returns the envelope.
+        // `openNativeProviderRecord` requires all three fields — a two-field
+        // `{iv, content}` envelope throws instead of decrypting.
         expect(Object.keys(JSON.parse(payload)).sort()).toEqual([
             'content',
             'iv',
