@@ -197,6 +197,25 @@
           }
         ]
       }
+    },
+    {
+      "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "decimal.js",
+                "importNames": ["default"],
+                "message": "Import the named { Decimal } from decimal.js."
+              }
+            ]
+          }
+        ],
+        "pera/decimal-construction": "error"
+      }
     }
   ]
 }

@@ -33,7 +33,9 @@ export const useAssetConfigDisplay = (
 
     const supply = useMemo(() => {
         const { amount, unit } = assetConfig?.params?.total
-            ? formatWithUnits(Decimal(assetConfig?.params?.total.toString()))
+            ? formatWithUnits(
+                  new Decimal(assetConfig?.params?.total.toString()),
+              )
             : { amount: undefined, unit: undefined }
 
         if (!amount) {

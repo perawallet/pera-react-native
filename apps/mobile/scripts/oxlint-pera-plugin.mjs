@@ -374,6 +374,31 @@ const wcConnectorOwnership = {
     },
 }
 
+const decimalConstruction = {
+    meta: {
+        type: 'problem',
+        docs: {
+            description: 'Construct Decimal with new',
+        },
+        messages: {
+            bare: 'Decimal(…) without new: construct it with new Decimal(…), the one form the codebase uses.',
+        },
+        schema: [],
+    },
+    create(context) {
+        return {
+            CallExpression(node) {
+                if (
+                    node.callee.type === 'Identifier' &&
+                    node.callee.name === 'Decimal'
+                ) {
+                    context.report({ node, messageId: 'bare' })
+                }
+            },
+        }
+    },
+}
+
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
 // directory, so a root apps/mobile/src/** override never reaches mobile.
@@ -386,5 +411,6 @@ export default {
         'dev-gallery-entry-points': devGalleryEntryPoints,
         'no-program-signer-in-dapp-paths': noProgramSignerInDappPaths,
         'wc-connector-ownership': wcConnectorOwnership,
+        'decimal-construction': decimalConstruction,
     },
 }

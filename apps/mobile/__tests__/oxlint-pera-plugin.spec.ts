@@ -551,3 +551,49 @@ describe('no-restricted-properties', () => {
         ])
     })
 })
+
+describe('pera/decimal-construction', () => {
+    const lintCall = (node: Node) => {
+        const report = vi.fn()
+        plugin.rules['decimal-construction']
+            .create({ report })
+            .CallExpression(node)
+        return report
+    }
+
+    it('reports Decimal called without new', () => {
+        expect(
+            lintCall(call(id('Decimal'), [{ type: 'Literal', value: '1' }])),
+        ).toHaveBeenCalledOnce()
+    })
+
+    it.each([
+        ['a static method', call(member(id('Decimal'), 'max'), [])],
+        ['another function', call(id('toDecimal'), [])],
+    ])('allows %s', (_label, node) => {
+        expect(lintCall(node)).not.toHaveBeenCalled()
+    })
+
+    it('runs in one override per config, beside the default decimal.js import ban', () => {
+        for (const path of ['.oxlintrc.json', 'apps/mobile/.oxlintrc.json']) {
+            const overrides = overridesWith(
+                readOxlintConfig(path),
+                'pera/decimal-construction',
+            )
+            expect(overrides).toHaveLength(1)
+            expect(overrides[0].rules['no-restricted-imports']).toEqual([
+                'error',
+                {
+                    paths: [
+                        {
+                            name: 'decimal.js',
+                            importNames: ['default'],
+                            message:
+                                'Import the named { Decimal } from decimal.js.',
+                        },
+                    ],
+                },
+            ])
+        }
+    })
+})
