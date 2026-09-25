@@ -17,7 +17,7 @@
   "jsPlugins": [
     "eslint-plugin-unused-imports",
     "eslint-plugin-react-native",
-    "./scripts/oxlint-pera-plugin.mjs"
+    "@perawallet/wallet-core-devtools/oxlint"
   ],
   "globals": {
     "__DEV__": "readonly",

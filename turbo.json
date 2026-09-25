@@ -67,7 +67,7 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/.oxlintrc.json",
-        "$TURBO_ROOT$/apps/mobile/scripts/oxlint-pera-plugin.mjs"
+        "$TURBO_ROOT$/packages/devtools/oxlint/**"
       ]
     },
     "test": {

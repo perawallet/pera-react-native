@@ -981,6 +981,9 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.3.0
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
       '@perawallet/wallet-extension-passkey-autofill':
         specifier: workspace:*
         version: link:../../extensions/passkey-autofill
@@ -14653,7 +14656,9 @@ snapshots:
       metro-runtime: 0.84.5
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

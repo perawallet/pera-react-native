@@ -3,7 +3,7 @@
 Project-specific conventions enforced by [lanekeep](https://github.com/fmsouza/lanekeep),
 run as part of `pnpm lint`. Rules are registered in `lanekeep.config.ts`. A new project rule
 that is per-file syntax over files oxlint already lints belongs in oxlint instead: a
-built-in, or the `pera` plugin in `apps/mobile/scripts/oxlint-pera-plugin.mjs`. lanekeep
+built-in, or the `pera` plugin in `packages/devtools/oxlint/`. lanekeep
 takes the rest: rules that need tests or tooling in view, another file's content
 (`en.json`), cross-file facts, or findings located in JSON.
 

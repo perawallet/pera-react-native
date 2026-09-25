@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "react", "import"],
-  "jsPlugins": ["eslint-plugin-unused-imports", "./apps/mobile/scripts/oxlint-pera-plugin.mjs"],
+  "jsPlugins": ["eslint-plugin-unused-imports", "@perawallet/wallet-core-devtools/oxlint"],
   "categories": {
     "correctness": "off"
   },

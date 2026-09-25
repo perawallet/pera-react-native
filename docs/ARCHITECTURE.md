@@ -157,7 +157,7 @@ consider flipping it is already reading that line.
 
 A web difference that is not a product decision (a focus-ring reset, a browser API that needs a user
 gesture) goes in a small `.web.ts` twin of a constant or function instead of a flag.
-`pera/no-platform-os-web` (`apps/mobile/scripts/oxlint-pera-plugin.mjs`) fails any
+`pera/no-platform-os-web` (`packages/devtools/oxlint/rules/no-platform-os-web.js`) fails any
 `Platform.OS === 'web'` comparison in `apps/mobile/src`, so one of the two is the only way to branch.
 Native-only iOS/Android splits read `isIOS()`/`isAndroid()` from `@utils/platform`; a capability that
 differs between them computes its native value there (`ledgerUsb` is `isAndroid()`).

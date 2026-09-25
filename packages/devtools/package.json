@@ -4,6 +4,7 @@
   "license": "MIT",
   "type": "module",
   "exports": {
+    "./oxlint": "./oxlint/plugin.js",
     "./tsconfig": "./tsconfig/vite.json",
     "./tsconfig/vite.json": "./tsconfig/vite.json",
     "./tsconfig/emit.json": "./tsconfig/emit.json",
@@ -25,6 +26,7 @@
     }
   },
   "files": [
+    "oxlint",
     "tsconfig",
     "vitest",
     "vite"
