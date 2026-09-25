@@ -341,4 +341,80 @@ describe('Flow: Settings → Passkeys', () => {
             ).toBeTruthy()
         })
     })
+
+    // Android credentials live in `k/`+`m/`, so the same credential reaches the
+    // list from the keystore and from the provider's own listing. A real id is
+    // standard base64; the row id is its url-safe form.
+    it('Given a credential listed by both the keystore and the provider, when the screen mounts, then it renders once', async () => {
+        const credentialId = 'c3Bs+aXQ/Y3JlZA=='
+        wireAutofill({
+            providerActive: true,
+            credentials: [
+                {
+                    credentialId,
+                    relyingPartyIdentifier: 'webauthn.io',
+                    userHandle: 'alice',
+                    userName: 'alice',
+                },
+            ],
+        })
+        seedHDWallet()
+        await getKeyStore().import({
+            id: credentialId,
+            type: 'hd-derived-p256',
+            metadata: {
+                origin: 'webauthn.io',
+                userHandle: 'alice',
+                createdAt: 1_700_000_000_000,
+            },
+        })
+
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+
+        await waitFor(() => {
+            expect(
+                screen.getAllByTestId('settings_passkeys_item_c3Bs-aXQ_Y3JlZA'),
+            ).toHaveLength(1)
+        })
+    })
+
+    // The provider's listing carries no migration marker; the keystore row
+    // does, and must win the merge so the banner still appears.
+    it('Given a flagged credential listed by both sources, when the screen mounts, then the migration banner offers to remove it', async () => {
+        wireAutofill({
+            providerActive: true,
+            credentials: [
+                {
+                    credentialId: 'flagged-split',
+                    relyingPartyIdentifier: 'example.com',
+                    userHandle: 'alice',
+                    userName: 'alice',
+                },
+            ],
+        })
+        seedHDWallet()
+        await getKeyStore().import({
+            id: 'flagged-split',
+            type: 'hd-derived-p256',
+            metadata: {
+                origin: 'example.com',
+                userHandle: 'alice',
+                createdAt: 1_700_000_000_000,
+                migration: PASSKEY_MIGRATION_NEEDED,
+            },
+        })
+
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('settings_passkeys_migration_banner'),
+            ).toBeTruthy()
+        })
+        expect(
+            screen.getByTestId(
+                'settings_passkeys_migration_recreate_flagged-split',
+            ),
+        ).toBeTruthy()
+    })
 })
