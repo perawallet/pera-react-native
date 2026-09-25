@@ -515,6 +515,66 @@ describe('splitFlatPasskeyCredentials', () => {
         ).resolves.toEqual(EMPTY)
     })
 
+    it('never writes key material to the log', async () => {
+        const wrapped = credentialId(0x21)
+        const failing = credentialId(0x42)
+        const backing = fakeStorage({
+            [CRED_ID]: await provider(credentialJson()),
+            [wrapped]: await provider(
+                credentialJson({
+                    id: wrapped,
+                    privateKey: undefined,
+                    privateKeyEnc: { iv: IV, data: base64.encode(CIPHERTEXT) },
+                }),
+            ),
+            [failing]: await provider(credentialJson({ id: failing })),
+        })
+        // Lands a k/ record for `failing` that describes some other credential.
+        const storage = {
+            ...backing,
+            set: (key: string, value: string) =>
+                backing.set(
+                    key,
+                    key === `k/${failing}` ? '{"id":"someone-else"}' : value,
+                ),
+        }
+        const warn = vi.mocked(console.warn)
+        warn.mockClear()
+
+        const result = await splitFlatPasskeyCredentials({
+            ...deps(backing),
+            storage,
+        })
+
+        expect(result.split).toEqual([CRED_ID, wrapped])
+        expect(result.failed).toEqual([failing])
+        const logged = warn.mock.calls
+            .flat()
+            .map(arg =>
+                typeof arg === 'string'
+                    ? arg
+                    : `${String(arg)} ${JSON.stringify(arg, (_field, value) =>
+                          ArrayBuffer.isView(value)
+                              ? Array.from(value as Uint8Array)
+                              : value,
+                      )}`,
+            )
+        expect(logged.some(line => line.includes(failing))).toBe(true)
+        const hex = (bytes: Uint8Array) =>
+            Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join(
+                '',
+            )
+        for (const secret of [
+            base64.encode(PRIVATE_KEY),
+            base64.encode(CIPHERTEXT),
+            hex(MASTER_KEY),
+            base64.encode(MASTER_KEY),
+            JSON.stringify(Array.from(PRIVATE_KEY)),
+        ]) {
+            expect(logged.filter(line => line.includes(secret))).toEqual([])
+        }
+    })
+
     it('reports a key that cannot be read and carries on with the rest', async () => {
         const unreadable = credentialId(1)
         const backing = fakeStorage({
