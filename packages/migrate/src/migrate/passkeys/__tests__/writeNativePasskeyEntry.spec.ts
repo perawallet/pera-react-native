@@ -226,7 +226,8 @@ describe('writeNativePasskeyEntry on Android', () => {
 })
 
 describe('nativePasskeyEntryExists', () => {
-    it('sees a flat record and a split one alike', () => {
+    it('on Android, sees a flat record and a split one alike', () => {
+        platformMock.OS = 'android'
         storageMock.getString.mockImplementation((key: string) =>
             key === 'flat-1' || key === 'k/split-1' ? '{}' : undefined,
         )
@@ -234,5 +235,14 @@ describe('nativePasskeyEntryExists', () => {
         expect(nativePasskeyEntryExists('flat-1')).toBe(true)
         expect(nativePasskeyEntryExists('split-1')).toBe(true)
         expect(nativePasskeyEntryExists('missing')).toBe(false)
+    })
+
+    it('on iOS, sees a flat record but not a split one', () => {
+        storageMock.getString.mockImplementation((key: string) =>
+            key === 'flat-1' || key === 'k/split-1' ? '{}' : undefined,
+        )
+
+        expect(nativePasskeyEntryExists('flat-1')).toBe(true)
+        expect(nativePasskeyEntryExists('split-1')).toBe(false)
     })
 })

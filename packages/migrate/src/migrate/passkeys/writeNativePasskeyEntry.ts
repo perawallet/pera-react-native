@@ -26,9 +26,16 @@ import {
     writePasskeyCredential,
 } from '@perawallet/wallet-extension-provider'
 
+/**
+ * Whether a credential already sits where the platform's provider reads it. A
+ * `k/` record counts only on Android: the iOS provider reads only the flat
+ * record, so a `k/` that `repairs/0002` left in place there must not stop the
+ * import writing the one copy it can read.
+ */
 export const nativePasskeyEntryExists = (credentialId: string): boolean =>
     storage.getString(credentialId) !== undefined ||
-    storage.getString(METADATA_PREFIX + credentialId) !== undefined
+    (getProvider().deviceInfo.getDevicePlatform() === 'android' &&
+        storage.getString(METADATA_PREFIX + credentialId) !== undefined)
 
 export type WriteNativePasskeyEntryParams = {
     /** Standard-base64 SHA-256(SPKI DER) — also the MMKV key. */
