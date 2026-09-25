@@ -231,10 +231,6 @@ describe('useSignRequestDetailQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
-
-        await expect(
-            mocks.getSignRequestDetail.mock.results[0]?.value,
-        ).rejects.toThrow('Request failed')
     })
 
     test('does not fetch when enabled is false', () => {

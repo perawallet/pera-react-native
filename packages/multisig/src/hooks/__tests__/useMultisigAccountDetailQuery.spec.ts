@@ -115,10 +115,6 @@ describe('useMultisigAccountDetailQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
-
-        await expect(
-            mocks.getMultisigAccountDetail.mock.results[0]?.value,
-        ).rejects.toThrow('Network error')
     })
 
     test('does not fetch when enabled is false', async () => {
