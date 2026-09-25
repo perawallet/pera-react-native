@@ -114,7 +114,18 @@
     "eqeqeq": ["error", "always", { "null": "ignore" }],
     "@typescript-eslint/consistent-type-imports": ["error", { "fixStyle": "inline-type-imports", "disallowTypeAnnotations": false }],
     "unicorn/switch-case-braces": "error",
-    "unicorn/numeric-separators-style": "error"
+    "unicorn/numeric-separators-style": "error",
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": ["algosdk", "algosdk/**", "@algorandfoundation/algokit-utils", "@algorandfoundation/algokit-utils/**"],
+            "message": "Import the Algorand SDK only inside packages/chain-algorand."
+          }
+        ]
+      }
+    ]
   },
   "overrides": [
     {
@@ -139,6 +150,19 @@
         "prefer-rest-params": "error",
         "prefer-spread": "error",
         "@typescript-eslint/no-non-null-assertion": "off"
+      }
+    },
+    {
+      // models/index.ts re-exports type-only SDK aliases (Transaction, Address) to every layer; it is the sanctioned seam, not debt.
+      "files": ["packages/chain-algorand/**", "packages/blockchain/src/models/index.ts"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
+    {
+      "files": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/__integration__/**", "**/vitest*.ts"],
+      "rules": {
+        "no-restricted-imports": "off"
       }
     }
   ]
