@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import React from 'react'
-import { render, fireEvent, screen } from '@test-utils/render'
+import { render, fireEvent, screen, act } from '@test-utils/render'
 import {
     useSettings,
     type ConfirmationMode,
 } from '@perawallet/wallet-core-settings'
+import { TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY } from '@constants/ui'
+import { APPROVAL_ARMING_DELAY_MS } from '@hooks/useApprovalArming.web'
 import '../../../i18n'
 import { ConfirmAction } from '../ConfirmAction.web'
 
@@ -41,10 +43,40 @@ const setConfirmationMode = (confirmationMode: ConfirmationMode) => {
     })
 }
 
+const renderConfirmAction = () => {
+    const onConfirm = vi.fn()
+    render(
+        <ConfirmAction
+            title='Slide To Confirm'
+            onConfirm={onConfirm}
+            testID='confirm-action'
+        />,
+    )
+    return { onConfirm }
+}
+
+const armWindow = () => {
+    act(() => {
+        window.dispatchEvent(new Event('pointermove'))
+        vi.advanceTimersByTime(APPROVAL_ARMING_DELAY_MS)
+    })
+}
+
+const waitMinConfirmDelay = () => {
+    act(() => {
+        vi.advanceTimersByTime(TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY)
+    })
+}
+
 describe('ConfirmAction (web)', () => {
     beforeEach(() => {
+        vi.useFakeTimers()
         // The web variant must ignore the stored preference entirely.
         setConfirmationMode('slide')
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
     })
 
     it('renders the tap surface even when the stored mode is "slide"', () => {
@@ -60,21 +92,35 @@ describe('ConfirmAction (web)', () => {
         expect(screen.queryByText('Slide To Confirm')).toBeNull()
     })
 
-    it('confirms via double tap, keeping the callsite testID', () => {
-        const onConfirm = vi.fn()
-
-        render(
-            <ConfirmAction
-                title='Slide To Confirm'
-                onConfirm={onConfirm}
-                testID='confirm-action'
-            />,
-        )
+    it('confirms via two spaced taps once armed, keeping the callsite testID', () => {
+        const { onConfirm } = renderConfirmAction()
+        armWindow()
 
         fireEvent.click(screen.getByTestId('confirm-action'))
         expect(onConfirm).not.toHaveBeenCalled()
 
+        waitMinConfirmDelay()
         fireEvent.click(screen.getByTestId('confirm-action'))
         expect(onConfirm).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not confirm before the window is armed', () => {
+        const { onConfirm } = renderConfirmAction()
+
+        fireEvent.click(screen.getByTestId('confirm-action'))
+        waitMinConfirmDelay()
+        fireEvent.click(screen.getByTestId('confirm-action'))
+
+        expect(onConfirm).not.toHaveBeenCalled()
+    })
+
+    it('does not confirm an immediate double-click', () => {
+        const { onConfirm } = renderConfirmAction()
+        armWindow()
+
+        fireEvent.click(screen.getByTestId('confirm-action'))
+        fireEvent.click(screen.getByTestId('confirm-action'))
+
+        expect(onConfirm).not.toHaveBeenCalled()
     })
 })

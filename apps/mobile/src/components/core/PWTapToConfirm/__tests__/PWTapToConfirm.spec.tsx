@@ -115,6 +115,52 @@ describe('PWTapToConfirm', () => {
         expect(onConfirm).toHaveBeenCalledTimes(1)
     })
 
+    describe('with a minimum confirm delay', () => {
+        const MIN_DELAY_MS = 400
+
+        it('confirms a second tap that lands after the delay', () => {
+            const { onConfirm } = renderTapToConfirm({
+                minConfirmDelayMs: MIN_DELAY_MS,
+            })
+
+            fireEvent.click(screen.getByTestId('tap-confirm'))
+            act(() => {
+                vi.advanceTimersByTime(MIN_DELAY_MS)
+            })
+            fireEvent.click(screen.getByTestId('tap-confirm'))
+
+            expect(onConfirm).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not confirm an immediate double-click', () => {
+            const { onConfirm } = renderTapToConfirm({
+                minConfirmDelayMs: MIN_DELAY_MS,
+            })
+
+            fireEvent.click(screen.getByTestId('tap-confirm'))
+            fireEvent.click(screen.getByTestId('tap-confirm'))
+
+            expect(onConfirm).not.toHaveBeenCalled()
+        })
+
+        // Ignoring the early press would leave it armed, so a third click
+        // arriving just after the delay would still sign.
+        it('never confirms under steady rapid clicking', () => {
+            const { onConfirm } = renderTapToConfirm({
+                minConfirmDelayMs: MIN_DELAY_MS,
+            })
+
+            for (let i = 0; i < 10; i++) {
+                fireEvent.click(screen.getByTestId('tap-confirm'))
+                act(() => {
+                    vi.advanceTimersByTime(MIN_DELAY_MS - 150)
+                })
+            }
+
+            expect(onConfirm).not.toHaveBeenCalled()
+        })
+    })
+
     it('ignores taps when disabled', () => {
         const { onConfirm } = renderTapToConfirm({ isDisabled: true })
 
