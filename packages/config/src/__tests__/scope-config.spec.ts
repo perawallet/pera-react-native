@@ -30,6 +30,7 @@ import {
     peraServicesFor,
     registerCustomNetworkSource,
     type CustomNetworkEndpoints,
+    type PeraService,
 } from '../network-config'
 
 const algorandScope = (network: Network): ChainScope =>
@@ -303,6 +304,14 @@ describe('peraServicesFor', () => {
 
     test("a fixture chain's mainnet scope has none until its configuration lists some", () => {
         expect(peraServicesFor(FIXTURE_MAINNET).size).toBe(0)
+    })
+
+    test('returns a copy, so a caller cannot change the table', () => {
+        const scope = algorandScope(Networks.mainnet)
+
+        ;(peraServicesFor(scope) as Set<PeraService>).delete('prices')
+
+        expect(hasPeraService(scope, 'prices')).toBe(true)
     })
 })
 

@@ -287,13 +287,16 @@ export const getPeraServicesConfig = (scope: ChainScope): PeraServices => ({
 
 const NO_PERA_SERVICES: ReadonlySet<PeraService> = new Set()
 
-export const peraServicesFor = (scope: ChainScope): ReadonlySet<PeraService> =>
+const servicesOf = (scope: ChainScope): ReadonlySet<PeraService> =>
     findScopeConfig(scope)?.services ?? NO_PERA_SERVICES
+
+export const peraServicesFor = (scope: ChainScope): ReadonlySet<PeraService> =>
+    new Set(servicesOf(scope))
 
 export const hasPeraService = (
     scope: ChainScope,
     service: PeraService,
-): boolean => peraServicesFor(scope).has(service)
+): boolean => servicesOf(scope).has(service)
 
 export const getNetworkConfig = (network: Network): NetworkConfig => {
     const scope = scopeForLegacyNetwork(network)
