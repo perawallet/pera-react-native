@@ -54,6 +54,7 @@ import {
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
 import { WatchAccountUpgradeSheet } from '@modules/ledger/components/WatchAccountUpgradeSheet'
+import { useLedgerExpandedTabHandoff } from '@modules/ledger/hooks'
 
 type LedgerVerifyRouteProp = RouteProp<AddAccountStackParamList, 'LedgerVerify'>
 
@@ -66,6 +67,11 @@ type UseLedgerVerifyScreenResult = {
     handleAdd: () => void
     handleRetry: () => void
     handleTroubleshoot: () => void
+    /** Set once accounts are added in a Ledger pairing tab, which then shows a result screen. */
+    isAddedInHandoffTab: boolean
+    handleDone: () => void
+    /** Closes a Ledger pairing tab; undefined anywhere else. */
+    handleCancel: (() => void) | undefined
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -96,6 +102,8 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { request: requestBottomSheet } = useBottomSheet()
     const navigation = useAppNavigation()
+    const { isHandoffTab, closeHandoffTab } = useLedgerExpandedTabHandoff()
+    const [isAddedInHandoffTab, setIsAddedInHandoffTab] = useState(false)
 
     const verifyTargets = useMemo<HardwareWalletDerivedAccount[]>(() => {
         const byIndex = new Map<number, HardwareWalletDerivedAccount>()
@@ -358,6 +366,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         if (selectedAddress) {
             setSelectedAccountAddress(selectedAddress)
         }
+        if (isHandoffTab) {
+            setIsAddedInHandoffTab(true)
+            return
+        }
         setShouldPlayConfetti(true)
         exitAccountFlow()
     }, [
@@ -370,6 +382,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         setSelectedAccountAddress,
         setShouldPlayConfetti,
         exitAccountFlow,
+        isHandoffTab,
         t,
     ])
 
@@ -390,6 +403,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const handleTroubleshoot = useCallback(() => {
         navigation.navigate('LedgerTroubleshooting')
     }, [navigation])
+
+    const handleDone = useCallback(() => {
+        void closeHandoffTab()
+    }, [closeHandoffTab])
 
     const errorPreset = useMemo(
         () =>
@@ -412,6 +429,9 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         handleAdd,
         handleRetry,
         handleTroubleshoot,
+        isAddedInHandoffTab,
+        handleDone,
+        handleCancel: isHandoffTab ? handleDone : undefined,
         t,
     }
 }

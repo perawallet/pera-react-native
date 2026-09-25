@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-export { useBlePermissions } from './useBlePermissions'
-export { useBluetoothState } from './useBluetoothState'
-export { useLedgerConnection } from './useLedgerConnectionProvider'
-export { useSupportedLedgerTransports } from './useSupportedLedgerTransports'
-export { useLedgerErrorAction } from './useLedgerErrorAction'
-export { useLedgerExpandedTabHandoff } from './useLedgerExpandedTabHandoff'
-export { useLedgerHandoffTabExit } from './useLedgerHandoffTabExit'
+import { describe, expect, it } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import { useLedgerHandoffTabExit } from '../useLedgerHandoffTabExit'
+
+describe('useLedgerHandoffTabExit (native default)', () => {
+    it('ignores navigation, since native never opens a pairing tab', () => {
+        const { result } = renderHook(() => useLedgerHandoffTabExit())
+
+        expect(() => result.current('Home')).not.toThrow()
+    })
+})

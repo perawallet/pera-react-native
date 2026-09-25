@@ -33,4 +33,8 @@ export type {
     SerializedLedgerAccount,
     SerializedLedgerSelectableAccount,
 } from './utils'
-export { useLedgerErrorAction, useSupportedLedgerTransports } from './hooks'
+export {
+    useLedgerErrorAction,
+    useLedgerHandoffTabExit,
+    useSupportedLedgerTransports,
+} from './hooks'

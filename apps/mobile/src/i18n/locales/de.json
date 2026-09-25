@@ -3691,7 +3691,11 @@
         "scan_header": {
             "having_issues": "Hast du Probleme?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Ledger-Konto hinzugefügt",
+            "body": "Du kannst es jetzt in der Pera-Erweiterung verwenden."
+        }
     },
     "countries": {
         "AC": "Ascension",

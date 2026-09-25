@@ -59,6 +59,7 @@ import { SigningOverlays } from '@modules/signing/shell'
 import { OverlayErrorFallback } from '@components/RootComponent/OverlayErrorFallback'
 import { navigationRef } from './navigationRef'
 import { createAppStackNavigator } from './createAppStackNavigator'
+import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation.web'
 import { routeCapabilities } from '@routes/capabilities'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
@@ -95,12 +96,16 @@ export const WebMainRoutes = ({
     const handleReady = useExpandedFlowNavigation((screen, params) => {
         navigationRef.navigate(screen, params)
     })
+    const handleLedgerTabExit = useLedgerHandoffTabExit()
 
     return (
         <NavigationContainer
             ref={navigationRef}
             theme={navTheme}
             onReady={handleReady}
+            onStateChange={() =>
+                handleLedgerTabExit(navigationRef.getCurrentRoute()?.name)
+            }
         >
             {/* Outside ConnectionsProvider, as native's BottomSheetModalProvider
                 sits above the provider: SigningOverlays needs the sheet host

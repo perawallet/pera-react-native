@@ -16,6 +16,9 @@ export type UseLedgerExpandedTabHandoffResult = {
     /** Always false off-web: native has no popup surface to escape. */
     isPopupSurface: boolean
     openLedgerExpandedTab: (transportType: LedgerTransportType) => Promise<void>
+    /** True in the tab a popup opened for Ledger pairing; always false off-web. */
+    isHandoffTab: boolean
+    closeHandoffTab: () => Promise<void>
 }
 
 /**
@@ -27,4 +30,6 @@ export const useLedgerExpandedTabHandoff =
     (): UseLedgerExpandedTabHandoffResult => ({
         isPopupSurface: false,
         openLedgerExpandedTab: async () => {},
+        isHandoffTab: false,
+        closeHandoffTab: async () => {},
     })
