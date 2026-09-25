@@ -431,6 +431,19 @@ describe('every pera plugin rule', () => {
     )
 })
 
+describe('pera/module-entry-named-exports', () => {
+    it('reports export * in an entry file', () => {
+        const report = vi.fn()
+        plugin.rules['module-entry-named-exports']
+            .create({ report })
+            .ExportAllDeclaration({
+                type: 'ExportAllDeclaration',
+                source: { type: 'Literal', value: './hooks' },
+            })
+        expect(report).toHaveBeenCalledOnce()
+    })
+})
+
 describe('pera/no-platform-os-web', () => {
     const platformOs = member(id('Platform'), 'OS')
     const literal = (value: string): Node => ({ type: 'Literal', value })

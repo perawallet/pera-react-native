@@ -12,6 +12,17 @@
 
 // The hooks reach every handler, and the handlers import connections, webview,
 // multisig and more. A caller those modules depend on imports ./core instead.
-export * from './core'
+export {
+    DeeplinkTimeoutError,
+    DeeplinkType,
+    PERAWALLET_UNIVERSAL_LINK_HOST,
+    PERAWALLET_WC_SCHEME,
+    WC_SCHEME,
+    buildDeeplink,
+    isOriginGatedDeeplinkType,
+    navigateToScreen,
+    parseDeeplink,
+    pushScreen,
+} from './core'
 export { useDeepLink } from './hooks/useDeepLink'
 export { useDeeplinkListener } from './hooks/useDeeplinkListener'

@@ -17,5 +17,20 @@ export { LedgerFetchAccountsScreen } from './screens/LedgerFetchAccountsScreen'
 export { LedgerSelectAccountsScreen } from './screens/LedgerSelectAccountsScreen'
 export { LedgerVerifyScreen } from './screens/LedgerVerifyScreen'
 export { LedgerTroubleshootingScreen } from './screens/LedgerTroubleshootingScreen'
-export * from './utils'
+export {
+    deserializeLedgerAccount,
+    deserializeSelectableAccount,
+    getLedgerErrorPreset,
+    getLedgerErrorPresetByKind,
+    sanitizeDeviceName,
+    serializeLedgerAccount,
+    serializeSelectableAccount,
+} from './utils'
+export type {
+    LedgerErrorActionKind,
+    LedgerErrorPreset,
+    LedgerErrorPresetKind,
+    SerializedLedgerAccount,
+    SerializedLedgerSelectableAccount,
+} from './utils'
 export { useLedgerErrorAction, useSupportedLedgerTransports } from './hooks'

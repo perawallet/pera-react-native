@@ -399,6 +399,30 @@ const decimalConstruction = {
     },
 }
 
+const moduleEntryNamedExports = {
+    meta: {
+        type: 'suggestion',
+        docs: {
+            description: 'Module entry files name each export',
+        },
+        messages: {
+            star: "export * from '{{source}}' widens this module's contract whenever that file grows: name each export.",
+        },
+        schema: [],
+    },
+    create(context) {
+        return {
+            ExportAllDeclaration(node) {
+                context.report({
+                    node,
+                    messageId: 'star',
+                    data: { source: node.source.value },
+                })
+            },
+        }
+    },
+}
+
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
 // directory, so a root apps/mobile/src/** override never reaches mobile.
@@ -412,5 +436,6 @@ export default {
         'no-program-signer-in-dapp-paths': noProgramSignerInDappPaths,
         'wc-connector-ownership': wcConnectorOwnership,
         'decimal-construction': decimalConstruction,
+        'module-entry-named-exports': moduleEntryNamedExports,
     },
 }
