@@ -11,6 +11,7 @@ import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
 import localeKeyParity from './lanekeep/rules/locale-key-parity.js'
 import localePlaceholderSuffix from './lanekeep/rules/locale-placeholder-suffix.js'
 import noAssertionlessTest from './lanekeep/rules/no-assertionless-test.js'
+import noChainIdentityInSharedPackages from './lanekeep/rules/no-chain-identity-in-shared-packages.js'
 import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outside-web.js'
 import noCrossProtocolImports from './lanekeep/rules/no-cross-protocol-imports.js'
 import noDeepModuleImports from './lanekeep/rules/no-deep-module-imports.js'
@@ -76,6 +77,7 @@ export default defineConfig({
         noReactNativeImportsInPackages,
         noCrossProtocolImports,
         noWcImportsInConnectionsModule,
+        noChainIdentityInSharedPackages,
         noDeepModuleImports,
         noTypographyInStyles,
         noEmptyStyleObjects,
