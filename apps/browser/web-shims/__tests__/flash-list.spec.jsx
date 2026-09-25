@@ -138,4 +138,66 @@ describe('@shopify/flash-list web shim', () => {
         const wrappedRenderItem = flatListProps.current.renderItem
         expect(wrappedRenderItem).toBe(originalRenderItem)
     })
+
+    describe('ItemSeparatorComponent', () => {
+        const rows = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+        const Separator = vi.fn(() => null)
+
+        const renderCell = index =>
+            render(
+                flatListProps.current.renderItem({
+                    item: rows[index],
+                    index,
+                }),
+            )
+
+        beforeEach(() => {
+            Separator.mockClear()
+        })
+
+        it('gives each separator both neighbours, as FlashList does', () => {
+            render(
+                <FlashList
+                    data={rows}
+                    renderItem={({ item }) => item.id}
+                    ItemSeparatorComponent={Separator}
+                />,
+            )
+
+            renderCell(0)
+
+            expect(Separator).toHaveBeenCalledWith(
+                { leadingItem: rows[0], trailingItem: rows[1] },
+                undefined,
+            )
+            expect(flatListProps.current.ItemSeparatorComponent).toBeUndefined()
+        })
+
+        it('draws no separator after the last row', () => {
+            render(
+                <FlashList
+                    data={rows}
+                    renderItem={({ item }) => item.id}
+                    ItemSeparatorComponent={Separator}
+                />,
+            )
+
+            renderCell(2)
+
+            expect(Separator).not.toHaveBeenCalled()
+        })
+
+        it('leaves grid separators to FlatList', () => {
+            render(
+                <FlashList
+                    data={rows}
+                    renderItem={({ item }) => item.id}
+                    ItemSeparatorComponent={Separator}
+                    numColumns={2}
+                />,
+            )
+
+            expect(flatListProps.current.ItemSeparatorComponent).toBe(Separator)
+        })
+    })
 })
