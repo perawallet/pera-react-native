@@ -32,6 +32,7 @@ import {
     keyToPasskey,
     PASSKEY_MIGRATION_NEEDED,
 } from '../passkey'
+import { fromStandardBase64 } from '../../native/nativeProviderRecord'
 
 const buildPasskeyKey = (metadata: Record<string, unknown>): Key =>
     ({
@@ -47,16 +48,11 @@ const buildPasskeyKey = (metadata: Record<string, unknown>): Key =>
  */
 const ANDROID_K_RECORD = String.raw`{"id":"+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/8=","type":"hd-derived-p256","algorithm":"P256","extractable":false,"keyUsages":["sign"],"name":"Passkey: https:\/\/webauthn.io","publicKey":{"$u8":"BAQEBA=="},"metadata":{"origin":"https:\/\/webauthn.io","userHandle":"alice","userId":"dXNlcg","count":3,"parentKeyId":"hd-1-passkey-main","scheme":"pbkdf2-p256","derivationVersion":1,"lastUsedAt":1727259000000},"privateKeyEnc":{"iv":"AAAAAAAAAAAAAAAA"}}`
 
-// `@scure/base` is not a dependency of this package, so its standard-base64
-// `decode` is restated here.
-const decodeBase64 = (value: string): Uint8Array =>
-    Uint8Array.from(atob(value), char => char.charCodeAt(0))
-
 /** Parses a `k/` record the way keystore hydration does: `$u8` back to bytes. */
 const parseKeyRecord = (raw: string): Key =>
     JSON.parse(raw, (_field, value) =>
         value && typeof value === 'object' && typeof value.$u8 === 'string'
-            ? decodeBase64(value.$u8)
+            ? fromStandardBase64(value.$u8)
             : value,
     ) as Key
 
