@@ -12,11 +12,9 @@
 
 import type { Decimal } from 'decimal.js'
 import type { CardWalletKind } from '@perawallet/wallet-core-card'
-import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardConfirmationSheet } from '../CardConfirmationSheet'
 import { useWalletWithdrawConfirmationSheet } from './useWalletWithdrawConfirmationSheet'
-import { useStyles } from './styles'
 
 type WalletWithdrawConfirmationSheetProps = {
     kind: CardWalletKind
@@ -27,23 +25,15 @@ type WalletWithdrawConfirmationSheetProps = {
 /**
  * Confirmation sheet shown before claiming a wallet balance. The withdrawal
  * runs here: the confirm button shows the pending state and the sheet closes
- * on success. The network fee quote is fetched while the sheet is up.
+ * on success.
  */
 export const WalletWithdrawConfirmationSheet = ({
     kind,
     amount,
 }: WalletWithdrawConfirmationSheetProps) => {
     const { t } = useLanguage()
-    const styles = useStyles()
-    const {
-        copy,
-        amountDisplay,
-        feeDisplay,
-        isEstimating,
-        isWithdrawing,
-        onConfirm,
-        onClose,
-    } = useWalletWithdrawConfirmationSheet({ kind, amount })
+    const { copy, amountDisplay, isWithdrawing, onConfirm, onClose } =
+        useWalletWithdrawConfirmationSheet({ kind, amount })
 
     return (
         <CardConfirmationSheet
@@ -56,23 +46,6 @@ export const WalletWithdrawConfirmationSheet = ({
             testID='wallet_withdraw_confirmation_sheet'
             confirmTestID='wallet_withdraw_confirm_button'
             closeTestID='wallet_withdraw_close_button'
-        >
-            <PWView style={styles.feeRow}>
-                <PWText
-                    variant='body'
-                    style={styles.feeLabel}
-                >
-                    {t('peraCard.credits.fee_label')}
-                </PWText>
-                <PWText
-                    variant='body'
-                    testID='wallet-withdraw-fee'
-                >
-                    {isEstimating || feeDisplay === null
-                        ? t('peraCard.credits.fee_loading')
-                        : feeDisplay}
-                </PWText>
-            </PWView>
-        </CardConfirmationSheet>
+        />
     )
 }
