@@ -41,6 +41,7 @@ takes the rest: rules that need tests or tooling in view, another file's content
 | `pera/no-retired-quantum-custody`          | The names of the pre-keystore quantum custody design don't reappear, in code, comments or strings.                                                                                                                |
 | `pera/locale-placeholder-suffix`           | No `tr.json` value attaches a suffix to a `{{placeholder}}` (apostrophe forms included); the suffix depends on the value. Cross-file: skipped under `--staged`.                                                   |
 | `pera/no-snapshot-tests`                   | No snapshot matcher in a test file; assert the specific fields instead.                                                                                                                                           |
+| `pera/no-assertionless-test`               | A test in a test file asserts something: a call starting `expect` or `assert`, or a listed helper. lanekeep's built-in, gated to test files.                                                                      |
 
 This is the complete set of lanekeep's `pera/*` rules.
 
