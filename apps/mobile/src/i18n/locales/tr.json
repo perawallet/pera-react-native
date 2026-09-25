@@ -3699,7 +3699,11 @@
         "scan_header": {
             "having_issues": "Sorun mu yaşıyorsun?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Ledger hesabı eklendi",
+            "body": "Artık onu Pera uzantısında kullanabilirsin."
+        }
     },
     "countries": {
         "AC": "Ascension Adası",

@@ -164,6 +164,20 @@ describe('consumeInitialExpandedFlow', () => {
         expect(consumeInitialExpandedFlow()).toBe('scan')
     })
 
+    it('keeps reporting the consumed flow after the one-shot read', async () => {
+        ;(
+            globalThis as { __PERA_TEST_SEARCH__?: string }
+        ).__PERA_TEST_SEARCH__ = '?flow=ledger-usb'
+        const { consumeInitialExpandedFlow, getConsumedExpandedFlow } =
+            await import('../navigation')
+        expect(getConsumedExpandedFlow()).toBeNull()
+
+        consumeInitialExpandedFlow()
+        consumeInitialExpandedFlow()
+
+        expect(getConsumedExpandedFlow()).toBe('ledger-usb')
+    })
+
     it('rejects unknown flows', async () => {
         ;(
             globalThis as { __PERA_TEST_SEARCH__?: string }

@@ -3699,7 +3699,11 @@
         "scan_header": {
             "having_issues": "Having issues?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Ledger account added",
+            "body": "You can now use it in the Pera extension."
+        }
     },
     "countries": {
         "AC": "Ascension Island",

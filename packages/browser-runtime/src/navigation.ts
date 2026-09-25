@@ -82,6 +82,7 @@ export const closeCurrentTab = async (): Promise<void> => {
 }
 
 let consumed = false
+let consumedFlow: ExpandedFlow | null = null
 
 const readSearch = (): string => {
     const testSeam = (globalThis as { __PERA_TEST_SEARCH__?: string })
@@ -128,5 +129,13 @@ export const consumeInitialExpandedFlow = (): ExpandedFlow | null => {
     const flow = new URLSearchParams(readSearch()).get('flow')
     if (flow === null || !FLOWS.includes(flow)) return null
     stripFlowFromUrl()
-    return flow as ExpandedFlow
+    consumedFlow = flow as ExpandedFlow
+    return consumedFlow
 }
+
+/**
+ * The flow this tab was opened for, once `consumeInitialExpandedFlow` has
+ * read it. Unlike that one-shot read, it stays set for the tab's lifetime, so
+ * a screen deep in the flow can tell a hand-off tab from a plain one.
+ */
+export const getConsumedExpandedFlow = (): ExpandedFlow | null => consumedFlow

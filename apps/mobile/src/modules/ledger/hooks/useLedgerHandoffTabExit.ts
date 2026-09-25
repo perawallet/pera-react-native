@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-export { useBlePermissions } from './useBlePermissions'
-export { useBluetoothState } from './useBluetoothState'
-export { useLedgerConnection } from './useLedgerConnectionProvider'
-export { useSupportedLedgerTransports } from './useSupportedLedgerTransports'
-export { useLedgerErrorAction } from './useLedgerErrorAction'
-export { useLedgerExpandedTabHandoff } from './useLedgerExpandedTabHandoff'
-export { useLedgerHandoffTabExit } from './useLedgerHandoffTabExit'
+/** Native no-op: only the extension opens a separate tab for Ledger pairing. */
+export const useLedgerHandoffTabExit = (): ((
+    currentRouteName: string | undefined,
+) => void) => noop
+
+const noop = (): void => {}

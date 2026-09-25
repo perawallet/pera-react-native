@@ -13,9 +13,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
-const { surfaceState, mockOpenExpandedTab } = vi.hoisted(() => ({
+const { surfaceState, mockOpenExpandedTab, consumedFlow } = vi.hoisted(() => ({
     surfaceState: { current: 'popup' as 'popup' | 'expanded' },
     mockOpenExpandedTab: vi.fn(),
+    consumedFlow: { current: null as string | null },
 }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
@@ -23,6 +24,8 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
 }))
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     openExpandedTab: (flow: string) => mockOpenExpandedTab(flow),
+    closeCurrentTab: vi.fn(),
+    getConsumedExpandedFlow: () => consumedFlow.current,
 }))
 
 import { useLedgerExpandedTabHandoff } from '../useLedgerExpandedTabHandoff.web'
@@ -30,8 +33,27 @@ import { useLedgerExpandedTabHandoff } from '../useLedgerExpandedTabHandoff.web'
 describe('useLedgerExpandedTabHandoff (web)', () => {
     beforeEach(() => {
         surfaceState.current = 'popup'
+        consumedFlow.current = null
         mockOpenExpandedTab.mockReset()
     })
+
+    it.each(['ledger-usb', 'ledger-ble'])(
+        'reports a hand-off tab when opened for %s',
+        flow => {
+            consumedFlow.current = flow
+            const { result } = renderHook(() => useLedgerExpandedTabHandoff())
+            expect(result.current.isHandoffTab).toBe(true)
+        },
+    )
+
+    it.each([null, 'scan', 'add-account'])(
+        'reports no hand-off tab for %s',
+        flow => {
+            consumedFlow.current = flow
+            const { result } = renderHook(() => useLedgerExpandedTabHandoff())
+            expect(result.current.isHandoffTab).toBe(false)
+        },
+    )
 
     it('reports isPopupSurface true in the popup', () => {
         const { result } = renderHook(() => useLedgerExpandedTabHandoff())

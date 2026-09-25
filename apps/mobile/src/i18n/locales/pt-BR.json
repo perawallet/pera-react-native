@@ -3727,7 +3727,11 @@
         "scan_header": {
             "having_issues": "Com problemas?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Conta Ledger adicionada",
+            "body": "Agora você pode usá-la na extensão da Pera."
+        }
     },
     "countries": {
         "AC": "Ilha de Ascensão",

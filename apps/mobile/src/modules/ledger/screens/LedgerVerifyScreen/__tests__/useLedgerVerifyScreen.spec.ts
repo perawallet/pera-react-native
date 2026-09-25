@@ -35,7 +35,9 @@ const {
     mockConnect,
     mockDisconnect,
     mockSheetRequest,
+    handoff,
 } = vi.hoisted(() => ({
+    handoff: { isHandoffTab: false, closeHandoffTab: vi.fn() },
     mockVerify: vi.fn(),
     mockExit: vi.fn(),
     mockSetConfetti: vi.fn(),
@@ -44,6 +46,14 @@ const {
     mockSheetRequest: vi.fn(),
 }))
 
+vi.mock('@modules/ledger/hooks', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useLedgerExpandedTabHandoff: () => ({
+        isPopupSurface: false,
+        openLedgerExpandedTab: vi.fn(),
+        ...handoff,
+    }),
+}))
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: vi.fn() }),
 }))
@@ -159,6 +169,7 @@ beforeEach(() => {
         }),
     )
     mockSheetRequest.mockResolvedValue(true)
+    handoff.isHandoffTab = false
     useAccountsStore.getState().setAccounts([])
 })
 
@@ -226,6 +237,66 @@ describe('useLedgerVerifyScreen', () => {
         expect(accounts.find(a => a.address === '!!bad')).toBeUndefined()
         expect(mockExit).toHaveBeenCalledTimes(1)
         expect(mockSetConfetti).toHaveBeenCalledWith(true)
+    })
+
+    describe('in a Ledger pairing tab', () => {
+        beforeEach(() => {
+            handoff.isHandoffTab = true
+            routeParams.current = {
+                deviceId: 'dev',
+                deviceName: 'Nano',
+                transportType: 'usb',
+                selectedAccounts: [
+                    { kind: 'derived', account: derived('LEDGER0', 0) },
+                ],
+            }
+        })
+
+        it('shows the added result instead of leaving for the wallet home', async () => {
+            const { result } = renderHook(() => useLedgerVerifyScreen())
+            await waitFor(() =>
+                expect(result.current.areAllVerified).toBe(true),
+            )
+
+            act(() => {
+                result.current.handleAdd()
+            })
+
+            await waitFor(() =>
+                expect(result.current.isAddedInHandoffTab).toBe(true),
+            )
+            expect(
+                useAccountsStore
+                    .getState()
+                    .accounts.some(a => a.address === 'LEDGER0'),
+            ).toBe(true)
+            expect(mockExit).not.toHaveBeenCalled()
+            expect(mockSetConfetti).not.toHaveBeenCalled()
+        })
+
+        it('closes the tab on Done and offers Cancel', async () => {
+            const { result } = renderHook(() => useLedgerVerifyScreen())
+
+            result.current.handleDone()
+
+            expect(handoff.closeHandoffTab).toHaveBeenCalledTimes(1)
+            expect(result.current.handleCancel).toBeDefined()
+        })
+    })
+
+    it('offers no Cancel outside a Ledger pairing tab', () => {
+        routeParams.current = {
+            deviceId: 'dev',
+            deviceName: 'Nano',
+            transportType: 'usb',
+            selectedAccounts: [
+                { kind: 'derived', account: derived('LEDGER0', 0) },
+            ],
+        }
+
+        const { result } = renderHook(() => useLedgerVerifyScreen())
+
+        expect(result.current.handleCancel).toBeUndefined()
     })
 
     it('does not persist a rekeyed watch account when its auth account address is invalid', async () => {
