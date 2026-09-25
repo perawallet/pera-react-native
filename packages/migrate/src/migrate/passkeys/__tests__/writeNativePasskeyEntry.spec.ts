@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { openNativeProviderRecord } from '@perawallet/wallet-core-passkeys/native'
 
