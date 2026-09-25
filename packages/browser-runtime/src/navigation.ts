@@ -12,7 +12,6 @@
 
 export type ExpandedFlow =
     | 'add-account'
-    | 'backup-wallet'
     | 'scan'
     | 'ledger-usb'
     | 'ledger-ble'
@@ -20,7 +19,6 @@ export type ExpandedFlow =
 
 const FLOWS: readonly string[] = [
     'add-account',
-    'backup-wallet',
     'scan',
     'ledger-usb',
     'ledger-ble',
@@ -42,10 +40,11 @@ const findExpandedTab = async (): Promise<chrome.tabs.Tab | undefined> => {
 }
 
 /**
- * Opens (or deep-links into) the full-tab surface. Blur-fragile flows —
- * onboarding, mnemonic backup, account import — must not run inside the
- * 360x600 toolbar popup (design spec); Chrome auto-closes the popup when the
- * created tab takes focus, which is the intended hand-off.
+ * Opens (or deep-links into) the full-tab surface, for the flows the 360x600
+ * toolbar popup can't host: the QR scanner, the Ledger WebHID/Web Bluetooth
+ * device pickers and the backup-file dialog, all of which take focus and so
+ * close the popup. Chrome auto-closes the popup when the created tab takes
+ * focus, which is the intended hand-off.
  *
  * If an expanded tab is already open, it's focused and re-pointed at the new
  * `?flow=` instead of stacking a second tab.

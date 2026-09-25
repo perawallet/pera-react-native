@@ -4045,9 +4045,6 @@
         "approval": {
             "placeholder": "Approval surface — coming in M4."
         },
-        "expanded": {
-            "redirecting": "Continuing in a new tab…"
-        },
         "reauth": {
             "title": "Confirm it's you",
             "confirm_button": "Confirm",

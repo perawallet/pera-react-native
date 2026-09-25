@@ -4045,9 +4045,6 @@
         "approval": {
             "placeholder": "Onay ekranı — M4’te geliyor."
         },
-        "expanded": {
-            "redirecting": "Yeni sekmede devam ediliyor…"
-        },
         "reauth": {
             "title": "Sen olduğunu doğrula",
             "confirm_button": "Onayla",

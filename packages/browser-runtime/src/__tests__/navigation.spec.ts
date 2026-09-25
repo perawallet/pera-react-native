@@ -33,9 +33,9 @@ describe('openExpandedTab', () => {
     })
 
     it('opens expanded.html with a flow query param', async () => {
-        await openExpandedTab('backup-wallet')
+        await openExpandedTab('scan')
         expect(fake.createdTabs[0].url).toBe(
-            'chrome-extension://test-extension-id/expanded.html?flow=backup-wallet',
+            'chrome-extension://test-extension-id/expanded.html?flow=scan',
         )
     })
 
@@ -85,7 +85,7 @@ describe('openExpandedTab', () => {
     it('focuses an existing expanded tab regardless of which flow it currently shows', async () => {
         fake.openTabs.push({
             id: 3,
-            url: 'chrome-extension://test-extension-id/expanded.html?flow=backup-wallet',
+            url: 'chrome-extension://test-extension-id/expanded.html?flow=scan',
             windowId: 9,
         })
 

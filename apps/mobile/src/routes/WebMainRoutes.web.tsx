@@ -54,28 +54,17 @@ import {
 import { withAgeGate } from '@components/AgeGated'
 import { fullScreenLayout } from '@layouts/index'
 import { headeredScreen } from './screen-options'
-import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { SigningOverlays } from '@modules/signing/shell'
 import { OverlayErrorFallback } from '@components/RootComponent/OverlayErrorFallback'
 import { navigationRef } from './navigationRef'
 import { createAppStackNavigator } from './createAppStackNavigator'
-import { createExpandedRedirect } from './createExpandedRedirect.web'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation.web'
 import { routeCapabilities } from '@routes/capabilities'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import type { RootStackParamList } from './types'
 
 const RootStack = createAppStackNavigator<RootStackParamList>()
-
-// Blur-fragile flows mount a redirect stand-in that opens the expanded tab.
-// AddAccount runs in-place on every surface (a new tab severs the flow); Backup
-// stays redirected because a focus-steal while the recovery phrase is shown risks data loss.
-const isPopup = getSurface() === 'popup'
-const AddAccountComponent = AddAccountStackNavigator
-const BackupComponent = isPopup
-    ? createExpandedRedirect('backup-wallet')
-    : BackupStackNavigator
 
 // Staking is age-gated at the navigator exactly as native routes/index.tsx.
 const GatedStakingScreen = withAgeGate(StakingScreen)
@@ -177,11 +166,11 @@ export const WebMainRoutes = ({
                     />
                     <RootStack.Screen
                         name='AddAccount'
-                        component={AddAccountComponent}
+                        component={AddAccountStackNavigator}
                     />
                     <RootStack.Screen
                         name='BackupWallet'
-                        component={BackupComponent}
+                        component={BackupStackNavigator}
                         options={{ headerShown: false }}
                     />
                     <RootStack.Screen
