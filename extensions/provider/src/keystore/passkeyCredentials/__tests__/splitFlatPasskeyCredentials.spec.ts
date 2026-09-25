@@ -200,6 +200,20 @@ describe('splitFlatPasskeyCredentials', () => {
         )
     })
 
+    it('keeps a credential carrying a seed field flat', async () => {
+        const flatRecord = await provider(
+            credentialJson({ seed: Array.from(new Uint8Array(32).fill(1)) }),
+        )
+        const storage = fakeStorage({ [CRED_ID]: flatRecord })
+
+        const result = await splitFlatPasskeyCredentials(deps(storage))
+
+        expect(result.failed).toEqual([CRED_ID])
+        expect(storage.getString(CRED_ID)).toBe(flatRecord)
+        expect(storage.getString(`k/${CRED_ID}`)).toBeUndefined()
+        expect(storage.getString(`m/${CRED_ID}`)).toBeUndefined()
+    })
+
     it('does not read the master key when nothing is flat', async () => {
         const storage = fakeStorage({
             'k/other': '{"id":"other","type":"hd-root-key"}',

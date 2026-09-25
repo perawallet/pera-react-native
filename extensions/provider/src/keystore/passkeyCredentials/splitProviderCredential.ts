@@ -11,6 +11,7 @@
  */
 
 import { base64 } from '@scure/base'
+import { SECRET_FIELDS } from '../migrations/canary13'
 import { isPasskeyCredentialType } from './passkeyCredentialTypes'
 
 /**
@@ -64,6 +65,25 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     !isBytes(value)
 
 /**
+ * True when a field named in `SECRET_FIELDS` holds bytes anywhere in `value`,
+ * at any depth. The split already pulls its own top-level `privateKey`/`seed`
+ * out before this runs, so a hit here is material found somewhere else — a
+ * nested `metadata.rootKey.privateKey`, a top-level `key` — that would
+ * otherwise be copied straight into the plaintext `k/` record.
+ */
+const carriesSecretBytes = (value: unknown): boolean => {
+    if (isBytes(value) || value === null) return false
+    if (Array.isArray(value)) return value.some(carriesSecretBytes)
+    if (typeof value !== 'object') return false
+
+    return Object.entries(value as Record<string, unknown>).some(
+        ([field, nested]) =>
+            (SECRET_FIELDS.has(field) && isBytes(nested)) ||
+            carriesSecretBytes(nested),
+    )
+}
+
+/**
  * Moves `origin`/`userHandle`/`userId`/`count` from the top level into
  * `metadata`, the only place the Android reader looks; a value already in
  * `metadata` wins. Returns the same reference when there is nothing to lift.
@@ -88,9 +108,10 @@ export const liftCredentialMetadata = <T extends Record<string, unknown>>(
 /**
  * Shapes a decoded flat credential record into its `k/` and `m/` halves.
  * Returns `undefined` for a record that cannot be stored in the split layout:
- * not a passkey type, no public key, no origin, or a biometric-wrapped key in
- * a shape the provider would not accept. Throws when `privateKeyEnc.data` is
- * not base64.
+ * not a passkey type, no public key, no origin, a `seed` field, a `privateKey`
+ * present but not usable bytes, a secret-named field holding bytes anywhere
+ * else in the record, or a biometric-wrapped key in a shape the provider would
+ * not accept. Throws when `privateKeyEnc.data` is not base64.
  */
 export const splitProviderCredential = (
     id: string,
@@ -100,7 +121,19 @@ export const splitProviderCredential = (
     if (!isBytes(flat.publicKey) || flat.publicKey.length === 0)
         return undefined
 
-    const { privateKey, privateKeyEnc, seed: _seed, ...rest } = flat
+    const { privateKey, privateKeyEnc, seed, ...rest } = flat
+    // Present at all, not just non-bytes: a seed this split does not carry
+    // forward would be lost the moment the flat record is deleted.
+    if (seed !== undefined) return undefined
+    // Same reasoning for a privateKey in a shape this split cannot place —
+    // an older writer's hex or base64url string, say — rather than absent.
+    if (
+        privateKey !== undefined &&
+        !(isBytes(privateKey) && privateKey.length > 0)
+    ) {
+        return undefined
+    }
+
     const lifted = liftCredentialMetadata({ ...rest, id })
     const metadata = isPlainObject(lifted.metadata) ? lifted.metadata : {}
     const origin = metadata.origin
@@ -113,6 +146,11 @@ export const splitProviderCredential = (
         publicKey: flat.publicKey,
         metadata: { ...metadata, origin },
     } as SplitCredentialRecord
+
+    // Anything else named like a secret carrier — a nested
+    // `metadata.rootKey.privateKey`, a top-level `key` — would otherwise be
+    // serialized into plaintext `k/` verbatim.
+    if (carriesSecretBytes(record)) return undefined
 
     if (isBytes(privateKey) && privateKey.length > 0) {
         return { record, material: privateKey }

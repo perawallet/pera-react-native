@@ -165,6 +165,51 @@ describe('splitProviderCredential', () => {
 
         expect(split.record.id).toBe('cred-1')
     })
+
+    // A seed, an unplaceable privateKey, or a secret-named field buried
+    // elsewhere in the record would all be lost or leaked once the flat
+    // record is deleted — each must refuse the split instead.
+    it('keeps a record carrying a seed field flat', () => {
+        expect(
+            splitProviderCredential(
+                'cred-1',
+                flat({ seed: new Uint8Array(32).fill(1) }),
+            ),
+        ).toBeUndefined()
+    })
+
+    it('keeps a record whose privateKey is not bytes flat', () => {
+        expect(
+            splitProviderCredential(
+                'cred-1',
+                flat({ privateKey: '03'.repeat(32) as unknown as Uint8Array }),
+            ),
+        ).toBeUndefined()
+    })
+
+    it('keeps a record with a nested rootKey.privateKey flat', () => {
+        expect(
+            splitProviderCredential(
+                'cred-1',
+                flat({
+                    metadata: {
+                        origin: 'https://webauthn.io',
+                        userHandle: 'alice',
+                        rootKey: { privateKey: new Uint8Array(32).fill(2) },
+                    },
+                }),
+            ),
+        ).toBeUndefined()
+    })
+
+    it('keeps a record with a top-level key field flat', () => {
+        expect(
+            splitProviderCredential(
+                'cred-1',
+                flat({ key: new Uint8Array(32).fill(2) }),
+            ),
+        ).toBeUndefined()
+    })
 })
 
 describe('liftCredentialMetadata', () => {
