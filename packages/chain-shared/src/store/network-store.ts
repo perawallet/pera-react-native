@@ -28,20 +28,21 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 const STORE_NAME = 'network-store'
 const STORE_VERSION = 2
 
-// Read once by the v1 migration and never written. Kept on disk so a crash
-// mid-migration or a downgraded build still finds the config.
+// Folded in on hydrate, never written. Kept on disk so a crash mid-migration
+// or a downgraded build still finds the config.
 const LEGACY_CUSTOM_NETWORK_KEY = 'custom-network-store'
 
-const CUSTOM_NETWORK_ID: NetworkId = Networks.custom
+// Persisted as the record id, so it is a storage format and is not read from
+// `Networks`. Module load must not touch the config enum: test mocks of the
+// config omit it.
+const CUSTOM_NETWORK_ID: NetworkId = 'custom'
 
-const SUPPORTED_NETWORKS = new Set<string>(Object.values(Networks))
-
+// ponytail: Algorand-shaped; widen customNetworksByChain's value to a per-chain union when a second chain adds custom networks.
 /**
  * Saved as a single unit, never merged: a half-updated chain config (new host,
  * stale genesis hash) would fail every signing attempt with a confusing
  * cross-network mismatch rather than anything pointing at the real cause.
  */
-// ponytail: Algorand-shaped; widen customNetworksByChain's value to a per-chain union when a second chain adds custom networks.
 export type CustomNetworkConfig = {
     algodUrl: string
     algodToken?: string
@@ -121,7 +122,7 @@ export const mergePersistedNetwork = (
     const selected = state.selectedNetworkByChain?.algorand
     const isUsable =
         typeof selected === 'string' &&
-        SUPPORTED_NETWORKS.has(selected) &&
+        (Object.values(Networks) as string[]).includes(selected) &&
         (selected !== CUSTOM_NETWORK_ID ||
             findCustomNetwork(algorandCustom) !== undefined)
 
