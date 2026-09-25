@@ -26,7 +26,7 @@ import { useModalState } from '@hooks/useModalState'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
-import { useWebView } from '@modules/webview'
+import { useWebView, withLanguageParam } from '@modules/webview'
 import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
 import type { IconName } from '@components/core'
@@ -49,7 +49,7 @@ export const useAddAccountScreen = () => {
     const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { hasMultipleHDWallets } = useHDWalletGroups()
     const { showError } = useErrorToast()
-    const { t } = useLanguage()
+    const { t, currentLanguage } = useLanguage()
     const { pushWebView } = useWebView()
     // TODO(card): TEMP — a completed Baanx onboarding persists `isAuthenticated`,
     // which hides this entry with no in-app way to clear it. Force it visible in
@@ -146,15 +146,24 @@ export const useAddAccountScreen = () => {
     const handleTermsPress = useCallback(
         () =>
             pushWebView({
-                url: config.termsOfServiceUrl,
+                url: withLanguageParam(
+                    config.termsOfServiceUrl,
+                    currentLanguage,
+                ),
                 id: 'terms-of-service',
             }),
-        [pushWebView],
+        [pushWebView, currentLanguage],
     )
     const handlePrivacyPress = useCallback(
         () =>
-            pushWebView({ url: config.privacyPolicyUrl, id: 'privacy-policy' }),
-        [pushWebView],
+            pushWebView({
+                url: withLanguageParam(
+                    config.privacyPolicyUrl,
+                    currentLanguage,
+                ),
+                id: 'privacy-policy',
+            }),
+        [pushWebView, currentLanguage],
     )
     const handleContinueMultisigIntroduction = useCallback(() => {
         closeMultisigIntroduction()

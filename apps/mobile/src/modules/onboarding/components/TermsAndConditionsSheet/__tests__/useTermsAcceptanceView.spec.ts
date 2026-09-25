@@ -41,8 +41,7 @@ vi.mock('../../../hooks/useTermsAcceptance', () => ({
 import { useTermsAcceptanceView } from '../useTermsAcceptanceView'
 import embeddedTerms from '../embedded-terms.json'
 
-const render = () =>
-    renderHook(() => useTermsAcceptanceView(mocks.onAccepted))
+const render = () => renderHook(() => useTermsAcceptanceView(mocks.onAccepted))
 
 const htmlOf = (source: { html: string } | { uri: string }) =>
     'html' in source ? source.html : undefined

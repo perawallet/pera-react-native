@@ -17,7 +17,7 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { trackEvent, OnrampEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
-import { useWebView } from '@modules/webview'
+import { useWebView, withLanguageParam } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useStyles } from './styles'
 
@@ -26,7 +26,7 @@ const EXODUS_TERMS_URL = 'https://exodus.com/terms'
 const EXODUS_PRIVACY_URL = 'https://exodus.com/privacy'
 
 export const OnrampTermsContent = () => {
-    const { t } = useLanguage()
+    const { t, currentLanguage } = useLanguage()
     const styles = useStyles()
     const { resolve } = useBottomSheetResult<boolean>()
     const { pushWebView } = useWebView()
@@ -84,7 +84,12 @@ export const OnrampTermsContent = () => {
                                 key='pera-terms'
                                 variant='link'
                                 onPress={() =>
-                                    handleOpenLink(config.termsOfServiceUrl)
+                                    handleOpenLink(
+                                        withLanguageParam(
+                                            config.termsOfServiceUrl,
+                                            currentLanguage,
+                                        ),
+                                    )
                                 }
                             />,
                         ]}
