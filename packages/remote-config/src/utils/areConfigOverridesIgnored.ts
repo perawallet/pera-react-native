@@ -15,9 +15,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 
 // A store-installed production extension ignores saved overrides, since a user
 // talked through the Feature Flags screen could switch off a safety flag such
-// as the quantum dApp warning. Mobile keeps them. The environment comes from
-// config because the Chrome device service reads an EXPO_PUBLIC_APP_ENV that no
-// build sets.
+// as the quantum dApp warning. Mobile keeps them.
 export const areConfigOverridesIgnored = (): boolean => {
     const { deviceInfo } = getProvider()
     return (
