@@ -25,6 +25,10 @@ import {
     getNetworkConfig,
     Networks,
 } from '@perawallet/wallet-core-config'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { setIntegrityTokenProvider } from '../integrity-token-provider'
 
 // Mock logger. Hoisted (like the ky mocks below) because vi.mock factories
@@ -55,6 +59,9 @@ const {
     mockCustomNodeToken,
     chainUrlsByNetwork,
     backendUrlByNetwork,
+    servicesByScopeKey,
+    extraScopes,
+    resetMockScopeConfig,
 } = vi.hoisted(() => {
     const mockNetworks = {
         testnet: 'testnet',
@@ -134,6 +141,39 @@ const {
         testnet: 'https://testnet.pera.algo',
     }
 
+    // Which Pera services each scope's configuration lists, keyed
+    // `chainId/networkId`. Mirrors the real table: MainNet and TestNet list
+    // every service, BetaNet and custom none. A test may narrow an entry;
+    // resetMockScopeConfig (afterEach) restores it.
+    const servicesByScopeKey: Record<string, string[]> = {}
+
+    // Scopes beyond the four Algorand ones, e.g. a fixture chain. The query
+    // client builds clients for every configured scope once, so a test that
+    // adds one must vi.resetModules() and re-import it.
+    const extraScopes: Array<{
+        scope: { chainId: string; networkId: string }
+        backendUrl: string
+    }> = []
+
+    const resetMockScopeConfig = () => {
+        extraScopes.length = 0
+        for (const key of Object.keys(servicesByScopeKey)) {
+            delete servicesByScopeKey[key]
+        }
+        const everyService = [
+            'accounts',
+            'assets',
+            'prices',
+            'history',
+            'devices',
+            'notifications',
+            'blockFollowing',
+        ]
+        servicesByScopeKey['algorand/mainnet'] = [...everyService]
+        servicesByScopeKey['algorand/testnet'] = [...everyService]
+    }
+    resetMockScopeConfig()
+
     return {
         mockNetworks,
         mockAlgodApiKey,
@@ -141,36 +181,72 @@ const {
         mockCustomNodeToken,
         chainUrlsByNetwork,
         backendUrlByNetwork,
+        servicesByScopeKey,
+        extraScopes,
+        resetMockScopeConfig,
     }
 })
 
-// Mock config. `getNetworkConfig` stands in for the real per-network chain
-// table (packages/config/src/network-config.ts): the fixtures above cover
-// all 4 networks, and betanet/custom's `backendUrl` is empty — mirroring the
-// real per-network table's empty rows — rather than a value borrowed from
-// another network.
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: {
-        debugEnabled: true,
-        backendAPIKey: 'test-api-key',
-        algodApiKey: mockAlgodApiKey,
-        indexerApiKey: mockIndexerApiKey,
-        // Not per-network: the backup service is one global endpoint, so every
-        // network's `backup` client is built against this same prefix.
-        backupBaseUrl: 'https://backup.test.perawallet.app/',
-        webIntegrityBearerEnabled: false,
-    },
-    Networks: mockNetworks,
-    // Mirrors the real per-network table: betanet/custom carry an EMPTY
-    // backendUrl rather than a borrowed one, which is exactly what
-    // createPeraClient branches on.
-    getNetworkConfig: (network: string) => ({
-        ...chainUrlsByNetwork[network],
-        backendUrl: backendUrlByNetwork[network] ?? '',
-    }),
-    isPeraBackedNetwork: (network: string) =>
-        backendUrlByNetwork[network] !== undefined,
-}))
+// Mock config. The scope getters stand in for the real scope table
+// (packages/config/src/network-config.ts): the fixtures above cover the four
+// Algorand scopes, and betanet/custom's `backendUrl` is empty — mirroring the
+// real table's empty rows — rather than a value borrowed from another network.
+// `getNetworkConfig` stays for the test bodies that read fixtures through it.
+vi.mock('@perawallet/wallet-core-config', () => {
+    type Scope = { chainId: string; networkId: string }
+    const isAlgorand = (scope: Scope) => scope.chainId === 'algorand'
+    const findExtraScope = (scope: Scope) =>
+        extraScopes.find(
+            extra =>
+                extra.scope.chainId === scope.chainId &&
+                extra.scope.networkId === scope.networkId,
+        )
+
+    return {
+        config: {
+            debugEnabled: true,
+            backendAPIKey: 'test-api-key',
+            algodApiKey: mockAlgodApiKey,
+            indexerApiKey: mockIndexerApiKey,
+            // Not per-network: the backup service is one global endpoint, so every
+            // network's `backup` client is built against this same prefix.
+            backupBaseUrl: 'https://backup.test.perawallet.app/',
+            webIntegrityBearerEnabled: false,
+        },
+        Networks: mockNetworks,
+        getNetworkConfig: (network: string) => ({
+            ...chainUrlsByNetwork[network],
+            backendUrl: backendUrlByNetwork[network] ?? '',
+        }),
+        isPeraBackedNetwork: (network: string) =>
+            backendUrlByNetwork[network] !== undefined,
+        configuredScopes: () => [
+            ...Object.values(mockNetworks).map(network => ({
+                chainId: 'algorand',
+                networkId: network,
+            })),
+            ...extraScopes.map(extra => extra.scope),
+        ],
+        getChainConfig: (scope: Scope) =>
+            isAlgorand(scope)
+                ? chainUrlsByNetwork[scope.networkId]
+                : {
+                      algodUrl: '',
+                      indexerUrl: '',
+                      algodToken: '',
+                      indexerToken: '',
+                  },
+        getPeraServicesConfig: (scope: Scope) => ({
+            backendUrl: isAlgorand(scope)
+                ? (backendUrlByNetwork[scope.networkId] ?? '')
+                : (findExtraScope(scope)?.backendUrl ?? ''),
+        }),
+        hasPeraService: (scope: Scope, service: string) =>
+            servicesByScopeKey[`${scope.chainId}/${scope.networkId}`]?.includes(
+                service,
+            ) ?? false,
+    }
+})
 
 // Mock ky with hooks support
 const { mockKy, mockJson, mockText, mockStatus, capturedHooks } = vi.hoisted(
@@ -353,6 +429,10 @@ describe('queryClient', () => {
         })
     })
 
+    afterEach(() => {
+        resetMockScopeConfig()
+    })
+
     it('should make a successful request to pera backend on mainnet', async () => {
         const { queryClient } = await import('../query-client')
         const mockData = { success: true }
@@ -381,16 +461,16 @@ describe('queryClient', () => {
         ).rejects.toThrow('URL is required')
     })
 
-    it('should throw an error for invalid network', async () => {
+    it('should throw an error for a network with no clients', async () => {
         const { queryClient } = await import('../query-client')
         await expect(
             queryClient({
-                backend: 'pera',
+                backend: 'algod',
                 network: 'invalid-network' as any,
                 url: '/test',
                 method: 'GET',
             }),
-        ).rejects.toThrow('Could not get backends for invalid-network')
+        ).rejects.toThrow('Could not get backends for algorand/invalid-network')
     })
 
     it('should throw an error for invalid backend', async () => {
@@ -609,8 +689,8 @@ describe('queryClient', () => {
 
         const { queryClient } = await import('../query-client')
 
-        // Importing this module must not call getNetworkConfig(): several
-        // consuming packages' tests mock it as a bare vi.fn() with no
+        // Importing this module must not call config's getters: several
+        // consuming packages' tests mock them as bare vi.fn()s with no
         // default return, and building eagerly at import time crashes those
         // suites during collection (see packages/card's lsig.spec.ts).
         expect(mockKy.create).not.toHaveBeenCalled()
@@ -823,6 +903,145 @@ describe('queryClient', () => {
         expect(mockKy).toHaveBeenCalled()
     })
 
+    describe('Pera services by scope', () => {
+        // A chain id outside the compiled-in union, standing in for a chain
+        // package that is not built in.
+        const FIXTURE_MAINNET: ChainScope = {
+            chainId: 'fixture' as unknown as ChainId,
+            networkId: 'mainnet',
+        }
+
+        test('a scope with no configuration is refused before ky, whether or not it names a service', async () => {
+            mockKy.mockClear()
+            const { queryClient } = await import('../query-client')
+            // Imported here for the same stale-class reason as the betanet test above.
+            const {
+                PeraServiceUnavailableError: FreshPeraServiceUnavailableError,
+            } = await import('../../errors/pera-service')
+
+            for (const service of [undefined, 'prices'] as const) {
+                const request = queryClient({
+                    backend: 'pera',
+                    scope: FIXTURE_MAINNET,
+                    service,
+                    method: 'GET',
+                    url: '/v1/prices/',
+                })
+
+                await expect(request).rejects.toBeInstanceOf(
+                    FreshPeraServiceUnavailableError,
+                )
+                await expect(request).rejects.toMatchObject({
+                    scope: FIXTURE_MAINNET,
+                    service,
+                })
+            }
+            expect(mockKy).not.toHaveBeenCalled()
+        })
+
+        test('a configured scope serves only the services its configuration lists', async () => {
+            extraScopes.push({
+                scope: FIXTURE_MAINNET,
+                backendUrl: 'https://fixture.pera.test',
+            })
+            servicesByScopeKey['fixture/mainnet'] = ['prices']
+            vi.resetModules()
+            mockKy.create.mockClear()
+            const { queryClient } = await import('../query-client')
+            const {
+                PeraServiceUnavailableError: FreshPeraServiceUnavailableError,
+            } = await import('../../errors/pera-service')
+            mockJson.mockResolvedValue({ results: [] })
+
+            await expect(
+                queryClient({
+                    backend: 'pera',
+                    scope: FIXTURE_MAINNET,
+                    service: 'prices',
+                    method: 'GET',
+                    url: '/v1/prices/',
+                }),
+            ).resolves.toBeDefined()
+            const fixturePeraClient = findClientInstance(
+                'https://fixture.pera.test',
+            )
+            expect(fixturePeraClient).toHaveBeenCalledTimes(1)
+
+            const refused = queryClient({
+                backend: 'pera',
+                scope: FIXTURE_MAINNET,
+                service: 'assets',
+                method: 'GET',
+                url: '/v1/assets/',
+            })
+
+            await expect(refused).rejects.toBeInstanceOf(
+                FreshPeraServiceUnavailableError,
+            )
+            await expect(refused).rejects.toMatchObject({
+                scope: FIXTURE_MAINNET,
+                service: 'assets',
+            })
+            expect(fixturePeraClient).toHaveBeenCalledTimes(1)
+        })
+
+        test('a legacy network request naming a service its scope lacks is refused', async () => {
+            servicesByScopeKey['algorand/mainnet'] = ['prices']
+            mockKy.mockClear()
+            const { queryClient } = await import('../query-client')
+            const {
+                PeraServiceUnavailableError: FreshPeraServiceUnavailableError,
+            } = await import('../../errors/pera-service')
+            mockJson.mockResolvedValue({ results: [] })
+
+            const refused = queryClient({
+                backend: 'pera',
+                network: 'mainnet',
+                service: 'assets',
+                method: 'GET',
+                url: '/v1/assets/',
+            })
+
+            await expect(refused).rejects.toBeInstanceOf(
+                FreshPeraServiceUnavailableError,
+            )
+            await expect(refused).rejects.toMatchObject({
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                service: 'assets',
+            })
+            expect(mockKy).not.toHaveBeenCalled()
+
+            await queryClient({
+                backend: 'pera',
+                network: 'mainnet',
+                service: 'prices',
+                method: 'GET',
+                url: '/v1/prices/',
+            })
+            expect(mockKy).toHaveBeenCalledTimes(1)
+        })
+
+        test('a listed service is still refused where the scope has no Pera deployment', async () => {
+            servicesByScopeKey['algorand/betanet'] = ['prices']
+            mockKy.mockClear()
+            const { queryClient } = await import('../query-client')
+            const {
+                PeraServiceUnavailableError: FreshPeraServiceUnavailableError,
+            } = await import('../../errors/pera-service')
+
+            await expect(
+                queryClient({
+                    backend: 'pera',
+                    network: 'betanet',
+                    service: 'prices',
+                    method: 'GET',
+                    url: '/v1/prices/',
+                }),
+            ).rejects.toBeInstanceOf(FreshPeraServiceUnavailableError)
+            expect(mockKy).not.toHaveBeenCalled()
+        })
+    })
+
     it('updateBackendHeaders reaches every network even when called before any request', async () => {
         vi.resetModules()
         mockKy.extend.mockClear()
@@ -913,13 +1132,11 @@ describe('queryClient', () => {
             ).toBe(mockIndexerApiKey)
         })
 
-        // The `custom` network is the case that matters: getNetworkConfig
-        // returns empty tokens for it by design (its chain values live in the
-        // custom-network store, which `config` cannot read), so re-deriving
-        // them here instead of taking them from the caller silently drops
-        // them. Asserted on mainnet for simplicity — the discriminator
-        // (passed token differs from the baked one) is the same regardless
-        // of which network's override this exercises.
+        // The caller's tokens must win: updateNodeEndpoints is how a node
+        // saved after the clients were built reaches them, and the caller is
+        // what resolved that node. Asserted on mainnet for simplicity — the
+        // discriminator (passed token differs from the baked one) is the same
+        // regardless of which network's override this exercises.
         it('takes the tokens from the caller, not from the baked chain config', async () => {
             vi.resetModules()
             mockKy.create.mockClear()

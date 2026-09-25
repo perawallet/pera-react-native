@@ -181,10 +181,12 @@ because a staging release bundles with `NODE_ENV=production` too. Its UI entry p
 
 ## Networks without a Pera backend
 
-Only MainNet and TestNet are Pera-backed (`PERA_BACKED_NETWORKS` in
-`packages/config/src/network-config.ts`). On betanet and any custom node, every request declaring
+Each chain scope's configuration in `packages/config/src/network-config.ts` lists the Pera services
+its deployment serves (`peraServicesFor(scope)`, `hasPeraService(scope, service)`): Algorand MainNet
+and TestNet list every service, betanet and a custom node list none. A request declaring
 `backend: 'pera'` throws `PeraServiceUnavailableError` in `packages/shared/src/api/query-client.ts`
-before a socket opens, so the failure is structural and instant rather than a timeout.
+before a socket opens when its scope has no Pera deployment, or when it names a `service` the
+scope does not list, so the failure is structural and instant rather than a timeout.
 
 Reads whose answer is obtainable from algod or the indexer must therefore branch on
 `isPeraBackedNetwork(network)` and take the public path, rather than swallowing the error as an empty
