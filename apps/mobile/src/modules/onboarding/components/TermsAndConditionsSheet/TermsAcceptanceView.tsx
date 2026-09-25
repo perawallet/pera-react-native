@@ -42,7 +42,8 @@ export const TermsAcceptanceView = ({
 }: TermsAcceptanceViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { source, showLoading, onAgree } = useTermsAcceptanceView(onAccepted)
+    const { source, showLoading, isAgreeDisabled, onLoad, onError, onAgree } =
+        useTermsAcceptanceView(onAccepted)
 
     return (
         <PWScreen
@@ -67,6 +68,7 @@ export const TermsAcceptanceView = ({
                         variant='primary'
                         title={t('onboarding.terms_sheet.agree')}
                         onPress={onAgree}
+                        isDisabled={isAgreeDisabled}
                         testID='terms_agree_button'
                     />
                 </PWView>
@@ -75,6 +77,9 @@ export const TermsAcceptanceView = ({
             <PWStaticWebView
                 source={source}
                 startInLoadingState={showLoading}
+                onLoad={onLoad}
+                onError={onError}
+                onHttpError={onError}
             />
         </PWScreen>
     )

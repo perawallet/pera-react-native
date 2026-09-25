@@ -27,6 +27,7 @@ vi.mock('@react-navigation/native', () => ({
 vi.mock('@hooks/useIsMounted', () => ({ useIsMounted: () => () => true }))
 vi.mock('@modules/webview', () => ({
     useWebView: () => ({ pushWebView: vi.fn() }),
+    withLanguageParam: (url: string, locale: string) => `${url}?lang=${locale}`,
 }))
 vi.mock('@hooks/useModalState', () => ({
     useModalState: () => ({ isOpen: false, open: vi.fn(), close: vi.fn() }),

@@ -37,7 +37,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
 import { useCardErrorToast } from '@modules/card/hooks'
-import { useWebView } from '@modules/webview'
+import { useWebView, withLanguageParam } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
@@ -92,7 +92,7 @@ export type UseCardOnboardingAddressScreenResult = {
 
 export const useCardOnboardingAddressScreen =
     (): UseCardOnboardingAddressScreenResult => {
-        const { t } = useLanguage()
+        const { t, currentLanguage } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast, infoToast } = useToast()
         const showError = useCardErrorToast({
@@ -178,9 +178,13 @@ export const useCardOnboardingAddressScreen =
         // GET /v1/auth/settings); Pera's terms page is the fallback. Fully
         // optional-chained so a settings shape without the links block can't
         // crash the render.
+        const platformTermsUrl = withLanguageParam(
+            config.termsOfServiceUrl,
+            currentLanguage,
+        )
         const cardTermsUrl =
             settings?.termsAndConditionsUrls?.[isUsResident ? 'us' : 'intl'] ??
-            config.termsOfServiceUrl
+            platformTermsUrl
 
         // Prefill the residence country chosen earlier in the flow, once settings
         // load. One-shot; matches it against the supported list for the flag/name.
@@ -281,11 +285,12 @@ export const useCardOnboardingAddressScreen =
         const handleOpenPlatformTerms = useCallback(() => {
             // Checkbox 2 is Pera's own Terms & Conditions.
             if (!routeCapabilities.inAppWebView) {
-                void Linking.openURL(config.termsOfServiceUrl)
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config plus a lang param
+                void Linking.openURL(platformTermsUrl)
                 return
             }
-            pushWebView({ url: config.termsOfServiceUrl, id: 'platform-terms' })
-        }, [pushWebView])
+            pushWebView({ url: platformTermsUrl, id: 'platform-terms' })
+        }, [pushWebView, platformTermsUrl])
 
         const submitAddressForm = handleSubmit(async values => {
             // Re-collected SMS consent gates Continue; guard here too so no

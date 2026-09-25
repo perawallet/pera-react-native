@@ -87,6 +87,7 @@ describe('useSettingsOptions', () => {
         vi.clearAllMocks()
         ;(useLanguage as Mock).mockReturnValue({
             t: mockT,
+            currentLanguage: 'de',
         })
         ;(useIsLanguageSelectionEnabled as Mock).mockReturnValue(false)
         ;(useIsCloudBackupEnabled as Mock).mockReturnValue(false)
@@ -159,12 +160,12 @@ describe('useSettingsOptions', () => {
         expect(settingsOptions[2].items[1]).toEqual({
             icon: 'text-document',
             title: 'settings.main.terms_title',
-            url: 'https://terms.example.com',
+            url: 'https://terms.example.com?lang=de',
         })
         expect(settingsOptions[2].items[2]).toEqual({
             icon: 'text-document',
             title: 'settings.main.privacy_title',
-            url: 'https://privacy.example.com',
+            url: 'https://privacy.example.com?lang=de',
         })
     })
 
@@ -271,12 +272,12 @@ describe('useSettingsOptions', () => {
                 {
                     icon: 'text-document',
                     title: 'settings.main.terms_title',
-                    url: 'https://terms.example.com',
+                    url: 'https://terms.example.com?lang=de',
                 },
                 {
                     icon: 'text-document',
                     title: 'settings.main.privacy_title',
-                    url: 'https://privacy.example.com',
+                    url: 'https://privacy.example.com?lang=de',
                 },
             ])
 

@@ -101,6 +101,11 @@ assumption it is the house rule.
 | `tr`    | informal `sen` | `Gir`, not `Girin`; `hesabın`, not `hesabınız`.                                                                                                                                                                                            |
 | `pt-BR` | `você`         | Neutral rather than markedly informal in Brazilian Portuguese, so no tension with the house style. Never `tu` or `o senhor`.                                                                                                               |
 
+Legal text is the exception: the bundled Terms & Conditions
+(`embedded-terms.<locale>.json`) always use the formal register, so `Sie`, `usted` and `siz`
+even where the app bundle is informal. Informal address in a binding contract reads as
+unserious. `fr` and `pt-BR` need no change.
+
 Sentence case everywhere. English Title-Cases buttons (`Buy Gift Card`); no
 other locale should.
 
