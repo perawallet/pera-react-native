@@ -10,21 +10,31 @@
  limitations under the License
  */
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 import { getRampRegion } from '../api'
 import type { RampRegion } from '../models'
 import { onrampQueryKeys } from './querykeys'
 
+export type UseRampRegionQueryResult = {
+    data: RampRegion | undefined
+    isSuccess: boolean
+}
+
 export const useRampRegionQuery = (
     enabled: boolean = true,
-): UseQueryResult<RampRegion, Error> => {
+): UseRampRegionQueryResult => {
     const { network } = useNetwork()
 
-    return useQuery({
+    const query = useQuery({
         queryKey: onrampQueryKeys.region(network),
         queryFn: () => getRampRegion(network),
         enabled,
     })
+
+    return {
+        data: query.data,
+        isSuccess: query.isSuccess,
+    }
 }
