@@ -13,7 +13,9 @@
 import { useCallback, useMemo, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useNetwork, useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CustomNetworkSheet } from './CustomNetworkSheet'
 
@@ -45,6 +47,15 @@ const NETWORK_DISPLAY_ORDER: Network[] = [
     Networks.custom,
 ]
 
+// A custom node serves balances and transaction previews, so a store-installed
+// production extension doesn't let a user be talked into pointing it anywhere.
+// Not deviceInfo.getAppEnvironment(): on Chrome it reads an env var no build sets.
+const isCustomNetworkOffered = (): boolean =>
+    !(
+        config.appEnvironment === 'production' &&
+        getProvider().deviceInfo.isStoreBuild()
+    )
+
 type UseSettingsDeveloperNodeSettingsScreenResult = {
     networks: NetworkRow[]
     isSwitching: boolean
@@ -66,15 +77,18 @@ export const useSettingsDeveloperNodeSettingsScreen =
         const [isSwitching, setIsSwitching] = useState(false)
         const { request } = useBottomSheet()
 
-        const networks = useMemo(
-            () =>
-                NETWORK_DISPLAY_ORDER.map<NetworkRow>(network => ({
-                    network,
-                    labelKey: LABEL_KEYS[network],
-                    isSelected: network === activeNetwork,
-                })),
-            [activeNetwork],
-        )
+        const networks = useMemo(() => {
+            const offered = isCustomNetworkOffered()
+                ? NETWORK_DISPLAY_ORDER
+                : NETWORK_DISPLAY_ORDER.filter(
+                      network => network !== Networks.custom,
+                  )
+            return offered.map<NetworkRow>(network => ({
+                network,
+                labelKey: LABEL_KEYS[network],
+                isSelected: network === activeNetwork,
+            }))
+        }, [activeNetwork])
 
         const selectNetwork = useCallback(
             async (network: Network): Promise<void> => {
