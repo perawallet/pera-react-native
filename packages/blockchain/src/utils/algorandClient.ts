@@ -10,46 +10,15 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    getNetworkConfig,
+    getChainConfig,
     Networks,
     type Network,
 } from '@perawallet/wallet-core-config'
 import { updateNodeEndpoints } from '@perawallet/wallet-core-shared'
-import {
-    useNetworkStore,
-    useCustomNetworkStore,
-    getCustomNetworkConfig,
-} from '../store'
+import { useNetworkStore, useCustomNetworkStore } from '../store'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
-
-/**
- * The endpoints to actually talk to. For the three real networks this is the
- * baked chain config. For `custom` it comes from the custom-network store,
- * because `config` is the leaf package and cannot read a store — see the
- * `custom` entry in `network-config.ts`.
- */
-export const resolveChainEndpoints = (network: Network) => {
-    const baked = getNetworkConfig(network)
-
-    if (network !== Networks.custom) {
-        return {
-            algodUrl: baked.algodUrl,
-            indexerUrl: baked.indexerUrl,
-            algodToken: baked.algodToken,
-            indexerToken: baked.indexerToken,
-        }
-    }
-
-    const custom = getCustomNetworkConfig()
-
-    return {
-        algodUrl: custom?.algodUrl ?? baked.algodUrl,
-        indexerUrl: custom?.indexerUrl ?? baked.indexerUrl,
-        algodToken: custom?.algodToken ?? baked.algodToken,
-        indexerToken: custom?.indexerToken ?? baked.indexerToken,
-    }
-}
 
 /**
  * Returns an instance of AlgorandClient for a specific network.
@@ -62,20 +31,29 @@ export const resolveChainEndpoints = (network: Network) => {
  */
 export const getAlgorandClient = (networkOverride?: Network) => {
     const network = networkOverride ?? useNetworkStore.getState().network
-    return createTimeoutBoundedAlgorandClient(resolveChainEndpoints(network))
+    return createTimeoutBoundedAlgorandClient(
+        getChainConfig(scopeForLegacyNetwork(network)),
+    )
 }
 
 const pushResolvedEndpointsForAllNetworks = (): void => {
     for (const network of Object.values(Networks)) {
-        updateNodeEndpoints(network, resolveChainEndpoints(network))
+        const { algodUrl, indexerUrl, algodToken, indexerToken } =
+            getChainConfig(scopeForLegacyNetwork(network))
+        updateNodeEndpoints(network, {
+            algodUrl,
+            indexerUrl,
+            algodToken,
+            indexerToken,
+        })
     }
 }
 
 // Deferred past module evaluation on purpose: updateNodeEndpoints calls
-// ensureClientsBuilt -> getNetworkConfig(), and doing that at import time breaks
-// every test that mocks getNetworkConfig as a bare vi.fn() (it took down a whole
-// package's suite once already). The try/catch keeps a hostile environment from
-// turning a best-effort sync into a crash.
+// ensureClientsBuilt -> config's getters, and doing that at import time breaks
+// every test that mocks them as bare vi.fn()s (it took down a whole package's
+// suite once already). The try/catch keeps a hostile environment from turning
+// a best-effort sync into a crash.
 void Promise.resolve().then(() => {
     try {
         pushResolvedEndpointsForAllNetworks()

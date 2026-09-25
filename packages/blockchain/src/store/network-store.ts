@@ -31,10 +31,9 @@ const SUPPORTED_NETWORKS = new Set<string>(Object.values(Networks))
  *
  * 1. A persisted value that is no longer a union member — e.g. a device that
  *    selected 'fnet' or 'localnet' before those were replaced by the custom
- *    slot. The unknown string would flow into `getNetworkConfig`, whose
- *    chain-table lookup misses and yields `{ algodUrl: undefined, … }`
- *    (spreading `undefined` is a legal no-op, so nothing fails here); the throw
- *    lands later, at client construction, far from the cause.
+ *    slot. The unknown string would reach `getNetworkConfig`, which throws
+ *    `UnconfiguredScopeError` for a network no configuration row covers — in
+ *    every render that reads it, far from the cause.
  * 2. A persisted `'custom'` whose config is not there. The two stores can
  *    diverge — a corrupt or absent `custom-network-store` entry, an interrupted
  *    write — and `custom` is the one member with no baked fallback, so every

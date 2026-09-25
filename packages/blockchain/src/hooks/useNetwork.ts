@@ -10,21 +10,27 @@
  limitations under the License
  */
 
-import { useNetworkStore } from '../store'
-
+import { useMemo } from 'react'
 import {
     getNetworkConfig,
     isMainnet as isMainnetHelper,
     isTestnet as isTestnetHelper,
 } from '@perawallet/wallet-core-config'
+import { useCustomNetworkStore, useNetworkStore } from '../store'
 
 export const useNetwork = () => {
     const network = useNetworkStore(state => state.network)
     const setNetwork = useNetworkStore(state => state.setNetwork)
+    const customNetwork = useCustomNetworkStore(state => state.customNetwork)
 
     const isMainnet = isMainnetHelper(network)
     const isTestnet = isTestnetHelper(network)
-    const networkConfig = getNetworkConfig(network)
+    // customNetwork is a real dependency: getNetworkConfig reads the saved
+    // node for `custom`, so a saved change must produce a fresh config.
+    const networkConfig = useMemo(
+        () => getNetworkConfig(network),
+        [network, customNetwork],
+    )
 
     return { network, setNetwork, isMainnet, isTestnet, networkConfig }
 }

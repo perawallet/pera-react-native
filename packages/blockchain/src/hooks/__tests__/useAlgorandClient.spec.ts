@@ -139,8 +139,12 @@ describe('services/blockchain/hooks', () => {
         expect(createTimeoutBoundedAlgorandClient).toHaveBeenNthCalledWith(1, {
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+            explorerUrl: '',
             algodToken: '',
             indexerToken: '',
+            dispenserUrl: '',
         })
 
         useCustomNetworkStore.getState().setCustomNetwork({
@@ -159,8 +163,12 @@ describe('services/blockchain/hooks', () => {
         expect(createTimeoutBoundedAlgorandClient).toHaveBeenNthCalledWith(2, {
             algodUrl: 'http://10.0.0.9:4001',
             indexerUrl: 'http://10.0.0.9:8980',
+            genesisHash: 'HASH2',
+            genesisId: 'dockernet-v2',
+            explorerUrl: '',
             algodToken: '',
             indexerToken: '',
+            dispenserUrl: '',
         })
     })
 })

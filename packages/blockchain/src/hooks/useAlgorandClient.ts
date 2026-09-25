@@ -11,6 +11,8 @@
  */
 
 import { useMemo } from 'react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { getChainConfig } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     PeraEncodedTransactionSigner,
@@ -20,7 +22,6 @@ import type {
 import { useCustomNetworkStore } from '../store'
 import { encodeSignedTransactions } from '../utils/transact'
 import { createTimeoutBoundedAlgorandClient } from '../utils/createAlgorandClient'
-import { resolveChainEndpoints } from '../utils/algorandClient'
 import { useNetwork } from './useNetwork'
 
 const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
@@ -35,7 +36,7 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
 
     return useMemo(() => {
         const client = createTimeoutBoundedAlgorandClient(
-            resolveChainEndpoints(network),
+            getChainConfig(scopeForLegacyNetwork(network)),
         )
         // algokit-utils defaults this to 10 rounds (~30s) on non-localnet,
         // which expires before a hardware-wallet user can confirm on-device.
@@ -63,7 +64,7 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
         return client
         // customNetwork (the whole object, not a property of it — oxlint's
         // exhaustive-deps wants the reference itself) is a real dependency:
-        // when `network` is 'custom', resolveChainEndpoints reads it, so a
+        // when `network` is 'custom', getChainConfig reads it, so a
         // saved config change must re-memoize the client rather than leave a
         // mounted screen pointed at the old host until it unmounts.
     }, [network, customNetwork, signer])
