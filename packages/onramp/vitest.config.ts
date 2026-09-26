@@ -41,9 +41,9 @@ export default defineConfig({
                 '../../extensions/platform-driver/src/index.ts',
             ),
             // Source alias so tests don't require a pre-built dist.
-            '@perawallet/wallet-core-fee-delegation': path.resolve(
+            '@perawallet/wallet-core-chain-algorand/fee-delegation': path.resolve(
                 __dirname,
-                '../fee-delegation/src/index.ts',
+                '../chain-algorand/src/fee-delegation/index.ts',
             ),
         },
     },

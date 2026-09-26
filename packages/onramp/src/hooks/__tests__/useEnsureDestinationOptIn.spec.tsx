@@ -59,7 +59,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useMinimumFeeConfig: () => useMinimumFeeConfigMock(),
 }))
 
-vi.mock('@perawallet/wallet-core-fee-delegation', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/fee-delegation', () => ({
     useFeeDelegation: () => ({
         submitWithFeeDelegation: submitWithFeeDelegationMock,
     }),

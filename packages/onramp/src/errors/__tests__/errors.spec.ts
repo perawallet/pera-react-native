@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-fee-delegation'
+import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-chain-algorand/fee-delegation'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import {
     isSourceAmountTooLowError,

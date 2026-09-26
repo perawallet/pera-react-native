@@ -13,4 +13,4 @@
 export {
     mockFeeDelegation,
     type MockFeeDelegationParams,
-} from './api/msw-handlers'
+} from './fee-delegation/api/msw-handlers'
