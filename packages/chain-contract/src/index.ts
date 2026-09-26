@@ -11,5 +11,6 @@
  */
 
 export * from './errors'
+export * from './models/domain'
 export * from './models/identity'
 export * from './scope'
