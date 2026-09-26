@@ -17,7 +17,7 @@ import {
     type ExecuteSwapResult,
     type SwapExecutionFailure,
     type SwapQuote,
-} from '@perawallet/wallet-core-swaps'
+} from '@perawallet/wallet-core-chain-algorand/swaps'
 import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
 import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'

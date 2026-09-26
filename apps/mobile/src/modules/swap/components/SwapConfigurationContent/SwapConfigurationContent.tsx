@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import type { SwapConfigurationResult } from '@perawallet/wallet-core-swaps'
+import type { SwapConfigurationResult } from '@perawallet/wallet-core-chain-algorand/swaps'
 import {
     PWButton,
     PWIcon,

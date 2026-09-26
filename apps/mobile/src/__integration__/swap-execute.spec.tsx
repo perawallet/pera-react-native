@@ -29,11 +29,11 @@ import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import {
     mockPrepareTransactions,
     mockUpdateSwapStatus,
-} from '@perawallet/wallet-core-swaps/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import {
     usePrepareTransactionsMutation,
     useUpdateSwapStatusMutation,
-} from '@perawallet/wallet-core-swaps'
+} from '@perawallet/wallet-core-chain-algorand/swaps'
 
 const QUOTE_ID = 'quote-tinyman-1'
 const SWAP_ID = '12345'

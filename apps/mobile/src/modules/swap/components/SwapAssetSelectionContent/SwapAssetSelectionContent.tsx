@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
+import { isSwappableAsset } from '@perawallet/wallet-core-chain-algorand/swaps'
 import { PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'

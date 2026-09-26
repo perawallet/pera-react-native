@@ -14,7 +14,7 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSwapConfirmationActions } from '../useSwapConfirmationActions'
 import type { SwapExecutionOutcome } from '../../../hooks/useSwapExecution'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { SwapQuote } from '@perawallet/wallet-core-chain-algorand/swaps'
 
 const makeQuote = (quoteIdStr?: string): SwapQuote =>
     ({

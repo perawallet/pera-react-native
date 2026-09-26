@@ -22,7 +22,7 @@ import {
 } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { SwapQuote } from '@perawallet/wallet-core-chain-algorand/swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ProviderSelectionItem } from './ProviderSelectionItem'
 import { useSwapProviderContent } from './useSwapProviderContent'

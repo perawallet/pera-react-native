@@ -11,7 +11,7 @@
  */
 
 import { PWText, PWTouchableOpacity } from '@components/core'
-import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
+import type { DexSwapAsset } from '@perawallet/wallet-core-chain-algorand/swaps'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import { useTheme } from '@rneui/themed'
 import { useStyles } from './styles'

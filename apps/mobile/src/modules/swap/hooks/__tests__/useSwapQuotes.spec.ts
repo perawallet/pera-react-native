@@ -31,7 +31,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         amount.mul(new Decimal(10).pow(decimals)),
 }))
 
-vi.mock('@perawallet/wallet-core-swaps', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/swaps', () => ({
     percentToApiSlippage: (value: string) => value,
     useCreateQuotesMutation: () => ({
         mutateAsync: mockCreateQuotes,

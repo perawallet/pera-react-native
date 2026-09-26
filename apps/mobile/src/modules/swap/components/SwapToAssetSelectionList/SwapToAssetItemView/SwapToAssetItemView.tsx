@@ -20,7 +20,7 @@ import {
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { AccountAssetItemView } from '@modules/assets'
 
-import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
+import type { DexSwapAsset } from '@perawallet/wallet-core-chain-algorand/swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PWTouchableOpacityProps } from '@components/core'
 

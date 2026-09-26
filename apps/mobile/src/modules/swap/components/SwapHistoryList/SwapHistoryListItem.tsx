@@ -13,7 +13,7 @@
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
-import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
+import type { SwapHistoryItem } from '@perawallet/wallet-core-chain-algorand/swaps'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
     DEFAULT_PRECISION,

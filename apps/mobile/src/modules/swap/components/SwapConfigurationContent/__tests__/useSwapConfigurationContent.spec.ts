@@ -18,7 +18,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 let mockSlippage: Nullable<string> = null
 let mockIsLocalCurrencyInput = false
 
-vi.mock('@perawallet/wallet-core-swaps', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/swaps', () => ({
     useSwaps: () => ({
         slippage: mockSlippage,
         isLocalCurrencyInput: mockIsLocalCurrencyInput,
