@@ -16,6 +16,10 @@
     "./handlerKit": {
       "types": "./dist/handlerKit.d.ts",
       "default": "./dist/handlerKit.js"
+    },
+    "./dappRequest": {
+      "types": "./dist/dappRequest.d.ts",
+      "default": "./dist/dappRequest.js"
     }
   },
   "scripts": {

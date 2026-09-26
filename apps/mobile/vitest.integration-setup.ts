@@ -77,7 +77,6 @@ vi.unmock('@perawallet/wallet-core-background')
 vi.unmock('@perawallet/wallet-core-settings')
 vi.unmock('@perawallet/wallet-core-contacts')
 vi.unmock('@perawallet/wallet-core-staking')
-vi.unmock('@perawallet/wallet-core-chain-algorand/connect')
 
 // Flows render the real design system on react-native-web: the unit setup's
 // PWIcon and @rneui stubs come off, and only the native-only react-native
