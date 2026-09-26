@@ -17,6 +17,7 @@ import { initNetworkStatus } from '@modules/network'
 import { registerAppBottomSheets } from './bottom-sheet-registrations'
 import { registerLocaleTour } from '@modules/locale-tour/register'
 import { registerHardwareWalletTransports } from './hardware-wallet-transports'
+import { registerChainAdapters } from './chain-adapters'
 
 /**
  * Process-wide setup that has to land before the React tree mounts. Called by
@@ -30,6 +31,7 @@ export const initRuntime = (): void => {
     // Resolves to a no-op stub in every non-dev bundle (see metro.config.js).
     registerLocaleTour()
     registerHardwareWalletTransports(getProvider().hardwareWalletRegistry)
+    registerChainAdapters()
     // Seeds onlineManager before QueryProvider mounts, so early queries never
     // fire-and-fail against a dead link.
     void initNetworkStatus()

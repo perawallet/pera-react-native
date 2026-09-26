@@ -10,11 +10,14 @@
  limitations under the License
  */
 
-export * from './capabilities/resolve'
-export * from './errors'
-export * from './models/capabilities'
-export * from './models/descriptor'
-export * from './models/domain'
-export * from './models/identity'
-export * from './registry'
-export * from './scope'
+import { describe, expect, it } from 'vitest'
+import { registerAlgorandChain } from '..'
+
+describe('registerAlgorandChain', () => {
+    it('can run more than once, so a repeated bootstrap is harmless', () => {
+        expect(() => {
+            registerAlgorandChain()
+            registerAlgorandChain()
+        }).not.toThrow()
+    })
+})

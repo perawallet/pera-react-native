@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { ChainScope } from './models/identity'
+import type { ChainId, ChainScope } from './models/identity'
 
 /**
  * A chain's selected network changed between capturing a scope and using it.
@@ -38,5 +38,31 @@ export class InvalidScopeKeyError extends Error {
         super(`Invalid chain scope key: "${key}"`)
         this.name = 'InvalidScopeKeyError'
         this.key = key
+    }
+}
+
+export class ChainAdapterNotRegisteredError extends Error {
+    readonly feature: string
+    readonly chainId: ChainId
+
+    constructor(feature: string, chainId: ChainId) {
+        super(`No ${feature} adapter is registered for chain "${chainId}"`)
+        this.name = 'ChainAdapterNotRegisteredError'
+        this.feature = feature
+        this.chainId = chainId
+    }
+}
+
+export class DuplicateChainAdapterError extends Error {
+    readonly feature: string
+    readonly chainId: ChainId
+
+    constructor(feature: string, chainId: ChainId) {
+        super(
+            `A different ${feature} adapter is already registered for chain "${chainId}"`,
+        )
+        this.name = 'DuplicateChainAdapterError'
+        this.feature = feature
+        this.chainId = chainId
     }
 }
