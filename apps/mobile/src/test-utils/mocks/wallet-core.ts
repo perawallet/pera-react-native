@@ -12,15 +12,6 @@
 
 import { vi } from 'vitest'
 
-// The webview bridge reads the adapter's relay list, and loading the real
-// module drags in the signing and config graphs that specs mock partially.
-vi.mock('@perawallet/wallet-core-chain-algorand/connect', () => ({
-    algorandDappRequestAdapter: {
-        chainId: 'algorand',
-        relayableErrorNames: ['Arc0001Error'],
-    },
-}))
-
 // Mock @perawallet/wallet-core-projects
 vi.mock('@perawallet/wallet-core-projects', () => ({
     useProjectByUrlQuery: vi.fn(() => ({

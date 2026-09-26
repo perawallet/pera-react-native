@@ -16,7 +16,7 @@ import {
     useAlgorandClient,
     useMinimumFeeConfig,
 } from '@perawallet/wallet-core-blockchain'
-import { useFeeDelegation } from '@perawallet/wallet-core-chain-algorand/fee-delegation'
+import { useFeeDelegation } from '@perawallet/wallet-core-fee-delegation'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 
@@ -58,8 +58,8 @@ const SOURCE = {
  * 2. Already opted in → no-op.
  * 3. Not opted in + enough spare ALGO → self-funded opt-in.
  * 4. Not opted in + insufficient ALGO → fee-delegated opt-in via
- *    `@perawallet/wallet-core-chain-algorand/fee-delegation` (sponsor covers
- *    fees + MBR; requires a valid device attestation token, throws
+ *    `@perawallet/wallet-core-fee-delegation` (sponsor covers fees + MBR;
+ *    requires a valid device attestation token, throws
  *    `FeeDelegationAttestationRequiredError` otherwise). The opt-in itself is
  *    built with a zero fee — the sponsor tops the group's fee pool up to the
  *    full requirement, so the (underfunded) account pays nothing.

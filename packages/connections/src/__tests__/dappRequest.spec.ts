@@ -13,6 +13,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import {
+    dappRelayableErrorNames,
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
 } from '../dappRequest'
@@ -52,5 +53,24 @@ describe('dappRequestChainAdapters', () => {
         dappRequestChainAdapters.reset()
 
         expect(dappRequestChainAdapters.has('algorand')).toBe(false)
+    })
+})
+
+describe('dappRelayableErrorNames', () => {
+    beforeEach(() => {
+        dappRequestChainAdapters.reset()
+    })
+
+    it("returns the registered adapter's relay list", () => {
+        dappRequestChainAdapters.register({
+            ...fakeAdapter,
+            relayableErrorNames: ['Arc0001Error'],
+        })
+
+        expect(dappRelayableErrorNames('algorand')).toEqual(['Arc0001Error'])
+    })
+
+    it('returns none for a chain with no registered adapter', () => {
+        expect(dappRelayableErrorNames('algorand')).toEqual([])
     })
 })

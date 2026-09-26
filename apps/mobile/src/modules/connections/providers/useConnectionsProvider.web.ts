@@ -15,7 +15,7 @@ import {
     useCustomNetworkStore,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
-import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     hydrateConnectionsStore,
     setActiveConnectionRegistry,
@@ -57,7 +57,10 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
                 }),
                 createDappConnectionHandler({
                     transport: createNoopDappTransport(),
-                    chainId: ALGORAND_CHAIN_ID,
+                    // Every legacy network is the same chain, so reading it once is safe.
+                    chainId: scopeForLegacyNetwork(
+                        useNetworkStore.getState().network,
+                    ).chainId,
                     getNetwork: () => useNetworkStore.getState().network,
                     getCustomNetworkGenesisHash: () =>
                         useCustomNetworkStore.getState().customNetwork

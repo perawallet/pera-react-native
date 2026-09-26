@@ -50,3 +50,10 @@ export interface DappRequestChainAdapter {
 
 export const dappRequestChainAdapters =
     createChainAdapterRegistry<DappRequestChainAdapter>('dapp-request')
+
+// Empty for a chain with no registered adapter, so a surface that sanitizes
+// before bootstrap relays only the codec's chain-neutral names: fails closed.
+export const dappRelayableErrorNames = (chainId: ChainId): readonly string[] =>
+    dappRequestChainAdapters.has(chainId)
+        ? dappRequestChainAdapters.get(chainId).relayableErrorNames
+        : []
