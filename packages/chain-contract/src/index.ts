@@ -10,7 +10,10 @@
  limitations under the License
  */
 
+export * from './capabilities/resolve'
 export * from './errors'
+export * from './models/capabilities'
+export * from './models/descriptor'
 export * from './models/domain'
 export * from './models/identity'
 export * from './scope'
