@@ -47,11 +47,8 @@ const isWithinTxnBounds = (txns: unknown): boolean =>
 
 export const algorandDappRequestAdapter: DappRequestChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    // ARC-0001 requires a meaningful message alongside the numeric code, and
-    // those strings only echo the dApp's own request back at it. Other signing
-    // errors stay withheld: `TransportError` and `SourceError` wrap third-party
-    // text verbatim, and `CannotSignError` and `NoLocalParticipantsError`
-    // interpolate wallet-held addresses.
+    // ARC-0001 requires a message that only echoes the dApp's own request. Other
+    // signing errors wrap third-party text or interpolate held addresses.
     relayableErrorNames: ['Arc0001Error'],
 
     // Webview-compatible param shapes: `{ txns, opts?, metadata? }` for
