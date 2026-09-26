@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
+import { nameServiceAdapterFor } from '../chain-adapter'
 import type { NfdBulkResult, NfdName, NfdSearchResult } from '../models'
 import type {
     NfdBulkReadApiResponse,
@@ -40,25 +40,27 @@ export const transformBulkResults = (
 
 export const transformSearchResults = (
     response: NfdSearchApiResponse,
-): NfdSearchResult[] =>
-    response.results
-        // A name search returns a backend-asserted address that can become a
-        // send destination. The backend is semi-trusted, so a malformed/garbage
-        // address must never reach the destination picker. This closes the
-        // malformed-response case; a VALID attacker-supplied address is caught
-        // by `verifyNfdAddress` against the NFD contract before it can be sent to.
-        .filter(item => {
-            if (isValidAlgorandAddress(item.address)) return true
-            logger.warn('NFD search result dropped: invalid Algorand address', {
-                name: item.name,
-            })
-            return false
-        })
-        .map(item => ({
+    network: Network,
+): NfdSearchResult[] => {
+    const adapter = nameServiceAdapterFor(network)
+    // A name search returns a backend-asserted address that can become a send
+    // destination. The backend is semi-trusted, so a malformed/garbage address
+    // must never reach the destination picker. This closes the malformed-response
+    // case; a VALID attacker-supplied address is caught by `verifyNameAddress`
+    // against the chain before it can be sent to.
+    const wellFormed = response.results.filter(item => {
+        if (adapter.isValidAddress(item.address)) return true
+        logger.warn('NFD search result dropped: invalid address', {
             name: item.name,
-            address: item.address,
-            service: {
-                name: item.service.name,
-                logo: item.service.logo,
-            },
-        }))
+        })
+        return false
+    })
+    return wellFormed.map(item => ({
+        name: item.name,
+        address: item.address,
+        service: {
+            name: item.service.name,
+            logo: item.service.logo,
+        },
+    }))
+}
