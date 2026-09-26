@@ -42,10 +42,6 @@
       "types": "./dist/nfd/index.d.ts",
       "default": "./dist/nfd/index.js"
     },
-    "./arc0027": {
-      "types": "./dist/arc0027/index.d.ts",
-      "default": "./dist/arc0027/index.js"
-    },
     "./fee-delegation": {
       "types": "./dist/fee-delegation/index.d.ts",
       "default": "./dist/fee-delegation/index.js"
@@ -83,11 +79,24 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@perawallet/wallet-core-chain-contract": "workspace:*"
+    "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-app-integrity": "workspace:*",
+    "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
+    "@perawallet/wallet-core-connections": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-signing": "workspace:*",
+    "react": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
+    "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "msw": "catalog:",
+    "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

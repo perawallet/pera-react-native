@@ -30,7 +30,6 @@ export default defineConfig(
             'swaps/index': resolve(__dirname, 'src/swaps/index.ts'),
             'asa-inbox/index': resolve(__dirname, 'src/asa-inbox/index.ts'),
             'nfd/index': resolve(__dirname, 'src/nfd/index.ts'),
-            'arc0027/index': resolve(__dirname, 'src/arc0027/index.ts'),
             'fee-delegation/index': resolve(
                 __dirname,
                 'src/fee-delegation/index.ts',

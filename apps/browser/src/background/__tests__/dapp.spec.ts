@@ -17,7 +17,10 @@ import {
     DAPP_PAGE_REQUEST_SCOPE,
     DAPP_PAGE_RESPONSE_SCOPE,
 } from '@perawallet/wallet-core-browser-runtime'
-import { JsonRpcErrorCode } from '@perawallet/wallet-core-dapp/wire'
+import {
+    JsonRpcErrorCode,
+    MAX_DAPP_REQUEST_JSON_LENGTH,
+} from '@perawallet/wallet-core-dapp/wire'
 import {
     installDappHostResponseRoute,
     installDappPageRequestRoute,
@@ -128,13 +131,31 @@ describe('installDappPageRequestRoute', () => {
         expect(chromeMock.runtimeSendMessage).not.toHaveBeenCalled()
     })
 
-    it('refuses an oversized payload with InvalidParams before anything is forwarded', async () => {
+    it('forwards a transaction over the per-chain cap, which the offscreen handler refuses', async () => {
         const big = {
             ...pageMessage,
             request: {
                 ...request,
                 method: 'requestTransactionSigning',
                 params: { txns: [{ txn: 'A'.repeat(70_000) }] },
+            },
+        }
+        const ack = await chromeMock.deliver(big, contentSender)
+        expect(ack).toEqual({ ok: true })
+        await vi.waitFor(() =>
+            expect(chromeMock.runtimeSendMessage).toHaveBeenCalled(),
+        )
+    })
+
+    it('refuses a payload over the blanket JSON cap with InvalidParams before anything is forwarded', async () => {
+        const big = {
+            ...pageMessage,
+            request: {
+                ...request,
+                method: 'requestTransactionSigning',
+                params: {
+                    txns: [{ txn: 'A'.repeat(MAX_DAPP_REQUEST_JSON_LENGTH) }],
+                },
             },
         }
         const ack = (await chromeMock.deliver(big, contentSender)) as {

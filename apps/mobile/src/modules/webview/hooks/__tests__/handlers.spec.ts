@@ -14,6 +14,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Linking } from 'react-native'
+import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
 import {
     BROWSER_FAVORITE_ACTION,
     generateBridgeToken,
@@ -24,6 +25,7 @@ import {
     JsonRpcErrorCode,
     openValidatedBrowserUrl,
     requireSecure,
+    sanitizeErrorForWebview,
     sendActionToWebview,
     sendNotificationToWebview,
     toValidatedBrowserUrl,
@@ -130,6 +132,37 @@ describe('sendActionToWebview', () => {
         expect(() =>
             sendActionToWebview(BROWSER_FAVORITE_ACTION, {}, null),
         ).not.toThrow()
+    })
+})
+
+describe('sanitizeErrorForWebview', () => {
+    const protocolError = (): Error => {
+        const error = new Error('Echoed ARC-0001 reason')
+        error.name = 'Arc0001Error'
+        return error
+    }
+
+    beforeEach(() => {
+        dappRequestChainAdapters.reset()
+    })
+
+    it("relays an error the legacy chain's dApp adapter names", () => {
+        dappRequestChainAdapters.register({
+            chainId: 'algorand',
+            relayableErrorNames: ['Arc0001Error'],
+            parseSigningParams: () => ({ ok: true, payload: [] }),
+            resolveReportedNetwork: network => network,
+        })
+
+        expect(sanitizeErrorForWebview(protocolError())).toBe(
+            'Echoed ARC-0001 reason',
+        )
+    })
+
+    it('withholds the message when no adapter is registered', () => {
+        expect(sanitizeErrorForWebview(protocolError())).not.toBe(
+            'Echoed ARC-0001 reason',
+        )
     })
 })
 

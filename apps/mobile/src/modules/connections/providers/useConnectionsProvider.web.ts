@@ -15,6 +15,7 @@ import {
     useCustomNetworkStore,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     hydrateConnectionsStore,
     setActiveConnectionRegistry,
@@ -56,6 +57,10 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
                 }),
                 createDappConnectionHandler({
                     transport: createNoopDappTransport(),
+                    // Every legacy network is the same chain, so reading it once is safe.
+                    chainId: scopeForLegacyNetwork(
+                        useNetworkStore.getState().network,
+                    ).chainId,
                     getNetwork: () => useNetworkStore.getState().network,
                     getCustomNetworkGenesisHash: () =>
                         useCustomNetworkStore.getState().customNetwork

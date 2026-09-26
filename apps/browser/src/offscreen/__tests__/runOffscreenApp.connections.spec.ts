@@ -42,6 +42,7 @@ const {
     dappHandler,
     createDappConnectionHandler,
     importLegacyDappPermissions,
+    registerAlgorandChain,
 } = vi.hoisted(() => {
     const handleControlMessage = vi.fn()
     const registry = { register: vi.fn() }
@@ -80,6 +81,7 @@ const {
         dappHandler,
         createDappConnectionHandler: vi.fn((_options: unknown) => dappHandler),
         importLegacyDappPermissions: vi.fn(async () => ({ imported: 0 })),
+        registerAlgorandChain: vi.fn(),
     }
 })
 
@@ -150,6 +152,10 @@ vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
     importLegacyDappPermissions,
 }))
+vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
+    ALGORAND_CHAIN_ID: 'algorand',
+    registerAlgorandChain,
+}))
 vi.mock('@perawallet/wallet-core-connections', () => ({
     createConnectionRegistry,
     bootConnections,
@@ -205,12 +211,23 @@ describe('runOffscreenApp connections wiring', () => {
         expect(registry.register).toHaveBeenCalledWith(dappHandler)
         const options = createDappConnectionHandler.mock.calls[0]?.[0] as {
             transport: unknown
+            chainId: string
             getNetwork: () => string
             getCustomNetworkGenesisHash: () => string | undefined
         }
         expect(options.transport).toBe(dappTransport)
+        expect(options.chainId).toBe('algorand')
         expect(options.getNetwork()).toBe('mainnet')
         expect(options.getCustomNetworkGenesisHash()).toBe('custom-genesis')
+    })
+
+    it('registers the Algorand chain adapters before building the dapp handler', async () => {
+        await boot()
+
+        expect(registerAlgorandChain).toHaveBeenCalledOnce()
+        expect(registerAlgorandChain.mock.invocationCallOrder[0]).toBeLessThan(
+            createDappConnectionHandler.mock.invocationCallOrder[0],
+        )
     })
 
     it('offers the dapp handler only the accounts the wallet can sign with', async () => {

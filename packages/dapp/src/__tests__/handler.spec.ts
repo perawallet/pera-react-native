@@ -11,13 +11,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-config'
 import {
     createConnectionRegistry,
+    dappRequestChainAdapters,
     type ConnectionProposal,
+    type DappRequestChainAdapter,
     type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
+import type { Network } from '@perawallet/wallet-core-shared'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 import { JsonRpcErrorCode, type JsonRpcResponse } from '../codec'
 import { createDappConnectionHandler } from '../handler'
@@ -39,19 +41,53 @@ const errorOf = (response: JsonRpcResponse) =>
 const resultOf = (response: JsonRpcResponse) =>
     'result' in response ? response.result : undefined
 
+const KNOWN_GENESIS_HASH = 'known-testnet-hash'
+const RELAYABLE_ERROR_NAME = 'ChainProtocolError'
+
+// Stands in for a chain's adapter: the handler must behave the same for any
+// chain, so nothing here is Algorand's real parsing.
+const fakeChainAdapter = (
+    overrides: Partial<DappRequestChainAdapter> = {},
+): DappRequestChainAdapter => ({
+    chainId: 'algorand',
+    relayableErrorNames: [RELAYABLE_ERROR_NAME],
+    parseSigningParams: (type, params) => {
+        const key = type === 'sign-transactions' ? 'txns' : 'data'
+        return params[key] === undefined
+            ? {
+                  ok: false,
+                  reason: 'missing',
+                  message: `Missing required param: ${key}`,
+              }
+            : { ok: true, payload: params[key] }
+    },
+    resolveReportedNetwork: (network, customGenesisHash) => {
+        if (network !== 'custom') return network
+        return customGenesisHash === KNOWN_GENESIS_HASH ? 'testnet' : undefined
+    },
+    ...overrides,
+})
+
 const setup = (
     seed: Connection[] = [],
     overrides: {
-        network?: (typeof Networks)[keyof typeof Networks]
+        network?: Network
         customGenesisHash?: string
+        adapter?: DappRequestChainAdapter | null
     } = {},
 ) => {
+    if (overrides.adapter !== null) {
+        dappRequestChainAdapters.register(
+            overrides.adapter ?? fakeChainAdapter(),
+        )
+    }
     const transport = new FakeDappTransport()
     const store = memoryStore(seed)
     let now = 1_000_000
     const handler = createDappConnectionHandler({
         transport,
-        getNetwork: () => overrides.network ?? Networks.mainnet,
+        chainId: 'algorand',
+        getNetwork: () => overrides.network ?? 'mainnet',
         getCustomNetworkGenesisHash: () => overrides.customGenesisHash,
         getAccounts: () => [
             { address: ADDR_A, name: 'Main' },
@@ -91,6 +127,7 @@ const connected = (): Connection => ({
 describe('DappConnectionHandler', () => {
     beforeEach(() => {
         vi.useFakeTimers()
+        dappRequestChainAdapters.reset()
     })
 
     describe('connect', () => {
@@ -115,7 +152,7 @@ describe('DappConnectionHandler', () => {
             })
             expect(proposal.requesterOrigin).toBe(ORIGIN)
             expect(proposal.requested).toEqual({
-                networks: [Networks.mainnet],
+                networks: ['mainnet'],
                 methods: [...DAPP_METHODS],
             })
             expect(proposal.pairingId).toBeUndefined()
@@ -126,7 +163,7 @@ describe('DappConnectionHandler', () => {
             expect((await store.get(ORIGIN))?.accounts).toEqual([ADDR_A])
             expect(resultOf(await pending)).toEqual({
                 accounts: [{ address: ADDR_A, name: 'Main' }],
-                network: Networks.mainnet,
+                network: 'mainnet',
             })
         })
 
@@ -196,7 +233,7 @@ describe('DappConnectionHandler', () => {
             )
             expect(resultOf(response)).toEqual({
                 accounts: [{ address: ADDR_A, name: 'Main' }],
-                network: Networks.mainnet,
+                network: 'mainnet',
             })
             expect(proposals).toHaveLength(0)
             expect((await store.get(ORIGIN))?.lastActiveAt).toBe(1_000_000)
@@ -229,14 +266,14 @@ describe('DappConnectionHandler', () => {
             await proposals[0].approve([ADDR_A])
             expect(resultOf(await first)).toEqual({
                 accounts: [{ address: ADDR_A, name: 'Main' }],
-                network: Networks.mainnet,
+                network: 'mainnet',
             })
             const later = await transport.send(ORIGIN, 'connect', undefined, {
                 hasUserActivation: false,
             })
             expect(resultOf(later)).toEqual({
                 accounts: [{ address: ADDR_A, name: 'Main' }],
-                network: Networks.mainnet,
+                network: 'mainnet',
             })
         })
 
@@ -246,14 +283,14 @@ describe('DappConnectionHandler', () => {
             const response = await transport.send(
                 ORIGIN,
                 'connect',
-                { network: Networks.testnet },
+                { network: 'testnet' },
                 { hasUserActivation: false },
             )
             // The wrong-network message names the wallet's active network, so
             // the activation gate has to win: an unapproved page must learn
             // nothing about the wallet from a connect it never earned.
             expect(errorOf(response)?.code).toBe(JsonRpcErrorCode.Unauthorized)
-            expect(errorOf(response)?.message).not.toContain(Networks.mainnet)
+            expect(errorOf(response)?.message).not.toContain('mainnet')
             expect(proposals).toHaveLength(0)
         })
 
@@ -288,7 +325,7 @@ describe('DappConnectionHandler', () => {
             const { transport, registry, proposals } = setup()
             await registry.initialize()
             const response = await transport.send(ORIGIN, 'connect', {
-                network: Networks.testnet,
+                network: 'testnet',
             })
             expect(errorOf(response)?.code).toBe(
                 JsonRpcErrorCode.NetworkNotSupported,
@@ -298,7 +335,7 @@ describe('DappConnectionHandler', () => {
 
         it('fails with NetworkNotSupported on a custom network with an unknown genesis hash', async () => {
             const { transport, registry } = setup([], {
-                network: Networks.custom,
+                network: 'custom',
                 customGenesisHash: 'unknown',
             })
             await registry.initialize()
@@ -306,6 +343,35 @@ describe('DappConnectionHandler', () => {
             expect(errorOf(response)?.code).toBe(
                 JsonRpcErrorCode.NetworkNotSupported,
             )
+        })
+
+        it('reports a custom network as the network the chain adapter resolves it to', async () => {
+            const { transport, registry, proposals } = setup([], {
+                network: 'custom',
+                customGenesisHash: KNOWN_GENESIS_HASH,
+            })
+            await registry.initialize()
+            void transport.send(ORIGIN, 'connect')
+            await flush()
+            expect(proposals[0].requested.networks).toEqual(['testnet'])
+        })
+
+        it('answers NetworkNotSupported for a chain with no adapter, opens no proposal and frees the slot', async () => {
+            const { transport, registry, proposals } = setup([], {
+                adapter: null,
+            })
+            await registry.initialize()
+            const response = await transport.send(ORIGIN, 'connect')
+            expect(errorOf(response)).toEqual({
+                code: JsonRpcErrorCode.NetworkNotSupported,
+                message: 'The wallet cannot answer requests for this chain',
+            })
+            expect(proposals).toHaveLength(0)
+
+            dappRequestChainAdapters.register(fakeChainAdapter())
+            void transport.send(ORIGIN, 'connect')
+            await flush()
+            expect(proposals).toHaveLength(1)
         })
     })
 
@@ -415,6 +481,35 @@ describe('DappConnectionHandler', () => {
             expect(error?.message).not.toContain(ADDR_B)
         })
 
+        it('relays the message of an error the chain adapter names, and only that one', async () => {
+            const { transport, registry, messages } = setup([connected()])
+            await registry.initialize()
+            const first = transport.send(ORIGIN, 'requestTransactionSigning', {
+                txns: [{ txn: 'AA==' }],
+            })
+            const second = transport.send(ORIGIN, 'requestTransactionSigning', {
+                txns: [{ txn: 'AA==' }],
+            })
+            await flush()
+            const [m1, m2] = messages
+            if (m1.kind !== 'request' || m2.kind !== 'request')
+                throw new Error('expected requests')
+            await m1.reject(
+                Object.assign(new Error('group is malformed'), {
+                    name: RELAYABLE_ERROR_NAME,
+                }),
+            )
+            await m2.reject(
+                Object.assign(new Error('group is malformed'), {
+                    name: 'OtherError',
+                }),
+            )
+            expect(errorOf(await first)?.message).toBe('group is malformed')
+            expect(errorOf(await second)?.message).toBe(
+                'An error occurred during signing',
+            )
+        })
+
         it('answers InvalidParams when txns is missing', async () => {
             const { transport, registry } = setup([connected()])
             await registry.initialize()
@@ -423,8 +518,52 @@ describe('DappConnectionHandler', () => {
                 'requestTransactionSigning',
                 {},
             )
-            expect(errorOf(response)?.code).toBe(JsonRpcErrorCode.InvalidParams)
+            expect(errorOf(response)).toEqual({
+                code: JsonRpcErrorCode.InvalidParams,
+                message: 'Missing required param: txns',
+            })
         })
+
+        it('answers InvalidParams with the size-limit message when the chain adapter finds the request out of bounds', async () => {
+            const { transport, registry, messages } = setup([connected()], {
+                adapter: fakeChainAdapter({
+                    parseSigningParams: () => ({
+                        ok: false,
+                        reason: 'out-of-bounds',
+                        message: 'Request exceeds size limits',
+                    }),
+                }),
+            })
+            await registry.initialize()
+            const response = await transport.send(
+                ORIGIN,
+                'requestTransactionSigning',
+                { txns: [{ txn: 'AA==' }] },
+            )
+            expect(errorOf(response)).toEqual({
+                code: JsonRpcErrorCode.InvalidParams,
+                message: 'Request exceeds size limits',
+            })
+            expect(messages.some(m => m.kind === 'request')).toBe(false)
+        })
+
+        it.each(['requestTransactionSigning', 'requestDataSigning'])(
+            'answers %s for a chain with no adapter before the registry sees it',
+            async method => {
+                const { transport, registry, messages } = setup([connected()], {
+                    adapter: null,
+                })
+                await registry.initialize()
+                const response = await transport.send(ORIGIN, method, {
+                    txns: [{ txn: 'AA==' }],
+                    data: [{ signer: ADDR_A, data: 'aGVsbG8=' }],
+                })
+                expect(errorOf(response)?.code).toBe(
+                    JsonRpcErrorCode.NetworkNotSupported,
+                )
+                expect(messages).toHaveLength(0)
+            },
+        )
 
         it('maps the registry rejecting a malformed payload to InvalidParams, before any request reaches a subscriber', async () => {
             const { transport, registry, messages } = setup([connected()])
@@ -522,7 +661,7 @@ describe('DappConnectionHandler', () => {
             await registry.initialize()
             await handler.notify?.(ORIGIN, {
                 type: 'network-changed',
-                network: Networks.testnet,
+                network: 'testnet',
             })
             await handler.notify?.(ORIGIN, {
                 type: 'accounts-changed',
@@ -532,7 +671,7 @@ describe('DappConnectionHandler', () => {
                 {
                     jsonrpc: '2.0',
                     method: DAPP_NOTIFICATIONS.networkChanged,
-                    params: { network: Networks.testnet },
+                    params: { network: 'testnet' },
                 },
                 {
                     jsonrpc: '2.0',

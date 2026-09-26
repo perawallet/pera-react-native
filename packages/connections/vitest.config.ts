@@ -32,6 +32,10 @@ export default defineConfig({
                 __dirname,
                 '../shared/src/index.ts',
             ),
+            '@perawallet/wallet-core-chain-contract': path.resolve(
+                __dirname,
+                '../chain-contract/src/index.ts',
+            ),
             '@perawallet/wallet-extension-connections': path.resolve(
                 __dirname,
                 '../../extensions/connections/src/index.ts',

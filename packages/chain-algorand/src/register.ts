@@ -10,7 +10,12 @@
  limitations under the License
  */
 
+import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
+import { algorandDappRequestAdapter } from './connect/dappRequestAdapter'
+
 // Adapters must be module-level instances, not built in here: the registries
 // ignore a repeat of the same instance but reject a new one, which is what
 // keeps a second call harmless.
-export const registerAlgorandChain = (): void => {}
+export const registerAlgorandChain = (): void => {
+    dappRequestChainAdapters.register(algorandDappRequestAdapter)
+}

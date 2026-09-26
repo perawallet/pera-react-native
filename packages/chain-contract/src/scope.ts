@@ -54,7 +54,7 @@ export const parseScopeKey = (key: string): ChainScope => {
 
 // Every legacy network value, and every row stored before scope keys, is this
 // chain's.
-const LEGACY_CHAIN_ID = 'algorand' satisfies ChainId
+export const LEGACY_CHAIN_ID = 'algorand' satisfies ChainId
 
 export const scopeForLegacyNetwork = (network: LegacyNetwork): ChainScope => ({
     chainId: LEGACY_CHAIN_ID,
