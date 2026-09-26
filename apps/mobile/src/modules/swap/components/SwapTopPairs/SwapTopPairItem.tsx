@@ -13,7 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { useTheme } from '@rneui/themed'
-import type { TopPairItem } from '@perawallet/wallet-core-swaps'
+import type { TopPairItem } from '@perawallet/wallet-core-chain-algorand/swaps'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'

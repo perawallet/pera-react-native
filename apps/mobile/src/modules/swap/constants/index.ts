@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { SwapStatus } from '@perawallet/wallet-core-swaps'
+import type { SwapStatus } from '@perawallet/wallet-core-chain-algorand/swaps'
 
 const VISIBLE_SWAP_STATUSES_LIST: SwapStatus[] = ['completed', 'in_progress']
 

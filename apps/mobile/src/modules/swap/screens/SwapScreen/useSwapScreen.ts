@@ -12,7 +12,7 @@
 
 import { useEffect } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
-import { useSwaps } from '@perawallet/wallet-core-swaps'
+import { useSwaps } from '@perawallet/wallet-core-chain-algorand/swaps'
 import {
     useSelectedAccount,
     useSelectedAccountAddress,

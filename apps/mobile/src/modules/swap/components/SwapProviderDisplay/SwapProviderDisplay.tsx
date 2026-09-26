@@ -11,7 +11,7 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import { useProvidersQuery } from '@perawallet/wallet-core-swaps'
+import { useProvidersQuery } from '@perawallet/wallet-core-chain-algorand/swaps'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'

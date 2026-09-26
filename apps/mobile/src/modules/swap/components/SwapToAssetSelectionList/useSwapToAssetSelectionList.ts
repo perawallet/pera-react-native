@@ -27,7 +27,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useAvailableAssetsQuery,
     type DexSwapAsset,
-} from '@perawallet/wallet-core-swaps'
+} from '@perawallet/wallet-core-chain-algorand/swaps'
 import {
     uint64IdToNumber,
     useDebouncedValue,

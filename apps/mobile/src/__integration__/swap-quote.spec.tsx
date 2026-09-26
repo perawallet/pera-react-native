@@ -25,8 +25,8 @@ import { createQueryClientWrapper } from '@test-utils/render'
 import {
     mockCreateQuotes,
     mockSwapProviders,
-} from '@perawallet/wallet-core-swaps/test-handlers'
-import { useCreateQuotesMutation } from '@perawallet/wallet-core-swaps'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { useCreateQuotesMutation } from '@perawallet/wallet-core-chain-algorand/swaps'
 
 const SWAPPER_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'

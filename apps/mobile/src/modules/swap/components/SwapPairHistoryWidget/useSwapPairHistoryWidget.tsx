@@ -15,7 +15,7 @@ import {
     useDistinctPairsHistoryQuery,
     useSwaps,
     type SwapDistinctPairItem,
-} from '@perawallet/wallet-core-swaps'
+} from '@perawallet/wallet-core-chain-algorand/swaps'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'

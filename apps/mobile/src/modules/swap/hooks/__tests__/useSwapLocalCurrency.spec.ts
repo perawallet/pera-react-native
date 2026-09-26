@@ -26,7 +26,7 @@ let mockAssetDecimals: Nullable<number> = 6
 
 const ASSET_ID = '0'
 
-vi.mock('@perawallet/wallet-core-swaps', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/swaps', () => ({
     useSwaps: () => ({ isLocalCurrencyInput: mockIsLocalCurrencyInput }),
 }))
 

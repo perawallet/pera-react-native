@@ -16,7 +16,7 @@ import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import {
     useSwapHistoryInfiniteQuery,
     type SwapHistoryItem,
-} from '@perawallet/wallet-core-swaps'
+} from '@perawallet/wallet-core-chain-algorand/swaps'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useWebView } from '@modules/webview'
 

@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { useSwaps } from '@perawallet/wallet-core-swaps'
+import { useSwaps } from '@perawallet/wallet-core-chain-algorand/swaps'
 import {
     areRatesUsable,
     assetToFiatAmount,

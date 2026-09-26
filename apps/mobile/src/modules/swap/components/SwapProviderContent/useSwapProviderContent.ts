@@ -24,7 +24,7 @@ import {
     sortQuotesByAmountOutDesc,
     useProvidersQuery,
     type SwapQuote,
-} from '@perawallet/wallet-core-swaps'
+} from '@perawallet/wallet-core-chain-algorand/swaps'
 
 type UseSwapProviderContentParams = {
     quotes: SwapQuote[]

@@ -11,7 +11,7 @@
  */
 
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
-import { useSwapsStore } from '@perawallet/wallet-core-swaps'
+import { useSwapsStore } from '@perawallet/wallet-core-chain-algorand/swaps'
 import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
 
 const SWAP_INTRODUCTION_SEEN_KEY = 'swap-introduction-seen'

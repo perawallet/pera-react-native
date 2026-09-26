@@ -44,7 +44,7 @@ import {
     useSettingsStore,
     type ThemeMode,
 } from '@perawallet/wallet-core-settings'
-import { useSwapsStore } from '@perawallet/wallet-core-swaps'
+import { useSwapsStore } from '@perawallet/wallet-core-chain-algorand/swaps'
 
 export type RNAuthSnapshot = {
     hasPin: boolean

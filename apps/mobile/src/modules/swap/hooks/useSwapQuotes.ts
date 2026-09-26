@@ -21,7 +21,7 @@ import {
     percentToApiSlippage,
     useCreateQuotesMutation,
     type SwapQuote,
-} from '@perawallet/wallet-core-swaps'
+} from '@perawallet/wallet-core-chain-algorand/swaps'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {

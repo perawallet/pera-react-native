@@ -54,7 +54,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-swaps', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/swaps', async () => {
     const { Decimal } = await import('decimal.js')
     return {
         useSwaps: vi.fn(),

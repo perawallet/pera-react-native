@@ -28,7 +28,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     apiSlippageToPercent,
     type SwapQuote,
-} from '@perawallet/wallet-core-swaps'
+} from '@perawallet/wallet-core-chain-algorand/swaps'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
 import { useStyles } from './styles'
 

@@ -610,7 +610,7 @@ describe('Pera backend wire contract', () => {
     // Folks-router swap of 0.5 ALGO into ALPHA. Two things this pins down that
     // the field names alone do not: decimals arrive as `fraction_decimals`,
     // and the amounts are base units — 500000 is 0.5 ALGO, not 500000 ALGO.
-    // The sibling `packages/swaps` history endpoint sends display units for
+    // The sibling `chain-algorand/src/swaps` history endpoint sends display units for
     // identically named fields, so the two are easy to conflate.
     const MAINNET_SWAP_ROW = {
         id: 'TGPRD6UIKWDZZLDNJZ2KUVAULOOGA2ETS7EC2GKLOVLHLPE7MYOQ',

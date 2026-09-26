@@ -100,7 +100,10 @@ import type { Banner } from '@perawallet/wallet-core-banners'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import type { StakingProject } from '@perawallet/wallet-core-staking'
-import type { DexSwapAsset, SwapQuote } from '@perawallet/wallet-core-swaps'
+import type {
+    DexSwapAsset,
+    SwapQuote,
+} from '@perawallet/wallet-core-chain-algorand/swaps'
 import type { GallerySection } from './types'
 
 const useThumbPreviewStyles = makeStyles(theme => ({
