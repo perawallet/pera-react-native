@@ -1129,6 +1129,38 @@ describe('useBiometrics', () => {
                 true,
             )
         })
+
+        test('offers the recovery prompt to a caller that lands mid-sweep', async () => {
+            let hasLegacy = true
+            kmsMocks.hasSecret.mockImplementation(
+                (id: string) =>
+                    id === LEGACY_BIOMETRIC_BLOB_KEY_ID && hasLegacy,
+            )
+            kmsMocks.removeSecret.mockImplementation(async (id: string) => {
+                if (id === LEGACY_BIOMETRIC_BLOB_KEY_ID) hasLegacy = false
+            })
+            let releaseClear: () => void = () => undefined
+            mockClearEnrollmentBinding.mockImplementationOnce(
+                () =>
+                    new Promise<void>(resolve => {
+                        releaseClear = resolve
+                    }),
+            )
+
+            const { result } = renderHook(() => useBiometrics())
+            await waitFor(() => {
+                expect(mockClearEnrollmentBinding).toHaveBeenCalled()
+            })
+
+            let available: boolean | undefined
+            await act(async () => {
+                const pending = result.current.checkBiometricUnlockAvailable()
+                setTimeout(releaseClear, 0)
+                available = await pending
+            })
+
+            expect(available).toBe(true)
+        })
     })
 
     describe('completePendingBiometricRearm', () => {
