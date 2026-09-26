@@ -12,7 +12,7 @@
 
 // Test-only barrel — exposes co-located MSW handler factories without pulling
 // them into the production entry (src/index.ts). Consumed only via the test
-// alias `@perawallet/wallet-core-card/test-handlers`.
+// alias `@perawallet/wallet-core-chain-algorand/card/test-handlers`.
 
 export {
     mockLogin,
