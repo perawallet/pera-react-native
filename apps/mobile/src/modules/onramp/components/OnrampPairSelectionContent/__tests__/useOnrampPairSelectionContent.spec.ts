@@ -13,7 +13,10 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type { RampPair, RampToken } from '@perawallet/wallet-core-onramp'
+import type {
+    RampPair,
+    RampToken,
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 
 const makeToken = (id: string, name: string, symbol: string): RampToken => ({
     id,
@@ -51,10 +54,13 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: () => ({ resolve: mockResolve }),
 }))
 
-vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
-    ...(await importOriginal()),
-    useRampPairsQuery: mockUseRampPairsQuery,
-}))
+vi.mock(
+    import('@perawallet/wallet-core-chain-algorand/onramp'),
+    async importOriginal => ({
+        ...(await importOriginal()),
+        useRampPairsQuery: mockUseRampPairsQuery,
+    }),
+)
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCardStore } from '@perawallet/wallet-core-card'
+import { useCardStore } from '@perawallet/wallet-core-chain-algorand/card'
 import {
     useFindAccountByAddress,
     type WalletAccount,

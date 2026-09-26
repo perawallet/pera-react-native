@@ -21,7 +21,7 @@ import {
     pickBestQuote,
     sortQuotesByDestinationDesc,
     type RampQuote,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import { ProviderSelectionItem } from './ProviderSelectionItem'
 import { getOnrampProviderName } from '../onrampQuoteDisplay'
 import { useStyles } from './styles'

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useUnfreezeCardMutation } from '@perawallet/wallet-core-card'
+import { useUnfreezeCardMutation } from '@perawallet/wallet-core-chain-algorand/card'
 import { useCardConfirmMutation } from '../../hooks'
 
 type UseUnfreezeCardConfirmationSheetResult = {

@@ -81,6 +81,32 @@ describe('workspaceSourceAliases', () => {
         ])
     })
 
+    it('maps test-handlers beside a directory-barrel subpath ahead of that subpath', () => {
+        writePackage(
+            'packages/chain',
+            '@scope/chain',
+            { '.': {}, './card': {} },
+            ['index.ts', 'card/index.ts', 'card/test-handlers.ts'],
+        )
+
+        const aliases = workspaceSourceAliases({
+            packageRoots: [path.join(fixtureRoot, 'packages')],
+        })
+
+        const src = path.join(fixtureRoot, 'packages/chain/src')
+        expect(aliases).toEqual([
+            {
+                find: '@scope/chain/card/test-handlers',
+                replacement: path.join(src, 'card/test-handlers.ts'),
+            },
+            {
+                find: '@scope/chain/card',
+                replacement: path.join(src, 'card/index.ts'),
+            },
+            { find: '@scope/chain', replacement: path.join(src, 'index.ts') },
+        ])
+    })
+
     it('orders every subpath ahead of a root that would prefix-match it', () => {
         writePackage('packages/a', '@scope/a', { '.': {} }, ['index.ts'])
         writePackage(

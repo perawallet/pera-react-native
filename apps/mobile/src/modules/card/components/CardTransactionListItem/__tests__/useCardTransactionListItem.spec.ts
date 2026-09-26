@@ -16,7 +16,7 @@ import {
     type CardTransaction,
     TransactionSign,
     TransactionStatus,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 
 // `t` echoes the key (and appends interpolated `days`) so assertions read the
 // resolved key, not English copy.

@@ -20,10 +20,10 @@ const mockSetAllowSms = vi.fn()
 let mockAllowSms: boolean | null = false
 let mockAllowMarketing: boolean | null = false
 let mockExistingOnboardingId: string | null = null
-vi.mock('@perawallet/wallet-core-card', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-card')
-    >('@perawallet/wallet-core-card')
+        typeof import('@perawallet/wallet-core-chain-algorand/card')
+    >('@perawallet/wallet-core-chain-algorand/card')
     const mutationShell = {
         mutate: vi.fn(),
         isPending: false,

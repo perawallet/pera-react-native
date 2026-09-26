@@ -12,10 +12,10 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { SupportedCountry } from '@perawallet/wallet-core-card'
+import type { SupportedCountry } from '@perawallet/wallet-core-chain-algorand/card'
 
 const mockUseRegistrationSettingsQuery = vi.fn()
-vi.mock('@perawallet/wallet-core-card', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/card', () => ({
     useRegistrationSettingsQuery: () => mockUseRegistrationSettingsQuery(),
 }))
 

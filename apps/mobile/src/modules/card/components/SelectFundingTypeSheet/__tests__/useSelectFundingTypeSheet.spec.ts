@@ -13,7 +13,7 @@
 import { renderHook } from '@test-utils/render'
 import { act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { FundingType } from '@perawallet/wallet-core-card'
+import { FundingType } from '@perawallet/wallet-core-chain-algorand/card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { CardEvent } from '@analytics'
 import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
@@ -31,8 +31,10 @@ let mockEscrowCardAddress: string | null = null
 let mockEscrowCardOwner: string | null = null
 let mockEscrowCardNetwork: string | null = null
 
-vi.mock('@perawallet/wallet-core-card', async () => {
-    const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-chain-algorand/card',
+    )
     return {
         ...actual,
         useCardStore: Object.assign(

@@ -19,10 +19,10 @@ const mockSetCodeVerificationError = vi.fn()
 const mockEmail = 'john@example.com'
 let mockSendIsPending = false
 let mockCodeVerificationError: 'email' | 'phone' | null = null
-vi.mock('@perawallet/wallet-core-card', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-card')
-    >('@perawallet/wallet-core-card')
+        typeof import('@perawallet/wallet-core-chain-algorand/card')
+    >('@perawallet/wallet-core-chain-algorand/card')
     return {
         ...actual,
         useSendEmailVerificationMutation: () => ({

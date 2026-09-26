@@ -20,8 +20,10 @@ const mocks = vi.hoisted(() => ({
     request: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-card', async () => {
-    const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-chain-algorand/card',
+    )
     return {
         ...actual,
         useCardStatusQuery: () => ({

@@ -16,8 +16,8 @@ import { http, HttpResponse } from 'msw'
 import { View } from 'react-native'
 import { Notifier } from 'react-native-notifier'
 
-import { useCardStore } from '@perawallet/wallet-core-card'
-import { mockOauthChain } from '@perawallet/wallet-core-card/test-handlers'
+import { useCardStore } from '@perawallet/wallet-core-chain-algorand/card'
+import { mockOauthChain } from '@perawallet/wallet-core-chain-algorand/card/test-handlers'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'

@@ -17,7 +17,7 @@ import {
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
     FundingType,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const {
@@ -37,10 +37,10 @@ const {
     mockShowCardError: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-card', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-card')
-    >('@perawallet/wallet-core-card')
+        typeof import('@perawallet/wallet-core-chain-algorand/card')
+    >('@perawallet/wallet-core-chain-algorand/card')
     return {
         ...actual,
         useCardStore: (selector: (state: typeof cardStoreState) => unknown) =>

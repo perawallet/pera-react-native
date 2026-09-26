@@ -36,7 +36,7 @@ import {
     useSubmitPersonalDetailsMutation,
     type PersonalDetailsFormValues,
     type SupportedCountry,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'

@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import type { RampPair } from '@perawallet/wallet-core-onramp'
+import type { RampPair } from '@perawallet/wallet-core-chain-algorand/onramp'
 import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { resolveDestinationAssetId } from '../onrampFormHelpers'
 

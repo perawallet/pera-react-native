@@ -12,7 +12,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { useCardStore } from '@perawallet/wallet-core-card'
+import { useCardStore } from '@perawallet/wallet-core-chain-algorand/card'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'

@@ -18,7 +18,7 @@ import {
     TransactionSign,
     useCardWalletBalanceQuery,
     useCardWalletHistoryQuery,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 
 const mocks = vi.hoisted(() => ({
     navigate: vi.fn(),
@@ -27,8 +27,10 @@ const mocks = vi.hoisted(() => ({
         | undefined,
 }))
 
-vi.mock('@perawallet/wallet-core-card', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => ({
+    ...(await vi.importActual<object>(
+        '@perawallet/wallet-core-chain-algorand/card',
+    )),
     useCardWalletBalanceQuery: vi.fn(),
     useCardWalletHistoryQuery: vi.fn(),
 }))

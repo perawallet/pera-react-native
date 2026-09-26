@@ -20,11 +20,11 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
     CardWalletKind,
     useCardSessionStore,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import {
     mockGetWalletBalance,
     mockGetWalletHistory,
-} from '@perawallet/wallet-core-card/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/card/test-handlers'
 import { CardWalletBalanceScreen } from '@modules/card/screens/CardWalletBalanceScreen'
 import { CardWalletBalanceWithdrawScreen } from '@modules/card/screens/CardWalletBalanceWithdrawScreen'
 import { isElementDisabled } from '@test-utils/rnw'

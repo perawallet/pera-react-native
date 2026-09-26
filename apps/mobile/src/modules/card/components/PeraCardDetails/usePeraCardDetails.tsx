@@ -21,7 +21,7 @@ import {
     useSetCardPinMutation,
     type CardEligibilityReason,
     type CardIssuanceState,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'

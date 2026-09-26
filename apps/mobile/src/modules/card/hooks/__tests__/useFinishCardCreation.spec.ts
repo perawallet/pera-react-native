@@ -12,7 +12,7 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { FundingType } from '@perawallet/wallet-core-card'
+import { FundingType } from '@perawallet/wallet-core-chain-algorand/card'
 
 const {
     mockSetSelectedFundingType,
@@ -28,10 +28,10 @@ const {
     mockNavigate: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-card', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-card')
-    >('@perawallet/wallet-core-card')
+        typeof import('@perawallet/wallet-core-chain-algorand/card')
+    >('@perawallet/wallet-core-chain-algorand/card')
     return {
         ...actual,
         useCardStore: Object.assign(vi.fn(), {

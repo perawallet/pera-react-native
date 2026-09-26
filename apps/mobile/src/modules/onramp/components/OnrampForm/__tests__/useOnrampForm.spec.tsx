@@ -19,7 +19,7 @@ import type {
     MeldQuote,
     XoQuote,
     RampOrder,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import { useOnrampForm } from '../useOnrampForm'
 import { OnrampTermsContent } from '../../OnrampTermsContent'
 
@@ -47,10 +47,10 @@ let mockSenderAddress = 'SENDER_ADDRESS'
 
 // --- mocks ----------------------------------------------------------------
 
-vi.mock('@perawallet/wallet-core-onramp', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/onramp', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-onramp')
-    >('@perawallet/wallet-core-onramp')
+        typeof import('@perawallet/wallet-core-chain-algorand/onramp')
+    >('@perawallet/wallet-core-chain-algorand/onramp')
     return {
         ...actual,
         useCreateRampQuoteMutation: () => ({ mutateAsync: mockCreateQuote }),

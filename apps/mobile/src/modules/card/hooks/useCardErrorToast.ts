@@ -22,7 +22,7 @@ import {
     CardSetupIncompleteError,
     getCardApiError,
     type CardApiError,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { toAlgodError } from '@perawallet/wallet-core-blockchain'
 import {
     isConnectivityError,

@@ -19,7 +19,7 @@ import {
     mockPasswordResetConfirm,
     mockPasswordResetRequest,
     mockPasswordResetVerify,
-} from '@perawallet/wallet-core-card/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/card/test-handlers'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'

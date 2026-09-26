@@ -13,7 +13,10 @@
 import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { FundingType, OnboardingStep } from '@perawallet/wallet-core-card'
+import {
+    FundingType,
+    OnboardingStep,
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { config } from '@perawallet/wallet-core-config'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { CardEvent } from '@analytics'
@@ -36,10 +39,10 @@ let mockOnboardingStep: OnboardingStep = OnboardingStep.Verification
 let mockConnectedAddress: string | null = null
 let mockStoredFundingType: FundingType | null = null
 
-vi.mock('@perawallet/wallet-core-card', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-card')
-    >('@perawallet/wallet-core-card')
+        typeof import('@perawallet/wallet-core-chain-algorand/card')
+    >('@perawallet/wallet-core-chain-algorand/card')
     return {
         ...actual,
         // The poll mechanics (give-up limits, restart) are unit-tested in the

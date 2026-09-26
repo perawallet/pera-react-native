@@ -64,7 +64,7 @@ vi.mock('../../../hooks', () => ({
     useCardErrorToast: () => mockDepositError,
 }))
 
-vi.mock('@perawallet/wallet-core-card', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/card', () => ({
     useCardUsdcCreditQuery: () => ({
         readUsdcBalance: mockReadBalance,
         waitForUsdcCredit: mockWaitCredit,

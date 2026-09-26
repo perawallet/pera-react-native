@@ -21,7 +21,7 @@ import { trackEvent, OnrampEvent } from '@analytics'
 import type {
     OnrampStatus,
     RampHistoryItem,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { OnrampOrderDetailsContent } from '../OnrampOrderDetailsContent'

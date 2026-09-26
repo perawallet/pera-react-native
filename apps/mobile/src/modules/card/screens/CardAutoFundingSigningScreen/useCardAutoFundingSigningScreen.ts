@@ -16,7 +16,7 @@ import {
     AutoDrawTealUnverifiedError,
     FundingType,
     useCardStore,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'

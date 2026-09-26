@@ -25,8 +25,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
 
 const mockSignOwnershipAsync = vi.fn()
 const mockCreateAndApproveAsync = vi.fn()
-vi.mock('@perawallet/wallet-core-card', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => ({
+    ...(await vi.importActual<object>(
+        '@perawallet/wallet-core-chain-algorand/card',
+    )),
     useSignCardOwnershipMutation: () => ({
         mutate: vi.fn(),
         mutateAsync: mockSignOwnershipAsync,

@@ -17,12 +17,12 @@ import {
     useRampRegionQuery,
     type RampPair,
     type RampToken,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 import { useOnrampSourceSelection } from '../useOnrampSourceSelection'
 
-vi.mock('@perawallet/wallet-core-onramp', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/onramp', () => ({
     useRampPairsQuery: vi.fn(),
     useRampRegionQuery: vi.fn(),
 }))

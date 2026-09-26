@@ -15,14 +15,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     useRampHistoryInfiniteQuery,
     type RampHistoryItem,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
 
 import { useOnrampHistory } from '../useOnrampHistory'
 
-vi.mock('@perawallet/wallet-core-onramp', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/onramp', () => ({
     useRampHistoryInfiniteQuery: vi.fn(),
 }))
 

@@ -15,7 +15,7 @@ import {
     CardStatus,
     useCardStatusQuery,
     useIsCardUnfreezing,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { UnfreezeCardConfirmationSheet } from '../UnfreezeCardConfirmationSheet'

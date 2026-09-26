@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useRef } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useCardPendingWithdrawalQuery } from '@perawallet/wallet-core-card'
+import { useCardPendingWithdrawalQuery } from '@perawallet/wallet-core-chain-algorand/card'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'

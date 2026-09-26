@@ -79,9 +79,11 @@ vi.mock('@modules/card/hooks', async () => {
 // the LSig step. The MSW compile handler also answers with `BoEB` (`int 1`),
 // which is exactly the substituted program the guard exists to reject. Stub the
 // compile step to stand in for a pinned build; the guard itself is unit-tested
-// in packages/card/src/api/escrow/__tests__/lsig.spec.ts.
-vi.mock('@perawallet/wallet-core-card', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+// in packages/chain-algorand/src/card/api/escrow/__tests__/lsig.spec.ts.
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => ({
+    ...(await vi.importActual<object>(
+        '@perawallet/wallet-core-chain-algorand/card',
+    )),
     compileAutoDrawProgram: vi.fn(async () => new Uint8Array([6, 129, 1])),
 }))
 
@@ -104,14 +106,14 @@ import {
     FundingType,
     OnboardingStep,
     useCardStore,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import {
     mockCreateCard,
     mockGetUser,
     mockGetDelegationToken,
     mockPostAlgorandDelegationApproval,
     mockPostDelegatorLsig,
-} from '@perawallet/wallet-core-card/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/card/test-handlers'
 import { mockAlgodTealCompile } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'

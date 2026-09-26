@@ -12,7 +12,7 @@
 
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { OnrampStatus } from '@perawallet/wallet-core-onramp'
+import type { OnrampStatus } from '@perawallet/wallet-core-chain-algorand/onramp'
 import type { TypographyVariant } from '@theme/typography'
 import { getOnrampStatusDescriptor } from '../OnrampStatusBadge'
 import { useStyles } from './styles'

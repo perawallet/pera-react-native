@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { FundingType } from '@perawallet/wallet-core-card'
+import { FundingType } from '@perawallet/wallet-core-chain-algorand/card'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardStepRow } from '../../components/CardStepRow'

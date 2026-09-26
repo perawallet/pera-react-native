@@ -14,7 +14,10 @@ import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { trackEvent, OnrampEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { RampPair, RampToken } from '@perawallet/wallet-core-onramp'
+import type {
+    RampPair,
+    RampToken,
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import { OnrampAmountFields } from './OnrampAmountFields'
 import { OnrampFormDetailRows } from './OnrampFormDetailRows'
 import { useOnrampForm } from './useOnrampForm'

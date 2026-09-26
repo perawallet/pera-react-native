@@ -50,9 +50,10 @@ const resolveSubpathSource = (packageDir: string, subpath: string): string => {
 
 /**
  * Aliases every workspace package specifier (the `exports` map's keys plus
- * the test-only `/test-handlers` entry when `src/test-handlers.ts` exists)
- * to its source file, so tests never run a stale `dist`. Packages without a
- * `src/` directory ship their exported files as-is and are skipped.
+ * the test-only `/test-handlers` entry when `src/test-handlers.ts`, or a
+ * directory-barrel subpath's own `test-handlers.ts`, exists) to its source
+ * file, so tests never run a stale `dist`. Packages without a `src/`
+ * directory ship their exported files as-is and are skipped.
  *
  * Vite matches a string alias on the exact specifier or as a `find + '/'`
  * prefix and takes the first hit, so the result is ordered longest-first:
@@ -95,10 +96,27 @@ export const workspaceSourceAliases = ({
                         ? manifest.name
                         : `${manifest.name}${subpath.slice(1)}`
                 if (skipSpecifiers.has(find)) continue
-                aliases.push({
-                    find,
-                    replacement: resolveSubpathSource(packageDir, subpath),
-                })
+                const replacement = resolveSubpathSource(packageDir, subpath)
+                aliases.push({ find, replacement })
+
+                // A directory-barrel subpath can carry its own test-only
+                // handlers; without an alias the subpath's own alias would
+                // prefix-match `…/test-handlers` into `index.ts/test-handlers`.
+                const siblingHandlers = path.join(
+                    path.dirname(replacement),
+                    'test-handlers.ts',
+                )
+                if (
+                    subpath !== '.' &&
+                    subpath !== TEST_HANDLERS_SUBPATH &&
+                    path.basename(replacement) === 'index.ts' &&
+                    fs.existsSync(siblingHandlers)
+                ) {
+                    aliases.push({
+                        find: `${find}/test-handlers`,
+                        replacement: siblingHandlers,
+                    })
+                }
             }
         }
     }

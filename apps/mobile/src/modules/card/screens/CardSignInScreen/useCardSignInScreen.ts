@@ -22,7 +22,7 @@ import {
     useRestoreEscrowCardMutation,
     useSendLoginOtpMutation,
     type SignInFormValues,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'

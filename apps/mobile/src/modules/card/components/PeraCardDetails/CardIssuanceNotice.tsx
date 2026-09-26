@@ -13,7 +13,7 @@
 import {
     CardEligibilityReason,
     CardIssuanceState,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWButton, PWView } from '@components/core'
 import { InfoCallout } from '@components/InfoCallout'

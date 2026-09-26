@@ -13,17 +13,17 @@
 import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { SupportedCountry } from '@perawallet/wallet-core-card'
+import type { SupportedCountry } from '@perawallet/wallet-core-chain-algorand/card'
 
 const mockMutateAsync = vi.fn()
 const mockWaitlistMutateAsync = vi.fn()
 const mockSetOnboardingStep = vi.fn()
 let mockSettings: { countries: SupportedCountry[]; usStates: [] } | undefined
 let mockCurrentRegion: { iso3166alpha2: string; name: string } | undefined
-vi.mock('@perawallet/wallet-core-card', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-card')
-    >('@perawallet/wallet-core-card')
+        typeof import('@perawallet/wallet-core-chain-algorand/card')
+    >('@perawallet/wallet-core-chain-algorand/card')
     return {
         ...actual,
         useSendEmailVerificationMutation: () => ({

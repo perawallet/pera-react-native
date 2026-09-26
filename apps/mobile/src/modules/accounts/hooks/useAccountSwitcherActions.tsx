@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { hasCardSession, useCardStore } from '@perawallet/wallet-core-card'
+import {
+    hasCardSession,
+    useCardStore,
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'

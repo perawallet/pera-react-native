@@ -16,7 +16,7 @@ import {
     useSignCardOwnershipMutation,
     type CardOwnershipProof,
     type CreateAndApproveCardResult,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import {
     canSignArc60,
     type WalletAccount,

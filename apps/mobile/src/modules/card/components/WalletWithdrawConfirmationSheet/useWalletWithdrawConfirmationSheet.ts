@@ -16,7 +16,7 @@ import {
     type CardWalletKind,
     useCardWalletBalanceQuery,
     useWithdrawWalletBalanceMutation,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useCardErrorToast } from '../../hooks'
 import {

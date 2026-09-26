@@ -13,7 +13,7 @@
 // @vitest-environment node
 
 import { describe, it, expect } from 'vitest'
-import type { OnrampStatus } from '@perawallet/wallet-core-onramp'
+import type { OnrampStatus } from '@perawallet/wallet-core-chain-algorand/onramp'
 import { getOnrampStatusDescriptor } from '../onrampStatus'
 
 describe('getOnrampStatusDescriptor', () => {

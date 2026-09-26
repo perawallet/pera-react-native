@@ -17,18 +17,21 @@ import {
     useRampRegionQuery,
     useOnramp,
     type RampPair,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
 import { useRoute } from '@react-navigation/native'
 
 import { useOnrampScreen } from '../useOnrampScreen'
 
-vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
-    ...(await importOriginal()),
-    useRampPairsQuery: vi.fn(),
-    useRampRegionQuery: vi.fn(),
-    useOnramp: vi.fn(),
-}))
+vi.mock(
+    import('@perawallet/wallet-core-chain-algorand/onramp'),
+    async importOriginal => ({
+        ...(await importOriginal()),
+        useRampPairsQuery: vi.fn(),
+        useRampRegionQuery: vi.fn(),
+        useOnramp: vi.fn(),
+    }),
+)
 
 let hasInternetMock = true
 

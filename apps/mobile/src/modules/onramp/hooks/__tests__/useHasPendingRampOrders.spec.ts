@@ -16,7 +16,7 @@ import {
     useRampHistoryInfiniteQuery,
     type OnrampStatus,
     type RampHistoryItem,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
@@ -30,12 +30,15 @@ vi.mock('@react-navigation/native', async importOriginal => ({
     useIsFocused: () => mockIsFocused,
 }))
 
-vi.mock('@perawallet/wallet-core-onramp', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-onramp')
-    >()),
-    useRampHistoryInfiniteQuery: vi.fn(),
-}))
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/onramp',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/onramp')
+        >()),
+        useRampHistoryInfiniteQuery: vi.fn(),
+    }),
+)
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: vi.fn(),

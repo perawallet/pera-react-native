@@ -17,7 +17,7 @@ import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
 import {
     hasPendingRampOrder,
     useRampHistoryInfiniteQuery,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 
 /**
  * Drives the "needs attention" dot on the History tab. Observes the same

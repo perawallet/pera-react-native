@@ -11,7 +11,7 @@
  */
 
 // The native onramp BUY flow end-to-end through the real OnrampScreen,
-// OnrampForm and wallet-core-onramp hooks. Only the network (MSW) and base app
+// OnrampForm and chain-algorand onramp hooks. Only the network (MSW) and base app
 // state (selected account, network, device, opt-in holdings) are seeded.
 //
 // XO quotes are fetched once per pair with a null source amount — the provider
@@ -58,7 +58,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
-import { useOnrampStore } from '@perawallet/wallet-core-onramp'
+import { useOnrampStore } from '@perawallet/wallet-core-chain-algorand/onramp'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { Networks } from '@perawallet/wallet-core-config'
@@ -77,7 +77,7 @@ import {
     type MockCreateRampQuoteParams,
     type MockCreateRampOrderParams,
     type MockRampHistoryParams,
-} from '@perawallet/wallet-core-onramp/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/onramp/test-handlers'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,

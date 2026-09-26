@@ -13,7 +13,10 @@
 import type { Decimal } from 'decimal.js'
 import { PWView } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { RampQuoteLimits, RampToken } from '@perawallet/wallet-core-onramp'
+import type {
+    RampQuoteLimits,
+    RampToken,
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import { OnrampAmountSection } from '../OnrampAmountSection'
 import { OnrampMinMaxPill } from '../OnrampMinMaxPill'
 import { useStyles } from './styles'

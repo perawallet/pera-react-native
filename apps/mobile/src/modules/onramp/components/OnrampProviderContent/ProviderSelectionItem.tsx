@@ -18,7 +18,7 @@ import {
     quoteDestinationAmount,
     quoteDestinationValueInUsd,
     type RampQuote,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import {
     displayCurrencyToAssetId,
     type Nullable,

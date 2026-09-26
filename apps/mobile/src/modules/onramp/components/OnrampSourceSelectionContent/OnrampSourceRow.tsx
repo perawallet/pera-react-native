@@ -13,7 +13,7 @@
 import { PWImage, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CircleFlag } from '@components/CircleFlag'
-import type { RampToken } from '@perawallet/wallet-core-onramp'
+import type { RampToken } from '@perawallet/wallet-core-chain-algorand/onramp'
 import { OnrampTokenIcon } from '../OnrampTokenIcon'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'

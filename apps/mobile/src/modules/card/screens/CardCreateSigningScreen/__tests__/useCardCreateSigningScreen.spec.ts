@@ -16,7 +16,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     CardAccountLinkedElsewhereError,
     FundingType,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const PROOF = {
@@ -48,10 +48,10 @@ const {
     routeState: { fundingType: 'manual' as string },
 }))
 
-vi.mock('@perawallet/wallet-core-card', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-card')
-    >('@perawallet/wallet-core-card')
+        typeof import('@perawallet/wallet-core-chain-algorand/card')
+    >('@perawallet/wallet-core-chain-algorand/card')
     return {
         ...actual,
         useCardStore: (selector: (state: typeof cardStoreState) => unknown) =>

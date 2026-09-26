@@ -25,7 +25,10 @@ import {
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useCardSession, useCardStore } from '@perawallet/wallet-core-card'
+import {
+    useCardSession,
+    useCardStore,
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import type { PWFlatList } from '@components/core'
 import type { AccountMenuProps } from './AccountMenu'

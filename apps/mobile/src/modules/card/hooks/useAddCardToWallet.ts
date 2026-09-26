@@ -20,7 +20,7 @@ import {
     useCardUserQuery,
     useWalletProvisioningAvailabilityQuery,
     useWalletProvisioningStatusQuery,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { useIsCardPushProvisioningEnabled } from '@hooks/useIsCardPushProvisioningEnabled'
 import { isIOS } from '@utils/platform'
 import {

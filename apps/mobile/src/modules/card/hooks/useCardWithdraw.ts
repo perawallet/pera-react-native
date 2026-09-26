@@ -18,7 +18,7 @@ import {
     useEscrowWithdrawal,
     useSubmitAndConfirmMutation,
     type PendingWithdrawal,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import {
     getOnChainAccountInformationQueryKey,
     invalidateAccountQueriesForAddresses,

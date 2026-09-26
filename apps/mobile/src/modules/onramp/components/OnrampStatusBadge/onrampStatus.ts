@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { OnrampStatus } from '@perawallet/wallet-core-onramp'
+import type { OnrampStatus } from '@perawallet/wallet-core-chain-algorand/onramp'
 import type { IconName, PWIconVariant } from '@components/core'
 
 export type OnrampStatusColor =

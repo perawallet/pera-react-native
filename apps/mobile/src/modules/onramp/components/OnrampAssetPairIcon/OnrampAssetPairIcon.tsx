@@ -13,7 +13,7 @@
 import { PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { CircleFlag } from '@components/CircleFlag'
-import type { RampToken } from '@perawallet/wallet-core-onramp'
+import type { RampToken } from '@perawallet/wallet-core-chain-algorand/onramp'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
 import { useStyles } from './styles'
 

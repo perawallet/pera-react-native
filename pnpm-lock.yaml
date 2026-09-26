@@ -551,9 +551,6 @@ importers:
       '@perawallet/wallet-core-browser-runtime':
         specifier: workspace:*
         version: link:../../packages/browser-runtime
-      '@perawallet/wallet-core-card':
-        specifier: workspace:*
-        version: link:../../packages/card
       '@perawallet/wallet-core-chain-algorand':
         specifier: workspace:*
         version: link:../../packages/chain-algorand
@@ -605,9 +602,6 @@ importers:
       '@perawallet/wallet-core-nfd':
         specifier: workspace:*
         version: link:../../packages/nfd
-      '@perawallet/wallet-core-onramp':
-        specifier: workspace:*
-        version: link:../../packages/onramp
       '@perawallet/wallet-core-passkeys':
         specifier: workspace:*
         version: link:../../packages/passkeys
@@ -14640,7 +14634,9 @@ snapshots:
       metro-runtime: 0.84.5
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

@@ -15,7 +15,7 @@ import {
     useRampPairsQuery,
     useRampRegionQuery,
     type RampToken,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 export type OnrampSourceFilter = 'all' | 'fiat' | 'crypto'

@@ -14,7 +14,7 @@ import { useCallback, useMemo, useState } from 'react'
 import {
     useRegistrationSettingsQuery,
     type SupportedUsState,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 
 export type UseCardUsStatePickerResult = {

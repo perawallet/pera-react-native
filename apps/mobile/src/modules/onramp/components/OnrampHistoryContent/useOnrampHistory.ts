@@ -18,7 +18,7 @@ import {
     useRampHistoryInfiniteQuery,
     type OnrampStatus,
     type RampHistoryItem,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseOnrampHistoryResult = {

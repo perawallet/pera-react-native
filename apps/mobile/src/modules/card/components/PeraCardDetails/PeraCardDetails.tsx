@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { CardIssuanceState } from '@perawallet/wallet-core-card'
+import { CardIssuanceState } from '@perawallet/wallet-core-chain-algorand/card'
 import { PWScrollView, PWView } from '@components/core'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { CardFrozenBanner } from '../CardFrozenBanner'

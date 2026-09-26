@@ -66,8 +66,10 @@ const mutationResult = (
     reset: vi.fn(),
 })
 
-vi.mock('@perawallet/wallet-core-card', async () => {
-    const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-chain-algorand/card',
+    )
     return {
         ...actual,
         // Selector reads come from the mock state; the Connect action writes
@@ -195,7 +197,7 @@ vi.mock('../../../hooks', async () => ({
     }),
 }))
 
-import { FundingType } from '@perawallet/wallet-core-card'
+import { FundingType } from '@perawallet/wallet-core-chain-algorand/card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { CardEvent } from '@analytics'
 import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'

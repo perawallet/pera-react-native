@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { CardStatus, useCardStatusQuery } from '@perawallet/wallet-core-card'
+import {
+    CardStatus,
+    useCardStatusQuery,
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'

@@ -23,7 +23,7 @@ import {
     resolveRampQuoteLimits,
     type RampQuote,
     type RampQuoteLimits,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import {
     isConnectivityError,
     type Nullable,

@@ -16,7 +16,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
     useCardStore,
     useSubmitAndConfirmMutation,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import {
     getOnChainAccountInformationQueryKey,
     invalidateAccountQueriesForAddresses,

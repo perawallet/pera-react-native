@@ -13,7 +13,7 @@
 import { useCallback, useLayoutEffect } from 'react'
 import { ActivityIndicator, SectionList } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
-import type { CardWalletHistoryEntry } from '@perawallet/wallet-core-card'
+import type { CardWalletHistoryEntry } from '@perawallet/wallet-core-chain-algorand/card'
 import {
     PWButton,
     PWIcon,

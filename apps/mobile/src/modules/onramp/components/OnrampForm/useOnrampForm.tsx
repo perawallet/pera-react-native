@@ -19,7 +19,7 @@ import {
     type RampPair,
     type RampQuote,
     type RampQuoteLimits,
-} from '@perawallet/wallet-core-onramp'
+} from '@perawallet/wallet-core-chain-algorand/onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { ONRAMP_AMOUNT_ERROR_DEBOUNCE_TIME } from '@constants/ui'

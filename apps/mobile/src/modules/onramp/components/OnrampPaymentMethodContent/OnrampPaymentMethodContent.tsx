@@ -21,7 +21,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { RampQuote } from '@perawallet/wallet-core-onramp'
+import type { RampQuote } from '@perawallet/wallet-core-chain-algorand/onramp'
 import { useStyles } from './styles'
 
 export type OnrampPaymentMethodContentProps = {

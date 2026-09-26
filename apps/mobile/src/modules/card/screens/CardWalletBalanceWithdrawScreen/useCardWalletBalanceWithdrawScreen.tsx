@@ -14,7 +14,7 @@ import { useCallback, useMemo, useRef } from 'react'
 import {
     CardWalletKind,
     useCardWalletBalanceQuery,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { type Maybe, ZERO_DECIMAL } from '@perawallet/wallet-core-shared'
 import {
     useNavigation,

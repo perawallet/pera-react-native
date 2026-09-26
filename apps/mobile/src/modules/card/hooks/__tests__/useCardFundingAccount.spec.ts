@@ -21,8 +21,10 @@ const mocks = vi.hoisted(() => ({
     connectedAddress: null as string | null,
 }))
 
-vi.mock('@perawallet/wallet-core-card', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => ({
+    ...(await vi.importActual<object>(
+        '@perawallet/wallet-core-chain-algorand/card',
+    )),
     useCardStore: (
         selector: (state: {
             connectedFundingSourceAddress: string | null

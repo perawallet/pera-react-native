@@ -29,8 +29,10 @@ const mocks = vi.hoisted(() => ({
     invalidateQueries: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-card', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => ({
+    ...(await vi.importActual<object>(
+        '@perawallet/wallet-core-chain-algorand/card',
+    )),
     useCardStore: (
         selector: (state: { escrowCardAddress: string | null }) => unknown,
     ) => selector({ escrowCardAddress: mocks.escrowCardAddress }),

@@ -11,7 +11,7 @@
  */
 
 import type { ImageSourcePropType } from 'react-native'
-import { CardWalletKind } from '@perawallet/wallet-core-card'
+import { CardWalletKind } from '@perawallet/wallet-core-chain-algorand/card'
 import { CardEvent } from '@analytics'
 import rewardsHero from '@assets/images/rewards-hero.png'
 

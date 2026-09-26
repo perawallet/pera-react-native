@@ -15,7 +15,7 @@ import type { Decimal } from 'decimal.js'
 import { AccountAssetItemView } from '@modules/assets'
 import type { PWTouchableOpacityProps } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { RampToken } from '@perawallet/wallet-core-onramp'
+import type { RampToken } from '@perawallet/wallet-core-chain-algorand/onramp'
 import { buildAccountBalanceFromRampToken } from './buildAccountBalanceFromRampToken'
 
 export type OnrampAssetItemViewProps = {

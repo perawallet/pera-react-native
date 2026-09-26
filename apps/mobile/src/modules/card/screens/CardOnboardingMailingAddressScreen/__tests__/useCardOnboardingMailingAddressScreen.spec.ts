@@ -12,7 +12,7 @@
 
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { SupportedUsState } from '@perawallet/wallet-core-card'
+import type { SupportedUsState } from '@perawallet/wallet-core-chain-algorand/card'
 
 const {
     mockMutateAsync,
@@ -30,8 +30,10 @@ const {
     storeState: { onboardingId: 'mock-onboarding-id' as string | null },
 }))
 
-vi.mock('@perawallet/wallet-core-card', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => ({
+    ...(await vi.importActual<object>(
+        '@perawallet/wallet-core-chain-algorand/card',
+    )),
     useCardStore: (selector: (state: typeof storeState) => unknown) =>
         selector(storeState),
     useSubmitMailingAddressMutation: () => ({

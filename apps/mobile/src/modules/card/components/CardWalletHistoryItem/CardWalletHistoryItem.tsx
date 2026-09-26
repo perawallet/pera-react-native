@@ -13,7 +13,7 @@
 import {
     type CardWalletHistoryEntry,
     TransactionSign,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { formatCardTransactionDate } from '../../utils/cardTransactions'

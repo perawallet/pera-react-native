@@ -11,7 +11,7 @@
  */
 
 import { createElement, useCallback } from 'react'
-import { useCardStore } from '@perawallet/wallet-core-card'
+import { useCardStore } from '@perawallet/wallet-core-chain-algorand/card'
 import {
     canSignArc60,
     canSignProgram,

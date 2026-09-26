@@ -65,7 +65,7 @@ import {
     FundingType,
     useCardSessionStore,
     useCardStore,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { PeraCardDetails } from '@modules/card/components/PeraCardDetails'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'

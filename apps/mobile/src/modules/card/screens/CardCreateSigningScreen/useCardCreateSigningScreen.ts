@@ -12,7 +12,10 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
+import {
+    FundingType,
+    useCardStore,
+} from '@perawallet/wallet-core-chain-algorand/card'
 import {
     useAllAccounts,
     type WalletAccount,

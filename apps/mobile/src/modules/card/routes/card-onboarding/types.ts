@@ -11,7 +11,7 @@
  */
 
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import type { FundingType } from '@perawallet/wallet-core-card'
+import type { FundingType } from '@perawallet/wallet-core-chain-algorand/card'
 
 // The flow's data (email, country, verification code, ids) lives in the card
 // store, so screens don't thread it through navigation params.

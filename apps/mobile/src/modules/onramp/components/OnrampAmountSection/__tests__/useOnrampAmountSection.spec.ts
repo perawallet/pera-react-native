@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { DEFAULT_MAX_FRACTION_DIGITS } from '@perawallet/wallet-core-onramp'
+import { DEFAULT_MAX_FRACTION_DIGITS } from '@perawallet/wallet-core-chain-algorand/onramp'
 import {
     getFiatBaseAmount,
     sanitizeAmountInput,

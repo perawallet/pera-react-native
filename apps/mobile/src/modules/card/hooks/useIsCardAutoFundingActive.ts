@@ -11,7 +11,10 @@
  */
 
 import { useMemo } from 'react'
-import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
+import {
+    FundingType,
+    useCardStore,
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { useCardFundingAccount } from './useCardFundingAccount'
 import { canAutoFund } from './useCardFundingSourcePicker'
 

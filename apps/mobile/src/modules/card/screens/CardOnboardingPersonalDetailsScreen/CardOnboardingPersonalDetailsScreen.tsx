@@ -11,7 +11,10 @@
  */
 
 import { Controller } from 'react-hook-form'
-import { formatDobInput, formatSsnInput } from '@perawallet/wallet-core-card'
+import {
+    formatDobInput,
+    formatSsnInput,
+} from '@perawallet/wallet-core-chain-algorand/card'
 import {
     PWButton,
     PWInput,

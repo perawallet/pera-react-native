@@ -16,7 +16,7 @@ import {
     invalidateCardQueries,
     useCardStore,
     type FundingType,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'

@@ -18,7 +18,7 @@ import {
     OnboardingStep,
     type SupportedCountry,
     type SupportedUsState,
-} from '@perawallet/wallet-core-card'
+} from '@perawallet/wallet-core-chain-algorand/card'
 import { config } from '@perawallet/wallet-core-config'
 
 const mockMutateAsync = vi.fn()
@@ -46,10 +46,10 @@ let mockSettings:
 let mockIsKycRequired = false
 const mockMarkServerRefused = vi.fn()
 
-vi.mock('@perawallet/wallet-core-card', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-card')
-    >('@perawallet/wallet-core-card')
+        typeof import('@perawallet/wallet-core-chain-algorand/card')
+    >('@perawallet/wallet-core-chain-algorand/card')
     return {
         ...actual,
         useOnboardingKycGate: () => ({
