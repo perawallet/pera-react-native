@@ -95,9 +95,6 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         },
     }),
 }))
-vi.mock('@perawallet/wallet-core-chain-algorand/ledger', () => ({
-    verifyLedgerAddress: mockVerify,
-}))
 vi.mock('@perawallet/wallet-core-ledger', async () => {
     // Real timeout semantics (via the shared util) so the hung-call cases
     // below exercise genuine expiry under fake timers; ceilings inlined.
@@ -105,6 +102,7 @@ vi.mock('@perawallet/wallet-core-ledger', async () => {
         typeof import('@perawallet/wallet-core-shared')
     >('@perawallet/wallet-core-shared')
     return {
+        verifyLedgerAddress: mockVerify,
         LedgerProviderNotFoundError: class extends Error {},
         LedgerAddressMismatchError: class extends Error {
             constructor(expected: string, actual: string) {

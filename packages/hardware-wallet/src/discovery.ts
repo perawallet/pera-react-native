@@ -57,7 +57,7 @@ export type DiscoverAccountsOptions = {
 }
 
 /**
- * Sequentially discovers accounts on a connected hardware wallet device.
+ * Sequentially discovers Algorand accounts on a connected hardware wallet device.
  *
  * When `isAccountOnChain` is provided, fetches accounts at indices 0, 1, 2...
  * and stops after `maxGap` consecutive indices with no on-chain presence,

@@ -50,7 +50,7 @@ export type HardwareWalletAppVersion = {
  * the signing package's ARC-60 types.
  */
 export type HardwareWalletArbitrarySignRequest = {
-    /** Authoritative for the key — the transport derives the device's derivation path from it. */
+    /** Authoritative for the key — the transport derives the BIP-44 path here. */
     accountIndex: number
     /** Encoded payload to sign. */
     data: string
@@ -63,7 +63,7 @@ export type HardwareWalletArbitrarySignRequest = {
     requestId?: string
     /** ARC-60 scope (1 = AUTH). */
     scope: number
-    /** Payload encoding; which values are accepted is up to the device app. */
+    /** The Algorand app only supports 'base64'. */
     encoding: string
 }
 
