@@ -12,22 +12,18 @@
 
 import { useMutation } from '@tanstack/react-query'
 import {
-    useAlgorandClient,
     useMinimumFeeConfig,
     useNetwork,
-    useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    isMultisigAccount,
     useSelectedAccount,
     useSignerFor,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import {
-    executeSwap,
-    type ExecuteSwapParams,
-    type ExecuteSwapResult,
-} from '../execution'
+import { swapAdapterFor, SwapCosignUnsupportedError } from '../chain-adapter'
+import type { ExecuteSwapParams, ExecuteSwapResult } from '../execution'
 import { useSwapHandoffStore } from '../store'
 import { usePrepareTransactionsMutation } from './usePrepareTransactionsMutation'
 import { useUpdateSwapStatusMutation } from './useUpdateSwapStatusMutation'
@@ -36,12 +32,6 @@ export type ExecuteSwapVariables = Omit<ExecuteSwapParams, 'account' | 'signer'>
 
 export const useExecuteSwapMutation = () => {
     const { addSignRequest } = useSigningRequest()
-    const {
-        decodeTransaction,
-        decodeSignedTransaction,
-        encodeSignedTransactions,
-    } = useTransactionEncoder()
-    const algorandClient = useAlgorandClient()
     const { network } = useNetwork()
     const account = useSelectedAccount()
     const signer = useSignerFor(account?.address)
@@ -53,23 +43,28 @@ export const useExecuteSwapMutation = () => {
     const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
 
     return useMutation<ExecuteSwapResult, Error, ExecuteSwapVariables>({
-        mutationFn: variables =>
-            executeSwap(
+        mutationFn: async variables => {
+            const adapter = swapAdapterFor(network)
+            if (
+                account &&
+                isMultisigAccount(account) &&
+                !adapter.submitSignedGroup
+            ) {
+                throw new SwapCosignUnsupportedError(adapter.chainId)
+            }
+            return adapter.executeSwap(
                 { ...variables, account, signer },
                 {
                     network,
-                    algorandClient,
-                    assetMbr,
+                    assetOptInMinBalance: assetMbr,
                     deviceId,
                     addSignRequest,
-                    decodeTransaction,
-                    decodeSignedTransaction,
-                    encodeSignedTransactions,
                     prepareTransactions,
                     updateSwapStatus,
                     registerHandoff,
                 },
-            ),
+            )
+        },
         // A retry would re-sign and re-broadcast a group the user approved once.
         retry: false,
         throwOnError: false,

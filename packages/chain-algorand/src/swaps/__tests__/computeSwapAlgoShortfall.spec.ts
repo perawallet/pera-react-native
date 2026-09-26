@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { computeSwapAlgoShortfall } from '../computeSwapAlgoShortfall'
 
-import type { SwapQuote } from '../../models'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 
 const ALGO = { assetId: '0' }
 const USDC = { assetId: '31566704' }

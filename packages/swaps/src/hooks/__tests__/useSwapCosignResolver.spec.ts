@@ -12,7 +12,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import type { SwapChainAdapter } from '../../chain-adapter'
 import type { SwapHandoffRecord } from '../../models'
+import { registerFakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
 import {
     settleCosignAttempt,
     useSwapCosignResolver,
@@ -20,7 +22,6 @@ import {
 
 const mocks = vi.hoisted(() => ({
     useNetwork: vi.fn(),
-    useAlgorandClient: vi.fn(),
     useDeviceID: vi.fn(),
     decodeFromBase64: vi.fn(),
     loggerWarn: vi.fn(),
@@ -29,7 +30,6 @@ const mocks = vi.hoisted(() => ({
     getSignRequestsWithSignaturesQueryKey: vi.fn(),
     useMarkSignRequestsConfirmedMutation: vi.fn(),
     classifyHandoffPoll: vi.fn(),
-    submitRawSignedTransactionGroup: vi.fn(),
     useHandoffResolver: vi.fn(),
     resolveSwapHandoffOutcome: vi.fn(),
     useUpdateSwapStatusMutation: vi.fn(),
@@ -46,7 +46,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mocks.useNetwork,
-    useAlgorandClient: mocks.useAlgorandClient,
 }))
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: mocks.useDeviceID,
@@ -65,7 +64,6 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
 }))
 vi.mock('@perawallet/wallet-core-signing', () => ({
     classifyHandoffPoll: mocks.classifyHandoffPoll,
-    submitRawSignedTransactionGroup: mocks.submitRawSignedTransactionGroup,
     useHandoffResolver: mocks.useHandoffResolver,
     recordSubmissionAttempt: mocks.recordSubmissionAttempt,
     markSubmissionUnknown: mocks.markSubmissionUnknown,
@@ -93,8 +91,6 @@ vi.mock('../useUpdateSwapStatusMutation', () => ({
     useUpdateSwapStatusMutation: mocks.useUpdateSwapStatusMutation,
 }))
 
-const ALGORAND_CLIENT = { id: 'algod' }
-
 const makeRecord = (
     overrides: Partial<SwapHandoffRecord> = {},
 ): SwapHandoffRecord => ({
@@ -121,11 +117,14 @@ const render = (isAppActive = true) =>
 type ResolverConfig = Parameters<typeof mocks.useHandoffResolver>[0]
 const config = (): ResolverConfig => mocks.useHandoffResolver.mock.calls[0][0]
 
+let submitSignedGroup: SwapChainAdapter['submitSignedGroup']
+
 beforeEach(() => {
     vi.clearAllMocks()
+    submitSignedGroup = vi.fn()
+    registerFakeSwapAdapter({ submitSignedGroup })
     mocks.handoffs = {}
     mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
-    mocks.useAlgorandClient.mockReturnValue(ALGORAND_CLIENT)
     mocks.useDeviceID.mockReturnValue('device-1')
     mocks.getSignRequestsWithSignaturesQueryKey.mockImplementation(
         (network: string, id: string) => ['msig', network, id],
@@ -185,7 +184,6 @@ describe('swaps/useSwapCosignResolver', () => {
 
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
-        mocks.useAlgorandClient.mockReturnValue(ALGORAND_CLIENT)
         mocks.useDeviceID.mockReturnValue(null)
         mocks.getSignRequestsWithSignaturesQueryKey.mockImplementation(
             (network: string, id: string) => ['msig', network, id],
@@ -260,10 +258,10 @@ describe('swaps/useSwapCosignResolver', () => {
         )
     })
 
-    it('wires submitGroup through to the algod submission helper', async () => {
+    it("wires submitGroup through to the handoff network's chain adapter", async () => {
         const handoff = makeRecord()
         mocks.handoffs = { 'req-1': handoff }
-        mocks.submitRawSignedTransactionGroup.mockResolvedValue(['txid'])
+        vi.mocked(submitSignedGroup).mockResolvedValue(['txid'])
 
         render()
 
@@ -274,10 +272,7 @@ describe('swaps/useSwapCosignResolver', () => {
 
         const bytes = [new Uint8Array([1])]
         await deps.submitGroup(bytes)
-        expect(mocks.submitRawSignedTransactionGroup).toHaveBeenCalledWith(
-            ALGORAND_CLIENT,
-            bytes,
-        )
+        expect(submitSignedGroup).toHaveBeenCalledWith('mainnet', bytes)
     })
 
     it('declines on the proposer address carried by the poll detail', async () => {

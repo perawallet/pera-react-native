@@ -2416,9 +2416,27 @@ importers:
 
   packages/chain-algorand:
     dependencies:
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-core-signing':
+        specifier: workspace:*
+        version: link:../signing
+      '@perawallet/wallet-core-swaps':
+        specifier: workspace:*
+        version: link:../swaps
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -3927,6 +3945,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-device':
         specifier: workspace:*
         version: link:../device
@@ -14685,7 +14706,9 @@ snapshots:
       metro-runtime: 0.84.5
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

@@ -15,6 +15,7 @@ import {
     availableAssetsResponseSchema,
     type AvailableAssetsApiResponse,
 } from './schema'
+import { swapAdapterFor } from '../../chain-adapter'
 import { transformDexSwapAsset } from './transformers'
 
 export const fetchAvailableAssets = async (
@@ -34,5 +35,8 @@ export const fetchAvailableAssets = async (
     })
 
     const parsed = availableAssetsResponseSchema.parse(response.data)
-    return parsed.results.map(transformDexSwapAsset)
+    const { nativeAssetId } = swapAdapterFor(network)
+    return parsed.results.map(asset =>
+        transformDexSwapAsset(asset, nativeAssetId),
+    )
 }

@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
+import { registerFakeSwapAdapter } from './src/__tests__/fakeSwapAdapter'
 
 const store = new Map<string, string>()
 
@@ -46,3 +47,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         },
     }),
 }))
+
+// Endpoints and useSwaps resolve the native asset through the registry.
+beforeEach(() => {
+    registerFakeSwapAdapter()
+})

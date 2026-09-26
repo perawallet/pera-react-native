@@ -21,6 +21,7 @@ import type {
 
 export const transformSwapHistoryItem = (
     data: SwapHistoryItemApiResponse,
+    nativeAssetId: string,
 ): SwapHistoryItem => ({
     id: data.id,
     idStr: data.id_str,
@@ -28,8 +29,8 @@ export const transformSwapHistoryItem = (
     status: data.status,
     completedDatetime: data.completed_datetime,
     transactionGroupId: data.transaction_group_id,
-    assetIn: transformDexSwapAsset(data.asset_in),
-    assetOut: transformDexSwapAsset(data.asset_out),
+    assetIn: transformDexSwapAsset(data.asset_in, nativeAssetId),
+    assetOut: transformDexSwapAsset(data.asset_out, nativeAssetId),
     amountIn: new Decimal(data.amount_in),
     amountOut: new Decimal(data.amount_out),
     amountInUsdValue: data.amount_in_usd_value,
@@ -38,9 +39,10 @@ export const transformSwapHistoryItem = (
 
 export const transformSwapDistinctPairItem = (
     data: SwapDistinctPairItemApiResponse,
+    nativeAssetId: string,
 ): SwapDistinctPairItem => ({
-    assetIn: transformDexSwapAsset(data.asset_in),
-    assetOut: transformDexSwapAsset(data.asset_out),
+    assetIn: transformDexSwapAsset(data.asset_in, nativeAssetId),
+    assetOut: transformDexSwapAsset(data.asset_out, nativeAssetId),
     swapDatetime: data.swap_datetime,
     pairKey: data.pair_key,
 })

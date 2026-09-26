@@ -17,6 +17,7 @@ import {
     type SwapHistoryApiResponse,
     type SwapDistinctPairsHistoryApiResponse,
 } from './schema'
+import { swapAdapterFor } from '../../chain-adapter'
 import {
     transformSwapHistoryItem,
     transformSwapDistinctPairItem,
@@ -43,8 +44,11 @@ export const fetchSwapHistory = async (
     })
 
     const parsed = swapHistoryResponseSchema.parse(response.data)
+    const { nativeAssetId } = swapAdapterFor(network)
     return {
-        results: parsed.results.map(transformSwapHistoryItem),
+        results: parsed.results.map(item =>
+            transformSwapHistoryItem(item, nativeAssetId),
+        ),
         next: parsed.next,
         previous: parsed.previous,
     }
@@ -67,5 +71,8 @@ export const fetchDistinctPairsHistory = async (
     })
 
     const parsed = swapDistinctPairsHistoryResponseSchema.parse(response.data)
-    return parsed.results.map(transformSwapDistinctPairItem)
+    const { nativeAssetId } = swapAdapterFor(network)
+    return parsed.results.map(pair =>
+        transformSwapDistinctPairItem(pair, nativeAssetId),
+    )
 }
