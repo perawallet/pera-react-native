@@ -10,9 +10,16 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { renderHook } from '@testing-library/react'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { algorandRampAdapter as adapter } from '../adapter'
+
+const { mockEnsureOptIn } = vi.hoisted(() => ({ mockEnsureOptIn: vi.fn() }))
+
+vi.mock('../useEnsureDestinationOptIn', () => ({
+    useEnsureDestinationOptIn: () => ({ ensureOptIn: mockEnsureOptIn }),
+}))
 
 const token = (overrides: Partial<RampToken>): RampToken =>
     ({
@@ -55,5 +62,11 @@ describe('algorandRampAdapter', () => {
 
     it('keeps the provider id for any other token', () => {
         expect(adapter.toAssetId(token({}))).toBe('31566704')
+    })
+
+    it('prepares the destination with the ASA opt-in', () => {
+        const { result } = renderHook(() => adapter.useEnsureCanReceive?.())
+
+        expect(result.current).toBe(mockEnsureOptIn)
     })
 })

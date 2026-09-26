@@ -20,32 +20,16 @@ import {
     FeeDelegationAttestationRequiredError,
     useFeeDelegation,
 } from '@perawallet/wallet-core-fee-delegation'
-import { RampAttestationRequiredError } from '@perawallet/wallet-core-onramp'
+import {
+    RampAttestationRequiredError,
+    type EnsureCanReceive,
+    type EnsureCanReceiveParams,
+} from '@perawallet/wallet-core-onramp'
 import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 
-export type ConfirmOptInContext = {
-    assetId: bigint
-    /** True when fees + MBR are sponsor-covered (display the fee as 0). */
-    isSponsored: boolean
-}
-
-export type EnsureDestinationOptInParams = {
-    address: string
-    /** The destination asset: 'ALGO' means no opt-in needed; otherwise the ASA id. */
-    destinationAssetId: bigint | typeof ALGO_ASSET_NAME
-    /**
-     * Asks the user to confirm an opt-in before it is performed (the UI layer
-     * shows the opt-in confirmation sheet). Resolve false to cancel — then
-     * `ensureOptIn` resolves false and nothing is signed or submitted. When
-     * omitted, the opt-in proceeds without an extra confirmation step.
-     */
-    confirmOptIn?: (context: ConfirmOptInContext) => Promise<boolean>
-}
-
 export type UseEnsureDestinationOptInResult = {
-    /** Resolves false when the user declined the opt-in confirmation. */
-    ensureOptIn: (params: EnsureDestinationOptInParams) => Promise<boolean>
+    ensureOptIn: EnsureCanReceive
 }
 
 const SOURCE = {
@@ -82,7 +66,7 @@ export const useEnsureDestinationOptIn =
                 address,
                 destinationAssetId,
                 confirmOptIn,
-            }: EnsureDestinationOptInParams): Promise<boolean> => {
+            }: EnsureCanReceiveParams): Promise<boolean> => {
                 // 1. ALGO never requires an opt-in.
                 if (destinationAssetId === ALGO_ASSET_NAME) {
                     return true

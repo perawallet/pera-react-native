@@ -11,4 +11,3 @@
  */
 
 export { algorandRampAdapter } from './adapter'
-export { useEnsureDestinationOptIn } from './useEnsureDestinationOptIn'

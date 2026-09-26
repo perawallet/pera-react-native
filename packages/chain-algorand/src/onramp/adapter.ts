@@ -18,6 +18,7 @@ import {
     isAlgoAssetName,
 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { useEnsureDestinationOptIn } from './useEnsureDestinationOptIn'
 
 // A numeric id is an on-chain id and wins; the ticker is trusted only when the
 // provider gives a code instead. That fallback assumes the provider names its
@@ -28,9 +29,12 @@ const isNativeToken: RampChainAdapter['isNativeToken'] = token =>
         ? isAlgoAssetId(token.id)
         : isAlgoAssetName(token.id) || isAlgoAssetName(token.symbol)
 
+const useEnsureCanReceive = () => useEnsureDestinationOptIn().ensureOptIn
+
 export const algorandRampAdapter: RampChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     destinationTokenIds: [ALGO_ASSET_NAME, 'USDC_ALGORAND'],
     isNativeToken,
     toAssetId: token => (isNativeToken(token) ? ALGO_ASSET_ID : token.id),
+    useEnsureCanReceive,
 }

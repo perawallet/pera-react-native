@@ -54,6 +54,9 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
     >('@perawallet/wallet-core-onramp')
     return {
         ...actual,
+        useEnsureRampDestination: () => ({
+            ensureCanReceive: mockEnsureOptIn,
+        }),
         useCreateRampQuoteMutation: () => ({ mutateAsync: mockCreateQuote }),
         useCreateRampOrderMutation: () => ({ mutateAsync: mockCreateOrder }),
         useOnramp: () => ({
@@ -64,10 +67,6 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
         }),
     }
 })
-
-vi.mock('@perawallet/wallet-core-chain-algorand/onramp', () => ({
-    useEnsureDestinationOptIn: () => ({ ensureOptIn: mockEnsureOptIn }),
-}))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     // Real enums (models/accounts has no runtime imports): components reached

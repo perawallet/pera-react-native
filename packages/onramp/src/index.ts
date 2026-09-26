@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-export { rampChainAdapters, type RampChainAdapter } from './chain-adapter'
+export {
+    rampChainAdapters,
+    type ConfirmReceiveContext,
+    type EnsureCanReceive,
+    type EnsureCanReceiveParams,
+    type RampChainAdapter,
+} from './chain-adapter'
 export * from './constants'
 export * from './currency-decimals'
 export * from './errors'

@@ -11,9 +11,7 @@
  */
 
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
-// The adapter file rather than the chain-algorand onramp barrel: the barrel
-// also carries the opt-in hook, which pulls in fee delegation and signing.
-import { algorandRampAdapter } from '@packages/chain-algorand/src/onramp/adapter'
+import { algorandRampAdapter } from '@perawallet/wallet-core-chain-algorand/onramp'
 
 // Unit specs skip the app bootstrap, so the real ramp token helpers have no
 // adapter unless a spec registers one.
