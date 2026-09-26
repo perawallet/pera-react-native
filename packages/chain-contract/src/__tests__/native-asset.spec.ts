@@ -10,20 +10,19 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
-import type { StakingProjectInfo } from './schema'
+import { describe, expect, it } from 'vitest'
+import { CHAIN_IDS } from '../models/identity'
+import { nativeAssetDecimals } from '../native-asset'
 
-export type StakingProject = StakingProjectInfo & {
-    /** Display units of the native asset of the chain the project was fetched for. */
-    tvlInNative: Decimal
-    tvlInUsd: Decimal
-}
+describe('nativeAssetDecimals', () => {
+    it('gives Algorand six decimals, so base units are microAlgos', () => {
+        expect(nativeAssetDecimals('algorand')).toBe(6)
+    })
 
-export type {
-    StakingType,
-    StakingProjectInfo,
-    StakingProjectsApiResponse,
-    StakingProjectsI18nConfig,
-} from './schema'
+    it.each(CHAIN_IDS)('has a non-negative integer for %s', chainId => {
+        const decimals = nativeAssetDecimals(chainId)
 
-export { STAKING_FALLBACK_LOCALE } from './schema'
+        expect(Number.isInteger(decimals)).toBe(true)
+        expect(decimals).toBeGreaterThanOrEqual(0)
+    })
+})

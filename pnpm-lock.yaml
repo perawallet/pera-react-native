@@ -3869,6 +3869,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-remote-config':
         specifier: workspace:*
         version: link:../remote-config
