@@ -1216,9 +1216,6 @@ importers:
 
   extensions/ledger-react-native:
     dependencies:
-      '@algorandfoundation/ledger-algorand-js':
-        specifier: 'catalog:'
-        version: 1.4.3
       '@ledgerhq/react-native-hw-transport-ble':
         specifier: ^6.39.1
         version: 6.41.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -1256,9 +1253,6 @@ importers:
 
   extensions/ledger-react-native-usb:
     dependencies:
-      '@algorandfoundation/ledger-algorand-js':
-        specifier: 'catalog:'
-        version: 1.4.3
       '@ledgerhq/react-native-hid':
         specifier: 'catalog:'
         version: 6.39.5(react-native@0.86.2(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.3))
@@ -1290,9 +1284,6 @@ importers:
 
   extensions/ledger-shared:
     dependencies:
-      '@algorandfoundation/ledger-algorand-js':
-        specifier: 'catalog:'
-        version: 1.4.3
       '@ledgerhq/devices':
         specifier: ^8.13.0
         version: 8.17.0
@@ -1305,9 +1296,6 @@ importers:
       '@perawallet/wallet-extension-hardware-wallet':
         specifier: workspace:*
         version: link:../hardware-wallet
-      buffer:
-        specifier: 'catalog:'
-        version: 6.0.3
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -1330,9 +1318,6 @@ importers:
 
   extensions/ledger-web-ble:
     dependencies:
-      '@algorandfoundation/ledger-algorand-js':
-        specifier: 'catalog:'
-        version: 1.4.3
       '@ledgerhq/hw-transport-web-ble':
         specifier: 'catalog:'
         version: 6.35.0
@@ -1364,9 +1349,6 @@ importers:
 
   extensions/ledger-web-usb:
     dependencies:
-      '@algorandfoundation/ledger-algorand-js':
-        specifier: 'catalog:'
-        version: 1.4.3
       '@ledgerhq/hw-transport-webhid':
         specifier: 'catalog:'
         version: 6.36.0
@@ -2416,9 +2398,21 @@ importers:
 
   packages/chain-algorand:
     dependencies:
+      '@algorandfoundation/ledger-algorand-js':
+        specifier: 'catalog:'
+        version: 1.4.3
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-extension-hardware-wallet':
+        specifier: workspace:*
+        version: link:../../extensions/hardware-wallet
+      '@perawallet/wallet-extension-ledger-shared':
+        specifier: workspace:*
+        version: link:../../extensions/ledger-shared
+      buffer:
+        specifier: 'catalog:'
+        version: 6.0.3
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -15335,7 +15329,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
+      vitest: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
 
   '@vitest/expect@4.1.11':
     dependencies:

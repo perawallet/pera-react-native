@@ -14,7 +14,7 @@ import { describe, test, expect, vi } from 'vitest'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 
 // The real Web Bluetooth / WebHID extensions run here; only the browser
-// transport libraries and the Ledger app client beneath them are stubbed.
+// transport libraries beneath them are stubbed.
 vi.mock('@ledgerhq/hw-transport-web-ble', () => ({
     default: {
         listen: vi.fn(),
@@ -29,14 +29,6 @@ vi.mock('@ledgerhq/hw-transport-webhid', () => ({
         open: vi.fn(),
         isSupported: vi.fn(),
         request: vi.fn(),
-    },
-}))
-vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
-    AlgorandApp: class {
-        getAddressAndPubKey = vi.fn()
-        sign = vi.fn()
-        getVersion = vi.fn()
-        signData = vi.fn()
     },
 }))
 

@@ -11,17 +11,14 @@
  */
 
 import type { HardwareWalletService } from '@perawallet/wallet-extension-hardware-wallet'
+import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import type {
     HardwareWalletAdapterState,
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
 } from '@perawallet/wallet-extension-hardware-wallet'
 import BluetoothTransport from '@ledgerhq/hw-transport-web-ble'
-import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
-import {
-    classifyLedgerError,
-    createLedgerTransportWrapper,
-} from '@perawallet/wallet-extension-ledger-shared'
+import { classifyLedgerError } from '@perawallet/wallet-extension-ledger-shared'
 
 type WebBluetoothDevice = { id: string; name?: string }
 
@@ -90,16 +87,15 @@ export class LedgerWebBleService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<HardwareWalletTransport> {
+                // Resolved at connect, not when the transport registers: the
+                // chain package registers its driver after the transports.
+                const appDriver = ledgerAppDriverRegistry.resolve()
                 const cached = devicesById.get(deviceId)
                 try {
                     const bleTransport = await BluetoothTransport.open(
                         cached ?? deviceId,
                     )
-                    const algorandApp = new AlgorandApp(bleTransport)
-                    return createLedgerTransportWrapper(
-                        bleTransport,
-                        algorandApp,
-                    )
+                    return appDriver.open(bleTransport)
                 } catch (error) {
                     throw classifyLedgerError(error)
                 }
