@@ -31,7 +31,8 @@
     "react": "catalog:",
     "zustand": "catalog:",
     "zod": "catalog:",
-    "@tanstack/react-query": "catalog:"
+    "@tanstack/react-query": "catalog:",
+    "@perawallet/wallet-core-chain-contract": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:",

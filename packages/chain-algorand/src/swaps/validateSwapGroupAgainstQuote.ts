@@ -12,7 +12,7 @@
 
 import type { Decimal } from 'decimal.js'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import type { SwapQuote } from '../models'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 
 const ALGO_ASSET_ID = '0'
 

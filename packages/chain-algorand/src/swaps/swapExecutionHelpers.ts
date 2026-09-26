@@ -20,7 +20,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
-import type { SwapStatusUpdateRequest } from '../api'
+import type { UpdateSwapStatusFn } from '@perawallet/wallet-core-swaps'
 import {
     generateOrderedUniqueId,
     logger,
@@ -249,11 +249,6 @@ export const requestSwapProposal = (
         addSignRequest(request)
     })
 }
-
-export type UpdateSwapStatusFn = (params: {
-    swapId: string
-    data: SwapStatusUpdateRequest
-}) => Promise<unknown>
 
 /**
  * Best-effort: a failed report is logged and swallowed, since the caller has

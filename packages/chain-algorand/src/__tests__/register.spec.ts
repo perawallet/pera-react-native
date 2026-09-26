@@ -10,10 +10,24 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { registerAlgorandChain } from '..'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
+import { ALGORAND_CHAIN_ID, registerAlgorandChain } from '..'
+import { algorandSwapAdapter } from '../swaps'
 
 describe('registerAlgorandChain', () => {
+    beforeEach(() => {
+        swapChainAdapters.reset()
+    })
+
+    it('registers the Algorand swap adapter', () => {
+        registerAlgorandChain()
+
+        expect(swapChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandSwapAdapter,
+        )
+    })
+
     it('can run more than once, so a repeated bootstrap is harmless', () => {
         expect(() => {
             registerAlgorandChain()

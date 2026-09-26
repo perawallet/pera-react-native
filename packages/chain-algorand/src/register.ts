@@ -10,7 +10,12 @@
  limitations under the License
  */
 
+import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
+import { algorandSwapAdapter } from './swaps'
+
 // Adapters must be module-level instances, not built in here: the registries
 // ignore a repeat of the same instance but reject a new one, which is what
 // keeps a second call harmless.
-export const registerAlgorandChain = (): void => {}
+export const registerAlgorandChain = (): void => {
+    swapChainAdapters.register(algorandSwapAdapter)
+}
