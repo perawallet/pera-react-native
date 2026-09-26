@@ -17,7 +17,7 @@
 // machinery in service of this one assertion.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 
 // The default driver mock in vitest.setup.ts predates the v3 payload (its
 // `deviceInfo` stub exposes `getVersion`, not `getAppVersion`) — mirrors
@@ -131,7 +131,11 @@ describe('Device registration v3', () => {
             .setConfigOverride(QUANTUM_FLAG_KEY, true)
     })
 
+    // Unmount first: resetting the accounts store under a mounted registrar
+    // fires one more registration, with no accounts, that lands in the next
+    // test's handler and can be the body it asserts on.
     afterEach(() => {
+        cleanup()
         useAccountsStore.getState().setAccounts([])
         useDeviceStore.getState().resetState()
         clearRegistrationQueuesForTests()
