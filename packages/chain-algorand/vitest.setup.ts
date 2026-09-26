@@ -11,6 +11,9 @@
  */
 
 import { vi } from 'vitest'
+// Patches BigInt.prototype.microAlgo() globally; the patch outlives a spec's own
+// mock of algokit-utils, which the transaction builders rely on.
+import '@algorandfoundation/algokit-utils'
 
 // The blockchain barrel reaches the platform provider, whose storage is a
 // native module that the test runtime cannot load.

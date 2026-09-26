@@ -10,10 +10,24 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { registerAlgorandChain } from '..'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
+import { ALGORAND_CHAIN_ID, registerAlgorandChain } from '..'
+import { algorandSendFlowAdapter } from '../asa-inbox/adapter'
 
 describe('registerAlgorandChain', () => {
+    beforeEach(() => {
+        sendFlowChainAdapters.reset()
+    })
+
+    it('registers the Algorand send-flow adapter', () => {
+        registerAlgorandChain()
+
+        expect(sendFlowChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandSendFlowAdapter,
+        )
+    })
+
     it('can run more than once, so a repeated bootstrap is harmless', () => {
         expect(() => {
             registerAlgorandChain()

@@ -49,7 +49,6 @@
     "@notifee/react-native": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-app-integrity": "workspace:*",
-    "@perawallet/wallet-core-asa-inbox": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-background": "workspace:*",
     "@perawallet/wallet-core-backup": "workspace:*",

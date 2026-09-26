@@ -84,14 +84,32 @@
     "dev": "vite build --watch & tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\" --ignore-pattern \"**/*.generated.ts\"",
+    "generate:arc59": "pnpm exec algokit-client-generator generate -a src/asa-inbox/hooks/arc59-app-spec.json -o src/asa-inbox/clients/Arc59Client.generated.ts --preserve-names"
   },
   "dependencies": {
-    "@perawallet/wallet-core-chain-contract": "workspace:*"
+    "@algorandfoundation/algokit-utils": "catalog:",
+    "algosdk": "catalog:",
+    "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-assets": "workspace:*",
+    "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-transactions": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "decimal.js": "catalog:",
+    "react": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
+    "@algorandfoundation/algokit-client-generator": "6.0.1",
     "@perawallet/wallet-core-devtools": "workspace:*",
+    "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "msw": "catalog:",
+    "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

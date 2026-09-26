@@ -26,13 +26,13 @@ import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import algosdk from 'algosdk'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { ARC59Client } from '../packages/asa-inbox/src/clients'
-import { buildPopulatedGroup } from '../packages/asa-inbox/src/utils'
+import { ARC59Client } from '../packages/chain-algorand/src/asa-inbox/clients'
+import { buildPopulatedGroup } from '../packages/chain-algorand/src/asa-inbox/utils'
 import {
     BASE_CLAIM_TX_COUNT,
     BASE_REJECT_TX_COUNT,
     CLAIM_ALGO_TX_COUNT,
-} from '../packages/asa-inbox/src/constants'
+} from '../packages/chain-algorand/src/asa-inbox/constants'
 
 const ALGOD_URL = 'https://mainnet-api.algonode.cloud'
 const INDEXER_URL = 'https://mainnet-idx.algonode.cloud'
@@ -47,7 +47,7 @@ const ZERO_ADDR = algosdk.encodeAddress(new Uint8Array(32))
 
 const FIXTURE_PATH = fileURLToPath(
     new URL(
-        '../packages/asa-inbox/src/hooks/__tests__/fixtures/arc59-resource-refs.json',
+        '../packages/chain-algorand/src/asa-inbox/hooks/__tests__/fixtures/arc59-resource-refs.json',
         import.meta.url,
     ),
 )
@@ -232,7 +232,7 @@ async function findPendingInboxes(
     return { claim, claimWithAlgo }
 }
 
-/** Builds a claim (or claim+algo) group exactly as useArc59ClaimTransaction.buildClaimAssetTxs does. */
+/** Builds a claim (or claim+algo) group exactly as buildArc59ClaimTxs does. */
 async function buildClaimGroup(
     algokit: AlgorandClient,
     sender: string,
@@ -278,7 +278,7 @@ async function buildClaimGroup(
     return buildPopulatedGroup(composer, algokit)
 }
 
-/** Builds a reject group exactly as useArc59ClaimTransaction.buildRejectAssetTxs does. */
+/** Builds a reject group exactly as buildArc59RejectTxs does. */
 async function buildRejectGroup(
     algokit: AlgorandClient,
     sender: string,
@@ -322,7 +322,7 @@ type SendSummary = {
     algo_fund_amount: number
 }
 
-/** Builds a send-via-inbox group exactly as useArc59SendTransaction.buildSendViaInboxTxs does. */
+/** Builds a send-via-inbox group exactly as buildArc59SendViaInboxTxs does. */
 async function buildSendGroup(
     algokit: AlgorandClient,
     sender: string,
