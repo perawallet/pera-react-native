@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+// @vitest-environment node
+// jsdom rewrites import.meta.url to a non-file URL, which readFileSync rejects.
+
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
@@ -79,5 +82,7 @@ describe('chain-algorand exports', () => {
             })
             await expect(barrels[key]()).resolves.toBeDefined()
         },
+        // A populated barrel cold-imports its whole module graph on first load.
+        30_000,
     )
 })

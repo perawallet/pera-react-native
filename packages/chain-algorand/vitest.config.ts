@@ -13,13 +13,33 @@
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
 import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
         coverage: coverageConfig,
         globals: true,
-        environment: 'node',
+        environment: 'jsdom',
+        setupFiles: ['./vitest.setup.ts'],
         passWithNoTests: true,
+    },
+    resolve: {
+        conditions: ['default'],
+        // Resolved from source so vitest transforms them and the setup file's
+        // mocks apply; their installed dist would load react-native-mmkv first.
+        alias: {
+            '@perawallet/wallet-extension-provider': path.resolve(
+                __dirname,
+                '../../extensions/provider/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-platform-driver': path.resolve(
+                __dirname,
+                '../../extensions/platform-driver/src/index.ts',
+            ),
+        },
     },
     ...poolConfig,
 })

@@ -10,5 +10,6 @@
  limitations under the License
  */
 
-export { ALGORAND_CHAIN_ID } from './chain-id'
-export { registerAlgorandChain } from './register'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+
+export const ALGORAND_CHAIN_ID = 'algorand' satisfies ChainId
