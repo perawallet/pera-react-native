@@ -34,10 +34,6 @@
       "types": "./dist/swaps/index.d.ts",
       "default": "./dist/swaps/index.js"
     },
-    "./staking": {
-      "types": "./dist/staking/index.d.ts",
-      "default": "./dist/staking/index.js"
-    },
     "./asa-inbox": {
       "types": "./dist/asa-inbox/index.d.ts",
       "default": "./dist/asa-inbox/index.js"

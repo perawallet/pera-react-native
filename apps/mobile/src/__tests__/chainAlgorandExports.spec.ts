@@ -28,8 +28,6 @@ const SUBPATHS: Record<string, () => Promise<unknown>> = {
         import('@perawallet/wallet-core-chain-algorand/transactions'),
     '@perawallet/wallet-core-chain-algorand/swaps': () =>
         import('@perawallet/wallet-core-chain-algorand/swaps'),
-    '@perawallet/wallet-core-chain-algorand/staking': () =>
-        import('@perawallet/wallet-core-chain-algorand/staking'),
     '@perawallet/wallet-core-chain-algorand/asa-inbox': () =>
         import('@perawallet/wallet-core-chain-algorand/asa-inbox'),
     '@perawallet/wallet-core-chain-algorand/nfd': () =>
