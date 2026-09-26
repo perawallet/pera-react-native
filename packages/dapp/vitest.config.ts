@@ -29,10 +29,9 @@ export default defineConfig({
         conditions: ['default'],
         alias: {
             // Source, not `dist`, so tests cannot pass against a stale build
-            // artifact. Both aliases are load-bearing: `Networks`
-            // (betanet/custom) lives in packages/config and shared only
-            // re-exports it, so aliasing shared alone still resolves that
-            // re-export through config's own dist.
+            // artifact. Both aliases are load-bearing: shared re-exports
+            // `Networks` from packages/config, so aliasing shared alone still
+            // resolves that re-export through config's own dist.
             '@perawallet/wallet-core-shared': path.resolve(
                 __dirname,
                 '../shared/src/index.ts',
@@ -41,9 +40,7 @@ export default defineConfig({
                 __dirname,
                 '../config/src/index.ts',
             ),
-            // The subpath entries `bounds.ts` reaches; without them these
-            // resolve through dist and the caps could pass against a stale
-            // build.
+            // Reached through the source-aliased connections barrel.
             '@perawallet/wallet-core-signing/constants': path.resolve(
                 __dirname,
                 '../signing/src/constants.ts',
@@ -92,6 +89,10 @@ export default defineConfig({
             '@perawallet/wallet-extension-platform-driver': path.resolve(
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
+            ),
+            '@perawallet/wallet-core-chain-contract': path.resolve(
+                __dirname,
+                '../chain-contract/src/index.ts',
             ),
             // The `/testing` subpath needs its own entry — aliasing the
             // package root does not cover it.

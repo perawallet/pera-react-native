@@ -11,8 +11,6 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { ARC0001_MAX_TXN_B64_LENGTH } from '@perawallet/wallet-core-blockchain'
-import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing'
 import { isWithinDappPayloadBounds } from '../bounds'
 import type { JsonRpcRequest } from '../codec'
 import { MAX_DAPP_REQUEST_JSON_LENGTH } from '../protocol'
@@ -54,22 +52,17 @@ describe('isWithinDappPayloadBounds', () => {
         expect(isWithinDappPayloadBounds(req('m'.repeat(64)))).toBe(true)
     })
 
-    it('accepts the largest permitted transaction count and base64 length', () => {
-        const atCap = Array.from(
-            { length: MAX_TRANSACTION_SIGN_REQUESTS },
-            () => ({ txn: 'AA==' }),
-        )
-        expect(
-            isWithinDappPayloadBounds(
-                req('requestTransactionSigning', { txns: atCap }),
-            ),
-        ).toBe(true)
+    it('leaves per-chain transaction caps to the offscreen handler', () => {
+        // Far past any chain's single-transaction cap, well inside the blanket one.
         expect(
             isWithinDappPayloadBounds(
                 req('requestTransactionSigning', {
-                    txns: [{ txn: 'A'.repeat(ARC0001_MAX_TXN_B64_LENGTH) }],
+                    txns: [{ txn: 'A'.repeat(70_000) }],
                 }),
             ),
+        ).toBe(true)
+        expect(
+            isWithinDappPayloadBounds(req('requestTransactionSigning', {})),
         ).toBe(true)
     })
 
@@ -80,41 +73,6 @@ describe('isWithinDappPayloadBounds', () => {
             ),
         ).toBe(false)
         expect(isWithinDappPayloadBounds(req('m'.repeat(65)))).toBe(false)
-    })
-
-    it('rejects too many transactions or a transaction over the base64 cap', () => {
-        const many = Array.from(
-            { length: MAX_TRANSACTION_SIGN_REQUESTS + 1 },
-            () => ({ txn: 'AA==' }),
-        )
-        expect(
-            isWithinDappPayloadBounds(
-                req('requestTransactionSigning', { txns: many }),
-            ),
-        ).toBe(false)
-        expect(
-            isWithinDappPayloadBounds(
-                req('requestTransactionSigning', {
-                    txns: [{ txn: 'A'.repeat(ARC0001_MAX_TXN_B64_LENGTH + 1) }],
-                }),
-            ),
-        ).toBe(false)
-    })
-
-    it('rejects an empty or malformed txns array', () => {
-        expect(
-            isWithinDappPayloadBounds(
-                req('requestTransactionSigning', { txns: [] }),
-            ),
-        ).toBe(false)
-        expect(
-            isWithinDappPayloadBounds(
-                req('requestTransactionSigning', { txns: ['AA=='] }),
-            ),
-        ).toBe(false)
-        expect(
-            isWithinDappPayloadBounds(req('requestTransactionSigning', {})),
-        ).toBe(false)
     })
 
     it('rejects any request whose JSON exceeds the blanket cap by one byte', () => {

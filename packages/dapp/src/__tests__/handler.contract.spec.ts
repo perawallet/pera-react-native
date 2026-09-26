@@ -10,12 +10,19 @@
  limitations under the License
  */
 
-import { Networks } from '@perawallet/wallet-core-config'
+import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { runHandlerContractTests } from '@perawallet/wallet-core-connections/testing'
 import { createDappConnectionHandler } from '../handler'
 import { FakeDappTransport } from './fake-transport'
 
 const ORIGIN = 'https://contract.example'
+
+dappRequestChainAdapters.register({
+    chainId: 'algorand',
+    relayableErrorNames: [],
+    parseSigningParams: (_type, params) => ({ ok: true, payload: params.txns }),
+    resolveReportedNetwork: network => network,
+})
 
 // One transport per handler instance: the suite builds handlers repeatedly.
 let transport = new FakeDappTransport()
@@ -26,7 +33,8 @@ runHandlerContractTests(
         transport = new FakeDappTransport()
         return createDappConnectionHandler({
             transport,
-            getNetwork: () => Networks.mainnet,
+            chainId: 'algorand',
+            getNetwork: () => 'mainnet',
             getCustomNetworkGenesisHash: () => undefined,
             getAccounts: () => [{ address: 'AAAA', name: 'A' }],
         })

@@ -14,6 +14,7 @@ import {
     createChainAdapterRegistry,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Network } from '@perawallet/wallet-core-shared'
 import type { WalletOperationType } from './models'
 
 export type DappSigningParamsResult =
@@ -42,9 +43,9 @@ export interface DappRequestChainAdapter {
      * network must not be disclosed.
      */
     resolveReportedNetwork(
-        network: string,
+        network: Network,
         customGenesisHash: string | undefined,
-    ): string | undefined
+    ): Network | undefined
 }
 
 export const dappRequestChainAdapters =

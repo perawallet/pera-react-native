@@ -2707,21 +2707,15 @@ importers:
 
   packages/dapp:
     dependencies:
-      '@perawallet/wallet-core-blockchain':
+      '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
-        version: link:../blockchain
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../config
+        version: link:../chain-contract
       '@perawallet/wallet-core-connections':
         specifier: workspace:*
         version: link:../connections
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-core-signing':
-        specifier: workspace:*
-        version: link:../signing
       '@perawallet/wallet-extension-connections':
         specifier: workspace:*
         version: link:../../extensions/connections

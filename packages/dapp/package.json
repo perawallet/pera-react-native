@@ -27,11 +27,9 @@
         "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
     },
     "dependencies": {
-        "@perawallet/wallet-core-blockchain": "workspace:*",
-        "@perawallet/wallet-core-config": "workspace:*",
+        "@perawallet/wallet-core-chain-contract": "workspace:*",
         "@perawallet/wallet-core-connections": "workspace:*",
         "@perawallet/wallet-core-shared": "workspace:*",
-        "@perawallet/wallet-core-signing": "workspace:*",
         "@perawallet/wallet-extension-connections": "workspace:*"
     },
     "devDependencies": {
