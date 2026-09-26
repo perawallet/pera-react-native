@@ -11,18 +11,15 @@
  */
 
 import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
 import { decodeAddress } from 'algosdk'
 
-import { useArc59ClaimTransaction } from '../useArc59ClaimTransaction'
-import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
+import { buildArc59ClaimTxs, buildArc59RejectTxs } from '../buildArc59ClaimTxs'
+import {
+    populateAppCallResources,
+    type AlgorandClient,
+} from '@algorandfoundation/algokit-utils'
+import type { Network } from '@perawallet/wallet-core-shared'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: vi.fn(),
-    useNetwork: vi.fn(),
-}))
 vi.mock('@algorandfoundation/algokit-utils', () => ({
     // Identity passthrough: the populated ATC is the one composer.build()
     // returns, so buildGroup() resolves to the stub transactions.
@@ -95,7 +92,7 @@ const baseClaimParams = {
     senderMinFee: 1000n,
 }
 
-describe('useArc59ClaimTransaction', () => {
+describe('ARC-59 claim and reject builders', () => {
     let mockComposer: {
         addAppCallMethodCall: Mock
         addAssetOptIn: Mock
@@ -108,6 +105,12 @@ describe('useArc59ClaimTransaction', () => {
         getSuggestedParams: Mock
         client: { algod: { accountInformation: Mock } }
     }
+
+    let network: Network = 'testnet'
+    const ctx = () => ({
+        algokit: mockAlgokit as unknown as AlgorandClient,
+        network,
+    })
 
     const mockSuggestedParams = { minFee: MIN_FEE }
 
@@ -139,36 +142,20 @@ describe('useArc59ClaimTransaction', () => {
             getSuggestedParams: vi.fn().mockResolvedValue(mockSuggestedParams),
             client: { algod: { accountInformation: mockAccountInformation } },
         }
-        ;(useAlgorandClient as Mock).mockReturnValue(mockAlgokit)
-        ;(useNetwork as Mock).mockReturnValue({ network: 'testnet' })
+        network = 'testnet'
     })
 
-    test('returns buildClaimAssetTxs and buildRejectAssetTxs functions', () => {
-        const { result } = renderHook(() => useArc59ClaimTransaction())
-
-        expect(result.current.buildClaimAssetTxs).toBeTypeOf('function')
-        expect(result.current.buildRejectAssetTxs).toBeTypeOf('function')
-    })
-
-    describe('buildClaimAssetTxs', () => {
+    describe('buildArc59ClaimTxs', () => {
         test('does not add arc59_claimAlgo when shouldClaimAlgo is false', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             expect(mockParamsClaimAlgo).not.toHaveBeenCalled()
         })
 
         test('prepends arc59_claimAlgo when shouldClaimAlgo is true', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs({
-                    ...baseClaimParams,
-                    shouldClaimAlgo: true,
-                })
+            await buildArc59ClaimTxs(ctx(), {
+                ...baseClaimParams,
+                shouldClaimAlgo: true,
             })
 
             expect(mockParamsClaimAlgo).toHaveBeenCalled()
@@ -176,13 +163,9 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('sets staticFee to 0 for arc59_claimAlgo (fee pooled to main call)', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs({
-                    ...baseClaimParams,
-                    shouldClaimAlgo: true,
-                })
+            await buildArc59ClaimTxs(ctx(), {
+                ...baseClaimParams,
+                shouldClaimAlgo: true,
             })
 
             expect(mockParamsClaimAlgo).toHaveBeenCalledWith(
@@ -193,11 +176,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('does not add asset opt-in when sender is already opted in', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             expect(mockComposer.addAssetOptIn).not.toHaveBeenCalled()
         })
@@ -205,11 +184,7 @@ describe('useArc59ClaimTransaction', () => {
         test('adds asset opt-in with staticFee 0 when sender is not opted in', async () => {
             mockAccountDo.mockResolvedValue({ assets: [] })
 
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             expect(mockComposer.addAssetOptIn).toHaveBeenCalledWith({
                 sender: SENDER_ADDRESS,
@@ -221,11 +196,7 @@ describe('useArc59ClaimTransaction', () => {
         test('treats account info error as not opted in', async () => {
             mockAccountDo.mockRejectedValue(new Error('account not found'))
 
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             expect(mockComposer.addAssetOptIn).toHaveBeenCalledWith({
                 sender: SENDER_ADDRESS,
@@ -235,11 +206,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('sets staticFee to 3 * minFee for arc59_claim (base case, opted in)', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             // Base fee: 3 * minFee (already opted in, no claimAlgo)
             expect(mockParamsClaim).toHaveBeenCalledWith(
@@ -250,13 +217,9 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('adds 2 * minFee to claim fee when shouldClaimAlgo is true', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs({
-                    ...baseClaimParams,
-                    shouldClaimAlgo: true,
-                })
+            await buildArc59ClaimTxs(ctx(), {
+                ...baseClaimParams,
+                shouldClaimAlgo: true,
             })
 
             // 3 * minFee (base) + 2 * minFee (claimAlgo) = 5 * minFee
@@ -270,11 +233,7 @@ describe('useArc59ClaimTransaction', () => {
         test('adds 1 * minFee to claim fee when not opted in', async () => {
             mockAccountDo.mockResolvedValue({ assets: [] })
 
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             // 3 * minFee (base) + 1 * minFee (opt-in) = 4 * minFee
             expect(mockParamsClaim).toHaveBeenCalledWith(
@@ -285,25 +244,14 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('returns PeraTransaction[] from the built group', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            let txResult: unknown
-
-            await act(async () => {
-                txResult =
-                    await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            const txResult = await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             expect(Array.isArray(txResult)).toBe(true)
             expect(txResult).toEqual([STUB_TXN])
         })
 
         test('calls composer.build() (not send) after composing transactions', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             expect(mockComposer.build).toHaveBeenCalledTimes(1)
         })
@@ -311,35 +259,23 @@ describe('useArc59ClaimTransaction', () => {
         test('treats accountInfo with no assets field as not opted in', async () => {
             mockAccountDo.mockResolvedValue({})
 
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             expect(mockComposer.addAssetOptIn).toHaveBeenCalled()
         })
 
         test('uses mainnet config when network is mainnet', async () => {
-            ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+            network = 'mainnet'
 
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             expect(mockParamsClaim).toHaveBeenCalled()
         })
 
         test('passes explicit refs to arc59_claim and never simulates when inboxAddress is set', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs({
-                    ...baseClaimParams,
-                    inboxAddress: INBOX_ADDRESS,
-                })
+            await buildArc59ClaimTxs(ctx(), {
+                ...baseClaimParams,
+                inboxAddress: INBOX_ADDRESS,
             })
 
             expect(mockParamsClaim).toHaveBeenCalledWith(
@@ -358,14 +294,10 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('passes explicit refs to arc59_claimAlgo when shouldClaimAlgo and inboxAddress are set', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs({
-                    ...baseClaimParams,
-                    shouldClaimAlgo: true,
-                    inboxAddress: INBOX_ADDRESS,
-                })
+            await buildArc59ClaimTxs(ctx(), {
+                ...baseClaimParams,
+                shouldClaimAlgo: true,
+                inboxAddress: INBOX_ADDRESS,
             })
 
             expect(mockParamsClaimAlgo).toHaveBeenCalledWith(
@@ -383,11 +315,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('falls back to simulate population when inboxAddress is null', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs(baseClaimParams)
-            })
+            await buildArc59ClaimTxs(ctx(), baseClaimParams)
 
             expect(populateAppCallResources).toHaveBeenCalledTimes(1)
         })
@@ -404,14 +332,10 @@ describe('useArc59ClaimTransaction', () => {
             // inners: 2 (claim) + 1 (claimAlgo).
             mockAccountDo.mockResolvedValue({ assets: [] })
 
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs({
-                    ...baseClaimParams,
-                    shouldClaimAlgo: true,
-                    senderMinFee: PQ_FEE,
-                })
+            await buildArc59ClaimTxs(ctx(), {
+                ...baseClaimParams,
+                shouldClaimAlgo: true,
+                senderMinFee: PQ_FEE,
             })
 
             // 3 outers * 3000 + 3 inners * 1000 = 12000
@@ -430,13 +354,9 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('claim: opted-in base case = senderFee + 2 inners at base', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildClaimAssetTxs({
-                    ...baseClaimParams,
-                    senderMinFee: PQ_FEE,
-                })
+            await buildArc59ClaimTxs(ctx(), {
+                ...baseClaimParams,
+                senderMinFee: PQ_FEE,
             })
 
             // 1 outer * 3000 + 2 inners * 1000 = 5000
@@ -448,13 +368,9 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('reject: pooled total = senderFee per outer + base per inner', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs({
-                    ...baseClaimParams,
-                    senderMinFee: PQ_FEE,
-                })
+            await buildArc59RejectTxs(ctx(), {
+                ...baseClaimParams,
+                senderMinFee: PQ_FEE,
             })
 
             // 1 outer * 3000 + 2 inners * 1000 = 5000
@@ -466,14 +382,10 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('reject with claimAlgo: adds a PQ outer + base inner', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs({
-                    ...baseClaimParams,
-                    shouldClaimAlgo: true,
-                    senderMinFee: PQ_FEE,
-                })
+            await buildArc59RejectTxs(ctx(), {
+                ...baseClaimParams,
+                shouldClaimAlgo: true,
+                senderMinFee: PQ_FEE,
             })
 
             // (3000 + 2*1000) + (3000 + 1*1000) = 9000
@@ -485,25 +397,17 @@ describe('useArc59ClaimTransaction', () => {
         })
     })
 
-    describe('buildRejectAssetTxs', () => {
+    describe('buildArc59RejectTxs', () => {
         test('does not add arc59_claimAlgo when shouldClaimAlgo is false', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs(baseClaimParams)
-            })
+            await buildArc59RejectTxs(ctx(), baseClaimParams)
 
             expect(mockParamsClaimAlgo).not.toHaveBeenCalled()
         })
 
         test('prepends arc59_claimAlgo when shouldClaimAlgo is true', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs({
-                    ...baseClaimParams,
-                    shouldClaimAlgo: true,
-                })
+            await buildArc59RejectTxs(ctx(), {
+                ...baseClaimParams,
+                shouldClaimAlgo: true,
             })
 
             expect(mockParamsClaimAlgo).toHaveBeenCalled()
@@ -511,11 +415,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('sets staticFee to 3 * minFee for arc59_reject (base case)', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs(baseClaimParams)
-            })
+            await buildArc59RejectTxs(ctx(), baseClaimParams)
 
             // Base fee: 3 * minFee (no claimAlgo)
             expect(mockParamsReject).toHaveBeenCalledWith(
@@ -526,13 +426,9 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('sets staticFee to 0 for arc59_claimAlgo in reject flow', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs({
-                    ...baseClaimParams,
-                    shouldClaimAlgo: true,
-                })
+            await buildArc59RejectTxs(ctx(), {
+                ...baseClaimParams,
+                shouldClaimAlgo: true,
             })
 
             expect(mockParamsClaimAlgo).toHaveBeenCalledWith(
@@ -543,13 +439,9 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('adds 2 * minFee to reject fee when shouldClaimAlgo is true', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs({
-                    ...baseClaimParams,
-                    shouldClaimAlgo: true,
-                })
+            await buildArc59RejectTxs(ctx(), {
+                ...baseClaimParams,
+                shouldClaimAlgo: true,
             })
 
             // 3 * minFee (base) + 2 * minFee (claimAlgo) = 5 * minFee
@@ -561,49 +453,30 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('returns PeraTransaction[] from the built group', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            let txResult: unknown
-
-            await act(async () => {
-                txResult =
-                    await result.current.buildRejectAssetTxs(baseClaimParams)
-            })
+            const txResult = await buildArc59RejectTxs(ctx(), baseClaimParams)
 
             expect(Array.isArray(txResult)).toBe(true)
             expect(txResult).toEqual([STUB_TXN])
         })
 
         test('calls composer.build() (not send) after composing transactions', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs(baseClaimParams)
-            })
+            await buildArc59RejectTxs(ctx(), baseClaimParams)
 
             expect(mockComposer.build).toHaveBeenCalledTimes(1)
         })
 
         test('uses mainnet config when network is mainnet', async () => {
-            ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+            network = 'mainnet'
 
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs(baseClaimParams)
-            })
+            await buildArc59RejectTxs(ctx(), baseClaimParams)
 
             expect(mockParamsReject).toHaveBeenCalled()
         })
 
         test('passes explicit refs (inbox + creator) to arc59_reject and never simulates when inboxAddress is set', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs({
-                    ...baseClaimParams,
-                    inboxAddress: INBOX_ADDRESS,
-                })
+            await buildArc59RejectTxs(ctx(), {
+                ...baseClaimParams,
+                inboxAddress: INBOX_ADDRESS,
             })
 
             expect(mockParamsReject).toHaveBeenCalledWith(
@@ -622,24 +495,16 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('falls back to simulate population when inboxAddress is null', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs(baseClaimParams)
-            })
+            await buildArc59RejectTxs(ctx(), baseClaimParams)
 
             expect(populateAppCallResources).toHaveBeenCalledTimes(1)
         })
 
         test('falls back to simulate population when inboxAddress is set but assetCreator is empty', async () => {
-            const { result } = renderHook(() => useArc59ClaimTransaction())
-
-            await act(async () => {
-                await result.current.buildRejectAssetTxs({
-                    ...baseClaimParams,
-                    inboxAddress: INBOX_ADDRESS,
-                    assetCreator: '',
-                })
+            await buildArc59RejectTxs(ctx(), {
+                ...baseClaimParams,
+                inboxAddress: INBOX_ADDRESS,
+                assetCreator: '',
             })
 
             expect(populateAppCallResources).toHaveBeenCalledTimes(1)

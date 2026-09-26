@@ -96,6 +96,7 @@
     "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-transactions": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "decimal.js": "catalog:",
     "react": "catalog:",

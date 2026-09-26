@@ -15,11 +15,6 @@ import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
-import {
-    useArc59SendTransaction,
-    useArc59ClaimTransaction,
-} from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import {
     displayUnitsToBaseUnits,
     useAlgorandClient,
@@ -39,6 +34,7 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { assetInboxFor } from '../chain-adapter'
 import { AssetFrozenError, InvalidSendParamsError } from '../errors'
 import { isAlgoAssetId, logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -56,7 +52,8 @@ type SendTransactionParams = BaseSendParams & {
     sendMode: 'normal' | 'express' | 'sendArc59'
     note?: string
     isCloseAccount?: boolean
-    arc59Summary?: Arc59SendSummaryResponse
+    /** The inbox quote the send was confirmed against; the chain adapter validates it. */
+    arc59Summary?: unknown
 }
 
 type SendClaimParams = BaseSendParams & {
@@ -98,9 +95,6 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
     const { submit } = useSignAndSubmitGroup()
     const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
-    const { buildSendViaInboxTxs } = useArc59SendTransaction()
-    const { buildClaimAssetTxs, buildRejectAssetTxs } =
-        useArc59ClaimTransaction()
     const accounts = useAllAccounts()
     const { minTxnFee, pqMultiplier, assetMbr } = useMinimumFeeConfig()
     const fetchSuggestedMinFee = useFetchSuggestedMinFee()
@@ -320,6 +314,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     if (!params.arc59Summary) {
                         throw new InvalidSendParamsError()
                     }
+                    const assetInbox = assetInboxFor(network)
                     const suggestedMinFee = await fetchSuggestedMinFee()
                     const senderMinFee = resolveMinFeeForSender({
                         senderAddress: params.sender.address,
@@ -328,7 +323,8 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                         configMinTxnFee: minTxnFee,
                         pqMultiplier,
                     })
-                    const unsignedTxs = await buildSendViaInboxTxs({
+                    const unsignedTxs = await assetInbox.buildSendTxs({
+                        network,
                         sender: params.sender.address,
                         receiver: params.receiver,
                         assetId,
@@ -358,7 +354,6 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
         },
         [
             buildExpressTxs,
-            buildSendViaInboxTxs,
             buildNormalTxs,
             submit,
             accounts,
@@ -375,6 +370,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 throw new InvalidSendParamsError()
             }
 
+            const assetInbox = assetInboxFor(network)
             const suggestedMinFee = await fetchSuggestedMinFee()
             const senderMinFee = resolveMinFeeForSender({
                 senderAddress: params.sender.address,
@@ -385,7 +381,8 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             })
 
             if (params.sendMode === 'claimArc59') {
-                const unsignedTxs = await buildClaimAssetTxs({
+                const unsignedTxs = await assetInbox.buildClaimTxs({
+                    network,
                     sender: params.sender.address,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
@@ -424,7 +421,8 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
 
                 return result.txIds[result.txIds.length - 1]
             } else {
-                const unsignedTxs = await buildRejectAssetTxs({
+                const unsignedTxs = await assetInbox.buildRejectTxs({
+                    network,
                     sender: params.sender.address,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
@@ -440,8 +438,6 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             }
         },
         [
-            buildClaimAssetTxs,
-            buildRejectAssetTxs,
             submit,
             network,
             invalidateBalances,
