@@ -15,6 +15,7 @@ import {
     useCustomNetworkStore,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 import {
     hydrateConnectionsStore,
     setActiveConnectionRegistry,
@@ -56,6 +57,7 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
                 }),
                 createDappConnectionHandler({
                     transport: createNoopDappTransport(),
+                    chainId: ALGORAND_CHAIN_ID,
                     getNetwork: () => useNetworkStore.getState().network,
                     getCustomNetworkGenesisHash: () =>
                         useCustomNetworkStore.getState().customNetwork

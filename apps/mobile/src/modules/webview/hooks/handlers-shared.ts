@@ -11,7 +11,11 @@
  */
 
 import { Linking } from 'react-native'
-import { JsonRpcErrorCode } from '@perawallet/wallet-core-dapp/wire'
+import { algorandDappRequestAdapter } from '@perawallet/wallet-core-chain-algorand/connect'
+import {
+    JsonRpcErrorCode,
+    sanitizeErrorForWebview as sanitizeDappError,
+} from '@perawallet/wallet-core-dapp/wire'
 import { logger, bytesToHex } from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
 
@@ -19,11 +23,13 @@ import { toLoadableUrl } from '../components/PWWebView/toLoadableUrl'
 
 // One codec for the in-app webview and the extension's window.pera bridge.
 // The `/wire` subpath, not the barrel: the barrel reaches the handler and its
-// config graph, which nothing in the webview bridge needs.
-export {
-    JsonRpcErrorCode,
-    sanitizeErrorForWebview,
-} from '@perawallet/wallet-core-dapp/wire'
+// connections graph, which nothing in the webview bridge needs.
+export { JsonRpcErrorCode } from '@perawallet/wallet-core-dapp/wire'
+
+// The in-app bridge speaks ARC-0001, so it relays the Algorand adapter's
+// protocol errors on top of the codec's chain-neutral default.
+export const sanitizeErrorForWebview = (error: Error): string =>
+    sanitizeDappError(error, algorandDappRequestAdapter.relayableErrorNames)
 
 export type RequireSecureContext = {
     operation: string
