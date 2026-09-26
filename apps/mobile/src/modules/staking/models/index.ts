@@ -15,4 +15,4 @@ export type {
     StakingType,
     StakingProjectInfo,
     StakingProjectsApiResponse,
-} from '@perawallet/wallet-core-staking'
+} from '@perawallet/wallet-core-chain-algorand/staking'

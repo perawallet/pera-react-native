@@ -632,9 +632,6 @@ importers:
       '@perawallet/wallet-core-signing':
         specifier: workspace:*
         version: link:../../packages/signing
-      '@perawallet/wallet-core-staking':
-        specifier: workspace:*
-        version: link:../../packages/staking
       '@perawallet/wallet-core-swaps':
         specifier: workspace:*
         version: link:../../packages/swaps

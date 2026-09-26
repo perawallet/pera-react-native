@@ -16,14 +16,14 @@
 // The list comes from Remote Config, not the API — the API only supplies
 // per-project TVL — so the config is seeded via the real override store and the
 // TVL via MSW. `mapProjects` sorts by descending tvlInAlgo, which is asserted.
-// wallet-core-staking is unmocked here so the real query runs end-to-end.
+// The staking subpath is unmocked here so the real query runs end-to-end.
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { mockStakingProjects } from '@perawallet/wallet-core-staking/test-handlers'
+import { mockStakingProjects } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import {
     RemoteConfigKeys,
     useRemoteConfigStore,
@@ -67,7 +67,7 @@ const FOLKS: ConfigProject = {
  * `staking_projects_i18n` holds a locale map, not a bare array. Seeding only
  * `en` is enough for these flows: the app runs on `en` under test, and locale
  * resolution has its own unit coverage in
- * `packages/staking/src/utils/__tests__/parseStakingProjectsI18nConfig.spec.ts`.
+ * `packages/chain-algorand/src/staking/utils/__tests__/parseStakingProjectsI18nConfig.spec.ts`.
  */
 const seedProjectsConfig = (projects: ConfigProject[]) => {
     useRemoteConfigStore

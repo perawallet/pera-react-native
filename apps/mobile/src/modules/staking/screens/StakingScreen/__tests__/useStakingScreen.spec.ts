@@ -13,7 +13,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNetworkStatusStore } from '@modules/network'
-import { useStakingProjectsQuery } from '@perawallet/wallet-core-staking'
+import { useStakingProjectsQuery } from '@perawallet/wallet-core-chain-algorand/staking'
 import { useStakingScreen } from '../useStakingScreen'
 
 vi.mock('@analytics', () => ({
@@ -36,7 +36,7 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: vi.fn().mockResolvedValue(undefined) }),
 }))
 
-vi.mock('@perawallet/wallet-core-staking', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/staking', () => ({
     useStakingProjectsQuery: vi.fn(),
 }))
 

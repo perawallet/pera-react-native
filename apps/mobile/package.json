@@ -83,7 +83,6 @@
     "@perawallet/wallet-core-settings": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
-    "@perawallet/wallet-core-staking": "workspace:*",
     "@perawallet/wallet-core-swaps": "workspace:*",
     "@perawallet/wallet-core-transactions": "workspace:*",
     "@perawallet/wallet-core-walletconnect": "workspace:*",

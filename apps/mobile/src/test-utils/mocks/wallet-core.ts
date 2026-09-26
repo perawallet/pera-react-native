@@ -469,9 +469,9 @@ vi.mock('@perawallet/wallet-core-contacts', () => {
     }
 })
 
-// Mock @perawallet/wallet-core-staking (dist schema.d.ts uses z.infer<typeof ...> which
-// cannot be parsed as JS; mock the whole package to avoid the SyntaxError)
-vi.mock('@perawallet/wallet-core-staking', () => ({
+// Mock @perawallet/wallet-core-chain-algorand/staking (dist schema.d.ts uses z.infer<typeof ...> which
+// cannot be parsed as JS; mock the whole subpath to avoid the SyntaxError)
+vi.mock('@perawallet/wallet-core-chain-algorand/staking', () => ({
     useStakingProjectsQuery: vi.fn(() => ({
         data: [],
         isLoading: false,
