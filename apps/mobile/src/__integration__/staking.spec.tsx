@@ -15,7 +15,7 @@
 //
 // The list comes from Remote Config, not the API — the API only supplies
 // per-project TVL — so the config is seeded via the real override store and the
-// TVL via MSW. `mapProjects` sorts by descending tvlInAlgo, which is asserted.
+// TVL via MSW. `mapProjects` sorts by descending tvlInNative, which is asserted.
 // wallet-core-staking is unmocked here so the real query runs end-to-end.
 
 import { beforeEach, describe, expect, it } from 'vitest'
