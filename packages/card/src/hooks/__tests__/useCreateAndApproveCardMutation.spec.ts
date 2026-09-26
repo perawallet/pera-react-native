@@ -23,20 +23,18 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     return { ...actual, useNetwork: mockUseNetwork }
 })
 
-const { createCard, postAlgorandDelegationApproval, fetchUser } = vi.hoisted(
-    () => ({
-        createCard: vi.fn(),
-        postAlgorandDelegationApproval: vi.fn(),
-        fetchUser: vi.fn(),
-    }),
-)
+const { createCard, postDelegationApproval, fetchUser } = vi.hoisted(() => ({
+    createCard: vi.fn(),
+    postDelegationApproval: vi.fn(),
+    fetchUser: vi.fn(),
+}))
 vi.mock('../../api/card-creation', async () => ({
     ...(await vi.importActual('../../api/card-creation')),
     createCard,
 }))
 vi.mock('../../api/delegation', async () => ({
     ...(await vi.importActual('../../api/delegation')),
-    postAlgorandDelegationApproval,
+    postDelegationApproval,
 }))
 vi.mock('../../api/user', async () => ({
     ...(await vi.importActual('../../api/user')),
@@ -100,7 +98,7 @@ describe('useCreateAndApproveCardMutation', () => {
         setValidIntegrityToken()
         buildEnv.appEnvironment = 'production'
         createCard.mockResolvedValue({ cardAddress: 'ESCROW1', txId: 'TX1' })
-        postAlgorandDelegationApproval.mockResolvedValue(undefined)
+        postDelegationApproval.mockResolvedValue(undefined)
         fetchUser.mockResolvedValue({
             id: BAANX_USER_ID,
             verificationState: 'VERIFIED',
@@ -127,7 +125,7 @@ describe('useCreateAndApproveCardMutation', () => {
                 signature: PROOF.signature,
             }),
         )
-        expect(postAlgorandDelegationApproval).toHaveBeenCalledWith(
+        expect(postDelegationApproval).toHaveBeenCalledWith(
             expect.objectContaining({
                 network: 'testnet',
                 address: ADDRESS,
@@ -153,7 +151,7 @@ describe('useCreateAndApproveCardMutation', () => {
         await expect(
             result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
         ).rejects.toThrow(CardAccountLinkedElsewhereError)
-        expect(postAlgorandDelegationApproval).not.toHaveBeenCalled()
+        expect(postDelegationApproval).not.toHaveBeenCalled()
         expect(useCardStore.getState().escrowCardAddress).toBeNull()
     })
 
@@ -223,13 +221,11 @@ describe('useCreateAndApproveCardMutation', () => {
             result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
         ).rejects.toThrow('create boom')
         expect(useCardStore.getState().escrowCardAddress).toBeNull()
-        expect(postAlgorandDelegationApproval).not.toHaveBeenCalled()
+        expect(postDelegationApproval).not.toHaveBeenCalled()
     })
 
     it('approval failure after creation: card persists unapproved; a retry with a fresh proof re-approves only', async () => {
-        postAlgorandDelegationApproval.mockRejectedValueOnce(
-            new Error('approval boom'),
-        )
+        postDelegationApproval.mockRejectedValueOnce(new Error('approval boom'))
         const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
             wrapper,
         })
@@ -250,10 +246,10 @@ describe('useCreateAndApproveCardMutation', () => {
         })
 
         expect(createCard).toHaveBeenCalledTimes(1)
-        expect(postAlgorandDelegationApproval).toHaveBeenCalledTimes(2)
+        expect(postDelegationApproval).toHaveBeenCalledTimes(2)
         // The delegation token is single-use, so a retry must carry the fresh
         // proof's token, never the consumed one.
-        expect(postAlgorandDelegationApproval.mock.calls[1][0]).toEqual(
+        expect(postDelegationApproval.mock.calls[1][0]).toEqual(
             expect.objectContaining({
                 signature: 'ZnJlc2g=',
                 token: 'ABC_tok2',
@@ -281,7 +277,7 @@ describe('useCreateAndApproveCardMutation', () => {
         })
 
         expect(createCard).not.toHaveBeenCalled()
-        expect(postAlgorandDelegationApproval).not.toHaveBeenCalled()
+        expect(postDelegationApproval).not.toHaveBeenCalled()
         expect(outcome).toEqual({ cardAddress: 'EXISTING_CARD' })
     })
 

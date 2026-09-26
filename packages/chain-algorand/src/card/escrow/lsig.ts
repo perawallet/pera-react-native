@@ -12,15 +12,17 @@
 
 import { sha256 } from '@noble/hashes/sha2.js'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
-    AppError,
-    ErrorCategory,
-    ErrorSeverity,
+    AutoDrawProgramUnverifiedError,
+    CardEscrowNotConfiguredError,
+    type EscrowChainConfig,
+} from '@perawallet/wallet-core-card'
+import {
     bytesToHex,
     decodeFromBase64,
     type Network,
 } from '@perawallet/wallet-core-shared'
+import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
     AUTODRAW_TEAL_TEMPLATE,
     TMPL_GENESIS_HASH,
@@ -28,26 +30,6 @@ import {
     TMPL_MAIN_APP,
 } from './autodraw-teal'
 import { verifyAutoDrawTealTemplate } from './verify-teal'
-
-/** The on-chain ids the AutoDraw template needs are missing from the build. */
-export class CardEscrowNotConfiguredError extends AppError {
-    constructor() {
-        super('Pera Card chain config is incomplete (app ids / asset id)', {
-            category: ErrorCategory.BLOCKCHAIN,
-            recoverable: false,
-        })
-        this.name = 'CardEscrowNotConfiguredError'
-    }
-}
-
-export type EscrowChainConfig = {
-    /** Settlement asset id (USDC) as a decimal string. */
-    assetId: string
-    /** Killswitch application id as a decimal string. */
-    killswitchAppId: string
-    /** W3Card (main) application id as a decimal string. */
-    mainAppId: string
-}
 
 /**
  * Resolves the on-chain ids the AutoDraw template needs. A missing id fails
@@ -99,22 +81,6 @@ export const renderAutoDrawTeal = ({
     )
         .replaceAll(TMPL_MAIN_APP, mainAppId)
         .replaceAll(TMPL_GENESIS_HASH, genesisHashHex)
-}
-
-/** Thrown when algod's compiled AutoDraw program doesn't match the pinned hash. */
-export class AutoDrawProgramUnverifiedError extends AppError {
-    constructor(network: Network) {
-        super(
-            `AutoDraw program for ${network} does not match the pinned hash`,
-            {
-                severity: ErrorSeverity.HIGH,
-                category: ErrorCategory.BLOCKCHAIN,
-                recoverable: false,
-                params: { network },
-            },
-        )
-        this.name = 'AutoDrawProgramUnverifiedError'
-    }
 }
 
 /**

@@ -19,18 +19,17 @@ import type { SignAndSubmitGroupParams } from '@perawallet/wallet-core-signing'
 const mocks = vi.hoisted(() => ({
     submit: vi.fn(),
     waitForTransactionConfirmation: vi.fn(),
-    algod: { tag: 'algod' },
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mocks.submit }),
 }))
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => ({ client: { algod: mocks.algod } }),
-    waitForTransactionConfirmation: mocks.waitForTransactionConfirmation,
+    useNetwork: () => ({ network: 'testnet' }),
 }))
 
 import { useSubmitAndConfirmMutation } from '../useSubmitAndConfirmMutation'
+import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 
 const PARAMS = {
     unsignedTxs: [],
@@ -50,6 +49,9 @@ describe('useSubmitAndConfirmMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.waitForTransactionConfirmation.mockResolvedValue(undefined)
+        registerFakeCardAdapter({
+            awaitConfirmation: mocks.waitForTransactionConfirmation,
+        })
     })
 
     it('submits, then waits for the first transaction to land before resolving', async () => {
@@ -70,7 +72,7 @@ describe('useSubmitAndConfirmMutation', () => {
 
         expect(mocks.submit).toHaveBeenCalledWith(PARAMS)
         expect(mocks.waitForTransactionConfirmation).toHaveBeenCalledWith(
-            mocks.algod,
+            'testnet',
             'TX1',
         )
         expect(order).toEqual(['submit', 'confirm'])

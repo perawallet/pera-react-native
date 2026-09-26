@@ -30,17 +30,24 @@ export type {
     CardTransportResponse,
 } from './api/transport/types'
 
+export {
+    cardChainAdapters,
+    type CardAutoDraw,
+    type CardChainAdapter,
+    type CardEscrowWithdrawals,
+    type EscrowChainConfig,
+} from './chain-adapter'
+
 // AutoDraw delegation helpers — the compile → sign → register leg, shared by
 // onboarding card creation and the post-onboarding funding-type switch.
 export {
     compileAutoDrawProgram,
     resolveEscrowChainConfig,
-    // Thrown when algod's compiled program doesn't match the pinned bytes.
-    // Exported so the funding-type flows can degrade to Manual with honest
-    // copy instead of a generic "please try again".
+    // Thrown when the compiled program doesn't match the pin. Exported so the
+    // funding-type flows can degrade to Manual with honest copy instead of a
+    // generic "please try again".
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
-    type EscrowChainConfig,
 } from './api/escrow'
 export {
     postDelegatorLsig,

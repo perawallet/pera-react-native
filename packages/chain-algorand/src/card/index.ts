@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export {}
+export { algorandCardAdapter } from './adapter'

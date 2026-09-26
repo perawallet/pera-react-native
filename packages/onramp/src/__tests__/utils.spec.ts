@@ -10,12 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { rampChainAdapters } from '../chain-adapter'
 import {
     hasPendingRampOrder,
-    isAlgoRampToken,
+    isNativeRampToken,
     rampTokenAssetId,
 } from '../utils'
+import { registerFakeRampAdapter } from './fakeRampAdapter'
 
 import type { OnrampStatus, RampHistoryItem, RampToken } from '../models'
 
@@ -53,34 +56,28 @@ const token = (overrides: Partial<RampToken>): RampToken =>
         ...overrides,
     }) as RampToken
 
-describe('isAlgoRampToken', () => {
-    it('recognises ALGO by its asset id', () => {
-        expect(isAlgoRampToken(token({ id: '0', symbol: 'XALGO' }))).toBe(true)
+describe("ramp token helpers ask the network's chain adapter", () => {
+    beforeEach(() => {
+        rampChainAdapters.reset()
     })
 
-    it('falls back to the ticker when the provider gives no asset id', () => {
-        expect(isAlgoRampToken(token({ id: 'ALGO', symbol: 'ALGO' }))).toBe(
-            true,
+    it('resolves native tokens and asset ids through the adapter', () => {
+        const adapter = registerFakeRampAdapter()
+        const native = token({ id: 'NATIVE', symbol: 'NAT' })
+
+        expect(isNativeRampToken(native, 'testnet')).toBe(true)
+        expect(isNativeRampToken(token({}), 'testnet')).toBe(false)
+        expect(rampTokenAssetId(native, 'testnet')).toBe('0')
+        expect(rampTokenAssetId(token({}), 'testnet')).toBe('31566704')
+        expect(adapter.isNativeToken).toHaveBeenCalledWith(native)
+    })
+
+    it('throws when no ramp adapter is registered for the network', () => {
+        expect(() => isNativeRampToken(token({}), 'mainnet')).toThrow(
+            ChainAdapterNotRegisteredError,
         )
-    })
-
-    it('does not treat another asset as ALGO', () => {
-        expect(isAlgoRampToken(token({}))).toBe(false)
-    })
-
-    it('ignores an ALGO ticker on a token that has another asset id', () => {
-        expect(isAlgoRampToken(token({ symbol: 'ALGO' }))).toBe(false)
-    })
-})
-
-describe('rampTokenAssetId', () => {
-    it("pins ALGO to the native asset id whatever the provider's id is", () => {
-        expect(rampTokenAssetId(token({ id: 'ALGO', symbol: 'ALGO' }))).toBe(
-            '0',
+        expect(() => rampTokenAssetId(token({}), 'mainnet')).toThrow(
+            'No ramp adapter is registered for chain "algorand"',
         )
-    })
-
-    it('keeps the provider id for any other token', () => {
-        expect(rampTokenAssetId(token({}))).toBe('31566704')
     })
 })

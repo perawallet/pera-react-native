@@ -10,10 +10,30 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { registerAlgorandChain } from '..'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { cardChainAdapters } from '@perawallet/wallet-core-card'
+import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
+import { ALGORAND_CHAIN_ID, registerAlgorandChain } from '..'
+import { algorandCardAdapter } from '../card'
+import { algorandRampAdapter } from '../onramp'
 
 describe('registerAlgorandChain', () => {
+    beforeEach(() => {
+        cardChainAdapters.reset()
+        rampChainAdapters.reset()
+    })
+
+    it('registers the Algorand card and ramp adapters', () => {
+        registerAlgorandChain()
+
+        expect(cardChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandCardAdapter,
+        )
+        expect(rampChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandRampAdapter,
+        )
+    })
+
     it('can run more than once, so a repeated bootstrap is harmless', () => {
         expect(() => {
             registerAlgorandChain()

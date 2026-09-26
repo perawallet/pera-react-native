@@ -13,7 +13,11 @@
 import type { Network } from '@perawallet/wallet-core-shared'
 import { getCardApiError, isAlreadyCreatedError } from '../errors'
 import { getCardTransport } from '../transport'
-import type { CardSiwaSignData } from '../card-creation'
+import {
+    cardAdapterFor,
+    type DelegationApprovalParams,
+    type DelegatorProgramParams,
+} from '../../chain-adapter'
 import type { CardDelegationToken, CardExternalWallet } from '../../models'
 import {
     delegationAcceptedResponseSchema,
@@ -75,64 +79,31 @@ const assertAccepted = (data: unknown): void => {
     }
 }
 
-export type PostAlgorandDelegationApprovalParams = {
+export type PostDelegationApprovalParams = DelegationApprovalParams & {
     network: Network
-    /** Delegator (funding-source) address whose spending is being delegated. */
-    address: string
-    /** Currency code as Baanx expects it, e.g. "usdc". */
-    currency: string
-    /** Transaction id of the on-chain card creation, from the backend create-card response. */
-    txId: string
-    /** ARC-60 SIWA sign data whose payload carries the delegation token's nonce. */
-    signData: CardSiwaSignData
-    /** Base64 ed25519 signature over `sha256(data) || sha256(authData)`. */
-    signature: string
-    /** Single-use token from GET /v1/delegation/token. */
-    token: string
     signal?: AbortSignal
 }
 
 /**
- * Registers the delegated wallet with Baanx, completing card creation. The
- * amount is fixed at "0": Algorand spending is bounded by the signed AutoDraw
- * LogicSig and the Killswitch app, not by an allowance, and Baanx's Algorand
- * reference client sends "0" too.
- *
- * A replay of a lost response resolves rather than throwing — the delegation is
+ * Registers the delegated wallet with Baanx, completing card creation. A
+ * replay of a lost response resolves rather than throwing: the delegation is
  * registered either way.
  */
-export const postAlgorandDelegationApproval = async (
-    params: PostAlgorandDelegationApprovalParams,
-): Promise<void> => {
-    const {
-        network,
-        address,
-        currency,
-        txId,
-        signData,
-        signature,
-        token,
-        signal,
-    } = params
+export const postDelegationApproval = async ({
+    network,
+    signal,
+    ...params
+}: PostDelegationApprovalParams): Promise<void> => {
+    const { path, data } =
+        cardAdapterFor(network).delegationApprovalRequest(params)
 
     try {
         const response = await getCardTransport().request({
             network,
             method: 'POST',
-            path: '/v1/delegation/algorand/post-approval',
+            path,
             authenticated: true,
-            data: {
-                address,
-                network: 'algorand',
-                currency,
-                amount: '0',
-                txHash: txId,
-                // Baanx's names, shared with its EVM/Solana contracts: sigHash
-                // carries the signature itself, not a hash of it.
-                sigData: signData,
-                sigHash: signature,
-                token,
-            },
+            data,
             signal,
         })
         assertAccepted(response.data)
@@ -143,50 +114,31 @@ export const postAlgorandDelegationApproval = async (
     }
 }
 
-export type PostDelegatorLsigParams = {
+export type PostDelegatorLsigParams = DelegatorProgramParams & {
     network: Network
-    /** Currency code the LogicSig covers, as Baanx expects it, e.g. "usdc". */
-    currency: string
-    /** Delegator (funding-source) address that signed the LogicSig. */
-    delegatorAddress: string
-    /** Base64 msgpack-encoded signed delegated LogicSigAccount. */
-    lsigBytes: string
-    /** Escrow card address returned by the backend create-card call. */
-    cardAddress: string
     signal?: AbortSignal
 }
 
 /**
- * Persists the signed AutoDraw LogicSig with Baanx, keyed by the delegator that
- * signed it. The delegation signature is itself the ownership proof, so no
- * separate SIWA signature accompanies it. Registered once per wallet and
+ * Persists the signed AutoDraw delegation with Baanx, keyed by the delegator
+ * that signed it. The delegation signature is itself the ownership proof, so
+ * no separate SIWA signature accompanies it. Registered once per wallet and
  * currency.
  */
-export const postDelegatorLsig = async (
-    params: PostDelegatorLsigParams,
-): Promise<void> => {
-    const {
-        network,
-        currency,
-        delegatorAddress,
-        lsigBytes,
-        cardAddress,
-        signal,
-    } = params
+export const postDelegatorLsig = async ({
+    network,
+    signal,
+    ...params
+}: PostDelegatorLsigParams): Promise<void> => {
+    const { path, data } =
+        cardAdapterFor(network).delegatorProgramRequest(params)
 
     const response = await getCardTransport().request({
         network,
         method: 'POST',
-        path: '/v1/delegation/algorand/delegator-lsig',
+        path,
         authenticated: true,
-        // Baanx rejects unknown fields on this route with a 422.
-        data: {
-            currency,
-            delegatorAddress,
-            lsigBytes,
-            cardAddress,
-            blockchain: 'algorand',
-        },
+        data,
         signal,
     })
 
