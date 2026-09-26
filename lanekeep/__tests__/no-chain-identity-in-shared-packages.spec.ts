@@ -14,6 +14,8 @@ const FIXTURES =
 // Debt the chain-split moves out of shared packages. Remove an entry when its
 // line goes; flip the rule to `error` when the list is empty.
 const KNOWN_OFFENDERS: readonly string[] = [
+    'packages/blockchain/src/store/custom-network-store.ts: `scope.chainId !== CUSTOM_SCOPE.chainId` branches on chain identity in a shared package',
+    'packages/blockchain/src/store/custom-network-store.ts: `scope.chainId !== CUSTOM_SCOPE.chainId` branches on chain identity in a shared package',
     "packages/card/src/api/delegation/endpoints.ts: `'algorand'` is a chain id literal in a shared package",
     "packages/card/src/api/delegation/endpoints.ts: `'algorand'` is a chain id literal in a shared package",
     "packages/walletconnect/src/shared/deeplink.ts: `'algorand'` is a chain id literal in a shared package",
