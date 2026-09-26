@@ -682,7 +682,7 @@ describe('executeAlgorandSwap', () => {
             kind: 'failed',
             failure: {
                 phase: 'prepare',
-                reason: 'insufficient-algo',
+                reason: 'insufficient-native-balance',
                 shortfall: new Decimal(5000),
             },
         })

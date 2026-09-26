@@ -16,12 +16,13 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    isMultisigAccount,
     useSelectedAccount,
     useSignerFor,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { swapAdapterFor } from '../chain-adapter'
+import { swapAdapterFor, SwapCosignUnsupportedError } from '../chain-adapter'
 import type { ExecuteSwapParams, ExecuteSwapResult } from '../execution'
 import { useSwapHandoffStore } from '../store'
 import { usePrepareTransactionsMutation } from './usePrepareTransactionsMutation'
@@ -42,8 +43,16 @@ export const useExecuteSwapMutation = () => {
     const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
 
     return useMutation<ExecuteSwapResult, Error, ExecuteSwapVariables>({
-        mutationFn: variables =>
-            swapAdapterFor(network).executeSwap(
+        mutationFn: async variables => {
+            const adapter = swapAdapterFor(network)
+            if (
+                account &&
+                isMultisigAccount(account) &&
+                !adapter.submitSignedGroup
+            ) {
+                throw new SwapCosignUnsupportedError(adapter.chainId)
+            }
+            return adapter.executeSwap(
                 { ...variables, account, signer },
                 {
                     network,
@@ -54,7 +63,8 @@ export const useExecuteSwapMutation = () => {
                     updateSwapStatus,
                     registerHandoff,
                 },
-            ),
+            )
+        },
         // A retry would re-sign and re-broadcast a group the user approved once.
         retry: false,
         throwOnError: false,

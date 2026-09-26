@@ -189,7 +189,7 @@ export const executeAlgorandSwap = async (
         if (shortfall) {
             return failed({
                 phase: 'prepare',
-                reason: 'insufficient-algo',
+                reason: 'insufficient-native-balance',
                 shortfall,
             })
         }

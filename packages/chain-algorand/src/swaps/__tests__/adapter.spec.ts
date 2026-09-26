@@ -58,8 +58,9 @@ describe('algorandSwapAdapter', () => {
         }))
     })
 
-    it('serves the Algorand chain', () => {
+    it('serves the Algorand chain, paying with ALGO by default', () => {
         expect(algorandSwapAdapter.chainId).toBe(ALGORAND_CHAIN_ID)
+        expect(algorandSwapAdapter.nativeAssetId).toBe('0')
     })
 
     it("executes with a client for the context's network and the opt-in balance as the asset MBR", async () => {
@@ -91,7 +92,7 @@ describe('algorandSwapAdapter', () => {
         mocks.submitRawSignedTransactionGroup.mockResolvedValue(['TX1'])
         const bytes = [new Uint8Array([1, 2])]
 
-        const ids = await algorandSwapAdapter.submitSignedGroup(
+        const ids = await algorandSwapAdapter.submitSignedGroup?.(
             'mainnet',
             bytes,
         )

@@ -18,6 +18,7 @@ import {
     type PeraSignedTransaction,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { submitRawSignedTransactionGroup } from '@perawallet/wallet-core-signing'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
@@ -27,6 +28,7 @@ import { executeAlgorandSwap } from './executeSwap'
 // account state and submits; it never builds or signs with its own defaults.
 export const algorandSwapAdapter: SwapChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
+    nativeAssetId: ALGO_ASSET_ID,
     executeSwap: (params, { assetOptInMinBalance, ...context }) =>
         executeAlgorandSwap(params, {
             ...context,

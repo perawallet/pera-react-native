@@ -41,7 +41,7 @@ export type SwapExecutionFailure =
     | { phase: 'prepare'; reason: 'asset-frozen'; assetId: string }
     | {
           phase: 'prepare'
-          reason: 'insufficient-algo'
+          reason: 'insufficient-native-balance'
           /** Shortfall in base units of the native asset. */
           shortfall: Decimal
       }
