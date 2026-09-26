@@ -10,4 +10,20 @@
  limitations under the License
  */
 
-export { registerAlgorandChain } from './register'
+import { describe, expect, it, vi } from 'vitest'
+
+const mocks = vi.hoisted(() => ({ registerAlgorandChain: vi.fn() }))
+
+vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
+    registerAlgorandChain: mocks.registerAlgorandChain,
+}))
+
+import { registerChainAdapters } from '../chain-adapters'
+
+describe('registerChainAdapters', () => {
+    it('registers the Algorand chain adapters', () => {
+        registerChainAdapters()
+
+        expect(mocks.registerAlgorandChain).toHaveBeenCalledTimes(1)
+    })
+})

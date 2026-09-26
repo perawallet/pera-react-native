@@ -10,4 +10,14 @@
  limitations under the License
  */
 
-export { registerAlgorandChain } from './register'
+import { describe, expect, it } from 'vitest'
+import { registerAlgorandChain } from '..'
+
+describe('registerAlgorandChain', () => {
+    it('can run more than once, so a repeated bootstrap is harmless', () => {
+        expect(() => {
+            registerAlgorandChain()
+            registerAlgorandChain()
+        }).not.toThrow()
+    })
+})

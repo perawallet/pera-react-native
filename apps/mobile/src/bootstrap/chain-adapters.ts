@@ -10,4 +10,10 @@
  limitations under the License
  */
 
-export { registerAlgorandChain } from './register'
+import { registerAlgorandChain } from '@perawallet/wallet-core-chain-algorand'
+
+// The app picks which chains ship: generic packages only define the adapter
+// registries and never import a chain package.
+export const registerChainAdapters = (): void => {
+    registerAlgorandChain()
+}

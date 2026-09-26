@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => {
         registerHardwareWalletTransports: record(
             'registerHardwareWalletTransports',
         ),
+        registerChainAdapters: record('registerChainAdapters'),
         initNetworkStatus: vi.fn(() => {
             calls.push('initNetworkStatus')
             return Promise.resolve()
@@ -46,6 +47,9 @@ vi.mock('@modules/locale-tour/register', () => ({
 }))
 vi.mock('../hardware-wallet-transports', () => ({
     registerHardwareWalletTransports: mocks.registerHardwareWalletTransports,
+}))
+vi.mock('../chain-adapters', () => ({
+    registerChainAdapters: mocks.registerChainAdapters,
 }))
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -74,13 +78,14 @@ describe('initRuntime (native)', () => {
         expect(mocks.calls).toEqual([])
     })
 
-    it('registers sheets, the tour and hardware-wallet transports, seeds network status, configures Decimal and holds the splash', () => {
+    it('registers sheets, the tour, hardware-wallet transports and chain adapters, seeds network status, configures Decimal and holds the splash', () => {
         initRuntime()
 
         expect(mocks.calls).toEqual([
             'registerAppBottomSheets',
             'registerLocaleTour',
             'registerHardwareWalletTransports',
+            'registerChainAdapters',
             'initNetworkStatus',
             'initDecimalConfig',
             'preventAutoHideAsync',

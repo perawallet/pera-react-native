@@ -86,6 +86,9 @@
     "test:unit": "vitest run",
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
+  "dependencies": {
+    "@perawallet/wallet-core-chain-contract": "workspace:*"
+  },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@types/node": "catalog:",
