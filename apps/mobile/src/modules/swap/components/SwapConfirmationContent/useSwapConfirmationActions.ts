@@ -28,7 +28,7 @@ import {
 import {
     useSwapHistoryInvalidator,
     type SwapQuote,
-} from '@perawallet/wallet-core-chain-algorand/swaps'
+} from '@perawallet/wallet-core-swaps'
 import type { SwapConfirmationResult } from './SwapConfirmationContent'
 
 const buildSwapStatusPayload = (

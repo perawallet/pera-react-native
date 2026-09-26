@@ -13,7 +13,7 @@
 import { PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { dexSwapAssetToDisplayable } from '@modules/swap/utils/dexSwapAssetToDisplayable'
-import type { DexSwapAsset } from '@perawallet/wallet-core-chain-algorand/swaps'
+import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import { useStyles } from './styles'
 
 export type SwapAssetPairIconProps = {

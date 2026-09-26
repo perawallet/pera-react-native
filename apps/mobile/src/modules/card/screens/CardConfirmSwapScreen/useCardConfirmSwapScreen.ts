@@ -30,7 +30,7 @@ import {
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
 import { useCardUsdcCreditQuery } from '@perawallet/wallet-core-card'
-import { apiSlippageToPercent } from '@perawallet/wallet-core-chain-algorand/swaps'
+import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
 import {
     logger,
     type Maybe,

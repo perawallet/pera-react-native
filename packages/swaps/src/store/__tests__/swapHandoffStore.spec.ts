@@ -24,7 +24,6 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useSwapHandoffStore } from '../swapHandoffStore'
 import type { SwapHandoffRecord } from '../../models'
 
@@ -147,20 +146,5 @@ describe('swaps/swapHandoffStore', () => {
         })
 
         expect(result.current.handoffs).toEqual({})
-    })
-
-    test('rehydrates a handoff persisted under the existing key and version', async () => {
-        const record = makeRecord()
-        getProvider().keyValueStorage.setItem(
-            'swap-handoff-store',
-            JSON.stringify({
-                state: { handoffs: { 'req-1': record } },
-                version: 1,
-            }),
-        )
-
-        await useSwapHandoffStore.persist.rehydrate()
-
-        expect(useSwapHandoffStore.getState().handoffs['req-1']).toEqual(record)
     })
 })

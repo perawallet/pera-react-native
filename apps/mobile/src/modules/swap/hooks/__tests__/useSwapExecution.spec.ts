@@ -18,7 +18,7 @@ import type {
     ExecuteSwapVariables,
     SwapExecutionFailure,
     SwapQuote,
-} from '@perawallet/wallet-core-chain-algorand/swaps'
+} from '@perawallet/wallet-core-swaps'
 import {
     NoConnectionError,
     PeraNetworkError,
@@ -37,7 +37,7 @@ const mockUseIsQuantumSwapEnabled = vi.fn()
 // The pipeline itself (preflights, group plans, signing, submission) is the
 // swaps package's `executeSwap`, covered by its own spec. This hook only maps
 // its results onto status and localized copy.
-vi.mock('@perawallet/wallet-core-chain-algorand/swaps', () => ({
+vi.mock('@perawallet/wallet-core-swaps', () => ({
     useExecuteSwapMutation: () => ({
         mutateAsync: mockExecuteSwap,
         reset: mockResetMutation,

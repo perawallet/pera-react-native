@@ -28,7 +28,7 @@ import {
     useSwaps,
     type SwapQuote,
     type SwapConfigurationResult,
-} from '@perawallet/wallet-core-chain-algorand/swaps'
+} from '@perawallet/wallet-core-swaps'
 import {
     isDecimalEqual,
     uint64IdToNumber,

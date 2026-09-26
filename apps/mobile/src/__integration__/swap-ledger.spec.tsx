@@ -65,7 +65,7 @@ import {
     type SwapExecutionOutcome,
 } from '@modules/swap/hooks/useSwapExecution'
 
-import type { SwapQuote } from '@perawallet/wallet-core-chain-algorand/swaps'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 
 const SWAP_ID = '98765'

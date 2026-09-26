@@ -14,7 +14,7 @@ import { useCallback, useMemo, useState } from 'react'
 import {
     useSwaps,
     type SwapConfigurationResult,
-} from '@perawallet/wallet-core-chain-algorand/swaps'
+} from '@perawallet/wallet-core-swaps'
 import { trackEvent, SwapEvent } from '@analytics'
 import {
     MAX_BALANCE_PERCENT,
