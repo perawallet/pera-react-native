@@ -100,7 +100,7 @@ export const configSchema = z
 
         // The WalletConnect v2 relay rejects clients with no Reown Cloud
         // project id. Empty in open-source builds, where v2 is unavailable;
-        // a production build without one fails in tools/generate-config.sh.
+        // a production build without one fails in tools/dev/generate-config.sh.
         reownProjectId: z.string(),
 
         notificationRefreshTime: z.number().int(),
@@ -292,7 +292,7 @@ const productionConfig: Omit<
     mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
     // Injected at build time from the BACKEND_API_KEY env var via
-    // tools/generate-config.sh (bitrise secrets in CI, .env locally). Empty
+    // tools/dev/generate-config.sh (bitrise secrets in CI, .env locally). Empty
     // here so no key literal ships in the open-source source tree.
     backendAPIKey: '',
     algodApiKey: '',
@@ -413,7 +413,7 @@ const productionConfig: Omit<
     mainnetBaanxBaseUrl: 'https://api.baanx.com',
     testnetBaanxBaseUrl: 'https://dev.api.baanx.com',
     // PUBLIC client keys (x-client-key) are injected at build time from env
-    // vars (bitrise secrets in CI, .env locally) via tools/generate-config.sh.
+    // vars (bitrise secrets in CI, .env locally) via tools/dev/generate-config.sh.
     mainnetBaanxClientKey: '',
     testnetBaanxClientKey: '',
     // TODO(card): set the real Baanx tenant id for production via the

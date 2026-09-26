@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# tools/validate-env.sh
+# tools/dev/validate-env.sh
 # Fails fast when a required Bitrise env var / secret for the current workflow
 # is missing, BEFORE expensive build steps run. Pure precondition check: reads
 # env, reports, exits. Never mutates env, never prints secret values.
@@ -110,7 +110,7 @@ case "$PROFILE" in
     # the bitrise "Resolve distribution channel" step, so a play build must fail
     # fast on a missing Play key rather than after the Play upload succeeds.
     required_global+=( "FIREBASE_SERVICE_ACCOUNT_BASE64" )
-    if [ "$("$(dirname "${BASH_SOURCE[0]}")/resolve-distribution.sh")" = "play" ]; then
+    if [ "$("$(dirname "${BASH_SOURCE[0]}")/../release/resolve-distribution.sh")" = "play" ]; then
       required_global+=( "ANDROID_JSON_KEY_FILE" )
     fi
     optional_prefixed+=(
@@ -173,7 +173,7 @@ case "$PROFILE" in
     ;;
 esac
 
-# tools/generate-config.sh already fails a production build with no Reown
+# tools/dev/generate-config.sh already fails a production build with no Reown
 # project id; validating it here names the missing Bitrise secret instead. In
 # staging a build without one is legal — v2 pairing is simply unavailable.
 case "$PROFILE" in

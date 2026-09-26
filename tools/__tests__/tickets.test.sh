@@ -5,7 +5,7 @@ set -uo pipefail
 # ticket move, so its ranges have to be right. Built against a throwaway repo
 # with interleaved alpha/rc/stable tags.
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/release-tickets.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/release/tickets.sh"
 REPO=$(mktemp -d)
 trap 'rm -rf "$REPO"' EXIT
 

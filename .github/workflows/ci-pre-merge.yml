@@ -390,8 +390,8 @@ jobs:
       # vitest/turbo directly, so run them here instead.
       - name: Prepare native modules and config
         run: |
-          bash tools/rebuild-native.sh
-          bash tools/generate-config.sh
+          bash tools/dev/rebuild-native.sh
+          bash tools/dev/generate-config.sh
 
       - name: Test
         env:
@@ -516,7 +516,7 @@ jobs:
         run: pnpm --filter browser bundle
 
       # The browser registers no v2 handler; WalletKit must never enter its
-      # bundle. Checked here rather than tools/check-prod-bundle.sh because
+      # bundle. Checked here rather than tools/qa/check-prod-bundle.sh because
       # apps/browser/dist does not exist yet when that script runs in the
       # Build job — only this job's `Bundle extension` step produces it.
       # `test -d` first: grep over a missing directory exits non-zero, which
@@ -644,14 +644,14 @@ jobs:
         run: actionlint
 
       # error severity only, for now. The five pre-existing warnings are real, but
-      # two are in tools/generate-config.sh on the production config path and want
+      # two are in tools/dev/generate-config.sh on the production config path and want
       # their own change with a test rather than a drive-by fix.
       - name: Lint shell scripts
         run: |
           set -euo pipefail
           git ls-files -z '*.sh' | xargs -0 shellcheck --severity=error
 
-      # These cover tools/jira-sync.sh and tools/previous-release-tag.sh, which
+      # These cover tools/jira-sync.sh and tools/release/previous-release-tag.sh, which
       # only ever run unattended and write to a live tracker.
       - name: Shell script tests
         run: |

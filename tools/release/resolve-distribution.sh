@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# tools/resolve-distribution.sh
+# tools/release/resolve-distribution.sh
 # Single source of truth for the Android distribution channel (play | firebase).
 # Echoes the resolved channel on stdout so both the bitrise "Resolve
 # distribution channel" step and validate-env.sh agree without duplicating the
