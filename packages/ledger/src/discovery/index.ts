@@ -10,16 +10,20 @@
  limitations under the License
  */
 
-export { discoverLedgerAccounts } from './discoverAccounts'
-export type { DiscoverAccountsOptions } from './discoverAccounts'
 export { connectAndDiscoverAccounts } from './connectAndDiscover'
 export type {
     ConnectAndDiscoverOptions,
     ConnectAndDiscoverResult,
 } from './connectAndDiscover'
-export { verifyLedgerAddress } from './verifyAddress'
 export {
     ledgerTimeoutReason,
     withLedgerConfirmationTimeout,
     withLedgerConnectionTimeout,
 } from './ledgerTimeouts'
+
+// Compatibility re-exports; import these from @perawallet/wallet-core-chain-algorand/ledger instead.
+export {
+    discoverLedgerAccounts,
+    verifyLedgerAddress,
+} from '@perawallet/wallet-core-chain-algorand/ledger'
+export type { DiscoverAccountsOptions } from '@perawallet/wallet-core-chain-algorand/ledger'
