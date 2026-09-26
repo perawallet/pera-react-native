@@ -10,14 +10,28 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { registerAlgorandChain } from '..'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
+import { ALGORAND_CHAIN_ID, registerAlgorandChain } from '..'
+import { algorandLedgerAppDriver } from '../ledger'
 
 describe('registerAlgorandChain', () => {
+    beforeEach(() => {
+        ledgerAppDriverRegistry.reset()
+    })
+
     it('can run more than once, so a repeated bootstrap is harmless', () => {
         expect(() => {
             registerAlgorandChain()
             registerAlgorandChain()
         }).not.toThrow()
+    })
+
+    it('registers the Algorand Ledger app driver', () => {
+        registerAlgorandChain()
+
+        expect(ledgerAppDriverRegistry.resolve(ALGORAND_CHAIN_ID)).toBe(
+            algorandLedgerAppDriver,
+        )
     })
 })

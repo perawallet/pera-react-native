@@ -68,16 +68,6 @@ export const resolveUsbDeviceModel = (
         ? USB_PRODUCT_ID_MODELS.get(productId)
         : undefined) ?? UNKNOWN_USB_LEDGER_MODEL
 
-/** Full path: 44'/283'/{accountIndex}'/0/0 — the device derives internally. */
-export const ALGORAND_BIP44_PREFIX = "44'/283'"
-
-/**
- * The `m/` prefix is mandatory: `ledger-algorand-js`'s `serializePath` rejects
- * bare `44'/283'/…` paths with 'Path should start with "m/"'.
- */
-export const buildLedgerAccountPath = (accountIndex: number): string =>
-    `m/${ALGORAND_BIP44_PREFIX}/${accountIndex}'/0/0`
-
 /** Standard codes from @ledgerhq/errors, plus the Algorand app's own 0x6986. */
 export const LEDGER_STATUS_CODES = {
     SUCCESS: StatusCodes.OK,
