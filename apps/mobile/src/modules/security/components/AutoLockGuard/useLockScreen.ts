@@ -45,7 +45,8 @@ export const useLockScreen = ({
         lockoutEndTime,
         setLockoutEndTime,
     } = usePinCode()
-    const { checkBiometricsEnabled, unlockWithBiometrics } = useBiometrics()
+    const { checkBiometricUnlockAvailable, unlockWithBiometrics } =
+        useBiometrics()
     const { performDuressWipe } = useDuressWipe()
 
     const [hasError, setHasError] = useState(false)
@@ -87,7 +88,7 @@ export const useLockScreen = ({
     // stranding the user on the PIN pad.
     const hasPromptedForLockRef = useRef(false)
     const promptRef = useRef({
-        checkBiometricsEnabled,
+        checkBiometricUnlockAvailable,
         unlockWithBiometrics,
         resetFailedAttempts,
         setLockoutEndTime,
@@ -96,7 +97,7 @@ export const useLockScreen = ({
         isLockedOut,
     })
     promptRef.current = {
-        checkBiometricsEnabled,
+        checkBiometricUnlockAvailable,
         unlockWithBiometrics,
         resetFailedAttempts,
         setLockoutEndTime,
@@ -142,7 +143,8 @@ export const useLockScreen = ({
             // Lockout can begin while waiting (failed PIN attempts on the pad).
             if (promptRef.current.isLockedOut) return
             hasLeftForeground = false
-            const enabled = await promptRef.current.checkBiometricsEnabled()
+            const enabled =
+                await promptRef.current.checkBiometricUnlockAvailable()
             if (cancelled || !enabled) return
             const outcome = await promptRef.current.unlockWithBiometrics({
                 title: promptRef.current.t(

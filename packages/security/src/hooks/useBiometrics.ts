@@ -69,6 +69,11 @@ type UseBiometricsResult = {
      * and on nothing else, so a returned false does not imply the blob is gone.
      */
     checkBiometricsEnabled: () => Promise<boolean>
+    /**
+     * Whether the lock screen should offer a biometric prompt: enabled, or a
+     * swept pre-binding opt-in that `unlockWithBiometrics` can still recover.
+     */
+    checkBiometricUnlockAvailable: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
     enableBiometrics: (
         prompt: BiometricsAuthenticatePrompt,
@@ -84,6 +89,12 @@ type UseBiometricsResult = {
      */
     completePendingBiometricRearm: () => Promise<void>
 }
+
+// Module-level because every mounted instance reconciles on mount. A caller
+// that lands between the blob's removal and the flag being set would see
+// neither and skip the prompt, and a recovery that arms while the sweep's
+// clear is in flight would lose its fresh key.
+let legacySweep: Nullable<Promise<void>> = null
 
 const sha256Hex = (bytes: Uint8Array): string =>
     bytesToHex(new Uint8Array(createHash('sha256').update(bytes).digest()))
@@ -171,11 +182,17 @@ export const useBiometrics = (): UseBiometricsResult => {
         // A blob from before OS-bound keys existed: nothing can unwrap it, so
         // it is swept without a probe, and the binding is re-armed once the
         // user has proven the PIN rather than asking them to opt in again.
-        if (hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)) {
-            await removeSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)
-            await biometricsService.clearEnrollmentBinding()
-            setIsEnabled(false)
-            setRearmPending(true)
+        if (legacySweep || hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)) {
+            // Flag first, so a kill mid-sweep cannot drop the opt-in unflagged.
+            legacySweep ??= (async () => {
+                setIsEnabled(false)
+                setRearmPending(true)
+                await removeSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)
+                await biometricsService.clearEnrollmentBinding()
+            })().finally(() => {
+                legacySweep = null
+            })
+            await legacySweep
             return false
         }
         if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) {
@@ -400,12 +417,94 @@ export const useBiometrics = (): UseBiometricsResult => {
         return endTime !== null && endTime > Date.now() ? endTime : null
     }, [withSecret])
 
+    // Only a pre-binding opt-in swept by the reconcile and never re-armed; a
+    // blob under the current id means the migration is done, and every path
+    // that finishes or abandons it clears the flag.
+    const isPendingRearmRecoverable = useCallback(
+        (): boolean =>
+            useSecurityStore.getState().isBiometricRearmPending &&
+            !hasSecret(BIOMETRIC_BLOB_KEY_ID),
+        [hasSecret],
+    )
+
+    const checkBiometricUnlockAvailable =
+        useCallback(async (): Promise<boolean> => {
+            if (await checkBiometricsEnabled()) return true
+            return isPendingRearmRecoverable()
+        }, [checkBiometricsEnabled, isPendingRearmRecoverable])
+
+    // Users upgraded from a pre-binding build lose biometrics until their next
+    // PIN entry, which strands anyone who has forgotten the PIN. This lets the
+    // ceremony stand in for the PIN: arm, then unwrap as `enableBiometrics`
+    // does. A failure leaves the flag set so the next lock can try again.
+    const recoverPendingRearm = useCallback(
+        async (
+            prompt: BiometricsAuthenticatePrompt,
+        ): Promise<BiometricUnlockOutcome> => {
+            const lockoutEndTime = await readLockoutEndTime()
+            if (lockoutEndTime !== null) {
+                return { kind: 'locked', lockoutEndTime }
+            }
+            if (
+                !(await biometricsService.checkBiometricsAvailable()) ||
+                (await biometricsService.getSecurityLevel()) !== 'strong'
+            ) {
+                return { kind: 'failed', reason: 'unavailable' }
+            }
+
+            const armed = await biometricsService.armBiometricBinding()
+            if (!armed) return { kind: 'failed', reason: 'unknown' }
+
+            const released = await biometricsService.unwrapBiometricToken(
+                armed.blob,
+                prompt,
+            )
+            if (!released.success) {
+                await biometricsService.clearEnrollmentBinding()
+                return { kind: 'failed', reason: released.reason }
+            }
+
+            try {
+                if (!matchesHash(released.token, armed.tokenHash)) {
+                    await biometricsService.clearEnrollmentBinding()
+                    return { kind: 'mismatch' }
+                }
+            } finally {
+                released.token.fill(0)
+            }
+
+            try {
+                await writeBiometricBlob(armed.blob, armed.tokenHash)
+            } catch (err) {
+                await biometricsService.clearEnrollmentBinding()
+                throw err
+            }
+            setRearmPending(false)
+            setIsEnabled(true)
+            setDisabledReason(null)
+            setUnwrapFailures(0)
+            return { kind: 'ok' }
+        },
+        [
+            readLockoutEndTime,
+            biometricsService,
+            writeBiometricBlob,
+            setRearmPending,
+            setIsEnabled,
+            setDisabledReason,
+            setUnwrapFailures,
+        ],
+    )
+
     const unlockWithBiometrics = useCallback(
         async (
             prompt: BiometricsAuthenticatePrompt,
         ): Promise<BiometricUnlockOutcome> => {
             try {
                 if (!(await checkBiometricsEnabled())) {
+                    if (isPendingRearmRecoverable()) {
+                        return await recoverPendingRearm(prompt)
+                    }
                     return { kind: 'failed', reason: 'unavailable' }
                 }
 
@@ -484,6 +583,8 @@ export const useBiometrics = (): UseBiometricsResult => {
         },
         [
             checkBiometricsEnabled,
+            isPendingRearmRecoverable,
+            recoverPendingRearm,
             readLockoutEndTime,
             getSecretMetadata,
             withSecret,
@@ -499,6 +600,7 @@ export const useBiometrics = (): UseBiometricsResult => {
         disabledReason,
         acknowledgeBiometricsDisabled,
         checkBiometricsEnabled,
+        checkBiometricUnlockAvailable,
         checkBiometricsAvailable,
         enableBiometrics,
         disableBiometrics,
