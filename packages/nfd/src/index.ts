@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-export * from './models'
-export * from './hooks'
-export * from './api'
-export * from './db'
-export * from './sync'
-export { verifyNfdAddress, type VerifyNfdAddressParams } from './services'
+// Kept only until every consumer imports the chain-algorand subpath directly.
+export * from '@perawallet/wallet-core-chain-algorand/nfd'

@@ -2416,16 +2416,55 @@ importers:
 
   packages/chain-algorand:
     dependencies:
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.29.7
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../database
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.2.3)
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
+      '@types/react':
+        specifier: ~19.2.14
+        version: 19.2.17
+      msw:
+        specifier: 'catalog:'
+        version: 2.15.0(@types/node@20.19.43)(typescript@7.0.2)
+      react-dom:
+        specifier: 19.2.3
+        version: 19.2.3(react@19.2.3)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3271,49 +3310,13 @@ importers:
 
   packages/nfd:
     dependencies:
-      '@babel/runtime':
-        specifier: 'catalog:'
-        version: 7.29.7
-      '@perawallet/wallet-core-blockchain':
+      '@perawallet/wallet-core-chain-algorand':
         specifier: workspace:*
-        version: link:../blockchain
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../config
-      '@perawallet/wallet-core-database':
-        specifier: workspace:*
-        version: link:../database
-      '@perawallet/wallet-core-shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@tanstack/react-query':
-        specifier: 'catalog:'
-        version: 5.101.2(react@19.2.3)
-      drizzle-orm:
-        specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))
-      react:
-        specifier: 19.2.3
-        version: 19.2.3
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
+        version: link:../chain-algorand
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
-      '@testing-library/react':
-        specifier: 'catalog:'
-        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@types/react':
-        specifier: ~19.2.14
-        version: 19.2.17
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
-      react-dom:
-        specifier: 19.2.3
-        version: 19.2.3(react@19.2.3)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

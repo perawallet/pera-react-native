@@ -9,7 +9,7 @@ export default defineConfig({
         '../assets/src/db/schema.ts',
         '../accounts/src/db/schema.ts',
         '../transactions/src/db/schema.ts',
-        '../nfd/src/db/schema.ts',
+        '../chain-algorand/src/nfd/db/schema.ts',
         '../signing/src/db/schema.ts',
     ],
     out: './src/migrations',
