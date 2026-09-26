@@ -12,5 +12,4 @@
 
 export const name = '@perawallet/wallet-core-staking'
 
-export * from './hooks'
-export * from './models'
+export * from '@perawallet/wallet-core-chain-algorand/staking'

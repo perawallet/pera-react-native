@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import { defineConfig } from 'vitest/config'
-import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
-import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
-
-export default defineConfig({
-    test: {
-        coverage: coverageConfig,
-        globals: true,
-        passWithNoTests: true,
-    },
-    ...poolConfig,
-})
+export {
+    mockStakingProjects,
+    type MockStakingProjectsParams,
+} from './staking/hooks/msw-handlers'

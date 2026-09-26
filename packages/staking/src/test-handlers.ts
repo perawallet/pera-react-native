@@ -10,9 +10,4 @@
  limitations under the License
  */
 
-// Test-only barrel — see packages/currencies/src/test-handlers.ts for the
-// rationale. Reachable only via the vitest alias.
-export {
-    mockStakingProjects,
-    type MockStakingProjectsParams,
-} from './hooks/msw-handlers'
+export * from '@perawallet/wallet-core-chain-algorand/test-handlers'
