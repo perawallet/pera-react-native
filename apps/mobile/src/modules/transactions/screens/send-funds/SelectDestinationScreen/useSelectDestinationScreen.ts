@@ -13,7 +13,7 @@
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { verifyNfdAddress } from '@perawallet/wallet-core-nfd'
+import { verifyNameAddress } from '@perawallet/wallet-core-nfd'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useCallback, useEffect, useState, useRef } from 'react'
@@ -75,7 +75,7 @@ export const useSelectDestinationScreen = () => {
     const handleClose = useCallback(() => onFinished?.(), [onFinished])
 
     // A name's address comes from Pera's backend. It only becomes the
-    // destination once the NFD contract itself vouches for it; nothing here
+    // destination once the chain itself vouches for it; nothing here
     // trusts the search result or a cache.
     const { network } = useNetwork()
     const { showToast } = useToast()
@@ -91,7 +91,7 @@ export const useSelectDestinationScreen = () => {
             verificationRef.current = controller
             setIsVerifyingNfd(true)
             try {
-                const verification = await verifyNfdAddress({
+                const verification = await verifyNameAddress({
                     name,
                     address,
                     network,

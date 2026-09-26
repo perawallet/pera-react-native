@@ -2416,9 +2416,21 @@ importers:
 
   packages/chain-algorand:
     dependencies:
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-nfd':
+        specifier: workspace:*
+        version: link:../nfd
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -3277,6 +3289,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config

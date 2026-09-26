@@ -14,12 +14,16 @@ import { z } from 'zod'
 import {
     decodeFromBase64,
     logger,
+    Networks,
     queryClient,
     type Network,
 } from '@perawallet/wallet-core-shared'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { fetchNfdAppId } from '../api/registry'
-import type { NfdAddressVerification } from '../models'
+import type {
+    NfdAddressVerification,
+    VerifyForwardResolutionParams,
+} from '@perawallet/wallet-core-nfd'
+import { fetchNfdAppId } from './registry'
 
 // NFD contract (v2) layout: the name and owner sit in global state; verified
 // addresses live in `v.caAlgo.<n>.as` boxes as back-to-back 32-byte keys.
@@ -82,11 +86,12 @@ const algodGet = async (
     return response.data
 }
 
-export type VerifyNfdAddressParams = {
-    name: string
-    address: string
-    network: Network
-    signal?: AbortSignal
+// Algorand's network ids are the legacy `Network` values (see
+// scopeForLegacyNetwork), so anything else is a scope this chain never issued.
+const toNetwork = (networkId: string): Network => {
+    const network = Object.values(Networks).find(value => value === networkId)
+    if (!network) throw new Error(`Not an Algorand network: ${networkId}`)
+    return network
 }
 
 /**
@@ -98,11 +103,12 @@ export type VerifyNfdAddressParams = {
 export const verifyNfdAddress = async ({
     name,
     address,
-    network,
+    scope,
     signal,
-}: VerifyNfdAddressParams): Promise<NfdAddressVerification> => {
+}: VerifyForwardResolutionParams): Promise<NfdAddressVerification> => {
     const normalizedName = name.toLowerCase()
     try {
+        const network = toNetwork(scope.networkId)
         const appId = await fetchNfdAppId({
             name: normalizedName,
             network,

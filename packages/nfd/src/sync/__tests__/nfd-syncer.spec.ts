@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { fetchAndPersistNfds } from '../nfd-syncer'
 import { NFD_BULK_CHUNK_SIZE } from '../../constants'
 import { Networks } from '@perawallet/wallet-core-config'
+import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
 const mockFetchNfdBulkRead = vi.hoisted(() => vi.fn())
 const mockUpsertNfdEntries = vi.hoisted(() => vi.fn())
@@ -28,11 +29,6 @@ vi.mock('../../db', () => ({
     getStaleOrMissingAddresses: mockGetStaleOrMissingAddresses,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    isValidAlgorandAddress: (address?: string) =>
-        !!address && /^[0-9a-zA-Z]{58}$/.test(address),
-}))
-
 const makeAddress = (i: number): string =>
     `${i.toString(36).padStart(2, '0')}${'A'.repeat(56)}`.slice(0, 58)
 
@@ -42,6 +38,7 @@ const ADDR_C = 'C'.repeat(58)
 
 describe('fetchAndPersistNfds', () => {
     beforeEach(() => {
+        registerFakeNameServiceAdapter()
         mockFetchNfdBulkRead.mockReset()
         mockUpsertNfdEntries.mockReset().mockResolvedValue(undefined)
         mockGetStaleOrMissingAddresses

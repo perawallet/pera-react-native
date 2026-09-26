@@ -10,10 +10,24 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { registerAlgorandChain } from '..'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
+import { ALGORAND_CHAIN_ID, registerAlgorandChain } from '..'
+import { algorandNameServiceAdapter } from '../nfd'
 
 describe('registerAlgorandChain', () => {
+    beforeEach(() => {
+        nameServiceChainAdapters.reset()
+    })
+
+    it('registers the Algorand name service adapter', () => {
+        registerAlgorandChain()
+
+        expect(nameServiceChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandNameServiceAdapter,
+        )
+    })
+
     it('can run more than once, so a repeated bootstrap is harmless', () => {
         expect(() => {
             registerAlgorandChain()

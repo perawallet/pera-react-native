@@ -12,7 +12,12 @@
 
 import { z } from 'zod'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
-import { NFD_REGISTRY_URLS } from '../constants'
+
+/** NFD's registry, per network. Consulted only for a name's application id. */
+export const NFD_REGISTRY_URLS: Partial<Record<Network, string>> = {
+    mainnet: 'https://api.nf.domains',
+    testnet: 'https://api.testnet.nf.domains',
+}
 
 const nfdRegistryRecordSchema = z.object({
     appID: z.number().int().positive(),
