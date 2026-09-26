@@ -16,6 +16,8 @@ import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-w
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID, registerAlgorandChain } from '..'
 import { algorandDappRequestAdapter } from '../connect'
+import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
+import { algorandSendFlowAdapter } from '../asa-inbox/adapter'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
 
@@ -24,6 +26,7 @@ describe('registerAlgorandChain', () => {
         ledgerAppDriverRegistry.reset()
         swapChainAdapters.reset()
         dappRequestChainAdapters.reset()
+        sendFlowChainAdapters.reset()
     })
 
     it('registers the Algorand swap adapter', () => {
@@ -39,6 +42,14 @@ describe('registerAlgorandChain', () => {
 
         expect(dappRequestChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandDappRequestAdapter,
+        )
+    })
+
+    it('registers the Algorand send-flow adapter', () => {
+        registerAlgorandChain()
+
+        expect(sendFlowChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandSendFlowAdapter,
         )
     })
 

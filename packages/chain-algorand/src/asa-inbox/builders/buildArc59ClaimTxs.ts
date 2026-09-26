@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { decodeAddress } from 'algosdk'
-import {
-    useAlgorandClient,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ARC59Client } from '../clients'
 import { requireArc59Config } from './requireArc59Config'
+import type { Arc59BuildContext } from './buildArc59SendViaInboxTxs'
 import { buildGroup, buildPopulatedGroup } from '../utils'
 import {
     CLAIM_ALGO_INNER_TX_COUNT,
@@ -27,7 +24,7 @@ import {
     REJECT_INNER_TX_COUNT,
 } from '../constants'
 
-type ClaimParams = {
+export type Arc59ClaimParams = {
     sender: string
     assetId: bigint
     shouldClaimAlgo: boolean
@@ -46,213 +43,195 @@ type ClaimParams = {
     senderMinFee: bigint
 }
 
-type RejectParams = {
+export type Arc59RejectParams = {
     sender: string
     assetId: bigint
     shouldClaimAlgo: boolean
-    /** See {@link ClaimParams.inboxAddress}. */
+    /** See {@link Arc59ClaimParams.inboxAddress}. */
     inboxAddress: Nullable<string>
     /**
      * The ASA creator address. ARC-59 reject closes the asset out to its
      * creator, so the creator MUST be referenced on the reject call.
      */
     assetCreator: string
-    /** See {@link ClaimParams.senderMinFee}. */
+    /** See {@link Arc59ClaimParams.senderMinFee}. */
     senderMinFee: bigint
 }
 
-type UseArc59ClaimTransactionResult = {
-    buildClaimAssetTxs: (params: ClaimParams) => Promise<PeraTransaction[]>
-    buildRejectAssetTxs: (params: RejectParams) => Promise<PeraTransaction[]>
+const isOptedInToAsset = async (
+    algokit: AlgorandClient,
+    address: string,
+    assetId: bigint,
+): Promise<boolean> => {
+    try {
+        const accountInfo = await algokit.client.algod
+            .accountInformation(address)
+            .do()
+        return (accountInfo.assets ?? []).some(
+            a => BigInt(a.assetId) === assetId,
+        )
+    } catch {
+        return false
+    }
 }
 
-export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
-    const { network } = useNetwork()
-    const algokit = useAlgorandClient()
+export const buildArc59ClaimTxs = async (
+    { algokit, network }: Arc59BuildContext,
+    params: Arc59ClaimParams,
+): Promise<PeraTransaction[]> => {
+    const { sender, assetId, shouldClaimAlgo, inboxAddress, senderMinFee } =
+        params
+    const arc59Config = requireArc59Config(network)
 
-    const isOptedInToAsset = useCallback(
-        async (address: string, assetId: bigint): Promise<boolean> => {
-            try {
-                const accountInfo = await algokit.client.algod
-                    .accountInformation(address)
-                    .do()
-                return (accountInfo.assets ?? []).some(
-                    a => BigInt(a.assetId) === assetId,
-                )
-            } catch {
-                return false
-            }
-        },
-        [algokit],
+    const suggestedParams = await algokit.getSuggestedParams()
+
+    const appClient = new ARC59Client({
+        appId: arc59Config.appId,
+        algorand: algokit,
+        defaultSender: sender,
+    })
+
+    const composer = algokit.newGroup()
+    const optedIn = await isOptedInToAsset(algokit, sender, assetId)
+
+    // Pooled onto the claim call: each claimer-signed outer leg at the
+    // PQ-aware rate, each app-dispatched inner at the base rate.
+    const minFee = BigInt(suggestedParams.minFee)
+    const senderFee = senderMinFee > minFee ? senderMinFee : minFee
+    let claimFee = senderFee + BigInt(CLAIM_INNER_TX_COUNT) * minFee
+    if (shouldClaimAlgo)
+        claimFee += senderFee + BigInt(CLAIM_ALGO_INNER_TX_COUNT) * minFee
+    if (!optedIn) claimFee += senderFee
+
+    // When the inbox address is known, attach the ARC-59 resource
+    // references explicitly so the group builds without a live
+    // simulate. The router box is keyed by the receiver's public key.
+    const receiverBox = {
+        appId: arc59Config.appId,
+        name: decodeAddress(sender).publicKey,
+    }
+    const claimAlgoRefs = inboxAddress
+        ? {
+              accountReferences: [inboxAddress],
+              boxReferences: [receiverBox],
+          }
+        : {}
+    const claimRefs = inboxAddress
+        ? {
+              accountReferences: [inboxAddress],
+              assetReferences: [assetId],
+              boxReferences: [receiverBox],
+          }
+        : {}
+
+    if (shouldClaimAlgo) {
+        composer.addAppCallMethodCall(
+            await appClient.params.arc59_claimAlgo({
+                args: [],
+                staticFee: 0n.microAlgo(),
+                ...claimAlgoRefs,
+            }),
+        )
+    }
+
+    if (!optedIn) {
+        composer.addAssetOptIn({
+            sender,
+            assetId,
+            staticFee: 0n.microAlgo(),
+        })
+    }
+
+    composer.addAppCallMethodCall(
+        await appClient.params.arc59_claim({
+            args: [assetId],
+            staticFee: claimFee.microAlgo(),
+            ...claimRefs,
+        }),
     )
 
-    const buildClaimAssetTxs = useCallback(
-        async (params: ClaimParams): Promise<PeraTransaction[]> => {
-            const {
-                sender,
-                assetId,
-                shouldClaimAlgo,
-                inboxAddress,
-                senderMinFee,
-            } = params
-            const arc59Config = requireArc59Config(network)
+    return inboxAddress
+        ? buildGroup(composer)
+        : buildPopulatedGroup(composer, algokit)
+}
 
-            const suggestedParams = await algokit.getSuggestedParams()
+export const buildArc59RejectTxs = async (
+    { algokit, network }: Arc59BuildContext,
+    params: Arc59RejectParams,
+): Promise<PeraTransaction[]> => {
+    const {
+        sender,
+        assetId,
+        shouldClaimAlgo,
+        inboxAddress,
+        assetCreator,
+        senderMinFee,
+    } = params
+    const arc59Config = requireArc59Config(network)
 
-            const appClient = new ARC59Client({
-                appId: arc59Config.appId,
-                algorand: algokit,
-                defaultSender: sender,
-            })
+    const suggestedParams = await algokit.getSuggestedParams()
 
-            const composer = algokit.newGroup()
-            const optedIn = await isOptedInToAsset(sender, assetId)
+    const appClient = new ARC59Client({
+        appId: arc59Config.appId,
+        algorand: algokit,
+        defaultSender: sender,
+    })
 
-            // Pooled onto the claim call: each claimer-signed outer leg at the
-            // PQ-aware rate, each app-dispatched inner at the base rate.
-            const minFee = BigInt(suggestedParams.minFee)
-            const senderFee = senderMinFee > minFee ? senderMinFee : minFee
-            let claimFee = senderFee + BigInt(CLAIM_INNER_TX_COUNT) * minFee
-            if (shouldClaimAlgo)
-                claimFee +=
-                    senderFee + BigInt(CLAIM_ALGO_INNER_TX_COUNT) * minFee
-            if (!optedIn) claimFee += senderFee
+    const composer = algokit.newGroup()
 
-            // When the inbox address is known, attach the ARC-59 resource
-            // references explicitly so the group builds without a live
-            // simulate. The router box is keyed by the receiver's public key.
-            const receiverBox = {
-                appId: arc59Config.appId,
-                name: decodeAddress(sender).publicKey,
-            }
-            const claimAlgoRefs = inboxAddress
-                ? {
-                      accountReferences: [inboxAddress],
-                      boxReferences: [receiverBox],
-                  }
-                : {}
-            const claimRefs = inboxAddress
-                ? {
-                      accountReferences: [inboxAddress],
-                      assetReferences: [assetId],
-                      boxReferences: [receiverBox],
-                  }
-                : {}
+    // See buildArc59ClaimTxs — same outer/inner fee pooling split.
+    const minFee = BigInt(suggestedParams.minFee)
+    const senderFee = senderMinFee > minFee ? senderMinFee : minFee
+    let rejectFee = senderFee + BigInt(REJECT_INNER_TX_COUNT) * minFee
+    if (shouldClaimAlgo)
+        rejectFee += senderFee + BigInt(CLAIM_ALGO_INNER_TX_COUNT) * minFee
 
-            if (shouldClaimAlgo) {
-                composer.addAppCallMethodCall(
-                    await appClient.params.arc59_claimAlgo({
-                        args: [],
-                        staticFee: 0n.microAlgo(),
-                        ...claimAlgoRefs,
-                    }),
-                )
-            }
+    // See buildArc59ClaimTxs. Reject additionally references the ASA
+    // creator, since the router closes the asset out to it.
+    const receiverBox = {
+        appId: arc59Config.appId,
+        name: decodeAddress(sender).publicKey,
+    }
+    const claimAlgoRefs = inboxAddress
+        ? {
+              accountReferences: [inboxAddress],
+              boxReferences: [receiverBox],
+          }
+        : {}
+    // Only take the explicit-ref (no-simulate) path when both the
+    // inbox and the creator are known non-empty addresses. The ARC-59
+    // asset schema types `creator.address` as `z.string()`, so a
+    // degenerate backend value (empty string) is possible; attaching
+    // it as an account reference would make algokit reject the group
+    // at build time. Fall back to the simulate path instead.
+    const rejectRefs =
+        inboxAddress && assetCreator
+            ? {
+                  accountReferences: [inboxAddress, assetCreator],
+                  assetReferences: [assetId],
+                  boxReferences: [receiverBox],
+              }
+            : {}
 
-            if (!optedIn) {
-                composer.addAssetOptIn({
-                    sender,
-                    assetId,
-                    staticFee: 0n.microAlgo(),
-                })
-            }
+    if (shouldClaimAlgo) {
+        composer.addAppCallMethodCall(
+            await appClient.params.arc59_claimAlgo({
+                args: [],
+                staticFee: 0n.microAlgo(),
+                ...claimAlgoRefs,
+            }),
+        )
+    }
 
-            composer.addAppCallMethodCall(
-                await appClient.params.arc59_claim({
-                    args: [assetId],
-                    staticFee: claimFee.microAlgo(),
-                    ...claimRefs,
-                }),
-            )
-
-            return inboxAddress
-                ? buildGroup(composer)
-                : buildPopulatedGroup(composer, algokit)
-        },
-        [algokit, network, isOptedInToAsset],
+    composer.addAppCallMethodCall(
+        await appClient.params.arc59_reject({
+            args: [assetId],
+            staticFee: rejectFee.microAlgo(),
+            ...rejectRefs,
+        }),
     )
 
-    const buildRejectAssetTxs = useCallback(
-        async (params: RejectParams): Promise<PeraTransaction[]> => {
-            const {
-                sender,
-                assetId,
-                shouldClaimAlgo,
-                inboxAddress,
-                assetCreator,
-                senderMinFee,
-            } = params
-            const arc59Config = requireArc59Config(network)
-
-            const suggestedParams = await algokit.getSuggestedParams()
-
-            const appClient = new ARC59Client({
-                appId: arc59Config.appId,
-                algorand: algokit,
-                defaultSender: sender,
-            })
-
-            const composer = algokit.newGroup()
-
-            // See buildClaimAssetTxs — same outer/inner fee pooling split.
-            const minFee = BigInt(suggestedParams.minFee)
-            const senderFee = senderMinFee > minFee ? senderMinFee : minFee
-            let rejectFee = senderFee + BigInt(REJECT_INNER_TX_COUNT) * minFee
-            if (shouldClaimAlgo)
-                rejectFee +=
-                    senderFee + BigInt(CLAIM_ALGO_INNER_TX_COUNT) * minFee
-
-            // See buildClaimAssetTxs. Reject additionally references the ASA
-            // creator, since the router closes the asset out to it.
-            const receiverBox = {
-                appId: arc59Config.appId,
-                name: decodeAddress(sender).publicKey,
-            }
-            const claimAlgoRefs = inboxAddress
-                ? {
-                      accountReferences: [inboxAddress],
-                      boxReferences: [receiverBox],
-                  }
-                : {}
-            // Only take the explicit-ref (no-simulate) path when both the
-            // inbox and the creator are known non-empty addresses. The ARC-59
-            // asset schema types `creator.address` as `z.string()`, so a
-            // degenerate backend value (empty string) is possible; attaching
-            // it as an account reference would make algokit reject the group
-            // at build time. Fall back to the simulate path instead.
-            const rejectRefs =
-                inboxAddress && assetCreator
-                    ? {
-                          accountReferences: [inboxAddress, assetCreator],
-                          assetReferences: [assetId],
-                          boxReferences: [receiverBox],
-                      }
-                    : {}
-
-            if (shouldClaimAlgo) {
-                composer.addAppCallMethodCall(
-                    await appClient.params.arc59_claimAlgo({
-                        args: [],
-                        staticFee: 0n.microAlgo(),
-                        ...claimAlgoRefs,
-                    }),
-                )
-            }
-
-            composer.addAppCallMethodCall(
-                await appClient.params.arc59_reject({
-                    args: [assetId],
-                    staticFee: rejectFee.microAlgo(),
-                    ...rejectRefs,
-                }),
-            )
-
-            return inboxAddress && assetCreator
-                ? buildGroup(composer)
-                : buildPopulatedGroup(composer, algokit)
-        },
-        [algokit, network],
-    )
-
-    return { buildClaimAssetTxs, buildRejectAssetTxs }
+    return inboxAddress && assetCreator
+        ? buildGroup(composer)
+        : buildPopulatedGroup(composer, algokit)
 }

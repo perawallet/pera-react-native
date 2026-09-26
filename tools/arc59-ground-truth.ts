@@ -232,7 +232,7 @@ async function findPendingInboxes(
     return { claim, claimWithAlgo }
 }
 
-/** Builds a claim (or claim+algo) group exactly as useArc59ClaimTransaction.buildClaimAssetTxs does. */
+/** Builds a claim (or claim+algo) group exactly as buildArc59ClaimTxs does. */
 async function buildClaimGroup(
     algokit: AlgorandClient,
     sender: string,
@@ -278,7 +278,7 @@ async function buildClaimGroup(
     return buildPopulatedGroup(composer, algokit)
 }
 
-/** Builds a reject group exactly as useArc59ClaimTransaction.buildRejectAssetTxs does. */
+/** Builds a reject group exactly as buildArc59RejectTxs does. */
 async function buildRejectGroup(
     algokit: AlgorandClient,
     sender: string,
@@ -322,7 +322,7 @@ type SendSummary = {
     algo_fund_amount: number
 }
 
-/** Builds a send-via-inbox group exactly as useArc59SendTransaction.buildSendViaInboxTxs does. */
+/** Builds a send-via-inbox group exactly as buildArc59SendViaInboxTxs does. */
 async function buildSendGroup(
     algokit: AlgorandClient,
     sender: string,

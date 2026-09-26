@@ -93,6 +93,7 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-core-swaps": "workspace:*",
+    "@perawallet/wallet-core-transactions": "workspace:*",
     "@perawallet/wallet-extension-hardware-wallet": "workspace:*",
     "@perawallet/wallet-extension-ledger-shared": "workspace:*",
     "@tanstack/react-query": "catalog:",

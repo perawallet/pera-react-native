@@ -17,7 +17,13 @@ import {
     useTransactionSendFlow,
     InvalidSendParamsError,
 } from '../useTransactionSendFlow'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { AssetFrozenError } from '../../errors'
+import {
+    sendFlowChainAdapters,
+    type SendFlowChainAdapter,
+} from '../../chain-adapter'
 
 // BigInt.prototype.microAlgo() (added by algokit-utils) returns an
 // AlgoAmount wrapper, not a raw bigint. Patch it to return the bigint itself
@@ -69,15 +75,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockUseAllAccounts(),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
-    useArc59SendTransaction: () => ({
-        buildSendViaInboxTxs: mockBuildSendViaInbox,
-    }),
-    useArc59ClaimTransaction: () => ({
-        buildClaimAssetTxs: mockBuildClaimAsset,
-        buildRejectAssetTxs: mockBuildRejectAsset,
-    }),
-}))
+const fakeSendFlowAdapter: SendFlowChainAdapter = {
+    chainId: 'algorand',
+    assetInbox: {
+        buildSendTxs: mockBuildSendViaInbox,
+        buildClaimTxs: mockBuildClaimAsset,
+        buildRejectTxs: mockBuildRejectAsset,
+    },
+}
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({
@@ -123,6 +128,8 @@ const freezeHoldings = (...frozenIds: string[]) =>
 describe('useTransactionSendFlow', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        sendFlowChainAdapters.reset()
+        sendFlowChainAdapters.register(fakeSendFlowAdapter)
         // Default: nothing frozen. The guard reads holdings on every send.
         freezeHoldings()
         mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
@@ -636,6 +643,73 @@ describe('useTransactionSendFlow', () => {
         )
         // Rejecting returns the asset to the sender — never credit holdings.
         expect(mockAddToAssetHolding).not.toHaveBeenCalled()
+    })
+
+    describe('send-flow chain adapter', () => {
+        const arc59Params = {
+            sendMode: 'sendArc59' as const,
+            sender: { address: 'A' } as any,
+            receiver: 'B',
+            asset: { assetId: '99', decimals: 0 } as any,
+            amount: new Decimal(1),
+            arc59Summary: { inbox_address: null },
+        }
+        const claimParams = {
+            sendMode: 'claimArc59' as const,
+            sender: { address: 'A' } as any,
+            asset: { assetId: '99', decimals: 0 } as any,
+            shouldClaimAlgo: false,
+        }
+
+        it("hands the inbox send to the network's adapter with the summary untouched", async () => {
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await result.current.execute({ params: arc59Params })
+            })
+            expect(mockBuildSendViaInbox).toHaveBeenCalledWith({
+                network: 'mainnet',
+                sender: 'A',
+                receiver: 'B',
+                assetId: 99n,
+                amount: 1n,
+                summary: arc59Params.arc59Summary,
+                senderMinFee: 1000n,
+            })
+        })
+
+        it('sends normally without any adapter registered', async () => {
+            sendFlowChainAdapters.reset()
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await result.current.execute({
+                    params: { ...arc59Params, sendMode: 'normal' },
+                })
+            })
+            expect(mockSubmit).toHaveBeenCalled()
+        })
+
+        it('refuses an inbox send when no adapter is registered for the chain', async () => {
+            sendFlowChainAdapters.reset()
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await expect(
+                    result.current.execute({ params: arc59Params }),
+                ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
+            })
+            expect(mockSubmit).not.toHaveBeenCalled()
+        })
+
+        it('refuses a claim when the chain has no asset inbox', async () => {
+            sendFlowChainAdapters.reset()
+            sendFlowChainAdapters.register({ chainId: 'algorand' })
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await expect(
+                    result.current.execute({ params: claimParams }),
+                ).rejects.toBeInstanceOf(PeraServiceUnavailableError)
+            })
+            expect(mockSubmit).not.toHaveBeenCalled()
+        })
     })
 
     describe('frozen holding guard', () => {

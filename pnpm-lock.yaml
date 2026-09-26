@@ -2401,6 +2401,9 @@ importers:
       '@perawallet/wallet-core-swaps':
         specifier: workspace:*
         version: link:../swaps
+      '@perawallet/wallet-core-transactions':
+        specifier: workspace:*
+        version: link:../transactions
       '@perawallet/wallet-extension-hardware-wallet':
         specifier: workspace:*
         version: link:../../extensions/hardware-wallet
@@ -4037,9 +4040,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
-      '@perawallet/wallet-core-chain-algorand':
+      '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
-        version: link:../chain-algorand
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config

@@ -14,6 +14,8 @@ import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import { algorandDappRequestAdapter } from './connect/dappRequestAdapter'
+import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
+import { algorandSendFlowAdapter } from './asa-inbox/adapter'
 import { algorandLedgerAppDriver } from './ledger/driver'
 import { algorandSwapAdapter } from './swaps'
 
@@ -24,4 +26,5 @@ export const registerAlgorandChain = (): void => {
     ledgerAppDriverRegistry.register(algorandLedgerAppDriver)
     swapChainAdapters.register(algorandSwapAdapter)
     dappRequestChainAdapters.register(algorandDappRequestAdapter)
+    sendFlowChainAdapters.register(algorandSendFlowAdapter)
 }

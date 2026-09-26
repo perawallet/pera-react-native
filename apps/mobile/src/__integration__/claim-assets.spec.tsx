@@ -299,7 +299,7 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         simulateCallCount = 0
 
         // Algod surface for the ARC-59 claim/reject build + sign + submit
-        // pipeline. `buildClaimAssetTxs` calls getSuggestedParams (params) and
+        // pipeline. `buildArc59ClaimTxs` calls getSuggestedParams (params) and
         // accountInformation(sender) for its opt-in check; the signing
         // pipeline POSTs the signed group to /v2/transactions.
         server.use(
