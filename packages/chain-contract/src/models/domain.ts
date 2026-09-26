@@ -15,6 +15,7 @@
 // display units happens at the UI or persistence edge, using AssetMetadata.decimals.
 
 import type { Decimal } from 'decimal.js'
+import type { ChainDescriptor } from './descriptor'
 import type { ChainId, ChainScope, NetworkId } from './identity'
 
 /** An i18n key plus its interpolation params, resolved by the UI. */
@@ -31,13 +32,12 @@ export interface AssetRef {
 export const assetRefKey = (ref: AssetRef): string =>
     `${ref.chainId}/${ref.assetId}`
 
-// TODO: take ChainDescriptor once it exists
 export const isNativeAsset = (
     ref: AssetRef,
-    descriptor: { id: ChainId; nativeAsset: { assetId: string } },
+    descriptor: Pick<ChainDescriptor, 'id' | 'nativeAsset'>,
 ): boolean =>
     ref.chainId === descriptor.id &&
-    ref.assetId === descriptor.nativeAsset.assetId
+    ref.assetId === descriptor.nativeAsset.ref.assetId
 
 export type SigningScheme = 'ed25519' | 'falcon-1024'
 
