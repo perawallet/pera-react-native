@@ -32,3 +32,10 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({ keyValueStorage }),
 }))
+
+// The signing dist is minified, which mangles the `constructor.name` its
+// errors take their `name` from; name-matching specs must see the source classes.
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    ...(await import('../signing/src/pipeline/errors')),
+}))
