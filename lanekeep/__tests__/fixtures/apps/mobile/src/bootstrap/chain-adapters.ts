@@ -2,7 +2,7 @@
  * Copyright (c) Pera Wallet. All rights reserved.
  */
 
-// Fixture stands in for the mobile composition root
+// Fixture stands in for the chain-adapter composition root
 import { algorandChain } from '@perawallet/wallet-core-chain-algorand'
 import type { AlgorandAccount } from '@perawallet/wallet-core-chain-algorand'
 import { signTransaction } from '@perawallet/wallet-core-chain-algorand/signing'
