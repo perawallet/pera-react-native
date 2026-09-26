@@ -46,7 +46,8 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
     useAlgorandClient: () => ({
         client: {
             algod: {
@@ -59,12 +60,17 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useMinimumFeeConfig: () => useMinimumFeeConfigMock(),
 }))
 
-vi.mock('@perawallet/wallet-core-fee-delegation', () => ({
+vi.mock('@perawallet/wallet-core-fee-delegation', async () => ({
+    ...(await vi.importActual<object>(
+        '@perawallet/wallet-core-fee-delegation',
+    )),
     useFeeDelegation: () => ({
         submitWithFeeDelegation: submitWithFeeDelegationMock,
     }),
 }))
 
+import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-fee-delegation'
+import { RampAttestationRequiredError } from '@perawallet/wallet-core-onramp'
 import { useEnsureDestinationOptIn } from '../useEnsureDestinationOptIn'
 
 const ADDRESS = 'TESTADDRESS'
@@ -305,5 +311,25 @@ describe('onramp/useEnsureDestinationOptIn', () => {
                 destinationAssetId: ASSET_ID,
             }),
         ).rejects.toBe(failure)
+    })
+
+    test('a missing device attestation surfaces as the onramp error', async () => {
+        accountInformationMock.mockResolvedValue({
+            amount: 100_000n,
+            minBalance: 100_000n,
+            assets: [],
+        })
+        submitWithFeeDelegationMock.mockRejectedValue(
+            new FeeDelegationAttestationRequiredError(),
+        )
+
+        const result = renderEnsure()
+
+        await expect(
+            result.current.ensureOptIn({
+                address: ADDRESS,
+                destinationAssetId: ASSET_ID,
+            }),
+        ).rejects.toBeInstanceOf(RampAttestationRequiredError)
     })
 })

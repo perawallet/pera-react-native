@@ -61,10 +61,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
 }))
 
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampPairSelectionContent } from '../useOnrampPairSelectionContent'
 
 describe('useOnrampPairSelectionContent', () => {
     beforeEach(() => {
+        registerAlgorandRampAdapter()
         vi.clearAllMocks()
         mockUseRampPairsQuery.mockReturnValue({ data: PAIRS, isLoading: false })
         mockUseSelectedAccount.mockReturnValue({ address: 'ADDR' })

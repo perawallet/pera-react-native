@@ -11,10 +11,10 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-fee-delegation'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import {
     isSourceAmountTooLowError,
+    RampAttestationRequiredError,
     resolveRampQuoteLimits,
     toOnrampUserMessage,
 } from '..'
@@ -85,10 +85,10 @@ describe('toOnrampUserMessage', () => {
         expect(toOnrampUserMessage(null)).toMatch(/something went wrong/i)
     })
 
-    it('maps FeeDelegationAttestationRequiredError to the onramp wording', () => {
-        expect(
-            toOnrampUserMessage(new FeeDelegationAttestationRequiredError()),
-        ).toBe('Device verification is required to fund this account.')
+    it('maps RampAttestationRequiredError to the onramp wording', () => {
+        expect(toOnrampUserMessage(new RampAttestationRequiredError())).toBe(
+            'Device verification is required to fund this account.',
+        )
     })
 
     it('surfaces a bun-backend error body message', () => {

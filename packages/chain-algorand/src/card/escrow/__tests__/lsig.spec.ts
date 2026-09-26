@@ -30,21 +30,24 @@ vi.mock('@perawallet/wallet-core-config', async () => ({
     },
     getNetworkConfig,
 }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({ getAlgorandClient }))
+vi.mock('@perawallet/wallet-core-blockchain', async () => ({
+    ...(await vi.importActual('@perawallet/wallet-core-blockchain')),
+    getAlgorandClient,
+}))
 
+import { sha256 } from '@noble/hashes/sha2.js'
+import {
+    AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
+} from '@perawallet/wallet-core-card'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
 import {
     renderAutoDrawTeal,
     resolveEscrowChainConfig,
     compileAutoDrawProgram,
     verifyAutoDrawProgram,
-    AutoDrawProgramUnverifiedError,
 } from '../lsig'
-import {
-    computeAutoDrawTemplateHash,
-    AutoDrawTealUnverifiedError,
-} from '../verify-teal'
-import { sha256 } from '@noble/hashes/sha2.js'
-import { bytesToHex } from '@perawallet/wallet-core-shared'
+import { computeAutoDrawTemplateHash } from '../verify-teal'
 
 const pinFor = (program: Uint8Array) => bytesToHex(sha256(program))
 

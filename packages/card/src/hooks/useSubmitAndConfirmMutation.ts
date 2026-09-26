@@ -11,14 +11,12 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    useAlgorandClient,
-    waitForTransactionConfirmation,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useSignAndSubmitGroup,
     type SignAndSubmitGroupParams,
 } from '@perawallet/wallet-core-signing'
+import { cardAdapterFor } from '../chain-adapter'
 
 /**
  * Signs and submits like `useSignAndSubmitGroup`, then holds until the group
@@ -27,7 +25,7 @@ import {
  * only change once the transaction has landed.
  */
 export const useSubmitAndConfirmMutation = () => {
-    const algokit = useAlgorandClient()
+    const { network } = useNetwork()
     const { submit } = useSignAndSubmitGroup()
 
     return useMutation<{ txIds: string[] }, Error, SignAndSubmitGroupParams>({
@@ -35,7 +33,7 @@ export const useSubmitAndConfirmMutation = () => {
             const result = await submit(params)
             const [txId] = result.txIds
             if (txId !== undefined) {
-                await waitForTransactionConfirmation(algokit.client.algod, txId)
+                await cardAdapterFor(network).awaitConfirmation(network, txId)
             }
             return result
         },

@@ -20,6 +20,7 @@ import type {
     XoQuote,
     RampOrder,
 } from '@perawallet/wallet-core-onramp'
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampForm } from '../useOnrampForm'
 import { OnrampTermsContent } from '../../OnrampTermsContent'
 
@@ -55,7 +56,6 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
         ...actual,
         useCreateRampQuoteMutation: () => ({ mutateAsync: mockCreateQuote }),
         useCreateRampOrderMutation: () => ({ mutateAsync: mockCreateOrder }),
-        useEnsureDestinationOptIn: () => ({ ensureOptIn: mockEnsureOptIn }),
         useOnramp: () => ({
             senderAddress: mockSenderAddress,
             setSenderAddress: mockSetSenderAddress,
@@ -64,6 +64,10 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
         }),
     }
 })
+
+vi.mock('@perawallet/wallet-core-chain-algorand/onramp', () => ({
+    useEnsureDestinationOptIn: () => ({ ensureOptIn: mockEnsureOptIn }),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     // Real enums (models/accounts has no runtime imports): components reached
@@ -267,6 +271,7 @@ const belowMinQuoteError = buildBelowMinQuoteError(
 
 describe('useOnrampForm', () => {
     beforeEach(() => {
+        registerAlgorandRampAdapter()
         vi.clearAllMocks()
         vi.useFakeTimers()
         vi.spyOn(Linking, 'openURL').mockImplementation(mockOpenURL)

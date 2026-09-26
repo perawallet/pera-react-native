@@ -17,9 +17,9 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useEnsureDestinationOptIn } from '@perawallet/wallet-core-chain-algorand/onramp'
 import {
     useCreateRampOrderMutation,
-    useEnsureDestinationOptIn,
     useOnramp,
     toOnrampUserMessage,
     parseRampAmount,

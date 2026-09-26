@@ -10,76 +10,33 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import { decodeAddress } from 'algosdk'
+import { useMemo } from 'react'
 import {
-    FALLBACK_MIN_TXN_FEE,
-    useAlgorandClient,
     useNetwork,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { getNetworkConfig, type Network } from '@perawallet/wallet-core-config'
-import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
-import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
-import type { Arc56Contract } from '@algorandfoundation/algokit-utils/types/app-arc56'
-import { isAlgodNotFoundError } from '../api/escrow/algod'
-import killswitchArc56 from '../api/escrow/killswitch-arc56.json'
+import type { Network } from '@perawallet/wallet-core-shared'
+import { cardAdapterFor } from '../chain-adapter'
 
-// AppliedBlockchain's Killswitch contract. The AutoDraw LSig only draws while
-// the Killswitch holds an on-chain "accounts" box for the (funding account,
-// asset) pair — created by `enable`, deleted by `kill`. The LSig no longer pins
-// a single asset, so every call and the box key are keyed by both. Regenerate
-// the vendored ARC-56 spec if AB changes the contract.
-const KILLSWITCH_SPEC = killswitchArc56 as unknown as Arc56Contract
-
-/**
- * Raw 32-byte address followed by the asset id as big-endian uint64 — how puya-ts
- * ARC-4-encodes a `[Account, Asset]` box-map key: static types concatenate
- * directly, no length prefix and no keyPrefix on this box map.
- */
-const buildAccountAssetBoxName = (
-    address: string,
-    assetId: bigint,
-): Uint8Array => {
-    const key = new Uint8Array(40)
-    key.set(decodeAddress(address).publicKey, 0)
-    new DataView(key.buffer).setBigUint64(32, assetId)
-    return key
-}
-
-/** True once a real Killswitch app id is configured (not the dev placeholder). */
-export const isKillswitchConfigured = (network: Network): boolean => {
-    const { cardKillswitchAppId } = getNetworkConfig(network)
-    return cardKillswitchAppId !== '' && cardKillswitchAppId !== '0'
-}
+/** True once a real Killswitch app is configured for the network. */
+export const isKillswitchConfigured = (network: Network): boolean =>
+    cardAdapterFor(network).autoDraw.isConfigured(network)
 
 export type UseKillswitchAutoDrawResult = {
-    /**
-     * Fee-delegation-ready: `staticFee` is zeroed rather than self-funded, since
-     * the caller submits via the backend's fee-delegation endpoint. The sponsor
-     * covers the group fee (the backend simulates, so the inner `getCardData`
-     * call is priced in) and tops up to min balance; the accounts-box MBR comes
-     * from the Killswitch app account, not the sponsor.
-     */
+    /** Built for fee delegation: the sponsor pays the group's fees. */
     buildEnable: (params: {
         sender: string
         cardAddress: string
         asset: string
     }) => Promise<PeraTransaction[]>
-    /** Deletes the caller's accounts box for that asset, releasing its MBR. */
     buildKill: (params: {
         sender: string
         asset: string
     }) => Promise<PeraTransaction[]>
     /**
-     * A present `accounts` box means enabled for that asset. Callers MUST
-     * pre-check rather than submit and parse reverts: `enable`/`kill` assert
-     * ALREADY_ENABLED/ALREADY_DISABLED, and on the raw-composer path those
-     * surface from the simulate as opaque "assert failed pc=NNN" errors, since
-     * the ARC-56 mapping never runs.
-     *
-     * Non-404 network errors rethrow — an unknown state must not read as
-     * "disabled".
+     * Callers MUST check this before enable/kill rather than parse reverts,
+     * which surface as opaque simulate failures. An unknown state rethrows
+     * instead of reading as disabled.
      */
     isAutoDrawEnabled: (params: {
         sender: string
@@ -89,124 +46,15 @@ export type UseKillswitchAutoDrawResult = {
 
 export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
     const { network } = useNetwork()
-    const algokit = useAlgorandClient()
 
-    const getAppClient = useCallback(
-        (sender: string) => {
-            const { cardKillswitchAppId } = getNetworkConfig(network)
-            return algokit.client.getAppClientById({
-                appId: BigInt(cardKillswitchAppId),
-                appSpec: KILLSWITCH_SPEC,
-                defaultSender: sender,
-            })
-        },
-        [algokit, network],
-    )
-
-    const buildEnable = useCallback(
-        async ({
-            sender,
-            cardAddress,
-            asset,
-        }: {
-            sender: string
-            cardAddress: string
-            asset: string
-        }): Promise<PeraTransaction[]> => {
-            const appClient = getAppClient(sender)
-
-            const composer = algokit.newGroup()
-            composer.addAppCallMethodCall(
-                await appClient.params.call({
-                    method: 'enable',
-                    args: [cardAddress, BigInt(asset)],
-                    // The call reaches the card's asset holding, which resource
-                    // population would otherwise discover as unnamed and then
-                    // place by JSON-stringifying every transaction field — a
-                    // path that throws on algosdk's native bigints (algokit
-                    // 9.2.x). Naming the pair short-circuits that scan.
-                    accountReferences: [cardAddress],
-                    assetReferences: [BigInt(asset)],
-                    // Simulate-only, and stripped after populating. The
-                    // resource-population simulate validates like a real
-                    // submission with no fee waiver, so a zero-fee group dies
-                    // with "group fee too small" before any resources are
-                    // discovered.
-                    staticFee: AlgoAmount.MicroAlgo(
-                        Number(FALLBACK_MIN_TXN_FEE) * 2,
-                    ),
-                }),
-            )
-
-            const { atc } = await composer.build()
-            const populated = await populateAppCallResources(
-                atc,
-                algokit.client.algod,
-            )
-            return populated.buildGroup().map(({ txn }) => {
-                // Fee-delegated: drop the simulate-only fee and any group id.
-                // The backend re-groups the txns with the sponsor's fee/MBR
-                // payment, recomputing the group id, so neither survives.
-                txn.fee = 0n
-                txn.group = undefined
-                return txn
-            })
-        },
-        [algokit, getAppClient],
-    )
-
-    const buildKill = useCallback(
-        async ({
-            sender,
-            asset,
-        }: {
-            sender: string
-            asset: string
-        }): Promise<PeraTransaction[]> => {
-            const appClient = getAppClient(sender)
-
-            const composer = algokit.newGroup()
-            composer.addAppCallMethodCall(
-                await appClient.params.call({
-                    method: 'kill',
-                    args: [BigInt(asset)],
-                }),
-            )
-
-            const { atc } = await composer.build()
-            const populated = await populateAppCallResources(
-                atc,
-                algokit.client.algod,
-            )
-            return populated.buildGroup().map(t => t.txn)
-        },
-        [algokit, getAppClient],
-    )
-
-    const isAutoDrawEnabled = useCallback(
-        async ({
-            sender,
-            asset,
-        }: {
-            sender: string
-            asset: string
-        }): Promise<boolean> => {
-            const { cardKillswitchAppId } = getNetworkConfig(network)
-            try {
-                await algokit.client.algod
-                    .getApplicationBoxByName(
-                        BigInt(cardKillswitchAppId),
-                        buildAccountAssetBoxName(sender, BigInt(asset)),
-                    )
-                    .do()
-                return true
-            } catch (error) {
-                if (isAlgodNotFoundError(error)) return false
-                throw error
-            }
-        },
-        [algokit, network],
-    )
-
-    return { buildEnable, buildKill, isAutoDrawEnabled }
+    return useMemo(() => {
+        const autoDraw = () => cardAdapterFor(network).autoDraw
+        return {
+            buildEnable: params =>
+                autoDraw().buildEnable({ ...params, network }),
+            buildKill: params => autoDraw().buildKill({ ...params, network }),
+            isAutoDrawEnabled: params =>
+                autoDraw().isEnabled({ ...params, network }),
+        }
+    }, [network])
 }

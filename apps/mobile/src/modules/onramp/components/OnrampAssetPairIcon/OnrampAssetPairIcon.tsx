@@ -13,6 +13,7 @@
 import { PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { CircleFlag } from '@components/CircleFlag'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
 import { useStyles } from './styles'
@@ -25,19 +26,21 @@ export type OnrampAssetPairIconProps = {
 
 // FIAT tokens (countryCode set) render the round country flag, matching the
 // rest of the onramp UI; crypto tokens render their backend logo.
-const TokenIcon = ({ token }: { token: RampToken }) =>
-    token.countryCode ? (
+const TokenIcon = ({ token }: { token: RampToken }) => {
+    const { network } = useNetwork()
+    return token.countryCode ? (
         <CircleFlag
             countryCode={token.countryCode}
             size='md'
         />
     ) : (
         <AssetIcon
-            asset={buildDisplayableAssetFromRampToken(token)}
+            asset={buildDisplayableAssetFromRampToken(token, network)}
             logoUrl={token.logo ?? undefined}
             size='md'
         />
     )
+}
 
 // Source sits behind at the top-left; destination overlaps in front at the
 // bottom-right with a surface-colored ring (matching the History design).

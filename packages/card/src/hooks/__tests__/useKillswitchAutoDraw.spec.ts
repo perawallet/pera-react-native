@@ -10,181 +10,55 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { generateAccount } from 'algosdk'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { CardChainAdapter } from '../../chain-adapter'
+import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 
-const { useAlgorandClient, useNetwork } = vi.hoisted(() => ({
-    useAlgorandClient: vi.fn(),
-    useNetwork: vi.fn(),
-}))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient,
+const { useNetwork } = vi.hoisted(() => ({ useNetwork: vi.fn() }))
+vi.mock('@perawallet/wallet-core-blockchain', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
     useNetwork,
-    FALLBACK_MIN_TXN_FEE: 1000n,
-}))
-vi.mock('@algorandfoundation/algokit-utils', () => ({
-    // Identity passthrough: the "populated" ATC is the one build() returned.
-    populateAppCallResources: vi.fn(async (atc: unknown) => atc),
 }))
 
-const { getNetworkConfig } = vi.hoisted(() => ({ getNetworkConfig: vi.fn() }))
-vi.mock('@perawallet/wallet-core-config', () => ({ getNetworkConfig }))
+import { useKillswitchAutoDraw } from '../useKillswitchAutoDraw'
 
-import {
-    useKillswitchAutoDraw,
-    isKillswitchConfigured,
-} from '../useKillswitchAutoDraw'
-
-const APP_ADDRESS = 'KILLSWITCHAPPADDR'
-const ENABLE_CALL = { method: 'enable' }
-const KILL_CALL = { method: 'kill' }
-
-let addPayment: Mock
-let addAppCallMethodCall: Mock
-let paramsCall: Mock
-let boxDo: Mock
+let adapter: CardChainAdapter
 
 beforeEach(() => {
     vi.clearAllMocks()
     useNetwork.mockReturnValue({ network: 'testnet' })
-    getNetworkConfig.mockReturnValue({ cardKillswitchAppId: '222' })
-
-    addPayment = vi.fn()
-    paramsCall = vi
-        .fn()
-        .mockImplementation(async ({ method }: { method: string }) =>
-            method === 'enable' ? ENABLE_CALL : KILL_CALL,
-        )
-    addAppCallMethodCall = vi.fn()
-    boxDo = vi.fn(async () => ({
-        name: new Uint8Array(),
-        value: new Uint8Array(),
-    }))
-
-    const composer = {
-        addPayment,
-        addAppCallMethodCall,
-        build: vi.fn(async () => ({
-            atc: { buildGroup: () => [{ txn: { id: 'txn-1' } }] },
-        })),
-    }
-    useAlgorandClient.mockReturnValue({
-        newGroup: () => composer,
-        getSuggestedParams: vi.fn(async () => ({ minFee: 1000n })),
-        client: {
-            algod: {
-                getApplicationBoxByName: vi.fn(() => ({ do: boxDo })),
-            },
-            getAppClientById: vi.fn(() => ({
-                appAddress: APP_ADDRESS,
-                params: { call: paramsCall },
-            })),
-        },
-    })
-})
-
-describe('isKillswitchConfigured', () => {
-    it('is false for the empty / placeholder app id, true for a real one', () => {
-        getNetworkConfig.mockReturnValue({ cardKillswitchAppId: '' })
-        expect(isKillswitchConfigured('testnet')).toBe(false)
-        getNetworkConfig.mockReturnValue({ cardKillswitchAppId: '0' })
-        expect(isKillswitchConfigured('testnet')).toBe(false)
-        getNetworkConfig.mockReturnValue({ cardKillswitchAppId: '222' })
-        expect(isKillswitchConfigured('testnet')).toBe(true)
-    })
+    adapter = registerFakeCardAdapter()
 })
 
 describe('useKillswitchAutoDraw', () => {
-    it('buildEnable calls enable(card, asset) fee-delegation-ready (simulate fee stripped, no self-funding)', async () => {
+    it("toggles auto-draw through the network's chain adapter", async () => {
+        vi.mocked(adapter.autoDraw.isEnabled).mockResolvedValue(true)
         const { result } = renderHook(() => useKillswitchAutoDraw())
 
-        const txns = await result.current.buildEnable({
+        await result.current.buildEnable({
             sender: 'SENDER',
             cardAddress: 'CARD',
             asset: '10458941',
         })
-
-        // No self-funded MBR payment: the accounts-box MBR is funded by the
-        // Killswitch app account, and the group's fees by the sponsor.
-        expect(addPayment).not.toHaveBeenCalled()
-        expect(paramsCall).toHaveBeenCalledWith(
-            expect.objectContaining({
-                method: 'enable',
-                args: ['CARD', 10458941n],
-                // Naming the card's account and asset keeps resource population
-                // off its unnamed-assetHolding path, which places the resource by
-                // JSON-stringifying transaction fields and throws on algosdk's
-                // native bigints (algokit 9.2.x).
-                accountReferences: ['CARD'],
-                assetReferences: [10458941n],
+        await result.current.buildKill({ sender: 'SENDER', asset: '10458941' })
+        await expect(
+            result.current.isAutoDrawEnabled({
+                sender: 'SENDER',
+                asset: '10458941',
             }),
-        )
-        // The build carries a simulate-only fee (call + one inner txn) so the
-        // resource-population simulate passes algod's min-fee validation...
-        expect(paramsCall.mock.calls[0][0].staticFee.microAlgo).toBe(2000n)
-        expect(addAppCallMethodCall).toHaveBeenCalledWith(ENABLE_CALL)
-        // ...but the returned txns are zero-fee and ungrouped: the
-        // fee-delegation sponsor pays, and the backend re-groups.
-        expect(txns).toEqual([{ id: 'txn-1', fee: 0n, group: undefined }])
-    })
+        ).resolves.toBe(true)
 
-    it('buildKill calls kill(asset) with no funding and no extra fee', async () => {
-        const { result } = renderHook(() => useKillswitchAutoDraw())
-
-        const txns = await result.current.buildKill({
+        const expected = {
+            network: 'testnet',
             sender: 'SENDER',
             asset: '10458941',
+        }
+        expect(adapter.autoDraw.buildEnable).toHaveBeenCalledWith({
+            ...expected,
+            cardAddress: 'CARD',
         })
-
-        expect(addPayment).not.toHaveBeenCalled()
-        expect(paramsCall).toHaveBeenCalledWith({
-            method: 'kill',
-            args: [10458941n],
-        })
-        expect(addAppCallMethodCall).toHaveBeenCalledWith(KILL_CALL)
-        expect(txns).toEqual([{ id: 'txn-1' }])
-    })
-
-    describe('isAutoDrawEnabled', () => {
-        // decodeAddress needs a real address; the box name is its raw pubkey
-        // followed by the 8-byte big-endian asset id.
-        const SENDER = generateAccount().addr.toString()
-
-        it('is true when the sender has an accounts box for that asset', async () => {
-            const { result } = renderHook(() => useKillswitchAutoDraw())
-            await expect(
-                result.current.isAutoDrawEnabled({
-                    sender: SENDER,
-                    asset: '10458941',
-                }),
-            ).resolves.toBe(true)
-        })
-
-        it('is false on the box-not-found 404', async () => {
-            boxDo.mockRejectedValue(
-                Object.assign(new Error('box not found'), {
-                    response: { status: 404 },
-                }),
-            )
-            const { result } = renderHook(() => useKillswitchAutoDraw())
-            await expect(
-                result.current.isAutoDrawEnabled({
-                    sender: SENDER,
-                    asset: '10458941',
-                }),
-            ).resolves.toBe(false)
-        })
-
-        it('rethrows non-404 errors instead of reading them as disabled', async () => {
-            boxDo.mockRejectedValue(new Error('network down'))
-            const { result } = renderHook(() => useKillswitchAutoDraw())
-            await expect(
-                result.current.isAutoDrawEnabled({
-                    sender: SENDER,
-                    asset: '10458941',
-                }),
-            ).rejects.toThrow('network down')
-        })
+        expect(adapter.autoDraw.buildKill).toHaveBeenCalledWith(expected)
+        expect(adapter.autoDraw.isEnabled).toHaveBeenCalledWith(expected)
     })
 })

@@ -2334,9 +2334,6 @@ importers:
 
   packages/card:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2352,6 +2349,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2370,9 +2370,6 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -2416,16 +2413,61 @@ importers:
 
   packages/chain-algorand:
     dependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 'catalog:'
+        version: 9.2.2(algosdk@3.7.0)
+      '@noble/hashes':
+        specifier: 'catalog:'
+        version: 2.3.0
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
+      '@perawallet/wallet-core-card':
+        specifier: workspace:*
+        version: link:../card
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
+      '@perawallet/wallet-core-fee-delegation':
+        specifier: workspace:*
+        version: link:../fee-delegation
+      '@perawallet/wallet-core-onramp':
+        specifier: workspace:*
+        version: link:../onramp
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-core-transactions':
+        specifier: workspace:*
+        version: link:../transactions
+      algosdk:
+        specifier: 'catalog:'
+        version: 3.7.0
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.2.3)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
+      '@types/react':
+        specifier: ~19.2.14
+        version: 19.2.17
+      react-dom:
+        specifier: 19.2.3
+        version: 19.2.3(react@19.2.3)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3326,33 +3368,24 @@ importers:
 
   packages/onramp:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
-      '@perawallet/wallet-core-fee-delegation':
+      '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
-        version: link:../fee-delegation
+        version: link:../chain-contract
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-core-transactions':
-        specifier: workspace:*
-        version: link:../transactions
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0

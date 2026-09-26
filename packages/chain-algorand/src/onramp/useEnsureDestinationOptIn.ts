@@ -16,9 +16,13 @@ import {
     useAlgorandClient,
     useMinimumFeeConfig,
 } from '@perawallet/wallet-core-blockchain'
-import { useFeeDelegation } from '@perawallet/wallet-core-fee-delegation'
-import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
+import {
+    FeeDelegationAttestationRequiredError,
+    useFeeDelegation,
+} from '@perawallet/wallet-core-fee-delegation'
+import { RampAttestationRequiredError } from '@perawallet/wallet-core-onramp'
 import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 
 export type ConfirmOptInContext = {
     assetId: bigint
@@ -59,10 +63,10 @@ const SOURCE = {
  * 3. Not opted in + enough spare ALGO → self-funded opt-in.
  * 4. Not opted in + insufficient ALGO → fee-delegated opt-in via
  *    `@perawallet/wallet-core-fee-delegation` (sponsor covers fees + MBR;
- *    requires a valid device attestation token, throws
- *    `FeeDelegationAttestationRequiredError` otherwise). The opt-in itself is
- *    built with a zero fee — the sponsor tops the group's fee pool up to the
- *    full requirement, so the (underfunded) account pays nothing.
+ *    requires a valid device attestation token, throws the onramp's
+ *    `RampAttestationRequiredError` otherwise). The opt-in itself is built
+ *    with a zero fee — the sponsor tops the group's fee pool up to the full
+ *    requirement, so the (underfunded) account pays nothing.
  *
  * Paths 3 and 4 run the `confirmOptIn` gate first when provided.
  */
@@ -132,13 +136,22 @@ export const useEnsureDestinationOptIn =
                 })
                 const { transactions } = await composer.build()
 
-                await submitWithFeeDelegation({
-                    account: address,
-                    transactions: transactions.map(t => t.txn),
-                    includeAssetOptInMbr: true,
-                    optInAssetIds: [assetId],
-                    sourceMetadata: SOURCE,
-                })
+                try {
+                    await submitWithFeeDelegation({
+                        account: address,
+                        transactions: transactions.map(t => t.txn),
+                        includeAssetOptInMbr: true,
+                        optInAssetIds: [assetId],
+                        sourceMetadata: SOURCE,
+                    })
+                } catch (error) {
+                    if (
+                        error instanceof FeeDelegationAttestationRequiredError
+                    ) {
+                        throw new RampAttestationRequiredError()
+                    }
+                    throw error
+                }
                 return true
             },
             [algokit, optIn, submitWithFeeDelegation, assetMbr],

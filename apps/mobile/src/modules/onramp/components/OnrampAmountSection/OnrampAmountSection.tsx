@@ -16,6 +16,7 @@ import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
@@ -50,6 +51,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
     const { t } = useLanguage()
     const { theme } = useTheme()
     const styles = useStyles()
+    const { network } = useNetwork()
 
     const {
         isPay,
@@ -117,7 +119,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                     variant={variant}
                     asset={
                         token
-                            ? buildDisplayableAssetFromRampToken(token)
+                            ? buildDisplayableAssetFromRampToken(token, network)
                             : undefined
                     }
                     label={token?.symbol ?? t('onramp.form.choose_asset')}

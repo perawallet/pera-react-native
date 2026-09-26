@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export { rampChainAdapters, type RampChainAdapter } from './chain-adapter'
 export * from './constants'
 export * from './currency-decimals'
 export * from './errors'
