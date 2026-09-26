@@ -54,7 +54,7 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
 }))
 
 const mockSubmitWithFeeDelegation = vi.fn()
-vi.mock('@perawallet/wallet-core-fee-delegation', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/fee-delegation', () => ({
     useFeeDelegation: () => ({
         submitWithFeeDelegation: mockSubmitWithFeeDelegation,
     }),

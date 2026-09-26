@@ -12,7 +12,7 @@
 
 import type { Decimal } from 'decimal.js'
 
-import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-fee-delegation'
+import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-chain-algorand/fee-delegation'
 import {
     isPeraNetworkError,
     type Nullable,

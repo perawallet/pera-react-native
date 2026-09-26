@@ -32,8 +32,6 @@ const SUBPATHS: Record<string, () => Promise<unknown>> = {
         import('@perawallet/wallet-core-chain-algorand/asa-inbox'),
     '@perawallet/wallet-core-chain-algorand/nfd': () =>
         import('@perawallet/wallet-core-chain-algorand/nfd'),
-    '@perawallet/wallet-core-chain-algorand/arc0027': () =>
-        import('@perawallet/wallet-core-chain-algorand/arc0027'),
     '@perawallet/wallet-core-chain-algorand/fee-delegation': () =>
         import('@perawallet/wallet-core-chain-algorand/fee-delegation'),
     '@perawallet/wallet-core-chain-algorand/multisig': () =>

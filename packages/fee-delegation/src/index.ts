@@ -10,6 +10,5 @@
  limitations under the License
  */
 
-export * from './api'
-export * from './errors'
-export * from './hooks'
+// Kept only until every consumer imports the chain-algorand subpath directly.
+export * from '@perawallet/wallet-core-chain-algorand/fee-delegation'
