@@ -11,9 +11,19 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { registerAlgorandChain } from '..'
+import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
+import { ALGORAND_CHAIN_ID, registerAlgorandChain } from '..'
+import { algorandDappRequestAdapter } from '../connect'
 
 describe('registerAlgorandChain', () => {
+    it('registers the dApp request adapter', () => {
+        registerAlgorandChain()
+
+        expect(dappRequestChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandDappRequestAdapter,
+        )
+    })
+
     it('can run more than once, so a repeated bootstrap is harmless', () => {
         expect(() => {
             registerAlgorandChain()
