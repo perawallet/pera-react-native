@@ -12,9 +12,4 @@
 
 export const name = '@perawallet/wallet-core-swaps'
 
-export * from './hooks'
-export * from './models'
-export * from './api'
-export * from './utils'
-export * from './execution'
-export { useSwapsStore, useSwapHandoffStore } from './store'
+export * from '@perawallet/wallet-core-chain-algorand/swaps'

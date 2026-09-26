@@ -2410,25 +2410,79 @@ importers:
       '@algorandfoundation/ledger-algorand-js':
         specifier: 'catalog:'
         version: 1.4.3
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.29.7
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-device':
+        specifier: workspace:*
+        version: link:../device
+      '@perawallet/wallet-core-multisig':
+        specifier: workspace:*
+        version: link:../multisig
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-core-signing':
+        specifier: workspace:*
+        version: link:../signing
       '@perawallet/wallet-extension-hardware-wallet':
         specifier: workspace:*
         version: link:../../extensions/hardware-wallet
       '@perawallet/wallet-extension-ledger-shared':
         specifier: workspace:*
         version: link:../../extensions/ledger-shared
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.2.3)
       buffer:
         specifier: 'catalog:'
         version: 6.0.3
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+      zustand:
+        specifier: 'catalog:'
+        version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
+      '@types/react':
+        specifier: ~19.2.14
+        version: 19.2.17
+      msw:
+        specifier: 'catalog:'
+        version: 2.15.0(@types/node@20.19.43)(typescript@7.0.2)
+      react-dom:
+        specifier: 19.2.3
+        version: 19.2.3(react@19.2.3)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3970,64 +4024,13 @@ importers:
 
   packages/swaps:
     dependencies:
-      '@babel/runtime':
-        specifier: 'catalog:'
-        version: 7.29.7
-      '@perawallet/wallet-core-accounts':
+      '@perawallet/wallet-core-chain-algorand':
         specifier: workspace:*
-        version: link:../accounts
-      '@perawallet/wallet-core-assets':
-        specifier: workspace:*
-        version: link:../assets
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
-      '@perawallet/wallet-core-device':
-        specifier: workspace:*
-        version: link:../device
-      '@perawallet/wallet-core-multisig':
-        specifier: workspace:*
-        version: link:../multisig
-      '@perawallet/wallet-core-shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@perawallet/wallet-core-signing':
-        specifier: workspace:*
-        version: link:../signing
-      '@perawallet/wallet-extension-provider':
-        specifier: workspace:*
-        version: link:../../extensions/provider
-      '@tanstack/react-query':
-        specifier: 'catalog:'
-        version: 5.101.2(react@19.2.3)
-      decimal.js:
-        specifier: 'catalog:'
-        version: 10.6.0
-      react:
-        specifier: 19.2.3
-        version: 19.2.3
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
-      zustand:
-        specifier: 'catalog:'
-        version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
+        version: link:../chain-algorand
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
-      '@testing-library/react':
-        specifier: 'catalog:'
-        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@types/react':
-        specifier: ~19.2.14
-        version: 19.2.17
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
-      react-dom:
-        specifier: 19.2.3
-        version: 19.2.3(react@19.2.3)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -15390,7 +15393,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
+      vitest: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
 
   '@vitest/expect@4.1.11':
     dependencies:
