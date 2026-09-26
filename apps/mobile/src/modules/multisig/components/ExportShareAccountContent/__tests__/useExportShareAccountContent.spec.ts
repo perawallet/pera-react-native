@@ -42,6 +42,7 @@ vi.mock('@utils/shareText', () => ({
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { debugEnabled: false },
     isTestnet: () => false,
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 vi.mock('@components/core', () => ({

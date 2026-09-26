@@ -198,21 +198,36 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         error instanceof PeraNetworkError
 
     // Mirrors packages/shared/src/errors/pera-service.ts. Thrown by the
-    // request layer for a network with no Pera deployment (betanet, custom);
-    // the crash-reporting sites in QueryProvider branch on the guard below.
+    // request layer for a scope with no Pera deployment (betanet, custom) or
+    // missing the named service; the crash-reporting sites in QueryProvider
+    // branch on the guard below.
     class PeraServiceUnavailableError extends AppError {
-        public readonly network: string
+        public readonly scope: { chainId: string; networkId: string }
+        public readonly service: string | undefined
 
-        constructor(network: string) {
-            super(`Pera services are not deployed for ${network}`, {
-                severity: 'low',
-                category: 'network',
-                retryable: false,
-                recoverable: false,
-                messageKey: 'errors.pera_service.unavailable',
-                params: { network },
-            })
-            this.network = network
+        constructor(
+            target: string | { chainId: string; networkId: string },
+            service?: string,
+        ) {
+            const scope =
+                typeof target === 'string'
+                    ? { chainId: 'algorand', networkId: target }
+                    : target
+            const scopeKey = `${scope.chainId}/${scope.networkId}`
+            super(
+                `Pera services are not deployed for ${scopeKey}` +
+                    (service === undefined ? '' : ` (service: ${service})`),
+                {
+                    severity: 'low',
+                    category: 'network',
+                    retryable: false,
+                    recoverable: false,
+                    messageKey: 'errors.pera_service.unavailable',
+                    params: { scope: scopeKey, service },
+                },
+            )
+            this.scope = scope
+            this.service = service
         }
     }
 

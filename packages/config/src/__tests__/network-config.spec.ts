@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
-import { Networks } from '../models/network'
+import { Networks, type Network } from '../models/network'
 import { config } from '../main'
 import {
     getArc59Config,
@@ -20,6 +20,7 @@ import {
     isMainnet,
     isPeraBackedNetwork,
     isTestnet,
+    type NetworkConfig,
 } from '../network-config'
 
 describe('network-config', () => {
@@ -250,5 +251,106 @@ describe('getIframeOrigins', () => {
     test('returns nothing for an empty or malformed URL', () => {
         expect(getIframeOrigins('')).toEqual([])
         expect(getIframeOrigins('not a url')).toEqual([])
+    })
+})
+
+describe('getNetworkConfig keeps its values and key order for every network', () => {
+    const noPeraServices = {
+        backendUrl: '',
+        bidaliBaseUrl: '',
+        bidaliApiKey: '',
+        baanxBaseUrl: '',
+        baanxClientKey: '',
+        baanxTenantId: '',
+        cardW3CardAppId: '',
+        cardKillswitchAppId: '',
+        cardAutoDrawProgramHash: '',
+        cardUsdcAssetId: '',
+    }
+
+    // Written in the key order getNetworkConfig has always produced; the
+    // Object.keys assertion pins that order, toStrictEqual pins the values.
+    const expected: Record<Network, NetworkConfig> = {
+        testnet: {
+            network: Networks.testnet,
+            isMainnet: false,
+            isTestnet: true,
+            algodUrl: config.testnetAlgodUrl,
+            indexerUrl: config.testnetIndexerUrl,
+            genesisHash: config.testnetGenesisHash,
+            genesisId: 'testnet-v1.0',
+            explorerUrl: config.testnetExplorerUrl,
+            algodToken: config.algodApiKey,
+            indexerToken: config.indexerApiKey,
+            dispenserUrl: config.dispenserUrl,
+            backendUrl: config.testnetBackendUrl,
+            bidaliBaseUrl: config.testnetBidaliBaseUrl,
+            bidaliApiKey: config.testnetBidaliApiKey,
+            baanxBaseUrl: config.testnetBaanxBaseUrl,
+            baanxClientKey: config.testnetBaanxClientKey,
+            baanxTenantId: config.testnetBaanxTenantId,
+            cardW3CardAppId: config.testnetCardW3CardAppId,
+            cardKillswitchAppId: config.testnetCardKillswitchAppId,
+            cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
+            cardUsdcAssetId: config.testnetCardUsdcAssetId,
+        },
+        mainnet: {
+            network: Networks.mainnet,
+            isMainnet: true,
+            isTestnet: false,
+            algodUrl: config.mainnetAlgodUrl,
+            indexerUrl: config.mainnetIndexerUrl,
+            genesisHash: config.mainnetGenesisHash,
+            genesisId: 'mainnet-v1.0',
+            explorerUrl: config.mainnetExplorerUrl,
+            algodToken: config.algodApiKey,
+            indexerToken: config.indexerApiKey,
+            dispenserUrl: config.mainnetDispenserUrl,
+            backendUrl: config.mainnetBackendUrl,
+            bidaliBaseUrl: config.mainnetBidaliBaseUrl,
+            bidaliApiKey: config.mainnetBidaliApiKey,
+            baanxBaseUrl: config.mainnetBaanxBaseUrl,
+            baanxClientKey: config.mainnetBaanxClientKey,
+            baanxTenantId: config.mainnetBaanxTenantId,
+            cardW3CardAppId: config.mainnetCardW3CardAppId,
+            cardKillswitchAppId: config.mainnetCardKillswitchAppId,
+            cardAutoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
+            cardUsdcAssetId: config.mainnetCardUsdcAssetId,
+        },
+        betanet: {
+            network: Networks.betanet,
+            isMainnet: false,
+            isTestnet: false,
+            algodUrl: config.betanetAlgodUrl,
+            indexerUrl: config.betanetIndexerUrl,
+            genesisHash: config.betanetGenesisHash,
+            genesisId: 'betanet-v1.0',
+            explorerUrl: config.betanetExplorerUrl,
+            algodToken: '',
+            indexerToken: '',
+            dispenserUrl: 'https://lora.algokit.io/betanet/fund/',
+            ...noPeraServices,
+        },
+        custom: {
+            network: Networks.custom,
+            isMainnet: false,
+            isTestnet: false,
+            algodUrl: '',
+            indexerUrl: '',
+            genesisHash: '',
+            genesisId: '',
+            explorerUrl: '',
+            algodToken: '',
+            indexerToken: '',
+            dispenserUrl: '',
+            ...noPeraServices,
+        },
+    }
+
+    test.each(Object.values(Networks))('%s', network => {
+        const actual = getNetworkConfig(network)
+
+        expect(actual).toStrictEqual(expected[network])
+        expect(Object.keys(actual)).toEqual(Object.keys(expected[network]))
     })
 })

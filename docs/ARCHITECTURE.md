@@ -31,7 +31,8 @@ Pera Wallet is a monorepo that keeps UI and business logic in separate layers.
 └────────────────────────┬────────────────────────────┘
                          ▼
 ┌─────────────────────────────────────────────────────┐
-│    bottom tier: packages/config, packages/shared     │
+│    bottom tier: packages/config, packages/shared,    │
+│             packages/chain-contract                  │
 │             (usable from every tier)                 │
 └─────────────────────────────────────────────────────┘
 ```
@@ -45,18 +46,20 @@ tested without React Native, and what let the browser extension reuse it.
 Dependencies point down the diagram and never up. `tools/check-layer-tiers.mjs` enforces this on
 every workspace `package.json` (all dependency fields) in pre-push and CI:
 
-| Tier                                                             | May depend on                                                   |
-| ---------------------------------------------------------------- | --------------------------------------------------------------- |
-| `apps/*`                                                         | anything                                                        |
-| `packages/*` (business)                                          | other packages, and extensions other than the Ledger transports |
-| `extensions/*`                                                   | other extensions and the bottom tier                            |
-| `extensions/platform` (the contract)                             | the bottom tier only                                            |
-| Ledger transports (`extensions/ledger-*` except `ledger-shared`) | depended on only by apps and each other                         |
-| bottom tier (`packages/config`, `packages/shared`)               | the bottom tier only                                            |
+| Tier                                                                          | May depend on                                                   |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `apps/*`                                                                      | anything                                                        |
+| `packages/*` (business)                                                       | other packages, and extensions other than the Ledger transports |
+| `extensions/*`                                                                | other extensions and the bottom tier                            |
+| `extensions/platform` (the contract)                                          | the bottom tier only                                            |
+| Ledger transports (`extensions/ledger-*` except `ledger-shared`)              | depended on only by apps and each other                         |
+| bottom tier (`packages/config`, `packages/shared`, `packages/chain-contract`) | the bottom tier only                                            |
 
 The bottom tier lives under `packages/` but is not business logic, so the directory alone does not
 tell you the tier. `packages/devtools` is build and test tooling, allowed anywhere as a
 devDependency.
+`packages/chain-contract` is in the bottom tier because it depends on nothing, and `config` and
+`shared` key their configuration and requests by its chain scope.
 
 The app is the composition root. It picks the platform driver (a bundler alias, below) and registers
 the concrete Ledger transports into `getProvider().hardwareWalletRegistry`
@@ -178,10 +181,12 @@ because a staging release bundles with `NODE_ENV=production` too. Its UI entry p
 
 ## Networks without a Pera backend
 
-Only MainNet and TestNet are Pera-backed (`PERA_BACKED_NETWORKS` in
-`packages/config/src/network-config.ts`). On betanet and any custom node, every request declaring
+Each chain scope's configuration in `packages/config/src/network-config.ts` lists the Pera services
+its deployment serves (`peraServicesFor(scope)`, `hasPeraService(scope, service)`): Algorand MainNet
+and TestNet list every service, betanet and a custom node list none. A request declaring
 `backend: 'pera'` throws `PeraServiceUnavailableError` in `packages/shared/src/api/query-client.ts`
-before a socket opens, so the failure is structural and instant rather than a timeout.
+before a socket opens when its scope has no Pera deployment, or when it names a `service` the
+scope does not list, so the failure is structural and instant rather than a timeout.
 
 Reads whose answer is obtainable from algod or the indexer must therefore branch on
 `isPeraBackedNetwork(network)` and take the public path, rather than swallowing the error as an empty

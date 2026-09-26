@@ -28,6 +28,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         testnet: 'testnet',
         mainnet: 'mainnet',
     },
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 const TEST_ADDRESS =

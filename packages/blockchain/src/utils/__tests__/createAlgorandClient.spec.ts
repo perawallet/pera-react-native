@@ -31,25 +31,51 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     updateNodeEndpoints: mocks.updateNodeEndpoints,
 }))
 
-import { Networks, getNetworkConfig } from '@perawallet/wallet-core-config'
-import { useCustomNetworkStore } from '../../store'
-import { resolveChainEndpoints } from '../algorandClient'
+// Spy on createTimeoutBoundedAlgorandClient while still delegating to the
+// real implementation, so getAlgorandClient's assertions below can inspect
+// what it was called with without breaking the real chain through to it.
+vi.mock('../createAlgorandClient', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('../createAlgorandClient')>()
+    return {
+        ...actual,
+        createTimeoutBoundedAlgorandClient: vi.fn(
+            actual.createTimeoutBoundedAlgorandClient,
+        ),
+    }
+})
 
-describe('resolveChainEndpoints', () => {
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    Networks,
+    getChainConfig,
+    getNetworkConfig,
+} from '@perawallet/wallet-core-config'
+import { useCustomNetworkStore } from '../../store'
+import { getAlgorandClient } from '../algorandClient'
+import { createTimeoutBoundedAlgorandClient } from '../createAlgorandClient'
+
+const CUSTOM_SCOPE = scopeForLegacyNetwork(Networks.custom)
+
+describe('getChainConfig for the custom network (real store, end-to-end)', () => {
     beforeEach(() => {
         useCustomNetworkStore.getState().resetState()
     })
 
-    test('uses the baked chain config when custom is not configured', () => {
-        expect(resolveChainEndpoints(Networks.betanet)).toEqual({
-            algodUrl: getNetworkConfig(Networks.betanet).algodUrl,
-            indexerUrl: getNetworkConfig(Networks.betanet).indexerUrl,
-            algodToken: getNetworkConfig(Networks.betanet).algodToken,
-            indexerToken: getNetworkConfig(Networks.betanet).indexerToken,
+    test('an unconfigured custom slot resolves to the empty placeholder', () => {
+        expect(getChainConfig(CUSTOM_SCOPE)).toStrictEqual({
+            algodUrl: '',
+            indexerUrl: '',
+            genesisHash: '',
+            genesisId: '',
+            explorerUrl: '',
+            algodToken: '',
+            indexerToken: '',
+            dispenserUrl: '',
         })
     })
 
-    test('the custom network resolves from the real custom-network store, end-to-end', () => {
+    test("a saved node resolves through the store's registered source", () => {
         useCustomNetworkStore.getState().setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
@@ -57,13 +83,20 @@ describe('resolveChainEndpoints', () => {
             genesisId: 'dockernet-v1',
         })
 
-        const resolved = resolveChainEndpoints(Networks.custom)
-
-        expect(resolved.algodUrl).toBe('http://10.0.0.5:4001')
-        expect(resolved.indexerUrl).toBe('http://10.0.0.5:8980')
+        expect(getChainConfig(CUSTOM_SCOPE)).toStrictEqual({
+            algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+            explorerUrl: '',
+            // No token saved, so none is sent — never `undefined`.
+            algodToken: '',
+            indexerToken: '',
+            dispenserUrl: '',
+        })
     })
 
-    test('carries the custom slot tokens, which have no baked counterpart to fall back to', () => {
+    test('carries the saved tokens, which have no baked counterpart to fall back to', () => {
         // AlgoKit LocalNet — the primary reason the custom slot exists —
         // rejects every request without this exact 64-char token. `custom`'s
         // baked entry is `''` by design, so the store is the ONLY source: if
@@ -78,10 +111,83 @@ describe('resolveChainEndpoints', () => {
             genesisId: 'dockernet-v1',
         })
 
-        const resolved = resolveChainEndpoints(Networks.custom)
+        expect(getChainConfig(CUSTOM_SCOPE)).toMatchObject({
+            algodToken: 'a'.repeat(64),
+            indexerToken: 'a'.repeat(64),
+        })
+    })
 
-        expect(resolved.algodToken).toBe('a'.repeat(64))
-        expect(resolved.indexerToken).toBe('a'.repeat(64))
+    test('getNetworkConfig serves the saved node for custom', () => {
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+        })
+
+        expect(getNetworkConfig(Networks.custom)).toMatchObject({
+            algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+            algodToken: '',
+            indexerToken: '',
+        })
+    })
+
+    test('the baked networks ignore the saved node', () => {
+        const bakedNetworks = [
+            Networks.mainnet,
+            Networks.testnet,
+            Networks.betanet,
+        ] as const
+        const before = bakedNetworks.map(network =>
+            getChainConfig(scopeForLegacyNetwork(network)),
+        )
+
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'x',
+        })
+
+        expect(
+            bakedNetworks.map(network =>
+                getChainConfig(scopeForLegacyNetwork(network)),
+            ),
+        ).toStrictEqual(before)
+    })
+
+    test('clearing the saved node restores the placeholder', () => {
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+        })
+
+        useCustomNetworkStore.getState().clearCustomNetwork()
+
+        expect(getChainConfig(CUSTOM_SCOPE).algodUrl).toBe('')
+    })
+
+    test('getAlgorandClient builds against the saved node', () => {
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+        })
+
+        getAlgorandClient(Networks.custom)
+
+        expect(createTimeoutBoundedAlgorandClient).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                algodUrl: 'http://10.0.0.5:4001',
+                indexerUrl: 'http://10.0.0.5:8980',
+            }),
+        )
     })
 })
 
@@ -104,8 +210,7 @@ describe('custom-network store subscription (real store, end-to-end)', () => {
             {
                 algodUrl: 'http://10.0.0.5:4001',
                 indexerUrl: 'http://10.0.0.5:8980',
-                // No token set above, so it falls back to the (empty) baked
-                // placeholder — see the `custom` entry in network-config.ts.
+                // No token saved, so the store's source reports none (`''`).
                 algodToken: '',
                 indexerToken: '',
             },

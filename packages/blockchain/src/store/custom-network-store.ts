@@ -12,6 +12,8 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { registerCustomNetworkSource } from '@perawallet/wallet-core-config'
 import {
     registerStore,
     type BaseStoreState,
@@ -89,4 +91,29 @@ registerStore({
             }
         ).persist.clearStorage(),
     resetState: () => useCustomNetworkStore.getState().resetState(),
+})
+
+// A literal, not Networks.custom: this module is loaded on its own under
+// mobile's blockchain mock, where many config mocks define no Networks.
+const CUSTOM_SCOPE = scopeForLegacyNetwork('custom')
+
+// config resolves chain endpoints but cannot import this store, so the saved
+// node reaches getChainConfig through this reader.
+registerCustomNetworkSource(scope => {
+    const saved = getCustomNetworkConfig()
+    if (
+        saved === undefined ||
+        scope.chainId !== CUSTOM_SCOPE.chainId ||
+        scope.networkId !== CUSTOM_SCOPE.networkId
+    ) {
+        return undefined
+    }
+    return {
+        algodUrl: saved.algodUrl,
+        indexerUrl: saved.indexerUrl,
+        algodToken: saved.algodToken ?? '',
+        indexerToken: saved.indexerToken ?? '',
+        genesisHash: saved.genesisHash,
+        genesisId: saved.genesisId,
+    }
 })

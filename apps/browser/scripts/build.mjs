@@ -105,11 +105,13 @@ execSync('bash tools/generate-config.sh', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })
-// packages/config specifically must be rebuilt right after generate-config.sh
-// (not just picked up by the broader turbo build below) so the freshly
-// generated generated-env.ts is what's baked into its dist, not a stale
-// cache from a previous run with different secrets.
-execSync('pnpm --filter ./packages/config build', {
+// packages/config and the workspace packages it depends on (e.g.
+// chain-contract, whose dist/index.d.ts config's types resolve to) must be
+// rebuilt right after generate-config.sh (not just picked up by the broader
+// turbo build below) so the freshly generated generated-env.ts is what's
+// baked into config's dist, not a stale cache from a previous run with
+// different secrets.
+execSync('pnpm --filter "@perawallet/wallet-core-config..." build', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })
