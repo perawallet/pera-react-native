@@ -20,7 +20,7 @@ import {
     getAccountDisplayName,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useNfdForAddressQuery } from '@perawallet/wallet-core-chain-algorand/nfd'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
 

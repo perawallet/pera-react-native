@@ -602,9 +602,6 @@ importers:
       '@perawallet/wallet-core-multisig':
         specifier: workspace:*
         version: link:../../packages/multisig
-      '@perawallet/wallet-core-nfd':
-        specifier: workspace:*
-        version: link:../../packages/nfd
       '@perawallet/wallet-core-onramp':
         specifier: workspace:*
         version: link:../../packages/onramp

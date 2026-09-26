@@ -164,10 +164,7 @@ const distResolvedPackages = new Set([
     '@perawallet/wallet-extension-platform-react-native',
 ])
 // Same, for the root barrel only; their `/test-handlers` still come from source.
-const distResolvedRoots = new Set([
-    '@perawallet/wallet-core-card',
-    '@perawallet/wallet-core-nfd',
-])
+const distResolvedRoots = new Set(['@perawallet/wallet-core-card'])
 
 // @rneui/base loads its rating images with CommonJS `require('./x.png')` inside
 // ESM files. Once inlined, node would try to parse the PNG as JavaScript, so

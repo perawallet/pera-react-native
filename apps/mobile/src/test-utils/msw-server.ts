@@ -18,7 +18,7 @@ import {
     mockAlgodStatusAfterBlock,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { mockGetCurrency } from '@perawallet/wallet-core-currencies/test-handlers'
-import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
+import { mockNfdBulkRead } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 // Shared MSW server for integration tests. vitest.integration-setup.ts owns its
 // listen / resetHandlers / close lifecycle, so flow files never call those.

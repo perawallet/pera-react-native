@@ -28,7 +28,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal =>
     importOriginal<typeof import('@perawallet/wallet-core-accounts')>(),
 )
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/nfd', () => ({
     useNfdForAddressQuery: () => ({ data: mockNfdNames }),
 }))
 

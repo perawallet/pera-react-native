@@ -17,7 +17,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
+import { useNfdSearchQuery } from '@perawallet/wallet-core-chain-algorand/nfd'
 
 // A pinned, syntactically-valid Algorand address (passes the real
 // `isValidAlgorandAddress` checksum round-trip mocked above) used to exercise
@@ -85,7 +85,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
 }))
 

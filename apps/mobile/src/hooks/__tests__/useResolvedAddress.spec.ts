@@ -16,7 +16,7 @@ import { useResolvedAddress } from '../useResolvedAddress'
 
 const mockUseNfdForAddress = vi.hoisted(() => vi.fn())
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/nfd', () => ({
     useNfdForAddressQuery: mockUseNfdForAddress,
 }))
 

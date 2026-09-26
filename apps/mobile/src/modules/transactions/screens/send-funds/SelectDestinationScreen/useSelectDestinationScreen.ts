@@ -13,7 +13,7 @@
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { verifyNfdAddress } from '@perawallet/wallet-core-nfd'
+import { verifyNfdAddress } from '@perawallet/wallet-core-chain-algorand/nfd'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useCallback, useEffect, useState, useRef } from 'react'

@@ -21,7 +21,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useNfdForAddressQuery } from '@perawallet/wallet-core-chain-algorand/nfd'
 import { useClipboard } from '@hooks/useClipboard'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import type { IconName } from '@components/core'
