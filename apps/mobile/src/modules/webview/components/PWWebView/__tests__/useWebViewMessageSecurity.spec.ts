@@ -20,12 +20,6 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     config: { discoverBaseUrl: 'https://discover.example.app/' },
 }))
 
-// handlers-shared reaches the chain package, whose graph this spec's partial
-// package mocks cannot load.
-vi.mock('@perawallet/wallet-core-chain-algorand/connect', () => ({
-    algorandDappRequestAdapter: { relayableErrorNames: ['Arc0001Error'] },
-}))
-
 const messageEvent = (url: string): WebViewMessageEvent =>
     ({ nativeEvent: { url, data: '{}' } }) as WebViewMessageEvent
 
