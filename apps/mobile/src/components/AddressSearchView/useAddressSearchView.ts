@@ -23,7 +23,7 @@ import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
     useNfdSearchQuery,
     type NfdSearchResult,
-} from '@perawallet/wallet-core-chain-algorand/nfd'
+} from '@perawallet/wallet-core-nfd'
 import {
     useDebouncedValue,
     type Nullable,

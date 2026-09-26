@@ -69,9 +69,6 @@
       "@perawallet/wallet-core-swaps/test-handlers": [
         "../../packages/swaps/src/test-handlers.ts"
       ],
-      "@perawallet/wallet-core-chain-algorand/test-handlers": [
-        "../../packages/chain-algorand/src/test-handlers.ts"
-      ],
       "@perawallet/wallet-core-messages/test-handlers": [
         "../../packages/messages/src/test-handlers.ts"
       ],
@@ -110,6 +107,9 @@
       ],
       "@perawallet/wallet-core-onramp/test-handlers": [
         "../../packages/onramp/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-nfd/test-handlers": [
+        "../../packages/nfd/src/test-handlers.ts"
       ],
       "@perawallet/wallet-extension-keystore-chrome": [
         "../../extensions/keystore-chrome/src/index.ts"

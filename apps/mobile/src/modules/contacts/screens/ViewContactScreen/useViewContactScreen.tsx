@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-chain-algorand/nfd'
+import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 
 import { useBottomSheet } from '@modules/bottom-sheet'

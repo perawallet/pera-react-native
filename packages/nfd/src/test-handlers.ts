@@ -17,4 +17,4 @@ export {
     type MockNfdNamesForAddressParams,
     type MockNfdBulkReadParams,
     type MockNfdSearchParams,
-} from './nfd/api/msw-handlers'
+} from './api/msw-handlers'

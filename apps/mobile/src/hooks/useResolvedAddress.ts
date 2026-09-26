@@ -14,7 +14,7 @@ import {
     LONG_ADDRESS_LENGTH,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-chain-algorand/nfd'
+import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useMemo } from 'react'
 
 export type AddressFormat = 'short' | 'long' | 'full'

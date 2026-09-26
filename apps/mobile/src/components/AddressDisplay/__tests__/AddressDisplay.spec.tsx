@@ -48,7 +48,7 @@ const mockUseNfdForAddress = vi.fn(() => ({
     isPending: false,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/nfd', () => ({
+vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdForAddressQuery: (...args: Parameters<typeof mockUseNfdForAddress>) =>
         mockUseNfdForAddress(...args),
 }))

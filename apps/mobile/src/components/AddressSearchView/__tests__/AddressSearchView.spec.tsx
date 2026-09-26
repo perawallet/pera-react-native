@@ -16,7 +16,7 @@ import { AddressSearchView } from '../AddressSearchView'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { useNfdSearchQuery } from '@perawallet/wallet-core-chain-algorand/nfd'
+import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -44,7 +44,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/nfd', () => ({
+vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
 }))
 

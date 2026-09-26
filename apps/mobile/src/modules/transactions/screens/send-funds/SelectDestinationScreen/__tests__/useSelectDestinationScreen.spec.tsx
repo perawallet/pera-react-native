@@ -39,7 +39,7 @@ const { mockCanSignWith, mockUseAllAccounts, mockGetArc59Config } = vi.hoisted(
 )
 
 const mockVerifyNfdAddress = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-chain-algorand/nfd', () => ({
+vi.mock('@perawallet/wallet-core-nfd', () => ({
     verifyNfdAddress: mockVerifyNfdAddress,
 }))
 

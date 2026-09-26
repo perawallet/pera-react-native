@@ -31,10 +31,6 @@ export default defineConfig({
         // Resolved from source so vitest transforms them and the setup file's
         // mocks apply; their installed dist would load react-native-mmkv first.
         alias: {
-            '@test-utils': path.resolve(
-                __dirname,
-                '../../extensions/platform/src/test-utils',
-            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',

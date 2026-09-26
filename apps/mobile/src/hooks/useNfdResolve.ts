@@ -11,7 +11,7 @@
  */
 
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { useNfdSearchQuery } from '@perawallet/wallet-core-chain-algorand/nfd'
+import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 import {
     type Optional,
     useDebouncedValue,
