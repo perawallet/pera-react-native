@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
-import { swapAdapterFor, swapChainAdapters } from '../chain-adapter'
+import {
+    submitCosignedSwapGroup,
+    swapAdapterFor,
+    swapChainAdapters,
+    SwapCosignUnsupportedError,
+} from '../chain-adapter'
 import { fakeSwapAdapter } from './fakeSwapAdapter'
 
 describe('swapAdapterFor', () => {
@@ -34,5 +39,32 @@ describe('swapAdapterFor', () => {
         expect(() => swapAdapterFor('mainnet')).toThrow(
             'No swap adapter is registered for chain "algorand"',
         )
+    })
+})
+
+describe('submitCosignedSwapGroup', () => {
+    beforeEach(() => {
+        swapChainAdapters.reset()
+    })
+
+    it("submits through the chain's co-sign support", async () => {
+        const submitSignedGroup = vi.fn().mockResolvedValue(['TX1'])
+        swapChainAdapters.register(fakeSwapAdapter({ submitSignedGroup }))
+        const signed = [new Uint8Array([1])]
+
+        const txIds = await submitCosignedSwapGroup('mainnet', signed)
+
+        expect(txIds).toEqual(['TX1'])
+        expect(submitSignedGroup).toHaveBeenCalledWith('mainnet', signed)
+    })
+
+    it('refuses when the chain has no co-sign support', async () => {
+        swapChainAdapters.register(
+            fakeSwapAdapter({ submitSignedGroup: undefined }),
+        )
+
+        await expect(
+            submitCosignedSwapGroup('mainnet', [new Uint8Array([1])]),
+        ).rejects.toBeInstanceOf(SwapCosignUnsupportedError)
     })
 })

@@ -17,6 +17,7 @@ import {
     type ProvidersApiResponse,
     type TopPairsApiResponse,
 } from './schema'
+import { swapAdapterFor } from '../../chain-adapter'
 import { transformProviderItem, transformTopPairItem } from './transformers'
 
 export const fetchProviders = async (network: Network) => {
@@ -41,5 +42,6 @@ export const fetchTopPairs = async (network: Network, limit?: number) => {
     })
 
     const parsed = topPairsResponseSchema.parse(response.data)
-    return parsed.results.map(transformTopPairItem)
+    const { nativeAssetId } = swapAdapterFor(network)
+    return parsed.results.map(pair => transformTopPairItem(pair, nativeAssetId))
 }

@@ -31,7 +31,7 @@ import {
     type TerminalHandoffOutcome,
 } from '@perawallet/wallet-core-signing'
 import type { SwapStatusUpdateRequest } from '../api'
-import { swapAdapterFor } from '../chain-adapter'
+import { submitCosignedSwapGroup } from '../chain-adapter'
 import type { SwapHandoffRecord } from '../models'
 import { useSwapHandoffStore } from '../store'
 import { resolveSwapHandoffOutcome } from '../utils'
@@ -247,10 +247,7 @@ export const useSwapCosignResolver = ({
                 record: handoff,
                 deps: {
                     submitGroup: bytes =>
-                        swapAdapterFor(handoff.network).submitSignedGroup(
-                            handoff.network,
-                            bytes,
-                        ),
+                        submitCosignedSwapGroup(handoff.network, bytes),
                     markSubmitted: txIds =>
                         markHandoffSubmitted(handoff.signRequestId, txIds),
                     decodeBase64: decodeFromBase64,

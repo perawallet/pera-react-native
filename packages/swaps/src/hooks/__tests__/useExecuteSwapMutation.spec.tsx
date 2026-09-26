@@ -17,7 +17,10 @@ import React from 'react'
 import { mutationDefaults } from '@perawallet/wallet-core-shared'
 import type { SwapChainAdapter } from '../../chain-adapter'
 import type { SwapQuote } from '../../models'
-import { swapChainAdapters } from '../../chain-adapter'
+import {
+    swapChainAdapters,
+    SwapCosignUnsupportedError,
+} from '../../chain-adapter'
 import { registerFakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
 import { useExecuteSwapMutation } from '../useExecuteSwapMutation'
 
@@ -26,11 +29,18 @@ const {
     mockPrepareTransactions,
     mockUpdateSwapStatus,
     mockRegisterHandoff,
+    mockSelectedAccount,
 } = vi.hoisted(() => ({
     mockAddSignRequest: vi.fn(),
     mockPrepareTransactions: vi.fn(),
     mockUpdateSwapStatus: vi.fn(),
     mockRegisterHandoff: vi.fn(),
+    mockSelectedAccount: {
+        current: { address: 'SELECTED', type: 'standard' } as {
+            address: string
+            type: string
+        },
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -39,7 +49,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: () => ({ address: 'SELECTED' }),
+    isMultisigAccount: (account: { type: string }) =>
+        account.type === 'multisig',
+    useSelectedAccount: () => mockSelectedAccount.current,
     useSignerFor: (address: string) => ({ address: `signer-of-${address}` }),
 }))
 
@@ -92,6 +104,7 @@ describe('useExecuteSwapMutation', () => {
     let executeSwap: SwapChainAdapter['executeSwap']
 
     beforeEach(() => {
+        mockSelectedAccount.current = { address: 'SELECTED', type: 'standard' }
         executeSwap = vi.fn()
         registerFakeSwapAdapter({ executeSwap })
     })
@@ -114,7 +127,7 @@ describe('useExecuteSwapMutation', () => {
         expect(executeSwap).toHaveBeenCalledWith(
             {
                 ...variables,
-                account: { address: 'SELECTED' },
+                account: { address: 'SELECTED', type: 'standard' },
                 signer: { address: 'signer-of-SELECTED' },
             },
             {
@@ -154,6 +167,22 @@ describe('useExecuteSwapMutation', () => {
             await expect(result.current.mutateAsync(variables)).rejects.toThrow(
                 'No swap adapter is registered',
             )
+        })
+
+        expect(executeSwap).not.toHaveBeenCalled()
+    })
+
+    test('refuses a shared-account swap on a chain without co-sign support', async () => {
+        mockSelectedAccount.current = { address: 'JOINT', type: 'multisig' }
+        registerFakeSwapAdapter({ executeSwap, submitSignedGroup: undefined })
+        const { result } = renderHook(() => useExecuteSwapMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await expect(
+                result.current.mutateAsync(variables),
+            ).rejects.toBeInstanceOf(SwapCosignUnsupportedError)
         })
 
         expect(executeSwap).not.toHaveBeenCalled()

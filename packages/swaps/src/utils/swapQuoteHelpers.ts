@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import {
     DEFAULT_PRECISION,
     formatNumber,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '../models'
+
+// Display precision for a rate whose out asset came back without decimals.
+const UNKNOWN_DECIMALS_RATE_PRECISION = 6
 
 export const pickBestByAmountOut = (quotes: SwapQuote[]): Nullable<SwapQuote> =>
     quotes.reduce<Nullable<SwapQuote>>((prev, curr) => {
@@ -37,7 +39,8 @@ export const sortQuotesByAmountOutDesc = (quotes: SwapQuote[]): SwapQuote[] =>
 
 export const formatSwapRate = (quote: SwapQuote): string => {
     if (!quote.price) return '-'
-    const outDecimals = quote.assetOut.decimals ?? ALGO_ASSET.decimals
+    const outDecimals =
+        quote.assetOut.decimals ?? UNKNOWN_DECIMALS_RATE_PRECISION
     const { sign, integer, fraction } = formatNumber(
         quote.price,
         outDecimals,

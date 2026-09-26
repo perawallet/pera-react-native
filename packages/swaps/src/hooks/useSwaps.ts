@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { useSwapsStore } from '../store'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { swapAdapterFor } from '../chain-adapter'
+import { useSwapsStore } from '../store'
 
 type UseSwapsResult = {
     fromAsset: string
@@ -27,7 +29,10 @@ type UseSwapsResult = {
 }
 
 export const useSwaps = (): UseSwapsResult => {
-    const fromAsset = useSwapsStore(state => state.fromAsset)
+    const { network } = useNetwork()
+    const fromAsset =
+        useSwapsStore(state => state.fromAsset) ??
+        swapAdapterFor(network).nativeAssetId
     const toAsset = useSwapsStore(state => state.toAsset)
     const slippage = useSwapsStore(state => state.slippage)
     const isLocalCurrencyInput = useSwapsStore(

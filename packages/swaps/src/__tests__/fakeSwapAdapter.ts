@@ -14,10 +14,13 @@ import { vi } from 'vitest'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { swapChainAdapters, type SwapChainAdapter } from '../chain-adapter'
 
+export const FAKE_NATIVE_ASSET_ID = 'native'
+
 export const fakeSwapAdapter = (
     overrides: Partial<SwapChainAdapter> = {},
 ): SwapChainAdapter => ({
     chainId: scopeForLegacyNetwork('mainnet').chainId,
+    nativeAssetId: FAKE_NATIVE_ASSET_ID,
     executeSwap: vi.fn(),
     submitSignedGroup: vi.fn(),
     ...overrides,
