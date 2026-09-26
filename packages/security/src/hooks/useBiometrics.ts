@@ -90,6 +90,12 @@ type UseBiometricsResult = {
     completePendingBiometricRearm: () => Promise<void>
 }
 
+// Module-level because every mounted instance reconciles on mount. A caller
+// that lands between the blob's removal and the flag being set would see
+// neither and skip the prompt, and a recovery that arms while the sweep's
+// clear is in flight would lose its fresh key.
+let legacySweep: Nullable<Promise<void>> = null
+
 const sha256Hex = (bytes: Uint8Array): string =>
     bytesToHex(new Uint8Array(createHash('sha256').update(bytes).digest()))
 
@@ -176,11 +182,17 @@ export const useBiometrics = (): UseBiometricsResult => {
         // A blob from before OS-bound keys existed: nothing can unwrap it, so
         // it is swept without a probe, and the binding is re-armed once the
         // user has proven the PIN rather than asking them to opt in again.
-        if (hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)) {
-            await removeSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)
-            await biometricsService.clearEnrollmentBinding()
-            setIsEnabled(false)
-            setRearmPending(true)
+        if (legacySweep || hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)) {
+            // Flag first, so a kill mid-sweep cannot drop the opt-in unflagged.
+            legacySweep ??= (async () => {
+                setIsEnabled(false)
+                setRearmPending(true)
+                await removeSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)
+                await biometricsService.clearEnrollmentBinding()
+            })().finally(() => {
+                legacySweep = null
+            })
+            await legacySweep
             return false
         }
         if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) {
