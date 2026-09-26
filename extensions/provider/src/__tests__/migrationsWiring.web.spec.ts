@@ -31,14 +31,6 @@ vi.mock('@ledgerhq/hw-transport-webhid', () => ({
         request: vi.fn(),
     },
 }))
-vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
-    AlgorandApp: class {
-        getAddressAndPubKey = vi.fn()
-        sign = vi.fn()
-        getVersion = vi.fn()
-        signData = vi.fn()
-    },
-}))
 vi.mock('@algorandfoundation/keystore-web', () => ({
     WithKeyStore: () => ({ key: { store: {} } }),
 }))

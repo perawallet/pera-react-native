@@ -11,15 +11,14 @@
  */
 
 import type { HardwareWalletService } from '@perawallet/wallet-extension-hardware-wallet'
+import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import type {
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
 } from '@perawallet/wallet-extension-hardware-wallet'
 import TransportWebHID from '@ledgerhq/hw-transport-webhid'
-import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {
     classifyLedgerError,
-    createLedgerTransportWrapper,
     resolveUsbDeviceModel,
 } from '@perawallet/wallet-extension-ledger-shared'
 
@@ -35,7 +34,7 @@ const deviceKey = (device: HIDDevice): string =>
 /**
  * Browser implementation of HardwareWalletService for Ledger USB (WebHID).
  * Uses @ledgerhq/hw-transport-webhid for USB communication and
- * @algorandfoundation/ledger-algorand-js for Algorand-specific APDU commands.
+ * the registered Ledger app driver for the chain app's APDU commands.
  */
 export class LedgerWebUsbService implements HardwareWalletService {
     manufacturer = 'ledger' as const
@@ -77,6 +76,9 @@ export class LedgerWebUsbService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<HardwareWalletTransport> {
+                // Resolved at connect, not when the transport registers: the
+                // chain package registers its driver after the transports.
+                const appDriver = ledgerAppDriverRegistry.resolve()
                 let cached = devicesByKey.get(deviceId)
                 // `devicesByKey` only holds what THIS document scanned, and
                 // scanning only ever happens in the Ledger connect/import
@@ -119,11 +121,7 @@ export class LedgerWebUsbService implements HardwareWalletService {
                     } else {
                         hidTransport = await TransportWebHID.request()
                     }
-                    const algorandApp = new AlgorandApp(hidTransport)
-                    return createLedgerTransportWrapper(
-                        hidTransport,
-                        algorandApp,
-                    )
+                    return appDriver.open(hidTransport)
                 } catch (error) {
                     throw classifyLedgerError(error)
                 }

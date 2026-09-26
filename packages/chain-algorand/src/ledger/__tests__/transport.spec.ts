@@ -12,17 +12,18 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import type { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
+import type { LedgerAppTransport } from '@perawallet/wallet-extension-hardware-wallet'
 import {
-    createLedgerTransportWrapper,
-    type LedgerAppTransport,
-} from '../transport-wrapper'
-import { LedgerDeviceBusyError, LedgerDisconnectedError } from '../errors'
+    LedgerDeviceBusyError,
+    LedgerDisconnectedError,
+} from '@perawallet/wallet-extension-ledger-shared'
+import { createAlgorandLedgerTransport } from '../transport'
 
-// The APDU surface is exercised through the transport specs; these tests only
+// The APDU surface is exercised through driver.spec.ts; these tests only
 // cover the disconnect-event passthrough, so a bare stub is enough.
 const stubApp = {} as AlgorandApp
 
-describe('createLedgerTransportWrapper disconnect events', () => {
+describe('createAlgorandLedgerTransport disconnect events', () => {
     it('exposes onDisconnect only when the transport emits events', () => {
         const withoutEvents: LedgerAppTransport = {
             close: vi.fn().mockResolvedValue(undefined),
@@ -31,7 +32,7 @@ describe('createLedgerTransportWrapper disconnect events', () => {
         // Callers branch on this being absent to fall back to their timeout,
         // so it must not be a no-op subscriber that never fires.
         expect(
-            createLedgerTransportWrapper(withoutEvents, stubApp).onDisconnect,
+            createAlgorandLedgerTransport(withoutEvents, stubApp).onDisconnect,
         ).toBeUndefined()
     })
 
@@ -45,7 +46,7 @@ describe('createLedgerTransportWrapper disconnect events', () => {
             off: vi.fn(),
         }
 
-        const wrapper = createLedgerTransportWrapper(transport, stubApp)
+        const wrapper = createAlgorandLedgerTransport(transport, stubApp)
         const onDisconnected = vi.fn()
         const unsubscribe = wrapper.onDisconnect?.(onDisconnected)
 
@@ -62,7 +63,7 @@ describe('createLedgerTransportWrapper disconnect events', () => {
     })
 })
 
-describe('createLedgerTransportWrapper error classification', () => {
+describe('createAlgorandLedgerTransport error classification', () => {
     const transport: LedgerAppTransport = {
         close: vi.fn().mockResolvedValue(undefined),
     }
@@ -73,7 +74,7 @@ describe('createLedgerTransportWrapper error classification', () => {
         }) as unknown as AlgorandApp
 
     it('classifies APDU failures with the shared classifier by default', async () => {
-        const wrapper = createLedgerTransportWrapper(
+        const wrapper = createAlgorandLedgerTransport(
             transport,
             failingApp(new Error('Device disconnected')),
         )
@@ -86,7 +87,7 @@ describe('createLedgerTransportWrapper error classification', () => {
     it('routes APDU failures through a transport-specific classifier', async () => {
         const raw = new Error('transport-specific')
         const classifyError = vi.fn(() => new LedgerDeviceBusyError())
-        const wrapper = createLedgerTransportWrapper(
+        const wrapper = createAlgorandLedgerTransport(
             transport,
             failingApp(raw),
             classifyError,
