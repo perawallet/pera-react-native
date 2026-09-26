@@ -10,6 +10,4 @@
  limitations under the License
  */
 
-export { discoverLedgerAccounts } from './discoverAccounts'
-export type { DiscoverAccountsOptions } from './discoverAccounts'
-export { verifyLedgerAddress } from './verifyAddress'
+export {}

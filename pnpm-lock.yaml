@@ -2416,18 +2416,9 @@ importers:
 
   packages/chain-algorand:
     dependencies:
-      '@babel/runtime':
-        specifier: 'catalog:'
-        version: 7.29.7
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
-      '@perawallet/wallet-core-hardware-wallet':
-        specifier: workspace:*
-        version: link:../hardware-wallet
-      '@perawallet/wallet-extension-ledger-shared':
-        specifier: workspace:*
-        version: link:../../extensions/ledger-shared
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -3021,9 +3012,6 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-chain-algorand':
-        specifier: workspace:*
-        version: link:../chain-algorand
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../hardware-wallet

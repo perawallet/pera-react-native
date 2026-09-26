@@ -26,8 +26,8 @@ import type {
     HardwareWalletDerivedAccount,
     HardwareWalletTransport,
 } from '@perawallet/wallet-core-hardware-wallet'
-import { verifyLedgerAddress } from '@perawallet/wallet-core-chain-algorand/ledger'
 import {
+    verifyLedgerAddress,
     withLedgerConfirmationTimeout,
     withLedgerConnectionTimeout,
     LedgerAddressMismatchError,

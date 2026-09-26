@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { discoverLedgerAccounts } from '@perawallet/wallet-core-chain-algorand/ledger'
 import type {
     LedgerAccount,
     LedgerTransport,
     LedgerTransportProvider,
 } from '@perawallet/wallet-extension-ledger-shared'
+import { discoverLedgerAccounts } from './discoverAccounts'
 import { withLedgerConnectionTimeout } from './ledgerTimeouts'
 
 export type ConnectAndDiscoverOptions = {
