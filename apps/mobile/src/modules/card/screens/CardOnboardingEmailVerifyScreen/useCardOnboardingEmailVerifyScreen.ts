@@ -14,7 +14,7 @@ import { useCallback, useState } from 'react'
 import {
     useCardStore,
     useSendEmailVerificationMutation,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'

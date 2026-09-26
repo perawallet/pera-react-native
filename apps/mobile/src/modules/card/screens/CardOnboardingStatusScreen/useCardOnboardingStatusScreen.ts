@@ -26,7 +26,7 @@ import {
     useFundingAddressLinkMutation,
     useOnboardingKycPoll,
     VerificationState,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import {
     isLedgerAccount,
     useAllAccounts,

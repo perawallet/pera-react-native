@@ -36,7 +36,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useCardSessionStore } from '@perawallet/wallet-core-chain-algorand/card'
+import { useCardSessionStore } from '@perawallet/wallet-core-card'
 import {
     useDeviceStore,
     type DeviceRegistrationRequest,

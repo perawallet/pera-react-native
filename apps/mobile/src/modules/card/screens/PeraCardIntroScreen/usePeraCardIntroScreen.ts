@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { config } from '@perawallet/wallet-core-config'
-import { useCardStore } from '@perawallet/wallet-core-chain-algorand/card'
+import { useCardStore } from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'

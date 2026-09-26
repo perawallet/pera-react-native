@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
-import type { RampQuote } from '@perawallet/wallet-core-chain-algorand/onramp'
+import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'

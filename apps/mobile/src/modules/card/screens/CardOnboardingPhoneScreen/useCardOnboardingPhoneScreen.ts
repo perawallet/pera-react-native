@@ -22,7 +22,7 @@ import {
     useSendPhoneVerificationMutation,
     type PhoneSendFormValues,
     type SupportedCountry,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { useCardErrorToast } from '@modules/card/hooks'

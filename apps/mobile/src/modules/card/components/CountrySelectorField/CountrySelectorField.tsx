@@ -11,7 +11,7 @@
  */
 
 import { PWIcon, PWInput, PWTouchableOpacity, PWView } from '@components/core'
-import type { SupportedCountry } from '@perawallet/wallet-core-chain-algorand/card'
+import type { SupportedCountry } from '@perawallet/wallet-core-card'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { isoToFlagEmoji } from '../../utils/isoToFlagEmoji'
 import { useStyles } from './styles'

@@ -38,8 +38,8 @@ import {
     CardWalletKind,
     useCardSessionStore,
     useCardStore,
-} from '@perawallet/wallet-core-chain-algorand/card'
-import { mockGetWalletBalance } from '@perawallet/wallet-core-chain-algorand/card/test-handlers'
+} from '@perawallet/wallet-core-card'
+import { mockGetWalletBalance } from '@perawallet/wallet-core-card/test-handlers'
 import {
     mockAlgodAccountInformation,
     mockAlgodPendingTransaction,

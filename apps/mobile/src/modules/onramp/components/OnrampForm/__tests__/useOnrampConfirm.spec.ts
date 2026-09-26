@@ -15,10 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Linking } from 'react-native'
 import { Decimal } from 'decimal.js'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
-import type {
-    RampPair,
-    MeldQuote,
-} from '@perawallet/wallet-core-chain-algorand/onramp'
+import type { RampPair, MeldQuote } from '@perawallet/wallet-core-onramp'
 import { useOnrampConfirm } from '../useOnrampConfirm'
 
 // --- mock fns -------------------------------------------------------------
@@ -36,10 +33,10 @@ let mockNetwork = 'mainnet'
 
 // --- mocks ----------------------------------------------------------------
 
-vi.mock('@perawallet/wallet-core-chain-algorand/onramp', async () => {
+vi.mock('@perawallet/wallet-core-onramp', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-chain-algorand/onramp')
-    >('@perawallet/wallet-core-chain-algorand/onramp')
+        typeof import('@perawallet/wallet-core-onramp')
+    >('@perawallet/wallet-core-onramp')
     return {
         ...actual,
         useCreateRampOrderMutation: () => ({

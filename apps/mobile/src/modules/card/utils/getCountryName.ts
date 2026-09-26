@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { SupportedCountry } from '@perawallet/wallet-core-chain-algorand/card'
+import type { SupportedCountry } from '@perawallet/wallet-core-card'
 
 /**
  * Maps an ISO 3166-1 alpha-2 code (e.g. "DE") to its display name (e.g.

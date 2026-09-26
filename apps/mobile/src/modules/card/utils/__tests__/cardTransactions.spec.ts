@@ -16,7 +16,7 @@ import { describe, it, expect } from 'vitest'
 import {
     type CardTransaction,
     TransactionSign,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import {
     CardTransactionKind,
     formatCardTransactionDate,

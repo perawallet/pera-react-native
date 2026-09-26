@@ -19,7 +19,7 @@ import {
     useCardStore,
     useVerifyEmailMutation,
     type PasswordSetFormValues,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'

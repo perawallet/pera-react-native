@@ -14,7 +14,7 @@ import {
     CardStatus,
     useCardStatusQuery,
     useFreezeCardMutation,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { useCardConfirmMutation } from './useCardConfirmMutation'
 
 /**

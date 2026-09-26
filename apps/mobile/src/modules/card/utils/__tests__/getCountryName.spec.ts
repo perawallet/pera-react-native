@@ -13,7 +13,7 @@
 // @vitest-environment node
 
 import { describe, it, expect } from 'vitest'
-import type { SupportedCountry } from '@perawallet/wallet-core-chain-algorand/card'
+import type { SupportedCountry } from '@perawallet/wallet-core-card'
 
 import { getCountryName } from '../getCountryName'
 

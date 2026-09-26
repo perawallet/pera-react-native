@@ -14,7 +14,7 @@ import {
     VerificationState,
     useCardUserQuery,
     useRegistrationSettingsQuery,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { useLanguage } from '@hooks/useLanguage'
 import { getCountryName } from '../../utils/getCountryName'
 

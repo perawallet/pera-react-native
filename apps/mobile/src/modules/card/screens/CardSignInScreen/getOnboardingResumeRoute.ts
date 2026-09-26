@@ -15,7 +15,7 @@ import {
     OnboardingPhase,
     OnboardingStep,
     VerificationState,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type OnboardingResumeRoute = {

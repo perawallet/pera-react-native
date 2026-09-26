@@ -42,10 +42,10 @@ vi.mock('@react-navigation/native', async importOriginal => ({
     useIsFocused: () => mockIsFocused,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
+vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-chain-algorand/card')
-    >('@perawallet/wallet-core-chain-algorand/card')
+        typeof import('@perawallet/wallet-core-card')
+    >('@perawallet/wallet-core-card')
     return {
         ...actual,
         // The poll mechanics (give-up limits) are unit-tested in the card

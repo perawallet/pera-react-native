@@ -24,7 +24,7 @@ import {
     useSendEmailVerificationMutation,
     type EmailSendFormValues,
     type SupportedCountry,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { trackEvent, CardEvent, AnalyticsMetadataKey } from '@analytics'

@@ -16,7 +16,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     OnboardingNotVerifiedError,
     type SupportedCountry,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 
 const mockMutateAsync = vi.fn()
 let mockOnboardingId: string | null = 'mock-onboarding-id'
@@ -36,10 +36,10 @@ let mockIsKycRequired = false
 let mockIsRecordLoading = false
 const mockMarkServerRefused = vi.fn()
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
+vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-chain-algorand/card')
-    >('@perawallet/wallet-core-chain-algorand/card')
+        typeof import('@perawallet/wallet-core-card')
+    >('@perawallet/wallet-core-card')
     return {
         ...actual,
         useSubmitPersonalDetailsMutation: () => ({

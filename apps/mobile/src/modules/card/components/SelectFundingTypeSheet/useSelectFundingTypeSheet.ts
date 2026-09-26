@@ -11,10 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-    FundingType,
-    useCardStore,
-} from '@perawallet/wallet-core-chain-algorand/card'
+import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
 import {
     isLedgerAccount,
     useAllAccounts,

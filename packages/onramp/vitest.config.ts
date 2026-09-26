@@ -24,13 +24,14 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
-        passWithNoTests: true,
     },
     resolve: {
         conditions: ['default'],
-        // Resolved from source so vitest transforms them and the setup file's
-        // mocks apply; their installed dist would load react-native-mmkv first.
         alias: {
+            '@test-utils': path.resolve(
+                __dirname,
+                '../../extensions/platform/src/test-utils',
+            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',
@@ -38,6 +39,11 @@ export default defineConfig({
             '@perawallet/wallet-extension-platform-driver': path.resolve(
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
+            ),
+            // Source alias so tests don't require a pre-built dist.
+            '@perawallet/wallet-core-fee-delegation': path.resolve(
+                __dirname,
+                '../fee-delegation/src/index.ts',
             ),
         },
     },

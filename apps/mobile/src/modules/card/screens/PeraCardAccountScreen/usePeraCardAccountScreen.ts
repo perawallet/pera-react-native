@@ -12,10 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import {
-    useCardIssuance,
-    useCardStore,
-} from '@perawallet/wallet-core-chain-algorand/card'
+import { useCardIssuance, useCardStore } from '@perawallet/wallet-core-card'
 import type { AccountDisplayCard } from '@components/AccountDisplay'
 import {
     useAccountDrawerPickerKind,

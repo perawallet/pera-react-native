@@ -31,10 +31,8 @@ const {
 const mockBuildEnable = vi.fn()
 const mockBuildKill = vi.fn()
 const mockIsAutoDrawEnabled = vi.fn()
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => ({
-    ...(await vi.importActual<object>(
-        '@perawallet/wallet-core-chain-algorand/card',
-    )),
+vi.mock('@perawallet/wallet-core-card', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
     compileAutoDrawProgram,
     postDelegatorLsig,
     isKillswitchConfigured,

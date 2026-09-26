@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { TransactionStatus } from '@perawallet/wallet-core-chain-algorand/card'
+import { TransactionStatus } from '@perawallet/wallet-core-card'
 import { PWChip, type PWChipProps } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'

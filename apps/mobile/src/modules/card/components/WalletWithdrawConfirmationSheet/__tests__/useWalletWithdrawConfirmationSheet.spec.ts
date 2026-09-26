@@ -14,7 +14,7 @@ import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { CardWalletKind } from '@perawallet/wallet-core-chain-algorand/card'
+import { CardWalletKind } from '@perawallet/wallet-core-card'
 
 const mocks = vi.hoisted(() => ({
     withdrawMutateAsync: vi.fn(),
@@ -38,10 +38,8 @@ const wallet = {
     isWithdrawable: true,
 }
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-chain-algorand/card',
-    )
+vi.mock('@perawallet/wallet-core-card', async () => {
+    const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
         useWithdrawWalletBalanceMutation: (kind: string) => {

@@ -33,10 +33,8 @@ vi.mock('../../../hooks', () => ({
     useCardOwnerAccount: () => mocks.owner,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => ({
-    ...(await vi.importActual<object>(
-        '@perawallet/wallet-core-chain-algorand/card',
-    )),
+vi.mock('@perawallet/wallet-core-card', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
     useCardPendingWithdrawalQuery: () => ({
         pending: mocks.pending,
         waitTimeSeconds: 20,

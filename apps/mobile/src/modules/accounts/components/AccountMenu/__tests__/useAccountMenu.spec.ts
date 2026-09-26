@@ -54,7 +54,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', () => ({
+vi.mock('@perawallet/wallet-core-card', () => ({
     useCardSession: () => ({ isAuthenticated: mockCardState.isAuthenticated }),
     useCardStore: (
         selector: (state: {

@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { useCardStore } from '@perawallet/wallet-core-chain-algorand/card'
+import { useCardStore } from '@perawallet/wallet-core-card'
 import { useOnChainAccountInformationQuery } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {

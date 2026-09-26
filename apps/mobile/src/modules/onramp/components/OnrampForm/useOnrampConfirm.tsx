@@ -25,7 +25,7 @@ import {
     parseRampAmount,
     type RampPair,
     type RampQuote,
-} from '@perawallet/wallet-core-chain-algorand/onramp'
+} from '@perawallet/wallet-core-onramp'
 import {
     isConnectivityError,
     ZERO_DECIMAL,

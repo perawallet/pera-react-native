@@ -12,7 +12,7 @@
 
 /**
  * Build gate for the AutoDraw LogicSig template. The user signs a program
- * compiled from `packages/chain-algorand/src/card/api/escrow/autodraw-teal.ts`, and once
+ * compiled from `packages/card/src/api/escrow/autodraw-teal.ts`, and once
  * signed it cannot be revoked, so the template shipped in a release must be
  * the one whose SHA-256 is pinned in Bitrise (`CARD_AUTODRAW_TEMPLATE_HASH`).
  * The app repeats this check before signing; running it here turns a
@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const TEMPLATE_PATH = join(
     ROOT,
-    'packages/chain-algorand/src/card/api/escrow/autodraw-teal.ts',
+    'packages/card/src/api/escrow/autodraw-teal.ts',
 )
 const GENERATED_ENV_PATH = join(ROOT, 'packages/config/src/generated-env.ts')
 

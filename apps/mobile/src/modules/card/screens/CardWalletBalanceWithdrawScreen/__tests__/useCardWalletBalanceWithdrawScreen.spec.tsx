@@ -13,7 +13,7 @@
 import { renderHook, act, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { CardWalletKind } from '@perawallet/wallet-core-chain-algorand/card'
+import { CardWalletKind } from '@perawallet/wallet-core-card'
 
 const mockSuccessToast = vi.fn()
 const mockRequestSheet = vi.fn()
@@ -31,10 +31,8 @@ const rewardWallet = {
     isWithdrawable: true,
 }
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-chain-algorand/card',
-    )
+vi.mock('@perawallet/wallet-core-card', async () => {
+    const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
         useCardWalletBalanceQuery: () => ({

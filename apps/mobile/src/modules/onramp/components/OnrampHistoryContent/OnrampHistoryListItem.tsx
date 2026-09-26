@@ -13,7 +13,7 @@
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import type { RampHistoryItem } from '@perawallet/wallet-core-chain-algorand/onramp'
+import type { RampHistoryItem } from '@perawallet/wallet-core-onramp'
 import { useTheme } from '@rneui/themed'
 import { OnrampAssetPairIcon } from '../OnrampAssetPairIcon'
 import { OnrampOrderStatus } from '../OnrampOrderStatus'

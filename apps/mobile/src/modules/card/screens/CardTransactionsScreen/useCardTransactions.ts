@@ -17,7 +17,7 @@ import {
     StatementFormat,
     useCardTransactionsQuery,
     useExportCardStatementMutation,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
 import { shareFile } from '@utils/shareFile'
 import { useCardErrorToast } from '../../hooks'

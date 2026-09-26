@@ -12,7 +12,7 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { CardTransaction } from '@perawallet/wallet-core-chain-algorand/card'
+import type { CardTransaction } from '@perawallet/wallet-core-card'
 
 const mockState = vi.hoisted(() => ({
     routeId: 'row_1',
@@ -39,10 +39,8 @@ vi.mock('@react-navigation/native', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-chain-algorand/card',
-    )
+vi.mock('@perawallet/wallet-core-card', async () => {
+    const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
         useCardTransactionsQuery: () => ({

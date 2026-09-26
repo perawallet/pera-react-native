@@ -21,7 +21,7 @@ import {
     parseCurrencyDecimalsConfig,
     parseRampAmount,
     type RampToken,
-} from '@perawallet/wallet-core-chain-algorand/onramp'
+} from '@perawallet/wallet-core-onramp'
 import {
     RemoteConfigKeys,
     useRemoteConfig,

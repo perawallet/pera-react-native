@@ -24,10 +24,10 @@ let mockContactVerificationId: string | null = 'mock-contact-id'
 let mockCodeVerificationError: 'email' | 'phone' | null = null
 const mockSetCodeVerificationError = vi.fn()
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
+vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-chain-algorand/card')
-    >('@perawallet/wallet-core-chain-algorand/card')
+        typeof import('@perawallet/wallet-core-card')
+    >('@perawallet/wallet-core-card')
     return {
         ...actual,
         useSendPhoneVerificationMutation: () => ({

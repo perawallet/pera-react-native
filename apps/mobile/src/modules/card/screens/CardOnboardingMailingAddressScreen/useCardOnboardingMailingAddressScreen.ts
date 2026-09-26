@@ -19,7 +19,7 @@ import {
     useSubmitMailingAddressMutation,
     type MailingAddressFormValues,
     type SupportedUsState,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'

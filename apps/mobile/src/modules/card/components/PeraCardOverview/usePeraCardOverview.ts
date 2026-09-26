@@ -17,7 +17,7 @@ import {
     CardWalletKind,
     useCardWalletBalanceQuery,
     useCardTransactionsQuery,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import {
     useAccountAssetBalanceQuery,
     useSelectedAccountAddress,

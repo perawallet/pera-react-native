@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { AUTO_FUNDING_PER_TX_LIMIT_USD } from '@perawallet/wallet-core-chain-algorand/card'
+import { AUTO_FUNDING_PER_TX_LIMIT_USD } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     formatCurrency,

@@ -21,7 +21,7 @@ import {
  * the flow is signed off; on in dev & staging for testing. This flag only gates
  * the UI — the hard guarantee that no unpinned program is ever signed is the
  * template and program hash checks in `compileAutoDrawProgram`
- * (packages/chain-algorand/src/card), not this flag.
+ * (packages/card), not this flag.
  */
 export const useIsCardAutoFundingEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()

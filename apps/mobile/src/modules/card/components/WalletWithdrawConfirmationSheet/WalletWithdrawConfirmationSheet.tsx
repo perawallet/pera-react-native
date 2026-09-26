@@ -11,7 +11,7 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import type { CardWalletKind } from '@perawallet/wallet-core-chain-algorand/card'
+import type { CardWalletKind } from '@perawallet/wallet-core-card'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardConfirmationSheet } from '../CardConfirmationSheet'
 import { useWalletWithdrawConfirmationSheet } from './useWalletWithdrawConfirmationSheet'

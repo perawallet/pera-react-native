@@ -10,4 +10,65 @@
  limitations under the License
  */
 
-export * from '@perawallet/wallet-core-chain-algorand/card'
+export const name = '@perawallet/wallet-core-card'
+
+export * from './models'
+export * from './hooks'
+export * from './store'
+export * from './session'
+
+// Transport seam — lets the app swap in a mock/proxy transport (e.g. dev mocks
+// or a future all-proxy mode). Every endpoint calls `getCardTransport()`.
+export {
+    getCardTransport,
+    setCardTransport,
+    resetCardTransport,
+} from './api/transport/registry'
+export type {
+    CardTransport,
+    CardTransportRequest,
+    CardTransportResponse,
+} from './api/transport/types'
+
+// AutoDraw delegation helpers — the compile → sign → register leg, shared by
+// onboarding card creation and the post-onboarding funding-type switch.
+export {
+    compileAutoDrawProgram,
+    resolveEscrowChainConfig,
+    // Thrown when algod's compiled program doesn't match the pinned bytes.
+    // Exported so the funding-type flows can degrade to Manual with honest
+    // copy instead of a generic "please try again".
+    AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
+    type EscrowChainConfig,
+} from './api/escrow'
+export {
+    postDelegatorLsig,
+    type PostDelegatorLsigParams,
+} from './api/delegation'
+
+// API error normalization — lets screens attribute a Baanx failure to a field.
+export {
+    getCardApiError,
+    isConflictError,
+    isInvalidInputError,
+    isDuplicateError,
+    isUserAlreadyCreatedError,
+    isNotVerifiedError,
+} from './api/errors'
+export type { CardApiError } from './api/errors'
+
+// Card-creation failure types — screens branch on these to pick flow-specific
+// copy (the classes carry no user-facing wording of their own).
+export {
+    CardAccountLinkedElsewhereError,
+    CardCreateInProgressError,
+    CardCreateUnavailableError,
+    CardOwnershipProofRejectedError,
+    CardSetupIncompleteError,
+    CardIntegrityAttestationRequiredError,
+    CardUserUnavailableError,
+} from './api/card-creation'
+export { CardOrderNotVerifiedError } from './api/card'
+export { CardEscrowNotConfiguredError } from './api/escrow'
+export { OnboardingNotVerifiedError } from './api/errors'

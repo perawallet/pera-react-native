@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import { PASSWORD_RULES } from '@perawallet/wallet-core-chain-algorand/card'
+import { PASSWORD_RULES } from '@perawallet/wallet-core-card'
 import { PasswordRequirements } from '../PasswordRequirements'
 
 const ruleRow = (id: string) =>

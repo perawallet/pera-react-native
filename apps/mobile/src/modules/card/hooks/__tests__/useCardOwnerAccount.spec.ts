@@ -19,10 +19,8 @@ import {
 
 const mocks = vi.hoisted(() => ({ escrowCardOwner: null as string | null }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => ({
-    ...(await vi.importActual<object>(
-        '@perawallet/wallet-core-chain-algorand/card',
-    )),
+vi.mock('@perawallet/wallet-core-card', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
     useCardStore: (
         selector: (state: { escrowCardOwner: string | null }) => unknown,
     ) => selector({ escrowCardOwner: mocks.escrowCardOwner }),

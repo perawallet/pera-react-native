@@ -21,7 +21,7 @@ import {
     CardCreateUnavailableError,
     CardOwnershipProofRejectedError,
     CardSetupIncompleteError,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import {
     NoConnectionError,
     PeraNetworkError,

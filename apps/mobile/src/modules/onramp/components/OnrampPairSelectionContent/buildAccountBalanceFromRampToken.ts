@@ -20,7 +20,7 @@ import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import {
     rampTokenAssetId,
     type RampToken,
-} from '@perawallet/wallet-core-chain-algorand/onramp'
+} from '@perawallet/wallet-core-onramp'
 import { ALGO_ASSET_ID, type Nullable } from '@perawallet/wallet-core-shared'
 
 // RampToken carries no tier, so the known-safe listings are mapped here rather

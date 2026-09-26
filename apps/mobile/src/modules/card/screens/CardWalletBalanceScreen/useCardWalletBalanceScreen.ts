@@ -17,7 +17,7 @@ import {
     CardWalletKind,
     useCardWalletBalanceQuery,
     useCardWalletHistoryQuery,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { ZERO_DECIMAL } from '@perawallet/wallet-core-shared'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'

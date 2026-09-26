@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    MELD_PROVIDERS,
-    type RampQuote,
-} from '@perawallet/wallet-core-chain-algorand/onramp'
+import { MELD_PROVIDERS, type RampQuote } from '@perawallet/wallet-core-onramp'
 
 // XO quotes have no first-class "service provider" name, so we fall back to the
 // payment method name and finally a hardcoded "Exodus" (XO is Exodus-backed).

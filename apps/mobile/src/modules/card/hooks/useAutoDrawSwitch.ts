@@ -18,7 +18,7 @@ import {
     resolveEscrowChainConfig,
     useKillswitchAutoDraw,
     isKillswitchConfigured,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     encodeDelegatedLsigAccount,

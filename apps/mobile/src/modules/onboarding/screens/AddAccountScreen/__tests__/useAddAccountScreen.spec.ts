@@ -144,7 +144,7 @@ vi.mock('react-i18next', async () => {
 })
 
 const mockUseCardSession = vi.fn(() => ({ isAuthenticated: false }))
-vi.mock('@perawallet/wallet-core-chain-algorand/card', () => ({
+vi.mock('@perawallet/wallet-core-card', () => ({
     useCardSession: () => mockUseCardSession(),
 }))
 

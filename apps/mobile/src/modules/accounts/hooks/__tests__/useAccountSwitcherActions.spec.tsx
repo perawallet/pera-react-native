@@ -35,7 +35,7 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mocks.requestSheet }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', () => ({
+vi.mock('@perawallet/wallet-core-card', () => ({
     hasCardSession: () => mocks.hasCardSession(),
     useCardStore: { getState: () => mocks.cardState },
 }))

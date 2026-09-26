@@ -22,7 +22,7 @@ import {
     type RampPair,
     type XoOrder,
     type XoQuote,
-} from '@perawallet/wallet-core-chain-algorand/onramp'
+} from '@perawallet/wallet-core-onramp'
 import {
     ALGO_ASSET_NAME,
     type Network,

@@ -20,7 +20,7 @@ import {
     toOnrampUserMessage,
     type OnrampStatus,
     type RampHistoryItem,
-} from '@perawallet/wallet-core-chain-algorand/onramp'
+} from '@perawallet/wallet-core-onramp'
 import {
     formatDatetime,
     isConnectivityError,

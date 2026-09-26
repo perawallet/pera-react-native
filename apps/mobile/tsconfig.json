@@ -57,11 +57,8 @@
       "@packages/*": [
         "../../packages/*"
       ],
-      "@perawallet/wallet-core-chain-algorand/card/test-handlers": [
-        "../../packages/chain-algorand/src/card/test-handlers.ts"
-      ],
-      "@perawallet/wallet-core-chain-algorand/onramp/test-handlers": [
-        "../../packages/chain-algorand/src/onramp/test-handlers.ts"
+      "@perawallet/wallet-core-card/test-handlers": [
+        "../../packages/card/src/test-handlers.ts"
       ],
       "@perawallet/wallet-core-currencies/test-handlers": [
         "../../packages/currencies/src/test-handlers.ts"
@@ -107,6 +104,9 @@
       ],
       "@perawallet/wallet-core-banners/test-handlers": [
         "../../packages/banners/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-onramp/test-handlers": [
+        "../../packages/onramp/src/test-handlers.ts"
       ],
       "@perawallet/wallet-core-nfd/test-handlers": [
         "../../packages/nfd/src/test-handlers.ts"

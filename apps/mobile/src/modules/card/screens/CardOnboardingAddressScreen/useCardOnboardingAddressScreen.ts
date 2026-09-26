@@ -30,7 +30,7 @@ import {
     type AddressInput,
     type SupportedCountry,
     type SupportedUsState,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'

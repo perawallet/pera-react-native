@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
-import type { SupportedUsState } from '@perawallet/wallet-core-chain-algorand/card'
+import type { SupportedUsState } from '@perawallet/wallet-core-card'
 import {
     PWButton,
     PWFlatList,

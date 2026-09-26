@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { CardImageCustomCss } from '@perawallet/wallet-core-chain-algorand/card'
+import type { CardImageCustomCss } from '@perawallet/wallet-core-card'
 
 /**
  * Brand colors for the Baanx-rendered secure card image, sampled from

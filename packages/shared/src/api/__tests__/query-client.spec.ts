@@ -612,7 +612,7 @@ describe('queryClient', () => {
         // Importing this module must not call getNetworkConfig(): several
         // consuming packages' tests mock it as a bare vi.fn() with no
         // default return, and building eagerly at import time crashes those
-        // suites during collection (see chain-algorand's card lsig.spec.ts).
+        // suites during collection (see packages/card's lsig.spec.ts).
         expect(mockKy.create).not.toHaveBeenCalled()
 
         mockJson.mockResolvedValue({ status: 'ok' })

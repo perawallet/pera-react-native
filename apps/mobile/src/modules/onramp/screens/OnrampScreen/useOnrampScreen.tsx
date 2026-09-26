@@ -20,7 +20,7 @@ import {
     type RampPair,
     type RampRegion,
     type RampToken,
-} from '@perawallet/wallet-core-chain-algorand/onramp'
+} from '@perawallet/wallet-core-onramp'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'

@@ -32,10 +32,10 @@ const mockSetOnboardingStep = vi.fn()
 const mockEscrowCardAddress: { value: string | null } = { value: 'ESCROW_CARD' }
 const mockSendOtpMutateAsync = vi.fn()
 const mockRestoreMutateAsync = vi.fn()
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
+vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-chain-algorand/card')
-    >('@perawallet/wallet-core-chain-algorand/card')
+        typeof import('@perawallet/wallet-core-card')
+    >('@perawallet/wallet-core-card')
     return {
         ...actual,
         useCardLoginMutation: () => ({

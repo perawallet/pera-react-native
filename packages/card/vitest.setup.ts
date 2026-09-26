@@ -11,9 +11,11 @@
  */
 
 import { vi } from 'vitest'
+// Side-effect import: patches `BigInt.prototype.microAlgo()` etc. globally so
+// the Killswitch tx builders work under test even when the algokit-utils
+// module is otherwise mocked per-test (the prototype patch outlives the mock).
+import '@algorandfoundation/algokit-utils'
 
-// The blockchain barrel reaches the platform provider, whose storage is a
-// native module that the test runtime cannot load.
 const store = new Map<string, string>()
 
 const keyValueStorage = {

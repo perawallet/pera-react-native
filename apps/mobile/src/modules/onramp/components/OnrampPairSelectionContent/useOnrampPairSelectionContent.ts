@@ -20,7 +20,7 @@ import {
     useRampPairsQuery,
     rampTokenAssetId,
     type RampToken,
-} from '@perawallet/wallet-core-chain-algorand/onramp'
+} from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 

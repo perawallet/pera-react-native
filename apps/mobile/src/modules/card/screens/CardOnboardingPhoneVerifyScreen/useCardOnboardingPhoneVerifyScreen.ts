@@ -17,7 +17,7 @@ import {
     useCardStore,
     useSendPhoneVerificationMutation,
     useVerifyPhoneMutation,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'

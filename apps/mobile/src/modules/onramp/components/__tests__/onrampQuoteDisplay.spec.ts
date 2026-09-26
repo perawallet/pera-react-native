@@ -12,10 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type {
-    MeldQuote,
-    XoQuote,
-} from '@perawallet/wallet-core-chain-algorand/onramp'
+import type { MeldQuote, XoQuote } from '@perawallet/wallet-core-onramp'
 import { getOnrampDestinationCurrency } from '../onrampQuoteDisplay'
 
 const meldQuote: MeldQuote = {

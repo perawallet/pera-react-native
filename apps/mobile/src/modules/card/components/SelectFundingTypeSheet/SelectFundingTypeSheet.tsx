@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { FundingType } from '@perawallet/wallet-core-chain-algorand/card'
+import { FundingType } from '@perawallet/wallet-core-card'
 import { PWButton, PWText, PWView } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'

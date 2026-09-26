@@ -14,7 +14,7 @@ import {
     type CardTransaction,
     TransactionSign,
     TransactionStatus,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     CardTransactionKind,

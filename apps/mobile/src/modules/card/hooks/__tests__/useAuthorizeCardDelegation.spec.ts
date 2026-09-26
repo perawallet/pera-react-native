@@ -33,7 +33,7 @@ vi.mock('@components/ConfirmActionContent', () => ({
     ConfirmActionContent: () => null,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', () => ({
+vi.mock('@perawallet/wallet-core-card', () => ({
     AUTO_FUNDING_PER_TX_LIMIT_USD: new Decimal(400),
 }))
 vi.mock('@perawallet/wallet-core-shared', () => ({

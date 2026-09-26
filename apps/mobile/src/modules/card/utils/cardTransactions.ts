@@ -13,7 +13,7 @@
 import {
     type CardTransaction,
     TransactionSign,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 
 export type CardTransactionSection<T = CardTransaction> = {
     /** Stable `YYYY-MM` key for the month. */

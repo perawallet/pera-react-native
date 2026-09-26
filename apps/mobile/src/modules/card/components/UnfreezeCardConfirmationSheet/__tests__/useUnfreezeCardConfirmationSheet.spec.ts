@@ -37,10 +37,8 @@ const mutationResult = (
     reset: vi.fn(),
 })
 
-vi.mock('@perawallet/wallet-core-chain-algorand/card', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-chain-algorand/card',
-    )
+vi.mock('@perawallet/wallet-core-card', async () => {
+    const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
         useUnfreezeCardMutation: () =>

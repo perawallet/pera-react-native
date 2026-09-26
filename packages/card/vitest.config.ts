@@ -24,22 +24,9 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
-        passWithNoTests: true,
     },
     resolve: {
         conditions: ['default'],
-        // Resolved from source so vitest transforms them and the setup file's
-        // mocks apply; their installed dist would load react-native-mmkv first.
-        alias: {
-            '@perawallet/wallet-extension-provider': path.resolve(
-                __dirname,
-                '../../extensions/provider/src/index.ts',
-            ),
-            '@perawallet/wallet-extension-platform-driver': path.resolve(
-                __dirname,
-                '../../extensions/platform-driver/src/index.ts',
-            ),
-        },
     },
     ...poolConfig,
 })

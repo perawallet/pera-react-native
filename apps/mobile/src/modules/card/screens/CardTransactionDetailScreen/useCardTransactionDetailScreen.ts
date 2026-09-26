@@ -15,7 +15,7 @@ import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     type CardTransaction,
     useCardTransactionsQuery,
-} from '@perawallet/wallet-core-chain-algorand/card'
+} from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'

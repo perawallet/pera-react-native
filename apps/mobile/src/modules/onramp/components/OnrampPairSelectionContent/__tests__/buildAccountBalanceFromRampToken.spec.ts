@@ -14,7 +14,7 @@
 
 import { Decimal } from 'decimal.js'
 import { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
-import type { RampToken } from '@perawallet/wallet-core-chain-algorand/onramp'
+import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { buildAccountBalanceFromRampToken } from '../buildAccountBalanceFromRampToken'
 
 const makeToken = (overrides: Partial<RampToken> = {}): RampToken => ({
