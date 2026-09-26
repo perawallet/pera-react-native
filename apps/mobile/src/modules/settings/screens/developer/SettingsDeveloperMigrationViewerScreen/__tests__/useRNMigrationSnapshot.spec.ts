@@ -127,7 +127,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: mkStore(stores.device),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/swaps', () => ({
+vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapsStore: mkStore(stores.swaps),
 }))
 

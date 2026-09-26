@@ -15,7 +15,7 @@ import {
     useSwaps,
     useTopPairsQuery,
     type TopPairItem,
-} from '@perawallet/wallet-core-chain-algorand/swaps'
+} from '@perawallet/wallet-core-swaps'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 

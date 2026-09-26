@@ -21,7 +21,7 @@ import {
     apiSlippageToPercent,
     formatSwapRate,
     type SwapQuote,
-} from '@perawallet/wallet-core-chain-algorand/swaps'
+} from '@perawallet/wallet-core-swaps'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 
 export type PriceImpactLevel = 'none' | 'low' | 'medium' | 'high'

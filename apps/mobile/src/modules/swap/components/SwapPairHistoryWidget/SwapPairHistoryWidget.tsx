@@ -18,7 +18,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import type { SwapDistinctPairItem } from '@perawallet/wallet-core-chain-algorand/swaps'
+import type { SwapDistinctPairItem } from '@perawallet/wallet-core-swaps'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapPairChip } from './SwapPairChip'
 import { useSwapPairHistoryWidget } from './useSwapPairHistoryWidget'

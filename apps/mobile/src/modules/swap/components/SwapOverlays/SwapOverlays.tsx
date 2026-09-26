@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import { AppState } from 'react-native'
-import { useSwapCosignResolver } from '@perawallet/wallet-core-chain-algorand/swaps'
+import { useSwapCosignResolver } from '@perawallet/wallet-core-swaps'
 import { useErrorToast } from '@hooks/useErrorToast'
 
 /**

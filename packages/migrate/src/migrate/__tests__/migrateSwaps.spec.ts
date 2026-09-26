@@ -21,7 +21,7 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
     useSettingsStore: { getState: () => settingsMock },
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/swaps', () => ({
+vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapsStore: { getState: () => swapsMock },
 }))
 

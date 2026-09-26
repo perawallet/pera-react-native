@@ -12,7 +12,7 @@
 
 import { PWSkeleton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { SwapQuote } from '@perawallet/wallet-core-chain-algorand/swaps'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import {
     useSwapQuoteDetails,
     type PriceImpactLevel,

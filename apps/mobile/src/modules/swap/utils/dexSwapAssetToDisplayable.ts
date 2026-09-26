@@ -11,7 +11,7 @@
  */
 
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
-import type { DexSwapAsset } from '@perawallet/wallet-core-chain-algorand/swaps'
+import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 
 export const dexSwapAssetToDisplayable = (
     asset: DexSwapAsset,

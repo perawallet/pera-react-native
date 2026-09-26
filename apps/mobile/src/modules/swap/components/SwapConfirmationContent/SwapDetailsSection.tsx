@@ -12,7 +12,7 @@
 
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { SwapQuote } from '@perawallet/wallet-core-chain-algorand/swaps'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { SwapProviderDisplay } from '../SwapProviderDisplay'
 import { DetailRow } from './DetailRow'
 import { useStyles } from './styles'

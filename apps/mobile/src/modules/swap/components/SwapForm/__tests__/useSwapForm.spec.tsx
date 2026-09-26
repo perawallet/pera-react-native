@@ -52,15 +52,13 @@ let mockFromAsset = '0'
 let mockToAsset = '31566704'
 let mockSlippage: Nullable<string> = null
 
-vi.mock('@perawallet/wallet-core-chain-algorand/swaps', async () => ({
+vi.mock('@perawallet/wallet-core-swaps', async () => ({
     // The real selection rule, by path: the package barrel drags in stores
     // the global shared mock can't satisfy.
     pickBestByAmountOut: (
         await vi.importActual<
-            typeof import('../../../../../../../../packages/chain-algorand/src/swaps/utils/swapQuoteHelpers')
-        >(
-            '../../../../../../../../packages/chain-algorand/src/swaps/utils/swapQuoteHelpers',
-        )
+            typeof import('../../../../../../../../packages/swaps/src/utils/swapQuoteHelpers')
+        >('../../../../../../../../packages/swaps/src/utils/swapQuoteHelpers')
     ).pickBestByAmountOut,
     useSwaps: () => ({
         fromAsset: mockFromAsset,

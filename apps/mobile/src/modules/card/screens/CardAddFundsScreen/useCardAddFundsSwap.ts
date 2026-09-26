@@ -18,7 +18,7 @@ import {
     formatSwapRate,
     pickBestByAmountOut,
     type SwapQuote,
-} from '@perawallet/wallet-core-chain-algorand/swaps'
+} from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useSwapExecution, useSwapQuotes } from '@modules/swap'
 

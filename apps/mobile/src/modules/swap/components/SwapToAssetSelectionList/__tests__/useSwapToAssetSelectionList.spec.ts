@@ -49,7 +49,7 @@ vi.mock('@tanstack/react-query', () => ({
     useQueryClient: mockUseQueryClient,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/swaps', () => ({
+vi.mock('@perawallet/wallet-core-swaps', () => ({
     useAvailableAssetsQuery: mockUseAvailableAssetsQuery,
 }))
 
