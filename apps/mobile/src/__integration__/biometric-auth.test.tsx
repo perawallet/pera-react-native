@@ -205,6 +205,50 @@ describe('Flow: Biometric authentication lifecycle', () => {
     )
 
     it(
+        'Given a blob from before OS-bound keys existed and a PIN the user no longer remembers, when the lock screen prompts, then the biometric ceremony unlocks and finishes the migration',
+        async () => {
+            const { result: pinHook } = renderHook(() => usePinCode())
+            await act(async () => {
+                await pinHook.current.savePin(TEST_PIN)
+            })
+            await commitSecret({
+                id: LEGACY_BIOMETRIC_BLOB_KEY_ID,
+                bytes: new TextEncoder().encode('{"legacy":true}'),
+            })
+
+            const { result } = renderHook(() => useBiometrics())
+            await waitFor(() => {
+                expect(hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)).toBe(false)
+            })
+
+            let isOffered: Optional<boolean>
+            await act(async () => {
+                isOffered = await result.current.checkBiometricUnlockAvailable()
+            })
+            expect(isOffered).toBe(true)
+
+            let outcome: Optional<BiometricUnlockOutcome>
+            await act(async () => {
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
+            })
+            expect(outcome).toEqual({ kind: 'ok' })
+            expect(hasSecret(BIOMETRIC_BLOB_KEY_ID)).toBe(true)
+            expect(result.current.isEnabled).toBe(true)
+
+            // Migrated: the next unlock takes the regular path, not a re-arm.
+            mockedBiometrics().armBiometricBinding.mockClear()
+            await act(async () => {
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
+            })
+            expect(outcome).toEqual({ kind: 'ok' })
+            expect(
+                mockedBiometrics().armBiometricBinding,
+            ).not.toHaveBeenCalled()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
         'Given biometrics is enabled, when the sensor is temporarily unavailable, then the keystore record survives and unlock recovers by itself',
         async () => {
             const { result } = renderHook(() => useBiometrics())
