@@ -69,6 +69,7 @@ vi.mock('../useKMSServices', () => ({
         },
         withExportedKey: async (
             keyId: string,
+            _domain: string,
             handler: (keyData: any) => any,
         ) => {
             const keyData = await mockKeyStoreExport(keyId)

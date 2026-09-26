@@ -39,6 +39,13 @@ export class UnsupportedBackupAccountTypeError extends Error {
     }
 }
 
+export class BackupSyncAbortedError extends Error {
+    constructor() {
+        super('Backup sync aborted')
+        this.name = 'BackupSyncAbortedError'
+    }
+}
+
 /**
  * How far a review action got:
  *
@@ -131,6 +138,9 @@ export type SyncEngineDeps = {
     ) => Promise<SerializedAccount | null>
     /** Decrypted remote accounts → wallet (import/update). */
     importAccounts: SyncImportFn
+    /** True once `stop()` or the app lock lands mid-run; the engine then throws
+     *  `BackupSyncAbortedError` before its next seed read, remote apply or push. */
+    isAborted: () => boolean
     /** Snapshot of local contacts to serialize/push. */
     listContacts: () => Contact[]
     /** Decrypted remote contacts → contacts store (insert or update). */

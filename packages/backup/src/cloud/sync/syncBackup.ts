@@ -20,7 +20,12 @@ import { buildLocalItems } from './buildLocalItems'
 import { pushDirty } from './pushDirty'
 import { fetchDeltaOrRebuild } from './rebuildFromManifest'
 import { reconcile } from './reconcile'
+import { BackupSyncAbortedError } from './types'
 import type { LocalSnapshot, SyncEngineDeps } from './types'
+
+const abortIfStopped = (deps: SyncEngineDeps): void => {
+    if (deps.isAborted()) throw new BackupSyncAbortedError()
+}
 
 const hasPendingWork = (state: SyncState): boolean =>
     Object.values(state.items).some(i => i.isDirty || i.pendingDelete)
@@ -52,10 +57,10 @@ export const syncBackup = async (
     now: number = Date.now(),
 ): Promise<SyncState> => {
     // 1. Reconcile local first so the short-circuit below is accurate.
-    const accounts = await buildLocalItems(
-        deps.listAccounts(),
-        deps.serializeAccount,
-    )
+    const accounts = await buildLocalItems(deps.listAccounts(), account => {
+        abortIfStopped(deps)
+        return deps.serializeAccount(account)
+    })
     if (accounts.skipped > 0) {
         logger.warn('syncBackup: accounts skipped, deletions deferred', {
             skipped: accounts.skipped,
@@ -107,6 +112,7 @@ export const syncBackup = async (
         next,
         async () => manifest,
     )
+    abortIfStopped(deps)
     next = await applyDeltas({
         state: next,
         deltas,
@@ -123,6 +129,7 @@ export const syncBackup = async (
     })
 
     // 5. Push local changes (use the freshly-built local items).
+    abortIfStopped(deps)
     next = await pushDirty({
         state: next,
         localItems: local.items,
@@ -131,6 +138,7 @@ export const syncBackup = async (
             backupId: deps.backupId,
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,
+            isAborted: deps.isAborted,
             batchUpsertItems,
             deleteItem,
         },

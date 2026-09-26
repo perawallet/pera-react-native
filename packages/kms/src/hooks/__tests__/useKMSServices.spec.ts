@@ -17,12 +17,27 @@ import type { Key } from '@algorandfoundation/keystore-core'
 import { useKMSService, checkAccess } from '../useKMSServices'
 import { AccessControlPermission } from '../../models'
 import { SeedScheme } from '../../constants'
-import { KeyAccessError } from '../../errors'
+import { KeyAccessError, KeyNotFoundError } from '../../errors'
 
 const mockKeyStoreRemove = vi.fn()
 const mockKeyStoreImport = vi.fn()
 const mockKeyStoreSign = vi.fn()
 const mockKeyStoreExport = vi.fn()
+const keystoreKeys: { value: Key[] } = { value: [] }
+
+const makeKey = (
+    acl?: { domains: string[]; permissions: string[] }[],
+    id = 'key-1',
+): Key => ({
+    id,
+    type: 'seed',
+    algorithm: 'raw',
+    extractable: true,
+    metadata: {
+        scheme: SeedScheme.Algo25,
+        pera: acl !== undefined ? { acl } : {},
+    },
+})
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -35,6 +50,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             },
         },
     }),
+    getKeystoreStore: () => ({ state: { keys: keystoreKeys.value } }),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -71,19 +87,6 @@ describe('useKMSService', () => {
     })
 
     describe('checkAccess', () => {
-        const makeKey = (
-            acl?: { domains: string[]; permissions: string[] }[],
-        ): Key => ({
-            id: 'key-1',
-            type: 'seed',
-            algorithm: 'raw',
-            extractable: true,
-            metadata: {
-                scheme: SeedScheme.Algo25,
-                pera: acl !== undefined ? { acl } : {},
-            },
-        })
-
         test('allows access when ACL grants ReadPrivate for domain', () => {
             const key = makeKey([
                 {
@@ -165,6 +168,47 @@ describe('useKMSService', () => {
     })
 
     describe('withExportedKey', () => {
+        beforeEach(() => {
+            keystoreKeys.value = [
+                makeKey(
+                    [
+                        {
+                            domains: ['test-domain'],
+                            permissions: [AccessControlPermission.ReadPrivate],
+                        },
+                    ],
+                    'ks-key-1',
+                ),
+            ]
+        })
+
+        test('refuses a domain the key ACL does not grant', async () => {
+            const { result } = renderHook(() => useKMSService())
+
+            await expect(
+                result.current.withExportedKey(
+                    'ks-key-1',
+                    'other-domain',
+                    () => 'done',
+                ),
+            ).rejects.toThrow(KeyAccessError)
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
+        })
+
+        test('refuses an id the keystore snapshot does not hold', async () => {
+            keystoreKeys.value = []
+            const { result } = renderHook(() => useKMSService())
+
+            await expect(
+                result.current.withExportedKey(
+                    'ks-key-1',
+                    'test-domain',
+                    () => 'done',
+                ),
+            ).rejects.toThrow(KeyNotFoundError)
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
+        })
+
         test('exports key, passes it to handler, and returns result', async () => {
             const privateKey = new Uint8Array(64).fill(2)
             const mockKeyData = {
@@ -179,6 +223,7 @@ describe('useKMSService', () => {
             await act(async () => {
                 handlerResult = await result.current.withExportedKey(
                     'ks-key-1',
+                    'test-domain',
                     keyData => keyData.publicKey!,
                 )
             })
@@ -198,7 +243,11 @@ describe('useKMSService', () => {
             const { result } = renderHook(() => useKMSService())
 
             await act(async () => {
-                await result.current.withExportedKey('ks-key-1', () => 'done')
+                await result.current.withExportedKey(
+                    'ks-key-1',
+                    'test-domain',
+                    () => 'done',
+                )
             })
 
             expect(privateKey.every(byte => byte === 0)).toBe(true)
@@ -217,9 +266,13 @@ describe('useKMSService', () => {
 
             await expect(
                 act(async () => {
-                    await result.current.withExportedKey('ks-key-1', () => {
-                        throw new Error('handler failed')
-                    })
+                    await result.current.withExportedKey(
+                        'ks-key-1',
+                        'test-domain',
+                        () => {
+                            throw new Error('handler failed')
+                        },
+                    )
                 }),
             ).rejects.toThrow('handler failed')
 
@@ -241,6 +294,7 @@ describe('useKMSService', () => {
             await act(async () => {
                 mnemonic = await result.current.withExportedKey(
                     'ks-key-1',
+                    'test-domain',
                     async keyData => {
                         return keyData.metadata?.mnemonic as string
                     },

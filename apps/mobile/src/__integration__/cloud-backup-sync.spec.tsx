@@ -101,6 +101,7 @@ const setupSyncedBackup = async ({
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,
         resolveHd: hdHook ? hdHook.current : async () => null,
+        isLocked: () => false,
     })
 
     return {

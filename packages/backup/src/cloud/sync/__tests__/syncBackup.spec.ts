@@ -37,12 +37,14 @@ import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
     BackupItemStatus,
     BackupItemType,
+    DeltaOperation,
     accountItemKey,
     contactItemKey,
     createEmptySyncState,
 } from '../../models'
 import { serializeAccountItems } from '../serializeAccountItems'
 import { syncBackup } from '../syncBackup'
+import { BackupSyncAbortedError } from '../types'
 import { canonicalJson, contentHash } from '../canonicalize'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
@@ -65,6 +67,7 @@ const deps = () => ({
     hashAddress,
     listAccounts: () => [watch],
     listContacts: () => [],
+    isAborted: () => false,
     serializeAccount: async (a: WalletAccount) =>
         serializeAccountItems(a, { updatedAt: 1, secrets: null, hashAddress }),
     importAccounts: vi.fn(async () => ({
@@ -325,6 +328,94 @@ describe('syncBackup', () => {
 
         expect(next.lastSyncResult).toBe('SUCCESS')
         expect(batchUpsertItems).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops reading account keys as soon as a stop lands', async () => {
+        const second: WalletAccount = { ...watch, id: '2', address: 'W2' }
+        let stopped = false
+        const serializeAccount = vi.fn(async (a: WalletAccount) => {
+            stopped = true
+            return serializeAccountItems(a, {
+                updatedAt: 1,
+                secrets: null,
+                hashAddress,
+            })
+        })
+
+        await expect(
+            syncBackup(
+                {
+                    ...deps(),
+                    listAccounts: () => [watch, second],
+                    serializeAccount,
+                    isAborted: () => stopped,
+                },
+                createEmptySyncState('b'),
+            ),
+        ).rejects.toThrow(BackupSyncAbortedError)
+
+        expect(serializeAccount).toHaveBeenCalledTimes(1)
+    })
+
+    it('drops the push when a stop lands after the accounts are serialized', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g5',
+            lastSeq: 0,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        let stopped = false
+
+        await expect(
+            syncBackup(
+                {
+                    ...deps(),
+                    serializeAccount: async (a: WalletAccount) => {
+                        stopped = true
+                        return serializeAccountItems(a, {
+                            updatedAt: 1,
+                            secrets: null,
+                            hashAddress,
+                        })
+                    },
+                    isAborted: () => stopped,
+                },
+                createEmptySyncState('b'),
+            ),
+        ).rejects.toThrow(BackupSyncAbortedError)
+
+        expect(batchUpsertItems).not.toHaveBeenCalled()
+    })
+
+    it('imports nothing when a stop lands during the delta fetch', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g6',
+            lastSeq: 1,
+            items: {},
+        })
+        let stopped = false
+        fetchDelta.mockImplementationOnce(async () => {
+            stopped = true
+            return [
+                {
+                    seq: 1,
+                    key: 'accounts/R',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'h',
+                },
+            ]
+        })
+        const stoppable = { ...deps(), isAborted: () => stopped }
+
+        await expect(
+            syncBackup(stoppable, createEmptySyncState('b')),
+        ).rejects.toThrow(BackupSyncAbortedError)
+
+        expect(readItems).not.toHaveBeenCalled()
+        expect(stoppable.importAccounts).not.toHaveBeenCalled()
     })
 
     it('pushes local contacts alongside accounts', async () => {
