@@ -10,40 +10,4 @@
  limitations under the License
  */
 
-export {
-    mockCalculatePeraFee,
-    mockCalculateSwapAmount,
-    mockCreateQuotes,
-    type MockCalculatePeraFeeParams,
-    type MockCalculateSwapAmountParams,
-    type MockCreateQuotesParams,
-} from './api/quotes/msw-handlers'
-
-export {
-    mockSwapProviders,
-    mockTopPairs,
-    type MockSwapProvidersParams,
-    type MockTopPairsParams,
-} from './api/providers/msw-handlers'
-
-export {
-    mockUpdateSwapStatus,
-    type MockUpdateSwapStatusParams,
-} from './api/swaps/msw-handlers'
-
-export {
-    mockAvailableAssets,
-    type MockAvailableAssetsParams,
-} from './api/available-assets/msw-handlers'
-
-export {
-    mockPrepareTransactions,
-    type MockPrepareTransactionsParams,
-} from './api/transactions/msw-handlers'
-
-export {
-    mockSwapHistory,
-    mockDistinctPairsHistory,
-    type MockSwapHistoryParams,
-    type MockDistinctPairsHistoryParams,
-} from './api/history/msw-handlers'
+export * from '@perawallet/wallet-core-chain-algorand/test-handlers'
