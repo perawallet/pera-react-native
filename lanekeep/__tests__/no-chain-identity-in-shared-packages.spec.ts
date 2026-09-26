@@ -14,6 +14,8 @@ const FIXTURES =
 // Debt the chain-split moves out of shared packages. Remove an entry when its
 // line goes; flip the rule to `error` when the list is empty.
 const KNOWN_OFFENDERS: readonly string[] = [
+    "packages/card/src/api/delegation/endpoints.ts: `'algorand'` is a chain id literal in a shared package",
+    "packages/card/src/api/delegation/endpoints.ts: `'algorand'` is a chain id literal in a shared package",
     "packages/walletconnect/src/shared/deeplink.ts: `'algorand'` is a chain id literal in a shared package",
     "packages/walletconnect/src/v2/caip.ts: `'algorand'` is a chain id literal in a shared package",
 ]
@@ -42,6 +44,16 @@ describe('pera/no-chain-identity-in-shared-packages', () => {
         expect(
             found.filter(v => v.file.endsWith('chain-identity.good.ts')),
         ).toEqual([])
+    })
+
+    it('scans the product packages that stay generic', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v => v.file.endsWith('chain-identity.product.ts')),
+            ),
+        ).toEqual(['chain-identity.product.ts:8'])
     })
 
     it('leaves packages outside the shared list alone', async () => {

@@ -22,6 +22,18 @@ const SHARED_PACKAGES = [
     'background',
     'connections',
     'walletconnect',
+    // Product packages that keep their generic code here and reach the chain
+    // through an adapter. asa-inbox and fee-delegation move whole, so they're out.
+    'swaps',
+    'card',
+    'onramp',
+    'nfd',
+    'staking',
+    'dapp',
+    'multisig',
+    'ledger',
+    'backup',
+    'migrate',
 ]
 
 const IDENTITY_PROPS = '"chainId" "family"'
@@ -47,11 +59,16 @@ const ALLOWED: readonly Allowed[] = [
         text: 'event.params.chainId !== activeChainId',
         reason: "WalletConnect's chainId is a CAIP-2 string, not a ChainId.",
     },
+    {
+        file: 'packages/migrate/src/migrate/migrateWalletConnect.ts',
+        text: 'fields.chainId != null',
+        reason: "A legacy WalletConnect v1 session's chainId is its numeric chain id, not a ChainId.",
+    },
 ]
 
 export default defineRule({
     id: 'pera/no-chain-identity-in-shared-packages',
-    // Existing chain literals in walletconnect move to the chain package
+    // Existing chain literals in walletconnect and card move to the chain package
     // before this can block; the spec pins them so nothing new joins them.
     severity: 'warn',
     card: {
