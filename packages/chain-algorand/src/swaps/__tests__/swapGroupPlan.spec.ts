@@ -17,7 +17,7 @@ import type {
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import type { TransactionGroup } from '../../models'
+import type { TransactionGroup } from '@perawallet/wallet-core-swaps'
 import { buildGroupPlans, scatterSigned } from '../swapGroupPlan'
 
 vi.mock('@perawallet/wallet-core-shared', () => ({

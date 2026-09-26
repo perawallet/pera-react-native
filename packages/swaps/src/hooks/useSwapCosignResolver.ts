@@ -11,10 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
-import {
-    useAlgorandClient,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
 import {
@@ -30,11 +27,11 @@ import {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
     setSubmissionSettledHandler,
-    submitRawSignedTransactionGroup,
     useHandoffResolver,
     type TerminalHandoffOutcome,
 } from '@perawallet/wallet-core-signing'
 import type { SwapStatusUpdateRequest } from '../api'
+import { swapAdapterFor } from '../chain-adapter'
 import type { SwapHandoffRecord } from '../models'
 import { useSwapHandoffStore } from '../store'
 import { resolveSwapHandoffOutcome } from '../utils'
@@ -180,7 +177,6 @@ export const useSwapCosignResolver = ({
 }: UseSwapCosignResolverArgs): void => {
     const { network } = useNetwork()
     const deviceId = useDeviceID(network)
-    const algorandClient = useAlgorandClient()
     const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
     const { markConfirmed } = useMarkSignRequestsConfirmedMutation()
 
@@ -251,7 +247,10 @@ export const useSwapCosignResolver = ({
                 record: handoff,
                 deps: {
                     submitGroup: bytes =>
-                        submitRawSignedTransactionGroup(algorandClient, bytes),
+                        swapAdapterFor(handoff.network).submitSignedGroup(
+                            handoff.network,
+                            bytes,
+                        ),
                     markSubmitted: txIds =>
                         markHandoffSubmitted(handoff.signRequestId, txIds),
                     decodeBase64: decodeFromBase64,
@@ -282,7 +281,6 @@ export const useSwapCosignResolver = ({
             })
         },
         [
-            algorandClient,
             deviceId,
             updateSwapStatus,
             markConfirmed,

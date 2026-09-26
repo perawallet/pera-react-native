@@ -16,36 +16,34 @@ import {
     type PeraDisplayableTransaction,
     type PeraSignedTransaction,
     type PeraTransaction,
-    type useAlgorandClient,
+    type getAlgorandClient,
 } from '@perawallet/wallet-core-blockchain'
 import {
     isAssetFrozen,
     isMultisigAccount,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     getOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS,
     submitAndAutoRefresh,
-    type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
     ALGO_ASSET_ID,
     encodeToBase64,
     logger,
-    type Network,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import type { PrepareTransactionsRequest } from '../api'
-import type {
-    PrepareTransactionsResult,
-    SwapHandoffRecord,
-    SwapQuote,
-} from '../models'
-import { computeSwapAlgoShortfall } from '../utils/computeSwapAlgoShortfall'
-import { isQuoteFresh } from '../utils/quoteFreshness'
-import { validateSwapGroupAgainstQuote } from '../utils/validateSwapGroupAgainstQuote'
+import {
+    isQuoteFresh,
+    type ExecuteSwapParams,
+    type ExecuteSwapResult,
+    type PrepareTransactionsResult,
+    type SwapExecutionContext,
+    type SwapExecutionFailure,
+} from '@perawallet/wallet-core-swaps'
+import { computeSwapAlgoShortfall } from './computeSwapAlgoShortfall'
+import { validateSwapGroupAgainstQuote } from './validateSwapGroupAgainstQuote'
 import {
     buildGroupPlans,
     scatterSigned,
@@ -57,86 +55,18 @@ import {
     reportSwapFailure,
     requestSwapProposal,
     requestSwapSignatures,
-    type UpdateSwapStatusFn,
 } from './swapExecutionHelpers'
 
-/** The in-flight phases an execution reports through `onProgress`. */
-export type SwapExecutionProgress =
-    | 'preparing'
-    | 'signing'
-    | 'submitting'
-    | 'updating-status'
-
-/**
- * Why an execution failed. Carries data, not copy: the display layer owns
- * the wording, so a raw `error` is kept only where it classifies itself
- * (backend 4xx, offline, unknown-outcome submission).
- */
-export type SwapExecutionFailure =
-    | { phase: 'prepare'; reason: 'missing-quote-id' }
-    | { phase: 'prepare'; reason: 'asset-frozen'; assetId: string }
-    | {
-          phase: 'prepare'
-          reason: 'insufficient-algo'
-          /** Shortfall in microAlgos. */
-          shortfall: Decimal
-      }
-    | { phase: 'prepare'; reason: 'prepare-failed'; error: unknown }
-    | { phase: 'prepare'; reason: 'no-transaction-groups' }
-    | { phase: 'prepare'; reason: 'quote-mismatch' }
-    | { phase: 'signing'; reason: 'quantum-blocked'; translationKey: string }
-    | { phase: 'signing'; reason: 'signing-failed' }
-    | { phase: 'submission'; reason: 'submission-failed'; error: unknown }
-
-export type ExecuteSwapResult =
-    | { kind: 'success'; txIds: string[] }
-    // Abandoned through `isCancelled` before anything was signed.
-    | { kind: 'cancelled' }
-    // The user declined the signing request (on screen or on a Ledger).
-    | { kind: 'user-rejected' }
-    // Shared-account swap proposed; the cosign resolver submits it later.
-    | { kind: 'pending-cosign' }
-    // The quote outlived its client TTL — never executed; the caller re-quotes.
-    | { kind: 'stale-quote' }
-    // An earlier attempt for this sender is still open — nothing was signed or
-    // broadcast.
-    | { kind: 'verifying-previous' }
-    | { kind: 'failed'; failure: SwapExecutionFailure }
-
-export type ExecuteSwapParams = {
-    quote: SwapQuote
-    /** The selected account; the frozen and balance preflights need one. */
-    account: Nullable<WalletAccount>
-    /**
-     * The resolved effective signer (`useSignerFor`), not the account's own
-     * nominal type: an account rekeyed to a quantum auth account signs with
-     * Falcon even though its own `type` is not `'quantum'`.
-     */
-    signer: Nullable<WalletAccount>
-    /** `enable_quantum_swap` remote flag; see `QUANTUM_SWAP_FEE_BLOCKED_KEY`. */
-    isQuantumSwapEnabled: boolean
-    /** Localized source metadata shown on the signing request. */
-    signingSource: { name: string; description: string }
-    onProgress: (progress: SwapExecutionProgress) => void
-    /** Polled at the cancellable checkpoints, all before signing starts. */
-    isCancelled: () => boolean
-}
-
-export type ExecuteSwapContext = {
-    network: Network
-    algorandClient: ReturnType<typeof useAlgorandClient>
+export type AlgorandSwapExecutionContext = Omit<
+    SwapExecutionContext,
+    'assetOptInMinBalance'
+> & {
+    algorandClient: ReturnType<typeof getAlgorandClient>
     /** Asset opt-in minimum balance, in microAlgos. */
     assetMbr: bigint
-    deviceId: Nullable<string>
-    addSignRequest: (request: TransactionSignRequest) => void
     decodeTransaction: (bytes: Uint8Array) => PeraTransaction
     decodeSignedTransaction: (bytes: Uint8Array) => PeraSignedTransaction
     encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
-    prepareTransactions: (
-        request: PrepareTransactionsRequest,
-    ) => Promise<PrepareTransactionsResult>
-    updateSwapStatus: UpdateSwapStatusFn
-    registerHandoff: (record: SwapHandoffRecord) => void
 }
 
 const failed = (failure: SwapExecutionFailure): ExecuteSwapResult => ({
@@ -160,7 +90,7 @@ const signingFailure = (error: unknown): ExecuteSwapResult =>
  * Never throws for an expected failure — every user-visible outcome is a
  * result — but an unexpected decode error still escapes.
  */
-export const executeSwap = async (
+export const executeAlgorandSwap = async (
     {
         quote,
         account,
@@ -182,7 +112,7 @@ export const executeSwap = async (
         prepareTransactions,
         updateSwapStatus,
         registerHandoff,
-    }: ExecuteSwapContext,
+    }: AlgorandSwapExecutionContext,
 ): Promise<ExecuteSwapResult> => {
     const quoteIdStr = quote.quoteIdStr
     if (!quoteIdStr) {
