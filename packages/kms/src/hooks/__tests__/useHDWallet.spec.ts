@@ -50,7 +50,18 @@ vi.mock('../useKMSServices', () => ({
 // `getDerivedPublicKey` reads the publicKey from the live reactive store
 // (rather than calling `keyStore.export`, since the rn-keystore stamps
 // derived keys `extractable: false`).
-const mockReactiveKeys: { id: string; publicKey?: Uint8Array }[] = []
+const mockReactiveKeys: {
+    id: string
+    type?: string
+    publicKey?: Uint8Array
+    metadata?: Record<string, unknown>
+}[] = []
+const pushHdSeed = () =>
+    mockReactiveKeys.push({
+        id: 'hd-1',
+        type: 'hd-root-key',
+        metadata: { scheme: 'bip39' },
+    })
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({
         get state() {
@@ -255,6 +266,7 @@ describe('useHDWallet', () => {
 
     describe('generateDerivedKey', () => {
         beforeEach(() => {
+            pushHdSeed()
             mockKeyStoreDeriveFromSeed.mockResolvedValue('derived-id-1')
         })
 
@@ -304,6 +316,7 @@ describe('useHDWallet', () => {
             // deriveFromSeed commits the entry to the reactive store as a
             // side effect; the hook then reads the publicKey back from
             // that snapshot. Mirror both halves here.
+            pushHdSeed()
             mockKeyStoreDeriveFromSeed.mockImplementation(async () => {
                 mockReactiveKeys.push({
                     id: 'hd-1-acc0-idx1-dt9',
