@@ -22,12 +22,12 @@ import {
     logger,
     setIntegrityTokenProvider,
 } from '@perawallet/wallet-core-shared'
+import { ensureDeviceInstallationID } from '@perawallet/wallet-extension-platform-chrome'
 import {
     INTEGRITY_BACKOFF_SESSION_KEY,
     clearEnrolmentMarker,
     clearInstallKey,
     clearSessionIntegrityToken,
-    ensureDeviceInstallationID,
     exportInstallPublicKey,
     getEnrolmentMarker,
     getInstallKeyId,
@@ -35,7 +35,7 @@ import {
     putSessionIntegrityToken,
     signChallenge,
     type SessionIntegrityToken,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { enrolBackoff, markEnrolmentNeeded } from './enrol-attempt'
 import { createSessionBackoff } from './session-backoff'
 import { withNamedLock } from './named-lock'

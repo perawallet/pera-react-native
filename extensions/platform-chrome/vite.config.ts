@@ -20,7 +20,9 @@ export default defineConfig(
         entry: {
             index: resolve(__dirname, 'src/index.ts'),
             bootstrap: resolve(__dirname, 'src/bootstrap.ts'),
-            'remote-registry': resolve(__dirname, 'src/remote-registry.ts'),
+            messaging: resolve(__dirname, 'src/messaging.ts'),
+            // Built so the browser-runtime package's specs can share the fake.
+            'test-utils/index': resolve(__dirname, 'src/test-utils/index.ts'),
         },
     }),
 )

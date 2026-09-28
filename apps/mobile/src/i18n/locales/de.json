@@ -1070,16 +1070,25 @@
                 "body": "Der Server hatte ein Problem bei der Verarbeitung deiner Anfrage. Bitte versuche es erneut."
             }
         },
-        "validation": {
-            "generic": "Die Daten scheinen ungültig zu sein.",
-            "invalid_address": "Die Adresse scheint ungültig zu sein: {{address}}",
-            "invalid_amount": "Der Betrag scheint ungültig zu sein: {{amount}}",
-            "invalid_mnemonic": "Die Wiederherstellungsphrase scheint ungültig zu sein.",
-            "required_field": "Ein Pflichtfeld fehlt: {{field}}"
-        },
         "transaction": {
             "title": "Bei der Verarbeitung dieser Transaktion ist ein Fehler aufgetreten",
-            "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht."
+            "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht.",
+            "insufficient_balance_for_opt_in": {
+                "title": "Nicht genügend ALGO",
+                "body": "Du brauchst noch {{shortfall}} ALGO, um dich für dieses Asset anzumelden. Dein Konto muss sein Mindestguthaben halten und die Transaktionsgebühr decken."
+            },
+            "already_opted_in": {
+                "title": "Bereits angemeldet",
+                "body": "Dieses Konto ist bereits für dieses Asset angemeldet."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "Asset hat noch ein Guthaben",
+                "body": "Du kannst nur ein Asset ohne Guthaben entfernen. Sende oder tausche zuerst den verbleibenden Betrag."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Asset kann nicht entfernt werden",
+                "body": "Dieses Konto hat das Asset erstellt und kann sich daher nicht davon abmelden."
+            }
         },
         "kms": {
             "key_not_found": "Der Signaturschlüssel für dieses Konto konnte nicht gefunden werden.",
@@ -1153,9 +1162,6 @@
             "overview_tab": "Übersicht",
             "card_details_tab": "Kartendetails",
             "balance": "Guthaben",
-            "spendable_per_tx": "≈{{amount}} {{currency}} verfügbar",
-            "spendable_info_title": "Verfügbar pro Transaktion",
-            "spendable_info_body": "Der Höchstbetrag für einen einzelnen Kauf: dein Kartenguthaben plus dein Rückerstattungsguthaben und, mit Auto-Funding, bis zu {{limit}} von deinem verknüpften Konto.",
             "withdraw": "Auszahlen",
             "add_funds": "Guthaben hinzufügen",
             "credits_title": "Guthaben",
@@ -1280,8 +1286,6 @@
             "balance": "Guthaben: {{amount}} USDC",
             "confirm_title": "Einlösung bestätigen",
             "confirm_button": "Bestätigen",
-            "fee_label": "Netzwerkgebühr",
-            "fee_loading": "Wird geschätzt...",
             "success_title": "Einlösung übermittelt",
             "history_title": "Aktivität"
         },
@@ -2068,6 +2072,7 @@
             "pair_ledger_description": "Ich möchte ein Algorand-Konto wiederherstellen, das über Bluetooth durch mein Ledger-Hardware-Wallet gesichert ist",
             "pair_ledger_usb_title": "Ledger per USB koppeln",
             "pair_ledger_usb_description": "Ich möchte ein Algorand-Konto wiederherstellen, das über USB-Kabel durch mein Ledger-Hardware-Wallet gesichert ist",
+            "pair_ledger_unsupported_description": "Von diesem Browser oder Gerät nicht unterstützt",
             "pera_web_title": "Von Pera Web importieren",
             "pera_web_description": "Ich möchte Algorand-Konten von Pera Web importieren",
             "cloud_backup_title": "Aus Cloud-Backup importieren",
@@ -2603,6 +2608,7 @@
         "input": {
             "max": "MAX",
             "next": "Weiter",
+            "amount_label": "Betrag",
             "error_title": "Ungültiger Betrag",
             "error_body": "Bitte gib einen Betrag größer als {{min}} ein.",
             "exceeds_max_title": "Unzureichendes Guthaben",
@@ -2654,8 +2660,9 @@
         },
         "close_account": {
             "title": "Konto schließen",
-            "body": "Dieses Konto hat keine angemeldeten Assets. Durch das Senden des gesamten Guthabens wird das Konto im Algorand-Netzwerk geschlossen.",
+            "body": "Dieses Konto hat keine angemeldeten Assets. Du kannst es daher schließen und das gesamte Guthaben senden. Manche Börsen akzeptieren keine Transaktionen, die ein Konto schließen. Wenn du das Konto offen lässt, verbleibt das Mindestguthaben von {{minBalance}} ALGO darin.",
             "confirm": "Konto schließen & senden",
+            "keep_open": "Senden, ohne zu schließen",
             "warning": "Diese Transaktion schließt dein Konto im Algorand-Netzwerk.",
             "success_title": "Konto geschlossen",
             "success_subtitle": "Dein Konto wurde im Algorand-Netzwerk geschlossen."
@@ -2787,6 +2794,7 @@
                 "fetch_from_node": "Vom Node abrufen",
                 "fetch_failed": "Dieser Node konnte nicht erreicht werden. Gib die Werte manuell ein.",
                 "invalid_url": "Gib eine gültige http:// oder https:// URL ein",
+                "invalid_https_url": "Gib eine gültige https:// URL ein",
                 "genesis_required": "Genesis-Hash abrufen oder eingeben",
                 "genesis_id_required": "Genesis-ID abrufen oder eingeben",
                 "save": "Speichern und wechseln",
@@ -3737,7 +3745,11 @@
         "scan_header": {
             "having_issues": "Hast du Probleme?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Ledger-Konto hinzugefügt",
+            "body": "Du kannst es jetzt in der Pera-Erweiterung verwenden."
+        }
     },
     "countries": {
         "AC": "Ascension",
@@ -4047,7 +4059,17 @@
             "error_invalid_password": "Falsches Passwort. Bitte versuche es erneut.",
             "corrupted_error": "Deine Vault-Daten sind beschädigt und können nicht entsperrt werden. Möglicherweise musst du die Erweiterung zurücksetzen und aus deinem Backup wiederherstellen.",
             "passkey_error": "Passkey-Entsperrung fehlgeschlagen. Verwende stattdessen dein Passwort.",
-            "lockout_countdown": "Zu viele Versuche. Erneut versuchen in {{time}}"
+            "lockout_countdown": "Zu viele Versuche. Erneut versuchen in {{time}}",
+            "forgot_password": "Passwort vergessen?"
+        },
+        "reset": {
+            "title": "Wallet zurücksetzen?",
+            "body": "Dein Passwort lässt sich nicht wiederherstellen. Beim Zurücksetzen wird alles gelöscht, was Pera Wallet in diesem Browser speichert. Danach legst du ein neues Passwort fest.",
+            "restore_note": "Stelle deine Konten danach mit ihrer Wiederherstellungsphrase wieder her. Konten ohne gesicherte Wiederherstellungsphrase gehen verloren.",
+            "hardware_note": "Ledger-Konten und Beobachtungskonten lassen sich nicht aus einer Passphrase wiederherstellen. Füge sie nach dem Zurücksetzen erneut hinzu.",
+            "acknowledge": "Mir ist klar, dass meine Daten gelöscht werden und das nicht rückgängig gemacht werden kann",
+            "confirm_button": "Wallet zurücksetzen",
+            "error": "Die Wallet konnte nicht zurückgesetzt werden. Bitte versuche es erneut."
         },
         "security": {
             "autolock_title": "Automatisch sperren nach",
@@ -4073,9 +4095,6 @@
         },
         "approval": {
             "placeholder": "Genehmigungsoberfläche — kommt in M4."
-        },
-        "expanded": {
-            "redirecting": "Wird in einem neuen Tab fortgesetzt…"
         },
         "reauth": {
             "title": "Bestätige, dass du es bist",

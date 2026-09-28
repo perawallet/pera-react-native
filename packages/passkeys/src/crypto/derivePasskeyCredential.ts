@@ -18,7 +18,7 @@ import {
     genDerivedMainKeyWithSubtle,
 } from '@algorandfoundation/keystore-core'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { subtle as quickCryptoSubtle } from 'react-native-quick-crypto'
+import { keystoreSubtle } from '@perawallet/wallet-extension-provider'
 import {
     credentialIdBytesToStandardBase64,
     p256RawPublicKeyToSpkiDer,
@@ -35,7 +35,7 @@ const dp256 = new DeterministicP256()
  */
 export const derivePasskeyMainKey = (
     entropy: Uint8Array,
-    subtle: SubtleCrypto = quickCryptoSubtle as unknown as SubtleCrypto,
+    subtle: SubtleCrypto = keystoreSubtle,
 ): Promise<Uint8Array> =>
     genDerivedMainKeyWithSubtle(
         subtle,

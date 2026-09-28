@@ -53,6 +53,10 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             save: vi.fn().mockResolvedValue('saved'),
             read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
         },
+        appLifecycle: {
+            getCurrentState: () => 'active',
+            addChangeListener: vi.fn(() => vi.fn()),
+        },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
             getDeviceModel: () => 'iPhone',
@@ -104,12 +108,6 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getBoolean: vi.fn().mockReturnValue(false),
             getString: vi.fn().mockReturnValue(''),
         },
-        // Expose a real (empty) registry so integration tests that exercise
-        // hardware-wallet flows (e.g. LedgerVerifyScreen) can register a fake
-        // transport provider via `getProvider().hardwareWalletRegistry.register()`.
-        // Unit tests never call into the registry so providing an empty one is safe.
-        hardwareWalletRegistry:
-            require('@perawallet/wallet-core-hardware-wallet').createHardwareWalletRegistry(),
         // Dormant defaults: card push provisioning reports unavailable, so
         // suites exercise today's manual-instructions fallback.
         walletProvisioning: {
@@ -168,6 +166,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             save: vi.fn().mockResolvedValue('saved'),
             read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
         },
+        appLifecycle: {
+            getCurrentState: () => 'active',
+            addChangeListener: vi.fn(() => vi.fn()),
+        },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
             getDeviceModel: () => 'iPhone',
@@ -193,6 +195,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getBooleanValue: vi.fn().mockReturnValue(false),
             getNumberValue: vi.fn().mockReturnValue(0),
         },
+        // A real (empty) registry, as `WithHardwareWalletExtension` supplies in
+        // production, so a spec can register a fake transport through it.
+        hardwareWalletRegistry:
+            require('@perawallet/wallet-extension-hardware-wallet').createHardwareWalletRegistry(),
         key: {
             store: {
                 remove: vi.fn(),

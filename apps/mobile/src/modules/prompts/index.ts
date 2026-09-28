@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export * from './components/PromptContainer'
+export { PromptContainer } from './components/PromptContainer'
 export type { PromptViewProps } from './models'

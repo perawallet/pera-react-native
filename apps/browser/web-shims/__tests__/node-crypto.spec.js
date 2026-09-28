@@ -15,7 +15,7 @@
 // This package's vitest.config.ts defaults to jsdom (web-shims specs render
 // through react-native-web). This spec instead needs Node's real node:crypto
 // as an oracle to byte-compare against the shim, so it opts into the node
-// environment per-file (precedent: apps/browser/src/content/__tests__/*.test.ts
+// environment per-file (precedent: apps/browser/src/content/__tests__/*.spec.ts
 // use the same pragma the other direction, jsdom, for the same reason).
 import { describe, it, expect } from 'vitest'
 import * as nodeCrypto from 'node:crypto'

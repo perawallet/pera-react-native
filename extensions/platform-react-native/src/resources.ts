@@ -11,10 +11,10 @@
  */
 
 import type { PlatformServices } from '@perawallet/wallet-extension-platform'
-import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import {
     RNAgeGateService,
     RNAppIntegrityService,
+    RNAppLifecycleService,
     RNCloudFileStorageService,
     RNDatabaseService,
     RNKeyValueStorageService,
@@ -35,8 +35,6 @@ import {
 const keyValueStorage = new RNKeyValueStorageService()
 const firebaseService = new RNFirebaseService()
 
-const hardwareWalletRegistry = createHardwareWalletRegistry()
-
 export const platformServices: PlatformServices = {
     analytics: firebaseService,
     biometrics: new RNBiometricsService(),
@@ -48,7 +46,7 @@ export const platformServices: PlatformServices = {
     database: new RNDatabaseService(),
     deviceInfo: new RNDeviceInfoStorageService(),
     appIntegrity: new RNAppIntegrityService(),
-    hardwareWalletRegistry,
+    appLifecycle: new RNAppLifecycleService(),
     migration: new RNMigrationService(keyValueStorage),
     walletProvisioning: new RNWalletProvisioningService(),
     cloudFileStorage: new RNCloudFileStorageService(),

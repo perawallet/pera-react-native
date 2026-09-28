@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,11 +11,11 @@
  */
 
 import type { PlatformServices } from '@perawallet/wallet-extension-platform'
-import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import {
     ChromeAgeGateService,
     ChromeAnalyticsService,
     ChromeAppIntegrityService,
+    ChromeAppLifecycleService,
     ChromeBiometricsService,
     ChromeCloudFileStorageService,
     ChromeCrashReportingService,
@@ -41,7 +41,7 @@ export const platformServices: PlatformServices = {
     database: new ChromeDatabaseService(),
     deviceInfo: new ChromeDeviceInfoService(),
     appIntegrity: new ChromeAppIntegrityService(),
-    hardwareWalletRegistry: createHardwareWalletRegistry(),
+    appLifecycle: new ChromeAppLifecycleService(),
     migration: new ChromeMigrationService(),
     walletProvisioning: new ChromeWalletProvisioningService(),
     cloudFileStorage: new ChromeCloudFileStorageService(),

@@ -10,21 +10,23 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-config'
-import type {
-    ConnectionHandler,
-    ConnectionHandlerContext,
-    ConnectionProposal,
-    WalletNotice,
-    WalletOperationResult,
-    WalletOperationType,
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    dappRequestChainAdapters,
+    type ConnectionHandler,
+    type ConnectionProposal,
+    type DappRequestChainAdapter,
+    type WalletNotice,
+    type WalletOperationResult,
+    type WalletOperationType,
 } from '@perawallet/wallet-core-connections'
+import { createHandlerKit } from '@perawallet/wallet-core-connections/handlerKit'
 import {
     encodeToBase64,
     generateOrderedUniqueId,
     logger,
+    type Network,
 } from '@perawallet/wallet-core-shared'
-import { isArc60WirePayload } from '@perawallet/wallet-core-signing'
 import type {
     Connection,
     ConnectionId,
@@ -47,7 +49,6 @@ import type {
     DappRespond,
     DappTransport,
 } from './models'
-import { resolveReportedNetwork } from './network'
 import {
     DAPP_KIND,
     DAPP_METHODS,
@@ -59,6 +60,11 @@ import {
 
 export type DappHandlerDeps = {
     transport: DappTransport
+    /**
+     * The chain this realm answers for. The `window.pera` protocol carries no
+     * chain, so it is fixed per handler.
+     */
+    chainId: ChainId
     getNetwork: () => Network
     getCustomNetworkGenesisHash: () => string | undefined
     /**
@@ -94,6 +100,7 @@ const toWireResult = (result: WalletOperationResult): unknown =>
 const toErrorResponse = (
     id: JsonRpcRequest['id'],
     error: Error,
+    relayableErrorNames: readonly string[],
 ): JsonRpcResponse => {
     if (error.name === 'UserCancelledError') {
         return jsonRpcError(
@@ -110,9 +117,16 @@ const toErrorResponse = (
     return jsonRpcError(
         id,
         JsonRpcErrorCode.InternalError,
-        sanitizeErrorForWebview(error),
+        sanitizeErrorForWebview(error, relayableErrorNames),
     )
 }
+
+const chainNotSupported = (id: JsonRpcRequest['id']): JsonRpcResponse =>
+    jsonRpcError(
+        id,
+        JsonRpcErrorCode.NetworkNotSupported,
+        'The wallet cannot answer requests for this chain',
+    )
 
 export const createDappConnectionHandler = (
     deps: DappHandlerDeps,
@@ -121,20 +135,19 @@ export const createDappConnectionHandler = (
     const proposalTtlMs = deps.proposalTtlMs ?? DAPP_PROPOSAL_TTL_MS
     const requestTtlMs = deps.requestTtlMs ?? DAPP_REQUEST_TTL_MS
 
-    let context: ConnectionHandlerContext | null = null
+    const kit = createHandlerKit(DAPP_KIND, {
+        logTag: '[dapp]',
+        notInitializedError: () => new Error('dapp handler is not initialized'),
+    })
+    const { requireContext, store } = kit
     let unsubscribe: (() => void) | null = null
     const openProposals = new Set<string>()
     const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
 
-    const requireContext = (): ConnectionHandlerContext => {
-        if (!context) throw new Error('dapp handler is not initialized')
-        return context
-    }
-
     const getConnection = async (
         origin: string,
     ): Promise<DappConnection | undefined> => {
-        const connection = await requireContext().store.get(origin)
+        const connection = await store().get(origin)
         return connection && isDappConnection(connection)
             ? connection
             : undefined
@@ -153,11 +166,12 @@ export const createDappConnectionHandler = (
         })
     }
 
-    const reportedNetwork = (): Network | undefined =>
-        resolveReportedNetwork(
-            deps.getNetwork(),
-            deps.getCustomNetworkGenesisHash(),
-        )
+    // Looked up per request, not at construction: a realm may build the
+    // handler before its bootstrap has registered the chain's adapters.
+    const chainAdapter = (): DappRequestChainAdapter | undefined =>
+        dappRequestChainAdapters.has(deps.chainId)
+            ? dappRequestChainAdapters.get(deps.chainId)
+            : undefined
 
     const deliver = (
         respond: DappRespond,
@@ -215,6 +229,8 @@ export const createDappConnectionHandler = (
             openProposals.delete(ctx.origin)
             return deliver(respond, response)
         }
+        const adapter = chainAdapter()
+        if (!adapter) return release(chainNotSupported(request.id))
 
         const params = isRecord(request.params) ? request.params : {}
         const existing = await getConnection(ctx.origin)
@@ -230,7 +246,10 @@ export const createDappConnectionHandler = (
                 ),
             )
         }
-        const network = reportedNetwork()
+        const network = adapter.resolveReportedNetwork(
+            deps.getNetwork(),
+            deps.getCustomNetworkGenesisHash(),
+        )
         if (!network) {
             return release(
                 jsonRpcError(
@@ -250,7 +269,7 @@ export const createDappConnectionHandler = (
             )
         }
         if (existing) {
-            await requireContext().store.upsert({
+            await store().upsert({
                 ...existing,
                 lastActiveAt: now(),
             })
@@ -313,7 +332,7 @@ export const createDappConnectionHandler = (
                     lastActiveAt: now(),
                 }
                 try {
-                    await requireContext().store.upsert(connection)
+                    await store().upsert(connection)
                 } finally {
                     // Freed only once the record exists (or the attempt has
                     // failed): a second tab claiming the slot mid-upsert would
@@ -352,6 +371,8 @@ export const createDappConnectionHandler = (
         respond: DappRespond,
         type: WalletOperationType,
     ): Promise<void> => {
+        const adapter = chainAdapter()
+        if (!adapter) return deliver(respond, chainNotSupported(request.id))
         const connection = await getConnection(ctx.origin)
         if (!connection) {
             return deliver(
@@ -364,23 +385,14 @@ export const createDappConnectionHandler = (
             )
         }
         const params = isRecord(request.params) ? request.params : {}
-        // Webview-compatible param shapes: `{ txns, opts?, metadata? }` for
-        // ARC-0001; an ARC-60 wire object or `{ data: [...] }` for data. Only
-        // the operation payload crosses into the registry; `opts`/`metadata`
-        // are display hints the connection's own peer record supersedes.
-        const rawParams =
-            type === 'sign-transactions'
-                ? params.txns
-                : isArc60WirePayload(params)
-                  ? params
-                  : params.data
-        if (rawParams === undefined) {
+        const parsed = adapter.parseSigningParams(type, params)
+        if (!parsed.ok) {
             return deliver(
                 respond,
                 jsonRpcError(
                     request.id,
                     JsonRpcErrorCode.InvalidParams,
-                    `Missing required param: ${type === 'sign-transactions' ? 'txns' : 'data'}`,
+                    parsed.message,
                 ),
             )
         }
@@ -415,7 +427,7 @@ export const createDappConnectionHandler = (
             authorizedAccounts: connection.accounts,
             peer: connection.peer,
             verifiedOrigin: ctx.origin,
-            rawOperation: { type, params: rawParams },
+            rawOperation: { type, params: parsed.payload },
             // Delivery failure must propagate so the request stays answerable
             // (the page may be reachable again on retry); settle only on success.
             respond: async result => {
@@ -423,11 +435,17 @@ export const createDappConnectionHandler = (
                 settle()
             },
             reject: async error => {
-                await respond(toErrorResponse(request.id, error))
+                await respond(
+                    toErrorResponse(
+                        request.id,
+                        error,
+                        adapter.relayableErrorNames,
+                    ),
+                )
                 settle()
             },
         })
-        await requireContext().store.upsert({
+        await store().upsert({
             ...connection,
             lastActiveAt: now(),
         })
@@ -436,7 +454,7 @@ export const createDappConnectionHandler = (
     const disconnect = async (id: ConnectionId): Promise<void> => {
         const connection = await getConnection(id)
         if (!connection) return
-        await requireContext().store.remove(id)
+        await store().remove(id)
         await deps.transport
             .notify(id, {
                 jsonrpc: '2.0',
@@ -518,12 +536,12 @@ export const createDappConnectionHandler = (
     }
 
     const restore = async (): Promise<DappConnection[]> =>
-        (await requireContext().store.list()).filter(isDappConnection)
+        (await store().list()).filter(isDappConnection)
 
     return {
         kind: DAPP_KIND,
         async initialize(ctx) {
-            context = ctx
+            kit.attach(ctx)
             unsubscribe = deps.transport.onRequest(onRequest)
         },
         async teardown() {
@@ -532,7 +550,7 @@ export const createDappConnectionHandler = (
             pendingTimers.forEach(timer => clearTimeout(timer))
             pendingTimers.clear()
             openProposals.clear()
-            context = null
+            kit.detach()
         },
         disconnect,
         async disconnectAll() {

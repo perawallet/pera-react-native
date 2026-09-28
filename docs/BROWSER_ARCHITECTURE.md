@@ -3,11 +3,12 @@
 > Map of the browser extension, organized by **realm and trust boundary** — the
 > way you have to reason about an MV3 wallet extension. Start here before reading any single file.
 >
-> Sources of truth: `apps/browser/manifest.json` (realms, permissions, CSP),
+> Sources of truth: `apps/browser/manifest.json` (realms, permissions), `apps/browser/scripts/csp.mjs` (CSP),
 > `apps/browser/src/{background,content,offscreen}` (realm entry points),
-> `extensions/platform-chrome` (message routing, storage, dApp/WC/passkey plumbing),
-> `extensions/keystore-chrome` (vault, WebAuthn signer), `extensions/provider/src/keystore/*.web.ts`
-> (the keystore engine).
+> `extensions/platform-chrome` (the `PlatformServices` driver: storage, DB host, offscreen storage
+> proxy, trusted-sender gate), `packages/browser-runtime` (message routing, dApp/WC/passkey/integrity
+> plumbing, extension-tab navigation), `extensions/keystore-chrome` (vault, WebAuthn signer),
+> `extensions/provider/src/keystore/*.web.ts` (the keystore engine).
 
 ---
 
@@ -61,16 +62,35 @@ graph TD
     UI -->|unlock → sign| VAULT[Vault master key · session storage]
 ```
 
-**Message scopes** (the routing table — each is a `*_SCOPE` constant in `platform-chrome`):
+**Message scopes** (the routing table — each is a `*_SCOPE` constant, in `platform-chrome` for
+`pera-db*` and `pera-storage-*`, in `browser-runtime` for the rest):
 
-| Scope                                                                                                     | Between              | Purpose                                                           |
-| --------------------------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------------------------------- |
-| `pera-db`, `pera-db-control`                                                                              | UI/offscreen ↔ SW    | DB exec proxy; `ensure-offscreen` lifecycle                       |
-| `pera-storage-proxy`, `pera-storage-event`                                                                | offscreen ↔ SW       | `chrome.storage` served to the offscreen doc + `onChanged` relay  |
-| `pera-dapp-approval`                                                                                      | SW ↔ approval window | ARC-0027 connect/sign approval                                    |
-| `pera-wc-control`, `pera-wc-request`, `pera-wc-error-notice`, `pera-wc-pair-outcome`, `pera-wc-page-pair` | SW ↔ offscreen ↔ UI  | WalletConnect control, sign requests, errors, pairing             |
-| `pera-webauthn-relay`                                                                                     | content ↔ SW         | Intercepted `navigator.credentials` ceremonies → passkey approval |
-| `pera-integrity-enrol`                                                                                    | UI → SW              | An extension page asks whether it should host the integrity check |
+| Scope                                                                                                 | Between              | Purpose                                                           |
+| ----------------------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------------------------------- |
+| `pera-db`, `pera-db-control`                                                                          | UI/offscreen ↔ SW    | DB exec proxy; `ensure-offscreen` lifecycle                       |
+| `pera-storage-proxy`, `pera-storage-event`                                                            | offscreen ↔ SW       | `chrome.storage` served to the offscreen doc + `onChanged` relay  |
+| `pera-dapp-approval`                                                                                  | SW ↔ approval window | ARC-0027 connect/sign approval                                    |
+| `pera-connections-control`, `pera-connections-request`, `pera-connections-event`, `pera-wc-page-pair` | SW ↔ offscreen ↔ UI  | WalletConnect control, sign requests, errors, pairing             |
+| `pera-webauthn-relay`                                                                                 | content ↔ SW         | Intercepted `navigator.credentials` ceremonies → passkey approval |
+| `pera-integrity-enrol`                                                                                | UI → SW              | An extension page asks whether it should host the integrity check |
+
+### Driver and runtime
+
+`extensions/platform-chrome` is only the `PlatformServices` driver that the web build aliases
+`platform-driver` to (see [Architecture](ARCHITECTURE.md)), plus what that driver needs itself: the
+DB host and its wire protocol, the offscreen `chrome.storage` proxy, `getSurface`, and the
+trusted-sender gate. It depends on no business package.
+
+Everything the realms use to talk to each other is `packages/browser-runtime`: the connections and
+dApp message protocols and clients, the approval bridge, the WebAuthn relay router, the integrity
+key store and enrolment client, the Discover webview bridge, and extension-tab navigation. It depends
+on the connections, dapp and passkeys packages, which is why it sits under `packages/` rather than
+`extensions/`. It reaches the driver only through `@perawallet/wallet-extension-platform-chrome/messaging`,
+because the driver's main barrel constructs every platform service at import.
+
+Two narrower entries keep bundles small. Content scripts get `browser-runtime/src/dapp/content-wire.ts`
+through a build alias (`apps/browser/scripts/build.mjs`), never the runtime barrel. The sqlite
+worker's executor lives beside the worker, in `apps/browser/src/offscreen/`.
 
 ---
 
@@ -84,7 +104,7 @@ Content scripts are injected into **every https page** (`matches: https://*/*`).
 - **Randomized per-load event channel** (`content/channel.ts`): MAIN↔ISOLATED event names are
   generated per document load via a one-shot handshake, so page code cannot forge relay
   traffic or responses.
-- **`isTrustedExtensionPageSender`** (`platform-chrome/trusted-sender.ts`): gates on
+- **`isTrustedExtensionPageSender`** (`extensions/platform-chrome/src/trusted-sender.ts`): gates on
   `sender.id === runtime.id` **and** `sender.url` starting with `chrome-extension://<id>/`.
   A content script's `sender.url` is the _web page_, never an extension URL — this is what
   separates "one of our own pages" from "a script we shipped into every tab."
@@ -95,8 +115,9 @@ Content scripts are injected into **every https page** (`matches: https://*/*`).
 
 ### 3.2 The vault (key custody)
 
-Password → **Argon2id** KEK (`ARGON2_MEMORY_KIB=19456, ITERATIONS=2`; OWASP baseline) → unwrap
-the master key. Legacy PBKDF2 blobs (`600k` iters) are re-wrapped as Argon2id on next unlock.
+Password → **Argon2id** KEK (`ARGON2_MEMORY_KIB=65536, ITERATIONS=3`, derived in `argon2-worker.js`
+so the page keeps painting) → unwrap the master key. Legacy PBKDF2 blobs (`600k` iters) and Argon2id
+blobs below that cost (down to the OWASP 19 MiB / t=2 floor) are re-wrapped on the next unlock.
 
 - **Wrapped** master key blob → `chrome.storage.local` (`vault:wrapped-master-key`, survives restart).
 - **Unwrapped** master key → `chrome.storage.session` (`vault:master-key`), `TRUSTED_CONTEXTS`,
@@ -133,23 +154,29 @@ rules and failure handling are specified in `docs/WEB_INTEGRITY_ENROLMENT_CONTRA
 
 ## 4. Storage map
 
-| Store                                         | Keys                                                                                                                                                                                                                                                                                                                                                       | Notes                                                                                                                                                                                                 |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chrome.storage.local`                        | `kv:accounts-store`, `kv:network-store`, `kv:custom-network-store`, `kv:polling-store`, `kv:wallet-connect-store`, `kv:settings-store`; `device:installation-id`; `vault:wrapped-master-key(+prf,+cred-id)`, `vault:auto-lock-minutes`, `vault:lockout`; dApp permissions; legacy-migration sentinels; `webauthnInterceptionEnabled`; TanStack Query cache | `kv:*` values are JSON **strings** (the KV service stringifies). `device:installation-id` is deliberately root-level (not `kv:`) so it survives "clear data". `unlimitedStorage` lifts the 10 MB cap. |
-| `chrome.storage.session` (`TRUSTED_CONTEXTS`) | `vault:master-key`, `integrity:token`, `integrity:backoff`, `integrity:enrol-attempt`, `integrity:enrol-backoff`, `integrity:enrol-needed`                                                                                                                                                                                                                 | Memory-only, cleared on browser close. The unwrapped master key lives **only** here.                                                                                                                  |
-| **IndexedDB** `pera-integrity`                | `install-key`, `enrolment:<network>`                                                                                                                                                                                                                                                                                                                       | Non-extractable P-256 keypair (private half never leaves), and one enrolment marker per network.                                                                                                      |
-| **OPFS**                                      | sqlite database                                                                                                                                                                                                                                                                                                                                            | Owned by the offscreen DB-worker; evictable without `unlimitedStorage`.                                                                                                                               |
+| Store                                         | Keys                                                                                                                                                                                                                                                                                                                                                                                                                             | Notes                                                                                                                                                                                                 |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chrome.storage.local`                        | `kv:accounts-store`, `kv:network-store`, `kv:custom-network-store` (legacy, folded into `kv:network-store` on hydrate and never written), `kv:polling-store`, `kv:wallet-connect-store`, `kv:settings-store`; `device:installation-id`; `vault:wrapped-master-key(+prf,+cred-id)`, `vault:auto-lock-minutes`, `vault:lockout`; dApp permissions; legacy-migration sentinels; `webauthnInterceptionEnabled`; TanStack Query cache | `kv:*` values are JSON **strings** (the KV service stringifies). `device:installation-id` is deliberately root-level (not `kv:`) so it survives "clear data". `unlimitedStorage` lifts the 10 MB cap. |
+| `chrome.storage.session` (`TRUSTED_CONTEXTS`) | `vault:master-key`, `integrity:token`, `integrity:backoff`, `integrity:enrol-attempt`, `integrity:enrol-backoff`, `integrity:enrol-needed`                                                                                                                                                                                                                                                                                       | Memory-only, cleared on browser close. The unwrapped master key lives **only** here.                                                                                                                  |
+| **IndexedDB** `pera-integrity`                | `install-key`, `enrolment:<network>`                                                                                                                                                                                                                                                                                                                                                                                             | Non-extractable P-256 keypair (private half never leaves), and one enrolment marker per network.                                                                                                      |
+| **OPFS**                                      | sqlite database                                                                                                                                                                                                                                                                                                                                                                                                                  | Owned by the offscreen DB-worker; evictable without `unlimitedStorage`.                                                                                                                               |
 
 ---
 
 ## 5. Manifest posture (the security envelope)
 
 - **CSP**: `script-src 'self' 'wasm-unsafe-eval'` — no remote code (MV3 + Web Store policy). This
-  is _why_ Turnstile enrolment (integrity step 2) must be hosted off-extension.
+  is _why_ Turnstile enrolment (integrity step 2) must be hosted off-extension. The full policy is
+  generated by `apps/browser/scripts/csp.mjs` at build time, not committed: a declared policy
+  replaces Chrome's default, so every directive is stated, and `frame-src` lists only that build's
+  own Discover, integrity, Bidali and terms origins. `connect-src` stays `https:`/`wss:` because
+  custom nodes, the WalletConnect v1 bridge (named by the pairing URI) and NFT copy/save reach
+  hosts no build can enumerate; loopback is added outside production for LocalNet and e2e.
 - **`externally_connectable: { ids: [] }`** — explicitly closed. No `onMessageExternal` listener
   exists; the empty allowlist keeps a future one from silently inheriting an open door.
-- **`host_permissions`** are enumerated (perawallet, algonode, baanx, bidali, firebase/FCM, GA,
-  Sentry) — not `<all_urls>`.
+- **`host_permissions`** are enumerated (perawallet, algonode, baanx, bidali, NFD, firebase/FCM,
+  GA, Sentry incl. region ingest hosts, the network reachability probe) — not `<all_urls>`. Adding a
+  host can make Chrome disable an installed extension until the user re-approves it.
 - **Permissions**: `storage`, `unlimitedStorage`, `alarms`, `offscreen`, `notifications` — each
   documented inline in the manifest with _why it is load-bearing_.
 

@@ -20,7 +20,7 @@ import {
     type DappMethod,
     type JsonRpcRequest,
     type JsonRpcResponse,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import {
     CHANNEL_HANDSHAKE_EVENT,
     CHANNEL_RELAY_READY_EVENT,

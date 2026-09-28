@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useCallback, useMemo } from 'react'
 import {
     useLedgerConnection as useLedgerConnectionCore,
     type UseLedgerConnectionResult,
 } from '@perawallet/wallet-core-ledger'
-import type {
-    HardwareWalletTransportProvider,
-    LedgerTransportType,
-} from '@perawallet/wallet-core-hardware-wallet'
+import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
+import { useSupportedLedgerTransports } from './useSupportedLedgerTransports'
 
 type UseLedgerConnectionOptions = {
     /**
@@ -46,59 +43,12 @@ type UseLedgerConnectionWrapperResult = UseLedgerConnectionResult & {
  * to the ones supported on this platform (BLE on iOS+Android+web via Web
  * Bluetooth, USB on Android+web via WebHID), and passes them to the core
  * hook.
- *
- * The supported-providers list is computed with local state instead of
- * React Query. The provider objects expose methods (`scan`, `connect`,
- * `isSupported`) and the `PersistQueryClientProvider` wired up at the
- * root of the app would serialize a query result via `JSON.stringify`,
- * silently stripping those methods and leaving consumers with plain
- * `{ manufacturer, transportType }` shells that throw at call time.
  */
 export const useLedgerConnection = (
     options?: UseLedgerConnectionOptions,
 ): UseLedgerConnectionWrapperResult => {
-    const allLedgerProviders = useMemo<HardwareWalletTransportProvider[]>(
-        () =>
-            getProvider().hardwareWalletRegistry.getProvidersByManufacturer(
-                'ledger',
-            ),
-        [],
-    )
-
-    const [supportedProviders, setSupportedProviders] = useState<
-        HardwareWalletTransportProvider[]
-    >([])
-    const [isReady, setIsReady] = useState(false)
-
-    useEffect(() => {
-        let cancelled = false
-        void (async () => {
-            const results = await Promise.all(
-                allLedgerProviders.map(async provider => {
-                    try {
-                        return {
-                            provider,
-                            supported: await provider.isSupported(),
-                        }
-                    } catch {
-                        // A provider's native module may be absent on this
-                        // platform (e.g. Android-only USB on iOS) — treat
-                        // a thrown isSupported as unsupported rather than
-                        // letting it bubble up as an unhandled rejection.
-                        return { provider, supported: false }
-                    }
-                }),
-            )
-            if (cancelled) return
-            setSupportedProviders(
-                results.filter(r => r.supported).map(r => r.provider),
-            )
-            setIsReady(true)
-        })()
-        return () => {
-            cancelled = true
-        }
-    }, [allLedgerProviders])
+    const { isReady, supportedProviders, supportedTransportTypes } =
+        useSupportedLedgerTransports()
 
     // Keyed on the joined string so an inline `{ transportTypes: ['usb'] }`
     // literal doesn't bust the memo (and with it the core hook's startScan
@@ -109,11 +59,6 @@ export const useLedgerConnection = (
         const allowed = new Set(transportKey.split(','))
         return supportedProviders.filter(p => allowed.has(p.transportType))
     }, [supportedProviders, transportKey])
-
-    const supportedTransportTypes = useMemo(
-        () => [...new Set(supportedProviders.map(p => p.transportType))],
-        [supportedProviders],
-    )
 
     const core = useLedgerConnectionCore(scanProviders)
 

@@ -15,9 +15,9 @@ import { webcrypto } from 'node:crypto'
 import type { Key } from '@algorandfoundation/keystore-core'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
-// Same technique as `derivePasskeyCredential.spec.ts`: the real native module
-// has no loadable build here, and every test below passes `subtle` explicitly.
-vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
+// Same technique as `derivePasskeyCredential.spec.ts`: the provider has no
+// loadable build here, and every test below passes `subtle` explicitly.
+vi.mock('@perawallet/wallet-extension-provider', () => ({ keystoreSubtle: {} }))
 
 // `@perawallet/wallet-core-kms`'s single-file bundle unconditionally pulls in
 // `@perawallet/wallet-extension-provider` -> `react-native-mmkv`, which also

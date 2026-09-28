@@ -36,10 +36,11 @@ const {
     platformMock: { OS: 'android' as 'android' | 'ios' },
 }))
 
-vi.mock('react-native', () => ({ Platform: platformMock }))
-
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({ state: keystoreState }),
+    getProvider: () => ({
+        deviceInfo: { getDevicePlatform: () => platformMock.OS },
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

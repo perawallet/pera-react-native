@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { Dimensions, Platform } from 'react-native'
+import { Dimensions } from 'react-native'
+import { isAndroid } from '@utils/platform'
 
 const BASE_WIDTH = 375
 const MIN_SCALE = 1
@@ -48,8 +49,7 @@ export const scaleLineHeight = (
     if (lineHeight === undefined) return undefined
     if (fontScale <= 0 || fontScale === 1) return lineHeight
     const clampedScale = Math.min(fontScale, maxMultiplier)
-    const nativeMultiplier =
-        Platform.OS === 'android' ? fontScale : clampedScale
+    const nativeMultiplier = isAndroid() ? fontScale : clampedScale
     if (fontSize === undefined || fontSize <= 0) {
         // No font size to anchor the leading on: keep the whole-box scaling
         // but neutralize the native multiplication so it applies once.

@@ -332,39 +332,3 @@ export const classifyPeraTransaction = (
 
     return baseType
 }
-
-export const isPaymentTransaction = (
-    tx: PeraDisplayableTransaction,
-): boolean => {
-    return tx.txType === 'pay' && tx.paymentTransaction !== undefined
-}
-
-export const isAssetTransferTransaction = (
-    tx: PeraDisplayableTransaction,
-): boolean => {
-    return tx.txType === 'axfer' && tx.assetTransferTransaction !== undefined
-}
-
-export const isAssetConfigTransaction = (
-    tx: PeraDisplayableTransaction,
-): boolean => {
-    return tx.txType === 'acfg' && tx.assetConfigTransaction !== undefined
-}
-
-export const isAssetFreezeTransaction = (
-    tx: PeraDisplayableTransaction,
-): boolean => {
-    return tx.txType === 'afrz' && tx.assetFreezeTransaction !== undefined
-}
-
-export const isKeyRegistrationTransaction = (
-    tx: PeraDisplayableTransaction,
-): boolean => {
-    return tx.txType === 'keyreg'
-}
-
-export const isAppCallTransaction = (
-    tx: PeraDisplayableTransaction,
-): boolean => {
-    return tx.txType === 'appl' && tx.applicationTransaction !== undefined
-}

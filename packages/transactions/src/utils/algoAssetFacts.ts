@@ -10,14 +10,11 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_NAME, isAlgoAssetId } from '@perawallet/wallet-core-shared'
-
-/**
- * Deliberately not `ALGO_ASSET.decimals` from wallet-core-assets: that import
- * pulls react-native-mmkv into this module, and it is reached from the
- * transactions DB layer.
- */
-export const ALGO_DECIMALS = 6
+import {
+    ALGO_ASSET_NAME,
+    ALGO_DECIMALS,
+    isAlgoAssetId,
+} from '@perawallet/wallet-core-shared'
 
 /** Unit name and decimals as an amount renderer needs them. */
 export type AssetDisplayFacts = {

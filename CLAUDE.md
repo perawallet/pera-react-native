@@ -18,6 +18,8 @@ The platform layer (`extensions/*`: storage, keystore, Ledger and device adapter
 
 Component, styling and folder conventions for the app live in `apps/mobile/CLAUDE.md`.
 
+New lint rules: per-file syntax over linted source goes in oxlint (built-in, or the `pera` plugin in `packages/devtools/oxlint/`); anything needing tests/tooling coverage, other files' content or cross-file facts goes in lanekeep (`lanekeep/README.md`).
+
 ## Hooks (CRITICAL)
 
 ### Naming & Suffixes
@@ -52,13 +54,14 @@ Always use the **named import** (`{ Decimal }`), never the default import. Alway
 
 ### Boundary Rules
 
-| Boundary                   | From            | To                 | How                                                                                       |
-| -------------------------- | --------------- | ------------------ | ----------------------------------------------------------------------------------------- |
-| API response → app         | `string` (JSON) | `Decimal`          | Wrap in `new Decimal(...)` in transformer functions                                       |
-| AlgoKit/blockchain → app   | `bigint`        | `Decimal`          | Use `microAlgosToAlgos()` or `baseUnitsToDisplayUnits()`                                  |
-| App → display              | `Decimal`       | formatted `string` | Use `formatNumber`/`formatCurrency` from `@perawallet/wallet-core-shared`                 |
-| App → transaction building | `Decimal`       | `bigint`           | Use `toBigInt()` or `algosToMicroAlgosBigInt()` from `@perawallet/wallet-core-blockchain` |
-| App → database             | `Decimal`       | `TEXT`             | Automatic via `decimalColumn`, no manual conversion needed                                |
+| Boundary                   | From                   | To                        | How                                                                                                                            |
+| -------------------------- | ---------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| API response → app         | `string` (JSON)        | `Decimal`                 | Wrap in `new Decimal(...)` in transformer functions                                                                            |
+| AlgoKit/blockchain → app   | `bigint`               | `Decimal`                 | Use `microAlgosToAlgos()` or `baseUnitsToDisplayUnits()`                                                                       |
+| Chain contract → app       | `Decimal` (base units) | `Decimal` (display units) | `baseUnitsToDisplayUnits()` / `toDecimalUnits()` at the UI or persistence edge; chain-contract types never carry display units |
+| App → display              | `Decimal`              | formatted `string`        | Use `formatNumber`/`formatCurrency` from `@perawallet/wallet-core-shared`                                                      |
+| App → transaction building | `Decimal`              | `bigint`                  | Use `toBigInt()` or `algosToMicroAlgosBigInt()` from `@perawallet/wallet-core-blockchain`                                      |
+| App → database             | `Decimal`              | `TEXT`                    | Automatic via `decimalColumn`, no manual conversion needed                                                                     |
 
 ### Conversion Utilities
 
@@ -117,7 +120,8 @@ Keep JSDoc on exported package APIs where it earns its place (units, constraints
 ## Documentation (CRITICAL)
 
 The same rule as comments, one level up: **record the decision and the reason, never the journey.**
-`pnpm lint:docs` enforces the mechanical half of this and runs in pre-push.
+`pnpm lint:docs` (Markdown, shell, YAML) and the lanekeep rule `pera/no-work-item-refs` (code
+comments, in `pnpm lint`) enforce the mechanical half of this.
 
 **Never write, in a doc or a comment:**
 
@@ -187,7 +191,7 @@ See `docs/TESTING.md` for the integration test harness, MSW handler factories, a
 
 ## Translations
 
-Adding or revising a locale bundle in `apps/mobile/src/i18n/locales/`? Read `docs/I18N_TRANSLATION_GUIDE.md` first. `pnpm run lint:i18n` enforces **bidirectional** key parity against `en.json`, so an extra key fails as loudly as a missing one, so never add CLDR plural categories (`_many`) that `en.json` doesn't use. The guide also records the register per locale (French is formal `vous` on purpose), the two terms that deliberately differ between bundles, and the per-language traps, such as Turkish suffixes never attaching to a `{{placeholder}}`.
+Adding or revising a locale bundle in `apps/mobile/src/i18n/locales/`? Read `docs/I18N_TRANSLATION_GUIDE.md` first. `pera/locale-key-parity` (in `pnpm lint`) enforces **bidirectional** key parity against `en.json`, so an extra key fails as loudly as a missing one, so never add CLDR plural categories (`_many`) that `en.json` doesn't use. The guide also records the register per locale (French is formal `vous` on purpose), the two terms that deliberately differ between bundles, and the per-language traps, such as Turkish suffixes never attaching to a `{{placeholder}}`.
 
 ## Work Completion
 

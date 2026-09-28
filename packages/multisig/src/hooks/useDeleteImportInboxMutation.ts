@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useMutation, type UseMutationResult } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { useMutation } from '@tanstack/react-query'
+import type { Nullable, Network } from '@perawallet/wallet-core-shared'
 import { deleteImportInbox } from '../api/endpoints'
 
 type UseDeleteImportInboxMutationParams = {
@@ -24,18 +24,36 @@ type DeleteImportInboxInput = {
     multisigAddress: string
 }
 
+export type UseDeleteImportInboxMutationResult = {
+    data: void
+    error: Nullable<Error>
+    isError: boolean
+    isIdle: boolean
+    isPending: boolean
+    isSuccess: boolean
+    mutate: (params: DeleteImportInboxInput) => void
+    mutateAsync: (params: DeleteImportInboxInput) => Promise<void>
+}
+
 export const useDeleteImportInboxMutation = ({
     network,
     deviceId,
     onSuccess,
-}: UseDeleteImportInboxMutationParams): UseMutationResult<
-    void,
-    Error,
-    DeleteImportInboxInput
-> => {
-    return useMutation({
+}: UseDeleteImportInboxMutationParams): UseDeleteImportInboxMutationResult => {
+    const mutation = useMutation({
         mutationFn: ({ multisigAddress }: DeleteImportInboxInput) =>
             deleteImportInbox(network, deviceId, multisigAddress),
         onSuccess,
     })
+
+    return {
+        data: mutation.data,
+        error: mutation.error,
+        isError: mutation.isError,
+        isIdle: mutation.isIdle,
+        isPending: mutation.isPending,
+        isSuccess: mutation.isSuccess,
+        mutate: mutation.mutate,
+        mutateAsync: mutation.mutateAsync,
+    }
 }

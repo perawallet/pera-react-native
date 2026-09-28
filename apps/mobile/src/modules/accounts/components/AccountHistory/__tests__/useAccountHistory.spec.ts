@@ -647,9 +647,9 @@ describe('useAccountHistory', () => {
                 expect(mockShowError).toHaveBeenCalledTimes(1)
                 const [error, title] = mockShowError.mock.calls[0]
                 expect(isPeraServiceUnavailableError(error)).toBe(true)
-                expect((error as PeraServiceUnavailableError).network).toBe(
-                    network,
-                )
+                expect(
+                    (error as PeraServiceUnavailableError).scope,
+                ).toStrictEqual({ chainId: 'algorand', networkId: network })
                 expect(title).toBe('common.network_unavailable.title')
             },
         )

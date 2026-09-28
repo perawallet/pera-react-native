@@ -1,0 +1,42 @@
+{
+    "name": "@perawallet/wallet-core-browser-runtime",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./remote-registry": {
+            "types": "./dist/remote-registry.d.ts",
+            "default": "./dist/remote-registry.js"
+        }
+    },
+    "scripts": {
+        "build": "vite build && tsc -p tsconfig.build.json",
+        "dev": "vite build --watch & tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+        "test": "vitest run",
+        "test:unit": "vitest run",
+        "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+    },
+    "dependencies": {
+        "@perawallet/wallet-core-connections": "workspace:*",
+        "@perawallet/wallet-core-dapp": "workspace:*",
+        "@perawallet/wallet-core-passkeys": "workspace:*",
+        "@perawallet/wallet-core-shared": "workspace:*",
+        "@perawallet/wallet-extension-connections": "workspace:*",
+        "@perawallet/wallet-extension-platform-chrome": "workspace:*"
+    },
+    "devDependencies": {
+        "@perawallet/wallet-core-devtools": "workspace:*",
+        "@types/chrome": "catalog:",
+        "@types/node": "catalog:",
+        "fake-indexeddb": "^6.2.5",
+        "typescript": "catalog:",
+        "vite": "catalog:",
+        "vitest": "catalog:"
+    }
+}

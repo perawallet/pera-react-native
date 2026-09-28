@@ -43,7 +43,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => {
         isWalletConnectFocusHint,
         isWalletConnectScheme,
         parseWalletConnectUri,
-        AlgorandChainId: {
+        AlgorandWalletConnectChainId: {
             MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
             TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
         },
@@ -65,18 +65,6 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
     }
 })
-
-vi.mock('@perawallet/wallet-core-polling', () => ({
-    usePollingStore: {
-        getState: vi.fn(() => ({
-            lastRefreshedRound: null,
-            setLastRefreshedRound: vi.fn(),
-        })),
-    },
-    sendShouldRefreshRequest: vi.fn(() =>
-        Promise.resolve({ refresh: false, round: null }),
-    ),
-}))
 
 vi.mock('@perawallet/wallet-core-background', () => ({
     createSyncStorePorts: vi.fn(() => ({})),
@@ -391,15 +379,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 : { kind: 'watch', account },
         ),
         useCanSignWith: vi.fn((account: any) => !!account?.keyPairId),
-        useCanSignArbitraryData: vi.fn(
-            (account: any) =>
-                !!account?.keyPairId && account?.type !== 'hardware',
-        ),
-        useIsRekeyedUnsignable: vi.fn(() => false),
-        useCanInitiateRekey: vi.fn((account: any) => !!account?.keyPairId),
         useRekeyAccount: vi.fn(() => null),
         useSignerFor: vi.fn(() => null),
-        useSignerResolution: vi.fn(() => ({ kind: 'accountNotFound' })),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
             isPending: false,
@@ -532,19 +513,18 @@ class MockAlgodError extends Error {
 }
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    // Real store (not hand-mocked): setCustomNetwork/clearCustomNetwork/
-    // resetState need genuine zustand reactivity so subscribed hooks
-    // re-render on change. Imported by its own module path (not the package
-    // barrel/`../store` index) to avoid evaluating utils/algorandClient's
-    // module-level side effects, which would run for every test in the
-    // suite and reach into the (also-mocked) wallet-core-shared module.
+    // Real custom-network functions (backed by the real network store) so
+    // subscribed hooks re-render on change. Imported by module path, not a
+    // package barrel, to keep utils/algorandClient's module-level side effects
+    // out of every test in the suite.
     const {
-        useCustomNetworkStore,
         getCustomNetworkConfig,
         isCustomNetworkConfigured,
+        setCustomNetwork,
+        clearCustomNetwork,
     } = await vi.importActual<
-        typeof import('@packages/blockchain/src/store/custom-network-store')
-    >('@packages/blockchain/src/store/custom-network-store')
+        typeof import('@packages/chain-shared/src/store/network-store')
+    >('@packages/chain-shared/src/store/network-store')
     // Real ARC-0001 module: `packages/connections` composes its request
     // schema from `arc0001SignTxnRequestSchema` at load, so a hand-written
     // stand-in would silently disarm the resolver's own refusals.
@@ -578,7 +558,10 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             {
                 getState: vi.fn(() => ({
                     network: 'mainnet',
+                    selectedNetworkByChain: { algorand: 'mainnet' },
+                    customNetworksByChain: { algorand: [] },
                     setNetwork: vi.fn(),
+                    selectNetwork: vi.fn(),
                     resetState: vi.fn(),
                 })),
                 // The accounts barrel subscribes at load to mirror per-network
@@ -587,7 +570,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             },
         ),
         // Error-translation exports. Tests that need the real parser should use
-        // `vi.importActual` in their own file (see useAlgodErrorMessage.test.ts).
+        // `vi.importActual` in their own file (see useAlgodErrorMessage.spec.ts).
         AlgodError: MockAlgodError,
         AlgodErrorCode: {
             OVERSPEND: 'overspend',
@@ -612,8 +595,12 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             const { Decimal } = require('decimal.js')
             return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
         }),
-        toBigInt: vi.fn((decimal: { toFixed: (dp: number) => string }) =>
-            BigInt(decimal.toFixed(0)),
+        toBigInt: vi.fn(
+            (decimal: { toFixed: (dp: number, rm: number) => string }) => {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
+                const { Decimal } = require('decimal.js')
+                return BigInt(decimal.toFixed(0, Decimal.ROUND_DOWN))
+            },
         ),
         baseUnitsToDisplayUnits: vi.fn(
             (baseUnits: bigint | number | string, decimals: number) => {
@@ -632,8 +619,9 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             if (firstDp.isZero()) return new Decimal(0)
             return lastDp.minus(firstDp).div(firstDp).mul(100)
         }),
-        useCustomNetworkStore,
         getCustomNetworkConfig,
         isCustomNetworkConfigured,
+        setCustomNetwork,
+        clearCustomNetwork,
     }
 })

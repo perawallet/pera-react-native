@@ -14,9 +14,9 @@ import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 /**
  * Split out from `derivePasskeyCredential.ts` so `packages/migrate` can import
- * these two pure helpers without also pulling in `react-native-quick-crypto`
- * (which `derivePasskeyMainKey` needs and which has no loadable build outside
- * a React Native runtime).
+ * these two pure helpers without also pulling in the provider, whose
+ * `keystoreSubtle` `derivePasskeyMainKey` defaults to and which has no
+ * loadable build under Node.
  */
 
 /**

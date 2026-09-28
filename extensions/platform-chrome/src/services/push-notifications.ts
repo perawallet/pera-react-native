@@ -23,6 +23,14 @@ import { detectBrowser } from './browser'
 
 const noop = (): void => undefined
 
+// Without this a reload of the tab the click opened re-fires the same deeplink.
+const stripDeeplinkFromUrl = (): void => {
+    if (typeof history === 'undefined' || !location.href) return
+    const url = new URL(location.href)
+    url.searchParams.delete('deeplink')
+    history.replaceState(history.state, '', url.toString())
+}
+
 /**
  * Token acquisition runs in a DOM realm (popup/expanded); the `push` handlers
  * live in the service worker. `firebase/messaging/sw` exports no token getter
@@ -82,7 +90,9 @@ export class ChromePushNotificationService implements PushNotificationService {
         // survives that round trip, so type-routed taps (multisig) fall back
         // to URL routing here.
         const url = new URLSearchParams(location.search).get('deeplink')
-        if (url) listener({ url })
+        if (!url) return noop
+        stripDeeplinkFromUrl()
+        listener({ url })
         return noop
     }
 }

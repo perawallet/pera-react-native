@@ -1078,16 +1078,25 @@
                 "body": "O servidor encontrou um problema ao processar sua solicitação. Tente novamente."
             }
         },
-        "validation": {
-            "generic": "Os dados não parecem ser válidos.",
-            "invalid_address": "O endereço não parece ser válido: {{address}}",
-            "invalid_amount": "O valor não parece ser válido: {{amount}}",
-            "invalid_mnemonic": "A passphrase de recuperação não parece ser válida.",
-            "required_field": "Falta um campo obrigatório: {{field}}"
-        },
         "transaction": {
             "title": "Ocorreu um erro ao processar esta transação",
-            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir.",
+            "insufficient_balance_for_opt_in": {
+                "title": "ALGO insuficiente",
+                "body": "Você precisa de mais {{shortfall}} ALGO para adicionar este ativo. Sua conta precisa manter o saldo mínimo e cobrir a taxa da transação."
+            },
+            "already_opted_in": {
+                "title": "Ativo já adicionado",
+                "body": "Esta conta já adicionou este ativo."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "O ativo ainda tem saldo",
+                "body": "Só é possível remover um ativo com saldo zero. Envie ou troque o valor restante primeiro."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Não é possível remover este ativo",
+                "body": "Esta conta criou este ativo, então não pode removê-lo."
+            }
         },
         "kms": {
             "key_not_found": "Não foi possível encontrar a chave de assinatura desta conta.",
@@ -1161,9 +1170,6 @@
             "overview_tab": "Visão geral",
             "card_details_tab": "Dados do cartão",
             "balance": "Saldo",
-            "spendable_per_tx": "≈{{amount}} {{currency}} disponível",
-            "spendable_info_title": "Disponível por transação",
-            "spendable_info_body": "O máximo que uma única compra pode usar: o saldo do seu cartão mais o seu saldo de reembolsos e, com o financiamento automático, até {{limit}} da sua conta vinculada.",
             "withdraw": "Sacar",
             "add_funds": "Adicionar fundos",
             "credits_title": "Créditos",
@@ -1288,8 +1294,6 @@
             "balance": "Saldo: {{amount}} USDC",
             "confirm_title": "Confirmar resgate",
             "confirm_button": "Confirmar",
-            "fee_label": "Taxa de rede",
-            "fee_loading": "Estimando...",
             "success_title": "Resgate enviado",
             "history_title": "Atividade"
         },
@@ -2080,6 +2084,7 @@
             "pair_ledger_description": "Quero recuperar uma conta Algorand protegida pelo meu hardware wallet Ledger via Bluetooth",
             "pair_ledger_usb_title": "Parear Ledger via USB",
             "pair_ledger_usb_description": "Quero recuperar uma conta Algorand protegida pelo meu hardware wallet Ledger via cabo USB",
+            "pair_ledger_unsupported_description": "Não compatível com este navegador ou dispositivo",
             "pera_web_title": "Importar do Pera Web",
             "pera_web_description": "Quero importar contas Algorand do Pera Web",
             "cloud_backup_title": "Importar do backup na nuvem",
@@ -2627,6 +2632,7 @@
         "input": {
             "max": "MÁX",
             "next": "Avançar",
+            "amount_label": "Valor",
             "error_title": "Valor inválido",
             "error_body": "Digite um valor maior que {{min}}.",
             "exceeds_max_title": "Saldo insuficiente",
@@ -2678,8 +2684,9 @@
         },
         "close_account": {
             "title": "Encerrar conta",
-            "body": "Esta conta não tem ativos adicionados. Enviar todo o saldo encerrará a conta na rede Algorand.",
+            "body": "Esta conta não tem ativos adicionados, então você pode encerrá-la e enviar todo o saldo. Algumas exchanges não aceitam transações que encerram uma conta. Se você mantiver a conta aberta, o saldo mínimo de {{minBalance}} ALGO permanece nela.",
             "confirm": "Encerrar conta e enviar",
+            "keep_open": "Enviar sem encerrar",
             "warning": "Esta transação encerrará sua conta na rede Algorand.",
             "success_title": "Conta encerrada",
             "success_subtitle": "Sua conta foi encerrada na rede Algorand."
@@ -2811,6 +2818,7 @@
                 "fetch_from_node": "Buscar do nó",
                 "fetch_failed": "Não foi possível acessar esse nó. Digite os valores manualmente.",
                 "invalid_url": "Digite uma URL http:// ou https:// válida",
+                "invalid_https_url": "Digite uma URL https:// válida",
                 "genesis_required": "Busque ou digite o hash do genesis",
                 "genesis_id_required": "Busque ou digite o ID do genesis",
                 "save": "Salvar e trocar",
@@ -3773,7 +3781,11 @@
         "scan_header": {
             "having_issues": "Com problemas?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Conta Ledger adicionada",
+            "body": "Agora você pode usá-la na extensão da Pera."
+        }
     },
     "countries": {
         "AC": "Ilha de Ascensão",
@@ -4083,7 +4095,17 @@
             "error_invalid_password": "Senha incorreta. Tente novamente.",
             "corrupted_error": "Os dados do seu Vault estão corrompidos e não podem ser desbloqueados. Talvez seja necessário redefinir a extensão e restaurar a partir do seu backup.",
             "passkey_error": "Falha ao desbloquear com passkey. Use sua senha.",
-            "lockout_countdown": "Muitas tentativas. Tente novamente em {{time}}"
+            "lockout_countdown": "Muitas tentativas. Tente novamente em {{time}}",
+            "forgot_password": "Esqueceu a senha?"
+        },
+        "reset": {
+            "title": "Redefinir sua wallet?",
+            "body": "Sua senha não pode ser recuperada. A redefinição apaga tudo o que a Pera Wallet guarda neste navegador e depois você poderá criar uma nova senha.",
+            "restore_note": "Depois, restaure suas contas com a passphrase de recuperação de cada uma. Qualquer conta cuja passphrase de recuperação não tenha backup será perdida.",
+            "hardware_note": "Contas Ledger e contas de observação não são restauradas a partir de uma passphrase. Adicione-as novamente após a redefinição.",
+            "acknowledge": "Entendo que isso apaga meus dados e não pode ser desfeito",
+            "confirm_button": "Redefinir wallet",
+            "error": "Não foi possível redefinir a wallet. Tente novamente."
         },
         "security": {
             "autolock_title": "Bloqueio automático após",
@@ -4109,9 +4131,6 @@
         },
         "approval": {
             "placeholder": "Área de aprovação — chegando no M4."
-        },
-        "expanded": {
-            "redirecting": "Continuando em uma nova aba…"
         },
         "reauth": {
             "title": "Confirme que é você",

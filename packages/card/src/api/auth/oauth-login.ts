@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+    logger,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import type { CardSessionTokens } from '../../models'
 import {
     oauthAuthorizeRequest,
@@ -20,9 +26,12 @@ import {
 import { createOauthState, createPkcePair } from './pkce'
 
 /** The authorize step echoed a different `state` than we sent — possible CSRF. */
-export class OauthStateMismatchError extends Error {
+export class OauthStateMismatchError extends AppError {
     constructor() {
-        super('Baanx OAuth state mismatch')
+        super('Baanx OAuth state mismatch', {
+            severity: ErrorSeverity.HIGH,
+            category: ErrorCategory.VALIDATION,
+        })
         this.name = 'OauthStateMismatchError'
     }
 }

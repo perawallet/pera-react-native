@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

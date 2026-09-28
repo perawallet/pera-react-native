@@ -22,7 +22,7 @@ import {
     toCheckPortMessage,
     type IntegrityCheckPortMessage,
     type IntegrityFrameEvent,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 
 // The check page cannot reach chrome.runtime, so this relays its messages to the
 // worker and tells the hosting page when to expand or remove the frame. No check

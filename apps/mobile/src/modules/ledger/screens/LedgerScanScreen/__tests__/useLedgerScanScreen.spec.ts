@@ -69,6 +69,13 @@ vi.mock('react-native', () => ({
     },
 }))
 
+// vitest doesn't resolve `.web.ts` twins; follow the simulated OS instead.
+vi.mock('../../../utils/scanGesture', () => ({
+    get isScanGestureRequired() {
+        return platformState.os === 'web'
+    },
+}))
+
 const routeParams = vi.hoisted(() => ({
     current: {} as { transportType?: 'ble' | 'usb' },
 }))

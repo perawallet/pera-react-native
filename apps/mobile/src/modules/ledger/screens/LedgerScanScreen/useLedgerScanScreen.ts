@@ -11,7 +11,6 @@
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react'
-import { Platform } from 'react-native'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -26,6 +25,7 @@ import {
     LedgerScanTimeoutError,
 } from '@perawallet/wallet-core-ledger'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { isAndroid, isIOS } from '@utils/platform'
 
 import {
     useBlePermissions,
@@ -34,6 +34,7 @@ import {
     useLedgerExpandedTabHandoff,
 } from '../../hooks'
 import { sanitizeDeviceName } from '../../utils'
+import { isScanGestureRequired } from '../../utils/scanGesture'
 
 /**
  * Per-state copy for the Bluetooth warning toast, mirroring iOS's
@@ -145,8 +146,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     // iOS has no runtime BLE permission request (useBlePermissions reports
     // granted) — a denial surfaces as the adapter's `unauthorized` state and
     // only OS Settings can change it.
-    const isIosBluetoothDenied =
-        Platform.OS === 'ios' && adapterState === 'unauthorized'
+    const isIosBluetoothDenied = isIOS() && adapterState === 'unauthorized'
     const canScanBle = !isUsbOnly && hasPermissions && !isIosBluetoothDenied
 
     // USB HID needs no Bluetooth permission, so a denied BLE permission must
@@ -172,7 +172,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     // again on the same flip would immediately cancel that in-flight
     // `requestDevice()` prompt. The effect only needs the ref's current
     // value for its OTHER triggers (e.g. Bluetooth-recovery restarts).
-    const hasStartedOnWebRef = useRef(Platform.OS !== 'web')
+    const hasStartedOnWebRef = useRef(!isScanGestureRequired)
     const [hasStartedOnWeb, setHasStartedOnWeb] = useState(
         hasStartedOnWebRef.current,
     )
@@ -342,13 +342,12 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     // this actionable state Android-scoped (the error can't originate on iOS
     // anyway — this is defensive).
     const isLocationServicesDisabled =
-        Platform.OS === 'android' &&
-        error instanceof LedgerLocationServicesDisabledError
+        isAndroid() && error instanceof LedgerLocationServicesDisabledError
 
     const isScanTimeout = error instanceof LedgerScanTimeoutError
 
     const needsManualStart =
-        Platform.OS === 'web' &&
+        isScanGestureRequired &&
         !hasStartedOnWeb &&
         !isCheckingPermissions &&
         !isPermissionDenied

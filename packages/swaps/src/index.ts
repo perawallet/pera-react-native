@@ -17,4 +17,9 @@ export * from './models'
 export * from './api'
 export * from './utils'
 export * from './execution'
+export {
+    swapChainAdapters,
+    SwapCosignUnsupportedError,
+    type SwapChainAdapter,
+} from './chain-adapter'
 export { useSwapsStore, useSwapHandoffStore } from './store'

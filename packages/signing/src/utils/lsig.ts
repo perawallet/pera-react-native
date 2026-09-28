@@ -11,16 +11,26 @@
  */
 
 import { LogicSig, LogicSigAccount, decodeAddress } from 'algosdk'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
 
 /**
  * Thrown when an assembled delegated LogicSig fails local signature
  * verification against the signer's public key — a wrong signer address, a
  * corrupt signature, or a program/signature mismatch.
  */
-export class LsigSignatureVerificationError extends Error {
+export class LsigSignatureVerificationError extends AppError {
     constructor(signerAddress: string) {
         super(
             `Delegated LogicSig signature failed verification for ${signerAddress}`,
+            {
+                severity: ErrorSeverity.HIGH,
+                category: ErrorCategory.TRANSACTIONS,
+                recoverable: false,
+            },
         )
         this.name = 'LsigSignatureVerificationError'
     }

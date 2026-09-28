@@ -95,7 +95,7 @@ vi.mock('@components/core', () => ({
     bottomSheetNotifier: { current: null },
 }))
 
-vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
     useArc59Invalidator: () => ({ remove: vi.fn() }),
 }))
 

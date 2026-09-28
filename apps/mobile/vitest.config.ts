@@ -146,7 +146,6 @@ const singletons: AliasEntry[] = [
 // on purpose and run the full suite.
 const distResolvedPackages = new Set([
     '@perawallet/wallet-core-app-integrity',
-    '@perawallet/wallet-core-asa-inbox',
     '@perawallet/wallet-core-background',
     '@perawallet/wallet-core-dapp',
     '@perawallet/wallet-core-database',
@@ -308,10 +307,10 @@ export default defineConfig({
                     // reason: it is a sibling of `__tests__/`, not a child, so
                     // the config-plugin specs matched nothing and never ran.
                     include: [
-                        'src/**/*.{test,spec}.{ts,tsx}',
-                        '__tests__/**/*.{test,spec}.{ts,tsx}',
-                        'plugins/__tests__/**/*.{test,spec}.{ts,tsx}',
-                        '../browser/src/offscreen/**/*.{test,spec}.{ts,tsx}',
+                        'src/**/*.spec.{ts,tsx}',
+                        '__tests__/**/*.spec.{ts,tsx}',
+                        'plugins/__tests__/**/*.spec.{ts,tsx}',
+                        '../browser/src/offscreen/**/*.spec.{ts,tsx}',
                     ],
                     exclude: [
                         '**/node_modules/**',
@@ -344,7 +343,10 @@ export default defineConfig({
                         './vitest.setup.ts',
                         './vitest.integration-setup.ts',
                     ],
-                    include: ['src/__integration__/**/*.{test,spec}.{ts,tsx}'],
+                    include: ['src/__integration__/**/*.spec.{ts,tsx}'],
+                    // Flows run real key derivation and several screen
+                    // transitions, which routinely outrun vitest's 5s default.
+                    testTimeout: 30_000,
                     // Flow tests mount real screens whose queries can still be
                     // in flight when the file ends. Routing their console output
                     // through the worker RPC makes a late log race teardown

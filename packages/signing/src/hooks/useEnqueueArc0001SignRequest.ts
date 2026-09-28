@@ -55,7 +55,7 @@ export type ExternalSignTxnTransport = {
     // ARC-0001 response: an array of (SignedTxnStr | null), same length and
     // order as the original request. Returning a Promise lets transports
     // surface delivery failures through the signing pipeline (e.g. WC v1
-    // bridge socket revival via `ensureConnectorReady`).
+    // bridge socket revival via the connector registry's `ensureReady`).
     respondWithResult: (result: Nullable<string>[]) => Promise<void> | void
     respondWithReject: () => void
     respondWithError: (error: Error) => void

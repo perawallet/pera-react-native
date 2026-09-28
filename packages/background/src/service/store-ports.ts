@@ -12,7 +12,7 @@
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { usePollingStore } from '@perawallet/wallet-core-polling'
+import { usePollingStore } from '../polling'
 import type { SyncStorePorts } from '../models'
 
 export const createSyncStorePorts = (): SyncStorePorts => ({

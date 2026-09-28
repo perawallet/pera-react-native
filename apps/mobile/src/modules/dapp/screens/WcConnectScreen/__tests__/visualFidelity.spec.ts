@@ -16,8 +16,7 @@
 // drifts — the twin gets a tweak, mobile doesn't, and "make it look the same"
 // quietly stops being true.
 //
-// Source-scanning rather than rendering, for the same reason
-// webConnectorOwnership.test.ts scans source: the claim is about what the code
+// Source-scanning rather than rendering: the claim is about what the code
 // references, which a render can't observe. A snapshot would pin the twin to
 // itself, not to mobile — exactly the drift this needs to catch.
 import { describe, it, expect } from 'vitest'

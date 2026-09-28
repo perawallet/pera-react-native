@@ -38,6 +38,7 @@ import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
 import { routeCapabilities } from '@routes/capabilities'
 import { navigateToScreen } from '../navigateToScreen'
+import { isNotificationAllowedDeeplinkType } from '../notification-policy'
 import { isPeraOwnedDeeplink } from '../utils'
 import {
     buildAccountDeeplink,
@@ -144,6 +145,17 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         t('errors.deeplink.invalid_url_body'),
                     )
                 }
+                onError?.()
+                return
+            }
+
+            if (
+                source === 'notification' &&
+                !isNotificationAllowedDeeplinkType(parsedData.type)
+            ) {
+                logger.warn('Blocked notification deeplink', {
+                    type: parsedData.type,
+                })
                 onError?.()
                 return
             }

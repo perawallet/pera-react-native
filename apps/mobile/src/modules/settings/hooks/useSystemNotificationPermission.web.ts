@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { openExternalTab } from '@perawallet/wallet-extension-platform-chrome'
+import { openExternalTab } from '@perawallet/wallet-core-browser-runtime'
 
 type UseSystemNotificationPermissionResult = {
     isEnabled: boolean

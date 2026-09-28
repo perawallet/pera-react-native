@@ -15,43 +15,43 @@ import { renderHook, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { mutationDefaults } from '@perawallet/wallet-core-shared'
+import type { SwapChainAdapter } from '../../chain-adapter'
 import type { SwapQuote } from '../../models'
-import { executeSwap } from '../../execution'
+import {
+    swapChainAdapters,
+    SwapCosignUnsupportedError,
+} from '../../chain-adapter'
+import { registerFakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
 import { useExecuteSwapMutation } from '../useExecuteSwapMutation'
 
 const {
     mockAddSignRequest,
-    mockAlgorandClient,
-    mockEncoder,
     mockPrepareTransactions,
     mockUpdateSwapStatus,
     mockRegisterHandoff,
+    mockSelectedAccount,
 } = vi.hoisted(() => ({
     mockAddSignRequest: vi.fn(),
-    mockAlgorandClient: { client: {} },
-    mockEncoder: {
-        decodeTransaction: vi.fn(),
-        decodeSignedTransaction: vi.fn(),
-        encodeSignedTransactions: vi.fn(),
-    },
     mockPrepareTransactions: vi.fn(),
     mockUpdateSwapStatus: vi.fn(),
     mockRegisterHandoff: vi.fn(),
-}))
-
-vi.mock('../../execution', () => ({
-    executeSwap: vi.fn(),
+    mockSelectedAccount: {
+        current: { address: 'SELECTED', type: 'standard' } as {
+            address: string
+            type: string
+        },
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => mockAlgorandClient,
     useMinimumFeeConfig: () => ({ assetMbr: 100_000n }),
     useNetwork: () => ({ network: 'testnet' }),
-    useTransactionEncoder: () => mockEncoder,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: () => ({ address: 'SELECTED' }),
+    isMultisigAccount: (account: { type: string }) =>
+        account.type === 'multisig',
+    useSelectedAccount: () => mockSelectedAccount.current,
     useSignerFor: (address: string) => ({ address: `signer-of-${address}` }),
 }))
 
@@ -101,11 +101,15 @@ const variables = {
 }
 
 describe('useExecuteSwapMutation', () => {
+    let executeSwap: SwapChainAdapter['executeSwap']
+
     beforeEach(() => {
-        vi.mocked(executeSwap).mockReset()
+        mockSelectedAccount.current = { address: 'SELECTED', type: 'standard' }
+        executeSwap = vi.fn()
+        registerFakeSwapAdapter({ executeSwap })
     })
 
-    test('runs the use-case with the selected account, its signer and the wired context', async () => {
+    test("hands the selected account, its signer and the wired context to the network's chain adapter", async () => {
         vi.mocked(executeSwap).mockResolvedValue({
             kind: 'success',
             txIds: ['T'],
@@ -123,16 +127,14 @@ describe('useExecuteSwapMutation', () => {
         expect(executeSwap).toHaveBeenCalledWith(
             {
                 ...variables,
-                account: { address: 'SELECTED' },
+                account: { address: 'SELECTED', type: 'standard' },
                 signer: { address: 'signer-of-SELECTED' },
             },
             {
                 network: 'testnet',
-                algorandClient: mockAlgorandClient,
-                assetMbr: 100_000n,
+                assetOptInMinBalance: 100_000n,
                 deviceId: 'device-testnet',
                 addSignRequest: mockAddSignRequest,
-                ...mockEncoder,
                 prepareTransactions: mockPrepareTransactions,
                 updateSwapStatus: mockUpdateSwapStatus,
                 registerHandoff: mockRegisterHandoff,
@@ -153,5 +155,36 @@ describe('useExecuteSwapMutation', () => {
         })
 
         expect(executeSwap).toHaveBeenCalledTimes(1)
+    })
+
+    test('rejects without executing when no chain adapter is registered', async () => {
+        swapChainAdapters.reset()
+        const { result } = renderHook(() => useExecuteSwapMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await expect(result.current.mutateAsync(variables)).rejects.toThrow(
+                'No swap adapter is registered',
+            )
+        })
+
+        expect(executeSwap).not.toHaveBeenCalled()
+    })
+
+    test('refuses a shared-account swap on a chain without co-sign support', async () => {
+        mockSelectedAccount.current = { address: 'JOINT', type: 'multisig' }
+        registerFakeSwapAdapter({ executeSwap, submitSignedGroup: undefined })
+        const { result } = renderHook(() => useExecuteSwapMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await expect(
+                result.current.mutateAsync(variables),
+            ).rejects.toBeInstanceOf(SwapCosignUnsupportedError)
+        })
+
+        expect(executeSwap).not.toHaveBeenCalled()
     })
 })

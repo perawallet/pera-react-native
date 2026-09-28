@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import {
     useQuery,
     useQueryClient,
-    type UseQueryResult,
+    type RefetchOptions,
 } from '@tanstack/react-query'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { MultisigSignRequest } from '../models'
@@ -43,6 +43,13 @@ type UseSignRequestDetailQueryParams = {
 
 const PENDING_POLL_INTERVAL = 5000
 
+export type UseSignRequestDetailQueryResult = {
+    data: MultisigSignRequest | undefined
+    isLoading: boolean
+    isError: boolean
+    refetch: (options?: RefetchOptions) => unknown
+}
+
 export const useSignRequestDetailQuery = ({
     network,
     deviceId,
@@ -50,14 +57,11 @@ export const useSignRequestDetailQuery = ({
     enabled = true,
     pollWhilePending = false,
     pollWhileFailed = false,
-}: UseSignRequestDetailQueryParams): UseQueryResult<
-    MultisigSignRequest,
-    Error
-> => {
+}: UseSignRequestDetailQueryParams): UseSignRequestDetailQueryResult => {
     const queryClient = useQueryClient()
     const queryKey = getSignRequestDetailQueryKey(network, signRequestId)
 
-    return useQuery({
+    const query = useQuery({
         queryKey,
         // Backfill `proposer_address` from the previous cached value when
         // the search endpoint that backs `getSignRequestDetail` omits it
@@ -98,4 +102,11 @@ export const useSignRequestDetailQuery = ({
               }
             : undefined,
     })
+
+    return {
+        data: query.data,
+        isLoading: query.isLoading,
+        isError: query.isError,
+        refetch: query.refetch,
+    }
 }

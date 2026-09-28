@@ -17,4 +17,11 @@ export { PermissionItem } from './components/PermissionItem'
 export { WalletConnectErrorContent } from './components/WalletConnectErrorContent'
 export { useReturnToDapp } from './hooks/useReturnToDapp'
 export { usePairingProgressStore } from './stores/usePairingProgressStore'
+export {
+    clearActiveWalletConnectV1Delivery,
+    deliverApprove,
+    deliverReject,
+    deliverRejectInBackground,
+    setActiveWalletConnectV1Delivery,
+} from './utils/activeV1Delivery'
 export { getPreferredDappIcon } from './utils/dapp-icon'

@@ -38,10 +38,10 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 // Mutable capability map: mutate `mockCapabilities` per test to simulate the
-// native-shaped (inAppWebView: true) and web-shaped (false) route capability
-// maps without re-mocking.
+// native-shaped (true) and web-shaped (false) route capability maps without
+// re-mocking.
 const { mockCapabilities } = vi.hoisted(() => ({
-    mockCapabilities: { inAppWebView: true },
+    mockCapabilities: { inAppWebView: true, fullScreenMediaViewer: true },
 }))
 
 vi.mock('@routes/capabilities', () => ({
@@ -97,15 +97,9 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-// Mutable platform stub: mutate `mockPlatform` per test to simulate the
-// native (ios) and web builds without re-mocking.
-const { mockPlatform } = vi.hoisted(() => ({
-    mockPlatform: { OS: 'ios' },
-}))
-
 vi.mock('react-native', () => ({
     Linking: { openURL: (...args: unknown[]) => mockOpenURL(...args) },
-    Platform: mockPlatform,
+    Platform: { OS: 'ios' },
 }))
 
 vi.mock('@utils/shareText', () => ({
@@ -230,8 +224,10 @@ describe('useCollectibleDetail', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        Object.assign(mockCapabilities, { inAppWebView: true })
-        Object.assign(mockPlatform, { OS: 'ios' })
+        Object.assign(mockCapabilities, {
+            inAppWebView: true,
+            fullScreenMediaViewer: true,
+        })
         mockGetImageBase64.mockResolvedValue('base64data')
         mockSaveImageToDevice.mockResolvedValue(undefined)
         mockUseSelectedAccount.mockReturnValue(mockAccount)
@@ -812,9 +808,9 @@ describe('useCollectibleDetail', () => {
             expect(mockRequestBottomSheet).not.toHaveBeenCalled()
         })
 
-        describe('on web', () => {
+        describe('without the full-screen media viewer (web)', () => {
             it('opens the raw media URL in a new tab instead of a bottom sheet', () => {
-                Object.assign(mockPlatform, { OS: 'web' })
+                mockCapabilities.fullScreenMediaViewer = false
                 mockUseSingleAssetDetailsQuery.mockReturnValue({
                     data: makeAssetWithMedia([
                         {
@@ -839,7 +835,7 @@ describe('useCollectibleDetail', () => {
             })
 
             it('refuses creator-supplied media that is not absolute https', () => {
-                Object.assign(mockPlatform, { OS: 'web' })
+                mockCapabilities.fullScreenMediaViewer = false
                 mockUseSingleAssetDetailsQuery.mockReturnValue({
                     data: makeAssetWithMedia([
                         {

@@ -78,6 +78,7 @@ vi.mock('@hooks/useLanguage')
 // deterministic regardless of local env.
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { debugEnabled: false },
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 import {

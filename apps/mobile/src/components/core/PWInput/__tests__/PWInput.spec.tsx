@@ -14,22 +14,21 @@ import { Platform } from 'react-native'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { PWInput, getSensitiveInputProps } from '../PWInput'
+import * as webInputPlatform from '../inputPlatform.web'
 
 const originalOS = Platform.OS
+
+// vitest doesn't resolve `.web.ts` twins, so the web cases swap them in here.
+const inputPlatform = vi.hoisted(() => ({
+    inputFocusRingReset: null as object | null,
+    isVisibilityToggleAlwaysMounted: false,
+}))
+vi.mock('../inputPlatform', () => inputPlatform)
 
 describe('PWInput', () => {
     it('renders correctly', () => {
         render(<PWInput placeholder='Enter text' />)
         expect(screen.getByPlaceholderText('Enter text')).toBeTruthy()
-    })
-
-    it('calls onChangeText when text changes', () => {
-        render(
-            <PWInput
-                value='test'
-                onChangeText={() => {}}
-            />,
-        )
     })
 
     // Retrying with simpler test case for input
@@ -96,12 +95,15 @@ describe('PWInput', () => {
         })
 
         describe('on web', () => {
-            afterEach(() => {
-                Platform.OS = originalOS
+            afterEach(async () => {
+                Object.assign(
+                    inputPlatform,
+                    await vi.importActual('../inputPlatform'),
+                )
             })
 
             it('keeps the visibility toggle mounted regardless of focus', () => {
-                Platform.OS = 'web'
+                Object.assign(inputPlatform, webInputPlatform)
                 render(
                     <PWInput
                         placeholder='pw-web'

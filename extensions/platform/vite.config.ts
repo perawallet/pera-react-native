@@ -17,7 +17,12 @@ import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/libra
 export default defineConfig(
     defineLibraryConfig({
         root: __dirname,
-        entry: resolve(__dirname, 'src/index.ts'),
-        fileName: () => 'index.js',
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            'test-utils/index': resolve(__dirname, 'src/test-utils/index.ts'),
+        },
+        fileName: (_format, entryName) => `${entryName}.js`,
+        // Only the test-utils entry imports these; the consuming test suite supplies them.
+        external: ['react', 'react/jsx-runtime', '@tanstack/react-query'],
     }),
 )

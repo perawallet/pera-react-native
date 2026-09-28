@@ -50,7 +50,7 @@ const buildNativeCredential = (
     }) as NativeStoredCredential
 
 // toUrlSafeBase64 unit tests live in @perawallet/wallet-core-shared
-// (utils/__tests__/strings.test.ts) — the helper moved there.
+// (utils/__tests__/strings.spec.ts) — the helper moved there.
 
 // The restated copy in `../passkey` is what the model compares against; this
 // is the only thing standing between it and silent drift from the keystore.

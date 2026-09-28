@@ -46,7 +46,7 @@ Navigators and mountable screens stay in `routes/index.tsx`; see "Module Boundar
 - **Screen logic** → extract into `use[ModuleName]Screen.ts` and test the hook with `renderHook`.
 - **Component logic** → extract into `use[Component].ts` colocated with the component and test the hook.
 - **Module utils** → test the pure functions in `__tests__/`.
-- **Flow coverage** → if this module introduces a non-trivial user flow (multi-screen, network-dependent, state-changing), add an integration test in `apps/mobile/src/__integration__/<flow>.test.tsx`. See `docs/TESTING.md` for the harness.
+- **Flow coverage** → if this module introduces a non-trivial user flow (multi-screen, network-dependent, state-changing), add an integration test in `apps/mobile/src/__integration__/<flow>.spec.tsx`. See `docs/TESTING.md` for the harness.
 
 ### 7. Verify
 

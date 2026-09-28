@@ -29,7 +29,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetworkStore: { getState: () => ({ network: 'testnet' }) },
 }))
 
-vi.mock('@perawallet/wallet-core-polling', () => ({
+vi.mock('../polling', () => ({
     usePollingStore: {
         getState: () => ({
             lastRefreshedRound: { mainnet: 42 },

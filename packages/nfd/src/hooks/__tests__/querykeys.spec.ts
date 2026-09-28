@@ -18,7 +18,7 @@ import { describe, test, expect, vi } from 'vitest'
 // otherwise reach the real platform/provider plumbing and fail resolving
 // react-native-mmkv (a native module vitest can't load). Scoped to this file:
 // every other test in this package mocks '@perawallet/wallet-core-blockchain'
-// wholesale instead (see e.g. useNfdForAddressQuery.test.ts), so nothing else
+// wholesale instead (see e.g. useNfdForAddressQuery.spec.ts), so nothing else
 // needs this.
 const keyValueStorage = {
     getItem: () => null,

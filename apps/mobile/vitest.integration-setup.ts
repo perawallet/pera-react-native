@@ -14,7 +14,7 @@
 // `vi.mock` factories are hoisted to the top of the module — top-level
 // imports aren't bound when they run, so the factories below `require('react')`.
 
-import { afterEach, beforeEach, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest'
 
 // Start from the unit setup's native-module, navigation and package mocks,
 // then opt back into the real code below. Running native firebase, keychain,
@@ -27,8 +27,26 @@ import './vitest.setup'
 import { useBottomSheetStore } from './src/modules/bottom-sheet/store/bottomSheetStore'
 import { setTestTheme } from './src/test-utils/test-theme'
 import { getTheme } from './src/theme/theme'
+import { onUnhandledRequest, server } from './src/test-utils/msw-server'
 
 setTestTheme(getTheme('light'))
+
+// Registered before any file-level hook, so a file's beforeAll/beforeEach
+// `server.use(...)` lands on a listening server and the reset runs after the
+// file's own afterEach. Handlers added in beforeAll are gone after the first
+// test; per-test handlers belong in beforeEach.
+beforeAll(() => server.listen({ onUnhandledRequest }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
+
+// The app registers chain adapters before React mounts; flows render without
+// that bootstrap. Imported here rather than at the top so the chain packages
+// load after a test file's own vi.unmock calls have taken effect.
+beforeAll(async () => {
+    const { registerChainAdapters } =
+        await import('./src/bootstrap/chain-adapters')
+    registerChainAdapters()
+})
 
 // The bottom-sheet store is a module-scoped singleton, so requests opened in one
 // test survive into the next unless reset.
@@ -55,7 +73,6 @@ vi.unmock('@perawallet/wallet-core-assets')
 vi.unmock('@perawallet/wallet-core-projects')
 vi.unmock('@perawallet/wallet-core-walletconnect')
 vi.unmock('@perawallet/wallet-core-swaps')
-vi.unmock('@perawallet/wallet-core-polling')
 vi.unmock('@perawallet/wallet-core-background')
 vi.unmock('@perawallet/wallet-core-settings')
 vi.unmock('@perawallet/wallet-core-contacts')
@@ -93,7 +110,6 @@ vi.unmock('@perawallet/wallet-extension-provider')
 vi.unmock('@perawallet/wallet-core-kms')
 vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-blockchain')
-vi.unmock('@perawallet/wallet-core-age-gate')
 
 // The send/swap pipelines fire a background task that awaits chain confirmation
 // after submission returns. Against MSW that poll never resolves, so it logs
@@ -178,7 +194,7 @@ vi.mock('expo-file-system', () => {
     // The ASB import screen uses the static `File.pickFileAsync` to surface
     // the native picker and then reads `.text()` on the picked file.
     // Tests override the `pickFileAsync` vi.fn() per-case to supply backup
-    // contents — see `__integration__/onboarding-import-asb.test.tsx`.
+    // contents — see `__integration__/onboarding-import-asb.spec.tsx`.
     // `shareFile` instead constructs `new File(Paths.cache, fileName)` and
     // calls `create`/`write`/`uri`/`exists`/`delete`.
     class File {

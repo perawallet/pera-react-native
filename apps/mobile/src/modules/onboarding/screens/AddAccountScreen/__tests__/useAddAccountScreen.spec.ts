@@ -96,6 +96,7 @@ vi.mock('@modules/webview', () => ({
     useWebView: () => ({
         pushWebView: mockPushWebView,
     }),
+    withLanguageParam: (url: string, locale: string) => `${url}?lang=${locale}`,
 }))
 
 vi.mock('@perawallet/wallet-core-config', async () => {
@@ -916,7 +917,7 @@ describe('useAddAccountScreen', () => {
         })
 
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: 'https://example.com/terms',
+            url: 'https://example.com/terms?lang=en',
             id: 'terms-of-service',
         })
     })
@@ -929,7 +930,7 @@ describe('useAddAccountScreen', () => {
         })
 
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: 'https://example.com/privacy',
+            url: 'https://example.com/privacy?lang=en',
             id: 'privacy-policy',
         })
     })

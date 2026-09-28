@@ -155,6 +155,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
+    logEvent: vi.fn(),
+    createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'test-device-id',
 }))
 

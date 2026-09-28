@@ -10,17 +10,18 @@
  limitations under the License
  */
 
-import { Platform, useWindowDimensions } from 'react-native'
+import { useWindowDimensions } from 'react-native'
 import { type IconName, PWIcon } from '@components/core'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@rneui/themed'
 import { trackEvent } from '@analytics'
+import { isAndroid } from '@utils/platform'
 import { screenListeners } from './listeners'
 import { TabLabel } from '@components/TabLabel'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BOTTOM_TAB_HEIGHT_ANDROID, BOTTOM_TAB_HEIGHT_IOS } from '@constants/ui'
 import { tabScreens } from './tab-screens'
-import { getWebTabTransition } from './tab-transitions'
+import { getTabTransition } from './tab-transitions'
 import { AccountDrawer } from '@modules/accounts'
 import type { TabBarStackParamList } from './tab-types'
 
@@ -39,9 +40,7 @@ export const TabBarStackNavigator = () => {
             <TabBarStack.Navigator
                 initialRouteName='Home'
                 screenOptions={({ route }) => ({
-                    ...(Platform.OS === 'web'
-                        ? getWebTabTransition(width)
-                        : null),
+                    ...getTabTransition(width),
                     headerShown: false,
                     // Left unset, BottomTabBar's shouldUseHorizontalLabels flips the
                     // label beside the icon whenever the tabs fit side by side —
@@ -54,7 +53,7 @@ export const TabBarStackNavigator = () => {
                         height:
                             insets.bottom +
                             theme.spacing.md +
-                            (Platform.OS === 'android'
+                            (isAndroid()
                                 ? BOTTOM_TAB_HEIGHT_ANDROID
                                 : BOTTOM_TAB_HEIGHT_IOS),
                         // Overriding `height` drops React Navigation's default

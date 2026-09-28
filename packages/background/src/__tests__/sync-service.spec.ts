@@ -88,7 +88,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     isPeraBackedNetwork: (n: string) => n === 'mainnet' || n === 'testnet',
 }))
 
-vi.mock('@perawallet/wallet-core-polling', () => ({
+vi.mock('../polling', () => ({
     sendShouldRefreshRequest: (...args: unknown[]) =>
         mockSendShouldRefreshRequest(...args),
     usePollingStore: {
@@ -718,8 +718,7 @@ describe('SyncService', () => {
         )
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
-        const { usePollingStore } =
-            await import('@perawallet/wallet-core-polling')
+        const { usePollingStore } = await import('../polling')
 
         // Pretend we already completed the initial force-sync so the next
         // tick goes through checkShouldRefresh. lastRefreshedRound must be
@@ -862,8 +861,7 @@ describe('SyncService', () => {
         })
         mockSendShouldRefreshRequest.mockRejectedValue(authError)
         const { logger } = await import('@perawallet/wallet-core-shared')
-        const { usePollingStore } =
-            await import('@perawallet/wallet-core-polling')
+        const { usePollingStore } = await import('../polling')
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
 
@@ -896,8 +894,7 @@ describe('SyncService', () => {
     it('force-syncs a network absent from the persisted round map, sending null (not undefined) for its last-refreshed round', async () => {
         const { useNetworkStore } =
             await import('@perawallet/wallet-core-blockchain')
-        const { usePollingStore } =
-            await import('@perawallet/wallet-core-polling')
+        const { usePollingStore } = await import('../polling')
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
 
@@ -907,7 +904,7 @@ describe('SyncService', () => {
         // betanet/custom, which now short-circuit before this request
         // entirely and so can no longer demonstrate the wire-payload
         // assertion below). testnet's key is absent here to simulate a
-        // partially-seeded persisted map, mirroring how packages/polling's
+        // partially-seeded persisted map, mirroring how the polling
         // store can have a network key genuinely absent rather than an
         // explicit null.
         useNetworkStore.getState = vi.fn(() => ({ network: 'testnet' }))
@@ -1425,8 +1422,7 @@ describe('SyncService', () => {
         it('keeps syncing a Pera-less network (custom) on subsequent ticks without ever calling should-refresh', async () => {
             const { fetchAndPersistAccount } =
                 await import('@perawallet/wallet-core-accounts')
-            const { usePollingStore } =
-                await import('@perawallet/wallet-core-polling')
+            const { usePollingStore } = await import('../polling')
 
             mockNetwork = 'custom'
             // Already synced (a number, not null) so neverSynced is false —
@@ -1469,8 +1465,7 @@ describe('SyncService', () => {
         }, 8000)
 
         it('control: still calls should-refresh for a Pera-backed network (mainnet)', async () => {
-            const { usePollingStore } =
-                await import('@perawallet/wallet-core-polling')
+            const { usePollingStore } = await import('../polling')
 
             usePollingStore.getState = vi.fn(() => ({
                 lastRefreshedRound: { mainnet: 100, testnet: null },
@@ -1645,8 +1640,7 @@ describe('SyncService', () => {
         })
 
         it('backs off when shouldRefresh keeps failing after the first sync', async () => {
-            const { usePollingStore } =
-                await import('@perawallet/wallet-core-polling')
+            const { usePollingStore } = await import('../polling')
             const originalGetState = usePollingStore.getState
             usePollingStore.getState = (() => ({
                 lastRefreshedRound: { mainnet: 42, testnet: null },

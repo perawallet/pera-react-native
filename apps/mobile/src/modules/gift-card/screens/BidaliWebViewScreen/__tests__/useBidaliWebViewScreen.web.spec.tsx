@@ -40,6 +40,7 @@ vi.mock('../../../hooks/useBidaliClose', () => ({
 
 vi.mock('react-native', () => ({
     Linking: { openURL: vi.fn() },
+    Platform: { OS: 'ios' },
 }))
 
 vi.mock('react-native-webview', () => ({ default: {} }))

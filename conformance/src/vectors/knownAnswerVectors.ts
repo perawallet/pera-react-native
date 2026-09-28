@@ -33,7 +33,7 @@ export type InRepoHdVector = {
 }
 
 /**
- * Pinned from `packages/kms/src/crypto/__tests__/hdwallet-integration.test.ts:34-38`
+ * Pinned from `packages/kms/src/crypto/__tests__/hdwallet-integration.spec.ts:34-38`
  * — a BIP39 24-word mnemonic at path `m/44'/283'/0'/0/0` (Peikert derivation),
  * documented there as matching the native iOS/Android Pera apps.
  *

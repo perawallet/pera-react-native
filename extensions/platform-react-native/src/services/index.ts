@@ -12,6 +12,7 @@
 
 export { RNAgeGateService } from './age-gate'
 export { RNAppIntegrityService } from './app-integrity'
+export { RNAppLifecycleService } from './app-lifecycle'
 export { RNFirebaseService } from './firebase'
 export { RNBiometricsService } from './biometrics'
 export { RNKeyValueStorageService } from './key-value-storage'

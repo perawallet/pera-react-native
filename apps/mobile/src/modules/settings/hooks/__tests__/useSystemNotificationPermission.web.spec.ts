@@ -14,7 +14,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 
 const openExternalTabMock = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     openExternalTab: openExternalTabMock,
 }))
 

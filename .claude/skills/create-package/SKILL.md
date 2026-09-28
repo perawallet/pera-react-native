@@ -16,7 +16,7 @@ mkdir -p packages/[package-name]/src/store/__tests__
 
 ### 2. Create package.json
 
-Match the shape of an existing package (`packages/analytics` is the smallest current example).
+Match the shape of an existing package (`packages/search` is one of the smallest).
 `main`/`types`/`exports` point at `dist/` — packages ship built output, not source:
 
 ```json

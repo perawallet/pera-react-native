@@ -398,7 +398,7 @@ test('the injected row pairs a real WC session, and approving it surfaces the ve
             icons: [],
         },
     })
-    // Wildcard chainId (4160, AlgorandChainId.all) accepts pairing regardless
+    // Wildcard chainId (4160, AlgorandWalletConnectChainId.all) accepts pairing regardless
     // of which network the extension is currently running against.
     await dappConnector.createSession({ chainId: 4160 })
     const uri = dappConnector.uri

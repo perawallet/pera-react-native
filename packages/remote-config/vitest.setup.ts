@@ -37,6 +37,10 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: vi.fn(() => ({
+        deviceInfo: {
+            getDevicePlatform: () => 'ios',
+            isStoreBuild: () => false,
+        },
         keyValueStorage: {
             getItem: (key: string) => store.get(key) ?? null,
             setItem: (key: string, value: string) => store.set(key, value),

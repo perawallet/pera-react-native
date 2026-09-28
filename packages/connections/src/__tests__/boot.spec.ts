@@ -58,6 +58,7 @@ const makeRegistry = (order: string[]): ConnectionRegistry => ({
     networksFor: vi.fn(() => []),
     disconnect: vi.fn(async () => {}),
     disconnectAll: vi.fn(async () => {}),
+    reconnect: vi.fn(),
     subscribeToProposals: vi.fn(() => () => {}),
     subscribeToMessages: vi.fn(() => () => {}),
     subscribeToErrors: vi.fn(() => () => {}),

@@ -6,11 +6,15 @@ contract to stop behaviour being re-derived from the screens.
 
 ## Where the code lives
 
-| Path                            | Holds                                   |
-| ------------------------------- | --------------------------------------- |
-| `packages/card/`                | API clients, session, stores, models    |
-| `apps/mobile/src/modules/card/` | Screens, onboarding routes, dashboard   |
-| `modules/gift-card/`            | Gift cards: separate flow, same backend |
+| Path                                | Holds                                                    |
+| ----------------------------------- | -------------------------------------------------------- |
+| `packages/card/`                    | API clients, session, stores, models, `CardChainAdapter` |
+| `packages/chain-algorand/src/card/` | Escrow contracts, AutoDraw LogicSig, delegation bodies   |
+| `apps/mobile/src/modules/card/`     | Screens, onboarding routes, dashboard                    |
+| `modules/gift-card/`                | Gift cards: separate flow, same backend                  |
+
+The card package reaches every chain-specific step through the adapter the
+chain package registers, so it never imports `chain-algorand`.
 
 ## Ownership
 
@@ -89,8 +93,9 @@ A killswitch app (ARC-56) can disable AutoDraw independently of the delegation.
 The delegated program is pinned twice. Both checks fail closed in every
 environment, because staging builds sign real keys too:
 
-- The vendored template (`packages/card/src/api/escrow/autodraw-teal.ts`) must
-  hash to `CARD_AUTODRAW_TEMPLATE_HASH`, one SHA-256 for every network. It is
+- The vendored template
+  (`packages/chain-algorand/src/card/escrow/autodraw-teal.ts`) must hash to
+  `CARD_AUTODRAW_TEMPLATE_HASH`, one SHA-256 for every network. It is
   checked by `pnpm check:autodraw-hash` inside `pnpm build`, and again by
   `verifyAutoDrawTealTemplate` before the user signs.
 - The algod-compiled program must hash to the network's

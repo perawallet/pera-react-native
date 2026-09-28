@@ -13,7 +13,7 @@
 import {
     CONNECTIONS_CONTROL_SCOPE,
     isWcPagePairMessage,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { ensureOffscreenDocument } from './offscreen'
 
 // Every pairing is a live socket to a page-chosen bridge host in the offscreen

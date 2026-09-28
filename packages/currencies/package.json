@@ -28,7 +28,6 @@
     "drizzle-orm": "catalog:",
     "zod": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
     "zustand": "catalog:",
     "@tanstack/react-query": "catalog:"
   },
@@ -39,6 +38,7 @@
     "msw": "catalog:",
     "@types/react": "catalog:",
     "@testing-library/react": "catalog:",
-    "@perawallet/wallet-core-devtools": "workspace:*"
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "react-dom": "catalog:"
   }
 }

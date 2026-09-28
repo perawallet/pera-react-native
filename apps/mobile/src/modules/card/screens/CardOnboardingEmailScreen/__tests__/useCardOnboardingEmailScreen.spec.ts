@@ -92,6 +92,8 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => ({
 
 let mockDeviceId: string | null = 'device-1'
 vi.mock('@perawallet/wallet-core-device', () => ({
+    logEvent: vi.fn(),
+    createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => mockDeviceId,
 }))
 

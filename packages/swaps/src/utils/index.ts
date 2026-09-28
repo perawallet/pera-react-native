@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-export * from './computeSwapAlgoShortfall'
 export * from './isSwappableAsset'
 export * from './quoteFreshness'
 export * from './slippage'
 export * from './swapQuoteHelpers'
 export * from './resolveSwapHandoffOutcome'
-export * from './validateSwapGroupAgainstQuote'

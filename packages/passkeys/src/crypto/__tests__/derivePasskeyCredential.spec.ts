@@ -13,9 +13,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { webcrypto } from 'node:crypto'
 
-// Same technique as `writeNativePasskeyEntry.spec.ts`: the real native module
-// has no loadable build here, and every test below passes `subtle` explicitly.
-vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
+// Same technique as `writeNativePasskeyEntry.spec.ts`: the provider has no
+// loadable build here, and every test below passes `subtle` explicitly.
+vi.mock('@perawallet/wallet-extension-provider', () => ({ keystoreSubtle: {} }))
 
 import {
     derivePasskeyCredential,

@@ -16,7 +16,7 @@ import type {
     SignableAnalysis,
     AnalysisContext,
     AnalysisWarning,
-    TransactionSummary,
+    AlgorandTransactionSummary,
 } from '../types'
 import {
     AnalysisError,
@@ -152,11 +152,13 @@ const createNonTransactionAnalysis = (
 /**
  * Create a human-readable summary of a transaction
  */
-const summarizeTransaction = (tx: PeraTransaction): TransactionSummary => {
+const summarizeTransaction = (
+    tx: PeraTransaction,
+): AlgorandTransactionSummary => {
     const type = classifyPeraTransaction(tx)
     const senderAddress = tx.sender.toString()
 
-    const summary: TransactionSummary = {
+    const summary: AlgorandTransactionSummary = {
         type,
         sender: senderAddress,
     }

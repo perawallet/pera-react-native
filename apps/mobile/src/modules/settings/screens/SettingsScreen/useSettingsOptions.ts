@@ -17,6 +17,7 @@ import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { config } from '@perawallet/wallet-core-config'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import { routeCapabilities } from '@routes/capabilities'
+import { withLanguageParam } from '@modules/webview'
 import type { IconName } from '@components/core'
 import type { SettingsStackParamsList } from '../../routes'
 
@@ -35,7 +36,7 @@ export type SettingsOptionSection = {
 }
 
 export const useSettingsOptions = () => {
-    const { t } = useLanguage()
+    const { t, currentLanguage } = useLanguage()
     const isLanguageSelectionEnabled = useIsLanguageSelectionEnabled()
     const isCloudBackupEnabled = useIsCloudBackupEnabled()
     const isCloudBackupConfigured = useCloudBackupStore(state =>
@@ -169,12 +170,18 @@ export const useSettingsOptions = () => {
                     {
                         icon: 'text-document',
                         title: t('settings.main.terms_title'),
-                        url: config.termsOfServiceUrl,
+                        url: withLanguageParam(
+                            config.termsOfServiceUrl,
+                            currentLanguage,
+                        ),
                     },
                     {
                         icon: 'text-document',
                         title: t('settings.main.privacy_title'),
-                        url: config.privacyPolicyUrl,
+                        url: withLanguageParam(
+                            config.privacyPolicyUrl,
+                            currentLanguage,
+                        ),
                     },
                     ...(routeCapabilities.developerSettings
                         ? [
@@ -192,6 +199,7 @@ export const useSettingsOptions = () => {
         return sections.filter(section => section.items.length > 0)
     }, [
         t,
+        currentLanguage,
         isLanguageSelectionEnabled,
         isCloudBackupEnabled,
         isCloudBackupConfigured,

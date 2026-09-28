@@ -12,13 +12,15 @@
 
 import { handleAutoLockAlarm } from '@perawallet/wallet-extension-keystore-chrome/vault/autolock'
 import {
-    ApprovalWindowBridge,
-    CONNECTIONS_CONTROL_SCOPE,
     DB_CONTROL_SCOPE,
-    PasskeyRouter,
     ensureDeviceInstallationID,
     startStorageProxyHost,
 } from '@perawallet/wallet-extension-platform-chrome'
+import {
+    ApprovalWindowBridge,
+    CONNECTIONS_CONTROL_SCOPE,
+    PasskeyRouter,
+} from '@perawallet/wallet-core-browser-runtime'
 import { config } from '@perawallet/wallet-core-config'
 import { installConnectModalPairRoute } from './connect-modal-pair'
 import {

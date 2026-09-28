@@ -11,12 +11,12 @@
  */
 
 import type { AppIntegrityService } from './app-integrity'
+import type { AppLifecycleService } from './app-lifecycle'
 import type { AgeGateService } from './age-gate'
 import type { AnalyticsService } from './analytics'
 import type { BiometricsService } from './biometrics'
 import type { CloudFileStorageService } from './cloud-file-storage'
 import type { DeviceInfoService } from './device'
-import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { MigrationService } from './migration'
 import type {
     PushNotificationInitResult,
@@ -38,8 +38,8 @@ export interface PlatformServices {
     crashReporting: CrashReportingService
     deviceInfo: DeviceInfoService
     appIntegrity: AppIntegrityService
+    appLifecycle: AppLifecycleService
     database: DatabaseService
-    hardwareWalletRegistry: HardwareWalletRegistry
     migration: MigrationService
     walletProvisioning: WalletProvisioningService
     cloudFileStorage: CloudFileStorageService

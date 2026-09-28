@@ -13,9 +13,9 @@
 /**
  * Narrow entry point for the pure P-256/credential-id helpers, on its own
  * entry for the same reason `./native` and `./webauthn` exist: the package
- * root (and `./crypto/derivePasskeyCredential`, via `derivePasskeyMainKey`)
- * pulls in `react-native-quick-crypto`, which has no loadable build outside a
- * React Native runtime. `packages/migrate` needs only these two pure
- * functions, not that native module.
+ * root (and `./crypto/derivePasskeyCredential`, via the provider's
+ * `keystoreSubtle`) pulls in native modules that have no loadable build under
+ * Node. `packages/migrate` needs only these two pure functions, not those
+ * modules.
  */
 export * from './crypto/p256Spki'

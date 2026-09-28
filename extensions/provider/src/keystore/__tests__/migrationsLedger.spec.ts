@@ -20,7 +20,7 @@ import {
 // Real `@algorandfoundation/react-native-keystore` executes native
 // Keychain/Nitro bindings at import time, which jsdom can't run — every spec
 // in this package that touches it mocks the whole module (see
-// createKeystore.spec.ts, singleton.test.ts). `storage` is rebuilt from the
+// createKeystore.spec.ts, singleton.spec.ts). `storage` is rebuilt from the
 // same mocked `react-native-mmkv` factory (see vitest.setup.ts) under the
 // package's real "keystore" instance id, so this test still exercises actual
 // per-id isolation rather than two independently-faked stores.

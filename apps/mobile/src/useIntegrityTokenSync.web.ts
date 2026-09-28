@@ -24,7 +24,7 @@ import {
     INTEGRITY_TOKEN_SESSION_KEY,
     getSessionIntegrityToken,
     onSessionStorageKeyChanged,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 
 /**
  * Mirrors the service worker's minted token into this realm's store. The SW is

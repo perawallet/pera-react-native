@@ -14,7 +14,7 @@ import { useCallback, useRef } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
-import { useWebView } from '@modules/webview'
+import { useWebView, withLanguageParam } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -46,7 +46,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const { setIsOnboarding } = useIsOnboarding()
     const { buildHdWalletAccount } = useCreateAccount()
     const { showError } = useErrorToast()
-    const { t } = useLanguage()
+    const { t, currentLanguage } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
     const { needsAcceptance } = useTermsAcceptance()
 
@@ -92,10 +92,10 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
 
     const handlePrivacyPress = useCallback(() => {
         pushWebView({
-            url: config.privacyPolicyUrl,
+            url: withLanguageParam(config.privacyPolicyUrl, currentLanguage),
             id: 'privacy-policy',
         })
-    }, [pushWebView])
+    }, [pushWebView, currentLanguage])
 
     const handleCreateAccount = useCallback(() => {
         if (isStartingRef.current) return

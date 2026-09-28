@@ -29,7 +29,7 @@ import {
     type ConnectionsControlMessage,
     type ConnectionsControlResponse,
     type ConnectionsEvent,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 
 export type ConnectionsHostDeps = {
     registry: ConnectionRegistry
@@ -41,7 +41,6 @@ export type ConnectionsHostDeps = {
      */
     requestApproval: (request: ConnectionApprovalRequest) => Promise<void>
     broadcastEvent: (event: ConnectionsEvent) => Promise<void>
-    reconnectAll: () => void
 }
 
 export type ConnectionsHost = {
@@ -355,7 +354,7 @@ export const startConnectionsHost = (
                 return registry.disconnectAll().then(() => ok())
             }
             case 'reconnect-all': {
-                deps.reconnectAll()
+                registry.reconnect()
                 return ok()
             }
             case 'approve-proposal': {

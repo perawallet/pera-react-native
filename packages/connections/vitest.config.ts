@@ -32,6 +32,10 @@ export default defineConfig({
                 __dirname,
                 '../shared/src/index.ts',
             ),
+            '@perawallet/wallet-core-chain-contract': path.resolve(
+                __dirname,
+                '../chain-contract/src/index.ts',
+            ),
             '@perawallet/wallet-extension-connections': path.resolve(
                 __dirname,
                 '../../extensions/connections/src/index.ts',
@@ -47,6 +51,12 @@ export default defineConfig({
             '@perawallet/wallet-core-blockchain': path.resolve(
                 __dirname,
                 '../blockchain/src/index.ts',
+            ),
+            // Blockchain source re-exports chain-shared; its dist would reach a
+            // second getProvider() instance the mocks here never see.
+            '@perawallet/wallet-core-chain-shared': path.resolve(
+                __dirname,
+                '../chain-shared/src/index.ts',
             ),
             // Source rather than dist: both are imported for their runtime
             // values, not just types. The signing barrel is additionally

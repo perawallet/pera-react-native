@@ -144,6 +144,7 @@ pera-react-native/
 │   ├── accounts/            # Account management and state
 │   ├── assets/              # Asset management
 │   ├── blockchain/          # Algorand-specific code (node/indexer)
+│   ├── browser-runtime/     # Browser extension runtime (message routing, dApp/WC plumbing)
 │   ├── config/              # Configuration and environment
 │   ├── database/            # Local persistence
 │   ├── devtools/            # Development tools
@@ -188,10 +189,8 @@ pnpm test           # run all tests (unit + integration)
 pnpm test:unit      # run unit tests only
 pnpm test:coverage  # run tests with coverage
 pnpm lint           # report lint/type-aware issues
-pnpm lint:fix       # auto-fix lint/type-aware issues
-pnpm lint:copyright # add/update necessary copyright headers
-pnpm lint:i18n      # report i18n errors
-pnpm lint:docs      # report stale doc/comment references
+pnpm lint:fix       # auto-fix lint issues and licence headers
+pnpm lint:docs      # report stale references in Markdown, shell and YAML
 pnpm format         # format files
 pnpm fallow         # report unused code, circular deps, duplication
 ```
@@ -202,10 +201,11 @@ pnpm fallow         # report unused code, circular deps, duplication
 dependencies, plus circular dependencies and code duplication, which neither Oxlint nor `tsc` cover.
 Config lives in [`.fallowrc.jsonc`](.fallowrc.jsonc).
 
-It runs in CI as an advisory, non-blocking job (`Dead Code` in
-[`ci-pre-merge.yml`](.github/workflows/ci-pre-merge.yml)): findings appear in the job summary but never
-fail a PR. The plan is to triage the existing findings, then ratchet specific rules to blocking with
-a `--baseline` so only new findings fail. Do removals in reviewed PRs, not via `fallow fix`.
+It runs in CI as the `Dead Code` job in [`ci-pre-merge.yml`](.github/workflows/ci-pre-merge.yml):
+findings appear in the job summary, and any rule set to `"error"` (unused files, exports and
+dependencies, cycles) fails the PR. A dependency used outside the import graph (an autolinked native
+module, a config plugin, a Metro polyfill) goes in `ignoreDependencies` with its reason. Do removals
+in reviewed PRs, not via `fallow fix`.
 
 ## Documentation
 

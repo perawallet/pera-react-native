@@ -31,7 +31,7 @@ type MockOnboardingDetails = {
 }
 let mockOnboardingDetails: MockOnboardingDetails | undefined
 // The gate's own derivation is unit-tested in the card package
-// (useOnboardingKycGate.test.ts); here only the screen's wiring matters.
+// (useOnboardingKycGate.spec.ts); here only the screen's wiring matters.
 let mockIsKycRequired = false
 let mockIsRecordLoading = false
 const mockMarkServerRefused = vi.fn()

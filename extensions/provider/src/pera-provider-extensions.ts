@@ -32,7 +32,10 @@ import type {
     WithConnections,
     ConnectionsExtension,
 } from '@perawallet/wallet-extension-connections'
-import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type {
+    WithHardwareWalletExtension,
+    HardwareWalletExtension,
+} from '@perawallet/wallet-extension-hardware-wallet'
 import type { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 import type { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
 
@@ -40,25 +43,13 @@ import type { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs
 // `new (...)` signature without importing `ProviderOptions` separately.
 export type { ProviderOptions }
 
-/**
- * Satisfied by both the native and web Ledger BLE extensions: takes the
- * provider's `hardwareWalletRegistry`, registers a transport as a side effect,
- * adds no properties. Structural so this shared type imports neither Ledger package.
- */
-export type LedgerBleExtension = (provider: {
-    hardwareWalletRegistry: HardwareWalletRegistry
-}) => object
-
-/** USB counterpart of {@link LedgerBleExtension}, satisfied by both native and web USB extensions. */
-export type LedgerUsbExtension = (provider: {
-    hardwareWalletRegistry: HardwareWalletRegistry
-}) => object
-
+// Only the empty registry, no transports: the app's composition root registers
+// them into `provider.hardwareWalletRegistry`, so the provider (and every
+// package that depends on it) stays free of the BLE/USB driver graph.
 export type PeraExtensions = readonly [
     typeof WithMigrations,
     typeof WithPlatformExtension,
-    LedgerBleExtension,
-    LedgerUsbExtension,
+    typeof WithHardwareWalletExtension,
     typeof WithPeraKeystorePreflight,
     typeof WithKeyStore,
     typeof WithPeraKeystoreRepairs,
@@ -73,6 +64,7 @@ export type PeraExtensions = readonly [
 export type PeraProvider = Provider<PeraExtensions> &
     MigrationsExtension &
     PlatformExtension &
+    HardwareWalletExtension &
     KeyStoreExtension &
     PasskeyAutofillExtension &
     ConnectionsExtension

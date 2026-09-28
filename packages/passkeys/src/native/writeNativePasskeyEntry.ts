@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
-import { subtle as quickCryptoSubtle } from 'react-native-quick-crypto'
 import {
     readMasterKey,
     storage,
@@ -22,6 +20,10 @@ import {
 } from './nativeProviderRecord'
 import { notifyPasskeyChanged } from './passkeyChanges'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
+import {
+    getProvider,
+    keystoreSubtle,
+} from '@perawallet/wallet-extension-provider'
 
 export const nativePasskeyEntryExists = (credentialId: string): boolean =>
     storage.getString(credentialId) != null
@@ -96,7 +98,7 @@ const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
         // label (assertion reads userId) so it must be user.name; iOS uses it as
         // the assertion id (display reads userName).
         userHandle:
-            Platform.OS === 'android'
+            getProvider().deviceInfo.getDevicePlatform() === 'android'
                 ? (params.userName ?? params.userId)
                 : params.userId,
         userId: params.userId,
@@ -139,7 +141,7 @@ export type NativePasskeyWriter = ((
  * poisoned key.
  */
 export const createNativePasskeyWriter = (
-    subtle: SubtleCrypto = quickCryptoSubtle as unknown as SubtleCrypto,
+    subtle: SubtleCrypto = keystoreSubtle,
 ): NativePasskeyWriter => {
     let masterKeyPromise: ReturnType<typeof readMasterKey> | undefined
 

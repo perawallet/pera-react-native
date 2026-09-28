@@ -47,6 +47,23 @@ const QUERY_CLIENT_DEFAULTS = {
 
 const createTestQueryClient = () => new QueryClient(QUERY_CLIENT_DEFAULTS)
 
+// A bare QueryClientProvider for `renderHook`, when the full TestProviders tree
+// isn't wanted. The client is bound once, so rerenders keep the cache.
+const createQueryClientWrapper = (
+    queryClient: QueryClient = createTestQueryClient(),
+) => {
+    const QueryClientWrapper = ({
+        children,
+    }: {
+        children: React.ReactNode
+    }) => (
+        <QueryClientProvider client={queryClient}>
+            {children}
+        </QueryClientProvider>
+    )
+    return QueryClientWrapper
+}
+
 export interface TestProvidersProps {
     children: React.ReactNode
     queryClient?: QueryClient
@@ -114,4 +131,9 @@ const customRender = (
 
 // Re-export everything from '@testing-library/react'
 export * from '@testing-library/react'
-export { customRender as render, createTestQueryClient, getTestTheme }
+export {
+    customRender as render,
+    createQueryClientWrapper,
+    createTestQueryClient,
+    getTestTheme,
+}

@@ -11,8 +11,8 @@
  */
 
 /**
- * Gate UI on these flags, never on Platform.OS. Native resolves capabilities.ts
- * (everything on); web resolves capabilities.web.ts.
+ * Gate UI on these flags, never on Platform.OS (pera/no-platform-os-web fails
+ * `=== 'web'`). Native resolves capabilities.ts; web resolves capabilities.web.ts.
  */
 export type RouteCapabilities = {
     discoverTab: boolean
@@ -23,7 +23,12 @@ export type RouteCapabilities = {
     giftCards: boolean
     /** In-app webview screens (help center, terms links). Off ⇒ Linking.openURL. */
     inAppWebView: boolean
+    /** Collectible media in a full-screen bottom sheet. Off ⇒ the raw media
+     * opens in a browser tab, since a sheet can't fill the screen in a popup. */
+    fullScreenMediaViewer: boolean
     qrScanner: boolean
+    /** Ledger pairing over USB: Android OTG and WebHID. iOS has no USB HID route. */
+    ledgerUsb: boolean
     /** Paste-a-deeplink entry point (web only), replacing qrScanner there: a camera
      * is near-useless in a 360x600 popup. The two flags are mutually exclusive per platform. */
     deepLinkPaste: boolean

@@ -42,6 +42,7 @@ import { entropyToIndices } from '../crypto/hdwallet-utils'
 import { algo25SeedToIndices } from '../crypto/algo25-utils'
 import { withSecret } from '../storage/secrets'
 import { resolvePQSigningInfo } from '../crypto/pq/resolvePQSigningInfo'
+import { createKmsCore } from '../core/createKmsCore'
 
 export type ExecuteWithMnemonicHandler<T> = (
     indices: Uint16Array,
@@ -276,21 +277,13 @@ export const useKMS = () => {
         childKeyId: string,
         domain: string,
         encodedTxs: Uint8Array[],
-    ): Promise<Uint8Array[]> => {
-        const seedKey = resolveSeedKey(childKeyId)
-        checkAccess(seedKey, domain)
-        return Promise.all(encodedTxs.map(tx => keyStore.sign(childKeyId, tx)))
-    }
+    ): Promise<Uint8Array[]> => core.signEach(childKeyId, encodedTxs, domain)
 
     const signDataWithKey = async (
         childKeyId: string,
         domain: string,
         data: Uint8Array[],
-    ): Promise<Uint8Array[]> => {
-        const seedKey = resolveSeedKey(childKeyId)
-        checkAccess(seedKey, domain)
-        return Promise.all(data.map(d => keyStore.sign(childKeyId, d)))
-    }
+    ): Promise<Uint8Array[]> => core.signEach(childKeyId, data, domain)
 
     const resolveSeedKey = useCallback(
         (childKeyId: string): Key => {
@@ -306,6 +299,14 @@ export const useKMS = () => {
         },
         [seedIdOf, getKeyOrThrow],
     )
+
+    // The hook's own resolver keeps the reactive lookup and `getKey`'s expiry sweep.
+    const core = createKmsCore({
+        keyStore: () => keyStore,
+        keys: () => getKeystoreStore().state.keys,
+        checkAccess,
+        resolveSeedKey,
+    })
 
     /**
      * Runs `handler` with the mnemonic for the seed that minted `childKeyId`,

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+
 /** Normalized view of a card/Baanx API failure, used to attribute it to a field. */
 export type CardApiError = {
     /** HTTP status code, when the failure carried an HTTP response. */
@@ -257,11 +259,11 @@ export const isNotVerifiedError = (apiError: CardApiError): boolean =>
  * undefined and break `instanceof`. Named for the flow, not one step, since
  * both the details and address steps raise it.
  */
-export class OnboardingNotVerifiedError extends Error {
+export class OnboardingNotVerifiedError extends AppError {
     constructor(
         message = 'Identity verification must be submitted before registration can continue.',
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.ACCOUNTS })
         this.name = 'OnboardingNotVerifiedError'
     }
 }

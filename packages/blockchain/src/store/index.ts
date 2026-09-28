@@ -10,6 +10,15 @@
  limitations under the License
  */
 
-export * from './network-store'
-export * from './custom-network-store'
 export * from './store'
+export {
+    useNetworkStore,
+    getCustomNetworkConfig,
+    isCustomNetworkConfigured,
+    setCustomNetwork,
+    clearCustomNetwork,
+    mergePersistedNetwork,
+    selectAlgorandCustomNetwork,
+    type CustomNetworkConfig,
+    type CustomNetwork,
+} from '@perawallet/wallet-core-chain-shared'

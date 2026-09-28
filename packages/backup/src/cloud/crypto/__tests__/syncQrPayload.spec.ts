@@ -13,17 +13,7 @@
 // @vitest-environment node
 
 import { describe, test, expect, beforeAll, vi } from 'vitest'
-import { argon2id } from '@noble/hashes/argon2.js'
 import { sha256 } from '@noble/hashes/sha2.js'
-
-type Argon2Params = {
-    message: Uint8Array
-    nonce: Uint8Array
-    parallelism: number
-    tagLength: number
-    memory: number
-    passes: number
-}
 
 type Argon2Callback = (error: Error | null, result: Uint8Array) => void
 
@@ -56,6 +46,11 @@ import {
 } from '../syncQrPayload'
 import { sealAesGcm } from '@perawallet/wallet-core-kms'
 import { ARGON2ID_CONFIG } from '../constants'
+import {
+    argon2OffThread,
+    type Argon2Algorithm,
+    type Argon2Params,
+} from './argon2OffThread'
 
 const record = (params: Argon2Params) => {
     derivations.push({
@@ -67,20 +62,12 @@ const record = (params: Argon2Params) => {
 const useProductionArgon2 = () => {
     argon2Mock.mockImplementation(
         (
-            _algorithm: string,
+            algorithm: Argon2Algorithm,
             params: Argon2Params,
             callback: Argon2Callback,
         ) => {
             record(params)
-            callback(
-                null,
-                argon2id(params.message, params.nonce, {
-                    t: params.passes,
-                    m: params.memory,
-                    p: params.parallelism,
-                    dkLen: params.tagLength,
-                }),
-            )
+            argon2OffThread(algorithm, params, callback)
         },
     )
 }
@@ -113,8 +100,7 @@ const MNEMONIC =
 const BACKUP_SALT = 'c2FsdHktc2FsdC0xNi1ieXRlcw=='
 const CODE = '123456'
 
-// A real Argon2id at 256 MiB runs for seconds per derive under the pure-JS
-// stand-in, and the block below derives twice.
+// The block below runs two real 256 MiB derives; the machine allowance, not a hang guard.
 const TIMEOUT = 60_000
 
 const SERIALIZED_CONFIG = {

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { AppError, ErrorCategory, ErrorSeverity } from '../errors/base'
 import { decodeFromBase64 } from './strings'
 
 /**
@@ -19,7 +20,7 @@ import { decodeFromBase64 } from './strings'
  * force an oversized allocation or parse. Each call site maps this to its own
  * typed/domain error (`Arc0001Error`, `AsbImportError`, …).
  */
-export class InputTooLargeError extends Error {
+export class InputTooLargeError extends AppError {
     /** Caller-supplied label identifying the bounded field, surfaced for logs. */
     readonly label: string
     /** The configured maximum (chars for strings, bytes for decoded buffers). */
@@ -28,7 +29,11 @@ export class InputTooLargeError extends Error {
     readonly actual: number
 
     constructor(label: string, limit: number, actual: number) {
-        super(`${label} exceeds maximum size (${actual} > ${limit})`)
+        super(`${label} exceeds maximum size (${actual} > ${limit})`, {
+            severity: ErrorSeverity.LOW,
+            category: ErrorCategory.VALIDATION,
+            params: { label, limit, actual },
+        })
         this.name = 'InputTooLargeError'
         this.label = label
         this.limit = limit

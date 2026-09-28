@@ -34,3 +34,14 @@ export const resolveWebviewLanguage = (appLocale?: string | null): string => {
     const trimmed = appLocale?.trim()
     return trimmed ? trimmed : WEBVIEW_FALLBACK_LANGUAGE
 }
+
+/**
+ * Appends `lang=<resolved locale>` so perawallet.app can serve a localized
+ * page. Built by concatenation because RN's `URLSearchParams.set` is not
+ * implemented on native.
+ */
+export const withLanguageParam = (
+    url: string,
+    appLocale?: string | null,
+): string =>
+    `${url}${url.includes('?') ? '&' : '?'}lang=${encodeURIComponent(resolveWebviewLanguage(appLocale))}`

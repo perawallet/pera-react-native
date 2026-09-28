@@ -19,11 +19,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
-import { logEvent } from '@perawallet/wallet-core-analytics'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRegisterDeviceMutation } from './useRegisterDeviceMutation'
 import { usePushToken } from './usePushToken'
 import { useDeviceStore } from '../store'
+import { logEvent } from '../analytics'
 import { registerDevice as registerDeviceEndpoint } from './endpoints'
 import type {
     DeviceAccountRegistration,

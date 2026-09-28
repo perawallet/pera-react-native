@@ -18,6 +18,7 @@ import type {
 import type { ConnectionHandler } from '@perawallet/wallet-core-connections'
 import { isStringArray, readString } from '../shared/read'
 import { walletConnectUriVersion } from '../shared/uri'
+import type { WalletConnectV1Delivery } from './deliver'
 
 export const WALLET_CONNECT_V1_KIND = 'walletconnect-v1'
 
@@ -192,12 +193,17 @@ export const isWalletConnectV1Connection = (
     )
 }
 
-/** The concrete handler, with the URI-pairing capabilities it declares made required. */
+/** The concrete handler, with the optional capabilities it declares made required. */
 export type WalletConnectV1Handler =
     ConnectionHandler<WalletConnectV1Connection> &
         Required<
             Pick<
                 ConnectionHandler<WalletConnectV1Connection>,
-                'canHandleUri' | 'pair' | 'abandonPairing' | 'describeUri'
+                | 'canHandleUri'
+                | 'pair'
+                | 'abandonPairing'
+                | 'describeUri'
+                | 'reconnect'
             >
-        >
+        > &
+        WalletConnectV1Delivery

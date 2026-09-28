@@ -21,10 +21,9 @@ export type SessionChromeFake = {
     session: Map<string, unknown>
 }
 
-// `test-utils/chrome` in @perawallet/wallet-extension-platform-chrome is not
-// reachable here (that package exports only `.` and `./bootstrap`), and this
-// hook needs a working storage.onChanged — the browser-side fake elsewhere
-// doesn't wire one up.
+// Kept local rather than reusing @perawallet/wallet-extension-platform-chrome/test-utils,
+// whose sender and tab fixtures are shaped for the extension's own specs; these
+// hooks need only the two storage areas and storage.onChanged.
 export const createSessionChromeFake = (): SessionChromeFake => {
     const local = new Map<string, unknown>()
     const session = new Map<string, unknown>()

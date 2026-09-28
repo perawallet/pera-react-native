@@ -25,8 +25,20 @@ import {
 
 type ShellComponent = React.ComponentType
 
+// Dynamic for the same boot-order reason as the surfaces themselves. Runs after
+// a surface's module graph (which builds the provider) and before it starts.
+const registerTransports = async (): Promise<void> => {
+    const [{ getProvider }, { registerHardwareWalletTransports }] =
+        await Promise.all([
+            import('@perawallet/wallet-extension-provider'),
+            import('./bootstrap/hardware-wallet-transports'),
+        ])
+    registerHardwareWalletTransports(getProvider().hardwareWalletRegistry)
+}
+
 const OffscreenStatus = (): React.JSX.Element => (
     <View style={{ flex: 1 }}>
+        {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- e2e status probe in the offscreen document, never shown to a user */}
         <Text testID='offscreen-status'>offscreen host running</Text>
     </View>
 )
@@ -55,12 +67,14 @@ class RootBoundary extends React.Component<
                     padding: 24,
                 }}
             >
+                {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the outermost error boundary renders before i18n can load */}
                 <Text
                     testID='root-boundary-fallback'
                     style={{ marginBottom: 16 }}
                 >
                     Pera Wallet failed to start.
                 </Text>
+                {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the outermost error boundary renders before i18n can load */}
                 <Text
                     testID='root-boundary-reload'
                     accessibilityRole='button'
@@ -93,6 +107,7 @@ export const App = (): React.JSX.Element => {
                 // Headless surface; store-bearing imports stay behind this dynamic
                 // import (same boot-order contract as AppShell).
                 const mod = await import('@browser/offscreen/runOffscreenApp')
+                await registerTransports()
                 await mod.runOffscreenApp()
                 setShell(() => OffscreenStatus)
                 return
@@ -101,7 +116,12 @@ export const App = (): React.JSX.Element => {
             // BOOT-ORDER CONTRACT: Zustand persist stores read getProvider().keyValueStorage
             // at module evaluation, which throws before hydrate() resolves. Everything
             // that transitively imports a store MUST stay behind this dynamic import.
-            const mod = await import('./AppShell.web')
+            const [mod, { initRuntime }] = await Promise.all([
+                import('./AppShell.web'),
+                import('./bootstrap/preReact.web'),
+            ])
+            initRuntime()
+            await registerTransports()
             setShell(() => mod.AppShell)
         }
         bootstrap().catch((err: unknown) => {

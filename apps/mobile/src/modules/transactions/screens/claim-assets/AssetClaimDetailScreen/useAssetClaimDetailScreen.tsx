@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import {
     useAllAccounts,
     type WalletAccount,

@@ -41,10 +41,7 @@
     "@perawallet/wallet-extension-passkey-autofill": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@tanstack/react-query": "catalog:",
-    "@tanstack/store": "catalog:",
-    "react": "catalog:",
-    "react-native": "catalog:",
-    "react-native-quick-crypto": "catalog:"
+    "react": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",

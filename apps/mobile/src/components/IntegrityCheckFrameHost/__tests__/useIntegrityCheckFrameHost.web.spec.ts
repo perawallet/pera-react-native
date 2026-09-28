@@ -40,6 +40,15 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', async () => {
     return {
         ...actual,
         getSurface: () => mocks.surface,
+    }
+})
+
+vi.mock('@perawallet/wallet-core-browser-runtime', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-browser-runtime')
+    >('@perawallet/wallet-core-browser-runtime')
+    return {
+        ...actual,
         requestIntegrityEnrolment: (...args: unknown[]) =>
             mocks.request(...args),
         onIntegrityEnrolmentNeeded: (listener: () => void) => {

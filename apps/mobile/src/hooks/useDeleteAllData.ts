@@ -88,8 +88,7 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
 
         // 4. Clear the native passkey-autofill mirror: the credential providers
         // keep their own copy of the master key and credentials, which does not
-        // die with the keystore. Trap: on Android `clearCredentials` wipes the
-        // ENTIRE shared keystore MMKV, only safe here where step 3 already destroyed it.
+        // die with the keystore.
         try {
             await getProvider().passkeyAutofill.clearCredentials()
         } catch (e) {

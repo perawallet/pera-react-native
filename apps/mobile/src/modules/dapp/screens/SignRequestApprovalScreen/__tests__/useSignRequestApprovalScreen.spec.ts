@@ -55,7 +55,7 @@ vi.mock('@perawallet/wallet-core-connections', () => ({
     isConnectionAlive: mocks.isConnectionAlive,
 }))
 
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     resolveConnectionRequest: mocks.resolveConnectionRequest,
     rejectApproval: mocks.rejectApproval,
     decodeWalletOperation: mocks.decodeWalletOperation,

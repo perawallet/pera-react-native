@@ -1078,16 +1078,25 @@
                 "body": "The server ran into a problem processing your request. Please try again."
             }
         },
-        "validation": {
-            "generic": "The data appears to be invalid.",
-            "invalid_address": "The address appears to be invalid: {{address}}",
-            "invalid_amount": "The amount appears to be invalid: {{amount}}",
-            "invalid_mnemonic": "The recovery passphrase appears to be invalid.",
-            "required_field": "A required field is missing: {{field}}"
-        },
         "transaction": {
             "title": "An error occurred processing this transaction",
-            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
+            "insufficient_balance_for_opt_in": {
+                "title": "Not enough ALGO",
+                "body": "You need {{shortfall}} more ALGO to opt in to this asset. Your account must keep its minimum balance and cover the transaction fee."
+            },
+            "already_opted_in": {
+                "title": "Already opted in",
+                "body": "This account is already opted in to this asset."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "Asset still has a balance",
+                "body": "You can only remove an asset with a zero balance. Send or trade the remaining amount first."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Can't remove this asset",
+                "body": "This account created this asset, so it can't opt out of it."
+            }
         },
         "kms": {
             "key_not_found": "Could not find the signing key for this account.",
@@ -1161,9 +1170,6 @@
             "overview_tab": "Overview",
             "card_details_tab": "Card Details",
             "balance": "Balance",
-            "spendable_per_tx": "≈{{amount}} {{currency}} available",
-            "spendable_info_title": "Available per transaction",
-            "spendable_info_body": "The most a single purchase can draw: your card balance plus your refund balance, and, with Auto Funding, up to {{limit}} from your linked account.",
             "withdraw": "Withdraw",
             "add_funds": "Add Funds",
             "credits_title": "Credits",
@@ -1288,8 +1294,6 @@
             "balance": "Balance: {{amount}} USDC",
             "confirm_title": "Confirm claim",
             "confirm_button": "Confirm",
-            "fee_label": "Network fee",
-            "fee_loading": "Estimating...",
             "success_title": "Claim submitted",
             "history_title": "Activity"
         },
@@ -2076,6 +2080,7 @@
             "pair_ledger_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via Bluetooth",
             "pair_ledger_usb_title": "Pair Ledger via USB",
             "pair_ledger_usb_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via USB cable",
+            "pair_ledger_unsupported_description": "Not supported by this browser or device",
             "pera_web_title": "Import from Pera Web",
             "pera_web_description": "I want to import Algorand accounts from Pera Web",
             "cloud_backup_title": "Import from Cloud Backup",
@@ -2611,6 +2616,7 @@
         "input": {
             "max": "MAX",
             "next": "Next",
+            "amount_label": "Amount",
             "error_title": "Invalid Amount",
             "error_body": "Please enter an amount greater than {{min}}.",
             "exceeds_max_title": "Insufficient Balance",
@@ -2662,8 +2668,9 @@
         },
         "close_account": {
             "title": "Close Account",
-            "body": "This account has no opted-in assets. Sending the full balance will close the account on the Algorand network.",
+            "body": "This account has no opted-in assets, so you can close it and send the full balance. Some exchanges don't accept transactions that close an account. If you keep the account open, the minimum balance of {{minBalance}} ALGO stays in it.",
             "confirm": "Close Account & Send",
+            "keep_open": "Send Without Closing",
             "warning": "This transaction will close your account on the Algorand network.",
             "success_title": "Account Closed",
             "success_subtitle": "Your account has been closed on the Algorand network."
@@ -2795,6 +2802,7 @@
                 "fetch_from_node": "Fetch from node",
                 "fetch_failed": "Could not reach that node. Enter the values manually.",
                 "invalid_url": "Enter a valid http:// or https:// URL",
+                "invalid_https_url": "Enter a valid https:// URL",
                 "genesis_required": "Fetch or enter the genesis hash",
                 "genesis_id_required": "Fetch or enter the genesis ID",
                 "save": "Save and switch",
@@ -3745,7 +3753,11 @@
         "scan_header": {
             "having_issues": "Having issues?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Ledger account added",
+            "body": "You can now use it in the Pera extension."
+        }
     },
     "countries": {
         "AC": "Ascension Island",
@@ -4055,7 +4067,17 @@
             "error_invalid_password": "Incorrect password. Please try again.",
             "corrupted_error": "Your vault data is corrupted and cannot be unlocked. You may need to reset the extension and restore from your backup.",
             "passkey_error": "Passkey unlock failed. Use your password instead.",
-            "lockout_countdown": "Too many attempts. Try again in {{time}}"
+            "lockout_countdown": "Too many attempts. Try again in {{time}}",
+            "forgot_password": "Forgot password?"
+        },
+        "reset": {
+            "title": "Reset your wallet?",
+            "body": "Your password can't be recovered. Resetting deletes everything Pera Wallet stores in this browser, then you can set a new password.",
+            "restore_note": "Restore your accounts afterwards with their recovery passphrase. Any account whose recovery passphrase isn't backed up will be lost.",
+            "hardware_note": "Ledger and watch accounts can't be restored from a passphrase. Add them again after the reset.",
+            "acknowledge": "I understand this deletes my data and can't be undone",
+            "confirm_button": "Reset Wallet",
+            "error": "Couldn't reset the wallet. Please try again."
         },
         "security": {
             "autolock_title": "Auto-lock after",
@@ -4081,9 +4103,6 @@
         },
         "approval": {
             "placeholder": "Approval surface — coming in M4."
-        },
-        "expanded": {
-            "redirecting": "Continuing in a new tab…"
         },
         "reauth": {
             "title": "Confirm it's you",

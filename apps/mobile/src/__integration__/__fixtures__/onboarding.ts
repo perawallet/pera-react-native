@@ -14,7 +14,7 @@ import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
 
 // Known-good test vectors for the onboarding flows. Both mnemonics and the
 // addresses they derive to are pinned by the integration tests in
-// packages/kms/src/crypto/__tests__/{algo25,hdwallet}-integration.test.ts —
+// packages/kms/src/crypto/__tests__/{algo25,hdwallet}-integration.spec.ts —
 // keep these in sync with that source of truth.
 
 // 24-word HD wallet seed → m/44'/283'/0'/0/0 with Peikert derivation.

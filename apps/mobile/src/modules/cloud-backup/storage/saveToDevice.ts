@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
 import { Directory } from 'expo-file-system'
 import { isFilePickerCancellation } from '@utils/isFilePickerCancellation'
 import { shareFile } from '@utils/shareFile'
+import { isAndroid } from '@utils/platform'
 
 import type { SaveResult } from './types'
 
@@ -51,6 +51,6 @@ export const saveToDevice = (
     fileName: string,
     contents: string,
 ): Promise<SaveResult> =>
-    Platform.OS === 'android'
+    isAndroid()
         ? saveOnAndroid(fileName, contents)
         : saveOnIos(fileName, contents)
