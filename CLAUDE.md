@@ -54,13 +54,14 @@ Always use the **named import** (`{ Decimal }`), never the default import. Alway
 
 ### Boundary Rules
 
-| Boundary                   | From            | To                 | How                                                                                       |
-| -------------------------- | --------------- | ------------------ | ----------------------------------------------------------------------------------------- |
-| API response → app         | `string` (JSON) | `Decimal`          | Wrap in `new Decimal(...)` in transformer functions                                       |
-| AlgoKit/blockchain → app   | `bigint`        | `Decimal`          | Use `microAlgosToAlgos()` or `baseUnitsToDisplayUnits()`                                  |
-| App → display              | `Decimal`       | formatted `string` | Use `formatNumber`/`formatCurrency` from `@perawallet/wallet-core-shared`                 |
-| App → transaction building | `Decimal`       | `bigint`           | Use `toBigInt()` or `algosToMicroAlgosBigInt()` from `@perawallet/wallet-core-blockchain` |
-| App → database             | `Decimal`       | `TEXT`             | Automatic via `decimalColumn`, no manual conversion needed                                |
+| Boundary                   | From                   | To                        | How                                                                                                                            |
+| -------------------------- | ---------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| API response → app         | `string` (JSON)        | `Decimal`                 | Wrap in `new Decimal(...)` in transformer functions                                                                            |
+| AlgoKit/blockchain → app   | `bigint`               | `Decimal`                 | Use `microAlgosToAlgos()` or `baseUnitsToDisplayUnits()`                                                                       |
+| Chain contract → app       | `Decimal` (base units) | `Decimal` (display units) | `baseUnitsToDisplayUnits()` / `toDecimalUnits()` at the UI or persistence edge; chain-contract types never carry display units |
+| App → display              | `Decimal`              | formatted `string`        | Use `formatNumber`/`formatCurrency` from `@perawallet/wallet-core-shared`                                                      |
+| App → transaction building | `Decimal`              | `bigint`                  | Use `toBigInt()` or `algosToMicroAlgosBigInt()` from `@perawallet/wallet-core-blockchain`                                      |
+| App → database             | `Decimal`              | `TEXT`                    | Automatic via `decimalColumn`, no manual conversion needed                                                                     |
 
 ### Conversion Utilities
 

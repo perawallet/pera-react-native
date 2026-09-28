@@ -17,6 +17,9 @@
     "test:unit": "vitest run",
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
+  "dependencies": {
+    "decimal.js": "catalog:"
+  },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@types/node": "catalog:",
