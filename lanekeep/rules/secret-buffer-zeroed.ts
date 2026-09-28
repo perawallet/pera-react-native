@@ -68,10 +68,15 @@ const fillZero = (object: string) =>
 const secretField = (object: string) =>
     `(member_expression object: ${object} property: (property_identifier) @field)`
 
+// A wiped or handed-off buffer is named, not computed: `c ? other : seed`
+// would discharge `seed` on the arm that leaves it behind.
 const WIPES = [
-    inFinally(fillZero('(_) @key'), '(#eq? @method "fill") (#eq? @zero "0")'),
     inFinally(
-        '(call_expression function: (identifier) @fn arguments: (arguments (_) @key))',
+        fillZero('(identifier) @key'),
+        '(#eq? @method "fill") (#eq? @zero "0")',
+    ),
+    inFinally(
+        '(call_expression function: (identifier) @fn arguments: (arguments (identifier) @key))',
         `(#match? @fn "${WIPERS}")`,
     ),
     inFinally(
@@ -99,16 +104,24 @@ const RETURNS = [
 ]
 
 // A transfer list detaches the buffer, so a posted key is no longer this
-// realm's to zero. Posting without one sends a copy and keeps the original.
+// realm's to zero. Posting without one sends a copy and keeps the original,
+// and a WebView's postMessage takes a string and ignores the list, so only a
+// worker's, a port's or the global scope's counts.
+const TRANSFER_TARGETS = '^(self|globalThis|worker|port)$|(Worker|Port)$'
+const transferList =
+    'arguments: (arguments . (identifier) @key . (object (pair key: (property_identifier) @option value: (array (member_expression object: (identifier) @transferred property: (property_identifier) @part)))))'
+const TRANSFERRED =
+    '(#eq? @fn "postMessage") (#eq? @option "transfer") (#eq? @part "buffer") (#eq? @transferred @key)'
 const TRANSFERS = [
-    `((call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)] arguments: (arguments . (identifier) @key . (object (pair key: (property_identifier) @option value: (array (member_expression object: (identifier) @transferred property: (property_identifier) @part)))))) @release (#eq? @fn "postMessage") (#eq? @option "transfer") (#eq? @part "buffer") (#eq? @transferred @key))`,
+    `((call_expression function: (identifier) @fn ${transferList}) @release ${TRANSFERRED})`,
+    `((call_expression function: (member_expression object: (identifier) @target property: (property_identifier) @fn) ${transferList}) @release ${TRANSFERRED} (#match? @target "${TRANSFER_TARGETS}"))`,
 ]
 
 // handOffSecret marks where a buffer moves to an owner that zeroes it: a
 // store, a cache or a helper. The rule can't verify that owner, so the marker
 // is the claim, made at the one buffer rather than over a whole line.
 const HAND_OFFS = [
-    '((call_expression function: (identifier) @fn arguments: (arguments . (_) @key .)) @release (#eq? @fn "handOffSecret"))',
+    '((call_expression function: (identifier) @fn arguments: (arguments . [(identifier) @key (call_expression) @key (await_expression (call_expression) @key)] .)) @release (#eq? @fn "handOffSecret"))',
     `((call_expression function: (identifier) @fn arguments: (arguments . ${secretField('(identifier) @key')} .)) @release (#eq? @fn "handOffSecret") (#match? @field "${SECRET_FIELDS}"))`,
 ]
 
@@ -125,7 +138,7 @@ export default defineRule({
     card: {
         message: 'secret key material is not zeroed on every path',
         remediation:
-            'Zero it in a finally block, with zeroBytes(buffer) from packages/kms/src/crypto/secure-memory.ts or buffer.fill(0), or return it so the caller owns it. A wipe outside finally is skipped when anything before it throws. If the buffer is handed to a long-lived owner (a store, a worker), suppress with the reason.',
+            'Zero it in a finally block, with zeroBytes(buffer) from packages/kms/src/crypto/secure-memory.ts or buffer.fill(0), or return it so the caller owns it. A wipe outside finally is skipped when anything before it throws. When the buffer moves to an owner that zeroes it (a store, a cache, a helper), pass it through handOffSecret(buffer) where it moves; a worker postMessage must list buffer.buffer in transfer.',
         examples: {
             bad: 'const entropy = indicesToEntropy(indices)\nsign(entropy)\nentropy.fill(0)',
             good: 'const entropy = indicesToEntropy(indices)\ntry { return sign(entropy) } finally { entropy.fill(0) }',
@@ -134,9 +147,21 @@ export default defineRule({
     gates: productionSource({ pathNotMatches: [...TEST_SUPPORT] }),
     // lanekeep gives every name destructured from a result the result's
     // identity, so a destructuring that binds no secret field (only
-    // `publicKey`) would let the unbound secret leak unreported.
-    query: `((variable_declarator name: (object_pattern) @pattern value: [(call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)]) (await_expression (call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)]))]) (#match? @fn "${ACQUIRE}"))`,
+    // `publicKey`) would let the unbound secret leak unreported. And
+    // handOffSecret names its owner only by where its result goes, so a
+    // result thrown away hands the buffer to nothing.
+    query: [
+        `((variable_declarator name: (object_pattern) @pattern value: [(call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)]) (await_expression (call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)]))]) (#match? @fn "${ACQUIRE}"))`,
+        '((expression_statement (call_expression function: (identifier) @handOff)) @discarded (#eq? @handOff "handOffSecret"))',
+    ].join('\n'),
     check(ctx, match) {
+        if (match.discarded) {
+            ctx.report(
+                match.discarded,
+                "handOffSecret's result is discarded, so no owner takes the buffer",
+            )
+            return
+        }
         const bindsSecret = ctx.namedChildren(match.pattern!).some(entry => {
             const kind = ctx.kind(entry)
             if (kind === 'rest_pattern') return true

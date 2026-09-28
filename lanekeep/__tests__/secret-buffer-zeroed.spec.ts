@@ -49,6 +49,7 @@ describe('pera/secret-buffer-zeroed', () => {
             'members.ts:30',
             'members.ts:39',
             'members.ts:48',
+            'members.ts:57',
         ])
     })
 
@@ -57,6 +58,9 @@ describe('pera/secret-buffer-zeroed', () => {
             'handoffs.ts:7',
             'handoffs.ts:29',
             'handoffs.ts:37',
+            'handoffs.ts:42',
+            'handoffs.ts:48',
+            'handoffs.ts:52',
         ])
     })
 

@@ -52,3 +52,12 @@ export const wipedWithWipeSecrets = (indices: Uint16Array) => {
         wipeSecrets(seed)
     }
 }
+
+export const wipedOnOneArm = (masterKey: Uint8Array, other: Uint8Array) => {
+    const itemKey = hkdf(sha256, masterKey, salt, info, 32)
+    try {
+        return hash(itemKey)
+    } finally {
+        zeroBytes(other ? other : itemKey)
+    }
+}

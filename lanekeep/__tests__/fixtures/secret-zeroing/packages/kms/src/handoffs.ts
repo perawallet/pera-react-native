@@ -37,3 +37,18 @@ export const transferredSomethingElse = (
     const key = computeArgon2id(request)
     self.postMessage(key, { transfer: [other.buffer] })
 }
+
+export const handedOffOnOneArm = (indices: Uint16Array, ready: boolean) => {
+    const seed = indicesToAlgo25Seed(indices)
+    store.set(handOffSecret(ready ? seed : null))
+}
+
+export const handedOffToNobody = (indices: Uint16Array) => {
+    const seed = indicesToAlgo25Seed(indices)
+    handOffSecret(seed)
+}
+
+export const postedToAWebView = (request: Request, webView: WebViewRef) => {
+    const key = computeArgon2id(request)
+    webView.current.postMessage(key, { transfer: [key.buffer] })
+}
