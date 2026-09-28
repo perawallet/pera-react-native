@@ -203,7 +203,6 @@ export const passkeyBackupInputs = async (
     const counter =
         typeof metadata.counter === 'number' ? (metadata.counter as number) : 0
 
-    // Set only when this call derived the key itself; a cached one is the sweep's.
     let ownedMainKey: Uint8Array | null = null
     let mainKey: Uint8Array
     if (mainKeyCache) {
