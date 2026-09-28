@@ -187,8 +187,8 @@ catalogs:
       specifier: ^2.0.2
       version: 2.0.2
     lanekeep:
-      specifier: 0.11.0
-      version: 0.11.0
+      specifier: 0.12.0
+      version: 0.12.0
     msw:
       specifier: ^2.14.6
       version: 2.15.0
@@ -339,7 +339,7 @@ importers:
         version: 3.25.0
       lanekeep:
         specifier: 'catalog:'
-        version: 0.11.0
+        version: 0.12.0
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
@@ -6351,23 +6351,23 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@lanekeep/darwin-arm64@0.11.0':
-    resolution: {integrity: sha512-Z2sJ/Uw04Gu65z2bPmagjeHxSgBKZum8zUVS/A0177k59a7bzKgZqDOlFbebUCX//RmUHQ8qzM2OdxGithioOw==}
+  '@lanekeep/darwin-arm64@0.12.0':
+    resolution: {integrity: sha512-4QEKjpVtNMQyvz+1NVkpx6OIlwuNQaczovGc53ogWkYcgj77AJm7GR81QI9GMyhc5C9KORDBmIc/9KM23OAjQw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@lanekeep/linux-arm64@0.11.0':
-    resolution: {integrity: sha512-Qp+ElIe0hzYKbV9CUwHN3EvHkBPKT135lF3T7we+uada7QQA+XHWrJhBkMms1VM5QrjnurGkSjt8OUxt8z8STg==}
+  '@lanekeep/linux-arm64@0.12.0':
+    resolution: {integrity: sha512-wF8j3E2QfOiRJ46KEfBwHOy2wicIpBEvWblo8JnI9yVrjhnFMSF/Zln+zOf39AXbh7mBTKzuVfNwOn8U2y/Ttw==}
     cpu: [arm64]
     os: [linux]
 
-  '@lanekeep/linux-x64@0.11.0':
-    resolution: {integrity: sha512-4neucSOc0mMRAjIGb/3npkG0S7qx1rcmBk+iQ+68DIbXQWYlxJCljOoZhBPcW1Rwx93m4nv+bqqV9Pn7dN2y1A==}
+  '@lanekeep/linux-x64@0.12.0':
+    resolution: {integrity: sha512-kPojCjhpwJ+Ur5HOC7O+419AXr8moYPnsvyvIt/0kU8x2rqkxlSQ41wU3Ryp7sTBRI5z+eTe0a3U3tqxB5Gl9w==}
     cpu: [x64]
     os: [linux]
 
-  '@lanekeep/win32-x64@0.11.0':
-    resolution: {integrity: sha512-kbIl9gP/QD5Wcq+EGRxtgfEDuMcXp3/nDegu+TTH0/E0xLvC77AcupDWr0KnYBe9K3vH14x2EdR5dD60Eh6H/g==}
+  '@lanekeep/win32-x64@0.12.0':
+    resolution: {integrity: sha512-FInQ0iQuJiKV2+hGVWVQZEqfE81diWVGzIhChVtfjbW3X6wOriJ3UOdFYvP7igLjlbg/nBqXxtIb4qvDdmpbAQ==}
     cpu: [x64]
     os: [win32]
 
@@ -9556,8 +9556,8 @@ packages:
     resolution: {integrity: sha512-ONPnazC96VKDntab9j9JKwIWhZ4ZUceB4A9Epu4Ssg0hYFmtHZSeQ+n15nIwTFmcBUKtExOer8WTJ4GF9MO64A==}
     hasBin: true
 
-  lanekeep@0.11.0:
-    resolution: {integrity: sha512-LPUTJyicK3N2MVgJQAy8kbmFsbP0jSsIOqKPI8wMLIe68ubPI21gBbZ/yRtRam07Z0vxkVDhsDjsYTKnBPN/3Q==}
+  lanekeep@0.12.0:
+    resolution: {integrity: sha512-ueOx829bS0XqgPt3TKz932kYMbqtLZ9CpJM4hUOqzIoZZdbstvoaTEvSg+72Oy3wr7Lm3VEB7WKu672tOU+Cfw==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -14142,16 +14142,16 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@lanekeep/darwin-arm64@0.11.0':
+  '@lanekeep/darwin-arm64@0.12.0':
     optional: true
 
-  '@lanekeep/linux-arm64@0.11.0':
+  '@lanekeep/linux-arm64@0.12.0':
     optional: true
 
-  '@lanekeep/linux-x64@0.11.0':
+  '@lanekeep/linux-x64@0.12.0':
     optional: true
 
-  '@lanekeep/win32-x64@0.11.0':
+  '@lanekeep/win32-x64@0.12.0':
     optional: true
 
   '@ledgerhq/devices@8.16.0':
@@ -17654,12 +17654,12 @@ snapshots:
 
   lan-network@0.2.1: {}
 
-  lanekeep@0.11.0:
+  lanekeep@0.12.0:
     optionalDependencies:
-      '@lanekeep/darwin-arm64': 0.11.0
-      '@lanekeep/linux-arm64': 0.11.0
-      '@lanekeep/linux-x64': 0.11.0
-      '@lanekeep/win32-x64': 0.11.0
+      '@lanekeep/darwin-arm64': 0.12.0
+      '@lanekeep/linux-arm64': 0.12.0
+      '@lanekeep/linux-x64': 0.12.0
+      '@lanekeep/win32-x64': 0.12.0
 
   leven@3.1.0: {}
 
