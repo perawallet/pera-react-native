@@ -52,6 +52,10 @@ set -x
 # so the Gemfile's CocoaPods pin applies rather than whatever `pod` is on PATH.
 pnpm --filter mobile exec expo prebuild --no-install --no-clean --platform ios
 pnpm --filter mobile exec node scripts/fix-development-team.js
+# ccache, when the host has it, keeps the C and C++ of every pod between runs;
+# pera-ci points CCACHE_DIR at its own cache. Without it the build is the same,
+# only slower.
+if command -v ccache >/dev/null; then export USE_CCACHE=1; fi
 (cd apps/mobile/ios && bundle exec pod install)
 
 ios_keychain_setup
