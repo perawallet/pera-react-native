@@ -26,6 +26,7 @@ import type {
     BackupActionOutcome,
     ContactImportSummary,
     ImportSummary,
+    PasskeyImportSummary,
 } from '../../sync'
 
 const { managerMock } = vi.hoisted(() => ({
@@ -226,14 +227,21 @@ describe('useBackupReviewActionMutation', () => {
         expect(result.current.error?.message).toBe('Backup is busy syncing')
     })
 
-    test('routes a passkey back-up action to the passkey manager method', async () => {
+    test('routes each passkey action to its manager method', async () => {
         const { result } = renderMutation('passkey')
 
-        act(() => result.current.mutate({ action: 'backUp', id: 'cred-1' }))
+        act(() => result.current.mutate({ action: 'backUp', id: 'A' }))
+        act(() => result.current.mutate({ action: 'add', id: 'B' }))
+        act(() => result.current.mutate({ action: 'delete', id: 'C' }))
 
         await waitFor(() =>
-            expect(managerMock.backUpPasskey).toHaveBeenCalledWith('cred-1'),
+            expect(managerMock.deletePasskeyFromBackup).toHaveBeenCalledWith(
+                'C',
+            ),
         )
+        expect(managerMock.backUpPasskey).toHaveBeenCalledWith('A')
+        expect(managerMock.addPasskeyFromBackup).toHaveBeenCalledWith('B')
+        expect(managerMock.backUpContact).not.toHaveBeenCalled()
     })
 
     test('throws when a passkey delete is only queued', async () => {

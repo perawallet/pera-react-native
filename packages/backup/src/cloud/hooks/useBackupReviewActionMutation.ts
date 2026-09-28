@@ -12,7 +12,16 @@
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import { assertOnline } from '@perawallet/wallet-core-shared'
-import { getBackupSyncManager } from '../sync/backupSyncManager'
+import {
+    getBackupSyncManager,
+    type BackupSyncManager,
+} from '../sync/backupSyncManager'
+import type {
+    BackupActionOutcome,
+    ContactImportSummary,
+    ImportSummary,
+    PasskeyImportSummary,
+} from '../sync/types'
 
 /** The three row actions an accounts, contacts or passkeys review screen
  *  offers. */
@@ -30,6 +39,74 @@ const BUSY_MESSAGE = 'Backup is busy syncing'
 const NOT_BACKED_UP_MESSAGE = 'Backup did not complete'
 const NOT_DELETED_MESSAGE = 'Delete did not complete'
 
+const backUpItem = (
+    manager: BackupSyncManager,
+    kind: BackupReviewItemKind,
+    id: string,
+): Promise<boolean> => {
+    switch (kind) {
+        case 'account': {
+            return manager.backUpAccount(id)
+        }
+        case 'contact': {
+            return manager.backUpContact(id)
+        }
+        case 'passkey': {
+            return manager.backUpPasskey(id)
+        }
+        default: {
+            const exhaustive: never = kind
+            return exhaustive
+        }
+    }
+}
+
+const addItemFromBackup = (
+    manager: BackupSyncManager,
+    kind: BackupReviewItemKind,
+    id: string,
+): Promise<
+    ImportSummary | ContactImportSummary | PasskeyImportSummary | null
+> => {
+    switch (kind) {
+        case 'account': {
+            return manager.addAccountFromBackup(id)
+        }
+        case 'contact': {
+            return manager.addContactFromBackup(id)
+        }
+        case 'passkey': {
+            return manager.addPasskeyFromBackup(id)
+        }
+        default: {
+            const exhaustive: never = kind
+            return exhaustive
+        }
+    }
+}
+
+const deleteItemFromBackup = (
+    manager: BackupSyncManager,
+    kind: BackupReviewItemKind,
+    id: string,
+): Promise<BackupActionOutcome> => {
+    switch (kind) {
+        case 'account': {
+            return manager.deleteAccountFromBackup(id)
+        }
+        case 'contact': {
+            return manager.deleteContactFromBackup(id)
+        }
+        case 'passkey': {
+            return manager.deletePasskeyFromBackup(id)
+        }
+        default: {
+            const exhaustive: never = kind
+            return exhaustive
+        }
+    }
+}
+
 const runReviewAction = async (
     kind: BackupReviewItemKind,
     { action, id }: BackupReviewActionVariables,
@@ -43,25 +120,15 @@ const runReviewAction = async (
 
     switch (action) {
         case 'backUp': {
-            const settled =
-                kind === 'account'
-                    ? await manager.backUpAccount(id)
-                    : kind === 'contact'
-                      ? await manager.backUpContact(id)
-                      : await manager.backUpPasskey(id)
+            const settled = await backUpItem(manager, kind, id)
             if (!settled) {
                 throw new Error(NOT_BACKED_UP_MESSAGE)
             }
             break
         }
         case 'add': {
-            const summary =
-                kind === 'account'
-                    ? await manager.addAccountFromBackup(id)
-                    : kind === 'contact'
-                      ? await manager.addContactFromBackup(id)
-                      : await manager.addPasskeyFromBackup(id)
-            if (summary == null) {
+            const summary = await addItemFromBackup(manager, kind, id)
+            if (summary === null) {
                 throw new Error(BUSY_MESSAGE)
             }
             if (summary.failed.length > 0) {
@@ -72,16 +139,15 @@ const runReviewAction = async (
         case 'delete': {
             // Unlike the removal flows, the row reports a verdict on the
             // backup, so a queued retry is a failure here.
-            const outcome =
-                kind === 'account'
-                    ? await manager.deleteAccountFromBackup(id)
-                    : kind === 'contact'
-                      ? await manager.deleteContactFromBackup(id)
-                      : await manager.deletePasskeyFromBackup(id)
+            const outcome = await deleteItemFromBackup(manager, kind, id)
             if (outcome !== 'settled') {
                 throw new Error(NOT_DELETED_MESSAGE)
             }
             break
+        }
+        default: {
+            const exhaustive: never = action
+            return exhaustive
         }
     }
 }
