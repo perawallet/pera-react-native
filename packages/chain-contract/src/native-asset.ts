@@ -10,20 +10,14 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
-import type { StakingProjectInfo } from './schema'
+import type { ChainId } from './models/identity'
 
-export type StakingProject = StakingProjectInfo & {
-    /** Display units of the native asset of the chain the project was fetched for. */
-    tvlInNative: Decimal
-    tvlInUsd: Decimal
+// A Record so that adding a chain id stops this compiling. Must agree with the
+// chain's ChainDescriptor.nativeAsset.decimals.
+const NATIVE_ASSET_DECIMALS: Record<ChainId, number> = {
+    algorand: 6,
 }
 
-export type {
-    StakingType,
-    StakingProjectInfo,
-    StakingProjectsApiResponse,
-    StakingProjectsI18nConfig,
-} from './schema'
-
-export { STAKING_FALLBACK_LOCALE } from './schema'
+/** Base units per display unit of the chain's native asset, as a power of ten. */
+export const nativeAssetDecimals = (chainId: ChainId): number =>
+    NATIVE_ASSET_DECIMALS[chainId]
