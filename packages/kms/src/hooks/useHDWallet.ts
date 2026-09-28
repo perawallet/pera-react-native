@@ -18,13 +18,14 @@ import {
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { buildSeedMetadata, entropyChildMetadata } from '../utils'
-import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
 import { usePasskeyMainKey } from './usePasskeyMainKey'
 import { prepareHDMasterKey } from '../crypto/prepare-hd-master-key'
 import { commitSecret } from '../storage/secrets'
 import { zeroBytes } from '../crypto/secure-memory'
-import { SeedScheme } from '../constants'
+import { SeedScheme, SIGNING_ACCESS_DOMAIN } from '../constants'
+import { createKmsCore } from '../core/createKmsCore'
+import type { KmsDerivationRequest } from '../core/types'
 
 export type HDWalletKeyResult = {
     seedKey: Key
@@ -33,6 +34,10 @@ export type HDWalletKeyResult = {
 export const useHDWallet = () => {
     const { keyStore } = useKMSService()
     const { ensurePasskeyMainKey } = usePasskeyMainKey()
+    const core = createKmsCore({
+        keyStore: () => keyStore,
+        keys: () => getKeystoreStore().state.keys,
+    })
 
     const createHDWalletKey = async (params?: {
         id?: string
@@ -132,33 +137,17 @@ export const useHDWallet = () => {
         account: number,
         keyIndex: number,
         derivationType: BIP32DerivationType,
-    ): Promise<KeyId> => {
-        if (!keyStore.deriveFromSeed) {
-            throw new KeyManagementError(
-                'Keystore backend does not implement deriveFromSeed',
-            )
-        }
-        const path = buildAddressPath(account, keyIndex)
-        return keyStore.deriveFromSeed(seedKeyId, path, {
-            id: hdDerivedKeyId(seedKeyId, account, keyIndex, derivationType),
-            algorithm: 'EdDSA',
-            mode:
-                derivationType === BIP32DerivationType.Khovratovich
-                    ? 'standard'
-                    : 'peikert',
-            // Stamp the full metadata `signXHDEd25519` reads. rn-keystore sets
-            // `keyIndex` (NOT `index`) and never sets `derivation`, so without
-            // this the signing path silently builds a BIP44 path with
-            // undefined segments and the signature fails dApp verification.
-            metadata: {
-                path,
-                context: KeyContext.Address,
+    ): Promise<KeyId> =>
+        core.deriveChild(
+            seedKeyId,
+            algorandDerivationRequest(
+                seedKeyId,
                 account,
-                index: keyIndex,
-                derivation: derivationType,
-            },
-        })
-    }
+                keyIndex,
+                derivationType,
+            ),
+            SIGNING_ACCESS_DOMAIN,
+        )
 
     /**
      * Derives an `hd-derived-ed25519` child at the given coords and returns
@@ -180,21 +169,17 @@ export const useHDWallet = () => {
         keyIndex: number,
         derivationType: BIP32DerivationType,
     ): Promise<Uint8Array> => {
-        const derivedKeyId = await generateDerivedKey(
+        const { publicKey } = await core.deriveFromSeed(
             seedKeyId,
-            account,
-            keyIndex,
-            derivationType,
+            algorandDerivationRequest(
+                seedKeyId,
+                account,
+                keyIndex,
+                derivationType,
+            ),
+            SIGNING_ACCESS_DOMAIN,
         )
-        const derived = getKeystoreStore().state.keys.find(
-            k => k.id === derivedKeyId,
-        )
-        if (!derived?.publicKey) {
-            throw new KeyManagementError(
-                'Derived key does not have a public key',
-            )
-        }
-        return new Uint8Array(derived.publicKey)
+        return publicKey
     }
 
     return {
@@ -210,6 +195,37 @@ export const useHDWallet = () => {
 // the raw numbers are passed through here.
 const buildAddressPath = (account: number, keyIndex: number): string =>
     `m/44'/283'/${account}'/0/${keyIndex}`
+
+const algorandDerivationRequest = (
+    seedKeyId: KeyId,
+    account: number,
+    keyIndex: number,
+    derivationType: BIP32DerivationType,
+): KmsDerivationRequest => {
+    const path = buildAddressPath(account, keyIndex)
+    return {
+        scheme: 'ed25519',
+        path,
+        id: hdDerivedKeyId(seedKeyId, account, keyIndex, derivationType),
+        params: {
+            mode:
+                derivationType === BIP32DerivationType.Khovratovich
+                    ? 'standard'
+                    : 'peikert',
+            // Stamp the full metadata `signXHDEd25519` reads. rn-keystore sets
+            // `keyIndex` (NOT `index`) and never sets `derivation`, so without
+            // this the signing path silently builds a BIP44 path with
+            // undefined segments and the signature fails dApp verification.
+            metadata: {
+                path,
+                context: KeyContext.Address,
+                account,
+                index: keyIndex,
+                derivation: derivationType,
+            },
+        },
+    }
+}
 
 /**
  * Deterministic keystore id for an `hd-derived-ed25519` child of a bip39

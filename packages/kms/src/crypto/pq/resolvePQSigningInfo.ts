@@ -13,50 +13,15 @@
 import type { Key } from '@algorandfoundation/keystore-core'
 import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
 import { SeedScheme } from '../../constants'
-import {
-    InvalidKeyError,
-    KeyManagementError,
-    KeyNotFoundError,
-} from '../../errors'
+import { KeyManagementError } from '../../errors'
 import { FALCON_CHILD_KEY_TYPE } from '../../models/keys'
-import { isSeedKey, seedSchemeOf } from '../../utils'
+import { seedSchemeOf } from '../../utils'
+import { resolveSeedKeyFrom } from '../../core/resolveSeed'
 import { getPQProvider } from './index'
 
+export { resolveSeedKeyFrom }
+
 export type PQSigningInfo = { schemeId: PQSchemeId; publicKey: Uint8Array }
-
-const parentIdOf = (key: Key | undefined): string | undefined => {
-    const parentKeyId = (key?.metadata as Record<string, unknown> | undefined)
-        ?.parentKeyId
-    return typeof parentKeyId === 'string' ? parentKeyId : undefined
-}
-
-/**
- * The seed key that minted `childKeyId`, resolved from a keystore snapshot.
- *
- * A seed id passed directly is accepted as a convenience for callers that
- * haven't migrated to child ids — the same allowance `useKMS.resolveSeedKey`
- * makes, and the reason the mismatch guard below has to exist.
- *
- * Key EXPIRY is deliberately not checked here: sweeping an expired seed means
- * deleting it, which is the store binding's job (`useKMS.getKey`), not a pure
- * function's. A caller reaching this directly with its own snapshot — as the
- * conformance harness does — gets no expiry enforcement.
- */
-export const resolveSeedKeyFrom = (
-    keys: readonly Key[],
-    childKeyId: string,
-): Key => {
-    const parentId = parentIdOf(keys.find(k => k.id === childKeyId))
-    if (!parentId) {
-        const direct = keys.find(k => k.id === childKeyId)
-        if (!direct) throw new KeyNotFoundError(childKeyId)
-        if (isSeedKey(direct)) return direct
-        throw new InvalidKeyError(childKeyId)
-    }
-    const seed = keys.find(k => k.id === parentId)
-    if (!seed) throw new KeyNotFoundError(parentId)
-    return seed
-}
 
 /**
  * Describes how to build a signed transaction for `keyPairId`: the PQ scheme
