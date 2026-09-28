@@ -122,17 +122,13 @@ export const fixtureDerivation: KeyDerivation = {
                 opts,
             )
             if (await probe(derived.address)) {
-                found.push({ account: 0, keyIndex, ...derived })
+                const { address, keyPairId } = derived
+                found.push({ account: 0, keyIndex, address, keyPairId })
                 misses = 0
             } else {
                 misses++
             }
         }
-        return found.map(({ account, keyIndex, address, keyPairId }) => ({
-            account,
-            keyIndex,
-            address,
-            keyPairId,
-        }))
+        return found
     },
 }
