@@ -55,4 +55,10 @@ describe('isChainIdAcceptable', () => {
     it('rejects a missing chain id', () => {
         expect(isChainIdAcceptable(undefined, Networks.mainnet)).toBe(false)
     })
+
+    it('rejects even the wildcard on a network with no expected chain id', () => {
+        expect(
+            isChainIdAcceptable(AlgorandWalletConnectChainId.all, 'fnet'),
+        ).toBe(false)
+    })
 })
