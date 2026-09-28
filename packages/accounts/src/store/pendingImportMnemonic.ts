@@ -78,6 +78,7 @@ export const usePendingImportMnemonicStore: UseBoundStore<
 
 export const setPendingImportMnemonic = (mnemonic: string): void => {
     const words = mnemonic.trim().split(/\s+/).filter(Boolean)
+    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: held by the pending-import store, which zeroes it when replaced, consumed or cleared
     const indices = mnemonicWordsToIndices(words)
     // Zero any buffer already held (e.g. a previous scan) before it is
     // overwritten and left to GC — including the cross-type case where an

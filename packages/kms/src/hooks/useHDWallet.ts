@@ -46,6 +46,7 @@ export const useHDWallet = () => {
         mnemonicIndices?: Uint16Array
     }): Promise<HDWalletKeyResult> => {
         const prepared = await prepareHDMasterKey(params)
+        // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: persistHDMasterKey takes ownership and zeroes rootKey and entropy in its finally
         return persistHDMasterKey({
             keyId: prepared.keyId,
             rootKey: prepared.rootKey,

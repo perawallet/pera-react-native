@@ -192,6 +192,7 @@ export const useCloudBackupRestoreDraftStore =
         return {
             ...initialRestoreDraftState,
             setMnemonic: (mnemonic: string[]) => {
+                // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: held by the restore-draft store, which zeroes it when replaced or cleared
                 const indices = mnemonicWordsToIndices(mnemonic)
                 const { mnemonicIndices, mnemonicRawBytes } = get()
                 zeroBytes(mnemonicIndices, mnemonicRawBytes)

@@ -49,6 +49,7 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
                 entropy: prepared.entropy,
                 derivationType,
             })
+            // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: rootKey and entropy are held by the import-session store, which zeroes them when a session is replaced or reset
             return { walletKeyId: prepared.keyId, derivationType }
         },
         [],

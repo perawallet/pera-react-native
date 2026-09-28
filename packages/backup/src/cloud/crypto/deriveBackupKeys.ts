@@ -62,6 +62,7 @@ export const deriveBackupKeys = async ({
         password = backupMnemonicToPassword(mnemonic)
         masterKey = await deriveBackupMasterKey(password, saltBytes, argon2id)
         ;({ encryptionKey, authSeed, itemKey } =
+            // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: destructured into the lets above, which the return, catch and finally account for; lanekeep doesn't follow a destructuring assignment
             deriveBackupChildKeys(masterKey))
 
         const { publicKey, secretKey: authSecretKey } =

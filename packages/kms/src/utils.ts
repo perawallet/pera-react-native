@@ -201,5 +201,6 @@ export const algo25SeedToAddress = (seed: Uint8Array): string => {
     // fromSeed copies the seed into secretKey[0..32); wipe it here or the
     // caller's own zeroBytes(seed) leaves this second copy on the heap.
     zeroBytes(naclKeyPair.secretKey)
+    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: the secret key is zeroed on the line above, before anything that can throw
     return encodeAddress(naclKeyPair.publicKey)
 }

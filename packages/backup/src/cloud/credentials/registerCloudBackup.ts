@@ -66,5 +66,6 @@ export const registerCloudBackup = async ({
         throw error
     }
 
+    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: the keys are returned in shorthand fields, which lanekeep doesn't resolve to their bindings
     return { backupId, encryptionKey, authSecretKey, itemKey }
 }

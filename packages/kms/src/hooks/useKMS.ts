@@ -372,6 +372,7 @@ export const useKMS = () => {
             } finally {
                 zeroBytes(seedBytes)
             }
+            // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: runWithIndices takes ownership and zeroes the indices in its finally
             return runWithIndices(indices)
         })
     }

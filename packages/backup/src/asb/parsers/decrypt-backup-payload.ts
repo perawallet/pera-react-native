@@ -64,6 +64,7 @@ const parseAccount = (raw: unknown): AsbBackupAccount | null => {
         if (!privateKey) return null
     }
 
+    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: the private key is returned in a shorthand field, which lanekeep doesn't resolve to its binding
     return {
         address,
         name: isNonEmptyString(name) ? name : null,

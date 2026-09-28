@@ -18,6 +18,7 @@ self.onmessage = (event: MessageEvent<Argon2Request>) => {
     // Same guard as db-worker.ts: a dedicated worker's messages carry an empty
     // origin, so only a non-empty foreign one is refused.
     if (event.origin && event.origin !== location.origin) return
+    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: moved to the page through postMessage's transfer list, which detaches it here
     const key = computeArgon2id(event.data)
     self.postMessage(key, { transfer: [key.buffer] })
 }

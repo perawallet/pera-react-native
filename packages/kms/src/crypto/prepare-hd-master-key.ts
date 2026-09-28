@@ -52,6 +52,7 @@ export const prepareHDMasterKey = async (params?: {
         zeroBytes(masterKey.seed)
     }
 
+    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: rootKey is returned in a shorthand field, which lanekeep doesn't resolve to its binding
     return {
         keyId,
         rootKey,
