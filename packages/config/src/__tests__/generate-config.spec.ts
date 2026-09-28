@@ -42,7 +42,9 @@ const appendedEnvVars = (): string[] =>
 
 const isHashedByTurbo = (name: string, globalEnv: string[]): boolean =>
     globalEnv.some(entry =>
-        entry.endsWith('*') ? name.startsWith(entry.slice(0, -1)) : entry === name,
+        entry.endsWith('*')
+            ? name.startsWith(entry.slice(0, -1))
+            : entry === name,
     )
 
 describe('tools/generate-config.sh', () => {

@@ -28,11 +28,6 @@ import {
 
 import { generatedEnv } from './generated-env'
 
-/**
- * First-party hosts only. Third-party sandboxes legitimately keep a staging
- * host in a production build — `testnetBidaliBaseUrl` pairs testnet with the
- * vendor's sandbox — so the production staging guard below ignores them.
- */
 const chainSetupSchema = z.object({
     enabled: z.array(z.enum(CHAIN_IDS)).min(1),
     capabilities: z.partialRecord(
@@ -41,6 +36,11 @@ const chainSetupSchema = z.object({
     ),
 }) satisfies z.ZodType<ChainSetupConfig>
 
+/**
+ * First-party hosts only. Third-party sandboxes legitimately keep a staging
+ * host in a production build — `testnetBidaliBaseUrl` pairs testnet with the
+ * vendor's sandbox — so the production staging guard below ignores them.
+ */
 const isFirstPartyUrl = (url: string): boolean => url.includes('perawallet.app')
 
 /**
@@ -601,9 +601,7 @@ const chainsFromEnv = (
     env: ChainEnv,
     fallback: Config['chains'],
 ): Config['chains'] => ({
-    enabled: (env.chainIds
-        ? csv(env.chainIds)
-        : fallback.enabled) as ChainId[],
+    enabled: (env.chainIds ? csv(env.chainIds) : fallback.enabled) as ChainId[],
     capabilities: {
         ...fallback.capabilities,
         ...Object.fromEntries(
