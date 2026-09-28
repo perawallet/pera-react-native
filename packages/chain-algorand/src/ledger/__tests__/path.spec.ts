@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-// Platform-agnostic Ledger protocol surface: types, errors, APDU codes,
-// timeout constants, classification helpers. Shared by every transport and
-// loaded by the business-logic `@perawallet/wallet-core-ledger` package
-// *without* pulling in `@ledgerhq/react-native-hw-transport-ble` or other
-// RN-only modules (which carry Flow-typed source that vitest can't parse), so
-// transport-specific error mapping belongs in the transport package.
-export * from './types'
-export * from './errors'
-export * from './constants'
+import { describe, expect, test } from 'vitest'
+import { buildLedgerAccountPath } from '../path'
+
+describe('buildLedgerAccountPath', () => {
+    test('builds the m/-prefixed Algorand BIP-44 path with the given account index', () => {
+        // `@algorandfoundation/ledger-algorand-js` serializePath (used by
+        // signData) requires the canonical "m/"-prefixed BIP-32 form.
+        expect(buildLedgerAccountPath(0)).toBe("m/44'/283'/0'/0/0")
+        expect(buildLedgerAccountPath(5)).toBe("m/44'/283'/5'/0/0")
+    })
+})

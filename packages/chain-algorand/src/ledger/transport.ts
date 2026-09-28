@@ -15,45 +15,28 @@ import type { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type {
     HardwareWalletArbitrarySignRequest,
     HardwareWalletTransport,
+    LedgerAppErrorClassifier,
+    LedgerAppTransport,
 } from '@perawallet/wallet-extension-hardware-wallet'
-import { buildLedgerAccountPath } from './constants'
 import {
     classifyLedgerError,
     LedgerSigningError,
-    type LedgerErrorClassifier,
-} from './errors'
-
-/**
- * Minimal transport shape this wrapper needs — deliberately NOT
- * `@ledgerhq/hw-transport`'s `Transport` class, so this file (loaded by
- * `@perawallet/wallet-core-ledger` and by the web transport packages) never
- * pulls in any concrete transport module.
- */
-export type LedgerAppTransport = {
-    close: () => Promise<void>
-    /**
-     * `@ledgerhq/hw-transport`'s emitter. Optional because a transport may not
-     * emit anything (the web ones, and test doubles) — the wrapper then omits
-     * `onDisconnect` entirely so callers can tell detection is unavailable
-     * rather than silently subscribing to a listener that never fires.
-     */
-    on?: (event: 'disconnect', listener: () => void) => void
-    off?: (event: 'disconnect', listener: () => void) => void
-}
+} from '@perawallet/wallet-extension-ledger-shared'
+import { buildLedgerAccountPath } from './path'
 
 /**
  * Wraps a connected Ledger transport + Algorand app instance into the
  * platform-agnostic HardwareWalletTransport interface. The APDU layer is
- * transport-independent — this is shared by every transport package
- * (native BLE/USB, web BLE/USB) instead of being duplicated per package.
+ * transport-independent, so every transport package (native BLE/USB, web
+ * BLE/USB) reaches this through the Algorand Ledger app driver.
  *
  * `classifyError` lets a transport map its own error shapes, which APDU
  * exchanges surface as well as `connect`.
  */
-export const createLedgerTransportWrapper = (
+export const createAlgorandLedgerTransport = (
     transport: LedgerAppTransport,
     algorandApp: AlgorandApp,
-    classifyError: LedgerErrorClassifier = classifyLedgerError,
+    classifyError: LedgerAppErrorClassifier = classifyLedgerError,
 ): HardwareWalletTransport => ({
     async getAddress(accountIndex, verify = false) {
         try {

@@ -14,8 +14,7 @@
 // may not depend on a business package, so they live in the ledger-shared
 // extension. This package is the facade over them (as kms is over the
 // keystore) so the app and signing import Ledger from one place. The
-// transport-only helpers (`createLedgerTransportWrapper`,
-// `resolveUsbDeviceModel`) stay out of this barrel.
+// transport-only `resolveUsbDeviceModel` stays out of this barrel.
 export type {
     LedgerDeviceModel,
     LedgerDevice,
@@ -53,14 +52,12 @@ export {
     classifyLedgerError,
 } from '@perawallet/wallet-extension-ledger-shared'
 export {
-    ALGORAND_BIP44_PREFIX,
     LEDGER_BLE_SERVICE_UUIDS,
     LEDGER_CONFIRMATION_TIMEOUT_MS,
     LEDGER_CONNECTION_TIMEOUT_MS,
     LEDGER_SCAN_TIMEOUT_MS,
     LEDGER_STATUS_CODES,
     MIN_ARBITRARY_SIGN_APP_VERSION,
-    buildLedgerAccountPath,
     isAppVersionAtLeast,
     resolveDeviceModel,
 } from '@perawallet/wallet-extension-ledger-shared'
