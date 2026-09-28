@@ -8,6 +8,7 @@ import {
     TEST_PATHS,
     TRANSITIONAL_ALLOWLIST,
 } from '../shared/chain-package-allowlist.js'
+import { withoutTests } from '../shared/scope.js'
 
 const CHAIN_PACKAGE_PREFIX = '@perawallet/wallet-core-chain-'
 
@@ -44,13 +45,13 @@ export default defineRule({
             good: '// in packages/accounts/src/hooks/useAccountBalances.ts\nconst chain = getProvider().chains.get(chainId)',
         },
     },
-    gates: {
+    gates: withoutTests({
         pathNotMatches: [
             ...COMPOSITION_ROOTS.map(e => e.glob),
             ...TEST_PATHS.map(e => e.glob),
         ],
         fileContains: [CHAIN_PACKAGE_PREFIX],
-    },
+    }),
     // Every form that creates the dependency: static, `export … from`, and a
     // deferred `import()`.
     query: `

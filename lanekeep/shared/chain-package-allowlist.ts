@@ -40,7 +40,7 @@ export const COMPOSITION_ROOTS: ExemptPath[] = [
     },
 ]
 
-// `__tests__/` and `*.spec.*` are already outside the lanekeep corpus.
+// Test support not named as a test; `withoutTests()` already drops `__tests__/` and `*.spec.*`.
 export const TEST_PATHS: ExemptPath[] = [
     {
         glob: '**/test-utils/**',
