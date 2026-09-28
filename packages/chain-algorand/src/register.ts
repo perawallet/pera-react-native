@@ -16,8 +16,10 @@ import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import { algorandDappRequestAdapter } from './connect/dappRequestAdapter'
 import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
 import { algorandSendFlowAdapter } from './asa-inbox/adapter'
+import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { algorandLedgerAppDriver } from './ledger/driver'
 import { algorandSwapAdapter } from './swaps'
+import { algorandNameServiceAdapter } from './nfd'
 
 // Adapters must be module-level instances, not built in here: the registries
 // ignore a repeat of the same instance but reject a new one, which is what
@@ -27,4 +29,5 @@ export const registerChain = (): void => {
     swapChainAdapters.register(algorandSwapAdapter)
     dappRequestChainAdapters.register(algorandDappRequestAdapter)
     sendFlowChainAdapters.register(algorandSendFlowAdapter)
+    nameServiceChainAdapters.register(algorandNameServiceAdapter)
 }

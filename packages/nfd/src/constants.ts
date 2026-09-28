@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
-
 /** Maximum addresses per bulk-read request. Conservative — tune if backend allows more. */
 export const NFD_BULK_CHUNK_SIZE = 50
 
@@ -54,9 +52,3 @@ export const NFD_BATCH_MAX_SIZE = NFD_BULK_CHUNK_SIZE
  * is what governs.
  */
 export const NFD_BATCH_MAX_WAIT_MS = 4000
-
-/** NFD's registry, per network. Consulted only for a name's application id. */
-export const NFD_REGISTRY_URLS: Partial<Record<Network, string>> = {
-    mainnet: 'https://api.nf.domains',
-    testnet: 'https://api.testnet.nf.domains',
-}

@@ -11,11 +11,9 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import {
-    useNetwork,
-    isValidAlgorandAddress,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
+import { nameServiceAdapterFor } from '../chain-adapter'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdName } from '../models'
@@ -47,7 +45,8 @@ export const useNfdForAddressQuery = (
 ): UseNfdForAddressQueryResult => {
     const { network } = useNetwork()
     const enabled =
-        (options?.enabled ?? true) && isValidAlgorandAddress(address)
+        (options?.enabled ?? true) &&
+        nameServiceAdapterFor(network).isValidAddress(address)
 
     const query = useQuery({
         queryKey: nfdQueryKeys.forAddress(address, network),

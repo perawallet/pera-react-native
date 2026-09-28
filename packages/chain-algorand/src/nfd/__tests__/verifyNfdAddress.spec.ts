@@ -24,6 +24,7 @@ const loggerMock = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: queryClientMock,
     logger: loggerMock,
+    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     decodeFromBase64: (base64: string) =>
         new Uint8Array(Buffer.from(base64, 'base64')),
 }))
@@ -75,7 +76,11 @@ const algod = (responses: Record<string, unknown>) =>
     )
 
 const verify = (address: string, name = 'alice.algo') =>
-    verifyNfdAddress({ name, address, network: 'mainnet' })
+    verifyNfdAddress({
+        name,
+        address,
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
+    })
 
 describe('verifyNfdAddress', () => {
     beforeEach(() => {
@@ -168,6 +173,17 @@ describe('verifyNfdAddress', () => {
         queryClientMock.mockRejectedValue(new Error('algod down'))
         expect(await verify('ADDR(1)')).toBe('unavailable')
         expect(loggerMock.warn).toHaveBeenCalled()
+    })
+
+    test('is unavailable for a network id Algorand never issued', async () => {
+        const result = await verifyNfdAddress({
+            name: 'alice.algo',
+            address: 'ADDR(1)',
+            scope: { chainId: 'algorand', networkId: 'not-a-network' },
+        })
+
+        expect(result).toBe('unavailable')
+        expect(fetchMock).not.toHaveBeenCalled()
     })
 
     test('lets an abort propagate so callers can ignore a stale answer', async () => {
