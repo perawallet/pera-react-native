@@ -108,6 +108,8 @@ export const runOffscreenApp = async (): Promise<void> => {
         key => void REHYDRATE_BY_KEY[key]?.persist.rehydrate(),
     )
 
+    // Before sync starts: its first tick reads the chain kill switch.
+    getProvider().chains.setCapabilityOverrides(readCapabilityOverrides)
     initializeSyncService({
         queryClient,
         stores: createSyncStorePorts(),
@@ -126,7 +128,6 @@ export const runOffscreenApp = async (): Promise<void> => {
     const registry = createConnectionRegistry({ store })
     // Before the dApp handler starts: it answers any chain without an adapter
     // with an error, so a request arriving first would be refused.
-    provider.chains.setCapabilityOverrides(readCapabilityOverrides)
     registerAlgorandChain()
     registry.register(
         createWalletConnectV1Handler({
