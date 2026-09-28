@@ -70,7 +70,6 @@ export const RemoteConfigDefaults: Record<
     // The two degrade differently: a build without GOOGLE_*_CLIENT_ID drops the
     // Drive row before this flag is consulted, while one without
     // IOS_ICLOUD_CONTAINER_ID shows the iCloud row and fails it at write time.
-    // Provisioning: docs/CLOUD_FILE_STORAGE_SETUP.md.
     enable_backup_credentials_cloud_storage: false,
     pera_7_migration: false,
     force_platform_age_gate: false,
