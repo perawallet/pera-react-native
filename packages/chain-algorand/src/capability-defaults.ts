@@ -10,6 +10,12 @@
  limitations under the License
  */
 
-export { ALGORAND_CHAIN_ID } from './chain-id'
-export { chainModule } from './module'
-export { registerChain } from './register'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+} from '@perawallet/wallet-core-chain-contract'
+
+// Algorand offers every capability; a composition root narrows per platform.
+export const algorandCapabilityDefaults = Object.fromEntries(
+    CHAIN_CAPABILITIES.map(capability => [capability, true]),
+) as ChainCapabilities

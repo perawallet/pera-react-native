@@ -10,6 +10,15 @@
  limitations under the License
  */
 
-export { ALGORAND_CHAIN_ID } from './chain-id'
-export { chainModule } from './module'
-export { registerChain } from './register'
+import type { ChainModule } from '@perawallet/wallet-core-chain-contract'
+import { algorandCapabilityDefaults } from './capability-defaults'
+import { algorandDescriptor } from './descriptor'
+import { registerChain } from './register'
+
+export const chainModule: ChainModule = {
+    descriptor: algorandDescriptor,
+    capabilityDefaults: algorandCapabilityDefaults,
+    // The adapters are module-level instances that don't read the context yet.
+    register: _ctx => registerChain(),
+    i18nKeys: () => [],
+}

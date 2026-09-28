@@ -67,6 +67,15 @@ describe('chain-algorand exports', () => {
         ])
     })
 
+    it('exports the chain module and no chain-specific registration name', async () => {
+        const root = await import('..')
+
+        expect(root).toHaveProperty('chainModule')
+        expect(
+            Object.keys(root).filter(name => /^register.+Chain$/.test(name)),
+        ).toEqual([])
+    }, 30_000)
+
     it.each(Object.keys(barrels))(
         '%s points at its dist barrel and resolves from src',
         async key => {
