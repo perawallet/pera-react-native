@@ -13,6 +13,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { registerStore } from '@perawallet/wallet-core-shared'
 import {
+    handOffSecret,
     mnemonicIndexToWord,
     mnemonicWordsToIndices,
     zeroBytes,
@@ -78,15 +79,15 @@ export const usePendingImportMnemonicStore: UseBoundStore<
 
 export const setPendingImportMnemonic = (mnemonic: string): void => {
     const words = mnemonic.trim().split(/\s+/).filter(Boolean)
-    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: held by the pending-import store, which zeroes it when replaced, consumed or cleared
     const indices = mnemonicWordsToIndices(words)
     // Zero any buffer already held (e.g. a previous scan) before it is
     // overwritten and left to GC — including the cross-type case where an
     // indexed phrase replaces raw bytes, or vice-versa.
     wipe(usePendingImportMnemonicStore.getState())
+    const pendingIndices = handOffSecret(indices)
     usePendingImportMnemonicStore.setState(
-        indices
-            ? { pendingIndices: indices, pendingRawBytes: null }
+        pendingIndices
+            ? { pendingIndices, pendingRawBytes: null }
             : {
                   pendingIndices: null,
                   pendingRawBytes: new TextEncoder().encode(words.join(' ')),

@@ -23,7 +23,7 @@ import {
     passkeyMainKeyIdFromSeedKeyId,
     writeNativePasskeyEntry,
 } from '@perawallet/wallet-core-passkeys'
-import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { handOffSecret, zeroBytes } from '@perawallet/wallet-core-kms'
 import type { PasskeyImportFn, PasskeyImportSummary } from '../sync/types'
 
 /** The owning seed as this device knows it. `seedKeyId` is local — the id the
@@ -85,10 +85,11 @@ export const useCloudBackupPasskeyImport = (
                                         ? null
                                         : {
                                               seedKeyId: resolved.seedKeyId,
-                                              mainKey:
+                                              mainKey: handOffSecret(
                                                   await derivePasskeyMainKey(
                                                       resolved.entropy,
                                                   ),
+                                              ),
                                           },
                                 )
                             } finally {
@@ -177,7 +178,6 @@ export const useCloudBackupPasskeyImport = (
                 }
             }
 
-            // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: each main key is cached in seeds, and the finally above zeroes every cached one
             return summary
         },
         [resolveSeedEntropy],
