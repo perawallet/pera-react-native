@@ -103,6 +103,25 @@ describe('tools/generate-config.sh', () => {
         expect(output).not.toContain('reownProjectId')
     })
 
+    test('emits only allowlisted keys when CONFIG_ALLOWLIST is set', () => {
+        const output = run({
+            CONFIG_ALLOWLIST: 'sentryDsn mainnetBidaliBaseUrl',
+            SENTRY_DSN: 'https://key@o0.ingest.sentry.io/0',
+            MAINNET_BIDALI_BASE_URL: 'https://bidali.example.com',
+            MAINNET_BIDALI_API_KEY: 'bidali-key',
+            GOOGLE_IOS_CLIENT_ID: 'ios-client',
+        })
+
+        expect(output).toContain(
+            'sentryDsn: "https://key@o0.ingest.sentry.io/0"',
+        )
+        expect(output).toContain(
+            'mainnetBidaliBaseUrl: "https://bidali.example.com"',
+        )
+        expect(output).not.toContain('mainnetBidaliApiKey')
+        expect(output).not.toContain('googleIosClientId')
+    })
+
     test('ignores obsolete web-feature URL environment variables', () => {
         const output = run({
             DISCOVER_BASE_URL: 'https://discover.example.com/',

@@ -96,7 +96,13 @@ append_config() {
   local env_var="$1"
   local config_key="$2"
   local type="$3" # string, boolean, number
-  
+
+  # Space-separated config keys; when set, anything unlisted is never written.
+  # The browser build passes one because everything it bakes ships in the zip.
+  if [ -n "${CONFIG_ALLOWLIST:-}" ] && [[ " $CONFIG_ALLOWLIST " != *" $config_key "* ]]; then
+    return 0
+  fi
+
   # Get the value of the environment variable
   local value="${!env_var}"
   
