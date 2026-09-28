@@ -90,16 +90,12 @@ const createSweepCaches = (): SweepCaches => {
 type KeystoreKey = ReturnType<typeof getKeystoreStore>['state']['keys'][number]
 
 /**
- * Every key a credential could be hiding in. The reactive keystore store holds
- * the `k/`+`m/` split layout, which on a device deliberately holds **no**
- * passkey credentials — `repairs/0002-rematerialize-passkey-credentials`
- * rewrites each one as a flat bare-id record and deletes the pair, because
- * Android resolves the split layout first and a surviving `k/` record shadows
- * the flat copy. Sweeping only the store therefore finds nothing on iOS or
- * Android; the flat records are where credentials actually are.
+ * Every key a credential could be hiding in. Android credentials live in the
+ * keystore's `k/`+`m/` split, which the reactive store holds; iOS credentials
+ * are flat bare-id records only `readFlatKeystoreRecords` sees, and so is an
+ * Android credential the per-launch split has not moved yet.
  *
- * Both sources are read because a legacy install whose repair declined still
- * has its pair. Deduped by id, store first: it is already decrypted.
+ * Deduped by id, store first: it is already decrypted.
  */
 const collectCandidateKeys = async (): Promise<KeystoreKey[]> => {
     const storeKeys = getKeystoreStore().state.keys

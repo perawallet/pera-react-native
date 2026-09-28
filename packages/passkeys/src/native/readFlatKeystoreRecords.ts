@@ -25,15 +25,10 @@ import {
 } from './nativeProviderRecord'
 
 /**
- * Reads the **flat bare-id records the credential providers own**, which is
- * where a passkey credential actually lives on iOS and Android.
- *
- * The keystore's own `k/`+`m/` split layout is deliberately *not* where they
- * live: `extensions/provider`'s `repairs/0002-rematerialize-passkey-credentials`
- * rewrites every credential as a flat record and deletes the pair, because
- * Android's `CredentialRepository.getCredential` tries the split layout first
- * and a surviving `k/` record shadows the flat copy. So anything that walks the
- * reactive keystore store sees no credentials at all on a device.
+ * Reads the **flat bare-id records the credential providers own**: every iOS
+ * passkey credential, and an Android one that `splitFlatPasskeyCredentials`
+ * has not moved into `k/`+`m/` yet. The reactive keystore store holds the split
+ * layout, so a caller after every credential reads both.
  *
  * Two writers seal these records and both are read here, because which one
  * wrote a given credential depends on how it got there:

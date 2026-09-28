@@ -35,7 +35,11 @@ export type { QuantumKeyResult } from './useQuantum'
 import { useHDWallet } from './useHDWallet'
 export type { HDWalletKeyResult } from './useHDWallet'
 import { isPasskeyMainKey, usePasskeyMainKey } from './usePasskeyMainKey'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    hasKeyMaterial,
+    isPasskeyCredentialType,
+} from '@perawallet/wallet-extension-provider'
 import { useKMSService } from './useKMSServices'
 import { useKeystoreKeys } from './useKeystoreState'
 import { entropyToIndices } from '../crypto/hdwallet-utils'
@@ -113,13 +117,12 @@ export const useKMS = () => {
      * other caller is wallet creation, and `repairs/0003` is ledgered one-shot),
      * so this does, below.
      *
-     * Credentials are NOT spared as a class: the extension's `hd-derived-p256`
-     * records are `k/` entries parented on the main key and hold no private key
-     * of their own, so this destroys them. The native provider's credentials
-     * survive only because they sit at bare ids
-     * (`PasskeyCredentialStore.swift:310`), outside the `k/` namespace the
-     * keystore driver enumerates (`react-native-keystore/dist/storage/driver.js:123`),
-     * so they never appear in `liveKeys` at all.
+     * Passkey credentials that carry their own sealed material are spared:
+     * every credential the native provider stores, in `k/`+`m/` on Android
+     * and at a bare id on iOS (where it never reaches `liveKeys` at all), keeps
+     * signing after its wallet is gone. The extension's `hd-derived-p256`
+     * records hold no private key of their own and re-derive from the main
+     * key, so they go with it.
      */
     const removeKeyAndChildren = useCallback(
         async (rootKeyId: string): Promise<void> => {
@@ -132,6 +135,8 @@ export const useKMS = () => {
                 grew = false
                 for (const k of liveKeys) {
                     if (doomed.has(k.id)) continue
+                    if (isPasskeyCredentialType(k.type) && hasKeyMaterial(k.id))
+                        continue
                     const parentKeyId = (k.metadata as Record<string, unknown>)
                         ?.parentKeyId
                     if (

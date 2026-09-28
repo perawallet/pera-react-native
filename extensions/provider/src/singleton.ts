@@ -18,7 +18,12 @@ import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keyst
 import type { MigrationReport } from '@algorandfoundation/provider-migrations'
 import { subtle } from './keystore/subtle'
 import { createPeraKeystore } from './keystore/createKeystore'
-import { readPersistedKeys, runMaterialRepair } from './keystore/maintenance'
+import {
+    readPersistedKeys,
+    runMaterialRepair,
+    runPasskeyCredentialSplit,
+} from './keystore/maintenance'
+import type { PasskeySplitResult } from './keystore/passkeyCredentials/splitFlatPasskeyCredentials'
 import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
 import { resolveEngineKey } from './keystore/engineKeySource'
 import { resealLegacyMaterialWith } from './keystore/resealLegacyMaterial'
@@ -28,6 +33,7 @@ import {
     PQ_DERIVATION_CANONICAL,
 } from './keystore/pqDerivation'
 import { createPeraMigrationLedger } from './keystore/migrationsLedger'
+import { safeErrorMessage, safeWarn } from './keystore/migrations/safeLog'
 import { PeraProvider } from './pera-provider'
 
 const keystoreStore = new Store<KeyStoreState>({
@@ -278,6 +284,8 @@ export class KeystoreHydrationError extends Error {
 
 export type KeystoreMaintenanceResult = {
     repair: QuantumMaterialRepairResult
+    /** What the Android passkey-credential split did this launch; empty elsewhere. */
+    passkeySplit: PasskeySplitResult
     /**
      * `k/`-prefixed storage keys the reconcile passes skipped as undecodable.
      * Non-fatal for this session, but the engine's strict hydration will fail
@@ -305,6 +313,9 @@ export type KeystoreMaintenanceResult = {
  *   material, and that fails only at submit time, after the user has already
  *   signed. It is not a tracked migration revision for exactly that reason —
  *   it has no "done" state to record, it must keep checking every launch.
+ * - On Android, flat passkey credentials are moved into `k/`+`m/` on every
+ *   launch until none remain (see `splitFlatPasskeyCredentials`); a split
+ *   needs the second reconcile, like a repair.
  * - A second `reconcileKeystore` runs only when the repair actually did
  *   something, since it re-reads every entry and paying that cost on a launch
  *   where nothing changed is pure cost.
@@ -335,12 +346,30 @@ export const runKeystoreMaintenance = async (
 
     const failedDecodeIds = new Set((await reconcileKeystore()).failedIds)
 
+    let passkeySplit: PasskeySplitResult = {
+        split: [],
+        normalized: [],
+        failed: [],
+    }
+    try {
+        if (instance.deviceInfo.getDevicePlatform() === 'android') {
+            passkeySplit = await runPasskeyCredentialSplit()
+        }
+    } catch (error) {
+        // Never blocks startup: a credential left flat is retried next launch.
+        safeWarn(
+            `[provider] passkey credential split failed: ${safeErrorMessage(error)}`,
+        )
+    }
+
     const repair = await runQuantumMaterialRepair(deps)
-    if (repair.repaired > 0 || repair.failed > 0) {
+    const splitMovedKeys =
+        passkeySplit.split.length > 0 || passkeySplit.normalized.length > 0
+    if (splitMovedKeys || repair.repaired > 0 || repair.failed > 0) {
         for (const id of (await reconcileKeystore()).failedIds) {
             failedDecodeIds.add(id)
         }
     }
 
-    return { repair, failedDecodeIds: [...failedDecodeIds] }
+    return { repair, passkeySplit, failedDecodeIds: [...failedDecodeIds] }
 }

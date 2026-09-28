@@ -201,7 +201,7 @@ patchedDependencies:
   # happens under a Web Lock with a re-read once held, so the first caller
   # creates and the rest read what it wrote. Drop once upstream takes it.
   "@algorandfoundation/keystore-web@1.0.0-canary.4": patches/@algorandfoundation__keystore-web@1.0.0-canary.4.patch
-  # Three unrelated reasons, none configurable through plugin options:
+  # Four unrelated reasons, none configurable through plugin options:
   # - The Android credential provider keeps the legacy native app's service
   #   class name, so Credential Manager carries the user's enablement across
   #   the upgrade.
@@ -214,6 +214,10 @@ patchedDependencies:
   #   Chrome rejects it.
   # - The package's iOS strings name its own product ("Rocca"), including the
   #   Face ID usage text and the biometric / passcode prompt reasons.
+  # - Android credentials live in the keystore's `k/`+`m/` split layout: the
+  #   credential chooser lists plaintext `k/` metadata without decrypting
+  #   anything, and one credential's sealed `m/` material is opened only after
+  #   the user selects it. Upstream lists flat records by opening each one.
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.27.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI

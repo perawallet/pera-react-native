@@ -75,7 +75,7 @@ export const wipeBytes = (bytes: Uint8Array | undefined): void => {
  * the only readable copy from the plaintext bucket.
  */
 export const sealAndVerify = async (
-    { storage, subtle }: PeraMigrationContext,
+    { storage, subtle }: Pick<PeraMigrationContext, 'storage' | 'subtle'>,
     masterKey: Uint8Array,
     key: string,
     bytes: Uint8Array,
@@ -104,7 +104,7 @@ export const sealAndVerify = async (
 
 /** True when `key` already holds a sealed copy of exactly `bytes`. */
 export const holdsSameMaterial = async (
-    { storage, subtle }: PeraMigrationContext,
+    { storage, subtle }: Pick<PeraMigrationContext, 'storage' | 'subtle'>,
     masterKey: Uint8Array,
     key: string,
     bytes: Uint8Array,

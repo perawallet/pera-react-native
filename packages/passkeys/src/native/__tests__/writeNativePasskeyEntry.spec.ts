@@ -10,25 +10,35 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { openNativeProviderRecord } from '@perawallet/wallet-core-passkeys/native'
 
-const { platformMock, masterKeyMock, storageMock } = vi.hoisted(() => ({
-    platformMock: { OS: 'android' as 'android' | 'ios' },
-    masterKeyMock: vi.fn(async () => new Uint8Array(32)),
-    storageMock: { set: vi.fn(), getString: vi.fn() },
-}))
+const { platformMock, masterKeyMock, storageMock, writeSplitMock } = vi.hoisted(
+    () => ({
+        platformMock: { OS: 'android' as 'android' | 'ios' },
+        masterKeyMock: vi.fn(async () => new Uint8Array(32)),
+        storageMock: { set: vi.fn(), getString: vi.fn() },
+        writeSplitMock: vi.fn(
+            async (_masterKey: Uint8Array, _id: string, _record: unknown) =>
+                undefined,
+        ),
+    }),
+)
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         deviceInfo: { getDevicePlatform: () => platformMock.OS },
     }),
     keystoreSubtle: {},
+    writePasskeyCredential: writeSplitMock,
 }))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     readMasterKey: masterKeyMock,
     storage: storageMock,
+    METADATA_PREFIX: 'k/',
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -39,6 +49,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 
 import {
     createNativePasskeyWriter,
+    nativePasskeyEntryExists,
     writeNativePasskeyEntry,
     type WriteNativePasskeyEntryParams,
 } from '../writeNativePasskeyEntry'
@@ -97,18 +108,29 @@ const writeFor = async (os: 'android' | 'ios') => {
         },
         subtle,
     )
+    if (os === 'android') {
+        const [, , record] = writeSplitMock.mock.calls.at(-1) as [
+            Uint8Array,
+            string,
+            { metadata: Record<string, unknown> },
+        ]
+        return record.metadata
+    }
     const record = await lastWrittenRecord()
     return record.metadata as Record<string, unknown>
 }
 
 beforeEach(() => {
+    platformMock.OS = 'ios'
     storageMock.set.mockClear()
+    storageMock.getString.mockReset()
     masterKeyMock.mockClear()
     masterKeyMock.mockImplementation(async () => Uint8Array.from(MASTER_KEY))
+    writeSplitMock.mockClear()
 })
 
 describe('writeNativePasskeyEntry provider contract', () => {
-    it('writes an envelope the provider can decrypt, with byte fields as number arrays', async () => {
+    it('iOS: writes an envelope the provider can decrypt, with byte fields as number arrays', async () => {
         await writeNativePasskeyEntry(entryParams('cred-1'), subtle)
 
         const [key, payload] = storageMock.set.mock.calls.at(-1) as [
@@ -116,8 +138,8 @@ describe('writeNativePasskeyEntry provider contract', () => {
             string,
         ]
         expect(key).toBe('cred-1')
-        // `decodeKeyData` only takes its decrypt branch on all three fields;
-        // canary.14's two-field `{iv, content}` silently returns the envelope.
+        // `openNativeProviderRecord` requires all three fields — a two-field
+        // `{iv, content}` envelope throws instead of decrypting.
         expect(Object.keys(JSON.parse(payload)).sort()).toEqual([
             'content',
             'iv',
@@ -234,5 +256,53 @@ describe('writeNativePasskeyEntry change notification', () => {
         unsubscribe()
 
         expect(recordsStoredAtAnnouncement).toEqual([1])
+    })
+})
+
+describe('writeNativePasskeyEntry on Android', () => {
+    it('writes the credential split through the provider, never as a flat record', async () => {
+        platformMock.OS = 'android'
+        // `dispose` zeroes the master key once the write returns, so keep a copy.
+        let capturedMasterKey: Uint8Array | undefined
+        writeSplitMock.mockImplementationOnce(async (masterKey: Uint8Array) => {
+            capturedMasterKey = Uint8Array.from(masterKey)
+            return undefined
+        })
+
+        await writeNativePasskeyEntry(entryParams('cred-1'), subtle)
+
+        expect(storageMock.set).not.toHaveBeenCalled()
+        expect(capturedMasterKey).toEqual(MASTER_KEY)
+        const [, id, record] = writeSplitMock.mock.calls.at(-1) as [
+            Uint8Array,
+            string,
+            Record<string, unknown>,
+        ]
+        expect(id).toBe('cred-1')
+        expect(record.privateKey).toEqual(new Uint8Array(32).fill(3))
+        expect(record.publicKey).toEqual(new Uint8Array(91).fill(4))
+        expect(record.type).toBe('hd-derived-p256')
+    })
+})
+
+describe('nativePasskeyEntryExists', () => {
+    it('on Android, sees a flat record and a split one alike', () => {
+        platformMock.OS = 'android'
+        storageMock.getString.mockImplementation((key: string) =>
+            key === 'flat-1' || key === 'k/split-1' ? '{}' : undefined,
+        )
+
+        expect(nativePasskeyEntryExists('flat-1')).toBe(true)
+        expect(nativePasskeyEntryExists('split-1')).toBe(true)
+        expect(nativePasskeyEntryExists('missing')).toBe(false)
+    })
+
+    it('on iOS, sees a flat record but not a split one', () => {
+        storageMock.getString.mockImplementation((key: string) =>
+            key === 'flat-1' || key === 'k/split-1' ? '{}' : undefined,
+        )
+
+        expect(nativePasskeyEntryExists('flat-1')).toBe(true)
+        expect(nativePasskeyEntryExists('split-1')).toBe(false)
     })
 })

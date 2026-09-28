@@ -208,6 +208,37 @@ describe('Flow: Settings → Passkeys removal', () => {
         )
     })
 
+    it('removes a credential listed by both the keystore and the provider from both', async () => {
+        await importKeystorePasskey('split-cred', false)
+        getAutofill().getStoredCredentials.mockResolvedValue([
+            nativeCredential('split-cred'),
+        ])
+        const remove = vi.spyOn(getKeyStore(), 'remove')
+
+        renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+        await waitFor(() =>
+            expect(
+                screen.getAllByTestId('settings_passkeys_item_split-cred'),
+            ).toHaveLength(1),
+        )
+
+        fireEvent.click(screen.getByTestId(/_remove$/))
+        await waitFor(() =>
+            expect(hasButtonWithLabel('settings.passkeys.remove_confirm')).toBe(
+                true,
+            ),
+        )
+        tapButtonByLabel('settings.passkeys.remove_confirm')
+
+        await waitFor(() =>
+            expect(getAutofill().deleteCredential).toHaveBeenCalledWith(
+                'split-cred',
+            ),
+        )
+        await waitFor(() => expect(remove).toHaveBeenCalledWith('split-cred'))
+        remove.mockRestore()
+    })
+
     it('leaves the passkey untouched when the confirmation sheet is cancelled', async () => {
         getAutofill().getStoredCredentials.mockResolvedValue([
             NATIVE_CREDENTIAL,
