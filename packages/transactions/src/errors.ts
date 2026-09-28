@@ -54,31 +54,68 @@ export class InvalidSendParamsError extends TransactionError {
     }
 }
 
+const ALREADY_OPTED_IN_KEYS = messageKeysFor(
+    'errors.transaction.already_opted_in',
+)
+
 export class AlreadyOptedInError extends TransactionError {
     constructor() {
-        super('Account is already opted in to this asset')
+        super('Account is already opted in to this asset', undefined, {
+            titleKey: ALREADY_OPTED_IN_KEYS.titleKey,
+            messageKey: ALREADY_OPTED_IN_KEYS.bodyKey,
+        })
     }
 }
 
+const INSUFFICIENT_BALANCE_FOR_OPT_IN_KEYS = messageKeysFor(
+    'errors.transaction.insufficient_balance_for_opt_in',
+)
+
 export class InsufficientBalanceForOptInError extends TransactionError {
-    constructor() {
+    /**
+     * @param shortfall ALGO (display units) still needed, already formatted
+     *   for the active locale since the app layer interpolates it verbatim.
+     */
+    constructor(shortfall: string) {
         super(
             'Insufficient ALGO balance to opt in. Account needs enough to cover the minimum balance requirement and transaction fee.',
+            undefined,
+            {
+                titleKey: INSUFFICIENT_BALANCE_FOR_OPT_IN_KEYS.titleKey,
+                messageKey: INSUFFICIENT_BALANCE_FOR_OPT_IN_KEYS.bodyKey,
+                params: { shortfall },
+            },
         )
     }
 }
+
+const NON_ZERO_BALANCE_KEYS = messageKeysFor(
+    'errors.transaction.non_zero_balance_opt_out',
+)
 
 export class NonZeroBalanceError extends TransactionError {
     constructor() {
         super(
             'Cannot opt out of an asset with a non-zero balance. Transfer the remaining balance first.',
+            undefined,
+            {
+                titleKey: NON_ZERO_BALANCE_KEYS.titleKey,
+                messageKey: NON_ZERO_BALANCE_KEYS.bodyKey,
+            },
         )
     }
 }
 
+const CREATOR_CANNOT_OPT_OUT_KEYS = messageKeysFor(
+    'errors.transaction.creator_cannot_opt_out',
+)
+
 export class CreatorCannotOptOutError extends TransactionError {
     constructor() {
-        super('Asset creators cannot opt out of their own assets.')
+        super('Asset creators cannot opt out of their own assets.', undefined, {
+            titleKey: CREATOR_CANNOT_OPT_OUT_KEYS.titleKey,
+            messageKey: CREATOR_CANNOT_OPT_OUT_KEYS.bodyKey,
+        })
     }
 }
 

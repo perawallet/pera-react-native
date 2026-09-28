@@ -1042,7 +1042,23 @@
         },
         "transaction": {
             "title": "Ocorreu um erro ao processar esta transação",
-            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir.",
+            "insufficient_balance_for_opt_in": {
+                "title": "ALGO insuficiente",
+                "body": "Você precisa de mais {{shortfall}} ALGO para adicionar este ativo. Sua conta precisa manter o saldo mínimo e cobrir a taxa da transação."
+            },
+            "already_opted_in": {
+                "title": "Ativo já adicionado",
+                "body": "Esta conta já adicionou este ativo."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "O ativo ainda tem saldo",
+                "body": "Só é possível remover um ativo com saldo zero. Envie ou troque o valor restante primeiro."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Não é possível remover este ativo",
+                "body": "Esta conta criou este ativo, então não pode removê-lo."
+            }
         },
         "kms": {
             "key_not_found": "Não foi possível encontrar a chave de assinatura desta conta.",
