@@ -13,10 +13,10 @@
 import { useCallback } from 'react'
 import type { ASAInbox, InboxItem } from '@perawallet/wallet-core-messages'
 import type { MultiSigAccount } from '@perawallet/wallet-core-multisig'
-import { pushScreen } from '@hooks/deeplink/navigateToScreen'
+import { pushScreen } from '@modules/deeplink/core'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useHandleMultisigSignTap } from '@modules/multisig/hooks/useHandleMultisigSignTap'
+import { useHandleMultisigSignTap } from '@modules/multisig'
 import {
     MultisigInvitationDetailContent,
     type MultisigInvitationDetailContentResult,

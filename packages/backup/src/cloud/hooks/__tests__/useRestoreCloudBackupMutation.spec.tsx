@@ -26,6 +26,7 @@ const {
     setConfiguredMock,
     setSyncStateMock,
     importAccountsMock,
+    importPasskeysMock,
     deviceIdMock,
 } = vi.hoisted(() => ({
     MNEMONIC: ['abandon', 'ability', 'able'],
@@ -34,6 +35,7 @@ const {
     setConfiguredMock: vi.fn(),
     setSyncStateMock: vi.fn(),
     importAccountsMock: vi.fn(),
+    importPasskeysMock: vi.fn(),
     deviceIdMock: { value: 'device-123' as string | null },
 }))
 
@@ -54,6 +56,14 @@ vi.mock('../../store/syncStateStore', () => ({
 }))
 vi.mock('../useCloudBackupImport', () => ({
     useCloudBackupImport: () => ({ importAccounts: importAccountsMock }),
+}))
+vi.mock('../useCloudBackupPasskeyImport', () => ({
+    useCloudBackupPasskeyImport: () => ({
+        importPasskeys: importPasskeysMock,
+    }),
+}))
+vi.mock('../useResolveSeedEntropyForBackup', () => ({
+    useResolveSeedEntropyForBackup: () => vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
     ...(await importOriginal<object>()),
@@ -121,6 +131,7 @@ describe('useRestoreCloudBackupMutation', () => {
             network: 'mainnet',
             importAccounts: importAccountsMock,
             importContacts: expect.any(Function),
+            importPasskeys: importPasskeysMock,
         })
         expect(setConfiguredMock).toHaveBeenCalledWith({
             backupId: 'did:pera:abc',

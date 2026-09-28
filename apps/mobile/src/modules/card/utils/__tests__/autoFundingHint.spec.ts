@@ -23,7 +23,6 @@ describe('resolveAutoFundingHint', () => {
             resolveAutoFundingHint(t, {
                 isAutoFundingEnabled: false,
                 isAutoUnavailable: true,
-                fallback: 'limit',
             }),
         ).toBe('peraCard.account.funding_type_auto_coming_soon_hint')
     })
@@ -33,7 +32,6 @@ describe('resolveAutoFundingHint', () => {
             resolveAutoFundingHint(t, {
                 isAutoFundingEnabled: true,
                 isAutoUnavailable: true,
-                fallback: 'limit',
             }),
         ).toBe('peraCard.account.funding_type_auto_unavailable_hint')
     })
@@ -44,7 +42,6 @@ describe('resolveAutoFundingHint', () => {
                 isAutoFundingEnabled: true,
                 isAutoUnavailable: true,
                 isLedgerAccount: true,
-                fallback: 'limit',
             }),
         ).toBe('peraCard.account.funding_type_auto_ledger_hint')
     })
@@ -59,17 +56,7 @@ describe('resolveAutoFundingHint', () => {
         ).toBe('peraCard.account.funding_type_auto_coming_soon_hint')
     })
 
-    it('returns the fallback when Auto is enabled and available', () => {
-        expect(
-            resolveAutoFundingHint(t, {
-                isAutoFundingEnabled: true,
-                isAutoUnavailable: false,
-                fallback: 'limit',
-            }),
-        ).toBe('limit')
-    })
-
-    it('returns undefined when available with no fallback', () => {
+    it('returns no hint when Auto is enabled and available', () => {
         expect(
             resolveAutoFundingHint(t, {
                 isAutoFundingEnabled: true,

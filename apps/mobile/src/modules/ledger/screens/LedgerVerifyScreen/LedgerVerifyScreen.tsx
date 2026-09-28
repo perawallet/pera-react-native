@@ -34,8 +34,26 @@ export const LedgerVerifyScreen = () => {
         handleAdd,
         handleRetry,
         handleTroubleshoot,
+        isAddedInHandoffTab,
+        handleDone,
+        handleCancel,
         t,
     } = useLedgerVerifyScreen()
+
+    if (isAddedInHandoffTab) {
+        return (
+            <PWResultView
+                variant='success'
+                title={t('ledger.handoff_added.title')}
+                body={t('ledger.handoff_added.body')}
+                primaryAction={{
+                    label: t('common.done'),
+                    onPress: handleDone,
+                }}
+                testID='ledger-handoff-added'
+            />
+        )
+    }
 
     if (errorPreset) {
         return (
@@ -51,6 +69,12 @@ export const LedgerVerifyScreen = () => {
                     label: t('ledger.errors.troubleshoot'),
                     onPress: handleTroubleshoot,
                 }}
+                linkAction={
+                    handleCancel && {
+                        label: t('common.cancel.label'),
+                        onPress: handleCancel,
+                    }
+                }
                 testID='ledger-verify-error'
             />
         )

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -64,11 +64,13 @@ export const createChromeFake = (): ChromeFake => {
         },
         remove: async (keys: string | string[]): Promise<void> => {
             const changes: StorageChanges = {}
+            // Like chrome.storage, a key that isn't there produces no change.
             for (const key of typeof keys === 'string' ? [keys] : keys) {
+                if (!data.has(key)) continue
                 changes[key] = { oldValue: data.get(key) }
                 data.delete(key)
             }
-            emit(changes, 'local')
+            if (Object.keys(changes).length > 0) emit(changes, 'local')
         },
     }
 
@@ -89,11 +91,13 @@ export const createChromeFake = (): ChromeFake => {
         },
         remove: async (keys: string | string[]): Promise<void> => {
             const changes: StorageChanges = {}
+            // Like chrome.storage, a key that isn't there produces no change.
             for (const key of typeof keys === 'string' ? [keys] : keys) {
+                if (!sessionData.has(key)) continue
                 changes[key] = { oldValue: sessionData.get(key) }
                 sessionData.delete(key)
             }
-            emit(changes, 'session')
+            if (Object.keys(changes).length > 0) emit(changes, 'session')
         },
         // A spy, not a bare no-op: session storage holds the decrypted master
         // key, so "did we actually restrict it to trusted contexts" is worth

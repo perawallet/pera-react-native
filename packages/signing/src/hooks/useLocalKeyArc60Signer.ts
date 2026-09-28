@@ -25,11 +25,13 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 import {
-    Arc60FailedHdPathError,
-    Arc60InvalidSignerError,
     buildArc60AuthSigningPayload,
     validateArc60AuthRequest,
 } from '../utils/arc60'
+import {
+    Arc60FailedHdPathError,
+    Arc60InvalidSignerError,
+} from '../utils/arc60-errors'
 
 export type UseLocalKeyArc60SignerResult = {
     /**

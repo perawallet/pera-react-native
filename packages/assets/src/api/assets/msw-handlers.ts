@@ -41,23 +41,6 @@ export const mockAssets = ({
     ]
 }
 
-export type MockAccountAssetsParams = {
-    address: string
-    response: z.input<typeof assetsResponseSchema>
-    status?: number
-}
-
-export const mockAccountAssets = ({
-    address,
-    response,
-    status = 200,
-}: MockAccountAssetsParams): HttpHandler => {
-    validateMockResponse(assetsResponseSchema, response, 'mockAccountAssets')
-    return http.get(`*/v2/accounts/${address}/assets/`, () =>
-        HttpResponse.json(response, { status }),
-    )
-}
-
 export type MockAssetDetailsParams = {
     assetID: string
     response: z.input<typeof assetResponseSchema>

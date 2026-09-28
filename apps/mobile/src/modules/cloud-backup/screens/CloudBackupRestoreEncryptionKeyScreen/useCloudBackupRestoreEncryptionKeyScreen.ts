@@ -14,8 +14,10 @@ import { useCallback, useEffect, useState } from 'react'
 import {
     useCloudBackupRestoreDraftStore,
     useRestoreCloudBackupMutation,
+    type BackupEncryptionKey,
     type RestoreCloudBackupVariables,
 } from '@perawallet/wallet-core-backup'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRestoreOutcome } from '../../hooks/useRestoreOutcome'
@@ -51,12 +53,15 @@ const useRestoreRunner = (
     restore: (variables: RestoreCloudBackupVariables) => void,
     hasMnemonic: boolean,
     salt: string,
+    importedKey: Nullable<BackupEncryptionKey>,
 ): (() => void) =>
     useCallback(() => {
         if (!hasMnemonic || salt.length === 0) return
         trackEvent(CloudBackupEvent.RestoreEncryptionKeyProceed)
-        restore({ salt })
-    }, [hasMnemonic, salt, restore])
+        // The file's Argon2id settings belong to its salt; an edited key is
+        // restored like a typed one, on this build's defaults.
+        restore(salt === importedKey?.salt ? importedKey : { salt })
+    }, [hasMnemonic, salt, importedKey, restore])
 
 export type UseCloudBackupRestoreEncryptionKeyScreenParams = {
     onDone: () => void
@@ -75,7 +80,12 @@ export const useCloudBackupRestoreEncryptionKeyScreen = ({
     onDone,
 }: UseCloudBackupRestoreEncryptionKeyScreenParams): UseCloudBackupRestoreEncryptionKeyScreenResult => {
     const { t } = useLanguage()
-    const [encryptionKey, setEncryptionKey] = useState('')
+    // Read once: editing the field must not be undone by a store update, and
+    // the draft is written before this screen mounts.
+    const [importedKey] = useState(
+        () => useCloudBackupRestoreDraftStore.getState().importedKey,
+    )
+    const [encryptionKey, setEncryptionKey] = useState(importedKey?.salt ?? '')
     const { hasMnemonic, clearDraft } = useRestoreDraft()
     const outcome = useRestoreOutcome({ clearDraft, onDone })
     const mutation = useRestoreCloudBackupMutation(outcome)
@@ -84,6 +94,7 @@ export const useCloudBackupRestoreEncryptionKeyScreen = ({
         mutation.mutate,
         hasMnemonic,
         encryptionKey,
+        importedKey,
     )
 
     const handleKeyChange = useCallback(

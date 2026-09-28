@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type { HardwareWalletRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { RNLedgerService } from './RNLedgerService'
 
 /**
  * wallet-provider Extension that registers the Ledger hardware wallet
  * transport provider into the hardware wallet registry.
  *
- * This extension must be composed AFTER the platform extension, which
- * provides the `hardwareWalletRegistry` on the provider instance.
+ * Run it after `WithHardwareWalletExtension`, which provides the
+ * `hardwareWalletRegistry` on the provider instance.
  */
 export const WithLedgerExtension = (provider: {
     hardwareWalletRegistry: HardwareWalletRegistry

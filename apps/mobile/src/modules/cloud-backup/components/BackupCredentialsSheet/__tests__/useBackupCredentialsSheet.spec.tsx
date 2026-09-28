@@ -51,7 +51,7 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: vi.fn(),
 }))
 
-const mockDismiss = vi.fn()
+const mockResolve = vi.fn()
 
 // Stands in for the real accessor: hands the handler a buffer it owns, then
 // zeroes it once the handler returns — the contract the hook has to copy out of.
@@ -60,8 +60,8 @@ let accessorBuffer: Uint16Array
 beforeEach(() => {
     vi.clearAllMocks()
     ;(useBottomSheetResult as Mock).mockReturnValue({
-        resolve: vi.fn(),
-        dismiss: mockDismiss,
+        resolve: mockResolve,
+        dismiss: vi.fn(),
     })
     ;(withBackupMnemonicIndices as Mock).mockImplementation(
         async (handler: (indices: Uint16Array) => unknown) => {
@@ -136,15 +136,15 @@ describe('useBackupCredentialsSheet', () => {
         expect(Array.from(retained)).toEqual([0, 0, 0])
     })
 
-    test('handleClose tracks the store tap and dismisses the sheet', async () => {
+    test('handleStore tracks the store tap and resolves the sheet with store', async () => {
         const { result } = renderHook(() => useBackupCredentialsSheet())
 
-        result.current.handleClose()
+        result.current.handleStore()
 
         expect(trackEvent).toHaveBeenCalledWith(
             CloudBackupEvent.CredentialsStore,
         )
-        expect(mockDismiss).toHaveBeenCalled()
+        expect(mockResolve).toHaveBeenCalledWith('store')
         await waitFor(() =>
             expect(result.current.passphraseStatus).toBe('ready'),
         )

@@ -17,7 +17,7 @@ import {
     useScannedAddress,
 } from '../useScannedAddress'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { parseDeeplink } from '@hooks/deeplink/parser'
+import { parseDeeplink } from '@modules/deeplink/parser'
 
 const mockShowToast = vi.fn()
 
@@ -25,7 +25,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: vi.fn(),
 }))
 
-vi.mock('@hooks/deeplink/parser', () => ({
+vi.mock('@modules/deeplink/parser', () => ({
     parseDeeplink: vi.fn(),
 }))
 

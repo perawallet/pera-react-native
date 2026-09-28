@@ -23,8 +23,6 @@ type AutoFundingHintParams = {
      * the generic can't-sign one.
      */
     isLedgerAccount?: boolean
-    /** Shown when Auto is enabled and available (e.g. the per-tx limit hint). */
-    fallback?: string
 }
 
 /**
@@ -37,7 +35,6 @@ export const resolveAutoFundingHint = (
         isAutoFundingEnabled,
         isAutoUnavailable,
         isLedgerAccount = false,
-        fallback,
     }: AutoFundingHintParams,
 ): string | undefined => {
     if (!isAutoFundingEnabled) {
@@ -48,5 +45,5 @@ export const resolveAutoFundingHint = (
             ? t('peraCard.account.funding_type_auto_ledger_hint')
             : t('peraCard.account.funding_type_auto_unavailable_hint')
     }
-    return fallback
+    return undefined
 }

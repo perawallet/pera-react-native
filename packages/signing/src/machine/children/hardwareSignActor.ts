@@ -85,6 +85,7 @@ export const hardwareSignActor = fromCallback<
     const strategy = createHardwareStrategy({
         hardwareWalletRegistry,
         encodeTransaction,
+        getAllAccounts: () => allAccounts,
     })
 
     let cancelled = false

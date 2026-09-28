@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { getSignerFor } from '../utils'
+import { getSignerFor } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
 

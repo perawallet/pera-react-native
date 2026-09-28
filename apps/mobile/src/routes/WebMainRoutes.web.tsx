@@ -21,7 +21,7 @@ import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useTokenListener } from '@modules/token'
 import { PromptContainer } from '@modules/prompts'
-import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
+import { useNotificationDeeplinkListener } from '@modules/deeplink/shell'
 import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
@@ -29,51 +29,43 @@ import { screenListeners } from './listeners'
 import { TabBarStackNavigator } from './tabbar'
 import { ContactsStackNavigator } from '@modules/contacts/routes'
 import { SettingsStackNavigator } from '@modules/settings/routes'
-import { SearchStackNavigator } from '@modules/search/routes'
+import { SearchStackNavigator } from '@modules/search'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { PeraCardStackNavigator, peraCardFlowScreens } from '@modules/card'
 import { AddAccountStackNavigator } from '@modules/onboarding/routes'
 import { BackupStackNavigator } from '@modules/backup'
-import { ScanQRScreen } from '@modules/menu/screens/ScanQRScreen'
+import { ScanQRScreen } from '@modules/menu/web'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
-import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen'
-import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupTransactionListScreen'
-import { StakingScreen } from '@modules/staking/screens/StakingScreen'
-import { BannersCarouselModalScreen } from '@modules/banners/screens/BannersCarouselModalScreen'
-import { MultisigStackNavigator } from '@modules/multisig'
-import { RekeyToLedgerStackNavigator } from '@modules/rekey/routes/rekey-to-ledger'
-import { RekeyToQuantumStackNavigator } from '@modules/rekey/routes/rekey-to-quantum'
-import { RekeyToSharedStackNavigator } from '@modules/rekey/routes/rekey-to-shared'
-import { RekeyToStandardStackNavigator } from '@modules/rekey/routes/rekey-to-standard'
-import { RescanRekeyedStackNavigator } from '@modules/rekey/routes/rescan-rekeyed'
-import { UndoRekeyStackNavigator } from '@modules/rekey/routes/undo-rekey'
+import { TransactionDetailsScreen } from '@modules/signing/routes'
+import { GroupTransactionListScreen } from '@modules/transactions/routes'
+import { StakingScreen } from '@modules/staking'
+import { BannersCarouselModalScreen } from '@modules/banners/routes'
+import { MultisigStackNavigator } from '@modules/multisig/routes'
+import {
+    RekeyToLedgerStackNavigator,
+    RekeyToQuantumStackNavigator,
+    RekeyToSharedStackNavigator,
+    RekeyToStandardStackNavigator,
+    RescanRekeyedStackNavigator,
+    UndoRekeyStackNavigator,
+} from '@modules/rekey'
 import { withAgeGate } from '@components/AgeGated'
 import { fullScreenLayout } from '@layouts/index'
 import { headeredScreen } from './screen-options'
-import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
-import { ConnectionsProvider } from '@modules/connections'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { ConnectionsProvider } from '@modules/connections/shell'
+import { SigningOverlays } from '@modules/signing/shell'
 import { OverlayErrorFallback } from '@components/RootComponent/OverlayErrorFallback'
 import { navigationRef } from './navigationRef'
 import { createAppStackNavigator } from './createAppStackNavigator'
-import { createExpandedRedirect } from './createExpandedRedirect.web'
+import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation.web'
 import { routeCapabilities } from '@routes/capabilities'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import type { RootStackParamList } from './types'
 
 const RootStack = createAppStackNavigator<RootStackParamList>()
-
-// Blur-fragile flows mount a redirect stand-in that opens the expanded tab.
-// AddAccount runs in-place on every surface (a new tab severs the flow); Backup
-// stays redirected because a focus-steal while the recovery phrase is shown risks data loss.
-const isPopup = getSurface() === 'popup'
-const AddAccountComponent = AddAccountStackNavigator
-const BackupComponent = isPopup
-    ? createExpandedRedirect('backup-wallet')
-    : BackupStackNavigator
 
 // Staking is age-gated at the navigator exactly as native routes/index.tsx.
 const GatedStakingScreen = withAgeGate(StakingScreen)
@@ -104,12 +96,16 @@ export const WebMainRoutes = ({
     const handleReady = useExpandedFlowNavigation((screen, params) => {
         navigationRef.navigate(screen, params)
     })
+    const handleLedgerTabExit = useLedgerHandoffTabExit()
 
     return (
         <NavigationContainer
             ref={navigationRef}
             theme={navTheme}
             onReady={handleReady}
+            onStateChange={() =>
+                handleLedgerTabExit(navigationRef.getCurrentRoute()?.name)
+            }
         >
             {/* Outside ConnectionsProvider, as native's BottomSheetModalProvider
                 sits above the provider: SigningOverlays needs the sheet host
@@ -175,11 +171,11 @@ export const WebMainRoutes = ({
                     />
                     <RootStack.Screen
                         name='AddAccount'
-                        component={AddAccountComponent}
+                        component={AddAccountStackNavigator}
                     />
                     <RootStack.Screen
                         name='BackupWallet'
-                        component={BackupComponent}
+                        component={BackupStackNavigator}
                         options={{ headerShown: false }}
                     />
                     <RootStack.Screen

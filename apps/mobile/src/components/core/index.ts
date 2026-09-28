@@ -12,6 +12,7 @@
 
 export * from './PWBadge'
 export * from './PWBottomSheet'
+export * from './PWBottomSheetView'
 export * from './PWButton'
 export * from './PWCheckbox'
 export * from './PWChip'

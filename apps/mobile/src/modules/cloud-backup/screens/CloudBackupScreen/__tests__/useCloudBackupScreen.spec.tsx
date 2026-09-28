@@ -14,8 +14,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useNavigation } from '@react-navigation/native'
 import { trackEvent, CloudBackupEvent } from '@analytics'
-import { useBottomSheet } from '@modules/bottom-sheet'
 import { useCloudBackupScreen } from '../useCloudBackupScreen'
+
+const { mockChooseRestoreRoute } = vi.hoisted(() => ({
+    mockChooseRestoreRoute: vi.fn(),
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: vi.fn(),
@@ -26,25 +29,19 @@ vi.mock('@analytics', async () => ({
     trackEvent: vi.fn(),
 }))
 
-vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: vi.fn(),
-}))
-
-// RestoreBackupSheet renders nothing relevant here; mock to avoid pulling its deps.
-vi.mock('../../../components/RestoreBackupSheet', () => ({
-    RestoreBackupSheet: () => null,
+vi.mock('../../../hooks/useRestoreBackupOptions', () => ({
+    useRestoreBackupOptions: () => ({
+        chooseRestoreRoute: mockChooseRestoreRoute,
+        isReadingCredentials: false,
+    }),
 }))
 
 const mockNavigate = vi.fn()
-const mockRequest = vi.fn()
 
 beforeEach(() => {
     vi.clearAllMocks()
     ;(useNavigation as ReturnType<typeof vi.fn>).mockReturnValue({
         navigate: mockNavigate,
-    })
-    ;(useBottomSheet as ReturnType<typeof vi.fn>).mockReturnValue({
-        request: mockRequest,
     })
 })
 
@@ -58,34 +55,12 @@ describe('useCloudBackupScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('CloudBackupSetup')
     })
 
-    it('navigates to the scanner when the sheet returns scan', async () => {
-        mockRequest.mockResolvedValue('scan')
-        const { result } = renderHook(() => useCloudBackupScreen())
-
-        await act(async () => {
-            await result.current.handleRestoreBackup()
-        })
-
-        expect(mockRequest).toHaveBeenCalled()
-        expect(mockNavigate).toHaveBeenCalledWith('CloudBackupRestoreScan')
-    })
-
-    it('navigates to manual entry when the sheet returns manual', async () => {
-        mockRequest.mockResolvedValue('manual')
-        const { result } = renderHook(() => useCloudBackupScreen())
-
-        await act(async () => {
-            await result.current.handleRestoreBackup()
-        })
-
-        expect(mockRequest).toHaveBeenCalled()
-        expect(mockNavigate).toHaveBeenCalledWith(
+    it('tracks the restore tap and navigates to the route the restore options pick', async () => {
+        const params = { importedKey: { salt: 'c2FsdA==' } }
+        mockChooseRestoreRoute.mockResolvedValueOnce([
             'CloudBackupRestorePassphrase',
-        )
-    })
-
-    it('tracks the restore tap but navigates nowhere when the sheet is dismissed', async () => {
-        mockRequest.mockResolvedValue(undefined)
+            params,
+        ])
         const { result } = renderHook(() => useCloudBackupScreen())
 
         await act(async () => {
@@ -93,6 +68,20 @@ describe('useCloudBackupScreen', () => {
         })
 
         expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.Restore)
+        expect(mockNavigate).toHaveBeenCalledWith(
+            'CloudBackupRestorePassphrase',
+            params,
+        )
+    })
+
+    it('navigates nowhere when no route is picked', async () => {
+        mockChooseRestoreRoute.mockResolvedValueOnce(null)
+        const { result } = renderHook(() => useCloudBackupScreen())
+
+        await act(async () => {
+            await result.current.handleRestoreBackup()
+        })
+
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 })

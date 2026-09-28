@@ -17,6 +17,7 @@ import {
     ARGON2ID_CONFIG,
     HKDF_INFO_AUTH_SEED,
     HKDF_INFO_ENCRYPTION,
+    HKDF_INFO_ITEM_KEY,
 } from './constants'
 
 export type BackupChildKeys = {
@@ -24,6 +25,8 @@ export type BackupChildKeys = {
     encryptionKey: Uint8Array
     /** Seed for the deterministic Ed25519 auth keypair (`K_auth_seed`). */
     authSeed: Uint8Array
+    /** HMAC key for hashing an address into an item key (`K_item`). */
+    itemKey: Uint8Array
 }
 
 const EMPTY_SALT = new Uint8Array(0)
@@ -32,10 +35,11 @@ const EMPTY_SALT = new Uint8Array(0)
 // encoding derives different keys and orphans every backup already written.
 const ENCRYPTION_INFO = utf8ToBytes(HKDF_INFO_ENCRYPTION)
 const AUTH_SEED_INFO = utf8ToBytes(HKDF_INFO_AUTH_SEED)
+const ITEM_KEY_INFO = utf8ToBytes(HKDF_INFO_ITEM_KEY)
 
 /**
- * Derives the backup child keys (`K_enc`, `K_auth_seed`) from the backup master
- * key via HKDF-SHA256 with distinct info labels.
+ * Derives the backup child keys (`K_enc`, `K_auth_seed`, `K_item`) from the backup
+ * master key via HKDF-SHA256 with distinct info labels.
  */
 export const deriveBackupChildKeys = (
     masterKey: Uint8Array,
@@ -49,5 +53,6 @@ export const deriveBackupChildKeys = (
         length,
     )
     const authSeed = hkdf(sha256, masterKey, EMPTY_SALT, AUTH_SEED_INFO, length)
-    return { encryptionKey, authSeed }
+    const itemKey = hkdf(sha256, masterKey, EMPTY_SALT, ITEM_KEY_INFO, length)
+    return { encryptionKey, authSeed, itemKey }
 }

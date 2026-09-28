@@ -15,7 +15,7 @@ import {
     logEvent as baseLogEvent,
     createBaseLogger,
     type LogEventFn,
-} from '@perawallet/wallet-core-analytics'
+} from '@perawallet/wallet-core-device'
 import type { AnalyticsEventName } from './events/event-names'
 import type { AnalyticsScreenName } from './events/screen-names'
 import type {

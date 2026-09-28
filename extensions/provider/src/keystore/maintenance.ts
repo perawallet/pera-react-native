@@ -12,8 +12,10 @@
 
 import type { Key } from '@algorandfoundation/keystore-core'
 import {
+    MATERIAL_PREFIX,
     METADATA_PREFIX,
     decode,
+    readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
 import {
@@ -21,6 +23,16 @@ import {
     type QuantumMaterialRepairResult,
 } from './repairQuantumMaterial'
 import type { PQDerivation } from './pqDerivation'
+import { subtle } from './subtle'
+import {
+    splitFlatPasskeyCredentials,
+    type PasskeySplitResult,
+} from './passkeyCredentials/splitFlatPasskeyCredentials'
+import {
+    splitProviderCredential,
+    type FlatProviderCredential,
+} from './passkeyCredentials/splitProviderCredential'
+import { writeSplitProviderCredential } from './passkeyCredentials/splitCredentialStorage'
 
 /**
  * One-off repairs of the on-disk keystore, and the only place in the provider
@@ -85,3 +97,39 @@ export const runMaterialRepair = (deps: {
         storage: keystoreStorage,
         regenerate: deps.regenerate,
     })
+
+/** Binds {@link splitFlatPasskeyCredentials} to the live keystore storage. */
+export const runPasskeyCredentialSplit = (): Promise<PasskeySplitResult> =>
+    splitFlatPasskeyCredentials({
+        storage: keystoreStorage,
+        subtle,
+        masterKeyForRead: () => readMasterKey(),
+    })
+
+/** Whether `id` has sealed material of its own under `m/<id>`. */
+export const hasKeyMaterial = (id: string): boolean =>
+    keystoreStorage.getString(MATERIAL_PREFIX + id) !== undefined
+
+/**
+ * Writes a passkey credential in the split layout the Android provider reads.
+ * Throws, leaving nothing behind, when the record could never be listed from
+ * `k/` or does not read back.
+ */
+export const writePasskeyCredential = async (
+    masterKey: Uint8Array,
+    id: string,
+    record: FlatProviderCredential,
+): Promise<void> => {
+    const split = splitProviderCredential(id, record)
+    if (split === undefined) {
+        throw new Error(
+            `passkey credential ${id} cannot be stored in the split layout`,
+        )
+    }
+    await writeSplitProviderCredential(
+        { storage: keystoreStorage, subtle },
+        masterKey,
+        id,
+        split,
+    )
+}

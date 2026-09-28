@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useRoute } from '@react-navigation/native'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
-import { isSafeRelativePath } from '@modules/webview/hooks/handlers'
+import { isSafeRelativePath } from '@modules/webview'
 import { useDiscoverDetailScreen } from '../useDiscoverDetailScreen'
 
 const goBack = vi.fn()

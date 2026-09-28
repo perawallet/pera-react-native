@@ -20,8 +20,8 @@ import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
+import { AccountDisplay } from '@components/AccountDisplay'
+import { AccountAssetItemView } from '@modules/assets'
 import {
     useLedgerAccountInfoContent,
     type LedgerInfoListItem,

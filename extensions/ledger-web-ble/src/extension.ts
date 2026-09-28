@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type { HardwareWalletRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { LedgerWebBleService } from './LedgerWebBleService'
 
 /**
@@ -19,7 +19,7 @@ import { LedgerWebBleService } from './LedgerWebBleService'
  * counterpart to @perawallet/wallet-extension-ledger-react-native's
  * WithLedgerExtension.
  *
- * Must be composed AFTER the platform extension, which provides the
+ * Run it after `WithHardwareWalletExtension`, which provides the
  * `hardwareWalletRegistry` on the provider instance.
  */
 export const WithLedgerWebBleExtension = (provider: {

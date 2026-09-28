@@ -19,6 +19,7 @@
 //               mnemonic import, private_key decoder)
 export * from './asb'
 export * from './cloud'
+export * from './errors'
 export * from './mnemonic'
 export * from './peraweb'
 export * from './shared'

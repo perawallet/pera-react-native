@@ -12,6 +12,7 @@
 
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import { BackupItemType, contactItemKey } from '../models'
+import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import { withContentHash } from './buildLocalItems'
 import type { LocalItem } from './types'
 
@@ -22,10 +23,11 @@ import type { LocalItem } from './types'
 export const buildLocalContactItems = (
     contacts: readonly Contact[],
     updatedAt: number,
+    hashAddress: ItemKeyHasher,
 ): LocalItem[] =>
     contacts.map(contact =>
         withContentHash({
-            key: contactItemKey(contact.address),
+            key: contactItemKey(hashAddress(contact.address)),
             type: BackupItemType.CONTACT,
             payload: {
                 address: contact.address,

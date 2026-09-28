@@ -32,17 +32,19 @@ export type PassphraseStatus =
     | 'unavailable'
     | 'unreadable'
 
+export type BackupCredentialsSheetResult = 'store'
+
 type UseBackupCredentialsSheetResult = {
     credentialAddress: string
     encryptionKey: string
     wordIndices: Uint16Array
     passphraseStatus: PassphraseStatus
-    handleClose: () => void
+    handleStore: () => void
 }
 
 export const useBackupCredentialsSheet =
     (): UseBackupCredentialsSheetResult => {
-        const { dismiss } = useBottomSheetResult()
+        const { resolve } = useBottomSheetResult<BackupCredentialsSheetResult>()
         const backupId = useCloudBackupStore(state => state.backupId)
         const salt = useCloudBackupStore(state => state.salt)
 
@@ -112,16 +114,16 @@ export const useBackupCredentialsSheet =
             }
         }, [clearIndices])
 
-        const handleClose = useCallback(() => {
+        const handleStore = useCallback(() => {
             trackEvent(CloudBackupEvent.CredentialsStore)
-            dismiss()
-        }, [dismiss])
+            resolve('store')
+        }, [resolve])
 
         return {
             credentialAddress,
             encryptionKey,
             wordIndices,
             passphraseStatus,
-            handleClose,
+            handleStore,
         }
     }

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { isIOS } from '../platform/utils'
+import { isIOS } from '@utils/platform'
 
 export const fontFamilies = {
     DMSANS: {

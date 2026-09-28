@@ -13,7 +13,7 @@
 import type React from 'react'
 import type { createNativeStackNavigator } from '@react-navigation/native-stack'
 
-import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
+import { AccountErrorBoundary } from '@modules/accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { fullScreenLayout } from '@layouts/index'
 
@@ -32,9 +32,11 @@ import { AsbImportResultScreen } from '@modules/onboarding/screens/AsbImportResu
 import { PeraWebImportInfoScreen } from '@modules/onboarding/screens/PeraWebImportInfoScreen'
 import { PeraWebImportLoadingScreen } from '@modules/onboarding/screens/PeraWebImportLoadingScreen'
 import { PeraWebImportResultScreen } from '@modules/onboarding/screens/PeraWebImportResultScreen'
-import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
-import { CloudBackupRestoreEncryptionKeyScreen } from '@modules/cloud-backup/screens/CloudBackupRestoreEncryptionKeyScreen'
-import { CloudBackupRestoreScanScreen } from '@modules/cloud-backup/screens/CloudBackupRestoreScanScreen'
+import {
+    CloudBackupRestorePassphraseScreen,
+    CloudBackupRestoreEncryptionKeyScreen,
+    CloudBackupRestoreScanScreen,
+} from '@modules/cloud-backup/routes'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import {
     LedgerInstructionsScreen,

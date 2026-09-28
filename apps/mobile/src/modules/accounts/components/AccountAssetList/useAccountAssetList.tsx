@@ -34,7 +34,7 @@ import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
+import { AddAssetContent } from '@modules/assets'
 import { AssetFilterContent } from '../AssetFilterContent'
 import { AssetSortContent } from '../AssetSortContent'
 import {

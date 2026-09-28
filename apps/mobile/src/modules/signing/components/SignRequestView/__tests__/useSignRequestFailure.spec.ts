@@ -37,9 +37,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // resolveErrorCopy (exercised via the SubmissionError branch below) does an
 // `instanceof AlgodError` check, so the mock needs a real class identity too

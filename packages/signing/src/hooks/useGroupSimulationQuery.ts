@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
     decodeTransaction,
     encodeTransactionRaw,
@@ -20,6 +20,8 @@ import {
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { flattenSimulatedInnerTransactions } from '../utils/simulateImpact'
+
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Clone a transaction with its group id cleared.
@@ -50,6 +52,15 @@ type UseGroupSimulationQueryParams = {
     enabled?: boolean
 }
 
+export type UseGroupSimulationQueryResult = {
+    /** Flattened inner transactions; empty until (and unless) a simulation succeeds. */
+    data: PeraDisplayableTransaction[]
+    isFetching: boolean
+    isSuccess: boolean
+    isError: boolean
+    error: Nullable<Error>
+}
+
 /**
  * Runs an unsigned algod simulation of a transaction group and returns its
  * flattened inner transactions.
@@ -64,14 +75,11 @@ export const useGroupSimulationQuery = ({
     requestId,
     groupTxs,
     enabled = true,
-}: UseGroupSimulationQueryParams): UseQueryResult<
-    PeraDisplayableTransaction[],
-    Error
-> => {
+}: UseGroupSimulationQueryParams): UseGroupSimulationQueryResult => {
     const algorand = useAlgorandClient()
     const { network } = useNetwork()
 
-    return useQuery({
+    const query = useQuery({
         queryKey: ['balance-impact-simulation', requestId, network],
         enabled: enabled && !!requestId && !!groupTxs?.length,
         staleTime: Infinity,
@@ -96,4 +104,12 @@ export const useGroupSimulationQuery = ({
             )
         },
     })
+
+    return {
+        data: query.data ?? [],
+        isFetching: query.isFetching,
+        isSuccess: query.isSuccess,
+        isError: query.isError,
+        error: query.error,
+    }
 }

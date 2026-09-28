@@ -16,7 +16,7 @@ mkdir -p packages/[package-name]/src/store/__tests__
 
 ### 2. Create package.json
 
-Match the shape of an existing package (`packages/analytics` is the smallest current example).
+Match the shape of an existing package (`packages/search` is one of the smallest).
 `main`/`types`/`exports` point at `dist/` — packages ship built output, not source:
 
 ```json
@@ -55,7 +55,7 @@ Copy from an existing package:
 
 - `tsconfig.json`
 - `tsconfig.build.json` (declaration emit — `pnpm run check:dts-emit` fails without it)
-- `vite.config.ts` (update the `external` list to this package's dependencies)
+- `vite.config.ts` (built on `defineLibraryConfig` from `@perawallet/wallet-core-devtools/vite/library`, which externalizes everything in `dependencies`/`peerDependencies`; the build fails if anything else would be inlined, so declare every runtime import there)
 - `vitest.config.ts`
 
 ### 4. Create Index File

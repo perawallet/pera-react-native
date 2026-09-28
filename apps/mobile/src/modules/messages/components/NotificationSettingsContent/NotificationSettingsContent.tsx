@@ -13,7 +13,7 @@
 import { PWView } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { NotificationSettingsList } from '@modules/settings/components/NotificationSettingsList'
+import { NotificationSettingsList } from '@modules/settings'
 import { useStyles } from './styles'
 
 export type NotificationSettingsContentProps = Record<string, never>

@@ -11,8 +11,7 @@
  */
 
 import { isHTTPError } from 'ky'
-import { getValidIntegrityToken } from '@perawallet/wallet-core-app-integrity'
-import { config } from '@perawallet/wallet-core-config'
+import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import type {
     CardTransport,
@@ -37,25 +36,6 @@ export const setRefreshHandler = (handler: RefreshHandler | null): void => {
 const isUnauthorized = (error: unknown): boolean =>
     isHTTPError(error) && error.response?.status === 401
 
-/**
- * The Pera-backend `/api/v3/baanx/*` routes sit behind the app-integrity
- * guard, so every proxy call carries the device attestation token when a
- * non-expired one is available. On non-production builds (simulators can't
- * attest) the backend's env-gated staging/dev bypass header is sent as a
- * fallback — production backends ignore it, and production builds never send
- * it.
- */
-const integrityHeaders = (): Record<string, string> => {
-    const integrityToken = getValidIntegrityToken()
-    if (integrityToken) {
-        return { 'x-app-integrity-token': integrityToken }
-    }
-    if (config.appEnvironment !== 'production') {
-        return { 'x-bypass-integrity': 'DEVELOPMENT_AND_STAGING_ONLY' }
-    }
-    return {}
-}
-
 const proxyRequest = <TData, TVars>(
     req: CardTransportRequest<TVars>,
 ): Promise<CardTransportResponse<TData>> =>
@@ -67,7 +47,8 @@ const proxyRequest = <TData, TVars>(
         params: req.params,
         data: req.data,
         signal: req.signal,
-        headers: { ...integrityHeaders(), ...req.headers },
+        // Every `/api/v3/baanx/*` route sits behind the app-integrity guard.
+        headers: { ...buildIntegrityHeaders(), ...req.headers },
         responseType: req.responseType,
         ...(req.timeoutMs !== undefined ? { timeout: req.timeoutMs } : {}),
     })

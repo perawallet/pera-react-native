@@ -44,7 +44,7 @@ vi.mock('../../../components/DeleteFromBackupSheet', () => ({
 
 vi.mock('../../../hooks/useBackupAccountReview', () => ({
     useBackupAccountReview: () => ({
-        availableFromBackup: ['GONE'],
+        availableFromBackup: [{ address: 'GONE', type: null }],
         notBackedUpAccounts: notBackedUpMock.current,
         busyAddress: null,
         addFromBackup: addFromBackupMock,

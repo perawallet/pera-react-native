@@ -17,7 +17,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Address, Transaction, TransactionType } from 'algosdk'
 import {
     groupTransactions,
-    type PeraDisplayableTransaction,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'
@@ -116,7 +115,7 @@ describe('useGroupSimulationQuery', () => {
 
         await waitFor(() => expect(result.current.isFetching).toBe(false))
         expect(mockSimulate).not.toHaveBeenCalled()
-        expect(result.current.data).toBeUndefined()
+        expect(result.current.data).toEqual([])
     })
 
     test('stays disabled when there are no group transactions', async () => {
@@ -152,7 +151,7 @@ describe('useGroupSimulationQuery', () => {
             skipSignatures: true,
             allowUnnamedResources: true,
         })
-        const data = result.current.data as PeraDisplayableTransaction[]
+        const { data } = result.current
         expect(data).toHaveLength(2)
     })
 
@@ -180,7 +179,7 @@ describe('useGroupSimulationQuery', () => {
         for (const call of mockAddTransaction.mock.calls) {
             expect(call[0]?.group).toBeUndefined()
         }
-        const data = result.current.data as PeraDisplayableTransaction[]
+        const { data } = result.current
         expect(data).toHaveLength(2)
     })
 

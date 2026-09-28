@@ -23,6 +23,10 @@ export const userResponseSchema = z.object({
     phoneNumber: z.string().optional().nullable(),
     countryOfResidence: z.string().optional().nullable(),
     verificationState: z.string(),
+    // Baanx's compliance verdict: present alongside verificationState and not
+    // implied by it: a passed identity check can still be `ineligible`.
+    cardEligibilityStatus: z.string().optional().nullable(),
+    cardEligibilityReason: z.string().optional().nullable(),
 })
 export type UserApiResponse = z.infer<typeof userResponseSchema>
 

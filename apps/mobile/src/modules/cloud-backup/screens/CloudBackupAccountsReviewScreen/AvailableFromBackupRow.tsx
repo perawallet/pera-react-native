@@ -11,6 +11,7 @@
  */
 
 import { memo, useCallback } from 'react'
+import type { BackupAccountType } from '@perawallet/wallet-core-backup'
 import { PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupAccountRow } from '../../components/BackupAccountRow'
@@ -18,6 +19,7 @@ import { useStyles } from './styles'
 
 type AvailableFromBackupRowProps = {
     address: string
+    type: BackupAccountType | null
     isBusy: boolean
     onAdd: (address: string) => void
     onDelete: (address: string) => Promise<void>
@@ -25,6 +27,7 @@ type AvailableFromBackupRowProps = {
 
 const AvailableFromBackupRowComponent = ({
     address,
+    type,
     isBusy,
     onAdd,
     onDelete,
@@ -41,6 +44,7 @@ const AvailableFromBackupRowComponent = ({
     return (
         <BackupAccountRow
             address={address}
+            accountType={type}
             isBackedUp
             action={
                 <PWButton

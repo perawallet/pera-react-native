@@ -13,12 +13,18 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
+import {
+    baseUnitsToDisplayUnits,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
+import {
+    nativeAssetDecimals,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { logger, toError } from '@perawallet/wallet-core-shared'
 import type {
     StakingProject,
@@ -51,19 +57,23 @@ const parseTvlValue = (value?: Nullable<string>): Decimal => {
 const mapProjects = (
     projects: StakingProjectInfo[],
     projectTVLs: Optional<StakingProjectsApiResponse>,
-) => {
+    nativeDecimals: number,
+): StakingProject[] => {
     return projects
         .map(project => {
             const projectTvl = projectTVLs?.[project.id]
-            const tvlInMicroAlgos = parseTvlValue(projectTvl?.tvl_in_algo)
+            const tvlInNativeBaseUnits = parseTvlValue(projectTvl?.tvl_in_algo)
 
             return {
                 ...project,
-                tvlInAlgo: microAlgosToAlgos(tvlInMicroAlgos),
+                tvlInNative: baseUnitsToDisplayUnits(
+                    tvlInNativeBaseUnits,
+                    nativeDecimals,
+                ),
                 tvlInUsd: parseTvlValue(projectTvl?.tvl_in_usd),
             }
         })
-        .sort((a, b) => b.tvlInAlgo.minus(a.tvlInAlgo).toNumber())
+        .sort((a, b) => b.tvlInNative.minus(a.tvlInNative).toNumber())
 }
 
 /**
@@ -78,6 +88,8 @@ export const useStakingProjectsQuery = (
     locale?: string,
 ): UseStakingProjectsQueryResult => {
     const { network } = useNetwork()
+    const scope = scopeForLegacyNetwork(network)
+    const nativeDecimals = nativeAssetDecimals(scope.chainId)
     const remoteConfigService = useRemoteConfig()
 
     const remoteProjectsI18nConfig = remoteConfigService.getStringValue(
@@ -112,14 +124,14 @@ export const useStakingProjectsQuery = (
     // Skip the TVL request when we already know the config is broken — the
     // result would be discarded by mapProjects anyway.
     const query = useQuery({
-        queryKey: getStakingProjectsQueryKey(network),
+        queryKey: getStakingProjectsQueryKey(scope),
         queryFn: () => fetchStakingProjectsInfo(network),
         enabled: !parsedConfig.error,
     })
 
     const projects = useMemo(
-        () => mapProjects(parsedConfig.projects, query.data),
-        [parsedConfig.projects, query.data],
+        () => mapProjects(parsedConfig.projects, query.data, nativeDecimals),
+        [parsedConfig.projects, query.data, nativeDecimals],
     )
 
     const queryError = query.error instanceof Error ? query.error : null

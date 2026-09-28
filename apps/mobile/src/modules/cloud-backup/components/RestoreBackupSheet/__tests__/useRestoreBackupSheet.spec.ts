@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
+import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useCredentialsFileReadSources } from '../../../hooks/useCredentialsFileSources'
 import { useRestoreBackupSheet } from '../useRestoreBackupSheet'
 
 vi.mock('@analytics', async () => ({
@@ -25,6 +26,10 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: vi.fn(),
 }))
 
+vi.mock('../../../hooks/useCredentialsFileSources', () => ({
+    useCredentialsFileReadSources: vi.fn(),
+}))
+
 const mockResolve = vi.fn()
 
 beforeEach(() => {
@@ -33,26 +38,86 @@ beforeEach(() => {
         resolve: mockResolve,
         dismiss: vi.fn(),
     })
+    ;(useCredentialsFileReadSources as Mock).mockReturnValue([
+        'device',
+        'icloud',
+        'googleDrive',
+    ])
 })
 
+type Row = { key: string; onPress?: () => void }
+
+const pressRow = (rows: readonly Row[], option: string): void => {
+    const row = rows.find(candidate => candidate.key === option)
+    if (!row) throw new Error(`No ${option} row`)
+    row.onPress?.()
+}
+
 describe('useRestoreBackupSheet', () => {
-    test('tracks and resolves the QR scan option', () => {
+    test.each([
+        [
+            ['device', 'icloud', 'googleDrive'],
+            ['scan', 'device', 'icloud', 'googleDrive', 'manual'],
+            'cloud_backup.restore.sheet_description_with_import',
+        ],
+        [
+            ['device'],
+            ['scan', 'device', 'manual'],
+            'cloud_backup.restore.sheet_description_with_import',
+        ],
+        [[], ['scan', 'manual'], 'cloud_backup.restore.sheet_description'],
+    ] as const)(
+        'wraps the available file sources %j and describes only those',
+        (fileSources, expectedOptions, expectedDescriptionKey) => {
+            ;(useCredentialsFileReadSources as Mock).mockReturnValue(
+                fileSources,
+            )
+
+            const { result } = renderHook(() => useRestoreBackupSheet())
+
+            expect(result.current.options.map(row => row.key)).toEqual(
+                expectedOptions,
+            )
+            expect(result.current.description).toBe(expectedDescriptionKey)
+        },
+    )
+
+    test('gives every row a title and a leading mark', () => {
         const { result } = renderHook(() => useRestoreBackupSheet())
 
-        result.current.handleScan()
-
-        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.RestoreScanQr)
-        expect(mockResolve).toHaveBeenCalledWith('scan')
+        for (const row of result.current.options) {
+            expect(row.title).toBeTruthy()
+            expect(row.leftIcon ?? row.leftImage).toBeTruthy()
+        }
     })
 
-    test('tracks and resolves the manual entry option', () => {
+    test('keeps each row stable across a re-render, so the list does not churn', () => {
+        const { result, rerender } = renderHook(() => useRestoreBackupSheet())
+        const first = result.current.options
+
+        rerender()
+
+        expect(result.current.options).toBe(first)
+    })
+
+    test.each([
+        ['scan', CloudBackupEvent.RestoreScanQr],
+        ['manual', CloudBackupEvent.RestoreEnterManually],
+    ] as const)('tracks and resolves %s', (option, event) => {
         const { result } = renderHook(() => useRestoreBackupSheet())
 
-        result.current.handleManual()
+        pressRow(result.current.options, option)
 
-        expect(trackEvent).toHaveBeenCalledWith(
-            CloudBackupEvent.RestoreEnterManually,
-        )
-        expect(mockResolve).toHaveBeenCalledWith('manual')
+        expect(trackEvent).toHaveBeenCalledWith(event)
+        expect(mockResolve).toHaveBeenCalledWith(option)
+    })
+
+    test('resolves a file source without an event of its own', () => {
+        const { result } = renderHook(() => useRestoreBackupSheet())
+
+        pressRow(result.current.options, 'googleDrive')
+
+        expect(trackEvent).not.toHaveBeenCalled()
+        expect(mockResolve).toHaveBeenCalledWith('googleDrive')
     })
 })

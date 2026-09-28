@@ -24,10 +24,7 @@ import { trackEvent, SettingsEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import {
-    clearAccountsStore,
-    useDeleteAllData,
-} from '@modules/settings/hooks/useDeleteAllData'
+import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
 import { DeleteAllSuccessContent } from '@modules/settings/components/DeleteAllSuccessContent'
 import { useWebView } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
@@ -68,6 +65,7 @@ export const useSettingsScreen = () => {
 
     const openWebView = (url: string) => {
         if (!routeCapabilities.inAppWebView) {
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers pass network config URLs
             void Linking.openURL(url)
             return
         }

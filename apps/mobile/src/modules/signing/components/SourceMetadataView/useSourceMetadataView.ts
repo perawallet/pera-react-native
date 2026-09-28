@@ -12,8 +12,7 @@
 
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { useWebView } from '@modules/webview/hooks'
-import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
+import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
 import { useSourceMetadataBadge } from '../SourceMetadataBadge/useSourceMetadataBadge'
 
 export const useSourceMetadataView = (

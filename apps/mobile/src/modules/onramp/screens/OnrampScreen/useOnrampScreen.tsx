@@ -16,13 +16,18 @@ import {
     useRampPairsQuery,
     useRampRegionQuery,
     useOnramp,
-    isAlgoRampToken,
+    isNativeRampToken,
     type RampPair,
     type RampRegion,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type {
+    Network,
+    Nullable,
+    Optional,
+} from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
 import {
@@ -54,13 +59,16 @@ type UseOnrampScreenResult = {
 const resolveSeedDestinationId = (
     pairs: RampPair[],
     destinationTokenId: Optional<string>,
+    network: Network,
 ): Nullable<string> => {
     const destinationIds = pairs.map(pair => pair.destinationToken.id)
     if (destinationTokenId && destinationIds.includes(destinationTokenId)) {
         return destinationTokenId
     }
-    const algoPair = pairs.find(pair => isAlgoRampToken(pair.destinationToken))
-    if (algoPair) return algoPair.destinationToken.id
+    const nativePair = pairs.find(pair =>
+        isNativeRampToken(pair.destinationToken, network),
+    )
+    if (nativePair) return nativePair.destinationToken.id
     return destinationIds[0] ?? null
 }
 
@@ -75,6 +83,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     const pairsQuery = useRampPairsQuery()
     const { data: pairs = [], isLoading: pairsLoading } = pairsQuery
     const { hasInternet } = useNetworkStatus()
+    const { network } = useNetwork()
     const { data: region } = useRampRegionQuery()
     const { selectedAccountAddress } = useSelectedAccountAddress()
     const {
@@ -100,6 +109,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
             const seedDestinationId = resolveSeedDestinationId(
                 pairs,
                 destinationTokenId,
+                network,
             )
             if (seedDestinationId !== null) {
                 setSelectedDestinationTokenId(seedDestinationId)
@@ -122,6 +132,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         pairsLoading,
         sourceTokenId,
         destinationTokenId,
+        network,
         setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
     ])

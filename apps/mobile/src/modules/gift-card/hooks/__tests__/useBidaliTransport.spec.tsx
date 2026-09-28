@@ -89,9 +89,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // BigInt.microAlgo() is a runtime extension added by algokit-utils.
 // Patch it for the test environment.

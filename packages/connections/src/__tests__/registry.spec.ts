@@ -24,7 +24,7 @@ import type {
     ConnectionOrigin,
     ConnectionStoreAPI,
 } from '@perawallet/wallet-extension-connections'
-import { memoryStore } from '../testing/handler-contract'
+import { memoryStore } from './handler-contract'
 
 /** A handler with no URI: the origin-identified `'dapp'` shape. */
 const makeOriginHandler = (
@@ -326,6 +326,42 @@ describe('createConnectionRegistry', () => {
             const pairingId = await registry.pair('beta:xyz')
 
             expect(() => registry.abandonPairing(pairingId)).not.toThrow()
+        })
+    })
+
+    describe('reconnect', () => {
+        it('reaches every handler that declares it and skips those that do not', () => {
+            const alpha = makeHandler('alpha', { reconnect: vi.fn() })
+            const beta = makeHandler('beta')
+            const registry = createConnectionRegistry({ store })
+            registry.register(alpha)
+            registry.register(beta)
+
+            expect(() => registry.reconnect()).not.toThrow()
+
+            expect(alpha.reconnect).toHaveBeenCalledTimes(1)
+        })
+
+        it('keeps sweeping past a handler that throws and reports it', () => {
+            const alpha = makeHandler('alpha', {
+                reconnect: vi.fn(() => {
+                    throw new Error('socket factory broke')
+                }),
+            })
+            const beta = makeHandler('beta', { reconnect: vi.fn() })
+            const registry = createConnectionRegistry({ store })
+            registry.register(alpha)
+            registry.register(beta)
+            const onError = vi.fn()
+            registry.subscribeToErrors(onError)
+
+            registry.reconnect()
+
+            expect(beta.reconnect).toHaveBeenCalledTimes(1)
+            expect(onError).toHaveBeenCalledTimes(1)
+            expect(onError.mock.calls[0][0]).toMatchObject({
+                message: 'socket factory broke',
+            })
         })
     })
 

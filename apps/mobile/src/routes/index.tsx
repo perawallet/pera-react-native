@@ -13,10 +13,10 @@
 import { NavigationContainer } from '@react-navigation/native'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { StakingScreen } from '@modules/staking/screens/StakingScreen'
-import { DiscoverDetailScreen } from '@modules/discover/screens/DiscoverDetailScreen'
+import { StakingScreen } from '@modules/staking'
+import { DiscoverDetailScreen } from '@modules/discover/routes'
 import { withAgeGate } from '@components/AgeGated'
-import { BannersCarouselModalScreen } from '@modules/banners/screens/BannersCarouselModalScreen'
+import { BannersCarouselModalScreen } from '@modules/banners/routes'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import {
     OnboardingStackNavigator,
@@ -30,26 +30,28 @@ import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen'
-import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupTransactionListScreen'
+import { TransactionDetailsScreen } from '@modules/signing/routes'
+import { GroupTransactionListScreen } from '@modules/transactions/routes'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
-import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { useIsOnboarding } from '@modules/onboarding'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
-import { MigrationSplashScreen } from '@modules/migration/screens/MigrationSplashScreen'
+import { MigrationSplashScreen } from '@modules/migration'
 
 import type { RootStackParamList } from './types'
 import { fullScreenLayout } from '@layouts/index'
 import { headeredScreen } from './screen-options'
 import { MessagesStackNavigator } from '@modules/messages/routes'
-import { MultisigStackNavigator } from '@modules/multisig'
+import { MultisigStackNavigator } from '@modules/multisig/routes'
 import { PeraCardStackNavigator, peraCardFlowScreens } from '@modules/card'
 import { BackupStackNavigator } from '@modules/backup'
-import { RekeyToLedgerStackNavigator } from '@modules/rekey/routes/rekey-to-ledger'
-import { RekeyToQuantumStackNavigator } from '@modules/rekey/routes/rekey-to-quantum'
-import { RekeyToSharedStackNavigator } from '@modules/rekey/routes/rekey-to-shared'
-import { RekeyToStandardStackNavigator } from '@modules/rekey/routes/rekey-to-standard'
-import { RescanRekeyedStackNavigator } from '@modules/rekey/routes/rescan-rekeyed'
-import { UndoRekeyStackNavigator } from '@modules/rekey/routes/undo-rekey'
+import {
+    RekeyToLedgerStackNavigator,
+    RekeyToQuantumStackNavigator,
+    RekeyToSharedStackNavigator,
+    RekeyToStandardStackNavigator,
+    RescanRekeyedStackNavigator,
+    UndoRekeyStackNavigator,
+} from '@modules/rekey'
 import { SearchStackNavigator } from '@modules/search'
 import { navigationRef } from './navigationRef'
 

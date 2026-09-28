@@ -14,7 +14,7 @@
  * Web build, picked by Metro's `.web.ts` resolution. `createKeystore.web.ts`
  * already leaves `subtle` to the IndexedDB driver's own `globalThis` default
  * rather than the injected value, so this is never actually consulted by the
- * web keystore — it exists only so `singleton.ts` can stay platform-neutral
- * and pass something of the right shape through `options.keystore.subtle`.
+ * web keystore — it exists so `singleton.ts` and the `keystoreSubtle` export
+ * stay platform-neutral and hand over something of the right shape.
  */
 export const subtle = globalThis.crypto.subtle

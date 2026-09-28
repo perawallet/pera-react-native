@@ -20,7 +20,7 @@ import {
 } from '@react-navigation/native'
 import { PWView } from '@components/core'
 import { BottomSheetManager } from '@modules/bottom-sheet'
-import { LedgerSigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { LedgerSigningOverlays } from '@modules/signing/shell'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'

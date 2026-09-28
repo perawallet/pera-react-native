@@ -14,23 +14,34 @@ import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { isPeraNetworkError, logger } from '@perawallet/wallet-core-shared'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
-import { createEmptySyncState, trackedItemsFromManifest } from '../models'
+import {
+    createEmptySyncState,
+    isAccountItemKey,
+    isContactItemKey,
+    isLegacyItemKey,
+    trackedItemsFromManifest,
+} from '../models'
 import type {
     Argon2idConfig,
+    BackupAccountType,
     BackupId,
+    BackupItemKey,
     ContactBackupPayload,
     DeviceId,
+    PasskeyBackupPayload,
+    SyncItemState,
     SyncState,
 } from '../models'
 import type {
     ContactImportFn,
     ContactImportSummary,
     ImportSummary,
+    PasskeyImportFn,
     SyncImportFn,
 } from '../sync/types'
 import type { BackupKeys } from '../crypto/deriveBackupKeys'
 import { pullBackupItems } from './pullBackupItems'
-import type { PullBackupItemsResult } from './pullBackupItems'
+import type { PulledAccount, PullBackupItemsResult } from './pullBackupItems'
 
 /** What a failure means to the restore flow. Deliberately not the shared
  *  `errors.api.*` mapping: "no backup for this phrase" is not "not found". */
@@ -63,6 +74,9 @@ type RestoreCloudBackupParams = {
     importAccounts: SyncImportFn
     /** Decrypted remote contacts → contacts store. */
     importContacts: ContactImportFn
+    /** Re-derives and writes each credential. Runs after `importAccounts`,
+     *  which is what puts the owning seed in the keystore. */
+    importPasskeys: PasskeyImportFn
 }
 
 export type RestoreCloudBackupResult = {
@@ -79,6 +93,7 @@ export const restoreErrorCategoryOf = (error: unknown): RestoreErrorCategory =>
     error instanceof CloudBackupRestoreError ? error.category : 'UNKNOWN'
 
 const categorize = (error: unknown): RestoreErrorCategory => {
+    if (error instanceof CloudBackupRestoreError) return error.category
     if (!isPeraNetworkError(error)) return 'UNKNOWN'
     if (error.status === 404) return 'NOT_FOUND'
     if (error.status === 401 || error.status === 403) {
@@ -128,6 +143,80 @@ const importContactsSafely = async (
     }
 }
 
+type PulledAccountTypes = {
+    address: BackupAccountType
+    secrets: BackupAccountType | null
+}
+
+const accountTypesByAddress = (
+    accounts: PulledAccount[],
+): Map<string, PulledAccountTypes> =>
+    new Map(
+        accounts.map(({ address, addressPayload, secretsPayload }) => [
+            address,
+            {
+                address: addressPayload.type,
+                secrets: secretsPayload?.type ?? null,
+            },
+        ]),
+    )
+
+const accountTypeOf = (
+    key: BackupItemKey,
+    address: string,
+    types: Map<string, PulledAccountTypes>,
+): BackupAccountType | null => {
+    if (isContactItemKey(key)) return null
+    const pulled = types.get(address)
+    if (pulled === undefined) return null
+    // An address record and the key material filed under the same address are
+    // not the same type: an HD account's secret is the seed.
+    return isAccountItemKey(key) ? pulled.address : pulled.secrets
+}
+
+/** The manifest knows only keys, and a key is an HMAC of the address, so the
+ *  pull is the only place these addresses exist. An item the pull could not
+ *  read is left without one, which reads as unknown, never as "not ours". */
+const trackedItemsFromPull = (
+    pull: PullBackupItemsResult,
+): Record<BackupItemKey, SyncItemState> => {
+    const items = trackedItemsFromManifest(pull.manifestItems)
+    const types = accountTypesByAddress(pull.accounts)
+
+    for (const [key, address] of Object.entries(pull.addressByKey)) {
+        const tracked = items[key]
+        if (tracked === undefined) continue
+        items[key] = {
+            ...tracked,
+            address,
+            accountType: accountTypeOf(key, address, types),
+        }
+    }
+    return items
+}
+
+/** A credential that cannot be written must never fail the restore: accounts
+ *  and contacts are already in place by the time this runs. */
+const importPasskeysSafely = async (
+    importPasskeys: PasskeyImportFn,
+    passkeys: PasskeyBackupPayload[],
+): Promise<void> => {
+    if (passkeys.length === 0) return
+    try {
+        const summary = await importPasskeys(passkeys)
+        if (summary.skipped.length > 0 || summary.failed.length > 0) {
+            logger.warn('restoreCloudBackup: some passkeys were not written', {
+                skipped: summary.skipped.length,
+                failed: summary.failed.length,
+            })
+        }
+    } catch (error) {
+        logger.warn('restoreCloudBackup: passkey import failed', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+    }
+}
+
 const syncStateFromPull = (
     backupId: BackupId,
     pull: PullBackupItemsResult,
@@ -137,7 +226,7 @@ const syncStateFromPull = (
     lastSyncedSeq: pull.lastSeq,
     lastSyncedAt: Date.now(),
     lastSyncResult: 'SUCCESS',
-    items: trackedItemsFromManifest(pull.manifestItems),
+    items: trackedItemsFromPull(pull),
 })
 
 const deriveKeys = async (
@@ -171,15 +260,18 @@ export const restoreCloudBackup = async ({
     network,
     importAccounts,
     importContacts,
+    importPasskeys,
 }: RestoreCloudBackupParams): Promise<RestoreCloudBackupResult> => {
-    const { backupId, encryptionKey, authSecretKey } = await deriveKeys(
-        mnemonic,
-        salt,
-        argon2id,
-    )
+    const { backupId, encryptionKey, authSecretKey, itemKey } =
+        await deriveKeys(mnemonic, salt, argon2id)
 
     try {
-        await persistBackupKeys({ encryptionKey, authSecretKey, mnemonic })
+        await persistBackupKeys({
+            encryptionKey,
+            authSecretKey,
+            itemKey,
+            mnemonic,
+        })
 
         const pull = await pullBackupItems({
             network,
@@ -187,11 +279,27 @@ export const restoreCloudBackup = async ({
             deviceId,
             encryptionKey,
         })
+
+        /* A legacy backup's secrets payloads lack the `address` field and no
+         * longer parse, while its address records still do: importing would
+         * leave watch-only copies of the accounts the user just restored. */
+        const legacyKeyCount = Object.keys(pull.manifestItems).filter(
+            isLegacyItemKey,
+        ).length
+        if (legacyKeyCount > 0) {
+            logger.warn(
+                'restoreCloudBackup: backup uses legacy address keys, refusing to restore',
+                { legacyKeyCount },
+            )
+            throw new CloudBackupRestoreError('UNKNOWN')
+        }
+
         const summary = await importAccounts(pull.accounts)
         const contactSummary = await importContactsSafely(
             importContacts,
             pull.contacts,
         )
+        await importPasskeysSafely(importPasskeys, pull.passkeys)
 
         return {
             backupId,
@@ -207,5 +315,6 @@ export const restoreCloudBackup = async ({
     } finally {
         zeroBytes(encryptionKey)
         zeroBytes(authSecretKey)
+        zeroBytes(itemKey)
     }
 }

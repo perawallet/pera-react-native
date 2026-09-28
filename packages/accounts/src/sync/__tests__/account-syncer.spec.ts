@@ -15,37 +15,43 @@ import type { Network } from '@perawallet/wallet-core-shared'
 
 // algosdk v9 builders: `accountInformation(addr).do()` and
 // `lookupAccountAssets(addr).limit(n).do()`.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetworkStore: {
-        getState: () => ({ network: 'mainnet' }),
-        subscribe: () => () => {},
-    },
-    getAlgorandClient: vi.fn(() => ({
-        client: {
-            algod: {
-                accountInformation: vi.fn(() => ({
-                    exclude: vi.fn().mockReturnThis(),
-                    do: vi.fn().mockResolvedValue({
-                        amount: 0n,
-                        minBalance: 0n,
-                        totalAssetsOptedIn: 0,
-                        totalCreatedAssets: 0,
-                        totalAppsOptedIn: 0,
-                        status: 'Offline',
-                        authAddr: { toString: () => 'S' },
-                    }),
-                })),
-            },
-            indexer: {
-                lookupAccountAssets: vi.fn(() => ({
-                    limit: vi.fn().mockReturnThis(),
-                    nextToken: vi.fn().mockReturnThis(),
-                    do: vi.fn().mockResolvedValue({ assets: [] }),
-                })),
-            },
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    const { microAlgosToAlgos } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
+    return {
+        microAlgosToAlgos,
+        useNetworkStore: {
+            getState: () => ({ network: 'mainnet' }),
+            subscribe: () => () => {},
         },
-    })),
-}))
+        getAlgorandClient: vi.fn(() => ({
+            client: {
+                algod: {
+                    accountInformation: vi.fn(() => ({
+                        exclude: vi.fn().mockReturnThis(),
+                        do: vi.fn().mockResolvedValue({
+                            amount: 0n,
+                            minBalance: 0n,
+                            totalAssetsOptedIn: 0,
+                            totalCreatedAssets: 0,
+                            totalAppsOptedIn: 0,
+                            status: 'Offline',
+                            authAddr: { toString: () => 'S' },
+                        }),
+                    })),
+                },
+                indexer: {
+                    lookupAccountAssets: vi.fn(() => ({
+                        limit: vi.fn().mockReturnThis(),
+                        nextToken: vi.fn().mockReturnThis(),
+                        do: vi.fn().mockResolvedValue({ assets: [] }),
+                    })),
+                },
+            },
+        })),
+    }
+})
 
 // Mocked so the resetModules loop below doesn't re-evaluate the real assets
 // package graph on every test — under full-suite parallel load that import

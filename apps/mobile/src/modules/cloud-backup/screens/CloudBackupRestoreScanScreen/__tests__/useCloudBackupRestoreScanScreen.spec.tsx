@@ -23,7 +23,6 @@ const {
     requestSheetMock,
     restoreMock,
     setMnemonicMock,
-    setSaltMock,
     clearDraftMock,
     showToastMock,
     onDoneMock,
@@ -38,7 +37,6 @@ const {
         requestSheetMock: vi.fn(),
         restoreMock: vi.fn(),
         setMnemonicMock: vi.fn(),
-        setSaltMock: vi.fn(),
         clearDraftMock: vi.fn(),
         showToastMock: vi.fn(),
         onDoneMock: vi.fn(),
@@ -60,7 +58,6 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
     useCloudBackupRestoreDraftStore: (selector: (state: unknown) => unknown) =>
         selector({
             setMnemonic: setMnemonicMock,
-            setSalt: setSaltMock,
             clearDraft: clearDraftMock,
         }),
     useRestoreCloudBackupMutation: (options: typeof restoreCallbacks) => {
@@ -182,7 +179,7 @@ describe('useCloudBackupRestoreScanScreen', () => {
         expect(restartScanning).toHaveBeenCalled()
     })
 
-    test('writes the draft before restoring with the envelope salt', async () => {
+    test('writes the phrase before restoring with the envelope salt and config', async () => {
         const { result } = renderScanScreen()
         act(() => result.current.handleOpenScanner())
 
@@ -191,7 +188,6 @@ describe('useCloudBackupRestoreScanScreen', () => {
         )
 
         expect(setMnemonicMock).toHaveBeenCalledWith(['w1', 'w2', 'w3'])
-        expect(setSaltMock).toHaveBeenCalledWith('SALT')
         // The envelope's own config, not the build default: a backup made
         // under other parameters derives a different backupId otherwise.
         expect(restoreMock).toHaveBeenCalledWith({

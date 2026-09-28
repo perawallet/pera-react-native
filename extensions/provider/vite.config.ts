@@ -12,56 +12,12 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: resolve(__dirname, 'src/index.ts'),
-            formats: ['es'],
-            fileName: 'index',
-        },
-        rollupOptions: {
-            external: [
-                'react',
-                'react/jsx-runtime',
-                'zustand',
-                '@tanstack/react-query',
-                '@tanstack/store',
-                'before-after-hook',
-                '@algorandfoundation/keystore-core',
-                '@algorandfoundation/provider-migrations',
-                '@algorandfoundation/react-native-keystore',
-                '@algorandfoundation/wallet-provider',
-                'react-native-mmkv',
-                'react-native-quick-crypto',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-extension-connections',
-                '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-extension-platform-driver',
-                '@perawallet/wallet-extension-ledger-react-native',
-                '@perawallet/wallet-extension-ledger-react-native-usb',
-                '@perawallet/wallet-extension-ledger-web-ble',
-                '@perawallet/wallet-extension-ledger-web-usb',
-                '@perawallet/wallet-extension-passkey-autofill',
-                '@perawallet/wallet-core-accounts',
-                '@perawallet/wallet-core-hardware-wallet',
-                '@perawallet/wallet-core-blockchain',
-                '@perawallet/wallet-core-config',
-                '@perawallet/wallet-core-contacts',
-                '@perawallet/wallet-core-currencies',
-                '@perawallet/wallet-core-kms',
-                '@perawallet/wallet-core-messages',
-                '@perawallet/wallet-core-polling',
-                '@perawallet/wallet-core-security',
-                '@perawallet/wallet-core-settings',
-                '@perawallet/wallet-core-signing',
-                '@perawallet/wallet-core-swaps',
-                '@perawallet/wallet-core-walletconnect',
-                '@algorandfoundation/xhd-wallet-api',
-                'uuid',
-                'decimal.js',
-            ],
-        },
-    },
-})
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: resolve(__dirname, 'src/index.ts'),
+        fileName: 'index',
+    }),
+)

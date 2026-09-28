@@ -20,12 +20,12 @@ import { Networks } from '@perawallet/wallet-core-config'
 import { PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
-import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import {
+    AccountSelection,
     AccountDrawerPager,
     useAccountDrawerPickerKind,
     useSigningPicker,
-} from '@modules/accounts/components/AccountDrawer'
+} from '@modules/accounts'
 import {
     OnrampCountryChip,
     OnrampForm,

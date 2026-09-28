@@ -76,9 +76,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const { mockUseGlobalSearch, defaultGlobalSearchResult } = vi.hoisted(() => {
     const defaultGlobalSearchResult = {

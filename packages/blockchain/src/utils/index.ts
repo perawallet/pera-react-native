@@ -24,6 +24,7 @@ export * from './resolveGenesisHash'
 export * from './clearCustomNetworkCache'
 export * from './fetchGenesisFromNode'
 export * from './createAlgorandClient'
+export * from './createWalletAlgorandClient'
 export * from './TimeoutHttpClient'
 export * from './confirmation'
 export * from './addresses'
@@ -33,56 +34,15 @@ export * from './json'
 export * from './multisig'
 export * from './assembleSignedMultisigTransactions'
 export * from './transact'
-
-/** e.g. `(1_000_000n, 6)` -> `Decimal(1)` — microAlgos to ALGO. */
-export const baseUnitsToDisplayUnits = (
-    amount: number | bigint | Decimal | string,
-    decimals: number,
-): Decimal => {
-    const amountDecimal = new Decimal(amount.toString())
-    return amountDecimal.div(Decimal.pow(10, decimals))
-}
-
-/** e.g. `(1, 6)` -> `Decimal(1_000_000)` — ALGO to microAlgos. */
-export const displayUnitsToBaseUnits = (
-    amount: number | bigint | Decimal | string,
-    decimals: number,
-): Decimal => {
-    const amountDecimal = new Decimal(amount.toString())
-    return amountDecimal.mul(Decimal.pow(10, decimals))
-}
-
-/** Truncates. Use at the blockchain boundary when building transactions. */
-export const toBigInt = (d: Decimal): bigint => {
-    return BigInt(d.toFixed(0))
-}
-
-/** {@link displayUnitsToBaseUnits} + {@link toBigInt}, for transaction building. */
-export const displayUnitsToBaseUnitsBigInt = (
-    amount: number | bigint | Decimal | string,
-    decimals: number,
-): bigint => {
-    return toBigInt(displayUnitsToBaseUnits(amount, decimals))
-}
-
-/** For transaction building. */
-export const algosToMicroAlgosBigInt = (
-    algos: number | bigint | Decimal | string,
-): bigint => {
-    return displayUnitsToBaseUnitsBigInt(algos, 6)
-}
-
-export const microAlgosToAlgos = (
-    microAlgos: number | bigint | Decimal | string,
-): Decimal => {
-    return baseUnitsToDisplayUnits(microAlgos, 6)
-}
-
-export const algosToMicroAlgos = (
-    algos: number | bigint | Decimal | string,
-): Decimal => {
-    return displayUnitsToBaseUnits(algos, 6)
-}
+export {
+    baseUnitsToDisplayUnits,
+    displayUnitsToBaseUnits,
+    toBigInt,
+    displayUnitsToBaseUnitsBigInt,
+    algosToMicroAlgosBigInt,
+    microAlgosToAlgos,
+    algosToMicroAlgos,
+} from '@perawallet/wallet-core-shared'
 
 export const percentChange = (first: Decimal, last: Decimal): Decimal => {
     if (first.isZero()) {

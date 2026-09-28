@@ -24,8 +24,9 @@ export const transformProviderItem = (
 
 export const transformTopPairItem = (
     data: TopPairItemApiResponse,
+    nativeAssetId: string,
 ): TopPairItem => ({
-    assetA: transformDexSwapAsset(data.asset_a),
-    assetB: transformDexSwapAsset(data.asset_b),
+    assetA: transformDexSwapAsset(data.asset_a, nativeAssetId),
+    assetB: transformDexSwapAsset(data.asset_b, nativeAssetId),
     volume24hUsd: data.volume_24h_usd,
 })

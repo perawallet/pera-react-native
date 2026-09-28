@@ -22,7 +22,7 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
-import { AssetIcon } from '../AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import { useAssetItemView } from './useAssetItemView'
 import { useStyles } from './styles'
 

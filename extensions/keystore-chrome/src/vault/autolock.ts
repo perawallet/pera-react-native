@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -39,9 +39,11 @@ export const setAutoLockMinutes = async (minutes: number): Promise<void> => {
 }
 
 /**
- * (Re)schedules the auto-lock alarm. Called on vault create/unlock and on
- * every surface open while unlocked — a sliding inactivity window. The alarm
- * outlives UI contexts; the background service worker handles it firing.
+ * (Re)schedules the auto-lock alarm. Called on vault create/unlock and on user
+ * activity in an extension page — never on surface open, because a web page
+ * can open the approval surfaces at will and would hold the vault unlocked.
+ * The alarm outlives UI contexts; the background service worker handles it
+ * firing.
  * With no argument, reads the persisted user preference.
  */
 export const armAutoLock = async (minutes?: number): Promise<void> => {

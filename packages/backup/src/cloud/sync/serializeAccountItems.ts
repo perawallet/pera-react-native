@@ -22,6 +22,7 @@ import {
     type AddressBackupPayload,
     type SecretsBackupPayload,
 } from '../models'
+import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import type { SerializedAccount } from './types'
 
 type SerializeParams = {
@@ -29,6 +30,7 @@ type SerializeParams = {
     updatedAt: number
     /** Secrets payload from KMS, or null for secret-less account types. */
     secrets: SecretsBackupPayload | null
+    hashAddress: ItemKeyHasher
     /** Resolved HD derivation data; REQUIRED for hdWallet accounts (the account
      *  carries neither its derived public key nor the seed's first address). */
     hd?: { seedFirstDerivedAddress: string; publicKeyHex: string }
@@ -115,19 +117,19 @@ const toAddressPayload = (
 
 export const serializeAccountItems = (
     account: WalletAccount,
-    { updatedAt, secrets, hd }: SerializeParams,
+    { updatedAt, secrets, hd, hashAddress }: SerializeParams,
 ): SerializedAccount | null => {
     const addressPayload = toAddressPayload(account, updatedAt, hd)
     if (addressPayload === null || !account.address) return null
 
     const address = {
-        key: accountItemKey(account.address),
+        key: accountItemKey(hashAddress(account.address)),
         type: BackupItemType.ACCOUNT,
         payload: addressPayload,
     }
     const secretsItem = secrets
         ? {
-              key: secretsItemKey(account.address),
+              key: secretsItemKey(hashAddress(account.address)),
               type: BackupItemType.ACCOUNT,
               payload: secrets,
           }

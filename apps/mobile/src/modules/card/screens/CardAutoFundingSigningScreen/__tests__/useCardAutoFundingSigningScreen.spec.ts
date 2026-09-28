@@ -15,6 +15,7 @@ import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
     FundingType,
 } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -123,7 +124,7 @@ describe('useCardAutoFundingSigningScreen', () => {
         })
 
         // Wait on isPending (the terminal condition, set in `finally` after
-        // the awaited showError call) rather than error — asserting on error
+        // the awaited showError call) rather than error: asserting on error
         // alone races the `finally` block and can catch an intermediate
         // render where isPending is still true.
         await waitFor(() => expect(result.current.isPending).toBe(false))
@@ -149,6 +150,24 @@ describe('useCardAutoFundingSigningScreen', () => {
         // "please try again" error toast would strand the user here.
         mockEnableAutoDraw.mockRejectedValueOnce(
             new AutoDrawProgramUnverifiedError('mainnet'),
+        )
+
+        const { result } = renderHook(() => useCardAutoFundingSigningScreen())
+
+        act(() => {
+            result.current.handleApprove()
+        })
+
+        await waitFor(() =>
+            expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, true),
+        )
+        expect(mockShowCardError).not.toHaveBeenCalled()
+        expect(result.current.error).toBeNull()
+    })
+
+    it('degrades to Manual funding when the bundled TEAL template fails its pin', async () => {
+        mockEnableAutoDraw.mockRejectedValueOnce(
+            new AutoDrawTealUnverifiedError(),
         )
 
         const { result } = renderHook(() => useCardAutoFundingSigningScreen())

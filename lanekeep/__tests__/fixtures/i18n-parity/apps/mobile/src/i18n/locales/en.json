@@ -1,0 +1,8 @@
+{
+    "common": {
+        "ok": "OK",
+        "items_one": "{{count}} item",
+        "items_other": "{{count}} items"
+    },
+    "gone": "Gone"
+}

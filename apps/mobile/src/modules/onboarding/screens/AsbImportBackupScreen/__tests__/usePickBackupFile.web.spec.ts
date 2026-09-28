@@ -19,6 +19,8 @@ const openExpandedTabMock = vi.fn()
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     getSurface: () => getSurfaceMock(),
+}))
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     openExpandedTab: (flow?: string) => openExpandedTabMock(flow),
 }))
 

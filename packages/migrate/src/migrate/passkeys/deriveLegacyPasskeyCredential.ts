@@ -14,10 +14,10 @@ import { DeterministicP256 } from '@algorandfoundation/dp256'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { deriveLiquidAuthMainKey } from '@perawallet/wallet-core-kms'
 import {
-    decodeFromBase64,
-    encodeToBase64,
-    hexToBytes,
-} from '@perawallet/wallet-core-shared'
+    credentialIdBytesToStandardBase64,
+    p256RawPublicKeyToSpkiDer,
+} from '@perawallet/wallet-core-passkeys/crypto'
+import { decodeFromBase64, hexToBytes } from '@perawallet/wallet-core-shared'
 
 /**
  * Pure-JS reproduction of a legacy passkey's deterministic P-256 keypair. A
@@ -40,29 +40,10 @@ import {
 
 const dp256 = new DeterministicP256()
 
-/**
- * P-256 SPKI DER prefix through the BIT STRING header. Full SPKI = this 26-byte
- * prefix + `0x04` + the 64-byte `X || Y` = 91 bytes. `getPurePKBytes` returns
- * the raw point without `0x04`, so the indicator is spliced back in.
- */
-const P256_SPKI_PREFIX = Uint8Array.from([
-    0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02,
-    0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03,
-    0x42, 0x00,
-])
-
-/**
- * Matches `KeyPair.public.encoded` on the native side — its
- * `getKeyPairFromCredential` reconstructs from this DER, and
- * `generateCredentialId` hashes exactly these bytes.
- */
-export const p256RawPublicKeyToSpkiDer = (pubRaw: Uint8Array): Uint8Array => {
-    const der = new Uint8Array(P256_SPKI_PREFIX.length + 1 + pubRaw.length)
-    der.set(P256_SPKI_PREFIX, 0)
-    der[P256_SPKI_PREFIX.length] = 0x04
-    der.set(pubRaw, P256_SPKI_PREFIX.length + 1)
-    return der
-}
+// Moved to `@perawallet/wallet-core-passkeys`, which derives the same SPKI DER
+// and credential-id encoding for the entropy-based path; re-exported here so
+// existing importers of this module keep compiling.
+export { credentialIdBytesToStandardBase64, p256RawPublicKeyToSpkiDer }
 
 /**
  * Accepts standard base64 (what the migration data carries) plus url-safe base64
@@ -85,11 +66,6 @@ export const decodeCredentialIdToBytes = (raw: string): Uint8Array | null => {
         return null
     }
 }
-
-/** Standard-base64 (with padding) — the exact MMKV key the native provider's
- * `getCredential` derives via `Base64.encodeToString(credentialId, DEFAULT)`. */
-export const credentialIdBytesToStandardBase64 = (bytes: Uint8Array): string =>
-    encodeToBase64(bytes)
 
 /** PBKDF2 is heavy, so callers cache this per HD seed across its passkeys. */
 export const deriveMainKey = (mnemonic: string): Promise<Uint8Array> =>

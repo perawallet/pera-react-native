@@ -18,7 +18,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { AccountAssetItemView } from '@modules/assets/components'
+import { AccountAssetItemView } from '@modules/assets'
 
 import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'

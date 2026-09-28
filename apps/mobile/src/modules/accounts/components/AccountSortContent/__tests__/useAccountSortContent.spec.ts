@@ -39,9 +39,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 describe('useAccountSortContent', () => {
     beforeEach(() => {

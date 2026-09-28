@@ -16,11 +16,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
+    CSV_MIME_TYPE,
     useTransactionHistoryQuery,
     useCsvExportMutation,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { shareCsvFile } from '@utils/shareCsvFile'
+import { shareFile } from '@utils/shareFile'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
 import {
@@ -28,13 +29,13 @@ import {
     TransactionsFilterContent,
     type CustomDateRange,
     type TransactionsFilterResult,
-} from '../../../../accounts/components/TransactionsFilterContent'
+    getFilterTimes,
+} from '@modules/accounts'
 import type { AppStackParamList } from '@routes/types'
-import { getFilterTimes } from '../../../../accounts/components/AccountHistory/utils'
 import {
     buildTransactionListRows,
     type TransactionListRow,
-} from '@modules/transactions/utils/transactionListRows'
+} from '@modules/transactions'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     PeraServiceUnavailableError,
@@ -142,7 +143,9 @@ export const useAssetTransactionList = ({
         onSuccess: result => {
             void (async () => {
                 try {
-                    await shareCsvFile(result.filename, result.csvContent)
+                    await shareFile(result.filename, result.csvContent, {
+                        mimeType: CSV_MIME_TYPE,
+                    })
                 } catch (error) {
                     showError(error)
                 }

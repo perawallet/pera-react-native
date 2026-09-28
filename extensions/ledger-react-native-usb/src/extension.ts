@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type { HardwareWalletRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { RNLedgerUsbService } from './RNLedgerUsbService'
 
 /**
  * wallet-provider Extension that registers the Ledger USB hardware wallet
  * transport provider into the hardware wallet registry.
  *
- * Compose AFTER the platform extension (which provides
+ * Run it after `WithHardwareWalletExtension` (which provides
  * `hardwareWalletRegistry`) and AFTER `WithLedgerExtension` so the BLE
  * provider lands first by convention. iOS still registers this provider —
  * its `isSupported()` returns false on iOS, so consumers naturally skip it.

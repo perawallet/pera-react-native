@@ -11,9 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { Linking } from 'react-native'
-import { logger } from '@perawallet/wallet-core-shared'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink'
+import { openValidatedBrowserUrl } from '@modules/webview'
 
 type RouteInput = {
     url: string | null
@@ -30,21 +29,11 @@ export const useBannerLinkRouter = (): UseBannerLinkRouterResult => {
     const route = useCallback(
         ({ url, isExternal }: RouteInput) => {
             if (!url) return
-            if (isExternal) {
-                // No OS handler for the URL is a device condition, not our bug.
-                Linking.openURL(url).catch(err =>
-                    logger.warn('Failed to open banner URL', { url, err }),
-                )
+            if (!isExternal && isValidDeepLink(url)) {
+                void handleDeepLink(url, false, 'in-app')
                 return
             }
-            if (isValidDeepLink(url)) {
-                void handleDeepLink(url, false, 'in-app')
-            } else {
-                // No OS handler for the URL is a device condition, not our bug.
-                Linking.openURL(url).catch(err =>
-                    logger.warn('Failed to open banner URL', { url, err }),
-                )
-            }
+            openValidatedBrowserUrl(url)
         },
         [isValidDeepLink, handleDeepLink],
     )

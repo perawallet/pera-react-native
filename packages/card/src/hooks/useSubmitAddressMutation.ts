@@ -13,7 +13,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
-import { acquireCardSessionTokens } from '../api/auth'
 import { submitAddress, type SubmitAddressResult } from '../api/onboarding'
 import {
     getCardApiError,
@@ -21,8 +20,8 @@ import {
     OnboardingNotVerifiedError,
 } from '../api/errors'
 import { OnboardingStep, type AddressInput } from '../models'
-import { setCardSession } from '../session'
 import { useCardStore } from '../store'
+import { completeCardRegistration } from './completeCardRegistration'
 import { cardQueryKeys } from './querykeys'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
@@ -48,32 +47,17 @@ export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
                 throw error
             }
         },
-        // The address step finalizes registration and issues the same class of
-        // 6h user access token as login. Trade it for the durable OAuth pair
-        // (6h access + 7-day refresh) so the brand-new session can be silently
-        // refreshed, then mark onboarding done.
         onSuccess: async result => {
-            // accessToken is null only on the US separate-mailing path, which we
-            // don't yet collect (the address screen always sends
-            // isSameMailingAddress:true).
-            // TODO(card): the US mailing-address step will issue the token; until
-            // then accessToken is always present here.
-            if (result.accessToken) {
-                // Falls back to a refresh-less 6h session if the OAuth
-                // exchange fails — registration already succeeded and must
-                // not be stranded on an exchange outage.
-                const tokens = await acquireCardSessionTokens({
-                    accessToken: result.accessToken,
-                    network,
-                })
-                await setCardSession(tokens)
+            // A US resident shipping the card elsewhere still owes the mailing
+            // address; Baanx withholds the token until that step, which then
+            // completes registration instead of this one.
+            if (result.accessToken === null) {
+                useCardStore
+                    .getState()
+                    .setOnboardingStep(OnboardingStep.MailingAddress)
+                return
             }
-            useCardStore.getState().setOnboardingStep(OnboardingStep.Completed)
-            // Registration just completed for this user: bind the device's
-            // setup state to them (clears a previous user's escrow card).
-            if (result.userId !== null) {
-                useCardStore.getState().adoptCardUser(result.userId)
-            }
+            await completeCardRegistration({ result, network })
         },
         // Surface Baanx's real (often nested-stringified) error for diagnosis —
         // the screen only shows a generic toast, so this is where the actual

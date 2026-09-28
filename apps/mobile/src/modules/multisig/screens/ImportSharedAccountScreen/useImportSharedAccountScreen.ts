@@ -23,7 +23,7 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useExitAccountFlow } from '@modules/onboarding/hooks'
+import { useExitAccountFlow } from '@modules/onboarding'
 import type { MultisigStackParamList } from '../../routes/types'
 
 type UseImportSharedAccountScreenResult = {

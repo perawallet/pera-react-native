@@ -196,6 +196,7 @@ describe('useCloudBackupImport', () => {
                 secretsPayload: {
                     type: 'algo25',
                     mnemonic: 'abandon ability able',
+                    address: 'ALGO25_ADDR',
                 },
             },
         ])
@@ -239,6 +240,7 @@ describe('useCloudBackupImport', () => {
                 secretsPayload: {
                     type: 'quantum',
                     mnemonic: 'about above absent',
+                    address: 'PQ_CANONICAL',
                 },
             },
         ])
@@ -290,7 +292,11 @@ describe('useCloudBackupImport', () => {
                     address: 'ALGO25_ADDR',
                     customName: null,
                 },
-                secretsPayload: { type: 'algo25', mnemonic: 'not a word' },
+                secretsPayload: {
+                    type: 'algo25',
+                    mnemonic: 'not a word',
+                    address: 'ALGO25_ADDR',
+                },
             },
         ])
 
@@ -459,6 +465,7 @@ describe('useCloudBackupImport', () => {
                     type: 'hdSeed',
                     seed: A_HEX_96,
                     entropy: ENTROPY_HEX,
+                    address: 'SEED_ADDR',
                 },
             },
         ])
@@ -511,6 +518,7 @@ describe('useCloudBackupImport', () => {
                     type: 'hdSeed',
                     seed: A_HEX_96,
                     entropy: ENTROPY_HEX,
+                    address: 'FIRST',
                 },
             },
             {
@@ -567,6 +575,7 @@ describe('useCloudBackupImport', () => {
                     type: 'hdSeed',
                     seed: A_HEX_96,
                     entropy: ENTROPY_HEX,
+                    address: 'FIRST',
                 },
             },
             {
@@ -628,6 +637,7 @@ describe('useCloudBackupImport', () => {
                     type: 'hdSeed',
                     seed: A_HEX_96,
                     entropy: ENTROPY_HEX,
+                    address: 'FIRST',
                 },
             },
         ])
@@ -649,6 +659,7 @@ describe('useCloudBackupImport', () => {
                     type: 'hdSeed',
                     seed: 'aa'.repeat(95),
                     entropy: ENTROPY_HEX,
+                    address: 'SEED_ADDR',
                 },
             },
             watchAccount('WATCH_ADDR'),
@@ -681,6 +692,7 @@ describe('useCloudBackupImport', () => {
                     type: 'hdSeed',
                     seed: 'aa'.repeat(95),
                     entropy: ENTROPY_HEX,
+                    address: 'FIRST',
                 },
             },
         ])

@@ -99,5 +99,6 @@ export type StatementFormat =
 
 export type CardStatement = {
     format: StatementFormat
-    blob: Blob
+    /** The file body, ready to be written to disk. */
+    bytes: Uint8Array<ArrayBuffer>
 }

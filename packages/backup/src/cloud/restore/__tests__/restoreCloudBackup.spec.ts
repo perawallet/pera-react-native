@@ -11,6 +11,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import { webcrypto } from 'node:crypto'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 
 const {
@@ -18,12 +20,39 @@ const {
     persistBackupKeysMock,
     deleteBackupKeysMock,
     pullBackupItemsMock,
-} = vi.hoisted(() => ({
-    deriveBackupKeysMock: vi.fn(),
-    persistBackupKeysMock: vi.fn(),
-    deleteBackupKeysMock: vi.fn(),
-    pullBackupItemsMock: vi.fn(),
-}))
+    getDerivedPublicKeyMock,
+    keystoreKeysMock,
+    secretBytesById,
+    withSecretMock,
+    writeNativePasskeyEntryMock,
+    nativePasskeyEntryExistsMock,
+} = vi.hoisted(() => {
+    const secretBytesById = new Map<string, Uint8Array>()
+    return {
+        deriveBackupKeysMock: vi.fn(),
+        persistBackupKeysMock: vi.fn(),
+        deleteBackupKeysMock: vi.fn(),
+        pullBackupItemsMock: vi.fn(),
+        getDerivedPublicKeyMock: vi.fn(),
+        keystoreKeysMock: vi.fn().mockReturnValue([]),
+        secretBytesById,
+        // Mirrors `withSecret`'s real contract: hands the handler a live
+        // buffer, then zeroes that same buffer once the handler returns.
+        withSecretMock: vi.fn(
+            async (id: string, handler: (bytes: Uint8Array) => unknown) => {
+                const bytes = secretBytesById.get(id)
+                if (!bytes) return null
+                try {
+                    return await handler(bytes)
+                } finally {
+                    bytes.fill(0)
+                }
+            },
+        ),
+        writeNativePasskeyEntryMock: vi.fn(),
+        nativePasskeyEntryExistsMock: vi.fn().mockReturnValue(false),
+    }
+})
 
 vi.mock('../../crypto', () => ({ deriveBackupKeys: deriveBackupKeysMock }))
 vi.mock('../../credentials/keyStorage', () => ({
@@ -33,19 +62,66 @@ vi.mock('../../credentials/keyStorage', () => ({
 vi.mock('../pullBackupItems', () => ({
     pullBackupItems: pullBackupItemsMock,
 }))
+// Real `entropyChildIdOf`/`seedSchemeOf`/`SeedScheme`/`zeroBytes`, so the
+// acceptance test below exercises the actual seed-lookup logic; only the
+// KMS session (`useKMS`) and the secret read (`withSecret`, which needs a
+// real keystore backend) are faked.
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useKMS: () => ({ getDerivedPublicKey: getDerivedPublicKeyMock }),
+    withSecret: withSecretMock,
+}))
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({ keyValueStorage: { getItem: () => null } }),
+    getKeystoreStore: () => ({ state: { keys: keystoreKeysMock() } }),
+    // The import derives with `derivePasskeyMainKey`'s default `subtle`.
+    keystoreSubtle: webcrypto.subtle,
+}))
+// Real `derivePasskeyMainKey`/`derivePasskeyCredential`/`passkeyBackupInputs`
+// (proving reproduction is the entire point of this test); only the native
+// write boundary is faked.
+vi.mock('@perawallet/wallet-core-passkeys', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    writeNativePasskeyEntry: (...args: unknown[]) =>
+        writeNativePasskeyEntryMock(...args),
+    nativePasskeyEntryExists: (...args: unknown[]) =>
+        nativePasskeyEntryExistsMock(...args),
+}))
 
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import {
+    accountItemKey,
+    contactItemKey,
+    secretsItemKey,
+    BackupAccountType,
+} from '../../models'
 import {
     CloudBackupRestoreError,
     restoreCloudBackup,
 } from '../restoreCloudBackup'
+import {
+    derivePasskeyCredential,
+    derivePasskeyMainKey,
+} from '@perawallet/wallet-core-passkeys'
+import { useCloudBackupPasskeyImport } from '../../hooks/useCloudBackupPasskeyImport'
+import { useResolveSeedEntropyForBackup } from '../../hooks/useResolveSeedEntropyForBackup'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+const ACCOUNT_KEY = accountItemKey(hashAddress('A'))
+const SECRETS_KEY = secretsItemKey(hashAddress('A'))
+const CONTACT_KEY = contactItemKey(hashAddress('C'))
+const UNREADABLE_KEY = accountItemKey(hashAddress('GONE'))
 
 const MNEMONIC = ['abandon', 'ability', 'able']
 const SUMMARY = { imported: 1, skippedDuplicate: 0, failed: [] }
 
 const CONTACT_SUMMARY = { imported: 1, failed: [] }
+const PASSKEY_SUMMARY = { imported: 1, skipped: [], failed: [] }
 
 const importAccounts = vi.fn()
 const importContacts = vi.fn()
+const importPasskeys = vi.fn()
 
 const params = () => ({
     mnemonic: MNEMONIC,
@@ -54,6 +130,7 @@ const params = () => ({
     network: 'mainnet' as const,
     importAccounts,
     importContacts,
+    importPasskeys,
 })
 
 const keys = (fill = 5) => ({
@@ -61,6 +138,7 @@ const keys = (fill = 5) => ({
     encryptionKey: new Uint8Array(32).fill(fill),
     authPublicKey: new Uint8Array(32).fill(3),
     authSecretKey: new Uint8Array(64).fill(4),
+    itemKey: new Uint8Array(32).fill(6),
 })
 
 const manifestItem = (overrides = {}) => ({
@@ -76,11 +154,27 @@ const pull = {
     backupGlobalHash: 'hash',
     lastSeq: 10,
     manifestItems: {
-        'accounts/A': manifestItem(),
-        'secrets/A': manifestItem({ ver: 2, hash: 'sha256:secret' }),
+        [ACCOUNT_KEY]: manifestItem(),
+        [SECRETS_KEY]: manifestItem({ ver: 2, hash: 'sha256:secret' }),
+        [CONTACT_KEY]: manifestItem({ type: 'CONTACT', ver: 1 }),
     },
-    accounts: [{ address: 'A', addressPayload: {}, secretsPayload: null }],
+    addressByKey: {
+        [ACCOUNT_KEY]: 'A',
+        [SECRETS_KEY]: 'A',
+        [CONTACT_KEY]: 'C',
+    },
+    accounts: [
+        {
+            address: 'A',
+            addressPayload: {
+                type: BackupAccountType.hdWallet,
+                address: 'A',
+            },
+            secretsPayload: { type: BackupAccountType.hdSeed, address: 'A' },
+        },
+    ],
     contacts: [{ address: 'C', name: 'Alice', updatedAt: 5 }],
+    passkeys: [{ credentialId: 'cred-1', seedAddress: 'A' }],
     skipped: [],
 }
 
@@ -102,6 +196,7 @@ describe('restoreCloudBackup', () => {
         pullBackupItemsMock.mockReset().mockResolvedValue(pull)
         importAccounts.mockReset().mockResolvedValue(SUMMARY)
         importContacts.mockReset().mockResolvedValue(CONTACT_SUMMARY)
+        importPasskeys.mockReset().mockResolvedValue(PASSKEY_SUMMARY)
     })
 
     test('persists the keys, imports the pulled accounts and seeds the sync state', async () => {
@@ -110,6 +205,7 @@ describe('restoreCloudBackup', () => {
         expect(persistBackupKeysMock).toHaveBeenCalledWith({
             encryptionKey: expect.any(Uint8Array),
             authSecretKey: expect.any(Uint8Array),
+            itemKey: expect.any(Uint8Array),
             mnemonic: MNEMONIC,
         })
         expect(importAccounts).toHaveBeenCalledWith(pull.accounts)
@@ -155,14 +251,14 @@ describe('restoreCloudBackup', () => {
         // Version 0 would mean "the server has nothing here"; the server has
         // these at 3 and 2, refuses the write, and no delta ever follows to
         // correct it.
-        expect(syncState.items['accounts/A']).toMatchObject({
+        expect(syncState.items[ACCOUNT_KEY]).toMatchObject({
             knownVer: 3,
             baseVer: 3,
             isDirty: false,
             status: 'ACTIVE',
             lastRemoteHash: 'sha256:remote',
         })
-        expect(syncState.items['secrets/A']).toMatchObject({
+        expect(syncState.items[SECRETS_KEY]).toMatchObject({
             knownVer: 2,
             baseVer: 2,
         })
@@ -173,7 +269,7 @@ describe('restoreCloudBackup', () => {
             ...pull,
             manifestItems: {
                 ...pull.manifestItems,
-                'accounts/GONE': manifestItem({ ver: 7, status: 'IGNORED' }),
+                [UNREADABLE_KEY]: manifestItem({ ver: 7, status: 'IGNORED' }),
             },
             // Deleted and unreadable items are filtered out of the import.
             accounts: [],
@@ -181,11 +277,44 @@ describe('restoreCloudBackup', () => {
 
         const { syncState } = await restoreCloudBackup(params())
 
-        expect(syncState.items['accounts/GONE']).toMatchObject({
+        expect(syncState.items[UNREADABLE_KEY]).toMatchObject({
             knownVer: 7,
             baseVer: 7,
             status: 'IGNORED',
         })
+    })
+
+    // An item seeded without an address is invisible to every review list
+    // until some later delta decrypts it.
+    test('stamps each read item with the address the pull decrypted', async () => {
+        const { syncState } = await restoreCloudBackup(params())
+
+        expect(syncState.items[ACCOUNT_KEY]).toMatchObject({
+            address: 'A',
+            accountType: BackupAccountType.hdWallet,
+        })
+        expect(syncState.items[SECRETS_KEY]).toMatchObject({
+            address: 'A',
+            accountType: BackupAccountType.hdSeed,
+        })
+        expect(syncState.items[CONTACT_KEY]).toMatchObject({
+            address: 'C',
+            accountType: null,
+        })
+    })
+
+    test('leaves an item the pull could not read without an address', async () => {
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            manifestItems: {
+                ...pull.manifestItems,
+                [UNREADABLE_KEY]: manifestItem({ ver: 7 }),
+            },
+        })
+
+        const { syncState } = await restoreCloudBackup(params())
+
+        expect(syncState.items[UNREADABLE_KEY].address ?? null).toBeNull()
     })
 
     test('keeps a restore whose accounts landed when the contact import throws', async () => {
@@ -196,6 +325,44 @@ describe('restoreCloudBackup', () => {
         expect(result.summary).toBe(SUMMARY)
         expect(result.contactSummary).toEqual({ imported: 0, failed: [] })
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('imports passkeys after accounts and contacts, so their owning seed is already in the keystore', async () => {
+        const order: string[] = []
+        importAccounts.mockImplementation(async () => {
+            order.push('accounts')
+            return SUMMARY
+        })
+        importContacts.mockImplementation(async () => {
+            order.push('contacts')
+            return CONTACT_SUMMARY
+        })
+        importPasskeys.mockImplementation(async passkeys => {
+            order.push('passkeys')
+            expect(passkeys).toEqual(pull.passkeys)
+            return PASSKEY_SUMMARY
+        })
+
+        await restoreCloudBackup(params())
+
+        expect(order).toEqual(['accounts', 'contacts', 'passkeys'])
+    })
+
+    test('keeps a restore whose accounts landed when the passkey import throws', async () => {
+        importPasskeys.mockRejectedValue(new Error('keystore busy'))
+
+        const result = await restoreCloudBackup(params())
+
+        expect(result.summary).toBe(SUMMARY)
+        expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('does not call the passkey importer when the backup holds none', async () => {
+        pullBackupItemsMock.mockResolvedValue({ ...pull, passkeys: [] })
+
+        await restoreCloudBackup(params())
+
+        expect(importPasskeys).not.toHaveBeenCalled()
     })
 
     test('persists the keys before pulling, so the signed request can read them', async () => {
@@ -211,6 +378,22 @@ describe('restoreCloudBackup', () => {
         await restoreCloudBackup(params())
 
         expect(order).toEqual(['persist', 'pull'])
+    })
+
+    test('refuses a backup still keyed by plaintext address, before importing', async () => {
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            manifestItems: {
+                ...pull.manifestItems,
+                'accounts/A': manifestItem(),
+            },
+        })
+
+        await expectCategory(restoreCloudBackup(params()), 'UNKNOWN')
+
+        expect(importAccounts).not.toHaveBeenCalled()
+        expect(importContacts).not.toHaveBeenCalled()
+        expect(deleteBackupKeysMock).toHaveBeenCalledTimes(1)
     })
 
     test('categorizes a 404 as NOT_FOUND and rolls the keys back', async () => {
@@ -273,6 +456,7 @@ describe('restoreCloudBackup', () => {
         await restoreCloudBackup(params())
         expect(succeeded.encryptionKey.every(byte => byte === 0)).toBe(true)
         expect(succeeded.authSecretKey.every(byte => byte === 0)).toBe(true)
+        expect(succeeded.itemKey.every(byte => byte === 0)).toBe(true)
 
         const failed = keys()
         deriveBackupKeysMock.mockResolvedValue(failed)
@@ -282,5 +466,86 @@ describe('restoreCloudBackup', () => {
         )
         expect(failed.encryptionKey.every(byte => byte === 0)).toBe(true)
         expect(failed.authSecretKey.every(byte => byte === 0)).toBe(true)
+        expect(failed.itemKey.every(byte => byte === 0)).toBe(true)
+    })
+})
+
+describe('restoreCloudBackup: passkey acceptance', () => {
+    // The whole point: this is the real derivation chain, not a stub, so a
+    // credential that reproduces here is proof "created on device A,
+    // authenticates on device B after restore" actually holds.
+    const subtle = webcrypto.subtle as unknown as SubtleCrypto
+    const ENTROPY = new Uint8Array(32).fill(9)
+    const SEED_PUBKEY = new Uint8Array(32).fill(5)
+    const SEED_ADDRESS = encodeAlgorandAddress(SEED_PUBKEY)
+
+    const buildRestoredPasskeyPayload = async () => {
+        const mainKey = await derivePasskeyMainKey(ENTROPY, subtle)
+        const derived = await derivePasskeyCredential({
+            mainKey,
+            origin: 'webauthn.io',
+            identity: 'alice',
+        })
+        return {
+            credentialId: derived.credentialId,
+            origin: 'webauthn.io',
+            identity: 'alice',
+            counter: 0,
+            publicKeySpkiDer: Buffer.from(derived.publicKeySpkiDer).toString(
+                'base64',
+            ),
+            seedAddress: SEED_ADDRESS,
+            createdAt: 1,
+        }
+    }
+
+    beforeEach(() => {
+        deriveBackupKeysMock.mockReset().mockResolvedValue(keys())
+        persistBackupKeysMock.mockReset().mockResolvedValue(undefined)
+        deleteBackupKeysMock.mockReset().mockResolvedValue(undefined)
+        importAccounts.mockReset().mockResolvedValue(SUMMARY)
+        importContacts.mockReset().mockResolvedValue(CONTACT_SUMMARY)
+
+        // A single on-device bip39 seed ("device B") whose first-derived
+        // address matches the payload's `seedAddress`.
+        getDerivedPublicKeyMock.mockReset().mockResolvedValue(SEED_PUBKEY)
+        keystoreKeysMock.mockReturnValue([
+            {
+                id: 'seed-b',
+                type: 'hd-root-key',
+                metadata: { scheme: 'bip39' },
+            },
+            {
+                id: 'entropy-b',
+                type: 'secret-key',
+                metadata: { parentKeyId: 'seed-b', entropyKey: true },
+            },
+        ])
+        secretBytesById.clear()
+        secretBytesById.set('entropy-b', new Uint8Array(ENTROPY))
+
+        writeNativePasskeyEntryMock.mockReset()
+        nativePasskeyEntryExistsMock.mockReset().mockReturnValue(false)
+    })
+
+    test('a passkey created on device A authenticates on device B after restore', async () => {
+        const payload = await buildRestoredPasskeyPayload()
+        pullBackupItemsMock.mockResolvedValue({ ...pull, passkeys: [payload] })
+
+        const { result } = renderHook(() =>
+            useCloudBackupPasskeyImport(useResolveSeedEntropyForBackup()),
+        )
+
+        await restoreCloudBackup({
+            ...params(),
+            importPasskeys: result.current.importPasskeys,
+        })
+
+        // Not skipped (seed-missing / pubkey-mismatch / already-present) and
+        // not silently dropped: the native record was actually written.
+        expect(writeNativePasskeyEntryMock).toHaveBeenCalledTimes(1)
+        expect(writeNativePasskeyEntryMock).toHaveBeenCalledWith(
+            expect.objectContaining({ credentialId: payload.credentialId }),
+        )
     })
 })

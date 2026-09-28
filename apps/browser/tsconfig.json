@@ -11,6 +11,12 @@
       "@perawallet/wallet-extension-platform-chrome": [
         "../../extensions/platform-chrome/src/index.ts"
       ],
+      "@perawallet/wallet-extension-platform-chrome/messaging": [
+        "../../extensions/platform-chrome/src/messaging.ts"
+      ],
+      "@perawallet/wallet-core-browser-runtime": [
+        "../../packages/browser-runtime/src/index.ts"
+      ],
       "@providers/*": [
         "../mobile/src/providers/*"
       ]

@@ -54,7 +54,7 @@ class StubWalletConnect {
         key?: string
     } = { key: 'stub-session-key' }
     // The real client opens its SocketTransport in the constructor and
-    // `ensureConnectorReady` fast-paths on `_transport.connected`, so the stub
+    // `ensureReady` fast-paths on `_transport.connected`, so the stub
     // models an immediately-open socket. Flip to false for a dead-socket test.
     _transport = { connected: true }
     handlers = new Map<string, Handler>()

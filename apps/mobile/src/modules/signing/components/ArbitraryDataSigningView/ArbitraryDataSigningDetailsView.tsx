@@ -21,7 +21,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { SignedDataWarning } from '../SignedDataWarning'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
 import { AssetAmount } from '@components/AssetAmount'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
@@ -76,7 +76,7 @@ export const ArbitraryDataSigningDetailsView = ({
                 <KeyValueRow title={t('signing.arbitrary_data_details.amount')}>
                     <AssetAmount
                         asset={ALGO_ASSET}
-                        value={Decimal(0)}
+                        value={new Decimal(0)}
                         showSymbol
                         density='compact'
                         ignorePrivacyMode
@@ -85,7 +85,7 @@ export const ArbitraryDataSigningDetailsView = ({
                 <KeyValueRow title={t('signing.arbitrary_data_details.fee')}>
                     <AssetAmount
                         asset={ALGO_ASSET}
-                        value={Decimal(0)}
+                        value={new Decimal(0)}
                         showSymbol
                         density='compact'
                         ignorePrivacyMode

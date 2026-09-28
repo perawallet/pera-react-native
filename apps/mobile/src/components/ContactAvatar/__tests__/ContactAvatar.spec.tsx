@@ -48,8 +48,8 @@ describe('ContactAvatar', () => {
                 contact={contact}
             />,
         )
-        // PWImage mock in vitest.setup renders as <img>; when a valid image
-        // source is supplied we should NOT fall through to the placeholder.
+        // When a valid image source is supplied we should NOT fall through to
+        // the placeholder.
         expect(screen.queryByTestId('icon-person')).toBeNull()
     })
 

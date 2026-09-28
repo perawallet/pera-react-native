@@ -13,10 +13,7 @@
 import { useCallback } from 'react'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import {
-    clearAccountsStore,
-    useDeleteAllData,
-} from '@modules/settings/hooks/useDeleteAllData'
+import { clearAccountsStore, useDeleteAllData } from '@hooks/useDeleteAllData'
 import { UserPreferences } from '@constants/user-preferences'
 
 type UseDuressWipeResult = {

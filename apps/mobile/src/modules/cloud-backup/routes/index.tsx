@@ -25,11 +25,14 @@ import { CloudBackupIntroScreen } from '../screens/CloudBackupIntroScreen'
 import { CloudBackupScreen } from '../screens/CloudBackupScreen'
 import { CloudBackupSetupScreen } from '../screens/CloudBackupSetupScreen'
 import { CloudBackupVerifyScreen } from '../screens/CloudBackupVerifyScreen'
+import { CloudBackupStoreEncryptionKeyScreen } from '../screens/CloudBackupStoreEncryptionKeyScreen'
 import { CloudBackupOverviewScreen } from '../screens/CloudBackupOverviewScreen'
 import { CloudBackupAccountsScreen } from '../screens/CloudBackupAccountsScreen'
 import { CloudBackupAccountsReviewScreen } from '../screens/CloudBackupAccountsReviewScreen'
 import { CloudBackupContactsScreen } from '../screens/CloudBackupContactsScreen'
 import { CloudBackupContactsReviewScreen } from '../screens/CloudBackupContactsReviewScreen'
+import { CloudBackupPasskeysScreen } from '../screens/CloudBackupPasskeysScreen'
+import { CloudBackupPasskeysReviewScreen } from '../screens/CloudBackupPasskeysReviewScreen'
 import { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
 import { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
 import { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'
@@ -112,6 +115,13 @@ export const CloudBackupStackNavigator = () => {
                 component={CloudBackupVerifyScreen}
             />
             <CloudBackupStack.Screen
+                name='CloudBackupStoreEncryptionKey'
+                options={{
+                    title: 'cloud_backup.store_encryption_key.title',
+                }}
+                component={CloudBackupStoreEncryptionKeyScreen}
+            />
+            <CloudBackupStack.Screen
                 name='CloudBackupOverview'
                 options={{
                     title: 'cloud_backup.overview.title',
@@ -147,6 +157,20 @@ export const CloudBackupStackNavigator = () => {
                 component={CloudBackupContactsReviewScreen}
             />
             <CloudBackupStack.Screen
+                name='CloudBackupPasskeys'
+                options={{
+                    title: 'cloud_backup.passkeys.title',
+                }}
+                component={CloudBackupPasskeysScreen}
+            />
+            <CloudBackupStack.Screen
+                name='CloudBackupPasskeysReview'
+                options={{
+                    title: 'cloud_backup.passkeys.review_title',
+                }}
+                component={CloudBackupPasskeysReviewScreen}
+            />
+            <CloudBackupStack.Screen
                 name='CloudBackupRestorePassphrase'
                 options={{
                     title: '',
@@ -170,3 +194,8 @@ export const CloudBackupStackNavigator = () => {
         </CloudBackupStack.Navigator>
     )
 }
+
+// Restore screens the onboarding import flow mounts in its own stack.
+export { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
+export { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
+export { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'

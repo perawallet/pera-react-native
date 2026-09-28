@@ -24,7 +24,7 @@ import m0007 from './0007_add_asset_sender.sql?raw'
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (packages/transactions sync/close-amount-backfill.ts) — no
 // cache-wiping migration needed.
-const migrations: MigrationConfig = {
+export const migrations: MigrationConfig = {
     '0000_initial': m0000,
     '0001_add_balance_impacts': m0001,
     '0002_add_close_amount': m0002,
@@ -45,5 +45,3 @@ const migrations: MigrationConfig = {
     // syncs the same transaction for the first time.
     '0007_add_asset_sender': m0007,
 }
-
-export default migrations

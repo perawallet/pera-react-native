@@ -13,7 +13,6 @@
 export {
     fetchWalletBalance,
     fetchWalletHistory,
-    fetchWalletWithdrawEstimation,
     withdrawWalletBalance,
     WALLET_TYPE_BY_KIND,
     type FetchWalletHistoryParams,

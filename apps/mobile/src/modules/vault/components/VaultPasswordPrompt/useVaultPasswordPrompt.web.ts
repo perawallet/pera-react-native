@@ -54,6 +54,8 @@ export const useVaultPasswordPrompt = ({
     const [password, setPassword] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [hasError, setHasError] = useState(false)
+    // On performance.now(), like the vault's own lockout, so moving the system
+    // clock can't clear the countdown.
     const [lockoutEndTime, setLockoutEndTime] = useState<number | null>(null)
     const [lockoutSeconds, setLockoutSeconds] = useState(0)
     // Tracked separately from isSubmitting so the password stays submittable
@@ -102,7 +104,7 @@ export const useVaultPasswordPrompt = ({
         void getLockoutRemainingSeconds().then(seconds => {
             if (cancelled) return
             if (seconds > 0) {
-                setLockoutEndTime(Date.now() + seconds * 1000)
+                setLockoutEndTime(performance.now() + seconds * 1000)
                 // Set lockoutSeconds in the same batch as isLockoutChecked.
                 // Otherwise it only gets its first value from the countdown
                 // effect reacting to lockoutEndTime, one commit later — and the
@@ -127,7 +129,7 @@ export const useVaultPasswordPrompt = ({
         const tick = (): void => {
             const remaining = Math.max(
                 0,
-                Math.ceil((lockoutEndTime - Date.now()) / 1000),
+                Math.ceil((lockoutEndTime - performance.now()) / 1000),
             )
             setLockoutSeconds(remaining)
             if (remaining === 0) setLockoutEndTime(null)
@@ -152,7 +154,9 @@ export const useVaultPasswordPrompt = ({
             setHasError(true)
         } catch (error) {
             if (error instanceof VaultLockedOutError) {
-                setLockoutEndTime(Date.now() + error.remainingSeconds * 1000)
+                setLockoutEndTime(
+                    performance.now() + error.remainingSeconds * 1000,
+                )
                 return
             }
             // Corruption or a storage failure — surface as a generic failure
@@ -174,7 +178,9 @@ export const useVaultPasswordPrompt = ({
             onVerified()
         } catch (error) {
             if (error instanceof VaultLockedOutError) {
-                setLockoutEndTime(Date.now() + error.remainingSeconds * 1000)
+                setLockoutEndTime(
+                    performance.now() + error.remainingSeconds * 1000,
+                )
                 setLockoutSeconds(error.remainingSeconds)
             } else if (
                 error instanceof DOMException &&

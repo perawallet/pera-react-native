@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {

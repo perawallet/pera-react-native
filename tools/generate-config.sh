@@ -96,7 +96,13 @@ append_config() {
   local env_var="$1"
   local config_key="$2"
   local type="$3" # string, boolean, number
-  
+
+  # Space-separated config keys; when set, anything unlisted is never written.
+  # The browser build passes one because everything it bakes ships in the zip.
+  if [ -n "${CONFIG_ALLOWLIST:-}" ] && [[ " $CONFIG_ALLOWLIST " != *" $config_key "* ]]; then
+    return 0
+  fi
+
   # Get the value of the environment variable
   local value="${!env_var}"
   
@@ -141,6 +147,10 @@ append_config "INDEXER_API_KEY" "indexerApiKey" "string"
 # App Store ID (per-env: {PRODUCTION_,STAGING_}APP_STORE_APPLE_ID, aliased by setup-env-secrets.sh)
 append_config "APP_STORE_APPLE_ID" "appStoreAppID" "string"
 append_config "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER" "playIntegrityCloudProjectNumber" "string"
+
+# Google OAuth client ids for the Drive credential store (public identifiers).
+append_config "GOOGLE_IOS_CLIENT_ID" "googleIosClientId" "string"
+append_config "GOOGLE_WEB_CLIENT_ID" "googleWebClientId" "string"
 
 # Firebase Web SDK config (browser extension Remote Config)
 append_config "FIREBASE_API_KEY" "firebaseApiKey" "string"
@@ -187,6 +197,12 @@ append_config "DEMO_DAPP_URL" "peraDemoDappUrl" "string"
 append_config "DEBUG_ENABLED" "debugEnabled" "boolean"
 append_config "PROFILING_ENABLED" "profilingEnabled" "boolean"
 append_config "POLLING_ENABLED" "pollingEnabled" "boolean"
+# Web app-integrity rollout (browser extension). The runtime env-loader reads
+# these too, but the extension bundle resolves config from generatedEnv at build
+# time, so they must be baked here or the flags can never be turned on in a build.
+append_config "WEB_INTEGRITY_MINT_ENABLED" "webIntegrityMintEnabled" "boolean"
+append_config "WEB_INTEGRITY_BEARER_ENABLED" "webIntegrityBearerEnabled" "boolean"
+append_config "WEB_INTEGRITY_ENROL_ENABLED" "webIntegrityEnrolEnabled" "boolean"
 # e2e-only: disables FLAG_SECURE so Appium/BrowserStack can drive the app.
 # Set ONLY in the e2e build job — never in store-submission builds.
 append_config "DISABLE_SCREEN_CAPTURE_PREVENTION" "disableScreenCapturePrevention" "boolean"
@@ -213,6 +229,8 @@ append_config "MAINNET_CARD_KILLSWITCH_APP_ID" "mainnetCardKillswitchAppId" "str
 append_config "TESTNET_CARD_KILLSWITCH_APP_ID" "testnetCardKillswitchAppId" "string"
 append_config "MAINNET_CARD_AUTODRAW_PROGRAM_HASH" "mainnetCardAutoDrawProgramHash" "string"
 append_config "TESTNET_CARD_AUTODRAW_PROGRAM_HASH" "testnetCardAutoDrawProgramHash" "string"
+# Environment-independent pin of the TEAL template itself; see docs/PERA_CARD.md.
+append_config "CARD_AUTODRAW_TEMPLATE_HASH" "cardAutoDrawTemplateHash" "string"
 append_config "MAINNET_CARD_USDC_ASSET_ID" "mainnetCardUsdcAssetId" "string"
 append_config "TESTNET_CARD_USDC_ASSET_ID" "testnetCardUsdcAssetId" "string"
 

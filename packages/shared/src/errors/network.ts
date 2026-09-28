@@ -19,7 +19,25 @@ import {
     type ErrorMessageKeys,
 } from './base'
 import { isRawPlatformNetworkError } from './expected'
-import { NoConnectionError } from './network-validation'
+
+/**
+ * Thrown by `assertOnline` before a mutation reaches the transport, so offline
+ * mutations fail fast instead of pausing.
+ *
+ * Deliberately a sibling of {@link PeraNetworkError}, not a `kind: 'offline'`
+ * instance of it: this one is reportable (not `expected`) and is not a
+ * transient failure to `isTransientNetworkError`, so the mutation cache still
+ * logs it. Use {@link isConnectivityError} to test for "offline" of either kind.
+ */
+export class NoConnectionError extends AppError {
+    constructor() {
+        super('No network connection found', {
+            severity: ErrorSeverity.HIGH,
+            category: ErrorCategory.NETWORK,
+            retryable: true,
+        })
+    }
+}
 
 /**
  * Coarse network-failure taxonomy shared across the app so UIs can say *why*

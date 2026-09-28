@@ -30,6 +30,7 @@ export type OnboardingResumeRoute = {
         | 'CardOnboardingPersonalDetails'
         | 'CardOnboardingVerification'
         | 'CardOnboardingAddress'
+        | 'CardOnboardingMailingAddress'
         | 'CardOnboardingStatus'
     /** Step to persist to the card store; null leaves the stored step as is. */
     step: Nullable<OnboardingStep>
@@ -98,12 +99,24 @@ export const getOnboardingResumeRoute = (
         // address shares the physical-address routing. KYC gates both; reaching
         // the mailing phase implies it's done, but the guard is defensive so an
         // un-done KYC can never skip verification.
-        case OnboardingPhase.PhysicalAddress:
-        case OnboardingPhase.MailingAddress: {
+        case OnboardingPhase.PhysicalAddress: {
             return isKycDone
                 ? {
                       screen: 'CardOnboardingAddress',
                       step: OnboardingStep.Address,
+                  }
+                : {
+                      screen: 'CardOnboardingVerification',
+                      step: OnboardingStep.Verification,
+                  }
+        }
+        // Baanx reports this phase only after an address posted with a
+        // separate mailing address, so that step is what is still owed.
+        case OnboardingPhase.MailingAddress: {
+            return isKycDone
+                ? {
+                      screen: 'CardOnboardingMailingAddress',
+                      step: OnboardingStep.MailingAddress,
                   }
                 : {
                       screen: 'CardOnboardingVerification',

@@ -12,7 +12,6 @@
 
 export {
     fetchAssets,
-    fetchAccountAssets,
     fetchAssetDetails,
     fetchPublicAssetDetails,
     fetchIndexerAssetDetails,

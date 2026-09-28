@@ -11,7 +11,7 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardConfirmationSheet } from '../CardConfirmationSheet'
 import { useCardWithdrawConfirmationSheet } from './useCardWithdrawConfirmationSheet'

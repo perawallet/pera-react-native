@@ -14,9 +14,8 @@ import { renderHook, act, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 
-const mockSuccessToast = vi.fn()
 const mockRequestSheet = vi.fn()
-const mockGoBack = vi.fn()
+const mockReplace = vi.fn()
 const mocks = vi.hoisted(() => ({
     cardBalance: '150',
     owner: null as unknown,
@@ -53,7 +52,7 @@ vi.mock('@react-navigation/native', async () => {
     return {
         ...actual,
         useNavigation: () => ({
-            goBack: mockGoBack,
+            replace: mockReplace,
             isFocused: () => mocks.isFocused,
         }),
     }
@@ -61,15 +60,6 @@ vi.mock('@react-navigation/native', async () => {
 
 vi.mock('../../../components/CardWithdrawConfirmationSheet', () => ({
     CardWithdrawConfirmationSheet: () => null,
-}))
-
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        successToast: mockSuccessToast,
-        errorToast: vi.fn(),
-        infoToast: vi.fn(),
-        showToast: vi.fn(),
-    }),
 }))
 
 import { useCardWithdrawScreen } from '../useCardWithdrawScreen'
@@ -126,17 +116,15 @@ describe('useCardWithdrawScreen', () => {
         expect(result.current.isWithdrawDisabled).toBe(true)
     })
 
-    it('toasts the requested amount, then leaves, once the sheet confirms', async () => {
+    it('hands over to the status screen once the sheet confirms', async () => {
         mockRequestSheet.mockResolvedValue('confirm')
         const { result } = renderHook(() => useCardWithdrawScreen())
         type(result, ['2', '.', '5'])
 
         act(() => result.current.onWithdraw())
 
-        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
-        expect(mockSuccessToast).toHaveBeenCalledWith(
-            'peraCard.withdraw.requested_title',
-            'peraCard.withdraw.requested_body',
+        await waitFor(() =>
+            expect(mockReplace).toHaveBeenCalledWith('CardWithdrawStatus'),
         )
     })
 
@@ -148,7 +136,6 @@ describe('useCardWithdrawScreen', () => {
         act(() => result.current.onWithdraw())
 
         await waitFor(() => expect(mockRequestSheet).toHaveBeenCalled())
-        expect(mockSuccessToast).not.toHaveBeenCalled()
-        expect(mockGoBack).not.toHaveBeenCalled()
+        expect(mockReplace).not.toHaveBeenCalled()
     })
 })

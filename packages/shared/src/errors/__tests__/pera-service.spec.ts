@@ -11,11 +11,12 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AppError, ErrorCategory } from '../base'
 import { PeraServiceUnavailableError } from '../pera-service'
 
 describe('PeraServiceUnavailableError', () => {
-    test('names the network and is not retryable', () => {
+    test('turns a legacy network into its scope and is not retryable', () => {
         const error = new PeraServiceUnavailableError('betanet')
 
         // Not retryable: retrying cannot conjure a deployment that does not
@@ -23,18 +24,51 @@ describe('PeraServiceUnavailableError', () => {
         // and what stops React Query burning retries on it.
         expect(error.metadata.retryable).toBe(false)
         expect(error.metadata.category).toBe(ErrorCategory.NETWORK)
-        expect(error.network).toBe('betanet')
-        expect(error.message).toContain('betanet')
+        expect(error.scope).toStrictEqual({
+            chainId: 'algorand',
+            networkId: 'betanet',
+        })
+        expect(error.service).toBeUndefined()
+        expect(error.message).toBe(
+            'Pera services are not deployed for algorand/betanet',
+        )
+        expect(error.metadata.params).toStrictEqual({
+            scope: 'algorand/betanet',
+            service: undefined,
+        })
         expect(error).toBeInstanceOf(AppError)
     })
 
-    test('declares user-facing copy that does not interpolate the network', () => {
-        const error = new PeraServiceUnavailableError('betanet')
+    test('carries the scope and the service it lacks', () => {
+        const scope = {
+            chainId: 'fixture' as unknown as ChainId,
+            networkId: 'mainnet',
+        }
+
+        const error = new PeraServiceUnavailableError(scope, 'prices')
+
+        expect(error.scope).toBe(scope)
+        expect(error.service).toBe('prices')
+        expect(error.message).toBe(
+            'Pera services are not deployed for fixture/mainnet (service: prices)',
+        )
+        expect(error.metadata.params).toStrictEqual({
+            scope: 'fixture/mainnet',
+            service: 'prices',
+        })
+    })
+
+    test('declares user-facing copy that does not interpolate the scope', () => {
+        const error = new PeraServiceUnavailableError('betanet', 'assets')
 
         expect(error.metadata.messageKey).toBe(
             'errors.pera_service.unavailable',
         )
-        // network rides along as log context; the copy says "this network".
-        expect(error.metadata.params).toEqual({ network: 'betanet' })
+        // The scope and service ride along as log context; the copy says
+        // "this network".
+        expect(error.metadata.params).toStrictEqual({
+            scope: 'algorand/betanet',
+            service: 'assets',
+        })
     })
 })

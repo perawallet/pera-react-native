@@ -64,7 +64,6 @@ export const useCloudBackupRestoreScanScreen = ({
     const setMnemonic = useCloudBackupRestoreDraftStore(
         state => state.setMnemonic,
     )
-    const setSalt = useCloudBackupRestoreDraftStore(state => state.setSalt)
     const clearDraft = useCloudBackupRestoreDraftStore(
         state => state.clearDraft,
     )
@@ -111,7 +110,7 @@ export const useCloudBackupRestoreScanScreen = ({
             const contents = await requestBottomSheet<BackupSyncQrContents>({
                 contents: <BackupCodeSheet raw={raw} />,
                 options: {
-                    size: 'full',
+                    size: 'auto',
                     enablePanDownToClose: true,
                     autoCreateContainer: false,
                 },
@@ -123,7 +122,6 @@ export const useCloudBackupRestoreScanScreen = ({
             }
 
             setMnemonic(contents.mnemonic.split(' '))
-            setSalt(contents.backupSalt)
             // The envelope carries the parameters the backup was created
             // under; deriving on this build's defaults instead would yield a
             // different backupId and surface as bad credentials.
@@ -139,7 +137,6 @@ export const useCloudBackupRestoreScanScreen = ({
             handleOpenScanner,
             requestBottomSheet,
             setMnemonic,
-            setSalt,
             restore,
         ],
     )

@@ -23,7 +23,7 @@ import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnin
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { InnerTransactionsPanel } from './InnerTransactionsPanel'
 import { AppCallDetailsPanel } from './AppCallDetailsPanel'
-import { ApplicationDisplay } from '@modules/projects/components/ApplicationDisplay'
+import { ApplicationDisplay } from '@modules/projects'
 
 export type AppCallTransactionDisplayProps = {
     transaction: PeraDisplayableTransaction

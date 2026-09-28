@@ -10,25 +10,17 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import {
-    useAlgorandClient,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    useMinimumFeeCalculator,
-    useSignAndSubmitGroup,
-} from '@perawallet/wallet-core-signing'
+import { useCallback } from 'react'
 import { fetchIndexerAssetDetails } from '@perawallet/wallet-core-assets'
-import {
-    deleteAssetHoldings,
-    invalidateAccountQueriesForAddresses,
-} from '@perawallet/wallet-core-accounts'
-import { toError } from '@perawallet/wallet-core-shared'
+import { deleteAssetHoldings } from '@perawallet/wallet-core-accounts'
 import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
+import { useAssetHoldingMutation } from './useAssetHoldingMutation'
 
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import type {
+    Network,
+    Nullable,
+    Optional,
+} from '@perawallet/wallet-core-shared'
 
 type AssetOptOutParams = {
     sender: string
@@ -57,87 +49,70 @@ const SOURCE = {
     description: 'Opt out of an asset',
 }
 
-export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
-    const algokit = useAlgorandClient()
-    const { submit } = useSignAndSubmitGroup()
-    const { assignFeeToGroup } = useMinimumFeeCalculator()
-    const { network } = useNetwork()
-    const queryClient = useQueryClient()
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<Nullable<Error>>(null)
-
-    const resolveCreator = useCallback(
-        async (params: AssetOptOutParams): Promise<ResolvedOptOutParams> => {
-            if (params.creator) {
-                return params as ResolvedOptOutParams
-            }
-            const assetDetails = await fetchIndexerAssetDetails(
-                String(params.assetId),
-                network,
-            )
-            return {
-                ...params,
-                creator: assetDetails.asset.params.creator,
-            }
-        },
-        [network],
-    )
-
-    // Hard validation only — throws on caller errors that must surface.
-    // Whether a txn is actually needed (skip when the asset is already gone
-    // on-chain) is a separate decision the caller makes via the holding
-    // lookup; mixing both into one helper produced a confusing
-    // returns-or-throws contract.
-    const assertCanOptOut = (
-        params: ResolvedOptOutParams,
-        holding: Optional<{ assetId: bigint; amount: bigint }>,
-    ): void => {
-        if (params.sender === params.creator) {
-            throw new CreatorCannotOptOutError()
-        }
-        if (holding && holding.amount !== 0n) {
-            throw new NonZeroBalanceError()
-        }
+const resolveCreator = async (
+    params: AssetOptOutParams,
+    network: Network,
+): Promise<ResolvedOptOutParams> => {
+    if (params.creator) {
+        return params as ResolvedOptOutParams
     }
+    const assetDetails = await fetchIndexerAssetDetails(
+        String(params.assetId),
+        network,
+    )
+    return {
+        ...params,
+        creator: assetDetails.asset.params.creator,
+    }
+}
 
-    const optOut = useCallback(
-        async (
-            params: AssetOptOutParams | AssetOptOutParams[],
-        ): Promise<{ txIds: string[] }> => {
-            const rawList = Array.isArray(params) ? params : [params]
+// Hard validation only — throws on caller errors that must surface.
+// Whether a txn is actually needed (skip when the asset is already gone
+// on-chain) is a separate decision the caller makes via the holding
+// lookup; mixing both into one helper produced a confusing
+// returns-or-throws contract.
+const assertCanOptOut = (
+    params: ResolvedOptOutParams,
+    holding: Optional<{ assetId: bigint; amount: bigint }>,
+): void => {
+    if (params.sender === params.creator) {
+        throw new CreatorCannotOptOutError()
+    }
+    if (holding && holding.amount !== 0n) {
+        throw new NonZeroBalanceError()
+    }
+}
 
-            if (rawList.length === 0) {
-                return { txIds: [] }
-            }
+export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
+    const { mutateAsync, isLoading, isError, error } = useAssetHoldingMutation<
+        AssetOptOutParams[]
+    >({
+        source: SOURCE,
+        run: async (rawList, { algokit, network, buildGroup, submit }) => {
+            const paramsList = await Promise.all(
+                rawList.map(p => resolveCreator(p, network)),
+            )
 
-            setIsLoading(true)
-            setError(null)
+            const sender = paramsList[0].sender
 
-            try {
-                const paramsList = await Promise.all(
-                    rawList.map(resolveCreator),
-                )
+            const accountInfo = await algokit.client.algod
+                .accountInformation(sender)
+                .do()
+            const assets = accountInfo.assets ?? []
 
-                const sender = paramsList[0].sender
+            // Skip txn-building for assets the chain shows as already
+            // gone (a prior opt-out already settled and the local UI
+            // is stale) — submitting again would be rejected as
+            // `duplicate_txn`. We still reconcile local state below.
+            const toSubmit = paramsList.filter(p => {
+                const holding = assets.find(a => a.assetId === p.assetId)
+                assertCanOptOut(p, holding)
+                return holding !== undefined
+            })
 
-                const accountInfo = await algokit.client.algod
-                    .accountInformation(sender)
-                    .do()
-                const assets = accountInfo.assets ?? []
-
-                // Skip txn-building for assets the chain shows as already
-                // gone (a prior opt-out already settled and the local UI
-                // is stale) — submitting again would be rejected as
-                // `duplicate_txn`. We still reconcile local state below.
-                const toSubmit = paramsList.filter(p => {
-                    const holding = assets.find(a => a.assetId === p.assetId)
-                    assertCanOptOut(p, holding)
-                    return holding !== undefined
-                })
-
-                let txIds: string[] = []
-                if (toSubmit.length > 0) {
-                    const composer = algokit.newGroup()
+            let txIds: string[] = []
+            if (toSubmit.length > 0) {
+                const unsignedTxs = await buildGroup(composer => {
                     for (const p of toSubmit) {
                         composer.addAssetTransfer({
                             sender: p.sender,
@@ -147,58 +122,40 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                             closeAssetTo: p.creator,
                         })
                     }
-                    const { transactions } = await composer.build()
-                    // A Falcon signature makes the group cost more than the
-                    // base minimum, and algod rejects the whole group when it
-                    // is short: `txgroup with 1mA fees is less than 3mA
-                    // (usage=3.000000 * base=1mA)`. AlgoKit sizes fees from an
-                    // Ed25519 envelope, so the PQ minimum has to be applied
-                    // here. Non-quantum senders pass through untouched.
-                    const { transactions: unsignedTxs } =
-                        await assignFeeToGroup({
-                            transactions: transactions.map(t => t.txn),
-                        })
-
-                    const result = await submit({
-                        unsignedTxs,
-                        source: SOURCE,
-                    })
-                    txIds = result.txIds
-                }
-
-                await deleteAssetHoldings({
-                    accountAddress: sender,
-                    assetIds: paramsList.map(p => String(p.assetId)),
-                    network,
                 })
-                // Same as the opt-in: the delete must invalidate every
-                // staleTime-Infinity account read; the sync diff won't see
-                // the already-persisted change.
-                invalidateAccountQueriesForAddresses(queryClient, [sender])
-
-                return { txIds }
-            } catch (err) {
-                const error = toError(err)
-                setError(error)
-                throw error
-            } finally {
-                setIsLoading(false)
+                const result = await submit(unsignedTxs)
+                txIds = result.txIds
             }
+
+            await deleteAssetHoldings({
+                accountAddress: sender,
+                assetIds: paramsList.map(p => String(p.assetId)),
+                network,
+            })
+
+            return { txIds, sender }
         },
-        [
-            algokit,
-            resolveCreator,
-            submit,
-            assignFeeToGroup,
-            network,
-            queryClient,
-        ],
+    })
+
+    const optOut = useCallback(
+        async (
+            params: AssetOptOutParams | AssetOptOutParams[],
+        ): Promise<{ txIds: string[] }> => {
+            const rawList = Array.isArray(params) ? params : [params]
+            // Resolved without starting the mutation, so an empty selection
+            // never flips isLoading or clears a previous error.
+            if (rawList.length === 0) {
+                return { txIds: [] }
+            }
+            return mutateAsync(rawList)
+        },
+        [mutateAsync],
     )
 
     return {
         optOut,
         isLoading,
-        isError: error !== null,
+        isError,
         error,
     }
 }

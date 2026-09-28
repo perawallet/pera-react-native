@@ -11,8 +11,8 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { Argon2idConfig, BackupId } from '../models'
+import { decodeBase64Salt } from './argon2idConfig'
 import { deriveBackupAuthKeypair } from './deriveBackupAuthKeypair'
 import { deriveBackupId } from './deriveBackupId'
 import { deriveBackupChildKeys } from './deriveBackupChildKeys'
@@ -27,6 +27,8 @@ export type BackupKeys = {
     authPublicKey: Uint8Array
     /** Ed25519 auth private key (64-byte tweetnacl secret key). */
     authSecretKey: Uint8Array
+    /** HMAC key for hashing an address into an item key (`K_item`). */
+    itemKey: Uint8Array
 }
 
 type DeriveBackupKeysParams = {
@@ -47,16 +49,20 @@ export const deriveBackupKeys = async ({
     let masterKey: Uint8Array | null = null
     let authSeed: Uint8Array | null = null
     let encryptionKey: Uint8Array | null = null
+    let itemKey: Uint8Array | null = null
     let secretKey: Uint8Array | null = null
+
+    // base64-js maps characters outside the alphabet to zero bytes, so a
+    // garbled paste of the right length would otherwise derive a plausible key
+    // that opens nothing.
+    const saltBytes = decodeBase64Salt(salt)
+    if (!saltBytes) throw new Error('Backup salt is not base64')
 
     try {
         password = backupMnemonicToPassword(mnemonic)
-        masterKey = await deriveBackupMasterKey(
-            password,
-            decodeFromBase64(salt),
-            argon2id,
-        )
-        ;({ encryptionKey, authSeed } = deriveBackupChildKeys(masterKey))
+        masterKey = await deriveBackupMasterKey(password, saltBytes, argon2id)
+        ;({ encryptionKey, authSeed, itemKey } =
+            deriveBackupChildKeys(masterKey))
 
         const { publicKey, secretKey: authSecretKey } =
             deriveBackupAuthKeypair(authSeed)
@@ -67,9 +73,10 @@ export const deriveBackupKeys = async ({
             encryptionKey,
             authPublicKey: publicKey,
             authSecretKey: secretKey,
+            itemKey,
         }
     } catch (error) {
-        zeroBytes(encryptionKey, secretKey)
+        zeroBytes(encryptionKey, secretKey, itemKey)
         throw error
     } finally {
         zeroBytes(password, masterKey, authSeed)
