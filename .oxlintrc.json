@@ -114,7 +114,8 @@
     "eqeqeq": ["error", "always", { "null": "ignore" }],
     "@typescript-eslint/consistent-type-imports": ["error", { "fixStyle": "inline-type-imports", "disallowTypeAnnotations": false }],
     "unicorn/switch-case-braces": "error",
-    "unicorn/numeric-separators-style": "error"
+    "unicorn/numeric-separators-style": "error",
+    "pera/no-algorand-sdk-imports": "warn"
   },
   "overrides": [
     {
@@ -226,6 +227,14 @@
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
       "rules": { "pera/hook-result-type": "error" }
+    },
+    {
+      "files": ["packages/chain-algorand/**", "packages/blockchain/src/models/index.ts"],
+      "rules": { "pera/no-algorand-sdk-imports": "off" }
+    },
+    {
+      "files": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/__integration__/**", "**/vitest*.ts"],
+      "rules": { "pera/no-algorand-sdk-imports": "off" }
     }
   ]
 }
