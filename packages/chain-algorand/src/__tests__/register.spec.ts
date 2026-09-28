@@ -12,12 +12,23 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
+import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID, registerAlgorandChain } from '..'
 import { algorandLedgerAppDriver } from '../ledger'
+import { algorandSwapAdapter } from '../swaps'
 
 describe('registerAlgorandChain', () => {
     beforeEach(() => {
         ledgerAppDriverRegistry.reset()
+        swapChainAdapters.reset()
+    })
+
+    it('registers the Algorand swap adapter', () => {
+        registerAlgorandChain()
+
+        expect(swapChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandSwapAdapter,
+        )
     })
 
     it('can run more than once, so a repeated bootstrap is harmless', () => {

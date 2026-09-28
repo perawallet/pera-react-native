@@ -11,11 +11,14 @@
  */
 
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
+import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import { algorandLedgerAppDriver } from './ledger/driver'
+import { algorandSwapAdapter } from './swaps'
 
 // Adapters must be module-level instances, not built in here: the registries
 // ignore a repeat of the same instance but reject a new one, which is what
 // keeps a second call harmless.
 export const registerAlgorandChain = (): void => {
     ledgerAppDriverRegistry.register(algorandLedgerAppDriver)
+    swapChainAdapters.register(algorandSwapAdapter)
 }

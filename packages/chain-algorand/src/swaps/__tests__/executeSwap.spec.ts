@@ -19,11 +19,14 @@ import type {
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { PrepareTransactionsResult, SwapQuote } from '../../models'
+import type {
+    ExecuteSwapResult,
+    PrepareTransactionsResult,
+    SwapQuote,
+} from '@perawallet/wallet-core-swaps'
 import {
-    executeSwap,
-    type ExecuteSwapContext,
-    type ExecuteSwapResult,
+    executeAlgorandSwap,
+    type AlgorandSwapExecutionContext,
 } from '../executeSwap'
 import { requestSwapProposal } from '../swapExecutionHelpers'
 
@@ -96,10 +99,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 // The validator and shortfall math are controllable collaborators here; their
 // real behaviour is covered by their own specs.
-vi.mock('../../utils/validateSwapGroupAgainstQuote', () => ({
+vi.mock('../validateSwapGroupAgainstQuote', () => ({
     validateSwapGroupAgainstQuote: mockValidate,
 }))
-vi.mock('../../utils/computeSwapAlgoShortfall', () => ({
+vi.mock('../computeSwapAlgoShortfall', () => ({
     computeSwapAlgoShortfall: mockComputeShortfall,
 }))
 
@@ -131,7 +134,7 @@ const SIGNING_SOURCE = {
     description: 'swap.signing.source_description',
 }
 
-const makeContext = (): ExecuteSwapContext => ({
+const makeContext = (): AlgorandSwapExecutionContext => ({
     network: 'mainnet',
     algorandClient: {
         client: {
@@ -142,7 +145,7 @@ const makeContext = (): ExecuteSwapContext => ({
                 }),
             },
         },
-    } as unknown as ExecuteSwapContext['algorandClient'],
+    } as unknown as AlgorandSwapExecutionContext['algorandClient'],
     assetMbr: 100_000n,
     deviceId: 'device-1',
     addSignRequest: mockAddSignRequest,
@@ -172,7 +175,7 @@ const run = (
         isCancelled = () => false,
     }: RunOptions = {},
 ): Promise<ExecuteSwapResult> =>
-    executeSwap(
+    executeAlgorandSwap(
         {
             quote,
             account,
@@ -265,7 +268,7 @@ const freezeHoldings = (...frozenIds: string[]) =>
 
 const lastProgress = () => mockOnProgress.mock.calls.at(-1)?.[0]
 
-describe('executeSwap', () => {
+describe('executeAlgorandSwap', () => {
     beforeEach(() => {
         vi.clearAllMocks()
 
@@ -679,7 +682,7 @@ describe('executeSwap', () => {
             kind: 'failed',
             failure: {
                 phase: 'prepare',
-                reason: 'insufficient-algo',
+                reason: 'insufficient-native-balance',
                 shortfall: new Decimal(5000),
             },
         })
