@@ -39,6 +39,15 @@ beforeAll(() => server.listen({ onUnhandledRequest }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
+// The app registers chain adapters before React mounts; flows render without
+// that bootstrap. Imported here rather than at the top so the chain packages
+// load after a test file's own vi.unmock calls have taken effect.
+beforeAll(async () => {
+    const { registerChainAdapters } =
+        await import('./src/bootstrap/chain-adapters')
+    registerChainAdapters()
+})
+
 // The bottom-sheet store is a module-scoped singleton, so requests opened in one
 // test survive into the next unless reset.
 afterEach(() => {

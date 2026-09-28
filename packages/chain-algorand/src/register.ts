@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-export * from './capabilities/resolve'
-export * from './errors'
-export * from './models/capabilities'
-export * from './models/descriptor'
-export * from './models/domain'
-export * from './models/identity'
-export * from './registry'
-export * from './scope'
+// Adapters must be module-level instances, not built in here: the registries
+// ignore a repeat of the same instance but reject a new one, which is what
+// keeps a second call harmless.
+export const registerAlgorandChain = (): void => {}
