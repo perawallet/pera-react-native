@@ -10,21 +10,34 @@
  limitations under the License
  */
 
-import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    test,
+} from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import React from 'react'
 
 import { mockRampPairs } from '../../test-handlers'
 import type { RampPairApiResponse } from '../../api/pairs/schema'
 import { useRampPairsQuery } from '../useRampPairsQuery'
+import { registerFakeRampAdapter } from '../../__tests__/fakeRampAdapter'
 
 const server = setupServer()
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
+beforeEach(() => {
+    registerFakeRampAdapter()
+})
 
 const apiPair: RampPairApiResponse = {
     id: 'pair-1',
@@ -91,5 +104,24 @@ describe('onramp/useRampPairsQuery', () => {
 
         expect(initialData).toEqual([])
         expect(result.current.data).toBe(initialData)
+    })
+
+    test("asks for the chain adapter's destination tokens", async () => {
+        let requested: string | null = null
+        server.use(
+            http.get('*/v1/ramp/pairs/', ({ request }) => {
+                requested = new URL(request.url).searchParams.get(
+                    'destination_tokens',
+                )
+                return HttpResponse.json([apiPair])
+            }),
+        )
+
+        const { result } = renderHook(() => useRampPairsQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => expect(result.current.data).toHaveLength(1))
+        expect(requested).toBe('NATIVE,STABLE')
     })
 })

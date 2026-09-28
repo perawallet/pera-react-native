@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
 import type { RampPair } from '@perawallet/wallet-core-onramp'
 import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { resolveDestinationAssetId } from '../onrampFormHelpers'
 
 const pairWithDestination = (id: string, symbol: string): RampPair =>
@@ -40,6 +41,10 @@ const pairWithDestination = (id: string, symbol: string): RampPair =>
     }) as RampPair
 
 describe('resolveDestinationAssetId', () => {
+    beforeEach(() => {
+        registerAlgorandRampAdapter()
+    })
+
     it('resolves the network-correct ASA id for a USDC destination', () => {
         expect(
             resolveDestinationAssetId(

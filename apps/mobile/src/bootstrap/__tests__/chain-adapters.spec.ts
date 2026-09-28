@@ -15,7 +15,7 @@ import { describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ registerAlgorandChain: vi.fn() }))
 
 vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
-    registerAlgorandChain: mocks.registerAlgorandChain,
+    registerChain: mocks.registerAlgorandChain,
 }))
 
 import { registerChainAdapters } from '../chain-adapters'

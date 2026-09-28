@@ -11,4 +11,4 @@
  */
 
 export { ALGORAND_CHAIN_ID } from './chain-id'
-export { registerAlgorandChain } from './register'
+export { registerChain } from './register'

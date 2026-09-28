@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import type { Passkey } from '@perawallet/wallet-core-passkeys'
 import { UserPreferences } from '@constants/user-preferences'
 import { useSettingsPasskeysScreen } from '../useSettingsPasskeysScreen.web'
@@ -25,6 +25,12 @@ const mocks = vi.hoisted(() => ({
     preferences: {} as Record<string, string | boolean | number>,
     setPreference: vi.fn(),
     getPreference: vi.fn(),
+    requestSheet: vi.fn(),
+    isCloudBackupEnabled: true,
+    isPasskeyBackedUp: vi.fn<(s: unknown, id: string) => boolean>(() => false),
+    deletePasskeyFromBackup: vi.fn(async () => 'settled'),
+    keepPasskeyInBackup: vi.fn(async () => true),
+    showToast: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-passkeys', () => ({
@@ -57,7 +63,34 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({ request: vi.fn() }),
+    useBottomSheet: () => ({ request: mocks.requestSheet }),
+}))
+
+vi.mock('@modules/cloud-backup', () => ({
+    DeleteFromBackupSheet: () => null,
+}))
+
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    getBackupSyncManager: () => ({
+        deletePasskeyFromBackup: mocks.deletePasskeyFromBackup,
+        keepPasskeyInBackup: mocks.keepPasskeyInBackup,
+    }),
+    isPasskeyBackedUp: (syncState: unknown, credentialId: string) =>
+        mocks.isPasskeyBackedUp(syncState, credentialId),
+    useBackupSyncStateStore: (selector: (s: unknown) => unknown) =>
+        selector({ syncState: null }),
+}))
+
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    logger: { warn: vi.fn() },
+}))
+
+vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
+    useIsCloudBackupEnabled: () => mocks.isCloudBackupEnabled,
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mocks.showToast }),
 }))
 
 vi.mock('@components/ConfirmActionContent', () => ({
@@ -84,6 +117,10 @@ describe('useSettingsPasskeysScreen (web)', () => {
         mocks.passkeys = []
         mocks.isPasskeysLoading = false
         mocks.isPasskeysError = false
+        mocks.isCloudBackupEnabled = true
+        mocks.isPasskeyBackedUp.mockReturnValue(false)
+        mocks.deletePasskeyFromBackup.mockResolvedValue('settled')
+        mocks.requestSheet.mockResolvedValue(true)
         mocks.preferences = {}
         mocks.getPreference.mockImplementation(
             (key: string) => mocks.preferences[key] ?? null,
@@ -151,5 +188,46 @@ describe('useSettingsPasskeysScreen (web)', () => {
         const { result } = renderHook(() => useSettingsPasskeysScreen())
 
         expect(result.current.canRemove(FLAGGED_PASSKEY)).toBe(true)
+    })
+
+    // The extension reaches the same Cloud Backup stack as native, so a
+    // credential removed here has to land in a bucket too — without the gate it
+    // stays ACTIVE server-side and invisible in every review list.
+    it('asks what to do with the backup copy before removing a backed-up passkey', async () => {
+        const backedUp = {
+            id: 'cred-1',
+            keyId: 'raw-cred-1',
+            displayName: 'example.com',
+            needsMigration: false,
+        } as Passkey
+        mocks.isPasskeyBackedUp.mockReturnValue(true)
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+        await act(async () => {
+            result.current.onRequestDelete(backedUp)
+        })
+
+        expect(mocks.isPasskeyBackedUp).toHaveBeenCalledWith(null, 'raw-cred-1')
+        expect(mocks.deletePasskeyFromBackup).toHaveBeenCalledWith('raw-cred-1')
+        expect(mocks.removePasskey).toHaveBeenCalledWith(backedUp)
+    })
+
+    it('abandons the removal when the backup choice is dismissed', async () => {
+        mocks.isPasskeyBackedUp.mockReturnValue(true)
+        mocks.requestSheet
+            .mockResolvedValueOnce(true)
+            .mockResolvedValueOnce(undefined)
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+        await act(async () => {
+            result.current.onRequestDelete({
+                id: 'cred-1',
+                keyId: 'raw-cred-1',
+                displayName: 'example.com',
+            } as Passkey)
+        })
+
+        expect(mocks.deletePasskeyFromBackup).not.toHaveBeenCalled()
+        expect(mocks.removePasskey).not.toHaveBeenCalled()
     })
 })

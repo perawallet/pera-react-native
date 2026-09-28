@@ -44,13 +44,15 @@ export const PassphraseAcknowledgeContent = ({
     const styles = useStyles()
     const { resolve, dismiss } =
         useBottomSheetResult<PassphraseAcknowledgeContentResult>()
-    const { checked, allChecked, toggle } = usePassphraseAcknowledgeContent({
-        rowCount: ACKNOWLEDGE_ROW_KEYS.length,
-    })
+    const { checked, allChecked, toggle, scrollRef } =
+        usePassphraseAcknowledgeContent({
+            rowCount: ACKNOWLEDGE_ROW_KEYS.length,
+        })
 
     return (
         <PWSheetLayout
             testID={testID}
+            scrollRef={scrollRef}
             header={
                 <SheetHeader title={t('view_passphrase.acknowledge.title')} />
             }

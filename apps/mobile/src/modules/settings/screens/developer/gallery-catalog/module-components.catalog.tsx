@@ -555,7 +555,7 @@ const mockStakingProject: StakingProject = {
     logoUrl: 'https://perawallet.app/static/folks-finance.png',
     link: 'https://folks.finance',
     type: 'liquid',
-    tvlInAlgo: new Decimal('12500000'),
+    tvlInNative: new Decimal('12500000'),
     tvlInUsd: new Decimal('3750000'),
 }
 

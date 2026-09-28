@@ -31,8 +31,8 @@
  * because two separate things need it and a third still will:
  *
  * 1. Writing credentials migrated from Pera 6 so the iOS provider can read
- *    them (`packages/migrate/.../writeNativePasskeyEntry.ts`). Android imports
- *    are written split, through the provider's `writePasskeyCredential`.
+ *    them (`./writeNativePasskeyEntry.ts`). Android imports are written split,
+ *    through the provider's `writePasskeyCredential`.
  * 2. Un-adopting a credential upstream's own `adopt-flat-records` revision
  *    wrongly split into `k/`+`m/`
  *    (`extensions/provider/.../repairs/0002-rematerialize-passkey-credentials.ts`,

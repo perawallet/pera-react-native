@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export {}
+export { algorandNameServiceAdapter } from './adapter'
+export { verifyNfdAddress } from './verifyNfdAddress'

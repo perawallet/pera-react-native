@@ -21,6 +21,7 @@ import {
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
 import { useRoute } from '@react-navigation/native'
 
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampScreen } from '../useOnrampScreen'
 
 vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
@@ -137,6 +138,7 @@ const setupOnramp = (overrides: Partial<ReturnType<typeof useOnramp>> = {}) => {
 
 describe('useOnrampScreen', () => {
     beforeEach(() => {
+        registerAlgorandRampAdapter()
         vi.clearAllMocks()
         setHasInternet(true)
         vi.mocked(useRoute).mockReturnValue({ params: undefined } as never)

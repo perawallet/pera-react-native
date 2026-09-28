@@ -101,17 +101,26 @@ required nor read, where the webview takes a single `data` object and requires
   with `-32003`. A `custom` network is reported as the baked network sharing
   its genesis hash and refused otherwise, so a forged custom-network record can
   never make the wallet claim MainNet.
+- **Chain.** The protocol carries no chain, so each realm builds its handler
+  for one chain, and the chain's `DappRequestChainAdapter` (registry in
+  `packages/connections/src/dappRequest.ts`) parses the signing payloads,
+  applies the per-chain caps, resolves the reported network and names the
+  errors whose message may be relayed. A realm that has not registered the
+  adapter answers `connect` and both sign methods with `-32003` before anything
+  reaches the registry.
 - **Not connected** → `-32001` on `getAddresses` and the sign methods.
-- **Payload caps are refused at the service worker**, before an approval opens,
-  all as `-32602`:
+- **Payload caps are refused before an approval opens**, all as `-32602`. The
+  service worker enforces the chain-neutral ones; the offscreen handler
+  enforces the Algorand ones through the chain's adapter, before anything is
+  queued:
 
-    | Cap                             | Value  | Applies to                          |
-    | ------------------------------- | ------ | ----------------------------------- |
-    | `MAX_ID_LENGTH`                 | 64     | `id`, stringified                   |
-    | `MAX_METHOD_LENGTH`             | 64     | `method`                            |
-    | `MAX_DAPP_REQUEST_JSON_LENGTH`  | 1 MiB  | the whole request, JSON-stringified |
-    | `MAX_TRANSACTION_SIGN_REQUESTS` | 1000   | `txns.length` (empty also fails)    |
-    | `ARC0001_MAX_TXN_B64_LENGTH`    | 64 KiB | each `txns[i].txn`                  |
+    | Cap                             | Value  | Applies to                          | Enforced by |
+    | ------------------------------- | ------ | ----------------------------------- | ----------- |
+    | `MAX_ID_LENGTH`                 | 64     | `id`, stringified                   | worker      |
+    | `MAX_METHOD_LENGTH`             | 64     | `method`                            | worker      |
+    | `MAX_DAPP_REQUEST_JSON_LENGTH`  | 1 MiB  | the whole request, JSON-stringified | worker      |
+    | `MAX_TRANSACTION_SIGN_REQUESTS` | 1000   | `txns.length` (empty also fails)    | offscreen   |
+    | `ARC0001_MAX_TXN_B64_LENGTH`    | 64 KiB | each `txns[i].txn`                  | offscreen   |
 
     The blanket JSON cap binds long before the per-group one: 1 MiB over 64 KiB
     leaves room for roughly **16** maximum-size transactions, not 1000. Size the
@@ -147,7 +156,9 @@ alone.)
 What a `-32603` message may say is bounded twice. `sanitizeErrorForWebview` is a
 deny-by-default allowlist keyed on `error.name`, because an error class not
 named in it may interpolate wallet-held data, and it truncates whatever it
-allows at `MAX_ERROR_LENGTH` (200 characters). A `-32002` reject reason is not
+allows at `MAX_ERROR_LENGTH` (200 characters). The codec allows only
+`UserCancelledError` on its own; each chain adapter adds its protocol errors
+(`Arc0001Error` for Algorand). A `-32002` reject reason is not
 filtered that way: `sanitizeRejectReason` strips control characters and
 truncates at the same limit, so its length and encoding are bounded but its
 content is not. An error rebuilt as `new Error(message)` crossing a realm hop
@@ -161,7 +172,7 @@ has lost its `name`, so it falls to the generic copy regardless of what it was.
 | `-32603` | Internal error (message sanitized; never wallet-held data)        |
 | `-32001` | Unauthorized: not connected, no user gesture, or untrusted origin |
 | `-32002` | User rejected the `connect` proposal                              |
-| `-32003` | Network not supported                                             |
+| `-32003` | Network not supported, or no adapter for the handler's chain      |
 | `-32004` | Request timed out                                                 |
 
 ## Extension transport
@@ -176,9 +187,10 @@ relay drops anything not for its own origin.
 The service worker is the trust boundary: origin is `sender.origin`, must be a
 secure context, and the request must pass `isWithinDappPayloadBounds` before it
 is forwarded or held anywhere. That gate ships from the package's `./bounds`
-subpath and the wire types from `./wire`; both reach nothing beyond the two
-constants subpaths that define the caps, so an MV3 bundle stays free of the
-package's runtime dependencies, which the index entry pulls in.
+subpath and the wire types from `./wire`; neither imports another package, so
+an MV3 bundle stays free of the chain graph and of the package's runtime
+dependencies, which the index entry pulls in. The worker registers no chain
+adapters, which is why the per-chain caps run offscreen.
 
 The worker acks immediately and holds no state; pending requests live in
 offscreen with their expiry, so an evicted worker never strands a page without

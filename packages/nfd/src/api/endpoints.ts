@@ -129,5 +129,5 @@ export const fetchNfdSearch = async (
         })
         return []
     }
-    return transformSearchResults(result.data)
+    return transformSearchResults(result.data, network)
 }

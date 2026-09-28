@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export {}
+export { algorandRampAdapter } from './adapter'

@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState, type RefObject } from 'react'
+
+import type { PWSheetLayoutScrollHandle } from '@components/core'
 
 export type UsePassphraseAcknowledgeContentParams = {
     rowCount: number
@@ -20,6 +22,7 @@ export type UsePassphraseAcknowledgeContentResult = {
     checked: boolean[]
     allChecked: boolean
     toggle: (index: number) => void
+    scrollRef: RefObject<PWSheetLayoutScrollHandle | null>
 }
 
 const buildInitialChecked = (rowCount: number): boolean[] =>
@@ -31,17 +34,28 @@ export const usePassphraseAcknowledgeContent = ({
     const [checked, setChecked] = useState<boolean[]>(() =>
         buildInitialChecked(rowCount),
     )
+    const scrollRef = useRef<PWSheetLayoutScrollHandle>(null)
 
     const allChecked = useMemo(
         () => checked.length === rowCount && checked.every(Boolean),
         [checked, rowCount],
     )
 
-    const toggle = useCallback((index: number) => {
-        setChecked(previous =>
-            previous.map((value, i) => (i === index ? !value : value)),
-        )
-    }, [])
+    const toggle = useCallback(
+        (index: number) => {
+            const isChecking = !checked[index]
+            setChecked(previous =>
+                previous.map((value, i) => (i === index ? !value : value)),
+            )
+            // On short viewports (the extension popup) the last rows sit below
+            // the fold with no scroll cue; the rows end the body, so scrolling
+            // to the end reveals whatever is still unticked.
+            if (isChecking && checked.slice(index + 1).some(value => !value)) {
+                scrollRef.current?.scrollToEnd({ animated: true })
+            }
+        },
+        [checked],
+    )
 
-    return { checked, allChecked, toggle }
+    return { checked, allChecked, toggle, scrollRef }
 }

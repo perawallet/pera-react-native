@@ -11,27 +11,93 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
+import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
-import { ALGORAND_CHAIN_ID, registerAlgorandChain } from '..'
+import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
+import { ALGORAND_CHAIN_ID, registerChain } from '..'
+import { algorandDappRequestAdapter } from '../connect'
+import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
+import { algorandSendFlowAdapter } from '../asa-inbox/adapter'
+import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { algorandLedgerAppDriver } from '../ledger'
+import { algorandSwapAdapter } from '../swaps'
+import { algorandNameServiceAdapter } from '../nfd'
+import { cardChainAdapters } from '@perawallet/wallet-core-card'
+import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
+import { algorandCardAdapter } from '../card'
+import { algorandRampAdapter } from '../onramp'
 
-describe('registerAlgorandChain', () => {
+describe('registerChain', () => {
     beforeEach(() => {
         ledgerAppDriverRegistry.reset()
+        swapChainAdapters.reset()
+        dappRequestChainAdapters.reset()
+        sendFlowChainAdapters.reset()
+        nameServiceChainAdapters.reset()
+        cardChainAdapters.reset()
+        rampChainAdapters.reset()
+    })
+
+    it('registers the Algorand swap adapter', () => {
+        registerChain()
+
+        expect(swapChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandSwapAdapter,
+        )
+    })
+
+    it('registers the dApp request adapter', () => {
+        registerChain()
+
+        expect(dappRequestChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandDappRequestAdapter,
+        )
+    })
+
+    it('registers the Algorand send-flow adapter', () => {
+        registerChain()
+
+        expect(sendFlowChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandSendFlowAdapter,
+        )
     })
 
     it('can run more than once, so a repeated bootstrap is harmless', () => {
         expect(() => {
-            registerAlgorandChain()
-            registerAlgorandChain()
+            registerChain()
+            registerChain()
         }).not.toThrow()
     })
 
     it('registers the Algorand Ledger app driver', () => {
-        registerAlgorandChain()
+        registerChain()
 
         expect(ledgerAppDriverRegistry.resolve(ALGORAND_CHAIN_ID)).toBe(
             algorandLedgerAppDriver,
+        )
+    })
+
+    it('registers the Algorand name service adapter', () => {
+        registerChain()
+
+        expect(nameServiceChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandNameServiceAdapter,
+        )
+    })
+
+    it('registers the Algorand card adapter', () => {
+        registerChain()
+
+        expect(cardChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandCardAdapter,
+        )
+    })
+
+    it('registers the Algorand ramp adapter', () => {
+        registerChain()
+
+        expect(rampChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandRampAdapter,
         )
     })
 })

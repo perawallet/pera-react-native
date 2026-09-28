@@ -137,7 +137,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     )
                     return { message: copy.body, title: copy.title }
                 }
-                case 'insufficient-algo': {
+                case 'insufficient-native-balance': {
                     const { sign, integer, fraction } = formatNumber(
                         microAlgosToAlgos(failure.shortfall),
                         6,

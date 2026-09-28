@@ -40,6 +40,10 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    ALGORAND_CHAIN_ID,
+    registerChain as registerAlgorandChain,
+} from '@perawallet/wallet-core-chain-algorand'
+import {
     bootConnections,
     createConnectionRegistry,
 } from '@perawallet/wallet-core-connections'
@@ -119,6 +123,9 @@ export const runOffscreenApp = async (): Promise<void> => {
     const storage = provider.keyValueStorage
     const sessionKeys = createStorageSessionKeyStore(storage)
     const registry = createConnectionRegistry({ store })
+    // Before the dApp handler starts: it answers any chain without an adapter
+    // with an error, so a request arriving first would be refused.
+    registerAlgorandChain()
     registry.register(
         createWalletConnectV1Handler({
             getNetwork: () => useNetworkStore.getState().network,
@@ -128,6 +135,7 @@ export const runOffscreenApp = async (): Promise<void> => {
     registry.register(
         createDappConnectionHandler({
             transport: createChromeDappTransport(),
+            chainId: ALGORAND_CHAIN_ID,
             getNetwork: () => useNetworkStore.getState().network,
             getCustomNetworkGenesisHash: () =>
                 getCustomNetworkConfig()?.genesisHash,

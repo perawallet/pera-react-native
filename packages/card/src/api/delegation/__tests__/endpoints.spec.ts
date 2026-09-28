@@ -18,9 +18,10 @@ vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
 import {
     fetchDelegationToken,
     fetchExternalWallets,
-    postAlgorandDelegationApproval,
+    postDelegationApproval,
     postDelegatorLsig,
 } from '../endpoints'
+import { registerFakeCardAdapter } from '../../../__tests__/fakeCardAdapter'
 
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
@@ -95,10 +96,10 @@ describe('fetchExternalWallets', () => {
     })
 })
 
-describe('postAlgorandDelegationApproval', () => {
+describe('postDelegationApproval', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    const params = {
+    const { network, ...approval } = {
         network: 'testnet' as const,
         address: 'FUNDINGADDR',
         currency: 'usdc',
@@ -107,41 +108,43 @@ describe('postAlgorandDelegationApproval', () => {
         signature: 'c2ln',
         token: 'ABC_tok',
     }
+    const params = { network, ...approval }
 
-    it('POSTs the Baanx Algorand post-approval body on the direct route with the user Bearer', async () => {
+    it("POSTs the chain adapter's route and body on the direct route with the user Bearer", async () => {
+        const adapter = registerFakeCardAdapter({
+            delegationApprovalRequest: vi.fn(() => ({
+                path: '/v1/delegation/chain/post-approval',
+                data: { body: 'chain' },
+            })),
+        })
         request.mockResolvedValue({ data: { success: true }, status: 201 })
 
-        await postAlgorandDelegationApproval(params)
+        await postDelegationApproval(params)
 
+        expect(adapter.delegationApprovalRequest).toHaveBeenCalledWith(approval)
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
+                network,
                 method: 'POST',
-                path: '/v1/delegation/algorand/post-approval',
+                path: '/v1/delegation/chain/post-approval',
                 authenticated: true,
-                data: {
-                    address: 'FUNDINGADDR',
-                    network: 'algorand',
-                    currency: 'usdc',
-                    amount: '0',
-                    txHash: 'TX123',
-                    sigData: signData,
-                    sigHash: 'c2ln',
-                    token: 'ABC_tok',
-                },
+                data: { body: 'chain' },
             }),
         )
         expect(request.mock.calls[0][0]).not.toHaveProperty('route')
     })
 
     it('rejects when Baanx answers success:false', async () => {
+        registerFakeCardAdapter()
         request.mockResolvedValue({ data: { success: false }, status: 200 })
 
-        await expect(postAlgorandDelegationApproval(params)).rejects.toThrow(
+        await expect(postDelegationApproval(params)).rejects.toThrow(
             'Card delegation was rejected',
         )
     })
 
     it('resolves when the service reports the wallet was already approved', async () => {
+        registerFakeCardAdapter()
         request.mockRejectedValue({
             response: {
                 status: 422,
@@ -150,12 +153,11 @@ describe('postAlgorandDelegationApproval', () => {
             },
         })
 
-        await expect(
-            postAlgorandDelegationApproval(params),
-        ).resolves.toBeUndefined()
+        await expect(postDelegationApproval(params)).resolves.toBeUndefined()
     })
 
     it('rethrows any other approval failure', async () => {
+        registerFakeCardAdapter()
         request.mockRejectedValue({
             response: {
                 status: 422,
@@ -164,14 +166,15 @@ describe('postAlgorandDelegationApproval', () => {
             },
         })
 
-        await expect(
-            postAlgorandDelegationApproval(params),
-        ).rejects.toBeTruthy()
+        await expect(postDelegationApproval(params)).rejects.toBeTruthy()
     })
 })
 
 describe('postDelegatorLsig', () => {
-    beforeEach(() => vi.clearAllMocks())
+    beforeEach(() => {
+        vi.clearAllMocks()
+        registerFakeCardAdapter()
+    })
 
     const lsigParams = {
         network: 'testnet' as const,
@@ -181,23 +184,29 @@ describe('postDelegatorLsig', () => {
         cardAddress: 'ESCROW_CARD',
     }
 
-    it('POSTs the LSig to the Baanx delegator-lsig path with the user Bearer', async () => {
+    it("POSTs the chain adapter's delegator route and body with the user Bearer", async () => {
+        const adapter = registerFakeCardAdapter({
+            delegatorProgramRequest: vi.fn(() => ({
+                path: '/v1/delegation/chain/delegator-lsig',
+                data: { body: 'chain' },
+            })),
+        })
         request.mockResolvedValue({ data: { success: true }, status: 201 })
 
         await postDelegatorLsig(lsigParams)
 
+        expect(adapter.delegatorProgramRequest).toHaveBeenCalledWith({
+            currency: 'usdc',
+            delegatorAddress: 'FUNDING_ADDR',
+            lsigBytes: 'bHNpZw==',
+            cardAddress: 'ESCROW_CARD',
+        })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
                 method: 'POST',
-                path: '/v1/delegation/algorand/delegator-lsig',
+                path: '/v1/delegation/chain/delegator-lsig',
                 authenticated: true,
-                data: {
-                    currency: 'usdc',
-                    delegatorAddress: 'FUNDING_ADDR',
-                    lsigBytes: 'bHNpZw==',
-                    cardAddress: 'ESCROW_CARD',
-                    blockchain: 'algorand',
-                },
+                data: { body: 'chain' },
             }),
         )
         expect(request.mock.calls[0][0]).not.toHaveProperty('route')

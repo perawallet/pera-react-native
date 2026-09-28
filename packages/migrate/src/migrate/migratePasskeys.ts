@@ -35,7 +35,7 @@ import {
     createNativePasskeyWriter,
     nativePasskeyEntryExists,
     type NativePasskeyWriter,
-} from './passkeys/writeNativePasskeyEntry'
+} from '@perawallet/wallet-core-passkeys'
 
 export type PasskeysMigrationResult = {
     imported: number

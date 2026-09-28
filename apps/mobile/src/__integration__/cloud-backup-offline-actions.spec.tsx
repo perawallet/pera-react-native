@@ -115,6 +115,9 @@ const setupBackup = async () => {
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,
         resolveHd: async () => null,
+        listPasskeys: async () => [],
+        importPasskeys: async () => ({ imported: 0, skipped: [], failed: [] }),
+        subscribePasskeyChanges: () => () => {},
     })
 
     return { getItem, seenDeviceIds, hashAddress }

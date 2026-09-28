@@ -19,7 +19,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useCreateRampOrderMutation,
-    useEnsureDestinationOptIn,
+    useEnsureRampDestination,
     useOnramp,
     toOnrampUserMessage,
     parseRampAmount,
@@ -84,7 +84,7 @@ export const useOnrampConfirm = ({
     const { errorToast } = useToast()
     const { isTermsAccepted, markTermsAccepted } = useOnrampTerms()
     const { mutateAsync: createOrder } = useCreateRampOrderMutation()
-    const { ensureOptIn } = useEnsureDestinationOptIn()
+    const { ensureCanReceive } = useEnsureRampDestination(network)
 
     const [isConfirming, setIsConfirming] = useState(false)
 
@@ -137,7 +137,7 @@ export const useOnrampConfirm = ({
             // confirms it via the standard opt-in sheet — with a 0 fee when
             // the opt-in is sponsored (fee-delegated). Declining cancels the
             // whole order quietly.
-            const optInConfirmed = await ensureOptIn({
+            const optInConfirmed = await ensureCanReceive({
                 address: currentAddress,
                 destinationAssetId,
                 confirmOptIn: async ({ assetId, isSponsored }) => {
@@ -226,7 +226,7 @@ export const useOnrampConfirm = ({
         senderAddress,
         isTermsAccepted,
         markTermsAccepted,
-        ensureOptIn,
+        ensureCanReceive,
         createOrder,
         requestBottomSheet,
         errorToast,

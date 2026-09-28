@@ -72,6 +72,10 @@ export type {
     ImportSummary,
     ContactImportFn,
     ContactImportSummary,
+    BackupPasskey,
+    PasskeyImportFn,
+    PasskeyImportSummary,
+    PasskeySkipReason,
     SerializeHdResolver,
     SerializeMnemonicResolver,
 } from './types'
