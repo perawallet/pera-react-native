@@ -69,6 +69,9 @@ export const SLIDE_TO_CONFIRM_ANIMATION_DURATION = 250
 export const TAP_TO_CONFIRM_ANIMATION_DURATION = 250
 // How long the armed "tap again" state waits for the second tap before reverting.
 export const TAP_TO_CONFIRM_ARMED_TIMEOUT = 1000
+// Web's floor between the arming and confirming press, so a page-baited
+// double-click cannot sign; native keeps a quick double-tap working.
+export const TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY = 400
 
 // How long the "back online" confirmation stays before auto-dismissing.
 export const OFFLINE_RECONNECT_DISPLAY_MS = 3000

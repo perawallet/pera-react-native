@@ -81,6 +81,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             setItem: vi.fn(),
             removeItem: vi.fn(),
         },
+        chains: { setCapabilityOverrides: vi.fn() },
     }),
 }))
 

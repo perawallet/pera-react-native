@@ -189,10 +189,8 @@ pnpm test           # run all tests (unit + integration)
 pnpm test:unit      # run unit tests only
 pnpm test:coverage  # run tests with coverage
 pnpm lint           # report lint/type-aware issues
-pnpm lint:fix       # auto-fix lint/type-aware issues
-pnpm lint:copyright # add/update necessary copyright headers
-pnpm lint:i18n      # report i18n errors
-pnpm lint:docs      # report stale doc/comment references
+pnpm lint:fix       # auto-fix lint issues and licence headers
+pnpm lint:docs      # report stale references in Markdown, shell and YAML
 pnpm format         # format files
 pnpm fallow         # report unused code, circular deps, duplication
 ```

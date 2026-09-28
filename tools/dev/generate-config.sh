@@ -96,7 +96,13 @@ append_config() {
   local env_var="$1"
   local config_key="$2"
   local type="$3" # string, boolean, number
-  
+
+  # Space-separated config keys; when set, anything unlisted is never written.
+  # The browser build passes one because everything it bakes ships in the zip.
+  if [ -n "${CONFIG_ALLOWLIST:-}" ] && [[ " $CONFIG_ALLOWLIST " != *" $config_key "* ]]; then
+    return 0
+  fi
+
   # Get the value of the environment variable
   local value="${!env_var}"
   
@@ -227,6 +233,12 @@ append_config "TESTNET_CARD_AUTODRAW_PROGRAM_HASH" "testnetCardAutoDrawProgramHa
 append_config "CARD_AUTODRAW_TEMPLATE_HASH" "cardAutoDrawTemplateHash" "string"
 append_config "MAINNET_CARD_USDC_ASSET_ID" "mainnetCardUsdcAssetId" "string"
 append_config "TESTNET_CARD_USDC_ASSET_ID" "testnetCardUsdcAssetId" "string"
+
+# Chains this build ships (comma list of chain ids), and per chain the exact
+# capability set to enable (comma list). Unset means the module's defaults. The
+# shell can't enumerate chain ids, so each chain gets its own line.
+append_config "CHAINS" "chainIds" "string"
+append_config "CHAIN_ALGORAND_CAPABILITIES" "chainAlgorandCapabilities" "string"
 
 # Default Network
 if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then

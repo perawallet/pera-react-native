@@ -31,6 +31,22 @@ const guardedEnvVars = (): string[] => {
     return loop ? loop[1].trim().split(/\s+/) : []
 }
 
+const TURBO_JSON = join(__dirname, '../../../../turbo.json')
+
+const appendedEnvVars = (): string[] =>
+    [
+        ...readFileSync(SCRIPT, 'utf8').matchAll(
+            /^append_config "([A-Z0-9_]+)"/gm,
+        ),
+    ].map(match => match[1])
+
+const isHashedByTurbo = (name: string, globalEnv: string[]): boolean =>
+    globalEnv.some(entry =>
+        entry.endsWith('*')
+            ? name.startsWith(entry.slice(0, -1))
+            : entry === name,
+    )
+
 describe('tools/dev/generate-config.sh', () => {
     let dir: string
 
@@ -98,9 +114,51 @@ describe('tools/dev/generate-config.sh', () => {
         expect(output).toContain('cardAutoDrawTemplateHash: "abc123"')
     })
 
+    test('emits the chain list and per-chain capability lists', () => {
+        const output = run({
+            CHAINS: 'algorand',
+            CHAIN_ALGORAND_CAPABILITIES: 'send,receive',
+        })
+        expect(output).toContain('chainIds: "algorand"')
+        expect(output).toContain('chainAlgorandCapabilities: "send,receive"')
+    })
+
+    // turbo hashes only globalEnv into the build key, so a variable missing
+    // there lets a cached dist ship a stale generated-env.ts.
+    test('hashes every variable the script bakes into the turbo cache key', () => {
+        const { globalEnv } = JSON.parse(readFileSync(TURBO_JSON, 'utf8')) as {
+            globalEnv: string[]
+        }
+        const baked = appendedEnvVars()
+
+        expect(baked.length).toBeGreaterThan(0)
+        expect(baked.filter(name => !isHashedByTurbo(name, globalEnv))).toEqual(
+            [],
+        )
+    })
+
     test('omits reownProjectId when REOWN_PROJECT_ID is unset', () => {
         const output = run({ REOWN_PROJECT_ID: '' })
         expect(output).not.toContain('reownProjectId')
+    })
+
+    test('emits only allowlisted keys when CONFIG_ALLOWLIST is set', () => {
+        const output = run({
+            CONFIG_ALLOWLIST: 'sentryDsn mainnetBidaliBaseUrl',
+            SENTRY_DSN: 'https://key@o0.ingest.sentry.io/0',
+            MAINNET_BIDALI_BASE_URL: 'https://bidali.example.com',
+            MAINNET_BIDALI_API_KEY: 'bidali-key',
+            GOOGLE_IOS_CLIENT_ID: 'ios-client',
+        })
+
+        expect(output).toContain(
+            'sentryDsn: "https://key@o0.ingest.sentry.io/0"',
+        )
+        expect(output).toContain(
+            'mainnetBidaliBaseUrl: "https://bidali.example.com"',
+        )
+        expect(output).not.toContain('mainnetBidaliApiKey')
+        expect(output).not.toContain('googleIosClientId')
     })
 
     test('ignores obsolete web-feature URL environment variables', () => {

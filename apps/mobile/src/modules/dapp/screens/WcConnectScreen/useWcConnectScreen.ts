@@ -22,7 +22,7 @@ import {
     openValidatedBrowserUrl,
     toValidatedBrowserUrl,
 } from '@modules/webview'
-import { useApprovalArming } from '../../hooks/useApprovalArming.web'
+import { useApprovalArming } from '@hooks/useApprovalArming.web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseWcConnectScreenResult = {

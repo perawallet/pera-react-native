@@ -639,6 +639,11 @@
             "contacts_in_sync_one": "{{count}} contact in sync",
             "contacts_not_backed_up": "You have {{count}} contacts not backed up",
             "contacts_not_backed_up_one": "You have {{count}} contact not backed up",
+            "passkeys": "Passkeys",
+            "passkeys_in_sync": "{{count}} passkeys in sync",
+            "passkeys_in_sync_one": "{{count}} passkey in sync",
+            "passkeys_not_backed_up": "You have {{count}} passkeys not backed up",
+            "passkeys_not_backed_up_one": "You have {{count}} passkey not backed up",
             "backup_details": "Backup Details",
             "credential_address": "Credential Address",
             "sync_devices": "Sync with other devices",
@@ -722,6 +727,39 @@
             "delete_success": "Removed from Cloud Backup",
             "delete_error": "Couldn’t remove this contact from the backup. Please try again.",
             "keep_error": "Couldn’t remove this contact from this device. Please try again."
+        },
+        "passkeys": {
+            "title": "Passkeys",
+            "review_title": "Passkeys to review",
+            "review_action": "Review",
+            "not_backed_up_count": "{{count}} not backed up",
+            "not_backed_up_count_one": "{{count}} not backed up",
+            "available_count": "{{count}} available from back up",
+            "available_count_one": "{{count}} available from back up",
+            "device_title": "Passkeys",
+            "device_subtitle": "Available on this device",
+            "add_from_backup_title": "Add from Backup",
+            "add_from_backup_subtitle": "In your Cloud Backup, not on this device",
+            "not_backed_up_title": "Not Backed Up",
+            "not_backed_up_subtitle": "On this device, not in your Cloud Backup",
+            "back_up_action": "Back Up",
+            "add_action": "Add",
+            "unnamed": "Unnamed passkey",
+            "empty_title": "No passkeys yet",
+            "empty_body": "Passkeys you create on this device will be protected by your Cloud Backup.",
+            "unsupported_title": "These passkeys can’t be backed up",
+            "unsupported_body": "Pera can only back up a passkey it can re-create from a Universal Wallet’s recovery passphrase. The ones on this device were made another way, so they stay here only.",
+            "review_empty_title": "Nothing to review",
+            "review_empty_body": "Every passkey on this device is in your Cloud Backup.",
+            "back_up_success": "Passkey backed up",
+            "back_up_error": "Couldn’t back up this passkey. Please try again.",
+            "add_success": "Passkey added",
+            "add_error": "Couldn’t add this passkey. Please try again.",
+            "delete_sheet_title": "Delete from Cloud Backup?",
+            "delete_sheet_body": "This will permanently remove the backup of this passkey from the cloud. You can re-backup from your local device at any time.",
+            "delete_success": "Removed from Cloud Backup",
+            "delete_error": "Couldn’t remove this passkey from the backup. Please try again.",
+            "keep_error": "Couldn’t remove this passkey from this device. Please try again."
         },
         "turn_off_sheet": {
             "title": "Turn Off Cloud Backup",
@@ -1042,7 +1080,23 @@
         },
         "transaction": {
             "title": "An error occurred processing this transaction",
-            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
+            "insufficient_balance_for_opt_in": {
+                "title": "Not enough ALGO",
+                "body": "You need {{shortfall}} more ALGO to opt in to this asset. Your account must keep its minimum balance and cover the transaction fee."
+            },
+            "already_opted_in": {
+                "title": "Already opted in",
+                "body": "This account is already opted in to this asset."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "Asset still has a balance",
+                "body": "You can only remove an asset with a zero balance. Send or trade the remaining amount first."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Can't remove this asset",
+                "body": "This account created this asset, so it can't opt out of it."
+            }
         },
         "kms": {
             "key_not_found": "Could not find the signing key for this account.",
@@ -1116,9 +1170,6 @@
             "overview_tab": "Overview",
             "card_details_tab": "Card Details",
             "balance": "Balance",
-            "spendable_per_tx": "≈{{amount}} {{currency}} available",
-            "spendable_info_title": "Available per transaction",
-            "spendable_info_body": "The most a single purchase can draw: your card balance plus your refund balance, and, with Auto Funding, up to {{limit}} from your linked account.",
             "withdraw": "Withdraw",
             "add_funds": "Add Funds",
             "credits_title": "Credits",
@@ -1243,8 +1294,6 @@
             "balance": "Balance: {{amount}} USDC",
             "confirm_title": "Confirm claim",
             "confirm_button": "Confirm",
-            "fee_label": "Network fee",
-            "fee_loading": "Estimating...",
             "success_title": "Claim submitted",
             "history_title": "Activity"
         },
@@ -2567,6 +2616,7 @@
         "input": {
             "max": "MAX",
             "next": "Next",
+            "amount_label": "Amount",
             "error_title": "Invalid Amount",
             "error_body": "Please enter an amount greater than {{min}}.",
             "exceeds_max_title": "Insufficient Balance",
@@ -2618,8 +2668,9 @@
         },
         "close_account": {
             "title": "Close Account",
-            "body": "This account has no opted-in assets. Sending the full balance will close the account on the Algorand network.",
+            "body": "This account has no opted-in assets, so you can close it and send the full balance. Some exchanges don't accept transactions that close an account. If you keep the account open, the minimum balance of {{minBalance}} ALGO stays in it.",
             "confirm": "Close Account & Send",
+            "keep_open": "Send Without Closing",
             "warning": "This transaction will close your account on the Algorand network.",
             "success_title": "Account Closed",
             "success_subtitle": "Your account has been closed on the Algorand network."
@@ -2751,6 +2802,7 @@
                 "fetch_from_node": "Fetch from node",
                 "fetch_failed": "Could not reach that node. Enter the values manually.",
                 "invalid_url": "Enter a valid http:// or https:// URL",
+                "invalid_https_url": "Enter a valid https:// URL",
                 "genesis_required": "Fetch or enter the genesis hash",
                 "genesis_id_required": "Fetch or enter the genesis ID",
                 "save": "Save and switch",
@@ -3548,6 +3600,9 @@
             "grant_permission": "Grant Permission",
             "open_settings": "Open Settings",
             "web_start_title": "Ready to Search",
+            "web_ble_unsupported_title": "Bluetooth Not Available",
+            "web_ble_unsupported_body": "This browser can't connect to a Ledger over Bluetooth. Pair via USB instead, or use a browser that supports Bluetooth, such as Chrome.",
+            "use_usb": "Pair via USB",
             "web_start_body": "Your browser will ask you to select your Ledger device.",
             "web_start_button": "Search for Ledger",
             "popup_launch_title": "Ready to Pair",
@@ -3701,7 +3756,11 @@
         "scan_header": {
             "having_issues": "Having issues?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Ledger account added",
+            "body": "You can now use it in the Pera extension."
+        }
     },
     "countries": {
         "AC": "Ascension Island",
@@ -4047,9 +4106,6 @@
         },
         "approval": {
             "placeholder": "Approval surface — coming in M4."
-        },
-        "expanded": {
-            "redirecting": "Continuing in a new tab…"
         },
         "reauth": {
             "title": "Confirm it's you",

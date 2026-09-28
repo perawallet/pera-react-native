@@ -20,7 +20,8 @@ import type {
 import type { MinimalAsset } from '@perawallet/wallet-core-assets'
 
 export type SwapsState = BaseStoreState & {
-    fromAsset: string
+    /** null until the user picks one: the chain's native asset. */
+    fromAsset: Nullable<string>
     toAsset: string
     slippage: Nullable<string>
     isLocalCurrencyInput: boolean

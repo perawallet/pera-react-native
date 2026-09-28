@@ -32,6 +32,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
 import {
+    armApprovalAction,
     expectApprovalSurfaceUrl,
     openApprovalSurface,
     trackPageErrors,
@@ -309,6 +310,7 @@ test('interception on: create() opens the Pera consent screen; approving returns
 
     const approveButton = approvalPage.getByTestId('dapp-passkey-approve')
     await expect(approveButton).toBeVisible()
+    await armApprovalAction(approvalPage, approveButton)
     await approveButton.click()
 
     // Deliberately generous: the FIRST passkey on a wallet also mints the
@@ -371,6 +373,7 @@ test('interception on: get() asserts against the stored credential and the RP pa
 
     const approveButton = approvalPage.getByTestId('dapp-passkey-approve')
     await expect(approveButton).toBeVisible()
+    await armApprovalAction(approvalPage, approveButton)
     await approveButton.click()
 
     await expect

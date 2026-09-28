@@ -5,6 +5,7 @@
 import { defineRule } from 'lanekeep'
 import type { Node, RuleContext } from 'lanekeep'
 import { EN_JSON, flattenLocale } from '../shared/locale.js'
+import { productionSource } from '../shared/scope.js'
 
 const PLACEHOLDER_RE = /\{\{\s*([\w.]+)\s*\}\}/g
 
@@ -81,7 +82,7 @@ export default defineRule({
             good: "{ messageKey: 'greet', params: { name } }",
         },
     },
-    gates: { fileContains: ['messageKey'] },
+    gates: productionSource({ fileContains: ['messageKey'] }),
     query: `
         (pair
           key: (_) @key

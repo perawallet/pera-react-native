@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
+import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import type { Decimal } from 'decimal.js'
 import { registerStore } from '@perawallet/wallet-core-shared'
 

@@ -27,6 +27,16 @@ export const HD_TEST_MNEMONIC_24_INDICES = mnemonicWordsToIndices(
     HD_TEST_MNEMONIC_24_WORDS,
 )!
 
+// A second, unrelated 24-word seed for tests that must tell two wallets apart.
+// The standard BIP39 all-ones vector; `mnemonicWordsToIndices` does not verify
+// the checksum, but a real vector keeps the derivation honest.
+export const HD_TEST_MNEMONIC_24_ALT =
+    'zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote'
+
+export const HD_TEST_MNEMONIC_24_ALT_INDICES = mnemonicWordsToIndices(
+    HD_TEST_MNEMONIC_24_ALT.split(' '),
+)!
+
 export const HD_TEST_ADDRESS =
     'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
 

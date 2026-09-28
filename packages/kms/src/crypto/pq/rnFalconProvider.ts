@@ -15,8 +15,8 @@
 // provider when an official PQ crypto lib exists.
 //
 // This file lives INSIDE the Seam A dir (`crypto/pq/`), so importing the native
-// module here does NOT breach the two-seam PQ-library firewall
-// (pqLibraryFirewall.spec.ts). It is the sole sanctioned on-device home.
+// module here does NOT breach the PQ-library firewall (the lanekeep rule
+// pera/pq-library-seam). It is the sole sanctioned on-device home.
 import { getFalconModule } from './falconModule'
 import type { PQSignatureProvider } from './types'
 

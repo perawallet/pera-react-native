@@ -1,0 +1,27 @@
+{
+  "extends": "@perawallet/wallet-core-devtools/tsconfig/vite.json",
+  "compilerOptions": {
+    // Arc59Client.generated.ts imports types without the type keyword.
+    "verbatimModuleSyntax": false,
+    "types": ["node"],
+    "resolveJsonModule": true,
+    // Must match CONTRACT_SUITES in vitest.config.ts. Typecheck-only: the
+    // build's program excludes the specs that import these.
+    "paths": {
+      "@perawallet/wallet-core-card/testing": ["../card/src/__tests__/adapter-contract.ts"],
+      "@perawallet/wallet-core-chain-contract/testing": ["../chain-contract/src/__tests__/descriptor-contract.ts"],
+      "@perawallet/wallet-core-connections/testing": ["../connections/src/__tests__/handler-contract.ts"],
+      "@perawallet/wallet-core-nfd/testing": ["../nfd/src/__tests__/adapter-contract.ts"],
+      "@perawallet/wallet-core-onramp/testing": ["../onramp/src/__tests__/adapter-contract.ts"],
+      "@perawallet/wallet-core-swaps/testing": ["../swaps/src/__tests__/adapter-contract.ts"],
+      "@perawallet/wallet-core-transactions/testing": ["../transactions/src/__tests__/adapter-contract.ts"],
+      "@perawallet/wallet-extension-hardware-wallet/testing": ["../../extensions/hardware-wallet/src/__tests__/app-driver-contract.ts"]
+    }
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "**/*.generated.ts"
+  ]
+}

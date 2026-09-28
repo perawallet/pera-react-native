@@ -32,6 +32,7 @@ import {
     expectApprovalSurfaceUrl,
     openApprovalSurface,
     selectAccountAndArmConnect,
+    tapToConfirm,
     trackPageErrors,
 } from './approval-surface'
 
@@ -298,9 +299,7 @@ test('signTransactions opens the signing review and returns one signed transacti
 
     const confirmControl = approvalPage.getByTestId('signing-confirm-slide')
     await expect(confirmControl).toBeVisible({ timeout: 20_000 })
-    // Web uses tap-to-confirm: the first tap arms, the second confirms.
-    await confirmControl.click()
-    await confirmControl.click()
+    await tapToConfirm(approvalPage, confirmControl)
 
     // Poll BOTH outcomes: waiting on the success one alone turns a decline
     // into a bare timeout with the real reason sitting unread in the DOM.

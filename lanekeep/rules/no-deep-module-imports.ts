@@ -3,6 +3,8 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { withoutTests } from '../shared/scope.js'
+import { resolveRelative } from '../shared/paths.js'
 
 const MODULES_DIR = 'apps/mobile/src/modules/'
 
@@ -39,16 +41,6 @@ const moduleOf = (filePath: string): string | undefined => {
     return filePath.slice(at + MODULES_DIR.length).split('/')[0]
 }
 
-// Rules run inside lanekeep's own runtime, so no node:path.
-const resolveRelative = (filePath: string, specifier: string): string => {
-    const parts = filePath.split('/').slice(0, -1)
-    for (const segment of specifier.split('/')) {
-        if (segment === '..') parts.pop()
-        else if (segment !== '.') parts.push(segment)
-    }
-    return parts.join('/')
-}
-
 /** `[module, rest]` for a specifier that lands in apps/mobile/src/modules, else undefined. */
 const targetOf = (
     specifier: string,
@@ -83,9 +75,7 @@ export default defineRule({
             good: "// in src/modules/card/...\nimport { AccountPicker } from '@modules/accounts'",
         },
     },
-    gates: {
-        pathMatches: ['**/apps/mobile/src/**'],
-    },
+    gates: withoutTests({ pathMatches: ['**/apps/mobile/src/**'] }),
     // Every form that creates the dependency: static, `export … from`, and a
     // deferred `import()`.
     query: `

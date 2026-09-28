@@ -304,7 +304,7 @@ describe('useSwapExecution', () => {
     it('names the ALGO shortfall in display units', async () => {
         failWith({
             phase: 'prepare',
-            reason: 'insufficient-algo',
+            reason: 'insufficient-native-balance',
             shortfall: new Decimal(5000),
         })
         const { result } = renderHook(() => useSwapExecution())

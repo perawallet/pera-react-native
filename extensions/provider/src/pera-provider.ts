@@ -19,6 +19,7 @@ import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofi
 import { WithConnections } from '@perawallet/wallet-extension-connections'
 import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 import { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
+import { WithChainRegistry } from './withChainRegistry'
 import type {
     PeraExtensions,
     PeraProvider as PeraProviderShape,
@@ -44,6 +45,7 @@ export const PeraProvider: {
     // Before the app's composition root runs, which registers the concrete
     // transports into the `hardwareWalletRegistry` this supplies.
     WithHardwareWalletExtension,
+    WithChainRegistry,
     // Immediately before WithKeyStore, and load-bearing: modules migrate in
     // registration order, so this is the only thing that gets revision 0001
     // ahead of upstream's `adopt-flat-records`.

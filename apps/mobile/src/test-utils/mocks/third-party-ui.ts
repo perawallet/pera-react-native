@@ -312,8 +312,15 @@ vi.mock('@gorhom/bottom-sheet', async () => {
                 ...props,
                 'data-testid': 'BottomSheetBackdrop',
             }),
-        BottomSheetScrollView: ({ children, ...props }: any) =>
-            React.createElement('div', { ...props }, children),
+        BottomSheetScrollView: React.forwardRef(
+            ({ children, ...props }: any, ref: any) => {
+                React.useImperativeHandle(ref, () => ({
+                    scrollTo: vi.fn(),
+                    scrollToEnd: vi.fn(),
+                }))
+                return React.createElement('div', { ...props }, children)
+            },
+        ),
         BottomSheetView: ({ children, ...props }: any) =>
             React.createElement('div', { ...props }, children),
         BottomSheetFlatList: ({ data, renderItem, ...props }: any) =>

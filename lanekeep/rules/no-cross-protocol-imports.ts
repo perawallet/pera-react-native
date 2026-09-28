@@ -3,6 +3,7 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { withoutTests } from '../shared/scope.js'
 
 const PROTOCOLS = ['v1', 'v2'] as const
 type Protocol = (typeof PROTOCOLS)[number]
@@ -30,9 +31,7 @@ export default defineRule({
             good: "// in src/v2/handler.ts\nimport { PERA_CLIENT_META } from '../shared'",
         },
     },
-    gates: {
-        pathMatches: ['**/v1/**', '**/v2/**'],
-    },
+    gates: withoutTests({ pathMatches: ['**/v1/**', '**/v2/**'] }),
     query: '(import_statement (string (string_fragment) @src) @str)',
     check(ctx, m) {
         const src = m.src

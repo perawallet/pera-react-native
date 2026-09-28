@@ -50,6 +50,7 @@ function deserializeBalanceImpacts(
         assetId: string
         unitName: string
         fractionDecimals: number
+        // lanekeep-ignore-next-line pera/amount-types reason: JSON.parse shape of the stored column; converted with new Decimal below
         amount: string
     }>
     return parsed.map(impact => {

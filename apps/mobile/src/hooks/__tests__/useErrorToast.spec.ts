@@ -30,6 +30,7 @@ const { mockShowToast, mockGetMessage } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { debugEnabled: false },
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 vi.mock('../useToast', () => ({

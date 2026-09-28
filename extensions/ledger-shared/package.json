@@ -19,12 +19,10 @@
         "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
     },
     "dependencies": {
-        "@algorandfoundation/ledger-algorand-js": "catalog:",
         "@ledgerhq/devices": "^8.13.0",
         "@ledgerhq/errors": "catalog:",
         "@perawallet/wallet-core-shared": "workspace:*",
-        "@perawallet/wallet-extension-hardware-wallet": "workspace:*",
-        "buffer": "catalog:"
+        "@perawallet/wallet-extension-hardware-wallet": "workspace:*"
     },
     "devDependencies": {
         "@perawallet/wallet-core-devtools": "workspace:*",

@@ -10,11 +10,16 @@
  limitations under the License
  */
 
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { UnconfiguredScopeError } from './errors'
 import { type Network, Networks } from './models/network'
 import { config } from './main'
 
 /** Chain-intrinsic endpoints. Always the real active network — never falls back. */
-type ChainConfig = {
+export type ChainConfig = {
     algodUrl: string
     indexerUrl: string
     genesisHash: string
@@ -26,7 +31,7 @@ type ChainConfig = {
 }
 
 /** Empty outside `PeraBackedNetwork`s — never borrowed from another network. */
-type PeraServices = {
+export type PeraServices = {
     backendUrl: string
     bidaliBaseUrl: string
     bidaliApiKey: string
@@ -54,6 +59,33 @@ export type NetworkConfig = ChainConfig &
         isTestnet: boolean
         isMainnet: boolean
     }
+
+export const PERA_SERVICES = [
+    'accounts',
+    'assets',
+    'prices',
+    'history',
+    'devices',
+    'notifications',
+    'blockFollowing',
+] as const
+
+export type PeraService = (typeof PERA_SERVICES)[number]
+
+/** What a saved custom node supplies; its explorer and dispenser stay empty. */
+export type CustomNetworkEndpoints = Pick<
+    ChainConfig,
+    | 'algodUrl'
+    | 'indexerUrl'
+    | 'algodToken'
+    | 'indexerToken'
+    | 'genesisHash'
+    | 'genesisId'
+>
+
+export type CustomNetworkSource = (
+    scope: ChainScope,
+) => CustomNetworkEndpoints | undefined
 
 export const isTestnet = (network: Network) => network === Networks.testnet
 export const isMainnet = (network: Network) => network === Networks.mainnet
@@ -95,9 +127,10 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
     },
     [Networks.custom]: {
         // Deliberately all empty: `custom`'s real values live in the
-        // custom-network store, which `config` can't read — it's the leaf package
-        // and must stay free of store dependencies. The blockchain-layer
-        // resolvers overlay the store on top of this placeholder.
+        // custom-network store, which `config` can't read — it must stay free
+        // of store dependencies. The store's owner registers a
+        // `CustomNetworkSource`, and `getChainConfig` lays the saved node over
+        // this placeholder.
         //
         // explorerUrl and dispenserUrl stay empty for good: an arbitrary node has
         // no known explorer or faucet, and the existing gate already hides the
@@ -174,19 +207,107 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
         cardUsdcAssetId: config.testnetCardUsdcAssetId,
     },
-    // No Pera deployment. Empty, never borrowed: createPeraClient turns an
-    // empty backendUrl into a thrown PeraServiceUnavailableError.
+    // No Pera deployment. Empty, never borrowed: the query client refuses a
+    // Pera request for a scope whose backendUrl is empty.
     [Networks.betanet]: EMPTY_PERA_SERVICES,
     [Networks.custom]: EMPTY_PERA_SERVICES,
 }
 
-export const getNetworkConfig = (network: Network): NetworkConfig => ({
-    network,
-    isMainnet: isMainnet(network),
-    isTestnet: isTestnet(network),
-    ...chainConfigByNetwork[network],
-    ...peraServicesByNetwork[network],
+/** `Record<Network, …>` for the same reason as the table above. */
+const peraServiceNamesByNetwork: Record<Network, readonly PeraService[]> = {
+    [Networks.mainnet]: PERA_SERVICES,
+    [Networks.testnet]: PERA_SERVICES,
+    [Networks.betanet]: [],
+    [Networks.custom]: [],
+}
+
+type ScopeConfig = {
+    scope: ChainScope
+    chain: ChainConfig
+    peraServices: PeraServices
+    services: ReadonlySet<PeraService>
+}
+
+const SCOPE_CONFIGS: readonly ScopeConfig[] = Object.values(Networks).map(
+    network => ({
+        scope: scopeForLegacyNetwork(network),
+        chain: chainConfigByNetwork[network],
+        peraServices: peraServicesByNetwork[network],
+        services: new Set(peraServiceNamesByNetwork[network]),
+    }),
+)
+
+// Compared field by field, not through toScopeKey: that validates the chain id
+// against the compiled-in union and throws for a test's fixture chain, and
+// nothing here is persisted.
+const findScopeConfig = (scope: ChainScope): ScopeConfig | undefined =>
+    SCOPE_CONFIGS.find(
+        row =>
+            row.scope.chainId === scope.chainId &&
+            row.scope.networkId === scope.networkId,
+    )
+
+let customNetworkSource: CustomNetworkSource | undefined
+
+/**
+ * The saved custom node lives in a store `config` cannot import, so the
+ * store's owner registers a reader here. One slot; the returned function clears
+ * it only while it still holds this source, so a stale cleanup cannot drop a
+ * newer registration.
+ */
+export const registerCustomNetworkSource = (
+    source: CustomNetworkSource,
+): (() => void) => {
+    customNetworkSource = source
+    return () => {
+        if (customNetworkSource === source) {
+            customNetworkSource = undefined
+        }
+    }
+}
+
+export const configuredScopes = (): readonly ChainScope[] =>
+    SCOPE_CONFIGS.map(row => row.scope)
+
+/**
+ * Throws for a scope no row configures, rather than handing back empty
+ * endpoints that fail later somewhere unrelated.
+ */
+export const getChainConfig = (scope: ChainScope): ChainConfig => {
+    const row = findScopeConfig(scope)
+    if (row === undefined) {
+        throw new UnconfiguredScopeError(scope)
+    }
+    return { ...row.chain, ...customNetworkSource?.(scope) }
+}
+
+export const getPeraServicesConfig = (scope: ChainScope): PeraServices => ({
+    ...(findScopeConfig(scope)?.peraServices ?? EMPTY_PERA_SERVICES),
 })
+
+const NO_PERA_SERVICES: ReadonlySet<PeraService> = new Set()
+
+const servicesOf = (scope: ChainScope): ReadonlySet<PeraService> =>
+    findScopeConfig(scope)?.services ?? NO_PERA_SERVICES
+
+export const peraServicesFor = (scope: ChainScope): ReadonlySet<PeraService> =>
+    new Set(servicesOf(scope))
+
+export const hasPeraService = (
+    scope: ChainScope,
+    service: PeraService,
+): boolean => servicesOf(scope).has(service)
+
+export const getNetworkConfig = (network: Network): NetworkConfig => {
+    const scope = scopeForLegacyNetwork(network)
+    return {
+        network,
+        isMainnet: isMainnet(network),
+        isTestnet: isTestnet(network),
+        ...getChainConfig(scope),
+        ...getPeraServicesConfig(scope),
+    }
+}
 
 const COMMERCE_HOST_PREFIX = 'commerce.'
 const GIFTCARDS_HOST_PREFIX = 'giftcards.'

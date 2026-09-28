@@ -21,6 +21,7 @@ import {
     accountItemKey,
     contactItemKey,
     createItemKeyHasher,
+    passkeyItemKey,
     secretsItemKey,
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -41,6 +42,9 @@ vi.mock('@perawallet/wallet-core-backup', async () => ({
     useBackupSyncStateStore: vi.fn(),
     deriveBackupSyncStatus: vi.fn(),
     backupIdToAddress: (v: string) => v.replace('did:pera:', ''),
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/backup/src/cloud/models/itemKeys')
+    >('../../../../../../../../packages/backup/src/cloud/models/itemKeys')),
     ...(await vi.importActual<
         typeof import('../../../../../../../../packages/backup/src/cloud/models/reviewBuckets')
     >(
@@ -88,6 +92,7 @@ const {
     markIntroductionSeenMock,
     useCloudBackupIntroductionMock,
     storeCredentialsMock,
+    provenPasskeysMock,
     navigationMock,
 } = vi.hoisted(() => ({
     disableBackupMock: vi.fn(),
@@ -98,6 +103,7 @@ const {
     markIntroductionSeenMock: vi.fn(),
     useCloudBackupIntroductionMock: vi.fn(),
     storeCredentialsMock: vi.fn(),
+    provenPasskeysMock: { current: [] as { credentialId: string }[] },
     // The global mock hands out fresh vi.fn()s per call, so nothing can be
     // asserted on it; this one is stable, like the real navigation object.
     navigationMock: {
@@ -133,6 +139,10 @@ vi.mock('../../../hooks', () => ({
     useStoreBackupCredentials: () => ({
         storeCredentials: storeCredentialsMock,
     }),
+    useProvenPasskeysQuery: () => ({
+        passkeys: provenPasskeysMock.current,
+        isLoading: false,
+    }),
 }))
 
 const mockRequestBottomSheet = vi.fn()
@@ -141,6 +151,8 @@ const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const accountKey = (address: string) => accountItemKey(hashAddress(address))
 const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
+const passkeyKey = (credentialId: string) =>
+    passkeyItemKey(hashAddress(credentialId))
 
 type SyncStateFixture = {
     backupId: string
@@ -212,8 +224,15 @@ const mockStores = (opts: {
     )
 }
 
+const mockPasskeys = (credentialIds: string[]) => {
+    provenPasskeysMock.current = credentialIds.map(credentialId => ({
+        credentialId,
+    }))
+}
+
 beforeEach(() => {
     vi.clearAllMocks()
+    mockPasskeys([])
     ;(useBottomSheet as unknown as Mock).mockReturnValue({
         request: mockRequestBottomSheet,
     })
@@ -343,7 +362,44 @@ describe('useCloudBackupOverview', () => {
         expect(result.current.credentialAddressLabel).toBe('truncated(abc)')
     })
 
-    test('tracks opening the accounts and contacts rows', () => {
+    test('counts passkeys in sync and not backed up', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            [passkeyKey('cred-1')]: uploaded('cred-1', { type: 'PASSKEY' }),
+        }
+        mockPasskeys(['cred-1', 'cred-2'])
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: [],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        expect(result.current.passkeysInSync).toBe(1)
+        expect(result.current.passkeysNotBackedUp).toBe(1)
+    })
+
+    test('reports zero not-backed-up when every credential is in the backup', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            [passkeyKey('cred-1')]: uploaded('cred-1', { type: 'PASSKEY' }),
+        }
+        mockPasskeys(['cred-1'])
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: [],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        expect(result.current.passkeysNotBackedUp).toBe(0)
+    })
+
+    test('tracks opening the accounts, contacts and passkeys rows', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
@@ -354,12 +410,19 @@ describe('useCloudBackupOverview', () => {
 
         act(() => result.current.onPressAccounts())
         act(() => result.current.onPressContacts())
+        act(() => result.current.onPressPasskeys())
 
         expect(trackEvent).toHaveBeenCalledWith(
             CloudBackupEvent.OverviewAccounts,
         )
         expect(trackEvent).toHaveBeenCalledWith(
             CloudBackupEvent.OverviewContacts,
+        )
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewPasskeys,
+        )
+        expect(navigationMock.navigate).toHaveBeenCalledWith(
+            'CloudBackupPasskeys',
         )
     })
 

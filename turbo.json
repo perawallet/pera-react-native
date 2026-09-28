@@ -28,7 +28,14 @@
     "DISABLE_SCREEN_CAPTURE_PREVENTION",
     "WEB_INTEGRITY_MINT_ENABLED",
     "WEB_INTEGRITY_ENROL_ENABLED",
-    "WEB_INTEGRITY_BEARER_ENABLED"
+    "WEB_INTEGRITY_BEARER_ENABLED",
+    "BETANET_*",
+    "GOOGLE_*",
+    "REOWN_PROJECT_ID",
+    "BACKUP_BASE_URL",
+    "CARD_AUTODRAW_TEMPLATE_HASH",
+    "CHAINS",
+    "CHAIN_*"
   ],
   "tasks": {
     "generate:config": {
@@ -63,7 +70,13 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {},
+    "lint": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/.oxlintrc.json",
+        "$TURBO_ROOT$/packages/devtools/oxlint/**"
+      ]
+    },
     "test": {
       "dependsOn": [
         "^build"

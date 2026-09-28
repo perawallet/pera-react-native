@@ -14,7 +14,6 @@ import { describe, test, expect, it } from 'vitest'
 import { getBluetoothServiceUuids } from '@ledgerhq/devices'
 import {
     resolveDeviceModel,
-    buildLedgerAccountPath,
     LEDGER_BLE_SERVICE_UUIDS,
     MIN_ARBITRARY_SIGN_APP_VERSION,
     isAppVersionAtLeast,
@@ -61,15 +60,6 @@ describe('resolveDeviceModel', () => {
 
     test('LEDGER_BLE_SERVICE_UUIDS mirrors getBluetoothServiceUuids()', () => {
         expect(LEDGER_BLE_SERVICE_UUIDS).toEqual(getBluetoothServiceUuids())
-    })
-})
-
-describe('buildLedgerAccountPath', () => {
-    test('builds the m/-prefixed Algorand BIP-44 path with the given account index', () => {
-        // `@algorandfoundation/ledger-algorand-js` serializePath (used by
-        // signData) requires the canonical "m/"-prefixed BIP-32 form.
-        expect(buildLedgerAccountPath(0)).toBe("m/44'/283'/0'/0/0")
-        expect(buildLedgerAccountPath(5)).toBe("m/44'/283'/5'/0/0")
     })
 })
 

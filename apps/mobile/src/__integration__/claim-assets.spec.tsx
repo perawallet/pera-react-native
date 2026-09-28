@@ -48,7 +48,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     mockAlgodAccountInformation,
@@ -90,7 +90,7 @@ const ASSET_ID = '741234567'
 // The list screen's GET endpoint returns the *raw* (snake_case) ARC-59 shape;
 // `fetchArc59AssetRequests` runs it through the real zod schema + transformer,
 // so this must be schema-valid. The asa-inbox `mockArc59AssetRequests` factory
-// is NOT aliased into apps/mobile (no `@perawallet/wallet-core-asa-inbox/test-handlers`
+// is NOT aliased into apps/mobile (no `@perawallet/wallet-core-chain-algorand/asa-inbox/test-handlers`
 // entry in vitest.config.ts / tsconfig.json), so we register the handler with a
 // plain `http.get` instead.
 const rawAssetRequestsResponse = {
@@ -299,7 +299,7 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         simulateCallCount = 0
 
         // Algod surface for the ARC-59 claim/reject build + sign + submit
-        // pipeline. `buildClaimAssetTxs` calls getSuggestedParams (params) and
+        // pipeline. `buildArc59ClaimTxs` calls getSuggestedParams (params) and
         // accountInformation(sender) for its opt-in check; the signing
         // pipeline POSTs the signed group to /v2/transactions.
         server.use(

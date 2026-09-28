@@ -16,23 +16,23 @@
  * `PasskeyCredentialStore` on iOS).
  *
  * The provider is a **separate process** that shares this app's keystore MMKV
- * instance (`PASSKEYS_MMKV_ID = "keystore"`) and master key. As of autofill
- * canary.23/.24 the derivation **parent/root** is read from the keystore's own
- * `k/`+`m/` split on both platforms — but **credential records are still
- * bare-id only, on both platforms**. iOS's only credential-from-keystore path,
- * `allKeystoreCredentials()`, guards on `dataArray(keyData["publicKey"])` and
- * `dataArray(keyData["privateKey"])`, both of which require a JSON number
- * array; a split `k/` record's `publicKey` is `{"$u8": …}` and it carries no
- * `privateKey` at all, so the guard fails silently. Android's
- * `credentialFromMetadataRecord` re-derives on demand instead of reading a
- * persisted key, which cannot reproduce a migrated Pera 6 credential. See
- * `packages/passkeys/src/native/README.md` for the full split.
+ * instance (`PASSKEYS_MMKV_ID = "keystore"`) and master key. On both platforms
+ * it reads the derivation **parent/root** from the keystore's own `k/`+`m/`
+ * split — and on iOS **credential records are still bare-id only**. iOS's only
+ * credential-from-keystore path, `allKeystoreCredentials()`, guards on
+ * `dataArray(keyData["publicKey"])` and a non-nil `keyData["privateKey"]`;
+ * only the former requires a JSON number array. A split `k/` record's
+ * `publicKey` is `{"$u8": …}` and it carries no `privateKey` key at all, so
+ * the guard fails silently. Android credentials live in `k/`+`m/` instead; one
+ * not split yet still passes through this module, via
+ * `readFlaggedPasskeyCredentials`. See `packages/passkeys/src/native/README.md`.
  *
  * This module is the single place the **credential** contract is expressed,
  * because two separate things need it and a third still will:
  *
- * 1. Writing credentials migrated from Pera 6 so the provider can read them
- *    (`packages/migrate/.../writeNativePasskeyEntry.ts`).
+ * 1. Writing credentials migrated from Pera 6 so the iOS provider can read
+ *    them (`./writeNativePasskeyEntry.ts`). Android imports are written split,
+ *    through the provider's `writePasskeyCredential`.
  * 2. Un-adopting a credential upstream's own `adopt-flat-records` revision
  *    wrongly split into `k/`+`m/`
  *    (`extensions/provider/.../repairs/0002-rematerialize-passkey-credentials.ts`,
@@ -48,31 +48,37 @@
  *    `sealNativeProviderRecord` for the same input. The last catches the two
  *    writers diverging from each other; only the golden pin — a frozen
  *    literal, with no writer to agree with — catches them drifting together.
- * 3. **A still-pending phase 3** — reading credential records back, if and
- *    when the provider ever moves credentials to `k/`+`m/` too, so they can be
- *    migrated into the keystore's own layout without loss. Not started: see
- *    "What a credential migration would have to handle" below.
+ * 3. Reading iOS credential records back, when the iOS provider learns to
+ *    read `k/`+`m/`. Not started; see "What a credential migration would have
+ *    to handle" below. Android's equivalent is `splitFlatPasskeyCredentials`
+ *    in `extensions/provider`.
  *
  * ## Why `sealData`/`encode` from the keystore cannot be used
  *
- * Under canary.14 they are wrong on two independent axes, and both fail
- * silently:
+ * The only provider that signs from a flat credential record is iOS's. Its
+ * reader, `PasskeyCredentialStore.decodeKeystorePayload`, opens a JSON object
+ * carrying both `iv` and `content` with the master key through the store's
+ * own AES-GCM open, whether the GCM tag sits in its own `tag` field or is
+ * appended to `content`, and takes any other JSON object as the record
+ * itself. The opened or unsealed payload is read as base64url of the record
+ * JSON, padded or not, or else as the JSON text.
  *
  * - `sealData` emits `{iv, content}` with the GCM tag appended to the
- *   ciphertext. The provider's `decodeKeyData` only takes its decrypt branch
- *   when the envelope has `iv` **and** `tag` **and** `content`; otherwise it
- *   returns the envelope object itself, which has no key material in it.
- * - `encode` serialises a `Uint8Array` as `{"$u8": "<base64>"}`. The provider
- *   does `getJSONArray("privateKey")` / `optJSONArray("seed")` and expects a
- *   **JSON array of byte values**.
+ *   ciphertext. The iOS provider opens that, but this module's own
+ *   {@link openNativeProviderRecord} takes only `{iv, tag, content}`: a
+ *   two-field envelope under a bare id is the keystore's own legacy writer's,
+ *   never a credential record, so the migration-banner scan skips it.
+ * - `encode` serialises a `Uint8Array` as `{"$u8": "<base64>"}`. The iOS
+ *   provider reads `publicKey` and `privateKey` through `dataArray`, which
+ *   accepts only a **JSON array of byte values**, and skips the record
+ *   otherwise.
  *
- * Neither throws. A record written with the keystore's own helpers is simply
- * invisible to the provider, which is exactly the failure this module exists to
- * prevent.
+ * Neither raises an error. A record written with the keystore's own helpers is
+ * simply skipped, which is exactly the failure this module exists to prevent.
  *
  * ## What a credential migration would have to handle
  *
- * Not started, but recorded here rather than left to be rediscovered — this is
+ * Not started for iOS, but recorded here rather than left to be rediscovered — this is
  * what the fixture corpus in `__tests__/nativeProviderRecord.spec.ts` pins:
  *
  * - Both envelope shapes: sealed `{iv, tag, content}` **and** the unsealed

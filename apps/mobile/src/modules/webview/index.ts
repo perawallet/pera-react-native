@@ -26,3 +26,7 @@ export {
     openValidatedBrowserUrl,
     toValidatedBrowserUrl,
 } from './hooks/handlers'
+export {
+    resolveWebviewLanguage,
+    withLanguageParam,
+} from './hooks/webviewLanguage'
