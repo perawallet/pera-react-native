@@ -409,6 +409,9 @@ importers:
       '@perawallet/wallet-core-passkeys':
         specifier: workspace:*
         version: link:../../packages/passkeys
+      '@perawallet/wallet-core-remote-config':
+        specifier: workspace:*
+        version: link:../../packages/remote-config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../../packages/shared

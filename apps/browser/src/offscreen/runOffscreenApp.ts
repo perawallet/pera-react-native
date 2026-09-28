@@ -56,6 +56,7 @@ import {
     createWalletConnectV1Handler,
     importLegacyConnections,
 } from '@perawallet/wallet-core-walletconnect'
+import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
@@ -125,6 +126,7 @@ export const runOffscreenApp = async (): Promise<void> => {
     const registry = createConnectionRegistry({ store })
     // Before the dApp handler starts: it answers any chain without an adapter
     // with an error, so a request arriving first would be refused.
+    provider.chains.setCapabilityOverrides(readCapabilityOverrides)
     registerAlgorandChain()
     registry.register(
         createWalletConnectV1Handler({
