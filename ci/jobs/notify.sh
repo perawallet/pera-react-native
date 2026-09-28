@@ -70,9 +70,14 @@ PAYLOAD=$(jq -n \
 printf '%s\n' "$PAYLOAD"
 
 # While uploads are off Bitrise still posts the real card for the same tag, so
-# a second one would only be noise in the channel.
+# a second one would only be noise in the channel. CI_SLACK_ENABLED is the
+# console's Slack switch.
 if [ "${CI_UPLOADS_ENABLED:-false}" != "true" ]; then
   echo "pera-ci: uploads disabled; not posting the card"
+  exit 0
+fi
+if [ "${CI_SLACK_ENABLED:-false}" != "true" ]; then
+  echo "pera-ci: Slack is off in the console; not posting the card"
   exit 0
 fi
 
