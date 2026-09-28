@@ -23,8 +23,6 @@ vi.mock('../../services/nfdBatchQueue', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
-    isValidAlgorandAddress: (address?: string) =>
-        !!address && /^[0-9a-zA-Z]{58}$/.test(address),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
@@ -35,6 +33,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 import { useNfdForAddressQuery } from '../useNfdForAddressQuery'
+import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
 const VALID_ADDRESS = 'A'.repeat(58)
 
@@ -42,6 +41,7 @@ describe('useNfdForAddressQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
+        registerFakeNameServiceAdapter()
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })

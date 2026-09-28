@@ -11,15 +11,18 @@
  */
 
 import { z } from 'zod'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeFromBase64,
     logger,
     queryClient,
-    type Network,
 } from '@perawallet/wallet-core-shared'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { fetchNfdAppId } from '../api/registry'
-import type { NfdAddressVerification } from '../models'
+import type {
+    NfdAddressVerification,
+    VerifyForwardResolutionParams,
+} from '@perawallet/wallet-core-nfd'
+import { fetchNfdAppId } from './registry'
 
 // NFD contract (v2) layout: the name and owner sit in global state; verified
 // addresses live in `v.caAlgo.<n>.as` boxes as back-to-back 32-byte keys.
@@ -66,27 +69,20 @@ const addressesIn = (base64: string): string[] => {
 }
 
 const algodGet = async (
-    network: Network,
+    scope: ChainScope,
     url: string,
     params: object | undefined,
     signal: AbortSignal | undefined,
 ): Promise<unknown> => {
     const response = await queryClient<unknown>({
         backend: 'algod',
-        network,
+        scope,
         method: 'GET',
         url,
         params,
         signal,
     })
     return response.data
-}
-
-export type VerifyNfdAddressParams = {
-    name: string
-    address: string
-    network: Network
-    signal?: AbortSignal
 }
 
 /**
@@ -98,21 +94,21 @@ export type VerifyNfdAddressParams = {
 export const verifyNfdAddress = async ({
     name,
     address,
-    network,
+    scope,
     signal,
-}: VerifyNfdAddressParams): Promise<NfdAddressVerification> => {
+}: VerifyForwardResolutionParams): Promise<NfdAddressVerification> => {
     const normalizedName = name.toLowerCase()
     try {
         const appId = await fetchNfdAppId({
             name: normalizedName,
-            network,
+            networkId: scope.networkId,
             signal,
         })
         if (appId === null) return 'mismatch'
 
         const application = applicationSchema.parse(
             await algodGet(
-                network,
+                scope,
                 `/v2/applications/${appId}`,
                 undefined,
                 signal,
@@ -137,7 +133,7 @@ export const verifyNfdAddress = async ({
         ])
         const { boxes } = boxesSchema.parse(
             await algodGet(
-                network,
+                scope,
                 `/v2/applications/${appId}/boxes`,
                 undefined,
                 signal,
@@ -147,7 +143,7 @@ export const verifyNfdAddress = async ({
             if (!VERIFIED_BOX.test(utf8(box.name))) continue
             const { value } = boxSchema.parse(
                 await algodGet(
-                    network,
+                    scope,
                     `/v2/applications/${appId}/box`,
                     { name: `b64:${box.name}` },
                     signal,

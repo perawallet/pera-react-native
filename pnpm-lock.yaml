@@ -2392,6 +2392,9 @@ importers:
       '@perawallet/wallet-core-connections':
         specifier: workspace:*
         version: link:../connections
+      '@perawallet/wallet-core-nfd':
+        specifier: workspace:*
+        version: link:../nfd
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -3314,6 +3317,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
