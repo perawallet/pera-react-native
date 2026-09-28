@@ -444,3 +444,4 @@ export const runHandlerContractTests = (
         })
     })
 }
+export * from './dapp-request-contract'
