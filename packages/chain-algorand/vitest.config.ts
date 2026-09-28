@@ -18,6 +18,23 @@ import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+const CONTRACT_SUITES = {
+    '@perawallet/wallet-core-card/testing':
+        '../card/src/testing/adapter-contract.ts',
+    '@perawallet/wallet-core-connections/testing':
+        '../connections/src/testing/handler-contract.ts',
+    '@perawallet/wallet-core-nfd/testing':
+        '../nfd/src/testing/adapter-contract.ts',
+    '@perawallet/wallet-core-onramp/testing':
+        '../onramp/src/testing/adapter-contract.ts',
+    '@perawallet/wallet-core-swaps/testing':
+        '../swaps/src/testing/adapter-contract.ts',
+    '@perawallet/wallet-core-transactions/testing':
+        '../transactions/src/testing/adapter-contract.ts',
+    '@perawallet/wallet-extension-hardware-wallet/testing':
+        '../../extensions/hardware-wallet/src/testing/app-driver-contract.ts',
+}
+
 export default defineConfig({
     test: {
         coverage: coverageConfig,
@@ -31,6 +48,14 @@ export default defineConfig({
         // Resolved from source so vitest transforms them and the setup file's
         // mocks apply; their installed dist would load react-native-mmkv first.
         alias: {
+            // Test-only suites, never built or exported: the `/testing`
+            // subpaths resolve to source here and in tsconfig.json.
+            ...Object.fromEntries(
+                Object.entries(CONTRACT_SUITES).map(([name, file]) => [
+                    name,
+                    path.resolve(__dirname, file),
+                ]),
+            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',

@@ -4,8 +4,18 @@
     // Arc59Client.generated.ts imports types without the type keyword.
     "verbatimModuleSyntax": false,
     "types": ["node"],
-    "outDir": "./dist",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    // Must match CONTRACT_SUITES in vitest.config.ts. Typecheck-only: the
+    // build's program excludes the specs that import these.
+    "paths": {
+      "@perawallet/wallet-core-card/testing": ["../card/src/testing/adapter-contract.ts"],
+      "@perawallet/wallet-core-connections/testing": ["../connections/src/testing/handler-contract.ts"],
+      "@perawallet/wallet-core-nfd/testing": ["../nfd/src/testing/adapter-contract.ts"],
+      "@perawallet/wallet-core-onramp/testing": ["../onramp/src/testing/adapter-contract.ts"],
+      "@perawallet/wallet-core-swaps/testing": ["../swaps/src/testing/adapter-contract.ts"],
+      "@perawallet/wallet-core-transactions/testing": ["../transactions/src/testing/adapter-contract.ts"],
+      "@perawallet/wallet-extension-hardware-wallet/testing": ["../../extensions/hardware-wallet/src/testing/app-driver-contract.ts"]
+    }
   },
   "include": [
     "src"
