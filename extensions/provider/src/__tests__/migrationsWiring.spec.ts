@@ -34,6 +34,7 @@ import type { KeyStoreState } from '@algorandfoundation/keystore-core'
 import { createPeraKeystore } from '../keystore/createKeystore'
 import { WithHardwareWalletExtension } from '@perawallet/wallet-extension-hardware-wallet'
 import { PeraProvider } from '../pera-provider'
+import { WithChainRegistry } from '../withChainRegistry'
 
 describe('provider migrations wiring', () => {
     it('places WithMigrations first so later extensions can register', () => {
@@ -123,5 +124,14 @@ describe('provider migrations wiring', () => {
         })
 
         await expect(keystore.ready).rejects.toThrow('migration failed')
+    })
+
+    // Built empty on every platform; the composition roots register chains into it.
+    it('composes WithChainRegistry right after WithHardwareWalletExtension', () => {
+        const extensions: readonly unknown[] = PeraProvider.EXTENSIONS
+
+        expect(extensions.indexOf(WithChainRegistry)).toBe(
+            extensions.indexOf(WithHardwareWalletExtension) + 1,
+        )
     })
 })
