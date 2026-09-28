@@ -249,5 +249,9 @@ export const openNativeProviderRecord = async (
         cryptoKey,
         sealed as unknown as BufferSource,
     )
-    return JSON.parse(fromBase64Url(new TextDecoder().decode(plaintext)))
+    try {
+        return JSON.parse(fromBase64Url(new TextDecoder().decode(plaintext)))
+    } finally {
+        new Uint8Array(plaintext).fill(0)
+    }
 }
