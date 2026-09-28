@@ -46,6 +46,7 @@ vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 import { WithHardwareWalletExtension } from '@perawallet/wallet-extension-hardware-wallet'
 import { PeraProvider } from '../pera-provider.web'
+import { WithChainRegistry } from '../withChainRegistry'
 
 describe('provider migrations wiring (web)', () => {
     it('places WithMigrations first so later extensions can register', () => {
@@ -80,6 +81,15 @@ describe('provider migrations wiring (web)', () => {
 
         expect(extensions.indexOf(WithHardwareWalletExtension)).toBe(
             names.indexOf('WithPlatformExtension') + 1,
+        )
+    })
+
+    // Built empty on every platform; the composition roots register chains into it.
+    it('composes WithChainRegistry right after WithHardwareWalletExtension', () => {
+        const extensions: readonly unknown[] = PeraProvider.EXTENSIONS
+
+        expect(extensions.indexOf(WithChainRegistry)).toBe(
+            extensions.indexOf(WithHardwareWalletExtension) + 1,
         )
     })
 })

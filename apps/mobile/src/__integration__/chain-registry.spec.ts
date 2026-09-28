@@ -10,16 +10,14 @@
  limitations under the License
  */
 
-export * from './capabilities/resolve'
-export * from './chain-registry'
-export * from './contracts/address-codec'
-export * from './contracts/key-derivation'
-export * from './errors'
-export * from './models/capabilities'
-export * from './models/descriptor'
-export * from './models/domain'
-export * from './models/identity'
-export * from './models/module'
-export * from './native-asset'
-export * from './registry'
-export * from './scope'
+import { describe, expect, it } from 'vitest'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+
+describe('chain registry', () => {
+    it('exposes an empty chain registry on the provider after bootstrap', () => {
+        const { chains } = getProvider()
+
+        expect(chains.list()).toEqual([])
+        expect(chains.byCaip2('algorand:mainnet')).toBeUndefined()
+    })
+})
