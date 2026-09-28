@@ -11,16 +11,13 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type {
-    AddressCodec,
-    ParsedPaymentUri,
-} from '../../contracts/address-codec'
+import type { AddressCodec, ParsedPaymentUri } from '../contracts/address-codec'
 import type {
     DiscoveryCandidate,
     KeyDerivation,
-} from '../../contracts/key-derivation'
-import type { DeriveOpts } from '../../models/domain'
-import type { ChainId, NetworkId } from '../../models/identity'
+} from '../contracts/key-derivation'
+import type { DeriveOpts } from '../models/domain'
+import type { ChainId, NetworkId } from '../models/identity'
 
 // A second chain that exists only to pressure-test the contracts: base-16
 // addresses with a per-network prefix, the way bech32 chains vary theirs.

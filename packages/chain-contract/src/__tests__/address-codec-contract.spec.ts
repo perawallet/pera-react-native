@@ -11,7 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { addressCodecContractTests } from '../address-codec-contract'
+import { addressCodecContractTests } from './address-codec-contract'
 import { FIXTURE_CHAIN_ID, fixtureCodec } from './fixture-chain'
 
 addressCodecContractTests(() => fixtureCodec, {

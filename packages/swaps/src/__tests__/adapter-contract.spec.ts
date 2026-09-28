@@ -11,10 +11,10 @@
  */
 
 import { vi } from 'vitest'
-import { fakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
-import type { ExecuteSwapParams } from '../../execution'
-import { isQuoteFresh } from '../../utils/quoteFreshness'
-import { swapContractTests } from '../adapter-contract'
+import { fakeSwapAdapter } from './fakeSwapAdapter'
+import type { ExecuteSwapParams } from '../execution'
+import { isQuoteFresh } from '../utils/quoteFreshness'
+import { swapContractTests } from './adapter-contract'
 
 const adapter = fakeSwapAdapter({
     executeSwap: async ({ quote }) => {

@@ -20,19 +20,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const CONTRACT_SUITES = {
     '@perawallet/wallet-core-card/testing':
-        '../card/src/testing/adapter-contract.ts',
+        '../card/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-connections/testing':
-        '../connections/src/testing/handler-contract.ts',
+        '../connections/src/__tests__/handler-contract.ts',
     '@perawallet/wallet-core-nfd/testing':
-        '../nfd/src/testing/adapter-contract.ts',
+        '../nfd/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-onramp/testing':
-        '../onramp/src/testing/adapter-contract.ts',
+        '../onramp/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-swaps/testing':
-        '../swaps/src/testing/adapter-contract.ts',
+        '../swaps/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-transactions/testing':
-        '../transactions/src/testing/adapter-contract.ts',
+        '../transactions/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-extension-hardware-wallet/testing':
-        '../../extensions/hardware-wallet/src/testing/app-driver-contract.ts',
+        '../../extensions/hardware-wallet/src/__tests__/app-driver-contract.ts',
 }
 
 export default defineConfig({

@@ -10,12 +10,19 @@
  limitations under the License
  */
 
-import { keyDerivationContractTests } from '../key-derivation-contract'
-import { fixtureCodec, fixtureDerivation } from './fixture-chain'
+import { fakeRampAdapter } from './fakeRampAdapter'
+import { rampContractTests } from './adapter-contract'
 
-keyDerivationContractTests(() => fixtureDerivation, {
-    codec: fixtureCodec,
-    deriveOpts: { scheme: 'ed25519', networkId: 'testnet' },
-    unsupportedOpts: { scheme: 'falcon-1024', networkId: 'testnet' },
-    rawKey: new Uint8Array(32).fill(7),
-})
+rampContractTests(
+    () =>
+        fakeRampAdapter({
+            toAssetId: token => (token.id === 'NATIVE' ? '0' : token.id),
+        }),
+    {
+        native: { id: 'NATIVE', symbol: 'NAT' },
+        nonNative: {
+            token: { id: '31566704', symbol: 'USDC' },
+            assetId: '31566704',
+        },
+    },
+)

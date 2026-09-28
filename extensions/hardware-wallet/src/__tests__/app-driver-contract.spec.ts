@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import type { HardwareWalletTransport } from '../../types'
-import type { LedgerAppDriver } from '../../app-driver'
-import { ledgerAppDriverContractTests } from '../app-driver-contract'
+import type { HardwareWalletTransport } from '../types'
+import type { LedgerAppDriver } from '../app-driver'
+import { ledgerAppDriverContractTests } from './app-driver-contract'
 
 let failure: unknown
 

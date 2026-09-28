@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { SendFlowChainAdapter } from '../../chain-adapter'
-import { sendFlowContractTests } from '../adapter-contract'
+import type { SendFlowChainAdapter } from '../chain-adapter'
+import { sendFlowContractTests } from './adapter-contract'
 
 const isQuote = (summary: unknown): boolean =>
     typeof summary === 'object' && summary !== null && 'fee' in summary

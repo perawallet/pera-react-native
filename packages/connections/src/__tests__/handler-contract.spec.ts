@@ -19,7 +19,7 @@ import type { ConnectionHandler } from '../handler'
 import {
     runHandlerContractTests,
     type HandlerContractPeer,
-} from '../testing/handler-contract'
+} from './handler-contract'
 
 const ORIGIN_KIND = 'origin-identified'
 // The page's own origin is the connection id: nothing is scanned or pasted,

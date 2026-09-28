@@ -11,8 +11,8 @@
  */
 
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { fakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
-import { nameServiceContractTests } from '../adapter-contract'
+import { fakeNameServiceAdapter } from './fakeNameServiceAdapter'
+import { nameServiceContractTests } from './adapter-contract'
 
 // The Error a fetch polyfill rejects with on abort.
 const abortError = (): Error =>
