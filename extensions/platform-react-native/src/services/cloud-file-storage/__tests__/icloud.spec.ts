@@ -29,6 +29,7 @@ const {
     isCloudAvailable,
     readFile,
     readdir,
+    stat,
     triggerSync,
     writeFile,
     constructed,
@@ -36,6 +37,7 @@ const {
     isCloudAvailable: vi.fn(),
     readFile: vi.fn(),
     readdir: vi.fn(),
+    stat: vi.fn(),
     triggerSync: vi.fn(),
     writeFile: vi.fn(),
     constructed: vi.fn(),
@@ -64,6 +66,7 @@ vi.mock('react-native-cloud-storage', () => {
             isCloudAvailable = isCloudAvailable
             readFile = readFile
             readdir = readdir
+            stat = stat
             triggerSync = triggerSync
             writeFile = writeFile
             constructor(...args: unknown[]) {
@@ -96,6 +99,7 @@ beforeEach(() => {
     isCloudAvailable.mockResolvedValue(true)
     readdir.mockResolvedValue([ONE])
     readFile.mockResolvedValue(CONTENTS)
+    stat.mockResolvedValue({ size: CONTENTS.length })
     triggerSync.mockResolvedValue(undefined)
     writeFile.mockResolvedValue(undefined)
 })
@@ -105,11 +109,11 @@ afterEach(() => {
 })
 
 describe('saveToICloud', () => {
-    test('writes the file to the hidden app-data scope of the iCloud container', async () => {
+    test('writes the file to the user-visible documents scope of the iCloud container', async () => {
         await expect(saveToICloud(ONE, '{}')).resolves.toBe('saved')
 
         expect(constructed).toHaveBeenCalledWith('icloud', {
-            scope: 'app_data',
+            scope: 'documents',
         })
         expect(writeFile).toHaveBeenCalledWith(`/${ONE}`, '{}')
     })
@@ -159,13 +163,13 @@ describe('saveToICloud', () => {
 })
 
 describe('readFromICloud resolving which file to read', () => {
-    test('reads the only saved file from the hidden app-data scope', async () => {
+    test('reads the only saved file from the user-visible documents scope', async () => {
         await expect(readFromICloud(options())).resolves.toEqual({
             status: 'read',
             contents: CONTENTS,
         })
         expect(constructed).toHaveBeenCalledWith('icloud', {
-            scope: 'app_data',
+            scope: 'documents',
         })
         expect(readdir).toHaveBeenCalledWith('/')
         expect(readFile).toHaveBeenCalledWith(`/${ONE}`)
@@ -383,5 +387,46 @@ describe('readFromICloud waiting for a placeholder to download', () => {
         readFile.mockRejectedValueOnce(error)
 
         await expect(readFromICloud(options())).rejects.toBe(error)
+    })
+})
+
+describe('readFromICloud recovering a renamed file', () => {
+    const renamed = (extra: Partial<ReadCloudFileOptions> = {}) =>
+        options({
+            isCandidateContents: (contents: string) => contents === CONTENTS,
+            ...extra,
+        })
+
+    test('finds a key the user renamed, and reads it only once', async () => {
+        readdir.mockResolvedValueOnce(['my-wallet-key.json'])
+
+        await expect(readFromICloud(renamed())).resolves.toEqual({
+            status: 'read',
+            contents: CONTENTS,
+        })
+        expect(readFile).toHaveBeenCalledTimes(1)
+        expect(readFile).toHaveBeenCalledWith('/my-wallet-key.json')
+    })
+
+    // The folder is the user's now, so anything at all can be sitting in it.
+    test('never reads an entry larger than the probe ceiling', async () => {
+        readdir.mockResolvedValueOnce(['holiday.mov'])
+        stat.mockResolvedValueOnce({ size: 64 * 1024 * 1024 })
+
+        await expect(readFromICloud(renamed())).rejects.toBeInstanceOf(
+            CloudFileNotFoundError,
+        )
+        expect(readFile).not.toHaveBeenCalled()
+    })
+
+    test('treats a placeholder it cannot read yet as not ours', async () => {
+        readdir.mockResolvedValueOnce(['my-wallet-key.json'])
+        readFile.mockRejectedValueOnce(
+            cloudError(CloudStorageErrorCode.READ_ERROR),
+        )
+
+        await expect(readFromICloud(renamed())).rejects.toBeInstanceOf(
+            CloudFileNotFoundError,
+        )
     })
 })
