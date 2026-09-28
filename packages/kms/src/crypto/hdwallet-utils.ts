@@ -87,8 +87,13 @@ export const deriveLiquidAuthMainKey = (
             LIQUID_AUTH_MAIN_KEY_LENGTH,
             LIQUID_AUTH_PBKDF2_DIGEST,
             (err, derivedKey) => {
-                if (err) reject(err)
-                else resolve(new Uint8Array(derivedKey))
+                if (err) {
+                    reject(err)
+                    return
+                }
+                const mainKey = new Uint8Array(derivedKey)
+                zeroBytes(derivedKey)
+                resolve(mainKey)
             },
         )
     })
@@ -220,9 +225,14 @@ export const generateHDMasterKey = async (mnemonicIndices?: Uint16Array) => {
 
     const mnemonicBytes = indicesToUtf8Bytes(indices)
     try {
-        const seed = await deriveBip39Seed(mnemonicBytes)
+        // The checksum check throws, so it runs before the seed exists.
         const entropy = indicesToEntropy(indices)
-        return { seed, entropy }
+        try {
+            return { seed: await deriveBip39Seed(mnemonicBytes), entropy }
+        } catch (error) {
+            zeroBytes(entropy)
+            throw error
+        }
     } finally {
         zeroBytes(mnemonicBytes)
         // Generated indices are owned here; caller-supplied ones are the
