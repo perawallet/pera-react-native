@@ -27,7 +27,9 @@ import {
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { reconcileOpenSubmissions } from '@perawallet/wallet-core-signing'
 import { sendShouldRefreshRequest } from '../polling'
 import type { SyncServiceDeps } from '../models'
@@ -310,6 +312,14 @@ export class SyncService {
                 networksToSync = check.networks
                 shouldRefreshRound = check.round
             }
+
+            const { chains } = getProvider()
+            networksToSync = networksToSync.filter(
+                network =>
+                    !chains.isSwitchedOff(
+                        scopeForLegacyNetwork(network).chainId,
+                    ),
+            )
 
             if (networksToSync.length > 0) {
                 const { hadTotalFailure, hadAccountFailure } =
