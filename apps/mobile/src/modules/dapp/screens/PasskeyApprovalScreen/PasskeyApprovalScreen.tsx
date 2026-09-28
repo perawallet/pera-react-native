@@ -31,6 +31,7 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
         rpId,
         userName,
         isBusy,
+        canApprove,
         error,
         approve,
         decline,
@@ -92,7 +93,7 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
                     onPress={() => void approve()}
                     style={styles.approveButton}
                     isLoading={isBusy}
-                    isDisabled={isBusy}
+                    isDisabled={!canApprove}
                     testID='dapp-passkey-approve'
                 />
             </PWView>

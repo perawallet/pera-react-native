@@ -19,6 +19,7 @@ import {
 } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { INVALID_ENDPOINT_MESSAGE_KEY } from './isValidEndpoint'
 import { useStyles } from './styles'
 import { useCustomNetworkSheet } from './useCustomNetworkSheet'
 
@@ -60,7 +61,7 @@ export const CustomNetworkSheet = () => {
                 onChangeText={text => sheet.handleFieldChange('algodUrl', text)}
                 errorMessage={
                     sheet.errors.algodUrl
-                        ? t('settings.developer.node_settings.invalid_url')
+                        ? t(INVALID_ENDPOINT_MESSAGE_KEY)
                         : undefined
                 }
                 autoCapitalize='none'
@@ -104,7 +105,7 @@ export const CustomNetworkSheet = () => {
                 }
                 errorMessage={
                     sheet.errors.indexerUrl
-                        ? t('settings.developer.node_settings.invalid_url')
+                        ? t(INVALID_ENDPOINT_MESSAGE_KEY)
                         : undefined
                 }
                 autoCapitalize='none'

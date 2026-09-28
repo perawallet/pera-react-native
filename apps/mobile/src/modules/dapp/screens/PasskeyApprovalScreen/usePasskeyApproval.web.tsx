@@ -45,6 +45,7 @@ import {
     PasskeyChooserContent,
     type PasskeyChoice,
 } from '../../components/PasskeyChooserContent'
+import { useApprovalArming } from '@hooks/useApprovalArming.web'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
@@ -96,6 +97,8 @@ type UsePasskeyApprovalResult = {
     userName?: string
     origin: string
     isBusy: boolean
+    /** False until the window is armed (see useApprovalArming) or while busy. */
+    canApprove: boolean
     error: string | null
     approve: () => Promise<void>
     decline: () => Promise<void>
@@ -108,12 +111,13 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
     const { t } = useLanguage()
     const [isBusy, setIsBusy] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const isArmed = useApprovalArming()
 
     const passkeyApproval = asPasskeyApproval(approval)
 
     const approve = useCallback(async (): Promise<void> => {
         const current = asPasskeyApproval(approval)
-        if (!requestId || !current) return
+        if (!requestId || !current || !isArmed) return
         setIsBusy(true)
         setError(null)
         // CRITICAL: `current.origin` is the browser-stamped frame origin the
@@ -202,7 +206,14 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
         } finally {
             setIsBusy(false)
         }
-    }, [requestId, approval, requireVaultPassword, requestBottomSheet, t])
+    }, [
+        requestId,
+        approval,
+        isArmed,
+        requireVaultPassword,
+        requestBottomSheet,
+        t,
+    ])
 
     const decline = useCallback(async (): Promise<void> => {
         if (!requestId) return
@@ -217,6 +228,7 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
         userName: passkeyApproval?.userName,
         origin: passkeyApproval?.origin ?? '',
         isBusy,
+        canApprove: isArmed && !isBusy,
         error,
         approve,
         decline,

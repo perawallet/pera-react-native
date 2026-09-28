@@ -42,7 +42,8 @@ import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     getAlgorandClient,
     useNetworkStore,
-    useCustomNetworkStore,
+    setCustomNetwork,
+    clearCustomNetwork,
     getExpectedGenesisHash,
 } from '@perawallet/wallet-core-blockchain'
 import { fetchTransactionHistory } from '@perawallet/wallet-core-transactions'
@@ -100,7 +101,7 @@ const FIXTURES: NetworkFixture[] = [
         indexerUrl: BETANET_INDEXER,
         genesisHash: BETANET_GENESIS,
         configure: () => {
-            useCustomNetworkStore.getState().resetState()
+            clearCustomNetwork()
         },
     },
     {
@@ -110,7 +111,7 @@ const FIXTURES: NetworkFixture[] = [
         indexerUrl: CUSTOM_INDEXER,
         genesisHash: CUSTOM_GENESIS,
         configure: () => {
-            useCustomNetworkStore.getState().setCustomNetwork({
+            setCustomNetwork({
                 algodUrl: CUSTOM_ALGOD,
                 indexerUrl: CUSTOM_INDEXER,
                 genesisHash: CUSTOM_GENESIS,
@@ -166,7 +167,7 @@ describe.each(FIXTURES)(
 
         afterEach(() => {
             useNetworkStore.getState().setNetwork(Networks.mainnet)
-            useCustomNetworkStore.getState().resetState()
+            clearCustomNetwork()
         })
 
         it('sends chain reads to the active network, not the fallback', async () => {

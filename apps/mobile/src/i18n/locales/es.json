@@ -2562,6 +2562,7 @@
         "input": {
             "max": "MÁX",
             "next": "Siguiente",
+            "amount_label": "Importe",
             "error_title": "Cantidad no válida",
             "error_body": "Introduce una cantidad mayor que {{min}}.",
             "exceeds_max_title": "Saldo insuficiente",
@@ -2613,8 +2614,9 @@
         },
         "close_account": {
             "title": "Cerrar cuenta",
-            "body": "Esta cuenta no tiene ningún activo añadido. Enviar todo el saldo cerrará la cuenta en la red de Algorand.",
+            "body": "Esta cuenta no tiene ningún activo añadido, así que puedes cerrarla y enviar todo el saldo. Algunos exchanges no aceptan transacciones que cierran una cuenta. Si mantienes la cuenta abierta, el saldo mínimo de {{minBalance}} ALGO se queda en ella.",
             "confirm": "Cerrar cuenta y enviar",
+            "keep_open": "Enviar sin cerrar",
             "warning": "Esta transacción cerrará tu cuenta en la red de Algorand.",
             "success_title": "Cuenta cerrada",
             "success_subtitle": "Tu cuenta se ha cerrado en la red de Algorand."
@@ -2746,6 +2748,7 @@
                 "fetch_from_node": "Obtener del nodo",
                 "fetch_failed": "No se pudo conectar con ese nodo. Introduce los valores manualmente.",
                 "invalid_url": "Introduce una URL http:// o https:// válida",
+                "invalid_https_url": "Introduce una URL https:// válida",
                 "genesis_required": "Obtén o introduce el hash génesis",
                 "genesis_id_required": "Obtén o introduce el ID génesis",
                 "save": "Guardar y cambiar",
@@ -3696,7 +3699,11 @@
         "scan_header": {
             "having_issues": "¿Tienes problemas?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Cuenta Ledger añadida",
+            "body": "Ya puedes usarla en la extensión de Pera."
+        }
     },
     "countries": {
         "AC": "Isla de la Ascensión",
@@ -4042,9 +4049,6 @@
         },
         "approval": {
             "placeholder": "Interfaz de aprobación — próximamente en M4."
-        },
-        "expanded": {
-            "redirecting": "Continuando en una pestaña nueva…"
         },
         "reauth": {
             "title": "Confirma que eres tú",

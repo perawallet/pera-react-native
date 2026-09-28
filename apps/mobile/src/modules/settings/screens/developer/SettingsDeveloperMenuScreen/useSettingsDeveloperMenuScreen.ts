@@ -15,12 +15,14 @@ import { Linking } from 'react-native'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { config } from '@perawallet/wallet-core-config'
+import { areConfigOverridesIgnored } from '@perawallet/wallet-core-remote-config'
 
 import { useWebView } from '@modules/webview/hooks'
 import { routeCapabilities } from '@routes/capabilities'
 
 export type UseSettingsDeveloperMenuScreenResult = {
     isGalleryAvailable: boolean
+    isFeatureFlagsAvailable: boolean
     handleNavigate: (page: string) => void
     handleOpenTestingDapp: () => void
 }
@@ -52,6 +54,7 @@ export const useSettingsDeveloperMenuScreen =
 
         return {
             isGalleryAvailable: routeCapabilities.developerGallery,
+            isFeatureFlagsAvailable: !areConfigOverridesIgnored(),
             handleNavigate,
             handleOpenTestingDapp,
         }

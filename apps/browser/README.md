@@ -6,6 +6,13 @@ Requires a repo-root `.env` with `BACKEND_API_KEY=<staging key>` (the same
 variable Bitrise injects for mobile; see `tools/generate-config.sh`).
 Without it, Pera-backend calls (should-refresh, asset metadata, prices,
 history) 401 against staging; `bundle` still succeeds but prints a warning.
+A production build (`APP_ENV=production`) fails instead.
+
+The bundle stamps `manifest.json`: `version` is the numeric part of this
+package's `version` (Chrome accepts only integers and needs a higher one for
+every store upload), `version_name` keeps any pre-release tag, and non-production
+builds get "(development build)" or "(staging build)" appended to the
+description. Bump `version` in `package.json` to release.
 
     pnpm --filter extension bundle
 

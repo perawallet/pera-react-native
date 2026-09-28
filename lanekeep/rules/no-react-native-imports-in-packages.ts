@@ -3,6 +3,7 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { withoutTests } from '../shared/scope.js'
 
 type AllowedImport = {
     file: string
@@ -78,9 +79,9 @@ export default defineRule({
             good: "import { getProvider } from '@perawallet/wallet-extension-provider'\nconst isIOS = getProvider().deviceInfo.getDevicePlatform() === 'ios'",
         },
     },
-    gates: {
+    gates: withoutTests({
         pathMatches: ['**/packages/*/src/**'],
-    },
+    }),
     // Every form that creates the dependency: static, `export … from`, a
     // deferred `import()` and a CommonJS `require`.
     query: `

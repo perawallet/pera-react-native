@@ -10,6 +10,14 @@
  limitations under the License
  */
 
+export * from './capabilities/resolve'
+export * from './contracts/address-codec'
+export * from './contracts/key-derivation'
 export * from './errors'
+export * from './models/capabilities'
+export * from './models/descriptor'
+export * from './models/domain'
 export * from './models/identity'
+export * from './models/module'
+export * from './registry'
 export * from './scope'

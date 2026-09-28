@@ -36,7 +36,7 @@ import {
 } from '@perawallet/wallet-core-background'
 import { canSignWith, useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
-    useCustomNetworkStore,
+    getCustomNetworkConfig,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
 import {
@@ -61,14 +61,11 @@ const OFFSCREEN_POLL_INTERVAL_MS = 30_000
 
 // zustand persist hydrates once at import and this context is long-lived, so
 // writes from other contexts must be re-read. Keys are `kv:` + STORE_NAME.
-// custom-network-store must stay paired with network-store: rehydration demotes
-// a persisted `custom` to config.defaultNetwork when the custom slot has no config.
 const REHYDRATE_BY_KEY: Record<
     string,
     { persist: { rehydrate: () => unknown } }
 > = {
     'kv:accounts-store': useAccountsStore,
-    'kv:custom-network-store': useCustomNetworkStore,
     'kv:network-store': useNetworkStore,
     'kv:polling-store': usePollingStore,
 }
@@ -133,7 +130,7 @@ export const runOffscreenApp = async (): Promise<void> => {
             transport: createChromeDappTransport(),
             getNetwork: () => useNetworkStore.getState().network,
             getCustomNetworkGenesisHash: () =>
-                useCustomNetworkStore.getState().customNetwork?.genesisHash,
+                getCustomNetworkConfig()?.genesisHash,
             getAccounts: () => {
                 const { accounts } = useAccountsStore.getState()
                 return accounts.flatMap(account =>

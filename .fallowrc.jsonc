@@ -15,7 +15,8 @@
   ],
 
   // Test infrastructure the runner (vitest) resolves by convention, never imported.
-  "ignorePatterns": ["**/__mocks__/**"],
+  // lanekeep's fixtures are source text its specs lint by glob; nothing imports them.
+  "ignorePatterns": ["**/__mocks__/**", "lanekeep/__tests__/fixtures/**"],
 
   // Entry points fallow's plugins don't infer on their own. Test files are runtime
   // entries for the suite, and packages expose test-only API (MSW handlers, fixtures)

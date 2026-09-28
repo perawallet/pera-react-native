@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
-import { render } from '@test-utils/render'
+import { describe, it, expect, vi } from 'vitest'
+import { fireEvent, render } from '@test-utils/render'
 // Import the exact web filename — vitest has no Metro platform resolution,
 // so a bare '../PWStaticWebView' specifier would load the react-native-webview
 // module instead (as the native PWStaticWebView.spec.tsx does).
@@ -47,6 +47,42 @@ describe('PWStaticWebView (web)', () => {
         expect(container.querySelector('iframe')?.getAttribute('sandbox')).toBe(
             '',
         )
+    })
+
+    it('forwards the iframe load event to onLoad', () => {
+        const onLoad = vi.fn()
+        const { container } = render(
+            <PWStaticWebView
+                source={{ html: '<p>terms</p>' }}
+                onLoad={onLoad}
+            />,
+        )
+
+        fireEvent.load(container.querySelector('iframe') as HTMLIFrameElement)
+
+        expect(onLoad).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports an offline remote uri through onError, but not bundled HTML', () => {
+        vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+        const onError = vi.fn()
+
+        render(
+            <PWStaticWebView
+                source={{ html: '<p>terms</p>' }}
+                onError={onError}
+            />,
+        )
+        expect(onError).not.toHaveBeenCalled()
+
+        render(
+            <PWStaticWebView
+                source={{ uri: 'https://example.com/terms' }}
+                onError={onError}
+            />,
+        )
+        expect(onError).toHaveBeenCalledTimes(1)
+        vi.restoreAllMocks()
     })
 
     it('sandboxes a remote uri with allow-same-origin allow-scripts — needed to render, equivalent to an ordinary cross-origin iframe', () => {

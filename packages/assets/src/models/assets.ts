@@ -156,9 +156,9 @@ export const ALGO_ASSET: PeraAsset = {
     },
 }
 
-export type AssetPrice = {
+export type AlgorandAssetPrice = {
     assetId: string
     usdPrice: Decimal
 }
 
-export type AssetPrices = Map<string, AssetPrice>
+export type AssetPrices = Map<string, AlgorandAssetPrice>

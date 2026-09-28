@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { consumeInitialExpandedFlow } from '@perawallet/wallet-core-browser-runtime'
 import { useIsOnboarding } from '@modules/onboarding'
 
-export type ExpandedFlowScreen = 'AddAccount' | 'BackupWallet' | 'ScanQR'
+export type ExpandedFlowScreen = 'AddAccount' | 'ScanQR'
 
 /** Screens the onboarding stack can be deep-linked into from the popup. */
 export type OnboardingFlowScreen = 'LedgerScan' | 'AsbImportBackup'
@@ -37,8 +37,6 @@ export const useExpandedFlowNavigation = (
         const flow = consumeInitialExpandedFlow()
         if (flow === 'add-account') {
             navigate('AddAccount')
-        } else if (flow === 'backup-wallet') {
-            navigate('BackupWallet')
         } else if (flow === 'scan') {
             navigate('ScanQR')
         } else if (flow === 'ledger-usb') {
@@ -64,7 +62,7 @@ export const useExpandedFlowNavigation = (
  * `consumeInitialExpandedFlow` source: the two shell states are exclusive, so
  * only one of these ever consumes the param.
  *
- * `add-account`/`backup-wallet`/`scan` are deliberately unhandled — they only
+ * `add-account`/`scan` are deliberately unhandled — they only
  * exist in the main shell and are unreachable with no account.
  */
 export const useOnboardingExpandedFlowNavigation = (

@@ -12,7 +12,6 @@
 
 export type ExpandedFlow =
     | 'add-account'
-    | 'backup-wallet'
     | 'scan'
     | 'ledger-usb'
     | 'ledger-ble'
@@ -20,7 +19,6 @@ export type ExpandedFlow =
 
 const FLOWS: readonly string[] = [
     'add-account',
-    'backup-wallet',
     'scan',
     'ledger-usb',
     'ledger-ble',
@@ -42,10 +40,11 @@ const findExpandedTab = async (): Promise<chrome.tabs.Tab | undefined> => {
 }
 
 /**
- * Opens (or deep-links into) the full-tab surface. Blur-fragile flows —
- * onboarding, mnemonic backup, account import — must not run inside the
- * 360x600 toolbar popup (design spec); Chrome auto-closes the popup when the
- * created tab takes focus, which is the intended hand-off.
+ * Opens (or deep-links into) the full-tab surface, for the flows the 360x600
+ * toolbar popup can't host: the QR scanner, the Ledger WebHID/Web Bluetooth
+ * device pickers and the backup-file dialog, all of which take focus and so
+ * close the popup. Chrome auto-closes the popup when the created tab takes
+ * focus, which is the intended hand-off.
  *
  * If an expanded tab is already open, it's focused and re-pointed at the new
  * `?flow=` instead of stacking a second tab.
@@ -83,6 +82,7 @@ export const closeCurrentTab = async (): Promise<void> => {
 }
 
 let consumed = false
+let consumedFlow: ExpandedFlow | null = null
 
 const readSearch = (): string => {
     const testSeam = (globalThis as { __PERA_TEST_SEARCH__?: string })
@@ -129,5 +129,13 @@ export const consumeInitialExpandedFlow = (): ExpandedFlow | null => {
     const flow = new URLSearchParams(readSearch()).get('flow')
     if (flow === null || !FLOWS.includes(flow)) return null
     stripFlowFromUrl()
-    return flow as ExpandedFlow
+    consumedFlow = flow as ExpandedFlow
+    return consumedFlow
 }
+
+/**
+ * The flow this tab was opened for, once `consumeInitialExpandedFlow` has
+ * read it. Unlike that one-shot read, it stays set for the tab's lifetime, so
+ * a screen deep in the flow can tell a hand-off tab from a plain one.
+ */
+export const getConsumedExpandedFlow = (): ExpandedFlow | null => consumedFlow

@@ -49,7 +49,7 @@ import { updateQueryHeaders } from './bootstrap/query-headers'
 import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
 import { getEffectiveSupportedLocales } from './i18n/effectiveLocales'
 import { resolveLocale } from './i18n/locales'
-import i18n from './i18n'
+import { i18n } from './i18n'
 
 /**
  * 'keystore' means hydration refused undecodable wallet records — retrying
