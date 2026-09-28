@@ -5,8 +5,7 @@
   ],
   "compilerOptions": {
     "rootDir": "./src",
-    "outDir": "./dist",
-    "types": []
+    "outDir": "./dist"
   },
   "include": [
     "src"
@@ -16,9 +15,6 @@
     "dist",
     "**/__tests__/**",
     "**/*.spec.ts",
-    "**/*.spec.tsx",
-    "**/handlers.ts",
-    "**/*-handlers.ts",
-    "**/testing/**"
+    "**/*.spec.tsx"
   ]
 }

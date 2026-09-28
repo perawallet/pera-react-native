@@ -11,15 +11,21 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import type { ChainDescriptor } from '../descriptor'
 import { assetRefKey, isNativeAsset } from '../domain'
 import type { ChainId } from '../identity'
 
 // ChainId has one member today; a second chain is simulated with a cast.
 const OTHER = 'other' as ChainId
 
-const algorandDescriptor = {
-    id: 'algorand' as const,
-    nativeAsset: { assetId: '0' },
+const algorandDescriptor: Pick<ChainDescriptor, 'id' | 'nativeAsset'> = {
+    id: 'algorand',
+    nativeAsset: {
+        ref: { chainId: 'algorand', assetId: '0' },
+        symbol: 'ALGO',
+        name: 'Algo',
+        decimals: 6,
+    },
 }
 
 describe('assetRefKey', () => {
