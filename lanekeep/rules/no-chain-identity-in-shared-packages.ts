@@ -64,6 +64,16 @@ const ALLOWED: readonly Allowed[] = [
         text: 'fields.chainId != null',
         reason: "A legacy WalletConnect v1 session's chainId is its numeric chain id, not a ChainId.",
     },
+    {
+        file: 'packages/chain-contract/src/models/domain.ts',
+        text: 'ref.chainId === descriptor.id',
+        reason: 'Compares against whichever descriptor the caller passes, never a named chain.',
+    },
+    {
+        file: 'packages/chain-contract/src/models/domain.ts',
+        text: "'algorand'",
+        reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',
+    },
 ]
 
 export default defineRule({
