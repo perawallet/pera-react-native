@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { vi } from 'vitest'
 import { rampContractTests } from '@perawallet/wallet-core-onramp/testing'
 import { algorandRampAdapter } from '../adapter'

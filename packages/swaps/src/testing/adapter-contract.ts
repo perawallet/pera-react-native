@@ -10,13 +10,9 @@
  limitations under the License
  */
 
-
 import { describe, expect, it } from 'vitest'
 import type { SwapChainAdapter } from '../chain-adapter'
-import type {
-    ExecuteSwapParams,
-    SwapExecutionContext,
-} from '../execution'
+import type { ExecuteSwapParams, SwapExecutionContext } from '../execution'
 
 export interface SwapContractFixtures {
     /**
@@ -35,7 +31,10 @@ export const swapContractTests = (
     const run = async (quote: Partial<ExecuteSwapParams['quote']>) => {
         const context = fixtures.makeContext()
         const result = await makeAdapter().executeSwap(
-            { ...fixtures.params, quote: { ...fixtures.params.quote, ...quote } },
+            {
+                ...fixtures.params,
+                quote: { ...fixtures.params.quote, ...quote },
+            },
             context,
         )
         return { result, context }

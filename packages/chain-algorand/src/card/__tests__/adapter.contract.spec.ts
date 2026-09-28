@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { vi } from 'vitest'
 import { cardContractTests } from '@perawallet/wallet-core-card/testing'
 
@@ -54,7 +53,9 @@ cardContractTests(() => algorandCardAdapter, {
         assetId: '31566704',
         arrangeNoHolding: () =>
             algod({
-                accountInformation: () => ({ do: async () => ({ assets: [] }) }),
+                accountInformation: () => ({
+                    do: async () => ({ assets: [] }),
+                }),
             }),
     },
     autoDraw: {

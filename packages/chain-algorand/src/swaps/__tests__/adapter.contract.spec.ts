@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { vi } from 'vitest'
 import type { ExecuteSwapParams } from '@perawallet/wallet-core-swaps'
 import { swapContractTests } from '@perawallet/wallet-core-swaps/testing'

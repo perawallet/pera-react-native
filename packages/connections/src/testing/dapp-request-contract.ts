@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { describe, expect, it } from 'vitest'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { DappRequestChainAdapter } from '../dappRequest'
@@ -65,7 +64,10 @@ export const dappRequestContractTests = (
                 fixtures.disclosed
 
             expect(
-                makeAdapter().resolveReportedNetwork(network, customGenesisHash),
+                makeAdapter().resolveReportedNetwork(
+                    network,
+                    customGenesisHash,
+                ),
             ).toBe(reportedAs)
         })
 
@@ -73,7 +75,10 @@ export const dappRequestContractTests = (
             const { network, customGenesisHash } = fixtures.undisclosed
 
             expect(
-                makeAdapter().resolveReportedNetwork(network, customGenesisHash),
+                makeAdapter().resolveReportedNetwork(
+                    network,
+                    customGenesisHash,
+                ),
             ).toBeUndefined()
         })
     })

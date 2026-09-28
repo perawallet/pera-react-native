@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { describe, expect, it } from 'vitest'
 import type { RampChainAdapter } from '../chain-adapter'
 import type { RampToken } from '../models'

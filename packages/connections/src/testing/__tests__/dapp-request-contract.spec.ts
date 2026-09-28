@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import type { DappRequestChainAdapter } from '../../dappRequest'
 import { dappRequestContractTests } from '../dapp-request-contract'
 

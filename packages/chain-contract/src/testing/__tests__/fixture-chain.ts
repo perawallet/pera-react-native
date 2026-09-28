@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { Decimal } from 'decimal.js'
 import type {
     AddressCodec,
@@ -68,7 +67,8 @@ export const fixtureCodec: AddressCodec = {
         const label = query.get('label')
         const note = query.get('note')
         if (amount) parsed.amount = new Decimal(amount)
-        if (asset) parsed.assetRef = { chainId: FIXTURE_CHAIN_ID, assetId: asset }
+        if (asset)
+            parsed.assetRef = { chainId: FIXTURE_CHAIN_ID, assetId: asset }
         if (label) parsed.label = label
         if (note) parsed.note = note
         return parsed
@@ -94,7 +94,10 @@ export const fixtureDerivation: KeyDerivation = {
             },
             'fixturehex',
         )
-        return { ...key, address: fixtureCodec.fromPublicKey(key.publicKey, opts) }
+        return {
+            ...key,
+            address: fixtureCodec.fromPublicKey(key.publicKey, opts),
+        }
     },
     importRawKey: async (kms, bytes, opts) => {
         assertScheme(opts)

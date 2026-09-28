@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { describe, expect, it, vi } from 'vitest'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import type { LedgerAppDriver, LedgerAppTransport } from '../app-driver'
@@ -43,7 +42,9 @@ export const ledgerAppDriverContractTests = (
         })
 
         it('omits disconnect detection when the link emits nothing', () => {
-            expect(makeDriver().open(rawTransport()).onDisconnect).toBeUndefined()
+            expect(
+                makeDriver().open(rawTransport()).onDisconnect,
+            ).toBeUndefined()
         })
 
         it('relays disconnects when the link emits them', () => {
@@ -71,7 +72,9 @@ export const ledgerAppDriverContractTests = (
             fixtures.arrangeExchangeFailure(failure)
 
             await expect(
-                makeDriver().open(rawTransport(), classifyError).getAppVersion(),
+                makeDriver()
+                    .open(rawTransport(), classifyError)
+                    .getAppVersion(),
             ).rejects.toBe(classified)
             expect(classifyError).toHaveBeenCalledWith(failure)
         })

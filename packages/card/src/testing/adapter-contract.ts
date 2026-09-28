@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { describe, expect, it } from 'vitest'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type {
@@ -48,8 +47,12 @@ export const cardContractTests = (
         it('builds delegation requests deterministically, with a route and a body', () => {
             const adapter = makeAdapter()
             const requests = [
-                () => adapter.delegationApprovalRequest(fixtures.delegationApproval),
-                () => adapter.delegatorProgramRequest(fixtures.delegatorProgram),
+                () =>
+                    adapter.delegationApprovalRequest(
+                        fixtures.delegationApproval,
+                    ),
+                () =>
+                    adapter.delegatorProgramRequest(fixtures.delegatorProgram),
             ]
 
             for (const build of requests) {

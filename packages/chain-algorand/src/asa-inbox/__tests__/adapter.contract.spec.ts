@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { vi } from 'vitest'
 import { sendFlowContractTests } from '@perawallet/wallet-core-transactions/testing'
 

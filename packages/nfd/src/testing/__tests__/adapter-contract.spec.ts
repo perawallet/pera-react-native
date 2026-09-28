@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { fakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 import { nameServiceContractTests } from '../adapter-contract'

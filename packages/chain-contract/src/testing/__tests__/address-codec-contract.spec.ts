@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { Decimal } from 'decimal.js'
 import { addressCodecContractTests } from '../address-codec-contract'
 import { FIXTURE_CHAIN_ID, fixtureCodec } from './fixture-chain'

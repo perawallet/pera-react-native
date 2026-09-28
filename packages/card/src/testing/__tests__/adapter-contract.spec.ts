@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { fakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 import { CardEscrowNotConfiguredError } from '../../api/escrow/errors'
 import { cardContractTests } from '../adapter-contract'

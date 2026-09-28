@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-
 import { describe, expect, it } from 'vitest'
-import type {
-    InboxSendTxsParams,
-    SendFlowChainAdapter,
-} from '../chain-adapter'
+import type { InboxSendTxsParams, SendFlowChainAdapter } from '../chain-adapter'
 
 export interface SendFlowContractFixtures {
     /** Required when the adapter has an asset inbox. */

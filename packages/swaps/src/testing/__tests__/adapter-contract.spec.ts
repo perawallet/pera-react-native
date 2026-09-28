@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { vi } from 'vitest'
 import { fakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
 import type { ExecuteSwapParams } from '../../execution'

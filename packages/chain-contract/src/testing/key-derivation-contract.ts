@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { describe, expect, it } from 'vitest'
 import type { AddressCodec } from '../contracts/address-codec'
 import type {
@@ -39,13 +38,13 @@ type FakeKeyStore = ChainKeyStore & {
 // Not real crypto: the suite pins how a chain drives the port (paths, ids,
 // determinism), so any stable bytes-from-text mapping will do.
 const fakeKeyBytes = (text: string): Uint8Array => {
-    let hash = 0x811c9dc5
+    let hash = 0x81_1c_9d_c5
     for (let i = 0; i < text.length; i++) {
-        hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193)
+        hash = Math.imul(hash ^ text.charCodeAt(i), 0x01_00_01_93)
     }
     const bytes = new Uint8Array(32)
     for (let i = 0; i < bytes.length; i++) {
-        hash = Math.imul(hash ^ i, 0x01000193)
+        hash = Math.imul(hash ^ i, 0x01_00_01_93)
         bytes[i] = hash >>> 24
     }
     return bytes
@@ -91,12 +90,26 @@ export const keyDerivationContractTests = (
             const derivation = makeDerivation()
             const kms = createFakeChainKeyStore()
 
-            const first = await derivation.deriveAccount(kms, SEED, 0, 0, deriveOpts)
-            const second = await derivation.deriveAccount(kms, SEED, 0, 0, deriveOpts)
+            const first = await derivation.deriveAccount(
+                kms,
+                SEED,
+                0,
+                0,
+                deriveOpts,
+            )
+            const second = await derivation.deriveAccount(
+                kms,
+                SEED,
+                0,
+                0,
+                deriveOpts,
+            )
 
             expect(second).toEqual(first)
             expect(kms.derivations[1]).toEqual(kms.derivations[0])
-            expect(codec.isValid(first.address, deriveOpts.networkId)).toBe(true)
+            expect(codec.isValid(first.address, deriveOpts.networkId)).toBe(
+                true,
+            )
         })
 
         it('derives distinct keys for distinct coordinates', async () => {
@@ -109,7 +122,13 @@ export const keyDerivationContractTests = (
                     [0, 1],
                     [1, 0],
                 ].map(([account, keyIndex]) =>
-                    derivation.deriveAccount(kms, SEED, account, keyIndex, deriveOpts),
+                    derivation.deriveAccount(
+                        kms,
+                        SEED,
+                        account,
+                        keyIndex,
+                        deriveOpts,
+                    ),
                 ),
             )
 
@@ -150,7 +169,9 @@ export const keyDerivationContractTests = (
 
             expect(first.keyPairId).not.toBe('')
             expect(second).toEqual(first)
-            expect(codec.isValid(first.address, deriveOpts.networkId)).toBe(true)
+            expect(codec.isValid(first.address, deriveOpts.networkId)).toBe(
+                true,
+            )
         })
 
         it('rejects a scheme it cannot derive', async () => {

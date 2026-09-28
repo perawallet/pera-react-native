@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { describe, expect, it } from 'vitest'
 import type { AddressCodec } from '../contracts/address-codec'
 import type { DeriveOpts, PaymentUriOpts } from '../models/domain'
@@ -41,9 +40,9 @@ export const addressCodecContractTests = (
             const address = derive(codec)
 
             expect(derive(codec)).toBe(address)
-            expect(
-                codec.isValid(address, fixtures.deriveOpts.networkId),
-            ).toBe(true)
+            expect(codec.isValid(address, fixtures.deriveOpts.networkId)).toBe(
+                true,
+            )
         })
 
         it('normalizes idempotently to a valid address', () => {
@@ -100,9 +99,7 @@ export const addressCodecContractTests = (
 
             const parsed = codec.parsePaymentUri(codec.toPaymentUri(address))
 
-            expect(parsed && codec.areEqual(parsed.address, address)).toBe(
-                true,
-            )
+            expect(parsed && codec.areEqual(parsed.address, address)).toBe(true)
             expect(parsed?.amount).toBeUndefined()
         })
 

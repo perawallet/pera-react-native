@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { vi } from 'vitest'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { nameServiceContractTests } from '@perawallet/wallet-core-nfd/testing'

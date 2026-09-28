@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { vi } from 'vitest'
 import { ledgerAppDriverContractTests } from '@perawallet/wallet-extension-hardware-wallet/testing'
 

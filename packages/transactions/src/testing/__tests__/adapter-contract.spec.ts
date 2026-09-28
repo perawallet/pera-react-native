@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import type { SendFlowChainAdapter } from '../../chain-adapter'
 import { sendFlowContractTests } from '../adapter-contract'
 

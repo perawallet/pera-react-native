@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import type { HardwareWalletTransport } from '../../types'
 import type { LedgerAppDriver } from '../../app-driver'
 import { ledgerAppDriverContractTests } from '../app-driver-contract'
@@ -21,24 +20,25 @@ const unused = () => Promise.reject(new Error('not exercised'))
 
 const driver: LedgerAppDriver = {
     chainId: 'fixture',
-    open: (transport, classifyError = error => error as never) => ({
-        getAddress: unused,
-        signTransaction: unused,
-        signData: unused,
-        getAppVersion: async () => {
-            if (failure) throw classifyError(failure)
-            return { major: 1, minor: 0, patch: 0 }
-        },
-        ...(transport.on
-            ? {
-                  onDisconnect: listener => {
-                      transport.on?.('disconnect', listener)
-                      return () => transport.off?.('disconnect', listener)
-                  },
-              }
-            : {}),
-        disconnect: () => transport.close(),
-    }) satisfies HardwareWalletTransport,
+    open: (transport, classifyError = error => error as never) =>
+        ({
+            getAddress: unused,
+            signTransaction: unused,
+            signData: unused,
+            getAppVersion: async () => {
+                if (failure) throw classifyError(failure)
+                return { major: 1, minor: 0, patch: 0 }
+            },
+            ...(transport.on
+                ? {
+                      onDisconnect: listener => {
+                          transport.on?.('disconnect', listener)
+                          return () => transport.off?.('disconnect', listener)
+                      },
+                  }
+                : {}),
+            disconnect: () => transport.close(),
+        }) satisfies HardwareWalletTransport,
 }
 
 ledgerAppDriverContractTests(() => driver, {
