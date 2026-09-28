@@ -39,6 +39,20 @@ describe('hooks/useNetwork', () => {
         vi.resetModules()
     })
 
+    test('a persisted v1 selection reaches useNetwork through the re-export', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        getProvider().keyValueStorage.setItem(
+            'network-store',
+            JSON.stringify({ state: { network: 'testnet' }, version: 1 }),
+        )
+        const { useNetwork } = await import('../useNetwork')
+
+        const { result } = renderHook(() => useNetwork())
+
+        expect(result.current.network).toBe('testnet')
+    })
+
     test('should return current network and setter', async () => {
         const { useNetworkStore } = await import('../../store')
         const { useNetwork } = await import('../useNetwork')
@@ -67,19 +81,17 @@ describe('hooks/useNetwork', () => {
     })
 
     test('recomputes networkConfig when the saved custom node changes', async () => {
-        const { useNetworkStore, useCustomNetworkStore } =
-            await import('../../store')
+        const { useNetworkStore } = await import('../../store')
         const { useNetwork } = await import('../useNetwork')
         const { getNetworkConfig } =
             await import('@perawallet/wallet-core-config')
         useNetworkStore.getState().resetState()
-        useCustomNetworkStore.getState().resetState()
         const { result } = renderHook(() => useNetwork())
         const before = result.current.networkConfig
         const callsBefore = vi.mocked(getNetworkConfig).mock.calls.length
 
         act(() => {
-            useCustomNetworkStore.getState().setCustomNetwork({
+            useNetworkStore.getState().setCustomNetwork({
                 algodUrl: 'http://10.0.0.5:4001',
                 indexerUrl: 'http://10.0.0.5:8980',
                 genesisHash: 'HASH',

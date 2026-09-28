@@ -19,7 +19,7 @@ import type {
     PeraTransactionGroup,
     PeraTransactionSigner,
 } from '../models'
-import { useCustomNetworkStore } from '../store'
+import { selectAlgorandCustomNetwork, useNetworkStore } from '../store'
 import { encodeSignedTransactions } from '../utils/transact'
 import { createTimeoutBoundedAlgorandClient } from '../utils/createAlgorandClient'
 import { useNetwork } from './useNetwork'
@@ -32,7 +32,7 @@ const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
 
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { network } = useNetwork()
-    const customNetwork = useCustomNetworkStore(state => state.customNetwork)
+    const customNetwork = useNetworkStore(selectAlgorandCustomNetwork)
 
     return useMemo(() => {
         const client = createTimeoutBoundedAlgorandClient(

@@ -17,7 +17,7 @@ import {
     type Network,
 } from '@perawallet/wallet-core-config'
 import { updateNodeEndpoints } from '@perawallet/wallet-core-shared'
-import { useNetworkStore, useCustomNetworkStore } from '../store'
+import { useNetworkStore } from '../store'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
 
 /**
@@ -62,4 +62,9 @@ void Promise.resolve().then(() => {
     }
 })
 
-useCustomNetworkStore.subscribe(pushResolvedEndpointsForAllNetworks)
+// Only a custom-network edit changes endpoints; a plain switch must not rebuild every client.
+useNetworkStore.subscribe((state, previous) => {
+    if (state.customNetworksByChain !== previous.customNetworksByChain) {
+        pushResolvedEndpointsForAllNetworks()
+    }
+})

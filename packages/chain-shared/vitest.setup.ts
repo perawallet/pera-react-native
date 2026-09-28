@@ -10,15 +10,22 @@
  limitations under the License
  */
 
-export * from './store'
-export {
-    useNetworkStore,
-    getCustomNetworkConfig,
-    isCustomNetworkConfigured,
-    setCustomNetwork,
-    clearCustomNetwork,
-    mergePersistedNetwork,
-    selectAlgorandCustomNetwork,
-    type CustomNetworkConfig,
-    type CustomNetwork,
-} from '@perawallet/wallet-core-chain-shared'
+import { vi, beforeEach } from 'vitest'
+
+const store = new Map<string, string>()
+
+beforeEach(() => {
+    store.clear()
+})
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+    }),
+}))

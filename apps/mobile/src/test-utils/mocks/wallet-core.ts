@@ -513,19 +513,18 @@ class MockAlgodError extends Error {
 }
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    // Real store (not hand-mocked): setCustomNetwork/clearCustomNetwork/
-    // resetState need genuine zustand reactivity so subscribed hooks
-    // re-render on change. Imported by its own module path (not the package
-    // barrel/`../store` index) to avoid evaluating utils/algorandClient's
-    // module-level side effects, which would run for every test in the
-    // suite and reach into the (also-mocked) wallet-core-shared module.
+    // Real custom-network functions (backed by the real network store) so
+    // subscribed hooks re-render on change. Imported by module path, not a
+    // package barrel, to keep utils/algorandClient's module-level side effects
+    // out of every test in the suite.
     const {
-        useCustomNetworkStore,
         getCustomNetworkConfig,
         isCustomNetworkConfigured,
+        setCustomNetwork,
+        clearCustomNetwork,
     } = await vi.importActual<
-        typeof import('@packages/blockchain/src/store/custom-network-store')
-    >('@packages/blockchain/src/store/custom-network-store')
+        typeof import('@packages/chain-shared/src/store/network-store')
+    >('@packages/chain-shared/src/store/network-store')
     // Real ARC-0001 module: `packages/connections` composes its request
     // schema from `arc0001SignTxnRequestSchema` at load, so a hand-written
     // stand-in would silently disarm the resolver's own refusals.
@@ -559,7 +558,10 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             {
                 getState: vi.fn(() => ({
                     network: 'mainnet',
+                    selectedNetworkByChain: { algorand: 'mainnet' },
+                    customNetworksByChain: { algorand: [] },
                     setNetwork: vi.fn(),
+                    selectNetwork: vi.fn(),
                     resetState: vi.fn(),
                 })),
                 // The accounts barrel subscribes at load to mirror per-network
@@ -617,8 +619,9 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             if (firstDp.isZero()) return new Decimal(0)
             return lastDp.minus(firstDp).div(firstDp).mul(100)
         }),
-        useCustomNetworkStore,
         getCustomNetworkConfig,
         isCustomNetworkConfigured,
+        setCustomNetwork,
+        clearCustomNetwork,
     }
 })
