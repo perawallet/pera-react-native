@@ -41,6 +41,7 @@ export const RemoteConfigKeys = {
     active_locales: 'active_locales',
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
+    chain_algorand_overrides: 'chain_algorand_overrides',
 } as const
 
 export type RemoteConfigKey =
@@ -130,6 +131,9 @@ export const RemoteConfigDefaults: Record<
     // detected as unreachable). Overridable via Remote Config without a
     // redeploy; defaults to Google's generate_204 interim.
     network_reachability_url: 'https://clients3.google.com/generate_204',
+    // JSON `{"enabled"?: boolean, "capabilities"?: {<capability>: boolean}}`;
+    // empty string = no overrides. Parsed by readCapabilityOverrides.
+    chain_algorand_overrides: '',
 }
 
 export interface RemoteConfigService {

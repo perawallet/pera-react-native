@@ -27,7 +27,9 @@ import {
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { reconcileOpenSubmissions } from '@perawallet/wallet-core-signing'
 import { sendShouldRefreshRequest } from '../polling'
 import type { SyncServiceDeps } from '../models'
@@ -274,6 +276,16 @@ export class SyncService {
         // backoff.
         if (this.isPaused()) {
             this.scheduleNextTick(PAUSE_RECHECK_MS)
+            return
+        }
+
+        // Gated before the first-tick flag below flips, so a chain switched
+        // back on still gets its force-sync.
+        const { chainId } = scopeForLegacyNetwork(
+            this.deps.stores.getActiveNetwork(),
+        )
+        if (getProvider().chains.isSwitchedOff(chainId)) {
+            this.scheduleNextTick()
             return
         }
 
