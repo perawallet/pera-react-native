@@ -79,7 +79,7 @@ vi.mock('@modules/card/hooks', async () => {
 // the LSig step. The MSW compile handler also answers with `BoEB` (`int 1`),
 // which is exactly the substituted program the guard exists to reject. Stub the
 // compile step to stand in for a pinned build; the guard itself is unit-tested
-// in packages/card/src/api/escrow/__tests__/lsig.spec.ts.
+// in packages/chain-algorand/src/card/escrow/__tests__/lsig.spec.ts.
 vi.mock('@perawallet/wallet-core-card', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
     compileAutoDrawProgram: vi.fn(async () => new Uint8Array([6, 129, 1])),

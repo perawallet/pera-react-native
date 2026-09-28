@@ -2280,9 +2280,6 @@ importers:
 
   packages/card:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2298,6 +2295,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2316,9 +2316,6 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -2371,6 +2368,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@noble/hashes':
+        specifier: 'catalog:'
+        version: 2.3.0
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../accounts
@@ -2383,6 +2383,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-card':
+        specifier: workspace:*
+        version: link:../card
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
@@ -2395,6 +2398,9 @@ importers:
       '@perawallet/wallet-core-nfd':
         specifier: workspace:*
         version: link:../nfd
+      '@perawallet/wallet-core-onramp':
+        specifier: workspace:*
+        version: link:../onramp
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -3369,33 +3375,24 @@ importers:
 
   packages/onramp:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
-      '@perawallet/wallet-core-fee-delegation':
+      '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
-        version: link:../fee-delegation
+        version: link:../chain-contract
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-core-transactions':
-        specifier: workspace:*
-        version: link:../transactions
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -14737,7 +14734,9 @@ snapshots:
       metro-runtime: 0.84.5
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

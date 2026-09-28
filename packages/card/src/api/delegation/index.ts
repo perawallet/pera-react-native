@@ -13,9 +13,9 @@
 export {
     fetchDelegationToken,
     fetchExternalWallets,
-    postAlgorandDelegationApproval,
+    postDelegationApproval,
     postDelegatorLsig,
     type DelegationRequestParams,
-    type PostAlgorandDelegationApprovalParams,
+    type PostDelegationApprovalParams,
     type PostDelegatorLsigParams,
 } from './endpoints'

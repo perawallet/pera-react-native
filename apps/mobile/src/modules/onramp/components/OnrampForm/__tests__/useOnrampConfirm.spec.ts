@@ -16,6 +16,7 @@ import { Linking } from 'react-native'
 import { Decimal } from 'decimal.js'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import type { RampPair, MeldQuote } from '@perawallet/wallet-core-onramp'
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampConfirm } from '../useOnrampConfirm'
 
 // --- mock fns -------------------------------------------------------------
@@ -39,10 +40,12 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
     >('@perawallet/wallet-core-onramp')
     return {
         ...actual,
+        useEnsureRampDestination: () => ({
+            ensureCanReceive: mockEnsureOptIn,
+        }),
         useCreateRampOrderMutation: () => ({
             mutateAsync: mockCreateRampOrder,
         }),
-        useEnsureDestinationOptIn: () => ({ ensureOptIn: mockEnsureOptIn }),
         useOnramp: () => ({ senderAddress: 'SENDER_ADDRESS' }),
     }
 })
@@ -209,6 +212,7 @@ const defaultProps: Parameters<typeof useOnrampConfirm>[0] = {
 
 describe('useOnrampConfirm', () => {
     beforeEach(() => {
+        registerAlgorandRampAdapter()
         vi.clearAllMocks()
         mockSelectedAccountAddress = 'ACCOUNT_ADDRESS'
         mockNetwork = 'mainnet'

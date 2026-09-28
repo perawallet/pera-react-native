@@ -18,7 +18,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 import { getRampPairs } from '../api'
-import { ONRAMP_DESTINATION_TOKEN_IDS } from '../constants'
+import { rampAdapterFor } from '../chain-adapter'
 import type { RampPair } from '../models'
 import { onrampQueryKeys } from './querykeys'
 
@@ -38,7 +38,7 @@ export const useRampPairsQuery = (
 ): UseRampPairsQueryResult => {
     const { network } = useNetwork()
 
-    const destinationTokenIds = [...ONRAMP_DESTINATION_TOKEN_IDS]
+    const destinationTokenIds = [...rampAdapterFor(network).destinationTokenIds]
 
     const query = useQuery({
         queryKey: onrampQueryKeys.pairs(destinationTokenIds, network),

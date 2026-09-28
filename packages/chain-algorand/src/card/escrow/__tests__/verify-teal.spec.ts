@@ -12,12 +12,12 @@
 
 import { describe, it, expect } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2.js'
+import { AutoDrawTealUnverifiedError } from '@perawallet/wallet-core-card'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
 import { AUTODRAW_TEAL_TEMPLATE } from '../autodraw-teal'
 import {
     computeAutoDrawTemplateHash,
     verifyAutoDrawTealTemplate,
-    AutoDrawTealUnverifiedError,
 } from '../verify-teal'
 
 const hashOf = (text: string) =>

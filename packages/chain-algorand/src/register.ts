@@ -20,6 +20,10 @@ import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { algorandLedgerAppDriver } from './ledger/driver'
 import { algorandSwapAdapter } from './swaps'
 import { algorandNameServiceAdapter } from './nfd'
+import { cardChainAdapters } from '@perawallet/wallet-core-card'
+import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
+import { algorandCardAdapter } from './card'
+import { algorandRampAdapter } from './onramp'
 
 // Adapters must be module-level instances, not built in here: the registries
 // ignore a repeat of the same instance but reject a new one, which is what
@@ -30,4 +34,6 @@ export const registerChain = (): void => {
     dappRequestChainAdapters.register(algorandDappRequestAdapter)
     sendFlowChainAdapters.register(algorandSendFlowAdapter)
     nameServiceChainAdapters.register(algorandNameServiceAdapter)
+    cardChainAdapters.register(algorandCardAdapter)
+    rampChainAdapters.register(algorandRampAdapter)
 }
