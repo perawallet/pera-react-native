@@ -11,10 +11,11 @@
  */
 
 import { z } from 'zod'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 
 /** NFD's registry, per network. Consulted only for a name's application id. */
-export const NFD_REGISTRY_URLS: Partial<Record<Network, string>> = {
+export const NFD_REGISTRY_URLS: Partial<Record<NetworkId, string>> = {
     mainnet: 'https://api.nf.domains',
     testnet: 'https://api.testnet.nf.domains',
 }
@@ -25,7 +26,7 @@ const nfdRegistryRecordSchema = z.object({
 
 export type FetchNfdAppIdParams = {
     name: string
-    network: Network
+    networkId: NetworkId
     signal?: AbortSignal
 }
 
@@ -36,12 +37,12 @@ export type FetchNfdAppIdParams = {
  */
 export const fetchNfdAppId = async ({
     name,
-    network,
+    networkId,
     signal,
 }: FetchNfdAppIdParams): Promise<number | null> => {
-    const baseUrl = NFD_REGISTRY_URLS[network]
+    const baseUrl = NFD_REGISTRY_URLS[networkId]
     if (!baseUrl) {
-        throw new Error(`NFD registry not configured for ${network}`)
+        throw new Error(`NFD registry not configured for ${networkId}`)
     }
 
     const response = await fetch(

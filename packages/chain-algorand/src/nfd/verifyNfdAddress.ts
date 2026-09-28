@@ -11,12 +11,11 @@
  */
 
 import { z } from 'zod'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeFromBase64,
     logger,
-    Networks,
     queryClient,
-    type Network,
 } from '@perawallet/wallet-core-shared'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import type {
@@ -70,28 +69,20 @@ const addressesIn = (base64: string): string[] => {
 }
 
 const algodGet = async (
-    network: Network,
+    scope: ChainScope,
     url: string,
     params: object | undefined,
     signal: AbortSignal | undefined,
 ): Promise<unknown> => {
     const response = await queryClient<unknown>({
         backend: 'algod',
-        network,
+        scope,
         method: 'GET',
         url,
         params,
         signal,
     })
     return response.data
-}
-
-// Algorand's network ids are the legacy `Network` values (see
-// scopeForLegacyNetwork), so anything else is a scope this chain never issued.
-const toNetwork = (networkId: string): Network => {
-    const network = Object.values(Networks).find(value => value === networkId)
-    if (!network) throw new Error(`Not an Algorand network: ${networkId}`)
-    return network
 }
 
 /**
@@ -108,17 +99,16 @@ export const verifyNfdAddress = async ({
 }: VerifyForwardResolutionParams): Promise<NfdAddressVerification> => {
     const normalizedName = name.toLowerCase()
     try {
-        const network = toNetwork(scope.networkId)
         const appId = await fetchNfdAppId({
             name: normalizedName,
-            network,
+            networkId: scope.networkId,
             signal,
         })
         if (appId === null) return 'mismatch'
 
         const application = applicationSchema.parse(
             await algodGet(
-                network,
+                scope,
                 `/v2/applications/${appId}`,
                 undefined,
                 signal,
@@ -143,7 +133,7 @@ export const verifyNfdAddress = async ({
         ])
         const { boxes } = boxesSchema.parse(
             await algodGet(
-                network,
+                scope,
                 `/v2/applications/${appId}/boxes`,
                 undefined,
                 signal,
@@ -153,7 +143,7 @@ export const verifyNfdAddress = async ({
             if (!VERIFIED_BOX.test(utf8(box.name))) continue
             const { value } = boxSchema.parse(
                 await algodGet(
-                    network,
+                    scope,
                     `/v2/applications/${appId}/box`,
                     { name: `b64:${box.name}` },
                     signal,

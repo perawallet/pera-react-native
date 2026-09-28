@@ -24,7 +24,6 @@ const loggerMock = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: queryClientMock,
     logger: loggerMock,
-    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     decodeFromBase64: (base64: string) =>
         new Uint8Array(Buffer.from(base64, 'base64')),
 }))
@@ -101,6 +100,11 @@ describe('verifyNfdAddress', () => {
         expect(fetchMock).toHaveBeenCalledWith(
             'https://api.nf.domains/nfd/alice.algo?view=brief',
             expect.anything(),
+        )
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+            }),
         )
     })
 
