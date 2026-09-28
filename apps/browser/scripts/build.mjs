@@ -33,6 +33,10 @@ import {
     assertStampedManifest,
     stampManifest,
 } from './manifest.mjs'
+import {
+    WEB_CONFIG_ALLOWLIST,
+    assertWebConfigAllowlisted,
+} from './web-config.mjs'
 
 const requireFromHere = createRequire(import.meta.url)
 
@@ -104,7 +108,13 @@ const monorepoRoot = path.resolve(root, '../..')
 execSync('bash tools/generate-config.sh', {
     cwd: monorepoRoot,
     stdio: 'inherit',
+    env: { ...process.env, CONFIG_ALLOWLIST: WEB_CONFIG_ALLOWLIST.join(' ') },
 })
+const generatedEnvPath = path.join(
+    monorepoRoot,
+    'packages/config/src/generated-env.ts',
+)
+assertWebConfigAllowlisted(readFileSync(generatedEnvPath, 'utf8'))
 // packages/config and the workspace packages it depends on (e.g.
 // chain-contract, whose dist/index.d.ts config's types resolve to) must be
 // rebuilt right after generate-config.sh (not just picked up by the broader
@@ -122,10 +132,7 @@ execSync('pnpm exec turbo run build --filter=...browser', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })
-const generatedEnv = readFileSync(
-    path.join(monorepoRoot, 'packages/config/src/generated-env.ts'),
-    'utf8',
-)
+const generatedEnv = readFileSync(generatedEnvPath, 'utf8')
 // generate-config.sh only emits a key's line when the source env var is
 // non-empty (see its append_config helper), so a missing/blank
 // BACKEND_API_KEY leaves this line out entirely rather than writing "".
