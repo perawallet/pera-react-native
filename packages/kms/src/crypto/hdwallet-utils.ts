@@ -212,16 +212,19 @@ export const generateHDMasterKey = async (mnemonicIndices?: Uint16Array) => {
     // scure's `generateMnemonic` (entropyToMnemonic over CSPRNG bytes), minus
     // the string.
     let indices: Uint16Array
+    // Set only when the indices are generated here; supplied ones are the
+    // caller's to zero.
+    let generatedIndices: Uint16Array | undefined
     if (mnemonicIndices) {
         indices = mnemonicIndices
     } else {
         const freshEntropy = randomBytes(HD_MNEMONIC_STRENGTH / BITS_PER_BYTE)
         try {
-            // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: generated indices are zeroed by the conditional wipe in the finally below; supplied ones stay the caller's
-            indices = entropyToIndices(freshEntropy)
+            generatedIndices = entropyToIndices(freshEntropy)
         } finally {
             zeroBytes(freshEntropy)
         }
+        indices = generatedIndices
     }
 
     const mnemonicBytes = indicesToUtf8Bytes(indices)
@@ -235,9 +238,6 @@ export const generateHDMasterKey = async (mnemonicIndices?: Uint16Array) => {
             throw error
         }
     } finally {
-        zeroBytes(mnemonicBytes)
-        // Generated indices are owned here; caller-supplied ones are the
-        // caller's to zero.
-        if (!mnemonicIndices) zeroBytes(indices)
+        zeroBytes(mnemonicBytes, generatedIndices)
     }
 }

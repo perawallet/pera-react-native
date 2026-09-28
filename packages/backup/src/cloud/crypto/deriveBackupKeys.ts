@@ -15,7 +15,10 @@ import type { Argon2idConfig, BackupId } from '../models'
 import { decodeBase64Salt } from './argon2idConfig'
 import { deriveBackupAuthKeypair } from './deriveBackupAuthKeypair'
 import { deriveBackupId } from './deriveBackupId'
-import { deriveBackupChildKeys } from './deriveBackupChildKeys'
+import {
+    deriveBackupChildKeys,
+    type BackupChildKeys,
+} from './deriveBackupChildKeys'
 import { deriveBackupMasterKey } from './deriveBackupMasterKey'
 import { backupMnemonicToPassword } from './backupMnemonicToPassword'
 
@@ -47,9 +50,7 @@ export const deriveBackupKeys = async ({
 }: DeriveBackupKeysParams): Promise<BackupKeys> => {
     let password: Uint8Array | null = null
     let masterKey: Uint8Array | null = null
-    let authSeed: Uint8Array | null = null
-    let encryptionKey: Uint8Array | null = null
-    let itemKey: Uint8Array | null = null
+    let childKeys: BackupChildKeys | null = null
     let secretKey: Uint8Array | null = null
 
     // base64-js maps characters outside the alphabet to zero bytes, so a
@@ -61,25 +62,24 @@ export const deriveBackupKeys = async ({
     try {
         password = backupMnemonicToPassword(mnemonic)
         masterKey = await deriveBackupMasterKey(password, saltBytes, argon2id)
-        ;({ encryptionKey, authSeed, itemKey } =
-            // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: destructured into the lets above, which the return, catch and finally account for; lanekeep doesn't follow a destructuring assignment
-            deriveBackupChildKeys(masterKey))
+        childKeys = deriveBackupChildKeys(masterKey)
 
-        const { publicKey, secretKey: authSecretKey } =
-            deriveBackupAuthKeypair(authSeed)
+        const { publicKey, secretKey: authSecretKey } = deriveBackupAuthKeypair(
+            childKeys.authSeed,
+        )
         secretKey = authSecretKey
 
         return {
             backupId: deriveBackupId(publicKey),
-            encryptionKey,
+            encryptionKey: childKeys.encryptionKey,
             authPublicKey: publicKey,
             authSecretKey: secretKey,
-            itemKey,
+            itemKey: childKeys.itemKey,
         }
     } catch (error) {
-        zeroBytes(encryptionKey, secretKey, itemKey)
+        zeroBytes(childKeys?.encryptionKey, secretKey, childKeys?.itemKey)
         throw error
     } finally {
-        zeroBytes(password, masterKey, authSeed)
+        zeroBytes(password, masterKey, childKeys?.authSeed)
     }
 }

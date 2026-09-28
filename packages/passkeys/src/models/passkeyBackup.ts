@@ -11,7 +11,7 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
-import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { handOffSecret, zeroBytes } from '@perawallet/wallet-core-kms'
 import {
     bytesEqual,
     concatBytes,
@@ -192,8 +192,8 @@ export const passkeyBackupInputs = async (
 
     // `entropy` is owned by `resolveSeedEntropy`'s caller, not by this
     // function — it's zeroed (or not) at that buffer's own lifetime, e.g.
-    // `withSecret`'s `finally`. Only `mainKey` and each `derived.privateKey`,
-    // which this function allocates, are this function's to zero.
+    // `withSecret`'s `finally`. Only a main key this call derives itself and
+    // each `derived.privateKey` are this function's to zero.
     const entropy = await resolveSeedEntropy(seedKeyId)
     if (entropy == null) return null
 
@@ -203,20 +203,25 @@ export const passkeyBackupInputs = async (
     const counter =
         typeof metadata.counter === 'number' ? (metadata.counter as number) : 0
 
-    let mainKey: Uint8Array | null
+    // Set only when this call derived the key itself; a cached one is the sweep's.
+    let ownedMainKey: Uint8Array | null = null
+    let mainKey: Uint8Array
     if (mainKeyCache) {
         if (!mainKeyCache.has(seedKeyId)) {
             mainKeyCache.set(
                 seedKeyId,
-                derivePasskeyMainKey(entropy, subtle).catch(() => null),
+                handOffSecret(derivePasskeyMainKey(entropy, subtle)).catch(
+                    () => null,
+                ),
             )
         }
-        mainKey = await mainKeyCache.get(seedKeyId)!
+        const cached = await mainKeyCache.get(seedKeyId)!
+        if (cached === null) return null
+        mainKey = cached
     } else {
-        mainKey = await derivePasskeyMainKey(entropy, subtle)
+        ownedMainKey = await derivePasskeyMainKey(entropy, subtle)
+        mainKey = ownedMainKey
     }
-    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: without a cache the finally below zeroes mainKey; a cached key belongs to the caller's cache, which the sweep zeroes on dispose
-    if (mainKey === null) return null
 
     try {
         for (const identity of identityCandidates(metadata)) {
@@ -261,6 +266,6 @@ export const passkeyBackupInputs = async (
         )
         return null
     } finally {
-        if (!mainKeyCache) zeroBytes(mainKey)
+        zeroBytes(ownedMainKey)
     }
 }

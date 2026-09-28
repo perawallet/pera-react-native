@@ -32,6 +32,8 @@ const pbkdf2Outputs = vi.hoisted((): Uint8Array[] => [])
 const pbkdf2Faults = vi.hoisted((): Error[] => [])
 // Copies of what each zeroBytes call received, taken before the wipe.
 const zeroedContents = vi.hoisted((): Uint8Array[] => [])
+// The buffers themselves, to check which ones ended up zeroed.
+const zeroedBuffers = vi.hoisted((): Array<Uint8Array | Uint16Array> => [])
 
 vi.mock('crypto', async importOriginal => {
     const actual = await importOriginal<typeof import('crypto')>()
@@ -74,7 +76,9 @@ vi.mock('../secure-memory', async importOriginal => {
         ...actual,
         zeroBytes: (...buffers: Parameters<typeof actual.zeroBytes>) => {
             for (const buf of buffers) {
-                if (buf) zeroedContents.push(Uint8Array.from(buf))
+                if (!buf) continue
+                zeroedContents.push(Uint8Array.from(buf))
+                zeroedBuffers.push(buf)
             }
             actual.zeroBytes(...buffers)
         },
@@ -137,6 +141,18 @@ describe('generateHDMasterKey', () => {
         expect(zeroedContents.some(buf => expectedEntropy.equals(buf))).toBe(
             true,
         )
+    })
+
+    test('zeroes the indices it generates when none are supplied', async () => {
+        zeroedBuffers.length = 0
+
+        await generateHDMasterKey()
+
+        const generated = zeroedBuffers.filter(
+            buf => buf instanceof Uint16Array,
+        )
+        expect(generated).toHaveLength(1)
+        expect(generated[0]!.every(index => index === 0)).toBe(true)
     })
 
     test('generates fresh 256-bit entropy when no indices are supplied', async () => {
