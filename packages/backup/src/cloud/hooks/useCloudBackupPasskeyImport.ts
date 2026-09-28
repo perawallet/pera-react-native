@@ -177,6 +177,7 @@ export const useCloudBackupPasskeyImport = (
                 }
             }
 
+            // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: each main key is cached in seeds, and the finally above zeroes every cached one
             return summary
         },
         [resolveSeedEntropy],

@@ -20,3 +20,8 @@ export const zeroedEntropy = (indices: Uint16Array) => {
         zeroBytes(entropy)
     }
 }
+
+export const leakyPasskeyMainKey = async (entropy: Uint8Array) => {
+    const mainKey = await derivePasskeyMainKey(entropy)
+    return sign(mainKey)
+}

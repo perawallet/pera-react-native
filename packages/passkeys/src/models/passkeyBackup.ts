@@ -215,6 +215,7 @@ export const passkeyBackupInputs = async (
     } else {
         mainKey = await derivePasskeyMainKey(entropy, subtle)
     }
+    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: without a cache the finally below zeroes mainKey; a cached key belongs to the caller's cache, which the sweep zeroes on dispose
     if (mainKey === null) return null
 
     try {

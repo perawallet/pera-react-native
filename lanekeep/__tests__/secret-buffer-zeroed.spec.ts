@@ -26,6 +26,7 @@ describe('pera/secret-buffer-zeroed', () => {
             'producers.ts:3',
             'producers.ts:8',
             'producers.ts:12',
+            'producers.ts:26',
         ])
     })
 
