@@ -1042,7 +1042,23 @@
         },
         "transaction": {
             "title": "An error occurred processing this transaction",
-            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
+            "insufficient_balance_for_opt_in": {
+                "title": "Not enough ALGO",
+                "body": "You need {{shortfall}} more ALGO to opt in to this asset. Your account must keep its minimum balance and cover the transaction fee."
+            },
+            "already_opted_in": {
+                "title": "Already opted in",
+                "body": "This account is already opted in to this asset."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "Asset still has a balance",
+                "body": "You can only remove an asset with a zero balance. Send or trade the remaining amount first."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Can't remove this asset",
+                "body": "This account created this asset, so it can't opt out of it."
+            }
         },
         "kms": {
             "key_not_found": "Could not find the signing key for this account.",

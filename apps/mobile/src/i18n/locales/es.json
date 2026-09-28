@@ -1042,7 +1042,23 @@
         },
         "transaction": {
             "title": "Error al procesar esta transacción",
-            "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa."
+            "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa.",
+            "insufficient_balance_for_opt_in": {
+                "title": "ALGO insuficiente",
+                "body": "Necesitas {{shortfall}} ALGO más para añadir este activo. Tu cuenta debe mantener su saldo mínimo y cubrir la comisión de la transacción."
+            },
+            "already_opted_in": {
+                "title": "Activo ya añadido",
+                "body": "Esta cuenta ya ha añadido este activo."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "El activo aún tiene saldo",
+                "body": "Solo puedes eliminar un activo con saldo cero. Envía o intercambia primero el importe restante."
+            },
+            "creator_cannot_opt_out": {
+                "title": "No se puede eliminar este activo",
+                "body": "Esta cuenta creó este activo, así que no puede eliminarlo."
+            }
         },
         "kms": {
             "key_not_found": "No se pudo encontrar la clave de firma de esta cuenta.",

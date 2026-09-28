@@ -21,6 +21,10 @@ import {
     InvalidSendParamsError,
     AssetFrozenError,
     RekeyError,
+    AlreadyOptedInError,
+    InsufficientBalanceForOptInError,
+    NonZeroBalanceError,
+    CreatorCannotOptOutError,
 } from '../errors'
 
 describe('TransactionError', () => {
@@ -157,6 +161,40 @@ describe('AssetFrozenError', () => {
         expect(titleKey).toBe('errors.algod.asset_frozen.title')
         expect(messageKey).toBe('errors.algod.asset_frozen.body')
         expect(params).toEqual({ assetId: '123' })
+    })
+})
+
+describe('asset holding errors', () => {
+    it.each([
+        [
+            'AlreadyOptedInError',
+            new AlreadyOptedInError(),
+            'errors.transaction.already_opted_in',
+        ],
+        [
+            'InsufficientBalanceForOptInError',
+            new InsufficientBalanceForOptInError('0.1'),
+            'errors.transaction.insufficient_balance_for_opt_in',
+        ],
+        [
+            'NonZeroBalanceError',
+            new NonZeroBalanceError(),
+            'errors.transaction.non_zero_balance_opt_out',
+        ],
+        [
+            'CreatorCannotOptOutError',
+            new CreatorCannotOptOutError(),
+            'errors.transaction.creator_cannot_opt_out',
+        ],
+    ])('%s declares its own user-facing copy', (_, error, base) => {
+        expect(error.metadata.titleKey).toBe(`${base}.title`)
+        expect(error.metadata.messageKey).toBe(`${base}.body`)
+    })
+
+    it('carries the ALGO shortfall for interpolation', () => {
+        const error = new InsufficientBalanceForOptInError('0.101')
+
+        expect(error.metadata.params).toEqual({ shortfall: '0.101' })
     })
 })
 

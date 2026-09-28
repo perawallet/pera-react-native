@@ -1042,7 +1042,23 @@
         },
         "transaction": {
             "title": "Bu işlem gerçekleştirilirken bir hata oluştu",
-            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç."
+            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç.",
+            "insufficient_balance_for_opt_in": {
+                "title": "Yetersiz ALGO",
+                "body": "Bu varlığı eklemek için {{shortfall}} ALGO daha gerekiyor. Hesabın minimum bakiyesini korumalı ve işlem ücretini karşılamalı."
+            },
+            "already_opted_in": {
+                "title": "Zaten eklendi",
+                "body": "Bu hesap bu varlığı zaten ekledi."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "Varlığın hâlâ bakiyesi var",
+                "body": "Yalnızca bakiyesi sıfır olan bir varlığı kaldırabilirsin. Önce kalan tutarı gönder veya takas et."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Bu varlık kaldırılamaz",
+                "body": "Bu varlığı bu hesap oluşturdu, bu yüzden hesap varlığı kaldıramaz."
+            }
         },
         "kms": {
             "key_not_found": "Bu hesabın imza anahtarı bulunamadı.",

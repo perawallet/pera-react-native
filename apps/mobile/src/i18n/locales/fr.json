@@ -1042,7 +1042,23 @@
         },
         "transaction": {
             "title": "Une erreur est survenue lors du traitement de cette transaction",
-            "body": "Un problème semble être survenu. Veuillez réessayer et contacter l’assistance si le problème persiste."
+            "body": "Un problème semble être survenu. Veuillez réessayer et contacter l’assistance si le problème persiste.",
+            "insufficient_balance_for_opt_in": {
+                "title": "ALGO insuffisant",
+                "body": "Il vous manque {{shortfall}} ALGO pour ajouter cet actif. Votre compte doit conserver son solde minimum et couvrir les frais de transaction."
+            },
+            "already_opted_in": {
+                "title": "Actif déjà ajouté",
+                "body": "Ce compte a déjà ajouté cet actif."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "L’actif a encore un solde",
+                "body": "Vous ne pouvez retirer qu’un actif dont le solde est nul. Envoyez ou échangez d’abord le montant restant."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Impossible de retirer cet actif",
+                "body": "Ce compte a créé cet actif et ne peut donc pas le retirer."
+            }
         },
         "kms": {
             "key_not_found": "Impossible de trouver la clé de signature de ce compte.",

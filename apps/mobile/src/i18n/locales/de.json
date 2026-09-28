@@ -1034,7 +1034,23 @@
         },
         "transaction": {
             "title": "Bei der Verarbeitung dieser Transaktion ist ein Fehler aufgetreten",
-            "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht."
+            "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht.",
+            "insufficient_balance_for_opt_in": {
+                "title": "Nicht genügend ALGO",
+                "body": "Du brauchst noch {{shortfall}} ALGO, um dich für dieses Asset anzumelden. Dein Konto muss sein Mindestguthaben halten und die Transaktionsgebühr decken."
+            },
+            "already_opted_in": {
+                "title": "Bereits angemeldet",
+                "body": "Dieses Konto ist bereits für dieses Asset angemeldet."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "Asset hat noch ein Guthaben",
+                "body": "Du kannst nur ein Asset ohne Guthaben entfernen. Sende oder tausche zuerst den verbleibenden Betrag."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Asset kann nicht entfernt werden",
+                "body": "Dieses Konto hat das Asset erstellt und kann sich daher nicht davon abmelden."
+            }
         },
         "kms": {
             "key_not_found": "Der Signaturschlüssel für dieses Konto konnte nicht gefunden werden.",
