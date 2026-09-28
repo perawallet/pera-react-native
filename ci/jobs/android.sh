@@ -10,9 +10,6 @@ use_pinned_node
 JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home -v 17)}"
 export JAVA_HOME
 
-# bundle exec fastlane needs a Ruby on PATH.
-use_pinned_ruby
-
 # tools/resolve-distribution.sh reads this to choose Play vs Firebase. Without
 # it every build silently resolves to the fallback channel.
 export BITRISE_GIT_TAG="$CI_TAG"
@@ -153,6 +150,8 @@ fi
 # silently land on the staging Play listing instead of failing.
 # Only needed on the upload path (gradlew alone doesn't touch fastlane), so
 # installed here rather than unconditionally near the top of the job.
+# Only this upload path runs fastlane, so only it needs the pinned Ruby.
+use_pinned_ruby
 (cd apps/mobile && bundle install)
 (cd apps/mobile && bundle exec fastlane android "deploy_${DISTRIBUTION}" "flavor:$ENVIRONMENT")
 collect_artifacts
