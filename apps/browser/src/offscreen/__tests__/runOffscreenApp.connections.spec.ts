@@ -151,7 +151,7 @@ vi.mock('@perawallet/wallet-core-dapp', () => ({
 }))
 vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
     ALGORAND_CHAIN_ID: 'algorand',
-    registerAlgorandChain,
+    registerChain: registerAlgorandChain,
 }))
 vi.mock('@perawallet/wallet-core-connections', () => ({
     createConnectionRegistry,

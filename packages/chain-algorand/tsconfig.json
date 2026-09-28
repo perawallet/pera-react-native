@@ -1,10 +1,16 @@
 {
   "extends": "@perawallet/wallet-core-devtools/tsconfig/vite.json",
   "compilerOptions": {
+    // Arc59Client.generated.ts imports types without the type keyword.
+    "verbatimModuleSyntax": false,
     "types": ["node"],
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "resolveJsonModule": true
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "**/*.generated.ts"
   ]
 }

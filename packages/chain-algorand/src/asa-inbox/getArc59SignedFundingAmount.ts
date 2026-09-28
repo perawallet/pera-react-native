@@ -13,7 +13,7 @@
 /**
  * The µAlgo the sender actually pays into the ARC-59 router: receiver funding
  * plus inbox MBR. This is the amount the payment transaction is built with
- * (useArc59SendTransaction), so it is the ONE value the summary screen must
+ * (buildArc59SendViaInboxTxs), so it is the ONE value the summary screen must
  * display and balance-check against. `total_protocol_and_mbr_fee` is an
  * independent backend field the signature never uses; displaying/checking
  * that while signing this let a malicious backend hide an overpayment of the
