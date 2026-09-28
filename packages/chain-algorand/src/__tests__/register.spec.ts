@@ -11,9 +11,11 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
+import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID, registerAlgorandChain } from '..'
+import { algorandDappRequestAdapter } from '../connect'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
 
@@ -21,6 +23,7 @@ describe('registerAlgorandChain', () => {
     beforeEach(() => {
         ledgerAppDriverRegistry.reset()
         swapChainAdapters.reset()
+        dappRequestChainAdapters.reset()
     })
 
     it('registers the Algorand swap adapter', () => {
@@ -28,6 +31,14 @@ describe('registerAlgorandChain', () => {
 
         expect(swapChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandSwapAdapter,
+        )
+    })
+
+    it('registers the dApp request adapter', () => {
+        registerAlgorandChain()
+
+        expect(dappRequestChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandDappRequestAdapter,
         )
     })
 

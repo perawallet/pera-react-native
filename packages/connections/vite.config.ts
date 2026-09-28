@@ -25,6 +25,9 @@ export default defineConfig(
             // Protocol handlers import the kit at runtime; the barrel
             // would pull signing and blockchain into their module graphs.
             handlerKit: resolve(__dirname, 'src/handlerKit.ts'),
+            // The webview bridge's error relay reads the adapter registry; the
+            // barrel would pull the registry's schema and signing graphs in.
+            dappRequest: resolve(__dirname, 'src/dappRequest.ts'),
         },
     }),
 )
