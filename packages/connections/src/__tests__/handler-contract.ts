@@ -24,6 +24,8 @@ import type {
 } from '../models'
 import { createConnectionRegistry } from '../registry'
 
+export * from './dapp-request-contract'
+
 /**
  * The peer's side of a pairing, so the suite can drive a handler without
  * knowing its wire format. Delivery may be async; the suite yields a macrotask after each call.

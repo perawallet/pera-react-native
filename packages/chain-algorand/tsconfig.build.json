@@ -8,7 +8,10 @@
     // import graph, so `exclude` cannot keep it out of the emit program.
     "noUnusedLocals": false,
     "rootDir": "./src",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    // tsconfig.json maps the /testing suites to source for the specs; an
+    // emitting program must not pull those in from outside rootDir.
+    "paths": {}
   },
   "include": [
     "src"

@@ -18,7 +18,6 @@
     "**/*.spec.ts",
     "**/*.spec.tsx",
     "**/handlers.ts",
-    "**/*-handlers.ts",
-    "**/testing/**"
+    "**/*-handlers.ts"
   ]
 }
