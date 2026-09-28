@@ -41,7 +41,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import {
     ALGORAND_CHAIN_ID,
-    registerAlgorandChain,
+    registerChain as registerAlgorandChain,
 } from '@perawallet/wallet-core-chain-algorand'
 import {
     bootConnections,
