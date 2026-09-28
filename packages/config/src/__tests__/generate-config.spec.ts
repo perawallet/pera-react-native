@@ -31,6 +31,20 @@ const guardedEnvVars = (): string[] => {
     return loop ? loop[1].trim().split(/\s+/) : []
 }
 
+const TURBO_JSON = join(__dirname, '../../../../turbo.json')
+
+const appendedEnvVars = (): string[] =>
+    [
+        ...readFileSync(SCRIPT, 'utf8').matchAll(
+            /^append_config "([A-Z0-9_]+)"/gm,
+        ),
+    ].map(match => match[1])
+
+const isHashedByTurbo = (name: string, globalEnv: string[]): boolean =>
+    globalEnv.some(entry =>
+        entry.endsWith('*') ? name.startsWith(entry.slice(0, -1)) : entry === name,
+    )
+
 describe('tools/generate-config.sh', () => {
     let dir: string
 
@@ -96,6 +110,29 @@ describe('tools/generate-config.sh', () => {
     test('emits cardAutoDrawTemplateHash from CARD_AUTODRAW_TEMPLATE_HASH', () => {
         const output = run({ CARD_AUTODRAW_TEMPLATE_HASH: 'abc123' })
         expect(output).toContain('cardAutoDrawTemplateHash: "abc123"')
+    })
+
+    test('emits the chain list and per-chain capability lists', () => {
+        const output = run({
+            CHAINS: 'algorand',
+            CHAIN_ALGORAND_CAPABILITIES: 'send,receive',
+        })
+        expect(output).toContain('chainIds: "algorand"')
+        expect(output).toContain('chainAlgorandCapabilities: "send,receive"')
+    })
+
+    // turbo hashes only globalEnv into the build key, so a variable missing
+    // there lets a cached dist ship a stale generated-env.ts.
+    test('hashes every variable the script bakes into the turbo cache key', () => {
+        const { globalEnv } = JSON.parse(readFileSync(TURBO_JSON, 'utf8')) as {
+            globalEnv: string[]
+        }
+        const baked = appendedEnvVars()
+
+        expect(baked.length).toBeGreaterThan(0)
+        expect(baked.filter(name => !isHashedByTurbo(name, globalEnv))).toEqual(
+            [],
+        )
     })
 
     test('omits reownProjectId when REOWN_PROJECT_ID is unset', () => {
