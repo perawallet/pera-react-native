@@ -80,8 +80,9 @@ export const migration: Migration<PeraMigrationContext> = {
         context: PeraMigrationContext,
         utils: MigrationUtils,
     ): Promise<void> => {
-        // Android's provider reads credentials from `k/`+`m/`, and keystore
-        // maintenance moves them there; un-adopting here would undo that.
+        // Android's provider reads credentials from `k/`+`m/`. Keystore
+        // maintenance moves them there on every launch, including the flat
+        // records an earlier run of this revision wrote; un-adopting undoes it.
         if (context.platform === 'android') return
 
         const { storage, subtle } = context
