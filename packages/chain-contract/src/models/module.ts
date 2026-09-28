@@ -50,7 +50,7 @@ export interface ChainContext<E extends ChainEndpoints = ChainEndpoints> {
 export interface ChainModule<E extends ChainEndpoints = ChainEndpoints> {
     descriptor: ChainDescriptor
     capabilityDefaults: ChainCapabilities
-    /** Adds the descriptor and every adapter the chain implements to their registries. */
+    /** Adds every adapter the chain implements to its feature registry; `registerChainSetup` registers the descriptor. */
     register(ctx: ChainContext<E>): void
     /** Every i18n key the chain's adapters emit as data, which the literal-`t()` lint can't see. */
     i18nKeys(): readonly string[]
