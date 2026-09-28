@@ -35,8 +35,10 @@ import {
 } from '@perawallet/wallet-extension-hardware-wallet'
 import { RNLedgerUsbService } from '../RNLedgerUsbService'
 import {
+    LEDGER_STATUS_CODES,
     LedgerUsbMultipleDevicesError,
     LedgerUsbNoDeviceError,
+    LedgerUserRejectedError,
 } from '@perawallet/wallet-extension-ledger-shared'
 
 const openedTransport: HardwareWalletTransport = {
@@ -132,6 +134,66 @@ describe('RNLedgerUsbService', () => {
 
         observer.next({ type: 'remove', descriptor: { deviceId: 1 } })
         expect(onDevice).not.toHaveBeenCalled()
+    })
+
+    test('scan skips a descriptor with neither deviceId nor productId, and names the rest by model when the OS gives no name', () => {
+        let observer: { next: (event: unknown) => void } = { next: () => {} }
+        transportListenMock.mockImplementation(subscription => {
+            observer = subscription
+            return { unsubscribe: vi.fn() }
+        })
+
+        const onDevice = vi.fn()
+        new RNLedgerUsbService().createTransportProvider().scan(onDevice)
+
+        observer.next({ type: 'add', descriptor: { vendorId: 0x2c97 } })
+        observer.next({
+            type: 'add',
+            descriptor: { ...NANO_X_DESCRIPTOR, deviceName: null },
+        })
+
+        expect(onDevice).toHaveBeenCalledTimes(1)
+        expect(onDevice).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: String(NANO_X_DESCRIPTOR.productId),
+                name: expect.stringMatching(/^Ledger /),
+            }),
+        )
+    })
+
+    test('scan classifies listener errors, and drops them when no onError is given', () => {
+        let observer: { error: (err: unknown) => void } = { error: () => {} }
+        transportListenMock.mockImplementation(subscription => {
+            observer = subscription
+            return { unsubscribe: vi.fn() }
+        })
+        const rejected = Object.assign(new Error('denied'), {
+            statusCode: LEDGER_STATUS_CODES.USER_REJECTED,
+        })
+        const provider = new RNLedgerUsbService().createTransportProvider()
+
+        provider.scan(vi.fn())
+        expect(() => observer.error(rejected)).not.toThrow()
+
+        const onError = vi.fn()
+        provider.scan(vi.fn(), onError)
+        observer.error(rejected)
+
+        expect(onError).toHaveBeenCalledWith(
+            expect.any(LedgerUserRejectedError),
+        )
+    })
+
+    test('connect classifies a failure to open the device', async () => {
+        transportOpenMock.mockRejectedValue(
+            Object.assign(new Error('denied'), {
+                statusCode: LEDGER_STATUS_CODES.USER_REJECTED,
+            }),
+        )
+
+        await expect(connectToFirstDevice()).rejects.toBeInstanceOf(
+            LedgerUserRejectedError,
+        )
     })
 
     test('connect opens the first connected Ledger from the live device list', async () => {

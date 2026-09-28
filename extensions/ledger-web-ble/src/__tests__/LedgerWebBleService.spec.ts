@@ -33,6 +33,10 @@ import {
     type HardwareWalletTransport,
     type LedgerAppDriver,
 } from '@perawallet/wallet-extension-hardware-wallet'
+import {
+    LEDGER_STATUS_CODES,
+    LedgerUserRejectedError,
+} from '@perawallet/wallet-extension-ledger-shared'
 import { LedgerWebBleService } from '../LedgerWebBleService'
 
 const openedTransport: HardwareWalletTransport = {
@@ -124,6 +128,25 @@ describe('LedgerWebBleService', () => {
         )
     })
 
+    test('scan recognises Flex, and names an unnamed device by its default model', () => {
+        const onDevice = vi.fn()
+        const provider = new LedgerWebBleService().createTransportProvider()
+
+        emitScannedDevice({ id: 'ble-flex', name: 'Flex 99' })
+        provider.scan(onDevice)
+        emitScannedDevice({ id: 'ble-unnamed' } as typeof NANO_X_DEVICE)
+        provider.scan(onDevice)
+
+        expect(onDevice).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({ model: 'flex' }),
+        )
+        expect(onDevice).toHaveBeenNthCalledWith(
+            2,
+            expect.objectContaining({ model: 'nanoX', name: 'Ledger nanoX' }),
+        )
+    })
+
     test('scan ignores non-"add" events', () => {
         let observer: ScanObserver = {
             next: () => {},
@@ -159,6 +182,31 @@ describe('LedgerWebBleService', () => {
 
         observer.error(new Error('User cancelled the requestDevice() chooser.'))
         expect(onError).toHaveBeenCalled()
+    })
+
+    test('scan drops errors when no onError is given', () => {
+        transportListenMock.mockImplementation((observer: ScanObserver) => {
+            observer.error(
+                new Error('User cancelled the requestDevice() chooser.'),
+            )
+            return { unsubscribe: vi.fn() }
+        })
+
+        expect(() =>
+            new LedgerWebBleService().createTransportProvider().scan(vi.fn()),
+        ).not.toThrow()
+    })
+
+    test('connect classifies a failure to open the device', async () => {
+        transportOpenMock.mockRejectedValue(
+            Object.assign(new Error('denied'), {
+                statusCode: LEDGER_STATUS_CODES.USER_REJECTED,
+            }),
+        )
+
+        await expect(scanAndConnect()).rejects.toBeInstanceOf(
+            LedgerUserRejectedError,
+        )
     })
 
     test('connect reopens the scanned BluetoothDevice object (not a fresh picker prompt)', async () => {

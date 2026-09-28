@@ -15,6 +15,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { CustomNetworkConfig } from '../network-store'
 
 const registerStoreMock = vi.hoisted(() => vi.fn())
+const registerCustomNetworkSourceMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -28,6 +29,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     return {
         ...actual,
         config: { ...actual.config, defaultNetwork: 'mainnet' as const },
+        registerCustomNetworkSource: registerCustomNetworkSourceMock,
     }
 })
 
@@ -293,6 +295,48 @@ describe('chain-shared network-store', () => {
             expect(registration.name).toBe('network-store')
             expect(storage().getItem('network-store')).toBeNull()
             expect(storage().getItem('custom-network-store')).toBeNull()
+        })
+    })
+
+    describe('custom network source', () => {
+        const loadSource = async () => {
+            const store = await loadStore()
+            const source =
+                registerCustomNetworkSourceMock.mock.calls.at(-1)?.[0]
+            return { ...store, source }
+        }
+
+        test('resolves nothing until a custom network is saved', async () => {
+            const { source } = await loadSource()
+
+            expect(
+                source({ chainId: 'algorand', networkId: 'custom' }),
+            ).toBeUndefined()
+        })
+
+        test('resolves nothing for any scope other than Algorand custom', async () => {
+            const { source, setCustomNetwork } = await loadSource()
+            setCustomNetwork(CONFIG)
+
+            expect(
+                source({ chainId: 'algorand', networkId: 'mainnet' }),
+            ).toBeUndefined()
+        })
+
+        test('resolves the saved node, defaulting missing tokens to empty', async () => {
+            const { source, setCustomNetwork } = await loadSource()
+            setCustomNetwork(CONFIG)
+
+            expect(
+                source({ chainId: 'algorand', networkId: 'custom' }),
+            ).toEqual({
+                algodUrl: CONFIG.algodUrl,
+                indexerUrl: CONFIG.indexerUrl,
+                algodToken: CONFIG.algodToken,
+                indexerToken: '',
+                genesisHash: CONFIG.genesisHash,
+                genesisId: CONFIG.genesisId,
+            })
         })
     })
 })
