@@ -27,7 +27,7 @@ import {
 import type { ChainDescriptor } from '../models/descriptor'
 import type { ChainNetwork } from '../models/identity'
 import type { ChainContext, ChainModule } from '../models/module'
-import { descriptorContractViolations } from '../testing/descriptor-contract'
+import { descriptorContractViolations } from './descriptor-contract'
 
 const network = (
     overrides: Partial<ChainNetwork> & Pick<ChainNetwork, 'id'>,
