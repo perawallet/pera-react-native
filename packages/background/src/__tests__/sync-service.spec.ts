@@ -466,24 +466,28 @@ describe('SyncService', () => {
         service.stop()
     })
 
-    it('syncs no network of a switched-off chain, and resumes once it is back on', async () => {
+    it('does no network work for a switched-off chain, and force-syncs once it is back on', async () => {
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
         mockSendShouldRefreshRequest.mockResolvedValue({
-            refresh: true,
-            round: 100,
+            refresh: false,
+            round: null,
         })
         mockChainSwitchedOff = true
 
         service.start()
-        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
 
         expect(mockIsSwitchedOff).toHaveBeenCalledWith('algorand')
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        expect(mockReconcileOpenSubmissions).not.toHaveBeenCalled()
         expect(fetchAndPersistAccount).not.toHaveBeenCalled()
 
         mockChainSwitchedOff = false
         await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
 
+        // The first tick that runs is still the unconditional force-sync.
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
         expect(fetchAndPersistAccount).toHaveBeenCalled()
 
         service.stop()

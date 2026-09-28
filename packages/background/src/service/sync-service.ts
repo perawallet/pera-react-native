@@ -279,6 +279,16 @@ export class SyncService {
             return
         }
 
+        // Gated before the first-tick flag below flips, so a chain switched
+        // back on still gets its force-sync.
+        const { chainId } = scopeForLegacyNetwork(
+            this.deps.stores.getActiveNetwork(),
+        )
+        if (getProvider().chains.isSwitchedOff(chainId)) {
+            this.scheduleNextTick()
+            return
+        }
+
         // Claimed before the first await below: the reconcile pass issues
         // network probes, and a reconnect landing mid-pass would otherwise
         // pass handleReconnect's guard and start a second overlapping tick.
@@ -312,14 +322,6 @@ export class SyncService {
                 networksToSync = check.networks
                 shouldRefreshRound = check.round
             }
-
-            const { chains } = getProvider()
-            networksToSync = networksToSync.filter(
-                network =>
-                    !chains.isSwitchedOff(
-                        scopeForLegacyNetwork(network).chainId,
-                    ),
-            )
 
             if (networksToSync.length > 0) {
                 const { hadTotalFailure, hadAccountFailure } =
