@@ -16,7 +16,7 @@ import type {
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainConfig } from '@perawallet/wallet-core-config'
-import { ALGORAND_CHAIN_ID } from './chain-id'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 // `custom` is left out: a custom node is user data with no genesis until probed.
 // CAIP-2 references are the URL-safe first 32 characters of the genesis hash.
@@ -111,3 +111,7 @@ export const algorandDescriptor: ChainDescriptor = {
     },
     finality: { kind: 'instant' },
 }
+
+// A subpath free of the adapter graph, so a consumer's tests can read the
+// descriptor without resolving the native modules the adapters pull in.
+export { algorandCapabilityDefaults } from '../capability-defaults'

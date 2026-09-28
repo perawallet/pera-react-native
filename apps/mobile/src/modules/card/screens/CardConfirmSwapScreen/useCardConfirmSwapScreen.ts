@@ -29,6 +29,7 @@ import {
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardUsdcCreditQuery } from '@perawallet/wallet-core-card'
 import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
 import {
@@ -139,7 +140,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     const account = useCardFundingAccount()
 
     const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', network),
+        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
         [network],
     )
     const assetIds = useMemo(

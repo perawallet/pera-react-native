@@ -82,7 +82,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane. A
     // constant id here would route past resolveDestinationAssetId's null
     // branch instead of exercising it.
-    getKnownAssetId: (_key: string, network: string) =>
+    getKnownAssetId: (
+        _key: string,
+        { networkId: network }: { networkId: string },
+    ) =>
         ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
     ALGO_ASSET: { assetId: '0', unitName: 'ALGO', decimals: 6 },
     toWholeUnits: (value: number) => value,
