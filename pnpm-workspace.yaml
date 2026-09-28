@@ -86,7 +86,7 @@ catalog:
   fast-glob: ^3.3.2
   jsdom: ^30.0.1
   ky: ^2.0.2
-  lanekeep: 0.11.0
+  lanekeep: 0.12.0
   msw: ^2.14.6
   oxfmt: ^0.68.0
   react: 19.2.3
@@ -169,6 +169,11 @@ minimumReleaseAgeExclude:
   # Same sole maintainer (ai <andrey@sitnik.es>) as 3.3.17, no install scripts,
   # SLSA provenance on both.
   - nanoid
+  # First-party: sole maintainer fredamsouza, SLSA provenance on the launcher and
+  # all four platform packages, no install scripts (checked for 0.12.0). Repeat
+  # those checks before adopting a release younger than the gate.
+  - lanekeep
+  - '@lanekeep/*'
   - expo
   - expo-*
   - '@expo/*'

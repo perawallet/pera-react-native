@@ -16,8 +16,12 @@ import { webcrypto } from 'node:crypto'
 import {
     derivePasskeyCredential,
     derivePasskeyMainKey,
+    type DerivedPasskeyCredential,
 } from '@perawallet/wallet-core-passkeys'
-import { useCloudBackupPasskeyImport } from '../useCloudBackupPasskeyImport'
+import {
+    useCloudBackupPasskeyImport,
+    type ResolvedSeed,
+} from '../useCloudBackupPasskeyImport'
 
 const subtle = webcrypto.subtle as unknown as SubtleCrypto
 const ENTROPY = new Uint8Array(32).fill(7)
@@ -32,11 +36,26 @@ const resolveEntropy = vi.fn(async (seedAddress: string) =>
         : null,
 )
 
-vi.mock('@perawallet/wallet-core-passkeys', async importOriginal => ({
-    ...(await importOriginal<object>()),
-    writeNativePasskeyEntry: (...args: unknown[]) => writeEntry(...args),
-    nativePasskeyEntryExists: (...args: unknown[]) => entryExists(...args),
-}))
+vi.mock('@perawallet/wallet-core-passkeys', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-passkeys')
+        >()
+    return {
+        ...actual,
+        // Spied, not replaced, so a test can inspect the real key material.
+        derivePasskeyCredential: vi.fn(actual.derivePasskeyCredential),
+        derivePasskeyMainKey: vi.fn(actual.derivePasskeyMainKey),
+        writeNativePasskeyEntry: (...args: unknown[]) => writeEntry(...args),
+        nativePasskeyEntryExists: (...args: unknown[]) => entryExists(...args),
+    }
+})
+
+// The credentials derived since the spy was last cleared.
+const derivedSinceClear = (): Promise<DerivedPasskeyCredential[]> =>
+    Promise.all(
+        vi.mocked(derivePasskeyCredential).mock.results.map(r => r.value),
+    )
 
 const buildPayload = async (
     overrides: { identity?: string; counter?: number } & Record<
@@ -145,6 +164,72 @@ describe('useCloudBackupPasskeyImport', () => {
 
         expect(summary.skipped[0].reason).toBe('already-present')
         expect(writeEntry).not.toHaveBeenCalled()
+    })
+
+    it('zeroes the derived private key once it is written', async () => {
+        const payload = await buildPayload()
+        const written: Uint8Array[] = []
+        writeEntry.mockImplementationOnce(
+            async (params: { privateKey: Uint8Array }) => {
+                written.push(Uint8Array.from(params.privateKey))
+            },
+        )
+        vi.mocked(derivePasskeyCredential).mockClear()
+        const { result } = renderHook(() =>
+            useCloudBackupPasskeyImport(resolveEntropy),
+        )
+
+        await result.current.importPasskeys([payload])
+
+        const [derived] = await derivedSinceClear()
+        expect(written[0]!.some(byte => byte !== 0)).toBe(true)
+        expect(derived!.privateKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('zeroes the derived private key when the public key disagrees', async () => {
+        const payload = await buildPayload({ publicKeySpkiDer: 'd3Jvbmc=' })
+        vi.mocked(derivePasskeyCredential).mockClear()
+        const { result } = renderHook(() =>
+            useCloudBackupPasskeyImport(resolveEntropy),
+        )
+
+        await result.current.importPasskeys([payload])
+
+        const [derived] = await derivedSinceClear()
+        expect(derived!.privateKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('zeroes the derived private key when the write fails', async () => {
+        const payload = await buildPayload()
+        writeEntry.mockRejectedValueOnce(new Error('keystore unavailable'))
+        vi.mocked(derivePasskeyCredential).mockClear()
+        const { result } = renderHook(() =>
+            useCloudBackupPasskeyImport(resolveEntropy),
+        )
+
+        const summary = await result.current.importPasskeys([payload])
+
+        const [derived] = await derivedSinceClear()
+        expect(summary.failed).toHaveLength(1)
+        expect(derived!.privateKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('zeroes the seed entropy when the main-key derivation fails', async () => {
+        const payload = await buildPayload()
+        vi.mocked(derivePasskeyMainKey).mockRejectedValueOnce(
+            new Error('kdf unavailable'),
+        )
+        resolveEntropy.mockClear()
+        const { result } = renderHook(() =>
+            useCloudBackupPasskeyImport(resolveEntropy),
+        )
+
+        const summary = await result.current.importPasskeys([payload])
+
+        const resolved: ResolvedSeed | null =
+            await resolveEntropy.mock.results[0]!.value
+        expect(summary.failed).toHaveLength(1)
+        expect(resolved!.entropy.every(byte => byte === 0)).toBe(true)
     })
 
     it('derives the main key once per seed across several credentials', async () => {
