@@ -48,6 +48,12 @@ _android_secrets: &android_secrets
   - TESTNET_CARD_KILLSWITCH_APP_ID
   - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
   - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
+  # Required by main's tools/validate-env.sh: an empty pin fails closed on the
+  # device, so auto funding would silently never work in the release.
+  - CARD_AUTODRAW_TEMPLATE_HASH
+  # Per environment, as setup-env-secrets.sh aliases it; unset, the Drive
+  # backup row reports itself unconfigured.
+  - GOOGLE_WEB_CLIENT_ID
   # Card: testnet Baanx x-client-key (public identifier, not the server-only
   # x-secret-key). setup-env-secrets.sh only aliases the testnet key —
   # mainnet card isn't live yet (see main.ts's mainnetBaanxTenantId TODO).
@@ -89,6 +95,13 @@ _ios_secrets: &ios_secrets
   - TESTNET_CARD_KILLSWITCH_APP_ID
   - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
   - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
+  # See the android list.
+  - CARD_AUTODRAW_TEMPLATE_HASH
+  # Per environment. Unset, app.config.builder drops the iCloud and Google
+  # sign-in plugins, and entitlements are fixed at build time.
+  - GOOGLE_IOS_CLIENT_ID
+  - GOOGLE_WEB_CLIENT_ID
+  - IOS_ICLOUD_CONTAINER_ID
   - TESTNET_BAANX_CLIENT_KEY
 
 # validate-env.sh's web profile treats the Firebase Web SDK, GA4 and Sentry
