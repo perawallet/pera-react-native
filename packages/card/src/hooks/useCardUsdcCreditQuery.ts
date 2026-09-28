@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { QueryObserver, useQueryClient } from '@tanstack/react-query'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { cardAdapterFor } from '../chain-adapter'
@@ -33,7 +34,7 @@ const fetchUsdcBalance = async (
     network: Network,
     address: string,
 ): Promise<bigint> => {
-    const usdcAssetId = getKnownAssetId('USDC', network)
+    const usdcAssetId = getKnownAssetId('USDC', scopeForLegacyNetwork(network))
     if (usdcAssetId === null) return 0n
     return cardAdapterFor(network).getAssetBalance(
         network,

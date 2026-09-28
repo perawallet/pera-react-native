@@ -11,9 +11,9 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { Networks } from '@perawallet/wallet-core-shared'
 import {
-    CAIP2_CHAIN_ID_BY_NETWORK,
     getCaip2ChainId,
     getNetworkFromCaip2ChainId,
     parseAlgorandCaip10Account,
@@ -57,23 +57,19 @@ describe('getCaip2ChainId', () => {
         expect(getCaip2ChainId(Networks.custom)).toBeNull()
     })
 
-    it('maps every network', () => {
-        expect(CAIP2_CHAIN_ID_BY_NETWORK).toEqual({
-            mainnet: MAINNET_CHAIN_ID,
-            testnet: TESTNET_CHAIN_ID,
-            betanet: BETANET_CHAIN_ID,
-            custom: null,
-        })
+    it('has no chain id for a network no chain declares', () => {
+        expect(getCaip2ChainId('fnet')).toBeNull()
     })
 
-    it('refuses to let a caller repoint a network', () => {
-        expect(() =>
-            Object.assign(CAIP2_CHAIN_ID_BY_NETWORK, {
-                [Networks.mainnet]: TESTNET_CHAIN_ID,
-            }),
-        ).toThrow(TypeError)
-        expect(getCaip2ChainId(Networks.mainnet)).toBe(MAINNET_CHAIN_ID)
-    })
+    it.each(algorandDescriptor.networks)(
+        "matches the descriptor's CAIP-2 id for $id and round-trips it",
+        network => {
+            const chainId = getCaip2ChainId(network.id)
+
+            expect(chainId).toBe(network.caip2)
+            expect(getNetworkFromCaip2ChainId(chainId ?? '')).toBe(network.id)
+        },
+    )
 })
 
 describe('parseCaip10Account', () => {

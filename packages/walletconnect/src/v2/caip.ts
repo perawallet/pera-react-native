@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
+import {
+    scopeForLegacyNetwork,
+    type NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import { getChainConfig } from '@perawallet/wallet-core-config'
 import {
     Networks,
     type Network,
@@ -48,32 +52,37 @@ export const toCaip2ChainId = (
     return `${ALGORAND_CAIP2_NAMESPACE}:${reference}`
 }
 
-/**
- * A `Record`, not a fallback ladder, so adding a network to `Network` fails
- * TypeScript here instead of resolving to whatever the last branch returned.
- * Frozen because it is module-level and exported: a caller repointing a
- * network here would silently change which chain every session is checked
- * against, `NETWORK_BY_CAIP2_CHAIN_ID` excepted since it snapshots.
- */
-export const CAIP2_CHAIN_ID_BY_NETWORK: Readonly<
-    Record<Network, Nullable<AlgorandCaip2ChainId>>
-> = Object.freeze({
-    [Networks.mainnet]: toCaip2ChainId(config.mainnetGenesisHash),
-    [Networks.testnet]: toCaip2ChainId(config.testnetGenesisHash),
-    [Networks.betanet]: toCaip2ChainId(config.betanetGenesisHash),
-    // `custom` has no CAIP-2 identity at all: its genesis hash is whatever node
-    // the developer pointed at and is never baked into config, so no v2 session
-    // can claim to be on it.
-    [Networks.custom]: null,
-})
+// `custom` has no CAIP-2 identity at all: its genesis hash is whatever node the
+// developer pointed at and is never baked into config, so no v2 session can
+// claim to be on it.
+const caip2ChainIdOf = (network: Network): Nullable<AlgorandCaip2ChainId> =>
+    network === Networks.custom
+        ? null
+        : toCaip2ChainId(
+              getChainConfig(scopeForLegacyNetwork(network)).genesisHash,
+          )
 
+/**
+ * Private, so no caller can repoint a network and silently change which chain
+ * every session is checked against. Read from config rather than the chain
+ * descriptor so an env genesis override still applies.
+ */
+const CAIP2_CHAIN_ID_BY_NETWORK: ReadonlyMap<
+    NetworkId,
+    Nullable<AlgorandCaip2ChainId>
+> = new Map(
+    Object.values(Networks).map(network => [network, caip2ChainIdOf(network)]),
+)
+
+/** `null` for `custom` and for a network with no chain id. */
 export const getCaip2ChainId = (
-    network: Network,
-): Nullable<AlgorandCaip2ChainId> => CAIP2_CHAIN_ID_BY_NETWORK[network]
+    networkId: NetworkId,
+): Nullable<AlgorandCaip2ChainId> =>
+    CAIP2_CHAIN_ID_BY_NETWORK.get(networkId) ?? null
 
 const NETWORK_BY_CAIP2_CHAIN_ID: ReadonlyMap<string, Network> = new Map(
     Object.values(Networks).flatMap(network => {
-        const chainId = CAIP2_CHAIN_ID_BY_NETWORK[network]
+        const chainId = getCaip2ChainId(network)
         return chainId === null ? [] : [[chainId, network] as [string, Network]]
     }),
 )

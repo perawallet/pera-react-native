@@ -168,17 +168,21 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     isCollectible: (asset: { peraMetadata?: { type?: string } }) =>
         asset.peraMetadata?.type === 'collectible',
     KNOWN_ASSET_IDS: {
-        USDC: { mainnet: '31566704', testnet: '10458941' },
+        USDC: new Map([
+            ['algorand/mainnet', '31566704'],
+            ['algorand/testnet', '10458941'],
+            ['algorand/betanet', null],
+        ]),
     },
     // `null`, not `''`, off the Pera-backed lane — mirroring the real
     // getKnownAssetId. An empty string is falsy but not null, so it routes
     // straight PAST every `=== null` guard the consumers now carry instead of
     // exercising it.
-    getKnownAssetId: vi.fn((key: string, network: string) => {
+    getKnownAssetId: vi.fn((key: string, scope: { networkId: string }) => {
         const ids: Record<string, Record<string, string>> = {
             USDC: { mainnet: '31566704', testnet: '10458941' },
         }
-        return ids[key]?.[network] ?? null
+        return ids[key]?.[scope.networkId] ?? null
     }),
     ALGO_ASSET: {
         assetId: '0',

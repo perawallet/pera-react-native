@@ -69,6 +69,10 @@
     "./connect": {
       "types": "./dist/connect/index.d.ts",
       "default": "./dist/connect/index.js"
+    },
+    "./descriptor": {
+      "types": "./dist/descriptor/index.d.ts",
+      "default": "./dist/descriptor/index.js"
     }
   },
   "scripts": {

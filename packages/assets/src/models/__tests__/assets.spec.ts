@@ -12,6 +12,10 @@
 
 import { describe, test, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 import { ALGO_ASSET, getKnownAssetId } from '../assets'
 import { toWholeUnits } from '../../utils'
@@ -29,10 +33,37 @@ describe('ALGO_ASSET', () => {
 
 describe('known asset ids', () => {
     test('getKnownAssetId returns null where the asset has no known id', () => {
-        expect(getKnownAssetId('USDC', 'mainnet')).toBe('31566704')
-        expect(getKnownAssetId('USDC', 'testnet')).toBe('10458941')
+        expect(getKnownAssetId('USDC', scopeForLegacyNetwork('mainnet'))).toBe(
+            '31566704',
+        )
+        expect(getKnownAssetId('USDC', scopeForLegacyNetwork('testnet'))).toBe(
+            '10458941',
+        )
         // Was TestNet's id, which does not identify USDC on these chains.
-        expect(getKnownAssetId('USDC', 'betanet')).toBeNull()
-        expect(getKnownAssetId('USDC', 'custom')).toBeNull()
+        expect(
+            getKnownAssetId('USDC', scopeForLegacyNetwork('betanet')),
+        ).toBeNull()
+        expect(
+            getKnownAssetId('USDC', scopeForLegacyNetwork('custom')),
+        ).toBeNull()
+    })
+
+    test('getKnownAssetId returns null for a network no chain declares', () => {
+        expect(
+            getKnownAssetId('USDC', {
+                ...scopeForLegacyNetwork('mainnet'),
+                networkId: 'fnet',
+            }),
+        ).toBeNull()
+    })
+
+    test('getKnownAssetId returns null, without throwing, for a chain that is not compiled in', () => {
+        const scope = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        } as unknown as ChainScope
+
+        expect(() => getKnownAssetId('USDC', scope)).not.toThrow()
+        expect(getKnownAssetId('USDC', scope)).toBeNull()
     })
 })

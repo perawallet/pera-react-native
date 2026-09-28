@@ -40,6 +40,7 @@ export default defineConfig(
             'ledger/index': resolve(__dirname, 'src/ledger/index.ts'),
             'backup/index': resolve(__dirname, 'src/backup/index.ts'),
             'connect/index': resolve(__dirname, 'src/connect/index.ts'),
+            'descriptor/index': resolve(__dirname, 'src/descriptor/index.ts'),
         },
     }),
 )
