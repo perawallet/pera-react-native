@@ -11,6 +11,7 @@
  */
 
 export * from './capabilities/resolve'
+export * from './chain-registry'
 export * from './contracts/address-codec'
 export * from './contracts/key-derivation'
 export * from './errors'
