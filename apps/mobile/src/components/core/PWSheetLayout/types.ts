@@ -10,6 +10,7 @@
  limitations under the License
  */
 
-export { PWSheetLayout } from './PWSheetLayout'
-export type { PWSheetLayoutProps } from './PWSheetLayout'
-export type { PWSheetLayoutScrollHandle } from './types'
+// Platform-neutral so callers never depend on gorhom's scroll view (absent on web).
+export type PWSheetLayoutScrollHandle = {
+    scrollToEnd: (options?: { animated: boolean }) => void
+}

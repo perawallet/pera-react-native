@@ -14,7 +14,7 @@ every store upload), `version_name` keeps any pre-release tag, and non-productio
 builds get "(development build)" or "(staging build)" appended to the
 description. Bump `version` in `package.json` to release.
 
-    pnpm --filter extension bundle
+    pnpm --filter browser bundle
 
 Then open `chrome://extensions`, enable Developer mode, "Load unpacked",
 select the `dist/` folder the bundle writes into. Click the toolbar icon to
@@ -33,6 +33,6 @@ open the popup.
 
 ## E2E
 
-    pnpm --filter extension bundle
-    pnpm --filter extension exec playwright install chromium
-    pnpm --filter extension test:e2e
+    pnpm --filter browser bundle
+    pnpm --filter browser exec playwright install chromium
+    pnpm --filter browser test:e2e
