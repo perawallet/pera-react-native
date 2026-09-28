@@ -22,6 +22,7 @@ import {
     indicesToEntropy,
 } from '../hdwallet-utils'
 import {
+    indicesToUtf8Bytes,
     mnemonicIndexToWord,
     mnemonicWordsToIndices,
 } from '../mnemonic-indices'
@@ -68,6 +69,12 @@ vi.mock('crypto', async importOriginal => {
             )
         },
     }
+})
+
+// Spied, not replaced, so a test can see which indices a call derived.
+vi.mock('../mnemonic-indices', async importOriginal => {
+    const actual = await importOriginal<typeof import('../mnemonic-indices')>()
+    return { ...actual, indicesToUtf8Bytes: vi.fn(actual.indicesToUtf8Bytes) }
 })
 
 vi.mock('../secure-memory', async importOriginal => {
@@ -148,11 +155,8 @@ describe('generateHDMasterKey', () => {
 
         await generateHDMasterKey()
 
-        const generated = zeroedBuffers.filter(
-            buf => buf instanceof Uint16Array,
-        )
-        expect(generated).toHaveLength(1)
-        expect(generated[0]!.every(index => index === 0)).toBe(true)
+        const generated = vi.mocked(indicesToUtf8Bytes).mock.calls.at(-1)![0]
+        expect(zeroedBuffers).toContain(generated)
     })
 
     test('generates fresh 256-bit entropy when no indices are supplied', async () => {
