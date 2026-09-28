@@ -16,6 +16,7 @@ import {
     useAccountBalancesQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useRampPairsQuery,
     rampTokenAssetId,
@@ -45,6 +46,7 @@ export const useOnrampPairSelectionContent = ({
     variant,
 }: UseOnrampPairSelectionContentParams): UseOnrampPairSelectionContentResult => {
     const { resolve } = useBottomSheetResult<string>()
+    const { network } = useNetwork()
     const { data: pairs, isLoading } = useRampPairsQuery()
     const selectedAccount = useSelectedAccount()
     const { accountBalances } = useAccountBalancesQuery(
@@ -87,9 +89,9 @@ export const useOnrampPairSelectionContent = ({
         return sorted.map(token => ({
             token,
             // A non-ALGO ramp token has no holding row, so it shows as unowned.
-            balance: balanceMap.get(rampTokenAssetId(token)) ?? null,
+            balance: balanceMap.get(rampTokenAssetId(token, network)) ?? null,
         }))
-    }, [pairs, variant, searchFilter, balanceMap])
+    }, [pairs, variant, searchFilter, balanceMap, network])
 
     const handleTokenSelected = useCallback(
         (token: RampToken) => {

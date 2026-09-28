@@ -22,6 +22,10 @@ import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
 import { algorandNameServiceAdapter } from '../nfd'
+import { cardChainAdapters } from '@perawallet/wallet-core-card'
+import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
+import { algorandCardAdapter } from '../card'
+import { algorandRampAdapter } from '../onramp'
 
 describe('registerChain', () => {
     beforeEach(() => {
@@ -30,6 +34,8 @@ describe('registerChain', () => {
         dappRequestChainAdapters.reset()
         sendFlowChainAdapters.reset()
         nameServiceChainAdapters.reset()
+        cardChainAdapters.reset()
+        rampChainAdapters.reset()
     })
 
     it('registers the Algorand swap adapter', () => {
@@ -76,6 +82,22 @@ describe('registerChain', () => {
 
         expect(nameServiceChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandNameServiceAdapter,
+        )
+    })
+
+    it('registers the Algorand card adapter', () => {
+        registerChain()
+
+        expect(cardChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandCardAdapter,
+        )
+    })
+
+    it('registers the Algorand ramp adapter', () => {
+        registerChain()
+
+        expect(rampChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandRampAdapter,
         )
     })
 })
