@@ -3171,9 +3171,6 @@ importers:
       '@algorandfoundation/dp256':
         specifier: 1.1.0
         version: 1.1.0
-      '@algorandfoundation/react-native-keystore':
-        specifier: 1.0.0-canary.20
-        version: 1.0.0-canary.20(685e4e97f63a794b035dd4d23667524b)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
