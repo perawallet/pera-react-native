@@ -21,6 +21,7 @@ import {
 import {
     CHAIN_CAPABILITIES,
     type ChainCapabilities,
+    type ChainCapability,
 } from './models/capabilities'
 import type { ChainDescriptor } from './models/descriptor'
 import type { ChainId, ChainNetwork } from './models/identity'
@@ -54,6 +55,11 @@ export interface ChainRegistry {
     capabilities(chainId: ChainId): ChainCapabilities
     /** Read on every `capabilities` call, so a changed remote value applies without re-registering. */
     setCapabilityOverrides(read: () => ChainCapabilityOverrides): void
+    /**
+     * True only while the kill switch is explicitly off, registered or not, so
+     * sync can stop a chain the registry doesn't list yet.
+     */
+    isSwitchedOff(chainId: ChainId): boolean
     byCaip2(
         caip2: string,
     ): { chainId: ChainId; network: ChainNetwork } | undefined
@@ -71,6 +77,13 @@ export interface ChainSetupEntry {
 }
 
 export type ChainSetup = readonly ChainSetupEntry[]
+
+/** The build layer, from `CHAINS` and `CHAIN_<ID>_CAPABILITIES`. */
+export interface ChainSetupConfig {
+    enabled: readonly ChainId[]
+    /** A listed chain gets exactly these capabilities on and every other one off. */
+    capabilities: Partial<Record<ChainId, readonly ChainCapability[]>>
+}
 
 const NO_OVERRIDES = (): ChainCapabilityOverrides => ({})
 
@@ -129,6 +142,8 @@ export const createChainRegistry = (): ChainRegistry => {
         setCapabilityOverrides: read => {
             readOverrides = read
         },
+        isSwitchedOff: chainId =>
+            readOverrides().chainEnabled?.[chainId] === false,
         byCaip2: caip2 => {
             for (const {
                 chain: { descriptor },
@@ -168,4 +183,36 @@ export const registerChainSetup = (
         })
         entry.module.register(contextFor(entry))
     }
+}
+
+export const buildChainSetup = (
+    chains: ChainSetupConfig,
+    modules: Record<ChainId, ChainModule>,
+): ChainSetupEntry[] => {
+    for (const chainId of chains.enabled) {
+        if (!modules[chainId]) {
+            throw new Error(
+                `Chain "${chainId}" is enabled but no chain module was supplied for it`,
+            )
+        }
+    }
+    return (Object.entries(modules) as [ChainId, ChainModule][]).map(
+        ([chainId, module]) => {
+            const listed = chains.capabilities[chainId]
+            return {
+                chainId,
+                enabled: chains.enabled.includes(chainId),
+                module,
+                endpoints: {},
+                ...(listed && {
+                    capabilities: Object.fromEntries(
+                        CHAIN_CAPABILITIES.map(capability => [
+                            capability,
+                            listed.includes(capability),
+                        ]),
+                    ) as ChainCapabilities,
+                }),
+            }
+        },
+    )
 }
