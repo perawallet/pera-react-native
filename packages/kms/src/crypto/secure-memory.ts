@@ -26,3 +26,10 @@ export const zeroBytes = (
         if (buf) buf.fill(0)
     }
 }
+
+/**
+ * Marks where a secret buffer passes to an owner that zeroes it later: a store,
+ * a cache, a helper. Returns its argument and zeroes nothing. It is the hand-off
+ * `pera/secret-buffer-zeroed` can't verify on its own, stated at the buffer.
+ */
+export const handOffSecret = <T>(secret: T): T => secret

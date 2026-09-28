@@ -52,6 +52,14 @@ describe('pera/secret-buffer-zeroed', () => {
         ])
     })
 
+    it('counts a transfer-list postMessage or handOffSecret as handing the buffer off', async () => {
+        expect(await reported('handoffs.ts')).toEqual([
+            'handoffs.ts:7',
+            'handoffs.ts:29',
+            'handoffs.ts:37',
+        ])
+    })
+
     it('reports destructuring that leaves every secret field of the result unbound', async () => {
         expect(await reported('destructure.ts')).toEqual(['destructure.ts:2'])
     })

@@ -98,6 +98,20 @@ const RETURNS = [
     '((arrow_function body: (call_expression) @key @release))',
 ]
 
+// A transfer list detaches the buffer, so a posted key is no longer this
+// realm's to zero. Posting without one sends a copy and keeps the original.
+const TRANSFERS = [
+    `((call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)] arguments: (arguments . (identifier) @key . (object (pair key: (property_identifier) @option value: (array (member_expression object: (identifier) @transferred property: (property_identifier) @part)))))) @release (#eq? @fn "postMessage") (#eq? @option "transfer") (#eq? @part "buffer") (#eq? @transferred @key))`,
+]
+
+// handOffSecret marks where a buffer moves to an owner that zeroes it: a
+// store, a cache or a helper. The rule can't verify that owner, so the marker
+// is the claim, made at the one buffer rather than over a whole line.
+const HAND_OFFS = [
+    '((call_expression function: (identifier) @fn arguments: (arguments . (_) @key .)) @release (#eq? @fn "handOffSecret"))',
+    `((call_expression function: (identifier) @fn arguments: (arguments . ${secretField('(identifier) @key')} .)) @release (#eq? @fn "handOffSecret") (#match? @field "${SECRET_FIELDS}"))`,
+]
+
 // `if (!key) return` leaves on the path where the producer returned nothing.
 const NULL_GUARDS = [
     '((if_statement condition: (parenthesized_expression (unary_expression operator: "!" argument: (identifier) @key)) consequence: [(return_statement) (throw_statement)] @release))',
@@ -144,7 +158,13 @@ export default defineRule({
             `((call_expression function: (identifier) @fn) @acquire @key (#match? @fn "${ACQUIRE}"))`,
             `((call_expression function: (member_expression property: (property_identifier) @fn)) @acquire @key (#match? @fn "${ACQUIRE}"))`,
         ],
-        release: [...WIPES, ...RETURNS, ...NULL_GUARDS],
+        release: [
+            ...WIPES,
+            ...RETURNS,
+            ...TRANSFERS,
+            ...HAND_OFFS,
+            ...NULL_GUARDS,
+        ],
         scope: 'function',
         // A release discharges only the buffer it zeroes or returns, not
         // every acquisition in the function.
