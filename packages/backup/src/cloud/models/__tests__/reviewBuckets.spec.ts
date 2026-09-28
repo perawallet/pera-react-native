@@ -23,7 +23,12 @@ import {
     serializeAccountForBackup,
 } from '../../sync'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
-import { accountItemKey, contactItemKey, secretsItemKey } from '../itemKeys'
+import {
+    accountItemKey,
+    contactItemKey,
+    passkeyItemKey,
+    secretsItemKey,
+} from '../itemKeys'
 import { BackupAccountType } from '../payloads'
 import {
     createEmptySyncState,
@@ -36,14 +41,18 @@ import {
     areKeysDeletedFromBackup,
     deriveBackupAccountReview,
     deriveBackupContactReview,
+    deriveBackupPasskeyReview,
     isAddressBackedUp,
     isContactBackedUp,
+    isPasskeyBackedUp,
 } from '../reviewBuckets'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const accountKey = (address: string) => accountItemKey(hashAddress(address))
 const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
+const passkeyKey = (credentialId: string) =>
+    passkeyItemKey(hashAddress(credentialId))
 
 const tracked = (
     address: string,
@@ -491,5 +500,51 @@ describe('deriveBackupContactReview', () => {
 
         expect(review.availableFromBackup).toEqual([])
         expect(review.notBackedUp).toEqual(['A'])
+    })
+})
+
+describe('deriveBackupPasskeyReview', () => {
+    const passkey = (
+        credentialId: string,
+        overrides: Partial<SyncItemState> = {},
+    ): SyncItemState =>
+        tracked(credentialId, { type: BackupItemType.PASSKEY, ...overrides })
+
+    const stateWith = (items: Record<string, SyncItemState>): SyncState => ({
+        ...createEmptySyncState('did:pera:x'),
+        items,
+    })
+
+    it('splits credentials into backed up and not backed up', () => {
+        const state = stateWith({
+            [passkeyKey('one')]: passkey('one', { label: 'Alice' }),
+        })
+
+        const review = deriveBackupPasskeyReview(state, ['one', 'two'])
+
+        expect([...review.backedUp]).toEqual(['one'])
+        expect(review.notBackedUp).toEqual(['two'])
+    })
+
+    it('offers a held credential the device no longer has, with its label', () => {
+        const state = stateWith({
+            [passkeyKey('one')]: passkey('one', {
+                pendingImport: true,
+                label: 'Alice',
+            }),
+        })
+
+        const review = deriveBackupPasskeyReview(state, [])
+
+        expect(review.availableFromBackup).toEqual([
+            { credentialId: 'one', label: 'Alice' },
+        ])
+    })
+
+    it('reports a credential the backup holds live as backed up', () => {
+        const state = stateWith({ [passkeyKey('one')]: passkey('one') })
+
+        expect(isPasskeyBackedUp(state, 'one')).toBe(true)
+        expect(isPasskeyBackedUp(state, 'two')).toBe(false)
     })
 })

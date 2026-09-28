@@ -17,7 +17,8 @@ import {
 import {
     sealNativeProviderRecord,
     toNativeByteArray,
-} from '@perawallet/wallet-core-passkeys/native'
+} from './nativeProviderRecord'
+import { notifyPasskeyChanged } from './passkeyChanges'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import {
     getProvider,
@@ -53,6 +54,26 @@ export type WriteNativePasskeyEntryParams = {
     privateKey: Uint8Array
     /** Signature counter; legacy passkeys carry no counter, so defaults to 0. */
     count?: number
+    /**
+     * The exact string that provably reproduced this credential. Persisted
+     * because it cannot be re-guessed from the other fields: `userHandle` is
+     * mapped differently per platform, so a credential collected on Android
+     * and written on iOS loses the identity that worked.
+     */
+    identity?: string
+    /**
+     * The owning seed's passkey-main key id (`passkeyMainKeyId(seedKeyId)`).
+     * Without it a written credential can never be proven reproducible again —
+     * `passkeyBackupInputs` reads the seed key id back out of it — so a
+     * restored passkey would report as unsupported on the restoring device.
+     */
+    parentKeyId?: string
+    /**
+     * The derivation counter fed to `derivePasskeyCredential`, NOT the WebAuthn
+     * signature counter above. Stored separately because the two diverge as
+     * soon as the credential is used.
+     */
+    counter?: number
     /** Optional last-used timestamp, preserved in metadata for parity. */
     lastUsedAtMs?: number | null
 }
@@ -68,6 +89,11 @@ const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
     publicKey: toNativeByteArray(params.publicKeySpkiDer),
     metadata: {
         origin: params.origin,
+        ...(params.identity != null ? { identity: params.identity } : {}),
+        ...(params.parentKeyId != null
+            ? { parentKeyId: params.parentKeyId }
+            : {}),
+        ...(params.counter != null ? { counter: params.counter } : {}),
         // userHandle is platform-overloaded: Android's picker renders it as the
         // label (assertion reads userId) so it must be user.name; iOS uses it as
         // the assertion id (display reads userName).
@@ -139,6 +165,7 @@ export const createNativePasskeyWriter = (
                 buildKeystoreKeyData(params),
             ),
         )
+        notifyPasskeyChanged()
     }
 
     write.dispose = (): Promise<void> => {

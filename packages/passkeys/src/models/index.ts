@@ -11,3 +11,4 @@
  */
 
 export * from './passkey'
+export * from './passkeyBackup'

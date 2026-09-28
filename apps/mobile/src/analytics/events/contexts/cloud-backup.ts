@@ -29,6 +29,7 @@ export enum CloudBackupEvent {
     RestoreEncryptionKeyProceed = 'backupscr_recoverBackup_encKey_proceed', // Started the restore with the entered key
     OverviewAccounts = 'backupscr_cloudBackup_accounts_edit', // Opened backed-up accounts
     OverviewContacts = 'backupscr_cloudBackup_contacts_edit', // Opened backed-up contacts
+    OverviewPasskeys = 'backupscr_cloudBackup_passkeys_edit', // Opened backed-up passkeys
     OverviewCredentialAddress = 'backupscr_cloudBackup_credAddress', // Opened the backup credentials
     OverviewSyncDevices = 'backupscr_cloudBackup_sync', // Started sync with other devices
     OverviewTurnOff = 'backupscr_cloudBackup_disable', // Opened the turn-off sheet

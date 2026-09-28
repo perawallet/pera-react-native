@@ -32,6 +32,11 @@ const baseDeps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 1, failed: [] })),
+    importPasskeys: vi.fn(async () => ({
+        imported: 0,
+        skipped: [],
+        failed: [],
+    })),
     readItems: vi.fn(),
     decrypt: vi.fn(),
 })
@@ -577,5 +582,89 @@ describe('applyDeltas: contacts', () => {
         expect(deps.importContacts).toHaveBeenCalledWith([
             { address: 'C1', name: 'Remote', updatedAt: 1000 },
         ])
+    })
+})
+
+describe('applyDeltas: passkeys', () => {
+    const passkeyDelta = (over: Record<string, unknown> = {}) => ({
+        seq: 5,
+        key: 'passkeys/P1',
+        type: BackupItemType.PASSKEY,
+        ver: 3,
+        status: BackupItemStatus.ACTIVE,
+        op: DeltaOperation.UPSERT,
+        hash: 'rh',
+        ...over,
+    })
+
+    const trackedPasskey = (over: Record<string, unknown> = {}) => ({
+        type: BackupItemType.PASSKEY,
+        knownVer: 1,
+        baseVer: 1,
+        isDirty: false,
+        status: BackupItemStatus.ACTIVE,
+        lastRemoteHash: 'old',
+        localContentHash: null,
+        localUpdatedAt: null,
+        ...over,
+    })
+
+    const passkeyPayload = (over: Record<string, unknown> = {}) => ({
+        credentialId: 'P1',
+        origin: 'webauthn.io',
+        identity: 'alice',
+        counter: 0,
+        publicKeySpkiDer: 'cHVi',
+        seedAddress: 'SEEDADDRESS',
+        displayName: 'Alice',
+        createdAt: 1,
+        ...over,
+    })
+
+    const serving = (payload: Record<string, unknown>) => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue([
+            { key: 'passkeys/P1', ver: 3, hash: 'rh', payload: 'enc' },
+        ])
+        deps.decrypt.mockReturnValue(JSON.stringify(payload))
+        return deps
+    }
+
+    it('imports a new credential and caches its display name', async () => {
+        const deps = serving(passkeyPayload())
+
+        const next = await applyDeltas({
+            state: createEmptySyncState('b'),
+            deltas: [passkeyDelta()],
+            deps,
+        })
+
+        expect(deps.importPasskeys).toHaveBeenCalledWith([passkeyPayload()])
+        expect(next.items['passkeys/P1']).toMatchObject({
+            label: 'Alice',
+            isDirty: false,
+            knownVer: 3,
+            baseVer: 3,
+        })
+    })
+
+    it('holds a credential this device removed, downloading it only for its label', async () => {
+        const deps = serving(passkeyPayload())
+        const state = createEmptySyncState('b')
+        state.items['passkeys/P1'] = trackedPasskey({
+            status: BackupItemStatus.IGNORED,
+        })
+
+        const next = await applyDeltas({
+            state,
+            deltas: [passkeyDelta({ ver: 4 })],
+            deps,
+        })
+
+        expect(deps.importPasskeys).not.toHaveBeenCalled()
+        expect(next.items['passkeys/P1']).toMatchObject({
+            pendingImport: true,
+            label: 'Alice',
+        })
     })
 })
