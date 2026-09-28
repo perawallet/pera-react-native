@@ -24,6 +24,7 @@ import {
     CloudStorageError,
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
+import { DRIVE_FILE_SCOPE } from '../google-drive-session'
 import { readFromGoogleDrive } from '../google-drive'
 
 const google = vi.hoisted(() => ({
@@ -38,9 +39,10 @@ const google = vi.hoisted(() => ({
     hasPlayServices: vi.fn(),
 }))
 
-const { readFile, readdir, constructed, mockConfig } = vi.hoisted(() => ({
+const { readFile, readdir, stat, constructed, mockConfig } = vi.hoisted(() => ({
     readFile: vi.fn(),
     readdir: vi.fn(),
+    stat: vi.fn(),
     constructed: vi.fn(),
     mockConfig: {
         googleIosClientId: 'ios-client.apps.googleusercontent.com',
@@ -81,6 +83,7 @@ vi.mock('react-native-cloud-storage', () => {
         CloudStorage: class {
             readFile = readFile
             readdir = readdir
+            stat = stat
             constructor(...args: unknown[]) {
                 constructed(...args)
             }
@@ -90,7 +93,6 @@ vi.mock('react-native-cloud-storage', () => {
 
 vi.mock('@perawallet/wallet-core-config', () => ({ config: mockConfig }))
 
-const DRIVE_APPDATA_SCOPE = 'https://www.googleapis.com/auth/drive.appdata'
 const ONE = 'pera-backup-VQBGR.json'
 const OTHER = 'pera-backup-ZZZZZ.json'
 const CONTENTS = '{"t":"backup-credentials"}'
@@ -125,7 +127,7 @@ const unauthorizedHttpError = () =>
 
 const driveOptions = (accessToken: string) => ({
     accessToken,
-    scope: 'app_data',
+    scope: 'documents',
     strictFilenames: false,
     timeout: 15_000,
 })
@@ -135,13 +137,14 @@ const originalOS = Platform.OS
 beforeEach(() => {
     vi.clearAllMocks()
     google.hasPreviousSignIn.mockReturnValue(false)
-    google.signIn.mockResolvedValue(signedIn([DRIVE_APPDATA_SCOPE]))
+    google.signIn.mockResolvedValue(signedIn([DRIVE_FILE_SCOPE]))
     google.getTokens.mockResolvedValue({ idToken: '', accessToken: 'token-1' })
     google.clearCachedAccessToken.mockResolvedValue(null)
     google.signOut.mockResolvedValue(null)
     google.hasPlayServices.mockResolvedValue(true)
     readdir.mockResolvedValue([ONE])
     readFile.mockResolvedValue(CONTENTS)
+    stat.mockResolvedValue({ size: CONTENTS.length })
 })
 
 afterEach(() => {
@@ -158,19 +161,19 @@ describe('readFromGoogleDrive resolving which file to read', () => {
             status: 'read',
             contents: CONTENTS,
         })
-        expect(readdir).toHaveBeenCalledWith('/')
-        expect(readFile).toHaveBeenCalledWith(`/${ONE}`)
+        expect(readdir).toHaveBeenCalledWith('/Pera Wallet')
+        expect(readFile).toHaveBeenCalledWith(`/Pera Wallet/${ONE}`)
         expect(chooseFile).not.toHaveBeenCalled()
     })
 
-    test('ignores anything in appDataFolder that is not ours', async () => {
+    test('ignores anything in Google Drive that is not ours', async () => {
         readdir.mockResolvedValueOnce(['other-app.json', ONE])
         const chooseFile = vi.fn()
 
         await readFromGoogleDrive(options({ chooseFile }))
 
         expect(chooseFile).not.toHaveBeenCalled()
-        expect(readFile).toHaveBeenCalledWith(`/${ONE}`)
+        expect(readFile).toHaveBeenCalledWith(`/Pera Wallet/${ONE}`)
     })
 
     test('asks which of two saved files to read, then reads the pick', async () => {
@@ -180,7 +183,7 @@ describe('readFromGoogleDrive resolving which file to read', () => {
         await readFromGoogleDrive(options({ chooseFile }))
 
         expect(chooseFile).toHaveBeenCalledWith([ONE, OTHER])
-        expect(readFile).toHaveBeenCalledWith(`/${OTHER}`)
+        expect(readFile).toHaveBeenCalledWith(`/Pera Wallet/${OTHER}`)
     })
 
     test('reads nothing when the user backs out of the picker', async () => {
@@ -200,6 +203,34 @@ describe('readFromGoogleDrive resolving which file to read', () => {
             CloudFileNotFoundError,
         )
         expect(google.signOut).toHaveBeenCalledTimes(1)
+    })
+
+    // A fresh restore, on an account that has never saved a key, has no
+    // /Pera Wallet folder at all yet.
+    test('treats a Drive with no backup folder yet as nothing of ours, not a raw storage error', async () => {
+        readdir.mockRejectedValueOnce(
+            new CloudStorageError(
+                'File not found',
+                CloudStorageErrorCode.FILE_NOT_FOUND,
+            ),
+        )
+
+        await expect(readFromGoogleDrive(options())).rejects.toBeInstanceOf(
+            CloudFileNotFoundError,
+        )
+        expect(readFile).not.toHaveBeenCalled()
+    })
+
+    // listBackupFolder swallows FILE_NOT_FOUND only; anything else must reach
+    // the caller as itself, not get reported as "no backup found".
+    test('propagates a real listing failure instead of reporting it as no backup found', async () => {
+        const failure = new CloudStorageError(
+            'listFiles blew up',
+            CloudStorageErrorCode.UNKNOWN,
+        )
+        readdir.mockRejectedValueOnce(failure)
+
+        await expect(readFromGoogleDrive(options())).rejects.toBe(failure)
     })
 
     test('still reports not found when the sign-out itself fails', async () => {
@@ -454,5 +485,45 @@ describe('readFromGoogleDrive failures the user can act on', () => {
 
         expect(error.message).toBe('kaboom')
         expect(isExpectedError(error)).toBe(false)
+    })
+})
+
+describe('readFromGoogleDrive recovering a renamed file', () => {
+    const renamed = (extra: Partial<ReadCloudFileOptions> = {}) =>
+        options({
+            isCandidateContents: (contents: string) => contents === CONTENTS,
+            ...extra,
+        })
+
+    test('finds a key the user renamed, and reads it only once', async () => {
+        readdir.mockResolvedValueOnce(['my-wallet-key.json'])
+
+        await expect(readFromGoogleDrive(renamed())).resolves.toEqual({
+            status: 'read',
+            contents: CONTENTS,
+        })
+        expect(readFile).toHaveBeenCalledTimes(1)
+        expect(readFile).toHaveBeenCalledWith('/Pera Wallet/my-wallet-key.json')
+    })
+
+    test('never reads an entry larger than the probe ceiling', async () => {
+        readdir.mockResolvedValueOnce(['not-ours.bin'])
+        stat.mockResolvedValueOnce({ size: 64 * 1024 * 1024 })
+
+        await expect(readFromGoogleDrive(renamed())).rejects.toBeInstanceOf(
+            CloudFileNotFoundError,
+        )
+        expect(readFile).not.toHaveBeenCalled()
+    })
+
+    test('skips an entry whose size cannot be read at all', async () => {
+        readdir.mockResolvedValueOnce(['locked.json', 'my-wallet-key.json'])
+        stat.mockRejectedValueOnce(new Error('no stat for you'))
+
+        await expect(readFromGoogleDrive(renamed())).resolves.toEqual({
+            status: 'read',
+            contents: CONTENTS,
+        })
+        expect(readFile).toHaveBeenCalledTimes(1)
     })
 })
