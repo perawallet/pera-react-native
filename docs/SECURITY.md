@@ -61,7 +61,8 @@ blob likewise keeps wrapping the unchanged key.
 
 Rotation — a fresh master key, every record re-sealed under it, both blobs re-wrapped — would close
 that case. It is not built. Until it is, the remedy for a leaked password is to move the funds to a
-new wallet.
+new wallet. "Delete all data" destroys the vault (both blobs and the session key), so a wallet
+created after it is sealed under a fresh master key; one created alongside the old vault is not.
 
 What the vault defends: a cold attacker holding a copy of the browser profile and no password (an
 infostealer, a backup, a shared machine). Only Argon2id's cost stands between them and the material.

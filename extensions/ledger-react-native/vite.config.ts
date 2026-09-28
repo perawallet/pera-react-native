@@ -12,34 +12,15 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            // The `protocol` entry moved out to
-            // @perawallet/wallet-extension-ledger-shared, which the two web
-            // transports now depend on directly instead of reaching through a
-            // package named "react-native".
-            entry: { index: resolve(__dirname, 'src/index.ts') },
-            formats: ['es'],
-        },
-        rollupOptions: {
-            external: [
-                '@ledgerhq/devices',
-                '@ledgerhq/errors',
-                '@ledgerhq/react-native-hw-transport-ble',
-                '@algorandfoundation/ledger-algorand-js',
-                '@ledgerhq/hw-transport',
-                'expo',
-                'react-native',
-                'react-native-ble-plx',
-                '@perawallet/wallet-core-hardware-wallet',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-extension-ledger-shared',
-                'buffer',
-            ],
-        },
-    },
-})
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        // The `protocol` entry moved out to
+        // @perawallet/wallet-extension-ledger-shared, which the two web
+        // transports now depend on directly instead of reaching through a
+        // package named "react-native".
+        entry: { index: resolve(__dirname, 'src/index.ts') },
+    }),
+)

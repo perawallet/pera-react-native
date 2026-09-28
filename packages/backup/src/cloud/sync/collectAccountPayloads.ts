@@ -13,8 +13,7 @@
 import { logger } from '@perawallet/wallet-core-shared'
 import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
 import {
-    BACKUP_ACCOUNTS_KEY_PREFIX,
-    BACKUP_SECRETS_KEY_PREFIX,
+    isAccountItemKey,
     type AddressBackupPayload,
     type BackupItemKey,
     type FetchedItem,
@@ -30,12 +29,9 @@ import {
     type CollectPayloadsDeps,
 } from './collectPayloads'
 
-const addressOf = (key: BackupItemKey): string | null =>
-    key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)
-        ? key.slice(BACKUP_ACCOUNTS_KEY_PREFIX.length)
-        : key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
-          ? key.slice(BACKUP_SECRETS_KEY_PREFIX.length)
-          : null
+type ParsedAccountPayload =
+    | { kind: 'address'; payload: AddressBackupPayload }
+    | { kind: 'secrets'; payload: SecretsBackupPayload }
 
 /** `items` is mutated in place: each readable item's version/hash bookkeeping
  *  is written back under its own key. */
@@ -52,14 +48,11 @@ export const collectAccountPayloads = ({
     const secretsPayloads = new Map<string, SecretsBackupPayload>()
 
     for (const item of fetched) {
-        const address = addressOf(item.key)
-        if (!address) continue
-
         const plaintext = decryptItem(item, deps)
         if (plaintext === null) continue
 
         const existing = items[item.key]
-        const isAddress = item.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)
+        const isAddress = isAccountItemKey(item.key)
         // Only the address record carries an editable name; a secret is
         // immutable, so there is no local edit for it to win.
         if (isAddress && existing && isLocalNewer(existing, plaintext)) {
@@ -67,21 +60,42 @@ export const collectAccountPayloads = ({
             continue
         }
 
+        let parsed: ParsedAccountPayload
         try {
-            if (isAddress)
-                addressPayloads.set(address, parseAddressPayload(plaintext))
-            else secretsPayloads.set(address, parseSecretsPayload(plaintext))
+            parsed = isAddress
+                ? { kind: 'address', payload: parseAddressPayload(plaintext) }
+                : { kind: 'secrets', payload: parseSecretsPayload(plaintext) }
         } catch {
             logger.warn('collectAccountPayloads: failed to parse', {
                 key: item.key,
             })
             continue
         }
-        items[item.key] = adoptRemote(
-            items[item.key] as SyncItemState,
-            item,
-            plaintext,
-        )
+        const { address, type } = parsed.payload
+
+        // Cached but not imported: the user deleted this account here on
+        // purpose, and only the review row needs it back.
+        if (existing?.pendingImport === true) {
+            items[item.key] = {
+                ...existing,
+                knownVer: item.ver,
+                baseVer: item.ver,
+                lastRemoteHash: item.hash,
+                address,
+                accountType: type,
+            }
+            continue
+        }
+
+        if (parsed.kind === 'address')
+            addressPayloads.set(address, parsed.payload)
+        else secretsPayloads.set(address, parsed.payload)
+
+        items[item.key] = {
+            ...adoptRemote(items[item.key] as SyncItemState, item, plaintext),
+            address,
+            accountType: type,
+        }
     }
 
     // Join address+secrets and surface orphan hdSeed secrets as standalone

@@ -1,0 +1,167 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, test, expect } from 'vitest'
+import {
+    config,
+    configSchema,
+    getConfig,
+    overrideEnvironmentMap,
+} from '../main'
+
+describe('config/main', () => {
+    test('config object is frozen', () => {
+        expect(Object.isFrozen(config)).toBe(true)
+    })
+
+    test('config matches schema', () => {
+        const result = configSchema.safeParse(config)
+        expect(result.success).toBe(true)
+    })
+
+    test('getConfig returns a valid config', () => {
+        const result = getConfig()
+        expect(configSchema.safeParse(result).success).toBe(true)
+    })
+
+    // Production needs backend overrides: the committed staging defaults
+    // would otherwise (correctly) trip the production staging-URL guard.
+    test.each([
+        ['production', 'https://discover-mobile.perawallet.app/'],
+        ['staging', 'https://discover-mobile-staging.perawallet.app/'],
+        ['development', 'https://discover-mobile-staging.perawallet.app/'],
+    ] as const)(
+        'uses the expected Discover URL for %s builds',
+        (appEnvironment, expectedUrl) => {
+            const overrides =
+                appEnvironment === 'production'
+                    ? {
+                          appEnvironment,
+                          mainnetBackendUrl:
+                              'https://mainnet.api.perawallet.app',
+                          testnetBackendUrl:
+                              'https://testnet.api.perawallet.app',
+                          backupBaseUrl: 'https://backup.perawallet.app/',
+                      }
+                    : { appEnvironment }
+            expect(getConfig(overrides).discoverBaseUrl).toBe(expectedUrl)
+        },
+    )
+
+    // Production needs backend overrides: the committed staging defaults
+    // would otherwise (correctly) trip the production staging-URL guard.
+    test.each([
+        ['production', 'https://integrity.perawallet.app'],
+        ['staging', 'https://integrity-staging.perawallet.app'],
+        ['development', 'https://integrity-staging.perawallet.app'],
+    ] as const)(
+        'uses the expected integrity check origin for %s builds',
+        (appEnvironment, expectedOrigin) => {
+            const overrides =
+                appEnvironment === 'production'
+                    ? {
+                          appEnvironment,
+                          mainnetBackendUrl:
+                              'https://mainnet.api.perawallet.app',
+                          testnetBackendUrl:
+                              'https://testnet.api.perawallet.app',
+                          backupBaseUrl: 'https://backup.perawallet.app/',
+                      }
+                    : { appEnvironment }
+            expect(getConfig(overrides).integrityCheckOrigin).toBe(
+                expectedOrigin,
+            )
+        },
+    )
+
+    test('does not expose obsolete staking or onramp URLs', () => {
+        expect('stakingBaseUrl' in config).toBe(false)
+        expect('onrampBaseUrl' in config).toBe(false)
+    })
+
+    test('does not map obsolete web-feature URL environment variables', () => {
+        expect(overrideEnvironmentMap).not.toHaveProperty('discoverBaseUrl')
+        expect(overrideEnvironmentMap).not.toHaveProperty(
+            'integrityCheckOrigin',
+        )
+        expect(overrideEnvironmentMap).not.toHaveProperty('stakingBaseUrl')
+        expect(overrideEnvironmentMap).not.toHaveProperty('onrampBaseUrl')
+    })
+
+    // Empty is a legitimate committed default: open-source builds have no
+    // Reown project id, and the v2 handler treats an empty one as unavailable.
+    test('defaults reownProjectId to the empty string', () => {
+        expect(getConfig({}).reownProjectId).toBe('')
+    })
+
+    test('schema rejects a config with no reownProjectId key', () => {
+        const withoutProjectId: Record<string, unknown> = { ...config }
+        delete withoutProjectId.reownProjectId
+
+        expect(configSchema.safeParse(withoutProjectId).success).toBe(false)
+    })
+
+    test('maps reownProjectId onto REOWN_PROJECT_ID', () => {
+        expect(overrideEnvironmentMap.reownProjectId).toBe('REOWN_PROJECT_ID')
+    })
+
+    // Empty is the committed default so open-source builds parse; the card
+    // package fails closed on it, so only a Bitrise-injected value enables
+    // AutoDraw.
+    test('defaults cardAutoDrawTemplateHash to the empty string', () => {
+        expect(getConfig({}).cardAutoDrawTemplateHash).toBe('')
+    })
+
+    test('maps cardAutoDrawTemplateHash onto CARD_AUTODRAW_TEMPLATE_HASH', () => {
+        expect(overrideEnvironmentMap.cardAutoDrawTemplateHash).toBe(
+            'CARD_AUTODRAW_TEMPLATE_HASH',
+        )
+    })
+
+    test('exposes bounded-timeout defaults in milliseconds', () => {
+        expect(config.algodReadTimeout).toBe(10_000)
+        expect(config.algodSubmitTimeout).toBe(30_000)
+        expect(config.signingTransportTimeout).toBe(60_000)
+    })
+
+    test('schema rejects a non-integer algodReadTimeout', () => {
+        const result = configSchema.safeParse({
+            ...config,
+            algodReadTimeout: 10.5,
+        })
+        expect(result.success).toBe(false)
+    })
+
+    test.each(['mainnet', 'testnet', 'betanet'] as const)(
+        'accepts %s as a build-time defaultNetwork',
+        defaultNetwork => {
+            expect(getConfig({ defaultNetwork }).defaultNetwork).toBe(
+                defaultNetwork,
+            )
+        },
+    )
+
+    test('rejects custom as a build-time defaultNetwork', () => {
+        // `custom` is the one union member with no baked chain config — every
+        // value comes from the custom-network store, which is empty on a fresh
+        // install. DEFAULT_NETWORK=custom would therefore make `custom` the
+        // ACTIVE network with empty endpoints on first launch, and
+        // TimeoutHttpClient's `new URL('/')` throws during render. There is no
+        // build-time value that could make it valid, so it must not be a legal
+        // default at all.
+        const result = configSchema.safeParse({
+            ...config,
+            defaultNetwork: 'custom',
+        })
+        expect(result.success).toBe(false)
+    })
+})

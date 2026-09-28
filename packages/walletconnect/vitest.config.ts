@@ -33,6 +33,12 @@ export default defineConfig({
             // (betanet/custom) lives in packages/config and shared only
             // re-exports it, so aliasing shared alone still resolves that
             // re-export through config's own dist.
+            // Before the barrel key: aliases prefix-match, so the barrel entry
+            // would rewrite `/queue` (imported by assets' dist) to a bad path.
+            '@perawallet/wallet-core-shared/queue': path.resolve(
+                __dirname,
+                '../shared/src/queue/index.ts',
+            ),
             '@perawallet/wallet-core-shared': path.resolve(
                 __dirname,
                 '../shared/src/index.ts',
@@ -48,6 +54,11 @@ export default defineConfig({
             '@perawallet/wallet-extension-platform-driver': path.resolve(
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
+            ),
+            // Before the bare specifier: an alias key also prefix-matches its subpaths.
+            '@perawallet/wallet-extension-platform/test-utils': path.resolve(
+                __dirname,
+                '../../extensions/platform/src/test-utils/index.ts',
             ),
             '@perawallet/wallet-extension-platform': path.resolve(
                 __dirname,
@@ -81,6 +92,12 @@ export default defineConfig({
                 __dirname,
                 '../blockchain/src/index.ts',
             ),
+            // Blockchain source re-exports chain-shared; its dist would reach a
+            // second getProvider() instance the mocks here never see.
+            '@perawallet/wallet-core-chain-shared': path.resolve(
+                __dirname,
+                '../chain-shared/src/index.ts',
+            ),
             '@perawallet/wallet-core-device': path.resolve(
                 __dirname,
                 '../device/src/index.ts',
@@ -90,7 +107,11 @@ export default defineConfig({
             // the shared handler contract suite from there.
             '@perawallet/wallet-core-connections/testing': path.resolve(
                 __dirname,
-                '../connections/src/testing/handler-contract.ts',
+                '../connections/src/__tests__/handler-contract.ts',
+            ),
+            '@perawallet/wallet-core-connections/handlerKit': path.resolve(
+                __dirname,
+                '../connections/src/handlerKit.ts',
             ),
             '@perawallet/wallet-core-connections': path.resolve(
                 __dirname,

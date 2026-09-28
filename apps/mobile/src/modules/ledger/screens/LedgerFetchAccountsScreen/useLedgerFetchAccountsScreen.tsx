@@ -30,13 +30,14 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
+import type { AddAccountStackParamList } from '@modules/onboarding'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     getLedgerErrorPreset,
     serializeLedgerAccount,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
+import { useLedgerExpandedTabHandoff } from '@modules/ledger/hooks'
 import { LedgerConnectingContent } from '../../components/LedgerConnectingContent'
 
 type LedgerFetchAccountsRouteProp = RouteProp<
@@ -55,6 +56,8 @@ type UseLedgerFetchAccountsScreenResult = {
     errorPreset: Nullable<LedgerErrorPreset>
     handleRetry: () => void
     handleTroubleshoot: () => void
+    /** Closes a Ledger pairing tab; undefined anywhere else. */
+    handleCancel: (() => void) | undefined
 }
 
 export const useLedgerFetchAccountsScreen =
@@ -67,6 +70,7 @@ export const useLedgerFetchAccountsScreen =
         const isMounted = useIsMounted()
         const { network } = useNetwork()
         const { request: requestBottomSheet, dismiss } = useBottomSheet()
+        const { isHandoffTab, closeHandoffTab } = useLedgerExpandedTabHandoff()
 
         const [connectionStatus, setConnectionStatus] =
             useState<LedgerConnectionStatus>('disconnected')
@@ -243,5 +247,8 @@ export const useLedgerFetchAccountsScreen =
             errorPreset,
             handleRetry,
             handleTroubleshoot,
+            handleCancel: isHandoffTab
+                ? () => void closeHandoffTab()
+                : undefined,
         }
     }

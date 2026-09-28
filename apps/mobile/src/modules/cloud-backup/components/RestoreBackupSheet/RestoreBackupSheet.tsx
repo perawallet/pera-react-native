@@ -10,50 +10,20 @@
  limitations under the License
  */
 
-import { PWSheetLayout, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { SheetHeader } from '@modules/bottom-sheet'
-import { RestoreOptionRow } from './RestoreOptionRow'
+import { OptionListSheet } from '../OptionListSheet'
 import { useRestoreBackupSheet } from './useRestoreBackupSheet'
-import { useStyles } from './styles'
 
 export const RestoreBackupSheet = () => {
     const { t } = useLanguage()
-    const styles = useStyles()
-    const { handleScan, handleManual } = useRestoreBackupSheet()
+    const { options, description } = useRestoreBackupSheet()
 
     return (
-        <PWSheetLayout
+        <OptionListSheet
             testID='cloud_backup_restore_sheet'
-            header={
-                <SheetHeader
-                    title={t('cloud_backup.restore.sheet_title')}
-                    showClose
-                />
-            }
-        >
-            <PWView style={styles.body}>
-                <PWText
-                    variant='bodyLarge'
-                    style={styles.description}
-                >
-                    {t('cloud_backup.restore.sheet_description')}
-                </PWText>
-                <PWView style={styles.options}>
-                    <RestoreOptionRow
-                        icon='qr'
-                        label={t('cloud_backup.restore.sheet_scan')}
-                        onPress={handleScan}
-                        testID='cloud_backup_restore_sheet_scan'
-                    />
-                    <RestoreOptionRow
-                        icon='key'
-                        label={t('cloud_backup.restore.sheet_manual')}
-                        onPress={handleManual}
-                        testID='cloud_backup_restore_sheet_manual'
-                    />
-                </PWView>
-            </PWView>
-        </PWSheetLayout>
+            title={t('cloud_backup.restore.sheet_title')}
+            description={description}
+            options={options}
+        />
     )
 }

@@ -88,9 +88,45 @@ it('renders with secondary variant', () => {
 })
 ```
 
+## The mobile Vitest harness
+
+`apps/mobile/vitest.config.ts` defines two projects. Both start from `apps/mobile/vitest.setup.ts`,
+which is only an ordered list of imports from `apps/mobile/src/test-utils/mocks/`; each module there
+registers the `vi.mock`s for one concern and says why at the top of each mock:
+
+| Module                                    | Covers                                                                    |
+| ----------------------------------------- | ------------------------------------------------------------------------- |
+| `dom-style.ts`                            | Flattens array `style` props on DOM tags (must load first)                |
+| `platform.ts`                             | Platform driver, provider, passkey autofill, `wallet-extension-platform`  |
+| `react-native.ts`                         | Unit-only DOM stubs for react-native's components                         |
+| `react-native-apis.ts`                    | Factory for the native-only APIs (Platform, Alert, Linking, AppState, …)  |
+| `native-modules.ts`, `expo.ts`            | Keychain, MMKV, crypto, netinfo, clipboard, camera; the expo-\* modules   |
+| `firebase.ts`, `navigation.ts`            | Firebase and notifee; the react-navigation stubs                          |
+| `animation-gesture.ts`                    | Reanimated, worklets, gesture-handler, Lottie                             |
+| `third-party-ui.ts`                       | Safe area, gorhom bottom sheet, FlashList, pager, charts, WebView, SVG, … |
+| `rneui.ts`, `pw-icon.ts`                  | Unit-only `@rneui/themed` and `PWIcon` stubs                              |
+| `wallet-core-shared.ts`, `wallet-core.ts` | Unit-only stubs of the `@perawallet/wallet-core-*` packages               |
+
+`vi.mock` calls are hoisted within the module that makes them, so a mock module registers its mocks
+when `vitest.setup.ts` imports it. A spec's own `vi.mock` of the same path still wins.
+
+**Unit project.** react-native is the DOM stub set in `react-native.ts`, `@rneui/themed` is stubbed,
+and the PW design system renders for real on top of them. The one design-system stub is `PWIcon`: a
+real icon is an anonymous `<svg>`, so the stub exposes which glyph was chosen as `icon-${name}`.
+Every `.svg` import compiles to a component, as it does under Metro.
+
+A spec that only needs `t` to echo its key calls `vi.mock('@hooks/useLanguage')` with no factory,
+which picks up `apps/mobile/src/hooks/__mocks__/useLanguage.ts`.
+
+**Integration project.** `apps/mobile/vitest.integration-setup.ts` runs after the unit setup and
+takes the stubs off: react-native resolves to react-native-web with only the `react-native-apis.ts`
+stubs spread over it, `@rneui/themed` and `PWIcon` are real, the app's own theme is installed, and
+the wallet-core packages run for real. The single core component still stubbed is `PWSlideToConfirm`,
+whose pan gesture and worklet cannot fire under jsdom; the stand-in confirms on click.
+
 ## Integration tests
 
-Flow tests live in `apps/mobile/src/__integration__/<flow>.test.tsx` and run real React Query, real
+Flow tests live in `apps/mobile/src/__integration__/<flow>.spec.tsx` and run real React Query, real
 Zustand stores, real domain hooks and the real KMS keystore. Only the network is mocked (MSW) and the
 platform's native services are swapped for in-memory test implementations.
 
@@ -114,7 +150,7 @@ aliased separately to its real source so consumers still get types and constants
 ### algod and indexer via algokit-utils
 
 `algokit-utils` makes its REST calls through `fetch`, which MSW intercepts cleanly (verified in
-`apps/mobile/src/__integration__/algokit-smoke.test.ts`). Handler factories for the common algod and
+`apps/mobile/src/__integration__/algokit-smoke.spec.ts`). Handler factories for the common algod and
 indexer endpoints live in `packages/blockchain/src/msw-handlers.ts` and are re-exported via
 `@perawallet/wallet-core-blockchain/test-handlers`:
 
@@ -153,10 +189,6 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { USD_EUR_GBP } from './__fixtures__/currencies'
 
 describe('Flow: …', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     it('Given …, when …, then …', async () => {
         server.use(mockListCurrencies({ response: USD_EUR_GBP }))
         renderWithNavigation(SettingsCurrencyScreen, 'SettingsCurrency')
@@ -173,6 +205,23 @@ Files under `apps/mobile/src/__integration__/` are picked up by the integration 
 (configured in `apps/mobile/vitest.config.ts`). Files outside it belong to the unit project and keep
 the speed-oriented mocks intact.
 
+The harness owns the rest, so a flow file carries none of it:
+
+- **MSW lifecycle.** `vitest.integration-setup.ts` starts the shared server before a file's own
+  hooks, resets handlers after each test, and closes it after the file. Register per-test handlers
+  in the test or a `beforeEach`; anything added in `beforeAll` is reset after the first test.
+- **Unhandled requests warn** and still reach the network. A suite that deliberately leaves an
+  incidental background fetch unmocked calls `setSuiteUnhandledRequestMode('bypass')` from
+  `@test-utils/msw-server` in its `describe` body, with a comment naming the request; the mode
+  reverts when that suite ends. Prefer mocking the request.
+- **Timeouts.** The integration project sets `testTimeout: 30_000`, so tests take no timeout
+  argument unless they want a tighter one. `waitFor` still defaults to 1s; pass
+  `{ timeout: SLOW_WAIT_TIMEOUT_MS }` from `__fixtures__/timeouts.ts` for a step that runs real key
+  derivation.
+- **Hook tests.** `renderHook(…, { wrapper: createQueryClientWrapper() })` from
+  `@test-utils/render` gives a bare `QueryClientProvider` with the test client defaults; use
+  `render` when the screen needs the full `TestProviders` tree.
+
 If a flow test needs the real implementation of a package not yet in the unmock list, add a single
 line to `apps/mobile/vitest.integration-setup.ts` rather than putting `vi.unmock` in the test file.
 `@perawallet/wallet-extension-*` packages stay mocked: they hit MMKV, biometrics and secure storage,
@@ -180,8 +229,17 @@ which only work on a real device.
 
 ### Quirks to know
 
-- Assert with `getByTestId`, not `getByText`. The global PW component mocks pass `title` and friends
-  as DOM attributes, not text content.
+- Components render through react-native-web, so pressables are focusable `<div>`s, not
+  `<button>`s, and report `disabled` through `aria-disabled`. `apps/mobile/src/test-utils/rnw.ts`
+  has the helpers: `isElementDisabled`, `closestPressable` and `queryPressableByText`,
+  `getInputErrorMessage` (PWInput's `${testID}-error` node), `getSwitchControl`, and `longPress`
+  (react-native-web fires `onLongPress` from a held press, not a context-menu event).
+- `PWTouchableOpacity` swallows a second press within its double-press guard. A flow that presses
+  the same re-rendered button twice calls `waitPastDoublePressGuard()` between the presses.
+- Re-query an element inside `waitFor` rather than holding a reference across renders: real
+  layouts remount subtrees, and a detached node keeps its stale attributes.
+- Components render what they render: `PWChip` upper-cases its title, and a `PWImage` shows up as
+  the `expo-image` stub's `<img>`.
 - For text inputs use `fireEvent.change(input, { target: { value: '…' } })`. `fireEvent.changeText`
   is `@testing-library/react-native`-only and doesn't exist on the DOM testing library this project
   uses via react-native-web.
@@ -212,9 +270,11 @@ export const mockListCurrencies = ({ response, status = 200 }: …): HttpHandler
     http.get('*/v1/currencies/', () => HttpResponse.json(response, { status }))
 ```
 
-Tests import via the test-only sub-export `@perawallet/wallet-core-<domain>/test-handlers`, wired
-through `apps/mobile/vitest.config.ts` aliases and `apps/mobile/tsconfig.json` paths. That sub-export
-deliberately does not exist in `package.json#exports`, so production code can't reach it.
+Tests import via the test-only sub-export `@perawallet/wallet-core-<domain>/test-handlers`. Mobile's
+vitest aliases it to source whenever `src/test-handlers.ts` exists (`apps/mobile/vitest.aliases.ts`
+generates every workspace package alias from `package.json#exports`), and `apps/mobile/tsconfig.json`
+`paths` types it. That sub-export deliberately does not exist in `package.json#exports`, so
+production code can't reach it.
 
 To add a factory:
 
@@ -224,9 +284,8 @@ To add a factory:
 3. If the package has no other handlers yet, add `"msw": "catalog:"` to its `devDependencies` and
    confirm its `vite.config.ts` dts plugin excludes `**/{handlers,*-handlers}.ts`, which every
    package in the repo carries.
-4. For mobile imports, add a deep alias `@perawallet/wallet-core-<domain>/test-handlers` in
-   `apps/mobile/vitest.config.ts` _before_ the package's main alias, plus a matching entry in
-   `apps/mobile/tsconfig.json` `paths`.
+4. For mobile imports, add a matching entry in `apps/mobile/tsconfig.json` `paths`. The vitest
+   alias is generated; check the package isn't in `vitest.config.ts`'s dist-resolved lists.
 5. Run `pnpm build && pnpm lint:bundle`. The leak guard greps every `dist/` for msw imports and fails
    CI if a handler enters the prod bundle.
 
@@ -235,6 +294,11 @@ To add a factory:
 Fixture data (named scenarios like `USD_EUR_GBP`, `JPY_ONLY`) lives in
 `apps/mobile/src/__integration__/__fixtures__/<domain>.ts`. Name a fixture after the shape it
 describes, not the test that uses it, so it stays reusable.
+
+Shared setup helpers live there too: `registerFakeLedgerProvider` (`ledger.ts`) registers a Ledger
+BLE transport, with an optional blocking signer for tests that assert the awaiting-approval UI, and
+`enableQuantumFlag` / `disableQuantumFlag` (`quantum.ts`) set the quantum-accounts override after
+awaiting the persisted store's rehydration.
 
 ## Locale tour (i18n screenshot QA)
 

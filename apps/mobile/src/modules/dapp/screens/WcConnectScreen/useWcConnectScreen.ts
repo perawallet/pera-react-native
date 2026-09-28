@@ -16,8 +16,13 @@ import {
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { stripUrlScheme } from '@perawallet/wallet-core-shared'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
-import { useApprovalArming } from '../../hooks/useApprovalArming.web'
+import {
+    openValidatedBrowserUrl,
+    toValidatedBrowserUrl,
+} from '@modules/webview'
+import { useApprovalArming } from '@hooks/useApprovalArming.web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseWcConnectScreenResult = {
@@ -37,6 +42,11 @@ type UseWcConnectScreenResult = {
     isConnecting: boolean
     handleConnect: () => void
     handleCancel: () => void
+    /** The dApp-asserted url without its scheme; rendered as text, never trusted. */
+    peerUrlLabel?: string
+    /** False when the peer url fails the https gate, so it renders unlinked. */
+    canOpenPeerUrl: boolean
+    handlePressUrl: () => void
     /** A decision failed to reach the bridge; the button stays spinning by design. */
     deliveryError: boolean
 }
@@ -117,6 +127,11 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         void reject()
     }, [reject])
 
+    // A new browser tab: nothing renders mobile's webview here.
+    const handlePressUrl = useCallback((): void => {
+        openValidatedBrowserUrl(proposal?.peer.url)
+    }, [proposal])
+
     return {
         peer: proposal?.peer ?? null,
         permissions: proposal?.requested.methods ?? [],
@@ -133,6 +148,9 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         isConnecting,
         handleConnect,
         handleCancel,
+        peerUrlLabel: stripUrlScheme(proposal?.peer.url),
+        canOpenPeerUrl: toValidatedBrowserUrl(proposal?.peer.url) !== null,
+        handlePressUrl,
         deliveryError,
     }
 }

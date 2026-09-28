@@ -18,7 +18,7 @@ import {
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
-import { useWebView } from '@modules/webview/hooks'
+import { useWebView } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 import { useClipboard } from '@hooks/useClipboard'
 
@@ -61,6 +61,7 @@ export const useTransactionHashRow = (
         trackEvent(CardEvent.TransactionsViewExplorer)
         const url = `${networkConfig.explorerUrl}/tx/${txHash}`
         if (!routeCapabilities.inAppWebView) {
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- rooted at config.explorerUrl
             void Linking.openURL(url)
             return
         }

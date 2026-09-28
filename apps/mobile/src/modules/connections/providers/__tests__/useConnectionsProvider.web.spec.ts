@@ -49,10 +49,10 @@ const onLocalStorageKeyChanged = vi.fn(
     },
 )
 
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     onLocalStorageKeyChanged,
 }))
-vi.mock('@perawallet/wallet-extension-platform-chrome/remote-registry', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime/remote-registry', () => ({
     createRemoteConnectionRegistry,
 }))
 
@@ -63,7 +63,9 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     createWalletConnectV1Handler,
 }))
 
-const createDappConnectionHandler = vi.fn(() => ({ kind: 'dapp' }))
+const createDappConnectionHandler = vi.fn((_deps: unknown) => ({
+    kind: 'dapp',
+}))
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
     createNoopDappTransport: () => ({
@@ -117,6 +119,14 @@ describe('useConnectionsProvider.web', () => {
         expect(createRemoteConnectionRegistry).toHaveBeenCalledWith({
             handlers: [{ kind: 'walletconnect-v1' }, { kind: 'dapp' }],
         })
+    })
+
+    it('builds the dapp descriptor handler for the Algorand chain', () => {
+        renderHook(() => useConnectionsProvider())
+
+        expect(createDappConnectionHandler).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: 'algorand' }),
+        )
     })
 
     // `useDeleteAllData` also runs from the duress path above the provider.

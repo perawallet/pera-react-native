@@ -11,10 +11,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
 import {
     useNetwork,
     Address,
+    algosToMicroAlgosBigInt,
     toBigInt,
     type AccountInformation,
 } from '@perawallet/wallet-core-blockchain'
@@ -27,10 +28,20 @@ const getAccountInformationQueryKey = (address: string, network: string) => [
     { address, network },
 ]
 
-export const useAccountInformationQuery = (address: string) => {
+export type UseAccountInformationQueryResult = {
+    /** `undefined` until loaded; callers gate on it, so no default. */
+    data: Optional<AccountInformation>
+    isPending: boolean
+    isLoading: boolean
+    isSuccess: boolean
+}
+
+export const useAccountInformationQuery = (
+    address: string,
+): UseAccountInformationQueryResult => {
     const { network } = useNetwork()
 
-    return useQuery({
+    const query = useQuery({
         queryKey: getAccountInformationQueryKey(address, network),
         queryFn: async (): Promise<AccountInformation> => {
             const balance = await getAccountBalance({
@@ -44,10 +55,10 @@ export const useAccountInformationQuery = (address: string) => {
 
             return {
                 minBalance: balance
-                    ? toBigInt(balance.minBalance.mul(1_000_000))
+                    ? algosToMicroAlgosBigInt(balance.minBalance)
                     : 0n,
                 amount: balance
-                    ? toBigInt(balance.algoBalance.mul(1_000_000))
+                    ? algosToMicroAlgosBigInt(balance.algoBalance)
                     : 0n,
                 address: Address.fromString(address),
                 status: balance?.status ?? 'Offline',
@@ -66,4 +77,11 @@ export const useAccountInformationQuery = (address: string) => {
         },
         staleTime: Infinity,
     })
+
+    return {
+        data: query.data,
+        isPending: query.isPending,
+        isLoading: query.isLoading,
+        isSuccess: query.isSuccess,
+    }
 }

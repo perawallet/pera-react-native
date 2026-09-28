@@ -26,7 +26,6 @@
     "@algorandfoundation/algokit-utils": "catalog:",
     "algosdk": "catalog:",
     "@algorandfoundation/keystore-core": "catalog:",
-    "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
     "@joe-p/react-native-falcon": "catalog:",
@@ -50,6 +49,7 @@
     "react-native-nitro-modules": "0.36.5",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@algorandfoundation/react-native-keystore": "catalog:"
   }
 }

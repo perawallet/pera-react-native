@@ -18,13 +18,13 @@ import {
     type HandoffPeerDelivery,
     type ResolverMessages,
 } from '@perawallet/wallet-core-signing'
+import { isConnectionAlive } from '@perawallet/wallet-core-connections'
+import { useUndeliveredSignRequestsStore } from '@perawallet/wallet-core-multisig'
 import {
     deliverApprove,
     deliverReject,
     deliverRejectInBackground,
-} from '@perawallet/wallet-core-walletconnect'
-import { isConnectionAlive } from '@perawallet/wallet-core-connections'
-import { useUndeliveredSignRequestsStore } from '@perawallet/wallet-core-multisig'
+} from '@modules/walletconnect'
 import { useMultisigProposeListener } from '../../hooks/useMultisigProposeListener'
 import { usePendingSignaturesSheetDriver } from './usePendingSignaturesSheetDriver'
 

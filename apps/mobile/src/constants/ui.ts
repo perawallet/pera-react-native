@@ -69,6 +69,9 @@ export const SLIDE_TO_CONFIRM_ANIMATION_DURATION = 250
 export const TAP_TO_CONFIRM_ANIMATION_DURATION = 250
 // How long the armed "tap again" state waits for the second tap before reverting.
 export const TAP_TO_CONFIRM_ARMED_TIMEOUT = 1000
+// Web's floor between the arming and confirming press, so a page-baited
+// double-click cannot sign; native keeps a quick double-tap working.
+export const TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY = 400
 
 // How long the "back online" confirmation stays before auto-dismissing.
 export const OFFLINE_RECONNECT_DISPLAY_MS = 3000
@@ -133,3 +136,9 @@ export const PROMPT_REVEAL_OFFSET = 32
 // document.body and would otherwise fill the whole viewport, match the same
 // card width). Never binds in the popup, which is already narrower than it.
 export const WEB_EXPANDED_CARD_MAX_WIDTH = 420
+
+/** The expanded check frame, clamped to the viewport by maxWidth and maxHeight. */
+export const INTEGRITY_CHECK_MODAL_WIDTH = 440
+export const INTEGRITY_CHECK_MODAL_HEIGHT = 560
+/** The hidden frame's size: rendered, so Turnstile runs, but invisible. */
+export const INTEGRITY_CHECK_HIDDEN_SIZE = 1

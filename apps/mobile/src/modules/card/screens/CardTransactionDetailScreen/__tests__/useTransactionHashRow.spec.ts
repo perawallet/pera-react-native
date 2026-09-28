@@ -32,7 +32,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     }
 })
 
-vi.mock('@modules/webview/hooks', () => ({
+vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
     useWebView: () => ({ pushWebView: mockPushWebView }),
 }))
 

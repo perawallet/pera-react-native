@@ -54,7 +54,7 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
 }))
 
 const mockSubmitWithFeeDelegation = vi.fn()
-vi.mock('@perawallet/wallet-core-fee-delegation', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/fee-delegation', () => ({
     useFeeDelegation: () => ({
         submitWithFeeDelegation: mockSubmitWithFeeDelegation,
     }),
@@ -115,7 +115,7 @@ describe('useAutoDrawSwitch', () => {
         expect(postDelegatorLsig).toHaveBeenCalledWith(
             expect.objectContaining({
                 network: 'testnet',
-                token: 'usdc',
+                currency: 'usdc',
                 delegatorAddress: 'FUNDINGADDR',
                 cardAddress: 'CARD',
                 lsigBytes: expect.any(String),

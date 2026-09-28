@@ -13,43 +13,16 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
 import react from '@vitejs/plugin-react'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [react()],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                'test-utils/index': resolve(
-                    __dirname,
-                    'src/test-utils/index.ts',
-                ),
-                queue: resolve(__dirname, 'src/queue/index.ts'),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            'test-utils/index': resolve(__dirname, 'src/test-utils/index.ts'),
+            queue: resolve(__dirname, 'src/queue/index.ts'),
         },
-        rollupOptions: {
-            external: [
-                'react',
-                'react/jsx-runtime',
-                'zustand',
-                '@tanstack/react-query',
-                '@tanstack/react-query-persist-client',
-                '@perawallet/wallet-core-config',
-                '@algorandfoundation/algokit-utils',
-                '@algorandfoundation/xhd-wallet-api',
-                'algosdk',
-                'base32-encode',
-                'base64-js',
-                'decimal.js',
-                'ky',
-                'react-native-quick-base64',
-                'util',
-                'uuid',
-                'zod',
-                'crypto',
-                '@perawallet/wallet-extension-platform-driver',
-            ],
-        },
-    },
-})
+        plugins: [react()],
+    }),
+)

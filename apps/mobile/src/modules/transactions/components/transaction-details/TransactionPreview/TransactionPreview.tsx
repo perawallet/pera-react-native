@@ -13,8 +13,8 @@
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { ExternalTransactionInfoContent } from '@modules/signing/components/ExternalTransactionInfoContent'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
+import { ExternalTransactionInfoContent } from '@modules/signing'
+import { TransactionIcon } from '@components/TransactionIcon'
 import {
     classifyDisplayableTransaction,
     type PeraDisplayableTransaction,

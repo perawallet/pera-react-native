@@ -39,6 +39,7 @@ export const PeraCardDetails = () => {
         onChangeFunding,
         hasCard,
         issuanceState,
+        eligibilityReason,
         onRetryOrder,
         onContactSupport,
         fundingTypeLabel,
@@ -96,6 +97,7 @@ export const PeraCardDetails = () => {
                 ) : (
                     <CardIssuanceNotice
                         state={issuanceState}
+                        eligibilityReason={eligibilityReason}
                         onRetryOrder={onRetryOrder}
                         onContactSupport={onContactSupport}
                     />

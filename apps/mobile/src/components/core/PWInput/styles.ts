@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
 import { makeStyles } from '@rneui/themed'
 import { getTypography, type TypographyVariant } from '@theme/typography'
+import { inputFocusRingReset } from './inputPlatform'
 
 type PWInputStyleProps = {
     variant: TypographyVariant
@@ -33,11 +33,7 @@ export const useStyles = makeStyles(
             paddingVertical: 0,
             // Pin the single line centered on Android.
             textAlignVertical: 'center' as const,
-            // RNW doesn't reset the browser's default :focus-visible ring;
-            // longhand is required since RNW rejects the `outline` shorthand.
-            ...(Platform.OS === 'web'
-                ? ({ outlineStyle: 'none' } as unknown as object)
-                : null),
+            ...inputFocusRingReset,
         }
         return {
             // Zero RNEInput's default outer paddingHorizontal: 10 so fields

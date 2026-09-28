@@ -34,5 +34,8 @@ export const HKDF_INFO_ENCRYPTION = 'backup-encryption-key'
 /** HKDF `info` label for the authentication seed (`K_auth_seed`). */
 export const HKDF_INFO_AUTH_SEED = 'backup-auth-seed'
 
+/** HKDF `info` label for the item-key hashing key (`K_item`). */
+export const HKDF_INFO_ITEM_KEY = 'backup-item-key'
+
 /** DID prefix for the backup identifier: `did:pera:<base64 auth public key>`. */
 export const BACKUP_ID_PREFIX = 'did:pera:'

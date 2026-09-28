@@ -15,12 +15,15 @@ import { useAccountHeaderMenu } from './useAccountHeaderMenu'
 
 export type AccountHeaderMenuProps = {
     testID?: string
+    /** The portfolio chart toggle only belongs where that chart renders. */
+    showChartToggle?: boolean
 }
 
 export const AccountHeaderMenu = ({
     testID = 'account_header_menu',
+    showChartToggle = true,
 }: AccountHeaderMenuProps) => {
-    const { items } = useAccountHeaderMenu()
+    const { items } = useAccountHeaderMenu({ showChartToggle })
 
     return (
         <PWView testID={testID}>

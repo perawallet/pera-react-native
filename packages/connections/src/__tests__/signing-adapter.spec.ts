@@ -165,6 +165,7 @@ const makeRegistry = () => {
         pair: vi.fn(async () => 'pairing-id'),
         disconnect: vi.fn(async () => {}),
         disconnectAll: vi.fn(async () => {}),
+        reconnect: vi.fn(),
         abandonPairing: vi.fn(),
         describeUri: vi.fn(() => ({})),
         networksFor: vi.fn(() => []),

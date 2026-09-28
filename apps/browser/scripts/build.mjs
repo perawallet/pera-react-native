@@ -24,6 +24,19 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
+import {
+    assertExtensionPagesCsp,
+    buildExtensionPagesCsp,
+} from './csp.mjs'
+import {
+    assertReleaseEnv,
+    assertStampedManifest,
+    stampManifest,
+} from './manifest.mjs'
+import {
+    WEB_CONFIG_ALLOWLIST,
+    assertWebConfigAllowlisted,
+} from './web-config.mjs'
 
 const requireFromHere = createRequire(import.meta.url)
 
@@ -95,12 +108,20 @@ const monorepoRoot = path.resolve(root, '../..')
 execSync('bash tools/generate-config.sh', {
     cwd: monorepoRoot,
     stdio: 'inherit',
+    env: { ...process.env, CONFIG_ALLOWLIST: WEB_CONFIG_ALLOWLIST.join(' ') },
 })
-// packages/config specifically must be rebuilt right after generate-config.sh
-// (not just picked up by the broader turbo build below) so the freshly
-// generated generated-env.ts is what's baked into its dist, not a stale
-// cache from a previous run with different secrets.
-execSync('pnpm --filter ./packages/config build', {
+const generatedEnvPath = path.join(
+    monorepoRoot,
+    'packages/config/src/generated-env.ts',
+)
+assertWebConfigAllowlisted(readFileSync(generatedEnvPath, 'utf8'))
+// packages/config and the workspace packages it depends on (e.g.
+// chain-contract, whose dist/index.d.ts config's types resolve to) must be
+// rebuilt right after generate-config.sh (not just picked up by the broader
+// turbo build below) so the freshly generated generated-env.ts is what's
+// baked into config's dist, not a stale cache from a previous run with
+// different secrets.
+execSync('pnpm --filter "@perawallet/wallet-core-config..." build', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })
@@ -111,14 +132,18 @@ execSync('pnpm exec turbo run build --filter=...browser', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })
-const generatedEnv = readFileSync(
-    path.join(monorepoRoot, 'packages/config/src/generated-env.ts'),
-    'utf8',
-)
+const generatedEnv = readFileSync(generatedEnvPath, 'utf8')
 // generate-config.sh only emits a key's line when the source env var is
 // non-empty (see its append_config helper), so a missing/blank
 // BACKEND_API_KEY leaves this line out entirely rather than writing "".
-if (!/backendAPIKey:\s*"[^"]+"/.test(generatedEnv)) {
+// A missing appEnvironment line means config's own default, development.
+const hasBackendApiKey = /backendAPIKey:\s*"[^"]+"/.test(generatedEnv)
+assertReleaseEnv({
+    appEnvironment:
+        generatedEnv.match(/appEnvironment:\s*"([^"]+)"/)?.[1] ?? 'development',
+    hasBackendApiKey,
+})
+if (!hasBackendApiKey) {
     console.warn(
         '\n⚠ BACKEND_API_KEY is empty — Pera backend calls will 401. ' +
             'Add it to the repo-root .env (see apps/browser/README.md).\n',
@@ -181,6 +206,25 @@ for (const family of FONT_FAMILIES) {
 }
 writeFileSync(path.join(dist, 'fonts.css'), fontFaces.join('\n') + '\n')
 
+// 1c. dotlottie (PWLottie's web renderer) instantiates a wasm engine at
+// runtime, and its default loader fetches it from cdn.jsdelivr.net/unpkg —
+// remotely hosted code in extension pages: a CDN or npm-artifact compromise
+// would execute in the wallet's own origin, and Chrome Web Store rejects
+// remote code outright. Ship the wasm like sqlite3.wasm (step 2b) and point
+// the loader at it (configureLottieWasm.web.ts). Resolved through
+// dotlottie-react's own dependency graph so the copied binary can never skew
+// from the dotlottie-web version Metro bundles.
+const requireFromMobile = createRequire(path.join(mobileDir, 'package.json'))
+const requireFromDotLottieReact = createRequire(
+    requireFromMobile.resolve('@lottiefiles/dotlottie-react'),
+)
+cpSync(
+    requireFromDotLottieReact.resolve(
+        '@lottiefiles/dotlottie-web/dotlottie-player.wasm',
+    ),
+    path.join(dist, 'dotlottie-player.wasm'),
+)
+
 // 2. Bundle the extension service worker
 await build({
     entryPoints: [path.join(root, 'src/background/index.ts')],
@@ -194,9 +238,19 @@ await build({
                 root,
                 '../../extensions/keystore-chrome/src/vault/autolock.ts',
             ),
+        // esbuild also rewrites subpaths of an aliased package, so the
+        // /messaging entry needs its own, longer key.
+        '@perawallet/wallet-extension-platform-chrome/messaging': path.join(
+            root,
+            '../../extensions/platform-chrome/src/messaging.ts',
+        ),
         '@perawallet/wallet-extension-platform-chrome': path.join(
             root,
             '../../extensions/platform-chrome/src/index.ts',
+        ),
+        '@perawallet/wallet-core-browser-runtime': path.join(
+            root,
+            '../../packages/browser-runtime/src/index.ts',
         ),
     },
 })
@@ -215,6 +269,21 @@ cpSync(
     path.join(dist, 'sqlite3.wasm'),
 )
 
+// 2b'. The vault's Argon2id worker, spawned by name from the extension pages
+// (ARGON2_WORKER_URL in keystore-chrome's vault/argon2.ts).
+await build({
+    entryPoints: [
+        path.join(
+            root,
+            '../../extensions/keystore-chrome/src/vault/argon2-worker.ts',
+        ),
+    ],
+    outfile: path.join(dist, 'argon2-worker.js'),
+    bundle: true,
+    format: 'esm',
+    target: 'chrome120',
+})
+
 // 2c. Content scripts. MAIN world (inject-main) and isolated world (relay) are
 // separate bundles so Chrome can load each into its declared world.
 for (const [entry, outfile] of [
@@ -226,6 +295,7 @@ for (const [entry, outfile] of [
     ['src/content/bidali-relay.ts', 'content-bidali-relay.js'],
     ['src/content/webauthn-main.ts', 'content-webauthn-main.js'],
     ['src/content/webauthn-relay.ts', 'content-webauthn-relay.js'],
+    ['src/content/integrity-check.ts', 'content-integrity-check.js'],
 ]) {
     await build({
         entryPoints: [path.join(root, entry)],
@@ -236,11 +306,12 @@ for (const [entry, outfile] of [
         alias: {
             // Narrow alias: content scripts run on every http/https page, so
             // they get only the pure dapp wire (content-wire.ts), not the
-            // full barrel (chrome DB host, storage proxy, hydratePlatform,
-            // etc.) that the service-worker build below still aliases to.
-            '@perawallet/wallet-extension-platform-chrome': path.join(
+            // full runtime barrel (approval bridge, connection clients,
+            // integrity key store) that the service-worker build above
+            // aliases to.
+            '@perawallet/wallet-core-browser-runtime': path.join(
                 root,
-                '../../extensions/platform-chrome/src/dapp/content-wire.ts',
+                '../../packages/browser-runtime/src/dapp/content-wire.ts',
             ),
         },
     })
@@ -279,8 +350,51 @@ for (const surface of SURFACES) {
 }
 rmSync(path.join(dist, 'index.html'))
 
-// 4. Manifest
-cpSync(path.join(root, 'manifest.json'), path.join(dist, 'manifest.json'))
+// 4. Manifest. The CSP is generated rather than committed so each build only
+// trusts its own environment's frame origins. Imported here, not at the top,
+// because packages/config is rebuilt against the fresh generated-env above.
+const { config, getIframeOrigins, getNetworkConfig, Networks } = await import(
+    '@perawallet/wallet-core-config'
+)
+const frameUrls = [
+    config.discoverBaseUrl,
+    config.integrityCheckOrigin,
+    config.termsOfServiceUrl,
+    // Networks with no Pera deployment have no Bidali and contribute ''.
+    ...Object.values(Networks)
+        .map(network => getNetworkConfig(network).bidaliBaseUrl)
+        .filter(Boolean),
+]
+const unparseableFrameUrls = frameUrls.filter(
+    url => getIframeOrigins(url).length === 0,
+)
+if (unparseableFrameUrls.length > 0) {
+    throw new Error(
+        `configured iframe URLs do not parse: ${unparseableFrameUrls.join(', ')}`,
+    )
+}
+const frameOrigins = frameUrls.flatMap(getIframeOrigins)
+const extensionPagesCsp = buildExtensionPagesCsp({
+    appEnvironment: config.appEnvironment,
+    frameOrigins,
+})
+assertExtensionPagesCsp(extensionPagesCsp, {
+    appEnvironment: config.appEnvironment,
+    requiredFrameOrigins: frameOrigins,
+})
+const { version: packageVersion } = JSON.parse(
+    readFileSync(path.join(root, 'package.json'), 'utf8'),
+)
+const manifest = stampManifest(
+    JSON.parse(readFileSync(path.join(root, 'manifest.json'), 'utf8')),
+    { packageVersion, appEnvironment: config.appEnvironment },
+)
+assertStampedManifest(manifest, { appEnvironment: config.appEnvironment })
+manifest.content_security_policy = { extension_pages: extensionPagesCsp }
+writeFileSync(
+    path.join(dist, 'manifest.json'),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+)
 
 // 4b. Extension icons (toolbar/action + management page), referenced by the
 // manifest's `icons` and `action.default_icon` maps.
@@ -327,6 +441,22 @@ if (bakedBackend && !uiCode.includes(bakedBackend)) {
         `the exported UI bundle does not contain the configured backend (${bakedBackend}).`,
     )
 }
+// The UI bundle must point dotlottie at the wasm shipped in step 1c — the
+// exact call in configureLottieWasm.web.ts survives minification because
+// `chrome.runtime.getURL` is a global member expression and its string
+// argument is used once. Asserting the CDN literals' *absence* instead would
+// never pass: dotlottie-web bakes its jsdelivr/unpkg default URLs into the
+// bundle whether or not they are overridden at runtime.
+if (!/getURL\(["']dotlottie-player\.wasm["']\)/.test(uiCode)) {
+    throw new Error(
+        'the exported UI bundle does not wire dotlottie to the bundled ' +
+            'dotlottie-player.wasm — the loader would fall back to fetching ' +
+            'its wasm from a public CDN at runtime. Check that PWLottie.tsx ' +
+            'still imports ./configureLottieWasm and that the .web.ts file ' +
+            "keeps the inline getURL('dotlottie-player.wasm') call.",
+    )
+}
+
 // Deliberately NOT asserting "no staging host appears anywhere": the committed
 // staging defaults in packages/config/src/main.ts are schema defaults, so their
 // string literals are compiled into every bundle even when an override wins at
@@ -336,13 +466,14 @@ if (bakedBackend && !uiCode.includes(bakedBackend)) {
 // The content scripts and the service worker exist to stay small and
 // dependency-free: they run on every https page (content) or wake on every
 // message (worker). One dropped `type` keyword on an `import type` in
-// extensions/platform-chrome/src/dapp/transport.ts pulls the whole dapp
+// packages/browser-runtime/src/dapp/transport.ts pulls the whole dapp
 // handler graph — and with it the signing package and react-native — into a
 // bundle that is supposed to hold the wire only. Ceilings are roughly double
 // today's size: they catch a graph leak, not ordinary growth.
 const BUNDLE_LIMITS = [
     ['content-inject-main.js', 32 * 1024],
     ['content-relay-isolated.js', 16 * 1024],
+    ['content-integrity-check.js', 16 * 1024],
     ['background.js', 3 * 1024 * 1024],
 ]
 
@@ -359,7 +490,7 @@ for (const [name, maxBytes] of BUNDLE_LIMITS) {
         throw new Error(
             `${name} is ${Buffer.byteLength(code)} bytes, over its ${maxBytes}-byte ceiling — ` +
                 'something pulled a new dependency graph into it. Check the ' +
-                '`import type` declarations on the dapp/platform-chrome seam.',
+                '`import type` declarations on the dapp/browser-runtime seam.',
         )
     }
     const leaked = FORBIDDEN_SYMBOLS.filter(symbol => code.includes(symbol))

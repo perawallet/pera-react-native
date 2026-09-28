@@ -19,6 +19,24 @@ import { getFirebaseApp } from '@perawallet/wallet-extension-platform-chrome'
 
 declare const self: ServiceWorkerGlobalScope
 
+const ALLOWED_DEEPLINK_PREFIXES = [
+    'perawallet://',
+    'algorand://',
+    'https://perawallet.app/qr/',
+]
+
+// The URL lands on the extension origin as `expanded.html?deeplink=`, so anything
+// that is not a Pera deeplink is refused here rather than trusted to the app.
+const toAllowedDeeplink = (url: unknown): string | undefined => {
+    if (typeof url !== 'string') return undefined
+    const normalized = url.trim().toLowerCase()
+    return ALLOWED_DEEPLINK_PREFIXES.some(prefix =>
+        normalized.startsWith(prefix),
+    )
+        ? url
+        : undefined
+}
+
 /**
  * The backend sends data-only messages so titles stay client-formatted and the
  * deeplink keeps mobile's `data.url` shape. The SDK only auto-displays payloads
@@ -34,14 +52,17 @@ export const handleBackgroundMessage = async (
         {
             body: payload.data?.body,
             icon: '/icons/icon-128.png',
-            data: { peraUrl: payload.data?.url },
+            data: { peraUrl: toAllowedDeeplink(payload.data?.url) },
         },
     )
 }
 
 export const handleNotificationClick = (event: NotificationEvent): void => {
-    const url = (event.notification.data as { peraUrl?: string } | undefined)
-        ?.peraUrl
+    // Re-checked on click: a notification shown by an earlier worker version
+    // was stored unvalidated and can outlive the update.
+    const url = toAllowedDeeplink(
+        (event.notification.data as { peraUrl?: string } | undefined)?.peraUrl,
+    )
     // Absent on FCM-tagged notifications and on anything we did not create.
     if (!url) return
 

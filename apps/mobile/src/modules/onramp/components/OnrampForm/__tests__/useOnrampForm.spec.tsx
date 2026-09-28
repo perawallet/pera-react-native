@@ -20,6 +20,7 @@ import type {
     XoQuote,
     RampOrder,
 } from '@perawallet/wallet-core-onramp'
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampForm } from '../useOnrampForm'
 import { OnrampTermsContent } from '../../OnrampTermsContent'
 
@@ -53,9 +54,11 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
     >('@perawallet/wallet-core-onramp')
     return {
         ...actual,
+        useEnsureRampDestination: () => ({
+            ensureCanReceive: mockEnsureOptIn,
+        }),
         useCreateRampQuoteMutation: () => ({ mutateAsync: mockCreateQuote }),
         useCreateRampOrderMutation: () => ({ mutateAsync: mockCreateOrder }),
-        useEnsureDestinationOptIn: () => ({ ensureOptIn: mockEnsureOptIn }),
         useOnramp: () => ({
             senderAddress: mockSenderAddress,
             setSenderAddress: mockSetSenderAddress,
@@ -65,7 +68,12 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    // Real enums (models/accounts has no runtime imports): components reached
+    // through module barrels read them at import time.
+    ...(await vi.importActual<object>(
+        '@packages/accounts/src/models/accounts',
+    )),
     useSelectedAccountAddress: () => ({
         selectedAccountAddress: mockSelectedAccountAddress,
     }),
@@ -124,8 +132,13 @@ vi.mock('@hooks/useToast', () => ({
 
 // Shadow the webview barrel so its transitive `AccountTypes` import (via
 // usePeraWebviewInterface) doesn't load against the partial accounts mock.
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview', async () => ({
     useWebView: () => ({ pushWebView: vi.fn(), removeWebView: vi.fn() }),
+    openValidatedBrowserUrl: (
+        await vi.importActual<typeof import('@modules/webview/hooks/handlers')>(
+            '@modules/webview/hooks/handlers',
+        )
+    ).openValidatedBrowserUrl,
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -257,6 +270,7 @@ const belowMinQuoteError = buildBelowMinQuoteError(
 
 describe('useOnrampForm', () => {
     beforeEach(() => {
+        registerAlgorandRampAdapter()
         vi.clearAllMocks()
         vi.useFakeTimers()
         vi.spyOn(Linking, 'openURL').mockImplementation(mockOpenURL)

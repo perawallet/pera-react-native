@@ -71,6 +71,12 @@ const ledgerAccount: WalletAccount = {
     address: 'LEDGERADDR',
 } as WalletAccount
 
+const watchAccount: WalletAccount = {
+    id: 'a3',
+    type: AccountTypes.watch,
+    address: 'WATCHADDR',
+} as WalletAccount
+
 beforeEach(() => {
     vi.clearAllMocks()
     mockSignOwnershipAsync.mockImplementation(async ({ signArc60 }) => {
@@ -87,11 +93,33 @@ beforeEach(() => {
 })
 
 describe('useEscrowCardCreation', () => {
-    it('canCreateCard is true only for local-key accounts', () => {
+    it('canCreateCard accepts local-key and Ledger accounts', () => {
         const { result } = renderHook(() => useEscrowCardCreation())
 
         expect(result.current.canCreateCard(localKeyAccount)).toBe(true)
-        expect(result.current.canCreateCard(ledgerAccount)).toBe(false)
+        expect(result.current.canCreateCard(ledgerAccount)).toBe(true)
+    })
+
+    it('canCreateCard rejects an account that holds no key of its own', () => {
+        const { result } = renderHook(() => useEscrowCardCreation())
+
+        expect(result.current.canCreateCard(watchAccount)).toBe(false)
+    })
+
+    it('signOwnership enqueues an arc60 request for a Ledger account', async () => {
+        mockAddSignRequest.mockImplementation(request => {
+            request.approve([
+                { signature: new Uint8Array([4, 5, 6]), signer: 'LEDGERADDR' },
+            ])
+        })
+        const { result } = renderHook(() => useEscrowCardCreation())
+
+        const proof = await result.current.signOwnership(ledgerAccount)
+
+        expect(mockAddSignRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'arc60', sourceType: 'arc60' }),
+        )
+        expect(proof.signature).toBe('4,5,6')
     })
 
     it('signOwnership enqueues an interactive arc60 request and resolves with the signature', async () => {
@@ -141,7 +169,7 @@ describe('useEscrowCardCreation', () => {
     it('throws before enqueuing any request for a non-signing account', async () => {
         const { result } = renderHook(() => useEscrowCardCreation())
 
-        expect(() => result.current.signOwnership(ledgerAccount)).toThrow()
+        expect(() => result.current.signOwnership(watchAccount)).toThrow()
         expect(mockAddSignRequest).not.toHaveBeenCalled()
     })
 

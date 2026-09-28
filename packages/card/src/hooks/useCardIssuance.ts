@@ -19,7 +19,7 @@ import {
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { CardOrderNotVerifiedError } from '../api/card'
 import { CardStatus, VerificationState, isKycVerified } from '../models'
-import type { Card } from '../models'
+import type { Card, CardEligibilityReason } from '../models'
 import { cardMutationKeys } from './querykeys'
 import { useCardStatusQuery } from './useCardStatusQuery'
 import { useCardUserQuery } from './useCardUserQuery'
@@ -64,6 +64,12 @@ export type UseCardIssuanceResult = {
     card: Optional<Nullable<Card>>
     /** True when the status query is paused waiting for connectivity. */
     isStatusPaused: boolean
+    /**
+     * Why Baanx won't issue a card yet, when it says so. Read alongside
+     * `VerificationPending`, which otherwise can't distinguish "queued for
+     * review" from "blocked on extra compliance checks".
+     */
+    eligibilityReason: Nullable<CardEligibilityReason>
 }
 
 type OrderAttempt = {
@@ -251,5 +257,6 @@ export const useCardIssuance = (): UseCardIssuanceResult => {
         // status query just to read the card.
         card,
         isStatusPaused: statusQuery.fetchStatus === 'paused',
+        eligibilityReason: userQuery.data?.eligibilityReason ?? null,
     }
 }

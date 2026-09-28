@@ -40,13 +40,13 @@ export const useLockScreen = ({
     const { t } = useLanguage()
     const {
         verifyPin,
-        handleFailedAttempt,
         resetFailedAttempts,
         isLockedOut,
         lockoutEndTime,
         setLockoutEndTime,
     } = usePinCode()
-    const { checkBiometricsEnabled, unlockWithBiometrics } = useBiometrics()
+    const { checkBiometricUnlockAvailable, unlockWithBiometrics } =
+        useBiometrics()
     const { performDuressWipe } = useDuressWipe()
 
     const [hasError, setHasError] = useState(false)
@@ -88,7 +88,7 @@ export const useLockScreen = ({
     // stranding the user on the PIN pad.
     const hasPromptedForLockRef = useRef(false)
     const promptRef = useRef({
-        checkBiometricsEnabled,
+        checkBiometricUnlockAvailable,
         unlockWithBiometrics,
         resetFailedAttempts,
         setLockoutEndTime,
@@ -97,7 +97,7 @@ export const useLockScreen = ({
         isLockedOut,
     })
     promptRef.current = {
-        checkBiometricsEnabled,
+        checkBiometricUnlockAvailable,
         unlockWithBiometrics,
         resetFailedAttempts,
         setLockoutEndTime,
@@ -119,6 +119,8 @@ export const useLockScreen = ({
 
         let cancelled = false
         let subscription: NativeEventSubscription | null = null
+        let isPromptPending = false
+        let hasLeftForeground = false
 
         // Resolves on the next 'active'; abandoned on cleanup (never resolves).
         const waitForNextActive = () =>
@@ -140,7 +142,9 @@ export const useLockScreen = ({
             }
             // Lockout can begin while waiting (failed PIN attempts on the pad).
             if (promptRef.current.isLockedOut) return
-            const enabled = await promptRef.current.checkBiometricsEnabled()
+            hasLeftForeground = false
+            const enabled =
+                await promptRef.current.checkBiometricUnlockAvailable()
             if (cancelled || !enabled) return
             const outcome = await promptRef.current.unlockWithBiometrics({
                 title: promptRef.current.t(
@@ -166,19 +170,45 @@ export const useLockScreen = ({
             // A dead blob terminates here too: re-prompting would burn
             // another ceremony on it.
             if (outcome.kind !== 'failed') return
-            // Only OS-initiated cancellation re-arms; a user cancel stays
-            // terminal (silent fallback to PIN), and lockout/failed/unknown
-            // never retry.
+            // Only OS-initiated cancellation retries in place; anything else
+            // stays on the PIN pad until the app returns from the background.
             if (outcome.reason !== 'system-cancel' || retriesLeft === 0) return
             return attemptPrompt(retriesLeft - 1)
         }
 
-        void attemptPrompt(MAX_SYSTEM_CANCEL_RETRIES)
+        const runPrompt = async () => {
+            isPromptPending = true
+            try {
+                await attemptPrompt(MAX_SYSTEM_CANCEL_RETRIES)
+            } finally {
+                isPromptPending = false
+            }
+        }
+
+        // Android rejects a device lock or HOME mid-prompt with the same code as
+        // a dismissal, so the rejection cannot say whether to ask again; leaving
+        // the foreground can. Only 'background' counts: the iOS Face ID sheet
+        // itself drives the app through 'inactive'.
+        const foregroundSubscription = AppState.addEventListener(
+            'change',
+            next => {
+                if (next === 'background') {
+                    hasLeftForeground = true
+                    return
+                }
+                if (next !== 'active' || !hasLeftForeground || isPromptPending)
+                    return
+                void runPrompt()
+            },
+        )
+
+        void runPrompt()
 
         return () => {
             cancelled = true
             subscription?.remove()
             subscription = null
+            foregroundSubscription.remove()
         }
     }, [isLocked])
 
@@ -189,7 +219,6 @@ export const useLockScreen = ({
         async (pin: string) => {
             const result = await verifyPin(pin)
             if (result.kind === 'ok') {
-                void resetFailedAttempts()
                 onUnlock()
                 return
             }
@@ -210,16 +239,9 @@ export const useLockScreen = ({
                 }
                 return
             }
-            void handleFailedAttempt()
             setHasError(true)
         },
-        [
-            verifyPin,
-            resetFailedAttempts,
-            handleFailedAttempt,
-            onUnlock,
-            performDuressWipe,
-        ],
+        [verifyPin, onUnlock, performDuressWipe],
     )
 
     const handleErrorAnimationComplete = useCallback(() => {

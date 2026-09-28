@@ -83,6 +83,18 @@ describe('isLegacyQuantumChild', () => {
         )
     })
 
+    // Delete-all removes keystore keys several steps before the accounts
+    // store clears, so a quantum account briefly has no key record at all.
+    // That window must not read as "legacy" — it made the notice prompt
+    // flash over the wipe for canonical accounts.
+    test('is false when the key record is missing entirely', () => {
+        const getKey = vi.fn(() => null)
+
+        expect(isLegacyQuantumChild(getKey as never, QUANTUM_ACCOUNT)).toBe(
+            false,
+        )
+    })
+
     test('is false for a non-quantum account, regardless of metadata', () => {
         const getKey = vi.fn(() => ({ metadata: {} }))
 

@@ -82,11 +82,18 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => ({
     ...(await vi.importActual<
         typeof import('../../../../../../../../packages/blockchain/src/arc0001/schema')
     >('../../../../../../../../packages/blockchain/src/arc0001/schema')),
+    // The card error toast classifies chain failures through the real parser
+    // before falling back to Baanx's message.
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/blockchain/src/errors')
+    >('../../../../../../../../packages/blockchain/src/errors')),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 let mockDeviceId: string | null = 'device-1'
 vi.mock('@perawallet/wallet-core-device', () => ({
+    logEvent: vi.fn(),
+    createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => mockDeviceId,
 }))
 
@@ -105,9 +112,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useCardOnboardingEmailScreen } from '../useCardOnboardingEmailScreen'
 

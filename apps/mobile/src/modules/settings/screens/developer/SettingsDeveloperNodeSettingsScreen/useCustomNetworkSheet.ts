@@ -16,8 +16,8 @@ import {
     clearCustomNetworkCache,
     fetchGenesisFromNode,
     getCustomNetworkConfig,
+    setCustomNetwork,
     shouldClearCustomCache,
-    useCustomNetworkStore,
     type CustomNetworkConfig,
 } from '@perawallet/wallet-core-blockchain'
 import { useSwitchNetwork } from '@perawallet/wallet-core-device'
@@ -190,7 +190,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
             await clearCustomNetworkCache(queryClient)
         }
 
-        useCustomNetworkStore.getState().setCustomNetwork(next)
+        setCustomNetwork(next)
 
         await switchNetwork(Networks.custom)
         try {

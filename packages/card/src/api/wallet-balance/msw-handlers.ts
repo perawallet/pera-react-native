@@ -17,11 +17,9 @@ import { WALLET_TYPE_BY_KIND } from './endpoints'
 import {
     walletBalanceResponseSchema,
     walletHistoryResponseSchema,
-    walletWithdrawEstimationResponseSchema,
     walletWithdrawResponseSchema,
     type WalletBalanceApiResponse,
     type WalletHistoryEntryApiResponse,
-    type WalletWithdrawEstimationApiResponse,
     type WalletWithdrawApiResponse,
 } from './schema'
 
@@ -46,26 +44,6 @@ export const mockGetWalletBalance = ({
         'mockGetWalletBalance',
     )
     return http.get(`*/v1/wallet/${kind}`, () =>
-        HttpResponse.json(response, { status }),
-    )
-}
-
-export type MockGetWalletWithdrawEstimationParams = {
-    kind: CardWalletKind
-    response?: WalletWithdrawEstimationApiResponse
-    status?: number
-}
-export const mockGetWalletWithdrawEstimation = ({
-    kind,
-    response = { gas: '6219123007416', fee: '0.000006219123007416' },
-    status = 200,
-}: MockGetWalletWithdrawEstimationParams): HttpHandler => {
-    validateMockResponse(
-        walletWithdrawEstimationResponseSchema,
-        response,
-        'mockGetWalletWithdrawEstimation',
-    )
-    return http.get(`*/v1/wallet/${kind}/withdraw-estimation`, () =>
         HttpResponse.json(response, { status }),
     )
 }

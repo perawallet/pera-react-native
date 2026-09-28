@@ -16,9 +16,7 @@ import type { Connection } from '@perawallet/wallet-extension-connections'
 import { useConnectionsStore } from '@perawallet/wallet-core-connections'
 import { useConnectionSettingsList } from '../useConnectionSettingsList'
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const mockShowError = vi.fn()
 vi.mock('@hooks/useErrorToast', () => ({

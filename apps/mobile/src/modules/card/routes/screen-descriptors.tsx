@@ -25,6 +25,7 @@ import { CardTransactionDetailScreen } from '../screens/CardTransactionDetailScr
 import { CardAddFundsScreen } from '../screens/CardAddFundsScreen'
 import { CardConfirmSwapScreen } from '../screens/CardConfirmSwapScreen'
 import { CardWithdrawScreen } from '../screens/CardWithdrawScreen'
+import { CardWithdrawStatusScreen } from '../screens/CardWithdrawStatusScreen'
 import { CardWalletBalanceScreen } from '../screens/CardWalletBalanceScreen'
 import { CardWalletBalanceWithdrawScreen } from '../screens/CardWalletBalanceWithdrawScreen'
 import type {
@@ -76,6 +77,13 @@ export const peraCardFlowScreens: CardScreenDescriptor<PeraCardFlowParamList>[] 
             name: 'CardWithdraw',
             options: headeredScreen('peraCard.withdraw.navigation_title'),
             component: CardWithdrawScreen as React.ComponentType,
+        },
+        {
+            name: 'CardWithdrawStatus',
+            options: headeredScreen(
+                'peraCard.withdraw.status_navigation_title',
+            ),
+            component: CardWithdrawStatusScreen as React.ComponentType,
         },
         // Both wallet screens set their per-kind title on mount; the section
         // title is only the pre-layout fallback.

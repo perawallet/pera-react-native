@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Linking, Platform } from 'react-native'
+import { Linking } from 'react-native'
 import {
     CardStatus,
     useCardDetailsMutation,
@@ -19,8 +19,10 @@ import {
     useCardStore,
     useIsCardUnfreezing,
     useSetCardPinMutation,
+    type CardEligibilityReason,
     type CardIssuanceState,
 } from '@perawallet/wallet-core-card'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -29,6 +31,7 @@ import { useWebView } from '@modules/webview'
 import { useNetworkStatus } from '@modules/network'
 import { routeCapabilities } from '@routes/capabilities'
 import { useRequirePinVerification } from '@modules/security'
+import { isIOS } from '@utils/platform'
 import {
     useAddCardToWallet,
     useCardErrorToast,
@@ -100,6 +103,8 @@ type UsePeraCardDetailsResult = {
      * visual, the issuance notice, and hiding the card-only affordances
      * until it reaches READY). */
     issuanceState: CardIssuanceState
+    /** Baanx's reason for withholding the card; refines the pending notice. */
+    eligibilityReason: Nullable<CardEligibilityReason>
     /** Fires a fresh order after a failed attempt (ORDER_FAILED notice). */
     onRetryOrder: () => void
     /** Opens support for the terminal VERIFICATION_REJECTED notice. */
@@ -160,6 +165,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         retryOrder: onRetryOrder,
         card,
         isStatusPaused,
+        eligibilityReason,
     } = useCardIssuance()
     const isFrozen = card?.status === CardStatus.Frozen
     // Freeze/unfreeze only applies to a live card; a BLOCKED card can't toggle.
@@ -170,7 +176,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const isOffline = !hasInternet || isStatusPaused
 
     // iOS provisions to Apple Wallet, Android to Google Pay — show one row.
-    const walletPlatform = Platform.OS === 'ios' ? 'apple' : 'google'
+    const walletPlatform = isIOS() ? 'apple' : 'google'
 
     const cardDetails = useCardDetailsMutation()
     // Shared with the Card Frozen banner so the in-flight unfreeze state (driven
@@ -333,6 +339,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         try {
             const session = await setPin.mutateAsync()
             if (!routeCapabilities.inAppWebView) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- httpsUrlSchema at the API boundary
                 void Linking.openURL(session.hostedPageUrl)
                 return
             }
@@ -485,6 +492,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         onChangeFunding,
         hasCard: card != null,
         issuanceState,
+        eligibilityReason,
         onRetryOrder,
         onContactSupport,
         fundingTypeLabel,

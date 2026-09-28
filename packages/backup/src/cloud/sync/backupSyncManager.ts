@@ -10,9 +10,6 @@
  limitations under the License
  */
 
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import {
     logger,
     type Network,
@@ -20,14 +17,9 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import {
-    useCloudBackupStore,
-    useBackupSyncActivityStore,
-    useBackupSyncStateStore,
-    resolveBackupDeviceId,
-} from '../store'
-import {
     withBackupAuthSecretKey,
     withBackupEncryptionKey,
+    withBackupItemKey,
     hasBackupCredentials,
     deleteBackupKeys,
 } from '../credentials/keyStorage'
@@ -36,19 +28,25 @@ import {
     createEmptySyncState,
     isAddressBackedUp,
     isContactBackedUp,
+    isPasskeyBackedUp,
     type BackupItemKey,
     type SyncState,
 } from '../models'
 import { buildBackupWebSocketToken } from '../crypto/buildBackupWebSocketToken'
+import { withItemKeyHasher } from '../crypto/itemKeyHash'
 import {
     deleteContactFromBackup,
     deleteFromBackup,
+    deletePasskeyFromBackup,
     importContactFromBackup,
     importFromBackup,
+    importPasskeyFromBackup,
     keepAccountInBackup,
     keepContactInBackup,
+    keepPasskeyInBackup,
     markAccountForBackup,
     markContactForBackup,
+    markPasskeyForBackup,
     reviewActionDeps,
     type BackupDeleteResult,
 } from './reviewActions'
@@ -57,6 +55,7 @@ import { contactsFingerprint } from './contactsFingerprint'
 import { syncBackup } from './syncBackup'
 import { pullBackupDeltas } from './pullBackupDeltas'
 import { serializeAccountForBackup } from './serializeAccountForBackup'
+import { createBackupSyncStatePort } from './backupSyncStatePort'
 import {
     BackupWebSocketClient,
     type BackupSocketFactory,
@@ -64,9 +63,12 @@ import {
 } from './webSocketClient'
 import type {
     BackupActionOutcome,
+    BackupSyncSources,
+    BackupSyncStatePort,
     ContactImportFn,
     ContactImportSummary,
     ImportSummary,
+    PasskeyImportSummary,
     SyncEngineDeps,
     SerializeHdResolver,
     SerializeMnemonicResolver,
@@ -82,10 +84,21 @@ export type BackupSyncManagerDeps = {
     resolveMnemonic: SerializeMnemonicResolver
     /** Hook-bound HD seed/derived resolver, injected from RootComponent. */
     resolveHd: SerializeHdResolver
+    listPasskeys: SyncEngineDeps['listPasskeys']
+    importPasskeys: SyncEngineDeps['importPasskeys']
+    /** Fires on any keystore write that could touch a passkey; the manager
+     *  doesn't distinguish a passkey change from a false alarm here — the
+     *  caller does that cheaply, since deciding here would mean deriving
+     *  first via `listPasskeys`, which is the expensive part. */
+    subscribePasskeyChanges: (onChange: () => void) => () => void
     socketFactory?: BackupSocketFactory
     /** Called after the server deletes the backup and local state is wiped, so
      *  the app can inform the user. */
     onBackupDeleted?: () => void
+    /** Accounts, contacts and network; `createBackupSyncStoreSources()` in the app. */
+    sources: BackupSyncSources
+    /** Defaults to the backup package's own stores; overridable for tests. */
+    state?: BackupSyncStatePort
 }
 
 export class BackupSyncManager {
@@ -95,22 +108,23 @@ export class BackupSyncManager {
     private socket: Nullable<BackupWebSocketClient> = null
     private unwatchAccounts: Nullable<() => void> = null
     private unwatchContacts: Nullable<() => void> = null
+    private unwatchPasskeys: Nullable<() => void> = null
     private localChangeTimer: Nullable<ReturnType<typeof setTimeout>> = null
     private accountsFingerprint = ''
     private contactsFingerprint = ''
+    private readonly state: BackupSyncStatePort
 
-    constructor(private readonly deps: BackupSyncManagerDeps) {}
+    constructor(private readonly deps: BackupSyncManagerDeps) {
+        this.state = deps.state ?? createBackupSyncStatePort()
+    }
 
     isSyncing(): boolean {
         return this.syncInProgress
     }
 
-    /** Mirrored into the activity store so the UI can show background work — a
-     *  periodic tick, an account change or a socket-driven pull — not just the
-     *  runs it started itself. */
     private setSyncing(isSyncing: boolean): void {
         this.syncInProgress = isSyncing
-        useBackupSyncActivityStore.getState().setIsSyncing(isSyncing)
+        this.state.setIsSyncing(isSyncing)
     }
 
     private context(): Nullable<{
@@ -118,9 +132,9 @@ export class BackupSyncManager {
         backupId: string
         deviceId: string
     }> {
-        const network = useNetworkStore.getState().network
-        const { backupId } = useCloudBackupStore.getState()
-        const deviceId = resolveBackupDeviceId(network)
+        const network = this.deps.sources.getNetwork()
+        const backupId = this.state.getBackupId()
+        const deviceId = this.state.getDeviceId(network)
         if (!backupId || !deviceId) return null
         return { network, backupId, deviceId }
     }
@@ -129,23 +143,33 @@ export class BackupSyncManager {
         ctx: { network: Network; backupId: string; deviceId: string },
         run: (deps: SyncEngineDeps) => Promise<T>,
     ): Promise<Nullable<T>> {
+        // Nested, not sequenced: each scope zeroes its key material on exit,
+        // and the hasher's copy of K_item outlives the keystore's buffer.
         return withBackupEncryptionKey(encryptionKey =>
-            run({
-                network: ctx.network,
-                backupId: ctx.backupId,
-                deviceId: ctx.deviceId,
-                encryptionKey,
-                listAccounts: () => useAccountsStore.getState().accounts,
-                serializeAccount: account =>
-                    serializeAccountForBackup(account, {
-                        updatedAt: Date.now(),
-                        resolveMnemonic: this.deps.resolveMnemonic,
-                        resolveHd: this.deps.resolveHd,
+            withBackupItemKey(itemKey =>
+                withItemKeyHasher(itemKey, hashAddress =>
+                    run({
+                        network: ctx.network,
+                        backupId: ctx.backupId,
+                        deviceId: ctx.deviceId,
+                        encryptionKey,
+                        hashAddress,
+                        listAccounts: () => this.deps.sources.listAccounts(),
+                        serializeAccount: account =>
+                            serializeAccountForBackup(account, {
+                                updatedAt: Date.now(),
+                                hashAddress,
+                                resolveMnemonic: this.deps.resolveMnemonic,
+                                resolveHd: this.deps.resolveHd,
+                            }),
+                        importAccounts: this.deps.importAccounts,
+                        listContacts: () => this.deps.sources.listContacts(),
+                        importContacts: this.deps.importContacts,
+                        listPasskeys: this.deps.listPasskeys,
+                        importPasskeys: this.deps.importPasskeys,
                     }),
-                importAccounts: this.deps.importAccounts,
-                listContacts: () => useContactsStore.getState().contacts ?? [],
-                importContacts: this.deps.importContacts,
-            }),
+                ),
+            ),
         )
     }
 
@@ -161,13 +185,12 @@ export class BackupSyncManager {
         this.setSyncing(true)
         try {
             const state =
-                useBackupSyncStateStore.getState().syncState ??
-                createEmptySyncState(ctx.backupId)
+                this.state.getSyncState() ?? createEmptySyncState(ctx.backupId)
             const next = await this.withEngineDeps(ctx, deps =>
                 run(state, deps),
             )
             if (!next) return false
-            useBackupSyncStateStore.getState().setSyncState(next)
+            this.state.setSyncState(next)
             return true
         } finally {
             this.setSyncing(false)
@@ -183,10 +206,7 @@ export class BackupSyncManager {
         )
         if (!staged) return false
         await this.syncNow()
-        return isAddressBackedUp(
-            useBackupSyncStateStore.getState().syncState,
-            address,
-        )
+        return isAddressBackedUp(this.state.getSyncState(), address)
     }
 
     async addAccountFromBackup(address: string): Promise<ImportSummary | null> {
@@ -219,10 +239,7 @@ export class BackupSyncManager {
             return result.state
         })
         if (!staged) return 'refused'
-        return areKeysDeletedFromBackup(
-            useBackupSyncStateStore.getState().syncState,
-            deleted,
-        )
+        return areKeysDeletedFromBackup(this.state.getSyncState(), deleted)
             ? 'settled'
             : 'queued'
     }
@@ -249,10 +266,7 @@ export class BackupSyncManager {
         )
         if (!staged) return false
         await this.syncNow()
-        return isContactBackedUp(
-            useBackupSyncStateStore.getState().syncState,
-            address,
-        )
+        return isContactBackedUp(this.state.getSyncState(), address)
     }
 
     async addContactFromBackup(
@@ -291,24 +305,79 @@ export class BackupSyncManager {
         )
     }
 
-    private watchLocalStores(): void {
-        this.accountsFingerprint = accountFingerprint(
-            useAccountsStore.getState().accounts,
+    async backUpPasskey(credentialId: string): Promise<boolean> {
+        const staged = await this.withExclusiveState(async state =>
+            markPasskeyForBackup(state, credentialId),
         )
-        this.unwatchAccounts = useAccountsStore.subscribe(state => {
-            const next = accountFingerprint(state.accounts)
+        if (!staged) return false
+        await this.syncNow()
+        return isPasskeyBackedUp(this.state.getSyncState(), credentialId)
+    }
+
+    async addPasskeyFromBackup(
+        credentialId: string,
+    ): Promise<PasskeyImportSummary | null> {
+        let summary: PasskeyImportSummary | null = null
+        const done = await this.withExclusiveState(async (state, deps) => {
+            const result = await importPasskeyFromBackup({
+                state,
+                credentialId,
+                deps: reviewActionDeps(deps),
+            })
+            summary = result.summary
+            return result.state
+        })
+        return done ? summary : null
+    }
+
+    async deletePasskeyFromBackup(
+        credentialId: string,
+    ): Promise<BackupActionOutcome> {
+        return this.runDelete((state, deps) =>
+            deletePasskeyFromBackup({
+                state,
+                credentialId,
+                deps: reviewActionDeps(deps),
+            }),
+        )
+    }
+
+    /** Leaves the backup's copy in place, so the credential returns to the
+     *  review screen under "available from backup". */
+    async keepPasskeyInBackup(
+        credentialId: string,
+        label: string,
+    ): Promise<boolean> {
+        return this.withExclusiveState(async state =>
+            keepPasskeyInBackup(state, credentialId, label),
+        )
+    }
+
+    private watchLocalStores(): void {
+        const { sources } = this.deps
+        this.accountsFingerprint = accountFingerprint(sources.listAccounts())
+        this.unwatchAccounts = sources.subscribeAccounts(accounts => {
+            const next = accountFingerprint(accounts)
             if (next === this.accountsFingerprint) return
             this.accountsFingerprint = next
             this.scheduleLocalSync()
         })
 
-        this.contactsFingerprint = contactsFingerprint(
-            useContactsStore.getState().contacts ?? [],
-        )
-        this.unwatchContacts = useContactsStore.subscribe(state => {
-            const next = contactsFingerprint(state.contacts ?? [])
+        this.contactsFingerprint = contactsFingerprint(sources.listContacts())
+        this.unwatchContacts = sources.subscribeContacts(contacts => {
+            const next = contactsFingerprint(contacts)
             if (next === this.contactsFingerprint) return
             this.contactsFingerprint = next
+            this.scheduleLocalSync()
+        })
+
+        // A credential minted by the OS provider extension is written outside
+        // the JS process and fires nothing here; the periodic and foreground
+        // syncs are what pick those up. The cheap filtering that keeps a
+        // caller's unrelated keystore write from reaching this at all lives
+        // with `subscribePasskeyChanges`'s injector, not here — this is
+        // already told only about changes worth a sync.
+        this.unwatchPasskeys = this.deps.subscribePasskeyChanges(() => {
             this.scheduleLocalSync()
         })
     }
@@ -347,6 +416,7 @@ export class BackupSyncManager {
         this.socket?.disconnect()
         this.unwatchAccounts?.()
         this.unwatchContacts?.()
+        this.unwatchPasskeys?.()
         this.watchLocalStores()
         await this.syncNow()
         this.connectSocket()
@@ -367,6 +437,8 @@ export class BackupSyncManager {
         this.unwatchAccounts = null
         this.unwatchContacts?.()
         this.unwatchContacts = null
+        this.unwatchPasskeys?.()
+        this.unwatchPasskeys = null
         this.socket?.disconnect()
         this.socket = null
     }
@@ -376,9 +448,7 @@ export class BackupSyncManager {
      *  remote call is made — the backup is already gone server-side. */
     private async clearLocalBackup(): Promise<void> {
         this.stop()
-        useCloudBackupStore.getState().resetState()
-        useBackupSyncStateStore.getState().resetState()
-        useBackupSyncActivityStore.getState().resetState()
+        this.state.reset()
         try {
             await deleteBackupKeys()
         } catch (error) {
@@ -398,13 +468,12 @@ export class BackupSyncManager {
         this.setSyncing(true)
         try {
             const state =
-                useBackupSyncStateStore.getState().syncState ??
-                createEmptySyncState(ctx.backupId)
+                this.state.getSyncState() ?? createEmptySyncState(ctx.backupId)
             const next = await this.withEngineDeps(ctx, deps =>
                 syncBackup(deps, state),
             )
             if (next) {
-                useBackupSyncStateStore.getState().setSyncState(next)
+                this.state.setSyncState(next)
             } else {
                 logger.warn(
                     'BackupSyncManager: sync produced no state, encryption key unavailable',
@@ -418,11 +487,8 @@ export class BackupSyncManager {
             // failed, so the overview reports FAILED instead of falling back
             // to the never-synced badge.
             const s =
-                useBackupSyncStateStore.getState().syncState ??
-                createEmptySyncState(ctx.backupId)
-            useBackupSyncStateStore
-                .getState()
-                .setSyncState({ ...s, lastSyncResult: 'FAILED' })
+                this.state.getSyncState() ?? createEmptySyncState(ctx.backupId)
+            this.state.setSyncState({ ...s, lastSyncResult: 'FAILED' })
         } finally {
             this.setSyncing(false)
         }
@@ -435,12 +501,11 @@ export class BackupSyncManager {
         this.setSyncing(true)
         try {
             const state =
-                useBackupSyncStateStore.getState().syncState ??
-                createEmptySyncState(ctx.backupId)
+                this.state.getSyncState() ?? createEmptySyncState(ctx.backupId)
             const next = await this.withEngineDeps(ctx, deps =>
                 pullBackupDeltas(deps, state),
             )
-            if (next) useBackupSyncStateStore.getState().setSyncState(next)
+            if (next) this.state.setSyncState(next)
         } catch (error) {
             logger.warn('BackupSyncManager: pull failed', {
                 error: error instanceof Error ? error.message : String(error),

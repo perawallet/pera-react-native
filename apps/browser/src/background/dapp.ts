@@ -10,16 +10,16 @@
  limitations under the License
  */
 
+import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome'
 import {
     DAPP_PAGE_RESPONSE_SCOPE,
     isDappHostResponseMessage,
     isDappPageRequestMessage,
     isSecureDappOrigin,
-    isTrustedExtensionPageSender,
     sendDappHostRequest,
     type DappPageRequestAck,
     type DappPageResponseMessage,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import {
     JsonRpcErrorCode,
     jsonRpcError,

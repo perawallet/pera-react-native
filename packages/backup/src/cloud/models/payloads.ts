@@ -39,20 +39,24 @@ const customName = z
 /** Epoch millis of the last local content change; drives last-write-wins. */
 const updatedAt = nonNegativeInt.optional()
 
+/** Non-empty: every collector keys its join map on this, so an empty one would
+ *  collide all such items onto a single entry. */
+const address = z.string().min(1)
+
 export const algo25AddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.algo25),
-    address: z.string(),
+    address,
     customName,
     updatedAt,
 })
 export const hdSeedAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hdSeed),
-    address: z.string(),
+    address,
 })
 export const hdWalletAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hdWallet),
-    address: z.string(),
-    seedFirstDerivedAddress: z.string(),
+    address,
+    seedFirstDerivedAddress: address,
     publicKey: z.string(),
     account: nonNegativeInt,
     change: nonNegativeInt,
@@ -63,7 +67,7 @@ export const hdWalletAddressPayloadSchema = z.object({
 })
 export const hardwareAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hardware),
-    address: z.string(),
+    address,
     deviceId: z.string(),
     deviceName: z.string(),
     accountIndex: nonNegativeInt,
@@ -74,13 +78,13 @@ export const hardwareAddressPayloadSchema = z.object({
 })
 export const watchAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.watch),
-    address: z.string(),
+    address,
     customName,
     updatedAt,
 })
 export const multisigAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.multisig),
-    address: z.string(),
+    address,
     participantAddresses: z.array(z.string()),
     threshold: nonNegativeInt,
     version: nonNegativeInt,
@@ -89,7 +93,7 @@ export const multisigAddressPayloadSchema = z.object({
 })
 export const quantumAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.quantum),
-    address: z.string(),
+    address,
     customName,
     updatedAt,
 })
@@ -122,6 +126,7 @@ export type AddressBackupPayload = z.infer<typeof addressBackupPayloadSchema>
 export const algo25SecretsPayloadSchema = z.object({
     type: z.literal(BackupAccountType.algo25),
     mnemonic: z.string(),
+    address,
 })
 export const hdSeedSecretsPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hdSeed),
@@ -129,10 +134,14 @@ export const hdSeedSecretsPayloadSchema = z.object({
     seed: z.string(),
     // Hex-encoded BIP39 entropy.
     entropy: z.string(),
+    /** The seed's first derived address, which is what this item is filed
+     *  under and a restoring device's only way to place it. */
+    address,
 })
 export const quantumSecretsPayloadSchema = z.object({
     type: z.literal(BackupAccountType.quantum),
     mnemonic: z.string(),
+    address,
 })
 
 export const secretsBackupPayloadSchema = z.discriminatedUnion('type', [
@@ -150,9 +159,33 @@ export type SecretsBackupPayload = z.infer<typeof secretsBackupPayloadSchema>
  *  identify the shape. `image` is a device-local `file://` URI and `nfd` is
  *  re-resolvable from the address, so neither is backed up. */
 export const contactBackupPayloadSchema = z.object({
-    address: z.string(),
+    address,
     name: z.string(),
     updatedAt,
 })
 
 export type ContactBackupPayload = z.infer<typeof contactBackupPayloadSchema>
+
+/** No discriminant: the `passkeys/` prefix and the PASSKEY item type already
+ *  identify the shape. `origin`, `identity` and `counter` are the derivation
+ *  inputs, stored as the strings that provably reproduced this credential;
+ *  `userId`/`userName`/`displayName` only build the native record and label the
+ *  UI, and must never reach derivation — they are not consistently encoded
+ *  across the platforms that wrote them. */
+export const passkeyBackupPayloadSchema = z.object({
+    credentialId: z.string(),
+    origin: z.string(),
+    identity: z.string(),
+    counter: nonNegativeInt,
+    /** Base64 of the 91-byte X.509 SPKI DER; the restore-time match target. */
+    publicKeySpkiDer: z.string(),
+    /** First-derived address of the owning seed, joining to its `secrets/` item. */
+    seedAddress: z.string(),
+    userId: z.string().optional(),
+    userName: z.string().optional(),
+    displayName: z.string().optional(),
+    createdAt: nonNegativeInt,
+    updatedAt,
+})
+
+export type PasskeyBackupPayload = z.infer<typeof passkeyBackupPayloadSchema>

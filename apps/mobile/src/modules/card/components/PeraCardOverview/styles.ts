@@ -36,16 +36,6 @@ export const useStyles = makeStyles(theme => ({
     balanceLabel: {
         color: theme.colors.textGray,
     },
-    // Compact spendable line: hugs its content (label + info icon) instead
-    // of stretching edge-to-edge.
-    spendableRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        alignSelf: 'flex-start',
-    },
-    fundingLabel: {
-        color: theme.colors.textGray,
-    },
     // Action buttons (stacked)
     buttons: {
         gap: theme.spacing.md,
@@ -74,28 +64,6 @@ export const useStyles = makeStyles(theme => ({
     },
     rowValue: {
         color: theme.colors.textMain,
-    },
-    // Pending withdrawal
-    pendingRow: {
-        backgroundColor: theme.colors.layerGrayLightest,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        borderRadius: theme.spacing.lg,
-        padding: theme.spacing.lg,
-        gap: theme.spacing.md,
-    },
-    pendingHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
-    },
-    pendingStatus: {
-        color: theme.colors.textGray,
-    },
-    pendingButtons: {
-        flexDirection: 'row',
-        gap: theme.spacing.md,
     },
     // Transactions
     sectionHeader: {

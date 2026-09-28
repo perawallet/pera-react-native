@@ -91,10 +91,13 @@ the codebase cannot.
 
 ```sh
 pnpm lint:docs
+pnpm lint:lanekeep
 ```
 
-It fails on wrongness (a path that no longer exists, a dead link, a work-item reference) and reports
-on length without failing. A genuine exception is recorded with its reason, on the line above:
+`pnpm lint:docs` fails on wrongness (a path that no longer exists, a dead link, a work-item
+reference) in Markdown, shell and YAML, and reports on length without failing; `pnpm lint:lanekeep`
+catches work-item references in code comments. A genuine exception is recorded with its reason, on
+the line above:
 
 ```
 <!-- doc-hygiene-ignore-next-line stale-path reason: written by CI at build time -->

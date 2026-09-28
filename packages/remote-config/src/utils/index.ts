@@ -11,3 +11,4 @@
  */
 
 export * from './readRemoteConfigWithOverrides'
+export * from './areConfigOverridesIgnored'

@@ -12,7 +12,8 @@
 
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useWebView } from '@modules/webview'
+import { useLanguage } from '@hooks/useLanguage'
+import { useWebView, withLanguageParam } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { trackEvent, OnboardingEvent } from '@analytics'
 
@@ -24,6 +25,7 @@ type UseWatchInfoScreenResult = {
 export const useWatchInfoScreen = (): UseWatchInfoScreenResult => {
     const navigation = useAppNavigation()
     const { pushWebView } = useWebView()
+    const { currentLanguage } = useLanguage()
 
     const handleCreateWatchAccount = useCallback(() => {
         trackEvent(OnboardingEvent.CreateAccountWatch)
@@ -31,8 +33,13 @@ export const useWatchInfoScreen = (): UseWatchInfoScreenResult => {
     }, [navigation])
 
     const handleInfoPress = useCallback(() => {
-        pushWebView({ url: config.watchAccountSupportUrl })
-    }, [pushWebView])
+        pushWebView({
+            url: withLanguageParam(
+                config.watchAccountSupportUrl,
+                currentLanguage,
+            ),
+        })
+    }, [pushWebView, currentLanguage])
 
     return {
         handleCreateWatchAccount,

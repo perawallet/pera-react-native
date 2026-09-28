@@ -31,7 +31,6 @@ import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.MessageDigest
-import java.security.ProviderException
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.spec.MGF1ParameterSpec
@@ -75,17 +74,8 @@ class PeraBiometricBindingModule : Module() {
         // Generating over a live alias fails, so delete first to stay idempotent.
         clearKeys()
         val generator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, KEYSTORE)
-        try {
-          generator.initialize(unlockKeySpec(strongBox = true))
-          generator.generateKeyPair()
-        } catch (e: ProviderException) {
-          // The bare superclass, not just StrongBoxUnavailableException: only
-          // KM_ERROR_HARDWARE_TYPE_UNAVAILABLE maps to the subclass, while an unsupported
-          // digest, padding or key size arrives as ProviderException and needs the same fallback.
-          Log.w(LOG_TAG, "StrongBox was refused; falling back to the TEE", e)
-          generator.initialize(unlockKeySpec(strongBox = false))
-          generator.generateKeyPair()
-        }
+        generator.initialize(unlockKeySpec())
+        generator.generateKeyPair()
         createCanaryKey()
 
         val token = ByteArray(32).also { SecureRandom().nextBytes(it) }
@@ -359,7 +349,12 @@ class PeraBiometricBindingModule : Module() {
     biometricPrompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
   }
 
-  private fun unlockKeySpec(strongBox: Boolean): KeyGenParameterSpec {
+  /**
+   * TEE-backed, not StrongBox: a secure element searches for RSA primes on its own small processor
+   * and holds the keystore while it does, stalling every other keystore user in the app. An EC key
+   * would be fast enough there, but `BiometricPrompt.CryptoObject` cannot carry a `KeyAgreement`.
+   */
+  private fun unlockKeySpec(): KeyGenParameterSpec {
     val builder =
       KeyGenParameterSpec.Builder(
           UNLOCK_ALIAS,
@@ -372,10 +367,6 @@ class PeraBiometricBindingModule : Module() {
         .setInvalidatedByBiometricEnrollment(true)
 
     applyAuthPerUse(builder)
-
-    if (strongBox && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-      builder.setIsStrongBoxBacked(true)
-    }
 
     return builder.build()
   }

@@ -30,13 +30,16 @@ const {
         current: {
             backedUp: new Set<string>(),
             notBackedUp: [] as string[],
-            availableFromBackup: [] as string[],
+            availableFromBackup: [] as {
+                address: string
+                type: string | null
+            }[],
         },
     },
     showToastMock: vi.fn(),
     showErrorMock: vi.fn(),
     reviewActionMock: vi.fn(
-        async (_variables: { action: string; address: string }) => undefined,
+        async (_variables: { action: string; id: string }) => undefined,
     ),
     kindMock: { current: '' },
     // One class for both the mock factory below and the tests: `instanceof` is
@@ -85,9 +88,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: showErrorMock }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const createWrapper = () => {
     const queryClient = new QueryClient({
@@ -109,7 +110,7 @@ beforeEach(() => {
     reviewMock.current = {
         backedUp: new Set(['A']),
         notBackedUp: ['B'],
-        availableFromBackup: ['GONE'],
+        availableFromBackup: [{ address: 'GONE', type: 'algo25' }],
     }
 })
 
@@ -119,9 +120,22 @@ describe('useBackupAccountReview', () => {
 
         expect(result.current.backedUpAccounts).toEqual([{ address: 'A' }])
         expect(result.current.notBackedUpAccounts).toEqual([{ address: 'B' }])
-        expect(result.current.availableFromBackup).toEqual(['GONE'])
+        expect(result.current.availableFromBackup).toEqual([
+            { address: 'GONE', type: 'algo25' },
+        ])
         expect(result.current.isBackedUp('A')).toBe(true)
         expect(result.current.isBackedUp('B')).toBe(false)
+    })
+
+    test('carries a null cached type through when the device never decrypted the item', () => {
+        reviewMock.current.availableFromBackup = [
+            { address: 'GONE', type: null },
+        ]
+        const { result } = renderReview()
+
+        expect(result.current.availableFromBackup).toEqual([
+            { address: 'GONE', type: null },
+        ])
     })
 
     test('runs each row action against the account side of the mutation', async () => {
@@ -136,9 +150,9 @@ describe('useBackupAccountReview', () => {
 
         await waitFor(() => expect(variables()).toHaveLength(3))
         expect(variables()).toEqual([
-            { action: 'backUp', address: 'B' },
-            { action: 'add', address: 'GONE' },
-            { action: 'delete', address: 'GONE' },
+            { action: 'backUp', id: 'B' },
+            { action: 'add', id: 'GONE' },
+            { action: 'delete', id: 'GONE' },
         ])
         expect(kindMock.current).toBe('account')
     })

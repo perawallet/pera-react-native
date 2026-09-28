@@ -23,7 +23,7 @@ import type {
 
 import { EmptyView } from '@components/EmptyView'
 import { SearchableList } from '@components/SearchableList'
-import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
+import { AssetRowSkeleton } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'

@@ -10,45 +10,17 @@
  limitations under the License
  */
 
-import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
+import type { HardwareWalletService } from '@perawallet/wallet-extension-hardware-wallet'
+import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import type {
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
-} from '@perawallet/wallet-core-hardware-wallet'
+} from '@perawallet/wallet-extension-hardware-wallet'
 import TransportWebHID from '@ledgerhq/hw-transport-webhid'
-import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {
     classifyLedgerError,
-    createLedgerTransportWrapper,
+    resolveUsbDeviceModel,
 } from '@perawallet/wallet-extension-ledger-shared'
-
-/**
- * Maps a WebHID device's USB product ID to a friendly model name.
- * IDs from https://developers.ledger.com (vendor 0x2c97) — identical
- * mapping to RNLedgerUsbService's resolveModel.
- */
-const resolveModel = (productId: number | undefined): string => {
-    switch (productId) {
-        case 0x00_01: {
-            return 'nanoS'
-        }
-        case 0x00_04: {
-            return 'nanoX'
-        }
-        case 0x40_11: {
-            return 'nanoSPlus'
-        }
-        case 0x60_11: {
-            return 'stax'
-        }
-        case 0x70_11: {
-            return 'flex'
-        }
-        default: {
-            return 'ledger'
-        }
-    }
-}
 
 /**
  * WebHID's HIDDevice exposes no stable per-device id (unlike the RN HID
@@ -62,7 +34,7 @@ const deviceKey = (device: HIDDevice): string =>
 /**
  * Browser implementation of HardwareWalletService for Ledger USB (WebHID).
  * Uses @ledgerhq/hw-transport-webhid for USB communication and
- * @algorandfoundation/ledger-algorand-js for Algorand-specific APDU commands.
+ * the registered Ledger app driver for the chain app's APDU commands.
  */
 export class LedgerWebUsbService implements HardwareWalletService {
     manufacturer = 'ledger' as const
@@ -85,7 +57,7 @@ export class LedgerWebUsbService implements HardwareWalletService {
                         const device = event.descriptor
                         const key = deviceKey(device)
                         devicesByKey.set(key, device)
-                        const model = resolveModel(device.productId)
+                        const model = resolveUsbDeviceModel(device.productId)
                         onDevice({
                             id: key,
                             name: device.productName || `Ledger ${model}`,
@@ -104,6 +76,9 @@ export class LedgerWebUsbService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<HardwareWalletTransport> {
+                // Resolved at connect, not when the transport registers: the
+                // chain package registers its driver after the transports.
+                const appDriver = ledgerAppDriverRegistry.resolve()
                 let cached = devicesByKey.get(deviceId)
                 // `devicesByKey` only holds what THIS document scanned, and
                 // scanning only ever happens in the Ledger connect/import
@@ -146,11 +121,7 @@ export class LedgerWebUsbService implements HardwareWalletService {
                     } else {
                         hidTransport = await TransportWebHID.request()
                     }
-                    const algorandApp = new AlgorandApp(hidTransport)
-                    return createLedgerTransportWrapper(
-                        hidTransport,
-                        algorandApp,
-                    )
+                    return appDriver.open(hidTransport)
                 } catch (error) {
                     throw classifyLedgerError(error)
                 }

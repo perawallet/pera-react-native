@@ -15,9 +15,9 @@ import {
     partition,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { fetchNfdBulkRead } from '../api'
+import { nameServiceAdapterFor } from '../chain-adapter'
 import {
     NFD_BULK_CHUNK_SIZE,
     NFD_BULK_CONCURRENCY,
@@ -43,8 +43,9 @@ export async function fetchAndPersistNfds(
     // every requested address commits as a fresh negative-cache row for no reason.
     if (!isPeraBackedNetwork(network)) return
 
+    const adapter = nameServiceAdapterFor(network)
     const dedup = Array.from(
-        new Set(addresses.filter(addr => isValidAlgorandAddress(addr))),
+        new Set(addresses.filter(addr => adapter.isValidAddress(addr))),
     )
     if (dedup.length === 0) return
 

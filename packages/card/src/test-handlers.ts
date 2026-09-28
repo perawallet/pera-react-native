@@ -75,13 +75,11 @@ export type { MockListCardTransactionsParams } from './api/transactions/msw-hand
 export {
     mockGetWalletBalance,
     mockGetWalletHistory,
-    mockGetWalletWithdrawEstimation,
     mockWithdrawWalletBalance,
 } from './api/wallet-balance/msw-handlers'
 export type {
     MockGetWalletBalanceParams,
     MockGetWalletHistoryParams,
-    MockGetWalletWithdrawEstimationParams,
     MockWithdrawWalletBalanceParams,
 } from './api/wallet-balance/msw-handlers'
 
@@ -108,6 +106,7 @@ export {
     mockVerifyPhone,
     mockSubmitPersonalDetails,
     mockSubmitAddress,
+    mockSubmitMailingAddress,
     mockSubmitOnboardingConsent,
     mockLinkOnboardingConsent,
     mockGetRegistrationSettings,

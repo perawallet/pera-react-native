@@ -12,7 +12,7 @@
 
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useEnableCloudBackupMutation } from '@perawallet/wallet-core-backup'
+import { useActivateCloudBackupMutation } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { CloudBackupStackParamList } from '../routes/types'
@@ -28,7 +28,7 @@ export const useEnableCloudBackup = (): UseEnableCloudBackupResult => {
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
 
-    const mutation = useEnableCloudBackupMutation({
+    const mutation = useActivateCloudBackupMutation({
         onSuccess: () => {
             showToast({
                 title: t('cloud_backup.enable.success'),

@@ -12,14 +12,14 @@
 
 import { vi } from 'vitest'
 
-// Both barrels transitively reach react-native-mmkv, whose entry resolves a
+// This package imports neither barrel; the source-aliased connections barrel
+// does, and both transitively reach react-native-mmkv, whose entry resolves a
 // platform-suffixed file with no node build — and it fails at resolution time,
 // before a `vi.mock` of the native module itself could intervene
 // (`packages/connections` hits the same wall). Every module named here is the
-// REAL one, narrowed to what these specs and the source-aliased registry
-// actually reach: the point of the specs is that the sanitizer's allowlist and
-// the registry's validation behave as the real code does, so a hand-written
-// fake would prove nothing.
+// REAL one, narrowed to what the registry actually reaches: the point of the
+// specs is that the registry's validation behaves as the real code does, so a
+// hand-written fake would prove nothing.
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await import('../signing/src/pipeline/errors')),
     ...(await import('../signing/src/utils/arc60-wire')),

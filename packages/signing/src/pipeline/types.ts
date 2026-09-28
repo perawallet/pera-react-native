@@ -225,7 +225,10 @@ export interface SignableGroup {
 
     source: SourceMetadata
 
-    /** Resolved from transaction senders or the data signer field. */
+    /**
+     * The authorizer: an ARC-0001 `signers` / `authAddr` override when the
+     * request carries one, else the transaction sender or data signer field.
+     */
     signerAddress: string
 
     /**
@@ -237,11 +240,7 @@ export interface SignableGroup {
     originalIndices?: number[]
 }
 
-export interface DataSource<TParams = unknown> {
-    getSignableData(params: TParams): Promise<SignableGroup>
-}
-
-export interface TransactionSummary {
+export interface AlgorandTransactionSummary {
     type: PeraTransactionType
     sender: string
     receiver?: string
@@ -265,7 +264,7 @@ export interface AnalysisWarning {
 export interface SignableAnalysis {
     totalFees: bigint
 
-    transactionSummaries: TransactionSummary[]
+    transactionSummaries: AlgorandTransactionSummary[]
 
     warnings: AnalysisWarning[]
 
@@ -435,51 +434,4 @@ export interface DataTransport {
         /** For multisig: the multisig account address. */
         multisigAddress?: string,
     ): Promise<TransportResult>
-}
-
-export interface PipelineCallbacks extends SigningCallbacks {
-    /** Called after analysis, before signing — show confirmation UI. */
-    onConfirmationRequired?: (group: AnalyzedSignableGroup) => Promise<boolean>
-
-    onWarnings?: (warnings: AnalysisWarning[]) => void
-}
-
-export interface PipelineConfig<TSourceParams> {
-    source: DataSource<TSourceParams>
-
-    /** Defaults to the standard analyzer. */
-    analyzer?: DataAnalyzer
-
-    /** Overrides transport selection. */
-    transport?: DataTransport
-
-    callbacks?: PipelineCallbacks
-}
-
-export interface DataPipeline<TSourceParams> {
-    /** Runs source -> analyze -> sign -> transport. */
-    execute(
-        params: TSourceParams,
-        account: WalletAccount,
-    ): Promise<TransportResult>
-}
-
-export type QueuedRequestStatus =
-    | 'pending'
-    | 'analyzing'
-    | 'awaiting-confirmation'
-    | 'signing'
-    | 'transporting'
-    | 'complete'
-    | 'failed'
-
-export interface QueuedRequest<TParams = unknown> {
-    id: string
-    params: TParams
-    account: WalletAccount
-    source: SourceMetadata
-    status: QueuedRequestStatus
-    analyzedGroup?: AnalyzedSignableGroup
-    error?: Error
-    createdAt: number
 }

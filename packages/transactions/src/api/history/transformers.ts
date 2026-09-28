@@ -23,8 +23,8 @@ import type {
     TransactionInterpretedMeaning,
     TransactionBalanceImpact,
 } from '../../models/types'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import { ALGO_DECIMALS, resolveAssetFacts } from '../../utils/algoAssetFacts'
+import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
+import { resolveAssetFacts } from '../../utils/algoAssetFacts'
 
 /**
  * Transforms a swap group detail from API response format to domain format,

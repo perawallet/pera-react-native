@@ -19,9 +19,9 @@ import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
 } from '@perawallet/wallet-core-transactions'
-import { shareCsvFile } from '@utils/shareCsvFile'
+import { shareFile } from '@utils/shareFile'
 import { useToast } from '@hooks/useToast'
-import { TransactionFilter } from '../../../../../accounts/components/TransactionsFilterContent/types'
+import { TransactionFilter } from '@modules/accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -48,6 +48,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
+    CSV_MIME_TYPE: 'text/csv',
     useTransactionHistoryQuery: vi.fn(),
     useCsvExportMutation: vi.fn(),
 }))
@@ -64,9 +65,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: vi.fn(),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', () => ({
@@ -82,8 +81,8 @@ vi.mock('react-native', () => ({
     },
 }))
 
-vi.mock('@utils/shareCsvFile', () => ({
-    shareCsvFile: vi.fn(),
+vi.mock('@utils/shareFile', () => ({
+    shareFile: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -675,7 +674,9 @@ describe('useAssetTransactionList', () => {
 
             await successCallback(mockResult)
 
-            expect(shareCsvFile).toHaveBeenCalledWith('test.csv', 'data')
+            expect(shareFile).toHaveBeenCalledWith('test.csv', 'data', {
+                mimeType: 'text/csv',
+            })
         })
 
         it('shows error toast when share fails', async () => {
@@ -693,7 +694,7 @@ describe('useAssetTransactionList', () => {
                 },
             )
 
-            vi.mocked(shareCsvFile).mockRejectedValueOnce(
+            vi.mocked(shareFile).mockRejectedValueOnce(
                 new Error('Share cancelled'),
             )
 
@@ -816,9 +817,9 @@ describe('useAssetTransactionList', () => {
                 expect(mockShowError).toHaveBeenCalledTimes(1)
                 const [error, title] = mockShowError.mock.calls[0]
                 expect(isPeraServiceUnavailableError(error)).toBe(true)
-                expect((error as PeraServiceUnavailableError).network).toBe(
-                    network,
-                )
+                expect(
+                    (error as PeraServiceUnavailableError).scope,
+                ).toStrictEqual({ chainId: 'algorand', networkId: network })
                 expect(title).toBe('common.network_unavailable.title')
             },
         )

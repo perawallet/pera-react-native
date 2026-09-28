@@ -41,8 +41,10 @@ import { useToast } from '@hooks/useToast'
 import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { LedgerAccountInfoContent } from '@modules/ledger/components/LedgerAccountInfoContent'
-import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
-import { useExitAccountFlow } from '@modules/onboarding/hooks'
+import {
+    type AddAccountStackParamList,
+    useExitAccountFlow,
+} from '@modules/onboarding'
 import {
     deserializeLedgerAccount,
     getLedgerErrorPreset,

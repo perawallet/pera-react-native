@@ -13,6 +13,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import {
+    BackupAccountType,
     BackupItemStatus,
     BackupItemType,
     createEmptySyncState,
@@ -21,11 +22,13 @@ import { reconcile } from '../reconcile'
 import type { LocalItem, LocalSnapshot } from '../types'
 
 const NOW = 1_000
-const item = (key: string, hash: string): LocalItem => ({
+const item = (key: string, hash: string, address = 'ADDR'): LocalItem => ({
     key,
     type: BackupItemType.ACCOUNT,
     contentHash: hash,
-    payload: { type: 'watch', address: key.split('/')[1] } as never,
+    address,
+    accountType: BackupAccountType.watch,
+    payload: { type: 'watch', address } as never,
 })
 const snapshot = (items: LocalItem[], skipped = 0): LocalSnapshot => ({
     items,
@@ -44,6 +47,18 @@ describe('reconcile', () => {
             localContentHash: 'h1',
             localUpdatedAt: NOW,
             status: BackupItemStatus.ACTIVE,
+        })
+    })
+
+    it('tracks a new local item with its address and account type', () => {
+        const next = reconcile(
+            createEmptySyncState('b'),
+            snapshot([item('accounts/HASHED', 'h1', 'REAL_ADDRESS')]),
+            NOW,
+        )
+        expect(next.items['accounts/HASHED']).toMatchObject({
+            address: 'REAL_ADDRESS',
+            accountType: BackupAccountType.watch,
         })
     })
 

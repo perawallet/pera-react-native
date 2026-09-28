@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { renderHook } from '@test-utils/render'
+import { act, renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockState = vi.hoisted(() => ({
     connectedAddress: null as string | null,
     accounts: [] as Array<{ address: string; name?: string }>,
 }))
-const mockInfoToast = vi.fn()
 const mockNavigate = vi.fn()
 const { mockPublishPickerKind, mockCardPicker } = vi.hoisted(() => ({
     mockPublishPickerKind: vi.fn(),
@@ -48,15 +47,6 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useCardIssuance: () => ({ state: 'READY', retryOrder: vi.fn() }),
     }
 })
-
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        infoToast: mockInfoToast,
-        errorToast: vi.fn(),
-        successToast: vi.fn(),
-        showToast: vi.fn(),
-    }),
-}))
 
 // The switcher on this screen is the shared drawer, so what the screen owns is
 // publishing its kind; the picker's own behaviour is covered by its spec.
@@ -148,13 +138,14 @@ describe('usePeraCardAccountScreen', () => {
         expect(result.current.accountPicker).toBe(mockCardPicker)
     })
 
-    it('header actions surface the coming-soon toast', () => {
+    it('opens the QR scanner from the header and closes it again', () => {
         const { result } = renderHook(() => usePeraCardAccountScreen())
+        expect(result.current.isScannerVisible).toBe(false)
 
-        result.current.onMore()
-        result.current.onScan()
-        result.current.onInbox()
+        act(() => result.current.onScan())
+        expect(result.current.isScannerVisible).toBe(true)
 
-        expect(mockInfoToast).toHaveBeenCalledTimes(3)
+        act(() => result.current.onScannerClose())
+        expect(result.current.isScannerVisible).toBe(false)
     })
 })

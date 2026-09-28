@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { Platform } from 'react-native'
+import { isAndroid } from '@utils/platform'
 import type { LedgerErrorActionKind } from '../utils/ledgerErrorPresets'
 import { useBlePermissions } from './useBlePermissions'
 import { useBluetoothState } from './useBluetoothState'
@@ -49,7 +49,7 @@ export const useLedgerErrorAction = (): UseLedgerErrorActionResult => {
                 void openSettings()
                 return
             }
-            if (Platform.OS !== 'android') {
+            if (!isAndroid()) {
                 void openSettings()
                 return
             }

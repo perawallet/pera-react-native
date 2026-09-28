@@ -12,6 +12,8 @@ Staging and production are built by separate pipelines so a nightly does not bur
 
 The smoke gate only runs on staging builds: they are the only ones that bake `DISABLE_SCREEN_CAPTURE_PREVENTION`, and Appium cannot drive a `FLAG_SECURE` surface, so a production build hangs rather than failing usefully. An rc is therefore covered by the nightlies it descends from, not directly. Production is likewise not built nightly, so a production-only break (scheme, signing, flavor) surfaces at rc time rather than the next morning.
 
+An rc shows the plain `X.Y.Z` in the settings footer, the same string its stable promotion shows, because it ships under the version it is a candidate for: the iOS and Android builds bake its tag into the app config without the `-rc.N` suffix. The build number beside it is what identifies the exact build. Nightlies keep their `-alpha.N`. Note that iOS and Android build numbers for one rc are not comparable: Android adds `BUILD_NUMBER_OFFSET` to the Bitrise counter and iOS does not.
+
 ### Cutting a golden release
 
 Run the `Release / Stable` workflow from the Actions tab. It tags the most recent rc's commit with the equivalent stable version (`v7.0.2-rc.3` → `v7.0.2`), publishes the GitHub Release, and fires the production builds. Leave the input blank to promote the highest rc, or name an older one explicitly.

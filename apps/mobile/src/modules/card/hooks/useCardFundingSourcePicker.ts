@@ -13,7 +13,7 @@
 import { createElement, useCallback } from 'react'
 import { useCardStore } from '@perawallet/wallet-core-card'
 import {
-    canSignArbitraryData,
+    canSignArc60,
     canSignProgram,
     isAlgo25Account,
     isHardwareWalletAccount,
@@ -25,8 +25,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     AccountMenuContent,
     type AccountMenuContentResult,
-} from '@modules/accounts/components/AccountMenuContent'
-import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
+} from '@modules/accounts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ConnectAccountHeader } from '../components/ConnectAccountHeader'
 import { useCardAddAccount } from './useCardAddAccount'
@@ -43,25 +42,18 @@ export const isEligibleFundingSource = (account: WalletAccount): boolean =>
     !isRekeyedAccount(account)
 
 /**
- * Funding sources that can also produce a signature — the stricter filter used
- * during onboarding, where creating the card requires an ARC-60 (and, for Auto,
- * a delegated LSig) signature. Excludes Ledger, which is eligible as a funding
- * source but can't sign arbitrary data / programs.
- *
- * Card creation uses `useLocalKeyArc60Signer`, which is local-key only (Algo25/HD).
- * Ledger ARC-60 signing is not yet wired up for card creation; once it is, this
- * filter could relax to include Ledger accounts.
+ * Funding sources that can also sign the ARC-60 ownership proof card creation
+ * needs — the stricter filter onboarding uses. Gates on `canSignArc60` rather
+ * than `canSignArbitraryData`: Ledger signs ARC-60 on-device, holding no local key.
  */
 export const isSigningCapableFundingSource = (
     account: WalletAccount,
-): boolean => isEligibleFundingSource(account) && canSignArbitraryData(account)
+): boolean => isEligibleFundingSource(account) && canSignArc60(account)
 
 /**
  * Whether `account` can turn ON auto funding, i.e. sign the delegated AutoDraw
- * LSig program. Ledger can never do this — a PERMANENT limitation, unlike the
- * temporary ARC-60 creation restriction in
- * {@link isSigningCapableFundingSource}. Keep the two distinct: once ARC-60
- * lets Ledger create a card, Auto must still be greyed out for it.
+ * LSig. Stays narrower than {@link isSigningCapableFundingSource}: Ledger
+ * creates cards but its firmware will never sign a program.
  */
 export const canAutoFund = (account: WalletAccount): boolean =>
     canSignProgram(account)
@@ -76,9 +68,9 @@ export type UseCardFundingSourcePickerResult = {
 
 export type UseCardFundingSourcePickerParams = {
     /**
-     * Which accounts to offer. Defaults to {@link isEligibleFundingSource}
-     * (includes Ledger); onboarding passes {@link isSigningCapableFundingSource}
-     * so only signing-capable accounts are offered.
+     * Which accounts to offer. Defaults to {@link isEligibleFundingSource};
+     * onboarding passes {@link isSigningCapableFundingSource}, which also
+     * requires the account to be able to sign the creation proof.
      */
     accountFilter?: (account: WalletAccount) => boolean
 }
@@ -95,54 +87,39 @@ export const useCardFundingSourcePicker = ({
     const pickFundingSource = useCallback(async (): Promise<
         Nullable<WalletAccount>
     > => {
-        // Reuse the standard account menu as-is, customised only through
-        // its existing props: the card header and the eligibility filter.
-        const openPicker = async (): Promise<Nullable<WalletAccount>> => {
-            const result = await request<AccountMenuContentResult>({
-                id: 'card-connect-funding-source',
-                contents: createElement(AccountMenuContent, {
-                    headerContent: createElement(ConnectAccountHeader),
-                    accountFilter,
-                    // Fresh on first connect (null → nothing highlighted);
-                    // the connected source is highlighted on "Change".
-                    selectedAddress: connectedAddress,
-                }),
-                options: {
-                    size: 'full',
-                    enablePanDownToClose: false,
-                    enableContentPanningGesture: false,
-                    autoCreateContainer: false,
-                },
-            })
-            if (!result) return null
-            switch (result.kind) {
-                case 'selected': {
-                    return result.account
-                }
-                case 'add-account': {
-                    handleCreateAccount()
-                    return null
-                }
-                case 'sort': {
-                    await request<void>({
-                        contents: createElement(AccountSortContent),
-                        options: {
-                            size: 'modal',
-                            enablePanDownToClose: false,
-                            enableContentPanningGesture: false,
-                            autoCreateContainer: false,
-                        },
-                    })
-                    // After sorting, reopen the picker so the user can choose.
-                    return openPicker()
-                }
-                case 'search':
-                default: {
-                    return null
-                }
+        // Reuse the standard account menu, but with its title row replaced:
+        // ConnectAccountHeader supplies the card flow's own heading and
+        // "Create Account" action, and offers no sorting.
+        const result = await request<AccountMenuContentResult>({
+            id: 'card-connect-funding-source',
+            contents: createElement(AccountMenuContent, {
+                headerContent: createElement(ConnectAccountHeader),
+                hideDefaultHeader: true,
+                accountFilter,
+                // Fresh on first connect (null → nothing highlighted);
+                // the connected source is highlighted on "Change".
+                selectedAddress: connectedAddress,
+            }),
+            options: {
+                size: 'full',
+                enablePanDownToClose: false,
+                enableContentPanningGesture: false,
+                autoCreateContainer: false,
+            },
+        })
+        if (!result) return null
+        switch (result.kind) {
+            case 'selected': {
+                return result.account
+            }
+            case 'add-account': {
+                handleCreateAccount()
+                return null
+            }
+            default: {
+                return null
             }
         }
-        return openPicker()
     }, [request, handleCreateAccount, connectedAddress, accountFilter])
 
     return { pickFundingSource }

@@ -14,10 +14,12 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import type { LegacyWalletConnectV1Session } from '@perawallet/wallet-extension-platform'
 import {
     ALL_PERMISSIONS,
-    commitSessionKey,
+    buildWalletConnectV1Connection,
+    createKeystoreSessionKeyStore,
     isWalletConnectV1Connection,
     toPeer,
     type WalletConnectV1Connection,
+    type WalletConnectV1SessionKeyStore,
 } from '@perawallet/wallet-core-walletconnect'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -57,8 +59,8 @@ const parseSessionMeta = (json: string): ParsedSessionMeta => {
 }
 
 /**
- * `key` is the raw session key, held only long enough to hand to
- * `commitSessionKey`; nothing past that carries secret material without a `secretRef`.
+ * `key` is the raw session key, held only long enough to hand to the
+ * session-key store; nothing past that carries secret material without a `secretRef`.
  */
 type ReconstructedLegacySession = {
     clientId: string
@@ -148,6 +150,7 @@ const toConnection = (
  */
 export const migrateWalletConnect = async (
     sessions: LegacyWalletConnectV1Session[],
+    options: { sessionKeys?: WalletConnectV1SessionKeyStore } = {},
 ): Promise<WalletConnectMigrationResult> => {
     const result: WalletConnectMigrationResult = { imported: 0, skipped: 0 }
     if (sessions.length === 0) {
@@ -158,6 +161,7 @@ export const migrateWalletConnect = async (
         useAccountsStore.getState().accounts.map(account => account.address),
     )
 
+    const sessionKeys = options.sessionKeys ?? createKeystoreSessionKeyStore()
     const store = getProvider().connections.store
     const existing = await store.list()
     const seenIds = new Set(existing.map(connection => connection.id))
@@ -192,34 +196,30 @@ export const migrateWalletConnect = async (
         }
 
         try {
-            const secretRef = await commitSessionKey(
+            const secretRef = await sessionKeys.commit(
                 reconstructed.clientId,
                 reconstructed.key,
             )
 
-            const connection: WalletConnectV1Connection = {
-                id: reconstructed.clientId,
-                kind: 'walletconnect-v1',
-                name: reconstructed.peer.name,
+            const connection = buildWalletConnectV1Connection({
+                clientId: reconstructed.clientId,
                 peer: reconstructed.peer,
                 accounts: reconstructed.accounts,
                 secretRef,
-                status: 'active',
                 createdAt: reconstructed.createdAt,
+                // The native export records no last-activity time.
                 lastActiveAt: reconstructed.createdAt,
                 metadata: {
                     bridge: reconstructed.bridge,
                     handshakeTopic: reconstructed.topic,
                     peerId: reconstructed.peerId,
                     chainId: reconstructed.chainId,
-                    ...(reconstructed.handshakeId !== undefined
-                        ? { handshakeId: reconstructed.handshakeId }
-                        : {}),
+                    handshakeId: reconstructed.handshakeId,
                     // The native export has no per-session method list and the
                     // legacy apps gated none; this is the v1 handler's fallback too.
                     permissions: [...ALL_PERMISSIONS],
                 },
-            }
+            })
             await store.upsert(connection)
 
             seenIds.add(reconstructed.clientId)

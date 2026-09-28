@@ -11,7 +11,7 @@
  */
 
 // The mobile app's analytics event catalog and type-safe tracking. Built on top
-// of the app-agnostic base logger in `@perawallet/wallet-core-analytics`. Keeping
+// of the app-agnostic base logger in `@perawallet/wallet-core-device`. Keeping
 // the catalog here (rather than in the shared package) lets each client app
 // declare exactly which events it supports.
 

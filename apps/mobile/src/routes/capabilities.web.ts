@@ -11,6 +11,7 @@
  */
 
 import type { RouteCapabilities } from './capabilities-types'
+import { isDeveloperGalleryIncluded } from './developer-gallery'
 
 export type { RouteCapabilities } from './capabilities-types'
 
@@ -25,11 +26,13 @@ export const routeCapabilities: RouteCapabilities = {
     peraCard: true, // Baanx card, additionally gated by useIsPeraCardEnabled() remote flag
     giftCards: true,
     inAppWebView: false, // stays false — help/terms open browser tabs
+    fullScreenMediaViewer: false, // a sheet can't fill a 360x600 popup; media opens in a tab
     // Off in the Menu and home header, replaced by deepLinkPaste. The scanner
     // sheet itself stays reachable from in-field scan buttons and the ScanQR
     // expanded tab; this flag only gates those two icon bars.
     qrScanner: false,
     deepLinkPaste: true, // paste a WC URI / perawallet:// link instead
+    ledgerUsb: true, // WebHID
     pushNotificationSettings: true, // FCM web push via the background SW
     walletConnectSettings: true, // WC v1 pairing + sessions on web
     passkeysAutofillSettings: true, // WebAuthn-interception credential provider + settings toggle
@@ -39,11 +42,12 @@ export const routeCapabilities: RouteCapabilities = {
     // awkward with a mouse), so the slide/tap choice would be a no-op here.
     confirmationModeSetting: false,
     developerSettings: true, // internal builds need network/debug toggles
+    developerGallery: isDeveloperGalleryIncluded,
     vaultSecuritySettings: true,
-    // Off: the keystore's Falcon shim is backed by the WASM `falcon-1024` build,
-    // whose Emscripten bundle fails to parse under Metro's web bundler, so
-    // quantum accounts have no signer path in the extension.
-    quantum: false,
+    // Off: the vault password already locks the extension, and web has no PIN
+    // lock screen, so shake to lock and duress PIN would do nothing.
+    pin: false,
+    quantum: true, // WASM falcon-1024 via its synchronous CJS build (metro.config.js)
     rekeyFlows: true,
     // Also gates the SHARED_ACCOUNT_IMPORT deeplink: without the Multisig stack
     // registered it navigates nowhere and leaves the QR scanner locked awaiting a callback.

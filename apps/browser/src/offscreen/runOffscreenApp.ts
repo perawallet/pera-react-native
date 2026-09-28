@@ -13,15 +13,14 @@
 // The offscreen document is the DB host: it owns the sqlite worker, runs
 // migrations before serving any proxy exec, and keeps slow warm polling alive
 // between popup opens.
+import { startDatabaseHost } from '@perawallet/wallet-extension-platform-chrome'
 import {
     broadcastConnectionsEvent,
     createChromeDappTransport,
-    createWorkerExecutor,
     onConnectionsControlMessage,
     onLocalStorageKeyChanged,
     sendConnectionApprovalRequest,
-    startDatabaseHost,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { getPlatformServices } from '@perawallet/wallet-extension-platform-driver'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
@@ -30,14 +29,20 @@ import {
 } from '@perawallet/wallet-core-database'
 import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
 import {
+    createSyncStorePorts,
     getSyncService,
     initializeSyncService,
+    usePollingStore,
 } from '@perawallet/wallet-core-background'
 import { canSignWith, useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
-    useCustomNetworkStore,
+    getCustomNetworkConfig,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    ALGORAND_CHAIN_ID,
+    registerChain as registerAlgorandChain,
+} from '@perawallet/wallet-core-chain-algorand'
 import {
     bootConnections,
     createConnectionRegistry,
@@ -46,29 +51,25 @@ import {
     createDappConnectionHandler,
     importLegacyDappPermissions,
 } from '@perawallet/wallet-core-dapp'
-import { usePollingStore } from '@perawallet/wallet-core-polling'
 import {
     createStorageSessionKeyStore,
     createWalletConnectV1Handler,
     importLegacyConnections,
-    reconnectAllConnectors,
 } from '@perawallet/wallet-core-walletconnect'
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
+import { createWorkerExecutor } from './worker-executor'
 
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000
 
 // zustand persist hydrates once at import and this context is long-lived, so
 // writes from other contexts must be re-read. Keys are `kv:` + STORE_NAME.
-// custom-network-store must stay paired with network-store: rehydration demotes
-// a persisted `custom` to config.defaultNetwork when the custom slot has no config.
 const REHYDRATE_BY_KEY: Record<
     string,
     { persist: { rehydrate: () => unknown } }
 > = {
     'kv:accounts-store': useAccountsStore,
-    'kv:custom-network-store': useCustomNetworkStore,
     'kv:network-store': useNetworkStore,
     'kv:polling-store': usePollingStore,
 }
@@ -100,7 +101,7 @@ export const runOffscreenApp = async (): Promise<void> => {
 
     // chrome.storage here is the SW-proxied shim (offscreen docs have none), and
     // apps/mobile compiles without chrome ambient types, so the raw onChanged
-    // listener lives in platform-chrome.
+    // listener lives in browser-runtime.
     onLocalStorageKeyChanged(
         Object.keys(REHYDRATE_BY_KEY),
         key => void REHYDRATE_BY_KEY[key]?.persist.rehydrate(),
@@ -108,6 +109,7 @@ export const runOffscreenApp = async (): Promise<void> => {
 
     initializeSyncService({
         queryClient,
+        stores: createSyncStorePorts(),
         pollIntervalMs: OFFSCREEN_POLL_INTERVAL_MS,
     })
     getSyncService().start()
@@ -121,6 +123,9 @@ export const runOffscreenApp = async (): Promise<void> => {
     const storage = provider.keyValueStorage
     const sessionKeys = createStorageSessionKeyStore(storage)
     const registry = createConnectionRegistry({ store })
+    // Before the dApp handler starts: it answers any chain without an adapter
+    // with an error, so a request arriving first would be refused.
+    registerAlgorandChain()
     registry.register(
         createWalletConnectV1Handler({
             getNetwork: () => useNetworkStore.getState().network,
@@ -130,9 +135,10 @@ export const runOffscreenApp = async (): Promise<void> => {
     registry.register(
         createDappConnectionHandler({
             transport: createChromeDappTransport(),
+            chainId: ALGORAND_CHAIN_ID,
             getNetwork: () => useNetworkStore.getState().network,
             getCustomNetworkGenesisHash: () =>
-                useCustomNetworkStore.getState().customNetwork?.genesisHash,
+                getCustomNetworkConfig()?.genesisHash,
             getAccounts: () => {
                 const { accounts } = useAccountsStore.getState()
                 return accounts.flatMap(account =>
@@ -157,7 +163,6 @@ export const runOffscreenApp = async (): Promise<void> => {
                 .accounts.map(account => account.address),
         requestApproval: sendConnectionApprovalRequest,
         broadcastEvent: broadcastConnectionsEvent,
-        reconnectAll: reconnectAllConnectors,
     })
     // Bound after the registry is live, never before: the registry refuses a
     // `pair` it cannot route, and an early command answered with that error

@@ -12,8 +12,9 @@
 
 import type { Decimal } from 'decimal.js'
 
-import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-fee-delegation'
 import {
+    AppError,
+    ErrorCategory,
     isPeraNetworkError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -21,6 +22,20 @@ import {
 import { parseRampAmount } from '../quotes'
 
 const GENERIC_FALLBACK = 'Something went wrong. Please try again.'
+
+/**
+ * Preparing the destination account needs a sponsored transaction, and the
+ * sponsor requires a device attestation token that isn't available.
+ */
+export class RampAttestationRequiredError extends AppError {
+    constructor() {
+        super('Device verification is required to prepare the account.', {
+            category: ErrorCategory.UNKNOWN,
+            recoverable: false,
+        })
+        this.name = 'RampAttestationRequiredError'
+    }
+}
 
 const SOURCE_AMOUNT_TOO_LOW_FALLBACK = "Amount is below the provider's minimum."
 
@@ -176,7 +191,7 @@ export function resolveRampQuoteLimits(
     return min === null && max === null ? null : { min, max }
 }
 
-// Bun-backend error body (e.g. the fee-delegation route): `{ error, code }`.
+// Bun-backend error body (e.g. the sponsored-transaction route): `{ error, code }`.
 // Resolved from the error itself or the parsed body the ky client attaches.
 type BunApiError = { error: string; code?: string }
 
@@ -207,9 +222,7 @@ const ATTESTATION_REQUIRED_MESSAGE =
 export function toOnrampUserMessage(error: unknown): string {
     const raw = unwrapNetworkError(error)
 
-    // The fee-delegation flow throws before the request when no device
-    // attestation token is available; surface it with onramp wording.
-    if (raw instanceof FeeDelegationAttestationRequiredError) {
+    if (raw instanceof RampAttestationRequiredError) {
         return ATTESTATION_REQUIRED_MESSAGE
     }
 

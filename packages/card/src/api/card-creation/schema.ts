@@ -18,3 +18,12 @@ export const createCardResponseSchema = z.object({
     cardAddress: z.string(),
     txId: z.string(),
 })
+
+// GET /api/v3/baanx/card-address?address=&baanx_user_id= (Pera backend) → whether
+// this Baanx user may connect that funding address. `cardAddress` is present only
+// when the link is the caller's own.
+export const fundingAddressLinkResponseSchema = z.object({
+    address: z.string(),
+    linkState: z.enum(['unlinked', 'linked_to_caller', 'linked_to_other']),
+    cardAddress: z.string().nullable(),
+})

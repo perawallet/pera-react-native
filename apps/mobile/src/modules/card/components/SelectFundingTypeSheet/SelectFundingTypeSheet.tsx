@@ -12,11 +12,7 @@
 
 import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import {
-    AUTO_FUNDING_PER_TX_LIMIT_USD,
-    FundingType,
-} from '@perawallet/wallet-core-card'
-import { formatCurrency } from '@perawallet/wallet-core-shared'
+import { FundingType } from '@perawallet/wallet-core-card'
 import { PWButton, PWText, PWView } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -41,8 +37,6 @@ export const SelectFundingTypeSheet = () => {
         onClose,
     } = useSelectFundingTypeSheet()
 
-    const limit = formatCurrency(AUTO_FUNDING_PER_TX_LIMIT_USD, 0, 'USD')
-
     const autoHint = resolveAutoFundingHint(t, {
         isAutoFundingEnabled,
         isAutoUnavailable: isAutoDisabled,
@@ -65,9 +59,7 @@ export const SelectFundingTypeSheet = () => {
                 weight={400}
                 style={styles.description}
             >
-                {t('peraCard.account.funding_type_sheet_description', {
-                    limit,
-                })}
+                {t('peraCard.account.funding_type_sheet_description')}
             </PWText>
             <PWView style={styles.optionsList}>
                 <FundingTypeOption

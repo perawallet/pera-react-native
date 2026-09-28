@@ -21,7 +21,11 @@ import {
     rampTokenAssetId,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { ALGO_ASSET_ID, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_ID,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 // RampToken carries no tier, so the known-safe listings are mapped here rather
 // than fabricating one on the domain model. Keyed on the resolved asset id, so
@@ -38,8 +42,9 @@ const RAMP_TOKEN_VERIFICATION_TIER: Record<string, PeraAssetVerificationTier> =
 export const buildAccountBalanceFromRampToken = (
     token: RampToken,
     balance: Nullable<Decimal>,
+    network: Network,
 ): AssetWithAccountBalance => {
-    const assetId = rampTokenAssetId(token)
+    const assetId = rampTokenAssetId(token, network)
 
     const asset: PeraAsset = {
         assetId,

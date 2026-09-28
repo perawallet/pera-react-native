@@ -10,6 +10,4 @@
  limitations under the License
  */
 
-export * from './store'
-export * from './hardwareSigningStore'
-export * from './walletConnectHandoffsStore'
+export { useSigningStore, wasRestoredFromStorage } from './store'

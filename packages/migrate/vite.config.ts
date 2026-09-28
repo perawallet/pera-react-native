@@ -12,46 +12,12 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: resolve(__dirname, 'src/index.ts'),
-            formats: ['es'],
-            fileName: 'index',
-        },
-        rollupOptions: {
-            external: [
-                'react',
-                'react/jsx-runtime',
-                'react-native',
-                'react-native-quick-crypto',
-                'zustand',
-                'zustand/middleware',
-                '@noble/hashes/sha2.js',
-                '@algorandfoundation/dp256',
-                '@algorandfoundation/react-native-keystore',
-                '@scure/bip39',
-                '@scure/bip39/wordlists/english.js',
-                'algosdk',
-                '@perawallet/wallet-core-accounts',
-                '@perawallet/wallet-core-assets',
-                '@perawallet/wallet-core-blockchain',
-                '@perawallet/wallet-core-config',
-                '@perawallet/wallet-core-contacts',
-                '@perawallet/wallet-core-currencies',
-                '@perawallet/wallet-core-device',
-                '@perawallet/wallet-core-kms',
-                '@perawallet/wallet-core-messages',
-                '@perawallet/wallet-core-remote-config',
-                '@perawallet/wallet-core-security',
-                '@perawallet/wallet-core-settings',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-core-swaps',
-                '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-extension-provider',
-            ],
-        },
-    },
-})
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: resolve(__dirname, 'src/index.ts'),
+        fileName: 'index',
+    }),
+)

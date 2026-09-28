@@ -36,7 +36,10 @@ export const useStyles = makeStyles(theme => {
         },
         secondaryValueBar: {
             flexDirection: 'row',
-            alignItems: 'center',
+            // Top, not centre: the scrubbed date is two lines tall and would
+            // centre the single-line converted value against it, pushing it
+            // away from the balance it belongs to.
+            alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: theme.spacing.md,
             minWidth: 0,
@@ -45,10 +48,15 @@ export const useStyles = makeStyles(theme => {
         valueTitle: {
             color: theme.colors.textGray,
         },
+        dateTimeColumn: {
+            alignItems: 'flex-end',
+            flexShrink: 0,
+            maxWidth: '45%',
+            minWidth: 0,
+        },
         dateDisplay: {
             color: theme.colors.textGray,
             textAlign: 'right',
-            flexGrow: 1,
         },
         primaryCurrency: {
             color: theme.colors.textMain,

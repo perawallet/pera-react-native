@@ -10,29 +10,82 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useMemo } from 'react'
+import type { PanelButtonProps } from '@components/PanelButton'
+import type { OptionListOption } from '@components/OptionList'
 import { trackEvent, CloudBackupEvent } from '@analytics'
+import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import type { CredentialsFileSource } from '../../storage'
+import { useCredentialsFileReadSources } from '../../hooks/useCredentialsFileSources'
+import { CREDENTIALS_FILE_SOURCE_ICONS } from '../credentialsFileSourceIcons'
 
-export type RestoreBackupSheetResult = 'scan' | 'manual'
+export type RestoreBackupSheetResult = 'scan' | CredentialsFileSource | 'manual'
 
 type UseRestoreBackupSheetResult = {
-    handleScan: () => void
-    handleManual: () => void
+    options: OptionListOption[]
+    description: string
+}
+
+const EVENTS: Partial<Record<RestoreBackupSheetResult, CloudBackupEvent>> = {
+    scan: CloudBackupEvent.RestoreScanQr,
+    manual: CloudBackupEvent.RestoreEnterManually,
+}
+
+const ROW_ICONS: Record<
+    RestoreBackupSheetResult,
+    Pick<PanelButtonProps, 'leftIcon' | 'leftImage'>
+> = {
+    scan: { leftIcon: 'qr' },
+    ...CREDENTIALS_FILE_SOURCE_ICONS,
+    manual: { leftIcon: 'key' },
+}
+
+const TITLE_KEYS: Record<RestoreBackupSheetResult, string> = {
+    scan: 'cloud_backup.restore.sheet_scan',
+    device: 'cloud_backup.restore.sheet_device',
+    icloud: 'cloud_backup.restore.sheet_icloud',
+    googleDrive: 'cloud_backup.restore.sheet_google_drive',
+    manual: 'cloud_backup.restore.sheet_manual',
+}
+
+const TEST_IDS: Record<RestoreBackupSheetResult, string> = {
+    scan: 'cloud_backup_restore_sheet_scan',
+    device: 'cloud_backup_restore_sheet_device',
+    icloud: 'cloud_backup_restore_sheet_icloud',
+    googleDrive: 'cloud_backup_restore_sheet_google_drive',
+    manual: 'cloud_backup_restore_sheet_manual',
 }
 
 export const useRestoreBackupSheet = (): UseRestoreBackupSheetResult => {
+    const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<RestoreBackupSheetResult>()
+    const fileSources = useCredentialsFileReadSources()
 
-    const handleScan = useCallback(() => {
-        trackEvent(CloudBackupEvent.RestoreScanQr)
-        resolve('scan')
-    }, [resolve])
+    const options = useMemo(
+        () =>
+            (
+                ['scan', ...fileSources, 'manual'] as RestoreBackupSheetResult[]
+            ).map(option => ({
+                key: option,
+                ...ROW_ICONS[option],
+                title: t(TITLE_KEYS[option]),
+                testID: TEST_IDS[option],
+                onPress: () => {
+                    const event = EVENTS[option]
+                    if (event) trackEvent(event)
+                    resolve(option)
+                },
+            })),
+        [fileSources, t, resolve],
+    )
 
-    const handleManual = useCallback(() => {
-        trackEvent(CloudBackupEvent.RestoreEnterManually)
-        resolve('manual')
-    }, [resolve])
-
-    return { handleScan, handleManual }
+    return {
+        options,
+        description: t(
+            fileSources.length > 0
+                ? 'cloud_backup.restore.sheet_description_with_import'
+                : 'cloud_backup.restore.sheet_description',
+        ),
+    }
 }

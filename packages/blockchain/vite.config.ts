@@ -12,34 +12,16 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                // Own entry so the extension's payload gate can enforce the
-                // ARC-0001 caps without pulling zod and the schema graph.
-                'arc0001/limits': resolve(__dirname, 'src/arc0001/limits.ts'),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            // Own entry so the extension's payload gate can enforce the
+            // ARC-0001 caps without pulling zod and the schema graph.
+            'arc0001/limits': resolve(__dirname, 'src/arc0001/limits.ts'),
         },
-        rollupOptions: {
-            external: [
-                'algosdk',
-                'react',
-                'react/jsx-runtime',
-                'zustand',
-                '@tanstack/react-query',
-                '@perawallet/wallet-core-config',
-                '@perawallet/wallet-core-database',
-                '@perawallet/wallet-core-shared',
-                '@algorandfoundation/algokit-utils',
-                'zod',
-                '@perawallet/wallet-extension-provider',
-                'drizzle-orm',
-            ],
-        },
-    },
-})
+    }),
+)

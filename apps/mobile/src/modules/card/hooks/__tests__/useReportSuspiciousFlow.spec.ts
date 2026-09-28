@@ -44,9 +44,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { BeforeWeContinueSheet } from '../../components/BeforeWeContinueSheet'
 import { ReportSuspiciousActivitySheet } from '../../components/ReportSuspiciousActivitySheet'

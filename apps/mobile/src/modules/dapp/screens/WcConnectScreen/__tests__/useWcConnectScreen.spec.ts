@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Linking } from 'react-native'
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -26,7 +27,7 @@ vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
 }))
 
-vi.mock('../../../hooks/useApprovalArming.web', () => ({
+vi.mock('@hooks/useApprovalArming.web', () => ({
     useApprovalArming: mocks.useApprovalArming,
 }))
 
@@ -297,5 +298,43 @@ describe('useWcConnectScreen', () => {
 
         expect(result.current.peer).toBe(null)
         expect(result.current.permissions).toEqual([])
+    })
+
+    describe('peer url link', () => {
+        beforeEach(() => {
+            vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        })
+
+        it.each([
+            'javascript:alert(document.cookie)',
+            'data:text/html,<script>alert(1)</script>',
+            'file:///etc/passwd',
+            'http://dapp.example',
+            '//evil.example',
+        ])('does not open %j', url => {
+            const { result } = render(
+                proposalApproval({ peer: { ...PEER, url } }),
+            )
+
+            act(() => result.current.handlePressUrl())
+
+            expect(Linking.openURL).not.toHaveBeenCalled()
+            expect(result.current.canOpenPeerUrl).toBe(false)
+        })
+
+        it('opens an https peer url in a new tab', () => {
+            const { result } = render()
+
+            act(() => result.current.handlePressUrl())
+
+            expect(Linking.openURL).toHaveBeenCalledWith('https://dapp.example')
+        })
+
+        it('labels the peer url without its scheme and marks it openable', () => {
+            const { result } = render()
+
+            expect(result.current.peerUrlLabel).toBe('dapp.example')
+            expect(result.current.canOpenPeerUrl).toBe(true)
+        })
     })
 })

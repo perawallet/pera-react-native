@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// Goes through platform-chrome's approval-client accessors: apps/mobile's
+// Goes through browser-runtime's approval-client accessors: apps/mobile's
 // oxlint forbids the ambient `chrome` global.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -19,7 +19,7 @@ import {
     rejectApproval,
     resolveApproval,
     type PendingApproval,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 
 type UseDappRequestResult = {
     requestId: string | null

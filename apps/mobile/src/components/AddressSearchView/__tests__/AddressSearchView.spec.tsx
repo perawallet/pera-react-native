@@ -74,7 +74,7 @@ vi.mock('@components/AddressDisplay', () => ({
     AddressDisplay: ({ address }: { address: string }) => address,
 }))
 
-vi.mock('@modules/accounts/components/AccountDisplay', () => ({
+vi.mock('@components/AccountDisplay', () => ({
     __esModule: true,
     AccountDisplay: ({ account }: { account: { name: string } }) =>
         account?.name || null,

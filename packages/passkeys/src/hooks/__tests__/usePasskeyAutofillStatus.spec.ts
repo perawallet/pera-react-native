@@ -24,7 +24,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: mocks.getProvider,
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     logger: { warn: mocks.warn, error: vi.fn() },
 }))
 

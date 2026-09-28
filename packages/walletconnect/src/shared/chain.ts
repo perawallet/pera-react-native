@@ -11,7 +11,7 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
-import { AlgorandChainId } from '../models'
+import { AlgorandWalletConnectChainId } from '../models'
 import { getExpectedChainId } from './expectedChainId'
 
 /**
@@ -23,6 +23,6 @@ export const isChainIdAcceptable = (
     network: Network,
 ): boolean => {
     if (chainId === undefined) return false
-    if (chainId === AlgorandChainId.all) return true
+    if (chainId === AlgorandWalletConnectChainId.all) return true
     return chainId === getExpectedChainId(network)
 }

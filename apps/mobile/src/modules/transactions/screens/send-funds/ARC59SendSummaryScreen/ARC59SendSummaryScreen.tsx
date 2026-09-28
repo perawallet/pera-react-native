@@ -19,7 +19,7 @@ import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { AssetTitle } from '@modules/assets/components'
+import { AssetTitle } from '@modules/assets'
 import { LoadingView } from '@components/LoadingView'
 
 export const ARC59SendSummaryScreen = () => {

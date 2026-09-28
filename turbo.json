@@ -25,7 +25,10 @@
     "DEBUG_ENABLED",
     "PROFILING_ENABLED",
     "POLLING_ENABLED",
-    "DISABLE_SCREEN_CAPTURE_PREVENTION"
+    "DISABLE_SCREEN_CAPTURE_PREVENTION",
+    "WEB_INTEGRITY_MINT_ENABLED",
+    "WEB_INTEGRITY_ENROL_ENABLED",
+    "WEB_INTEGRITY_BEARER_ENABLED"
   ],
   "tasks": {
     "generate:config": {
@@ -60,7 +63,13 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {},
+    "lint": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/.oxlintrc.json",
+        "$TURBO_ROOT$/packages/devtools/oxlint/**"
+      ]
+    },
     "test": {
       "dependsOn": [
         "^build"
@@ -71,8 +80,8 @@
       "inputs": [
         "src/**/*.ts",
         "src/**/*.tsx",
-        "src/**/*.test.ts",
-        "src/**/*.test.tsx",
+        "src/**/*.spec.ts",
+        "src/**/*.spec.tsx",
         "vitest.config.ts",
         "vitest.setup.ts"
       ]
@@ -87,8 +96,8 @@
       "inputs": [
         "src/**/*.ts",
         "src/**/*.tsx",
-        "src/**/*.test.ts",
-        "src/**/*.test.tsx",
+        "src/**/*.spec.ts",
+        "src/**/*.spec.tsx",
         "vitest.config.ts",
         "vitest.setup.ts"
       ]

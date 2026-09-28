@@ -20,7 +20,7 @@ import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
 } from '@perawallet/wallet-core-transactions'
-import { shareCsvFile } from '@utils/shareCsvFile'
+import { shareFile } from '@utils/shareFile'
 import { useToast } from '@hooks/useToast'
 import { TransactionFilter } from '../../TransactionsFilterContent/types'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -43,7 +43,12 @@ vi.mock('@modules/network', () => ({
 }))
 
 // Mock dependencies
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    // Real enums (models/accounts has no runtime imports): components reached
+    // through module barrels read them at import time.
+    ...(await vi.importActual<object>(
+        '@packages/accounts/src/models/accounts',
+    )),
     useSelectedAccount: vi.fn(),
 }))
 
@@ -60,6 +65,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
+    CSV_MIME_TYPE: 'text/csv',
     useTransactionHistoryQuery: vi.fn(),
     useCsvExportMutation: vi.fn(),
 }))
@@ -80,9 +86,7 @@ vi.mock('@hooks/useAlgodErrorMessage', () => ({
     useAlgodErrorMessage: () => ({ getMessage: vi.fn() }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', () => ({
@@ -98,8 +102,8 @@ vi.mock('react-native', () => ({
     },
 }))
 
-vi.mock('@utils/shareCsvFile', () => ({
-    shareCsvFile: vi.fn(),
+vi.mock('@utils/shareFile', () => ({
+    shareFile: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -527,7 +531,9 @@ describe('useAccountHistory', () => {
 
             await successCallback(mockResult)
 
-            expect(shareCsvFile).toHaveBeenCalledWith('test.csv', 'data')
+            expect(shareFile).toHaveBeenCalledWith('test.csv', 'data', {
+                mimeType: 'text/csv',
+            })
         })
 
         it('delegates to useErrorToast rather than rendering the raw error when share fails', async () => {
@@ -546,7 +552,7 @@ describe('useAccountHistory', () => {
             )
 
             const shareError = new Error('Share cancelled')
-            vi.mocked(shareCsvFile).mockRejectedValueOnce(shareError)
+            vi.mocked(shareFile).mockRejectedValueOnce(shareError)
 
             renderHook(() => useAccountHistory())
 
@@ -641,9 +647,9 @@ describe('useAccountHistory', () => {
                 expect(mockShowError).toHaveBeenCalledTimes(1)
                 const [error, title] = mockShowError.mock.calls[0]
                 expect(isPeraServiceUnavailableError(error)).toBe(true)
-                expect((error as PeraServiceUnavailableError).network).toBe(
-                    network,
-                )
+                expect(
+                    (error as PeraServiceUnavailableError).scope,
+                ).toStrictEqual({ chainId: 'algorand', networkId: network })
                 expect(title).toBe('common.network_unavailable.title')
             },
         )

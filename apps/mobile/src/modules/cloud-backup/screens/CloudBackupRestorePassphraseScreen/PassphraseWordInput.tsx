@@ -86,8 +86,7 @@ export const PassphraseWordInput = ({
                     returnKeyType={isLast ? 'done' : 'next'}
                     blurOnSubmit={isLast}
                     autoFocus={autoFocus}
-                    autoCapitalize='none'
-                    autoCorrect={false}
+                    isSensitive
                 />
             </PWView>
         </PWView>

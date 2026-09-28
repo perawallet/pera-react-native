@@ -13,10 +13,11 @@
 import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
 import { batchUpsertItems, deleteItem, fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
-import type { Manifest, SyncState } from '../models'
+import { isLegacyItemKey, type Manifest, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { buildLocalContactItems } from './buildLocalContactItems'
 import { buildLocalItems } from './buildLocalItems'
+import { buildLocalPasskeyItems } from './buildLocalPasskeyItems'
 import { pushDirty } from './pushDirty'
 import { fetchDeltaOrRebuild } from './rebuildFromManifest'
 import { reconcile } from './reconcile'
@@ -61,18 +62,49 @@ export const syncBackup = async (
             skipped: accounts.skipped,
         })
     }
+    // A KMS/biometric failure here must not block accounts and contacts from
+    // pushing; reconcile treats a missing item as "not yet re-derived", never
+    // as a delete, so skipping passkeys for this cycle is safe.
+    const passkeys = await deps.listPasskeys().catch(error => {
+        logger.warn('syncBackup: listPasskeys failed, skipping passkeys', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return []
+    })
     const local: LocalSnapshot = {
         items: [
             ...accounts.items,
-            ...buildLocalContactItems(deps.listContacts(), now),
+            ...buildLocalContactItems(
+                deps.listContacts(),
+                now,
+                deps.hashAddress,
+            ),
+            ...buildLocalPasskeyItems(passkeys, now, deps.hashAddress),
         ],
-        // Account-only: a contact cannot fail to serialize.
+        // Account-only: a contact cannot fail to serialize, and a credential
+        // that could not be re-derived never reaches this list.
         skipped: accounts.skipped,
     }
     let next = reconcile(state, local, now)
 
     // 2. Manifest short-circuit.
     const manifest = await fetchManifestOrNull(deps)
+
+    /* A legacy backup's payloads still decrypt, so syncing would import every
+     * item and push the same accounts back under hashed keys, doubling it. */
+    const legacyKeyCount = Object.keys(manifest?.items ?? {}).filter(
+        isLegacyItemKey,
+    ).length
+    if (legacyKeyCount > 0) {
+        logger.warn(
+            'syncBackup: backup uses legacy address keys, refusing to sync',
+            { legacyKeyCount },
+        )
+        // The reconciled state is dropped, not returned: committing it would
+        // track every local item as dirty work this backup can never accept.
+        return { ...state, lastSyncResult: 'FAILED' }
+    }
+
     if (
         manifest !== null &&
         manifest.backupGlobalHash === next.lastKnownBackupHash &&
@@ -97,6 +129,7 @@ export const syncBackup = async (
             encryptionKey: deps.encryptionKey,
             importAccounts: deps.importAccounts,
             importContacts: deps.importContacts,
+            importPasskeys: deps.importPasskeys,
             readItems,
             decrypt: decryptItemPayload,
         },

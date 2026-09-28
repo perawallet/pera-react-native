@@ -28,8 +28,8 @@ export default defineConfig({
             '**/node_modules/**',
             '**/dist/**',
             // These tests reference hooks from a different package
-            '**/usePreferences.test.ts',
-            '**/useSettings.test.ts',
+            '**/usePreferences.spec.ts',
+            '**/useSettings.spec.ts',
         ],
     },
     resolve: {
@@ -46,6 +46,11 @@ export default defineConfig({
             '@perawallet/wallet-extension-platform-driver': path.resolve(
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
+            ),
+            // Before the bare specifier: an alias key also prefix-matches its subpaths.
+            '@perawallet/wallet-extension-platform/test-utils': path.resolve(
+                __dirname,
+                '../../extensions/platform/src/test-utils/index.ts',
             ),
             '@perawallet/wallet-extension-platform': path.resolve(
                 __dirname,

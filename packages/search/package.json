@@ -21,14 +21,9 @@
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
-    "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-contacts": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-extension-provider": "workspace:*",
-    "decimal.js": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "@tanstack/react-query": "catalog:"
+    "react": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",
@@ -36,6 +31,10 @@
     "vitest": "catalog:",
     "@types/react": "catalog:",
     "@testing-library/react": "catalog:",
-    "@perawallet/wallet-core-devtools": "workspace:*"
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@perawallet/wallet-extension-provider": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "decimal.js": "catalog:",
+    "react-dom": "catalog:"
   }
 }

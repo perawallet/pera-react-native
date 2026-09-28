@@ -22,6 +22,7 @@ import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
+    pickBestByAmountOut,
     useCalculateSwapAmountMutation,
     usePrefetchProviders,
     useSwaps,
@@ -36,7 +37,6 @@ import {
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { pickBestByAmountOut } from '../../hooks/swapQuoteHelpers'
 import { useSwapQuotes } from '../../hooks/useSwapQuotes'
 import { SwapAssetSelectionContent } from '../SwapAssetSelectionContent'
 import { SwapConfigurationContent } from '../SwapConfigurationContent'

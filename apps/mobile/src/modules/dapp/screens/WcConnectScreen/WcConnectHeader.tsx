@@ -10,20 +10,19 @@
  limitations under the License
  */
 
-// Not a reuse of ConnectionApprovalViewHeader: that one navigates the dApp url
-// through a webview nothing renders here. Fidelity comes from importing its
-// stylesheet (see __tests__/visualFidelity.spec.ts).
+// Not a reuse of ConnectionApprovalViewHeader: that one carries network badges
+// and no requester-origin row. Fidelity comes from importing its stylesheet
+// (see __tests__/visualFidelity.spec.ts).
 import React from 'react'
-import { Linking } from 'react-native'
 import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
 import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
-import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
-import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
-import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
+import { ProjectVerificationIcon } from '@modules/projects'
+import { PermissionItem } from '@modules/walletconnect'
+import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useRequesterStyles } from './styles'
 
 export type WcConnectHeaderProps = {
@@ -33,6 +32,9 @@ export type WcConnectHeaderProps = {
     requesterOrigin?: string
     /** When true the badge alone cannot vouch for `peer.url`, so the origin is named. */
     isRequesterOriginDistinct?: boolean
+    peerUrlLabel?: string
+    canOpenPeerUrl: boolean
+    onPressUrl: () => void
 }
 
 export const WcConnectHeader = ({
@@ -40,6 +42,9 @@ export const WcConnectHeader = ({
     permissions,
     requesterOrigin,
     isRequesterOriginDistinct = false,
+    peerUrlLabel,
+    canOpenPeerUrl,
+    onPressUrl,
 }: WcConnectHeaderProps): React.JSX.Element => {
     const styles = useStyles()
     const requesterStyles = useRequesterStyles()
@@ -59,12 +64,6 @@ export const WcConnectHeader = ({
                 icon.endsWith('.jpg') ||
                 icon.endsWith('.jpeg'),
         ) ?? peer.icons?.at(0)
-
-    const handlePressUrl = (): void => {
-        if (!peer.url) return
-        // A new browser tab: nothing renders mobile's webview here.
-        void Linking.openURL(peer.url)
-    }
 
     return (
         <PWView style={styles.headerContainer}>
@@ -102,13 +101,22 @@ export const WcConnectHeader = ({
                         />
                     )}
                 </PWView>
-                {!!peer.url && (
-                    <PWButton
-                        variant='link'
-                        onPress={handlePressUrl}
-                        title={peer.url}
-                    />
-                )}
+                {!!peerUrlLabel &&
+                    (canOpenPeerUrl ? (
+                        <PWButton
+                            variant='link'
+                            onPress={onPressUrl}
+                            title={peerUrlLabel}
+                        />
+                    ) : (
+                        <PWText
+                            variant='caption'
+                            style={styles.peerUrlText}
+                            testID='wc-connect-peer-url-text'
+                        >
+                            {peerUrlLabel}
+                        </PWText>
+                    ))}
                 {!!requesterOrigin && (
                     <PWView style={requesterStyles.verifiedRow}>
                         {/* A page CAN pair while asserting someone else's url; the badge

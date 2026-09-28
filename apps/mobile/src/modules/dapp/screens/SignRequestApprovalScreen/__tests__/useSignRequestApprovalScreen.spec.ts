@@ -55,16 +55,14 @@ vi.mock('@perawallet/wallet-core-connections', () => ({
     isConnectionAlive: mocks.isConnectionAlive,
 }))
 
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     resolveConnectionRequest: mocks.resolveConnectionRequest,
     rejectApproval: mocks.rejectApproval,
     decodeWalletOperation: mocks.decodeWalletOperation,
     encodeWalletOperationResult: mocks.encodeWalletOperationResult,
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useSignRequestApprovalScreen } from '../useSignRequestApprovalScreen.web'
 

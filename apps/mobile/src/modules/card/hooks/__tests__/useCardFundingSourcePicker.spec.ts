@@ -50,10 +50,6 @@ vi.mock('@modules/accounts/components/AccountMenuContent', () => ({
     AccountMenuContent: () => null,
 }))
 
-vi.mock('@modules/accounts/components/AccountSortContent', () => ({
-    AccountSortContent: () => null,
-}))
-
 vi.mock('../../components/ConnectAccountHeader', () => ({
     ConnectAccountHeader: () => null,
 }))
@@ -65,7 +61,6 @@ vi.mock('../useCardAddAccount', () => ({
     }),
 }))
 
-import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 import {
     canAutoFund,
     isEligibleFundingSource,
@@ -100,8 +95,7 @@ describe('isEligibleFundingSource', () => {
 })
 
 describe('isSigningCapableFundingSource', () => {
-    it('excludes Ledger (eligible but cannot sign) and needs a signing key', () => {
-        // Local-key accounts (with a keyPairId) can sign; Ledger cannot.
+    it('accepts local-key and Ledger accounts, and needs a signing key', () => {
         expect(
             isSigningCapableFundingSource(
                 account('A', 'algo25', { keyPairId: 'k1' }),
@@ -112,14 +106,15 @@ describe('isSigningCapableFundingSource', () => {
                 account('B', 'hdWallet', { keyPairId: 'k2' }),
             ),
         ).toBe(true)
-        // Ledger is an eligible funding source but can't sign arbitrary data.
+        // Ledger signs the creation proof on-device; it carries no keyPairId.
         expect(isSigningCapableFundingSource(account('C', 'hardware'))).toBe(
-            false,
+            true,
         )
-        // A local-key type with no keyPairId can't sign either.
+        // A local-key type with no keyPairId can't sign at all.
         expect(isSigningCapableFundingSource(account('D', 'algo25'))).toBe(
             false,
         )
+        expect(isSigningCapableFundingSource(account('E', 'watch'))).toBe(false)
     })
 })
 
@@ -131,7 +126,7 @@ describe('canAutoFund', () => {
         expect(canAutoFund(account('B', 'hdWallet', { keyPairId: 'k2' }))).toBe(
             true,
         )
-        // Ledger can create a card once ARC-60 lands but can never sign an LSig.
+        // Ledger creates cards but can never sign an LSig.
         expect(canAutoFund(account('C', 'hardware'))).toBe(false)
         expect(canAutoFund(account('D', 'algo25'))).toBe(false)
     })
@@ -146,10 +141,14 @@ describe('useCardFundingSourcePicker', () => {
 
         const props = mockRequest.mock.calls[0][0].contents.props as {
             headerContent: unknown
+            hideDefaultHeader: boolean
             accountFilter: (account: WalletAccount) => boolean
             selectedAddress: string | null
         }
         expect(props.headerContent).toBeTruthy()
+        // The card header supplies its own title row, so the shared one (with
+        // its Sort button) must stay hidden.
+        expect(props.hideDefaultHeader).toBe(true)
         expect(props.accountFilter).toBe(isEligibleFundingSource)
         // Fresh pick: nothing connected yet → no account pre-highlighted.
         expect(props.selectedAddress).toBeNull()
@@ -207,20 +206,11 @@ describe('useCardFundingSourcePicker', () => {
         expect(mockHandleCreateAccount).toHaveBeenCalled()
     })
 
-    it('opens the sort sheet then reopens the picker when Sort is tapped', async () => {
-        const chosen = account('ADDR2', 'algo25')
-        mockRequest
-            .mockResolvedValueOnce({ kind: 'sort' }) // initial picker
-            .mockResolvedValueOnce(undefined) // sort sheet
-            .mockResolvedValueOnce({ kind: 'selected', account: chosen })
+    it('does not open a sort sheet: the card picker offers no sorting', async () => {
+        mockRequest.mockResolvedValue({ kind: 'sort' })
         const { result } = renderHook(() => useCardFundingSourcePicker())
 
-        await expect(result.current.pickFundingSource()).resolves.toBe(chosen)
-
-        expect(mockRequest).toHaveBeenCalledTimes(3)
-        // The second request opens the account sort sheet.
-        expect(mockRequest.mock.calls[1][0].contents.type).toBe(
-            AccountSortContent,
-        )
+        await expect(result.current.pickFundingSource()).resolves.toBeNull()
+        expect(mockRequest).toHaveBeenCalledTimes(1)
     })
 })

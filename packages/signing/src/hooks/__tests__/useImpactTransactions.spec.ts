@@ -43,12 +43,13 @@ const mockSimulation = (
     over: Partial<ReturnType<typeof useGroupSimulationQuery>> = {},
 ) => {
     vi.mocked(useGroupSimulationQuery).mockReturnValue({
-        data: undefined,
+        data: [],
         isFetching: false,
+        isSuccess: false,
         isError: false,
         error: null,
         ...over,
-    } as unknown as ReturnType<typeof useGroupSimulationQuery>)
+    })
 }
 
 describe('useImpactTransactions', () => {

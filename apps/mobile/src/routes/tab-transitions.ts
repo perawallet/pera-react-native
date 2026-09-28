@@ -11,37 +11,11 @@
  */
 
 import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs'
-import { SCREEN_ANIMATION_DURATION_MS } from '@constants/ui'
 
-type WebTabTransition = Pick<
+export type TabTransition = Pick<
     BottomTabNavigationOptions,
     'animation' | 'transitionSpec' | 'sceneStyleInterpolator'
 >
 
-/**
- * Full-width directional slide for bottom-tab switches on web.
- * `current.progress` is -1 / 0 / +1 for tabs left of / at / right of the
- * active index, so a [-width, width] translate slides scenes toward the
- * selected tab. `animation` must be any non-'none' name to enable the
- * transition driver; the custom interpolator overrides the preset's
- * ±50px shift.
- */
-export const getWebTabTransition = (width: number): WebTabTransition => ({
-    animation: 'shift',
-    transitionSpec: {
-        animation: 'timing',
-        config: { duration: SCREEN_ANIMATION_DURATION_MS },
-    },
-    sceneStyleInterpolator: ({ current }) => ({
-        sceneStyle: {
-            transform: [
-                {
-                    translateX: current.progress.interpolate({
-                        inputRange: [-1, 0, 1],
-                        outputRange: [-width, 0, width],
-                    }),
-                },
-            ],
-        },
-    }),
-})
+/** Native keeps the navigator's default tab switch; see the `.web.ts` twin. */
+export const getTabTransition = (_width: number): TabTransition | null => null

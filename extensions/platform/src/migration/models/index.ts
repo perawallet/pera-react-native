@@ -46,16 +46,24 @@ export interface MigrationService {
     ): Promise<void>
     clearMigrationComplete(): Promise<void>
     getMigrationPlans(): Promise<MigrationPlanSummary[]>
-    /** ⚠️ DEV-ONLY: materializes a populated legacy DB — never call from app code. */
-    simulateLegacyDatabase(args: SimulateLegacyDatabaseArgs): Promise<void>
-    /** ⚠️ DEV-ONLY: writes the pre-6.x encrypted account blob — never call from app code. */
-    simulatePreSixxAccounts(): Promise<void>
+    /**
+     * ⚠️ DEV-ONLY fixture writers for the developer migration simulator — never
+     * call from app code. Absent where there is no legacy store to write (web).
+     */
+    readonly devTools?: MigrationDevTools
     /** Removes all legacy (v6) migration data and clears the migration sentinel. */
     resetLegacyData(): Promise<void>
     /** Returns the per-step version record, or `null` when no record has ever been written. */
     getCompletedStepVersions(): Promise<MigrationStepVersions | null>
     /** Persists the per-step version record. */
     setCompletedStepVersions(versions: MigrationStepVersions): Promise<void>
+}
+
+export interface MigrationDevTools {
+    /** Materializes a populated legacy DB and clears the migration sentinel. */
+    simulateLegacyDatabase(args: SimulateLegacyDatabaseArgs): Promise<void>
+    /** Writes the pre-6.x encrypted account blob and clears the migration sentinel. */
+    simulatePreSixxAccounts(): Promise<void>
 }
 
 export interface SimulateLegacyDatabaseArgs {

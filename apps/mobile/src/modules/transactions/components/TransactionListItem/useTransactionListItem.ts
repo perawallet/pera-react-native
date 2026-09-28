@@ -31,7 +31,7 @@ import { getTransactionIconType } from './utils'
 import { safeDecimals, type AmountDisplay } from './amounts'
 import { useTransactionAmounts } from './useTransactionAmounts'
 
-import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
+import type { TransactionIconType } from '@components/TransactionIcon'
 
 type TFunction = ReturnType<typeof useLanguage>['t']
 

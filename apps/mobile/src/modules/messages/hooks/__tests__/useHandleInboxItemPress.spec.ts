@@ -27,7 +27,7 @@ const { mockPush, mockRequestBottomSheet } = vi.hoisted(() => ({
 
 // The hook pushes through the global navigationRef, not `useAppNavigation` —
 // see useHandleInboxItemPress and the outside-navigator spec next to this one.
-vi.mock('@hooks/deeplink/navigateToScreen', () => ({
+vi.mock('@modules/deeplink/navigateToScreen', () => ({
     pushScreen: mockPush,
     navigateToScreen: vi.fn(),
 }))

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
     preventScreenCaptureAsync,
     allowScreenCaptureAsync,
@@ -24,18 +24,26 @@ import { logger } from '@perawallet/wallet-core-shared'
 export const SECURE_SCREEN_CAPTURE_TAG = 'pera-secure-screen'
 
 let activeHolders = 0
+let captureLock: Promise<void> = Promise.resolve()
 
-const acquireCaptureLock = (tag: string): void => {
+const acquireCaptureLock = (tag: string): Promise<void> => {
     activeHolders += 1
-    if (activeHolders !== 1) return
-    void preventScreenCaptureAsync(SECURE_SCREEN_CAPTURE_TAG).catch(err => {
-        // The Expo module or Android's FLAG_SECURE refusing is a device
-        // condition, not a defect we can fix from here.
-        logger.warn(
-            'usePreventScreenCapture: failed to prevent screen capture',
-            { tag, error: err instanceof Error ? err.message : String(err) },
-        )
-    })
+    if (activeHolders === 1) {
+        captureLock = preventScreenCaptureAsync(
+            SECURE_SCREEN_CAPTURE_TAG,
+        ).catch(err => {
+            // The Expo module or Android's FLAG_SECURE refusing is a device
+            // condition, not a defect we can fix from here.
+            logger.warn(
+                'usePreventScreenCapture: failed to prevent screen capture',
+                {
+                    tag,
+                    error: err instanceof Error ? err.message : String(err),
+                },
+            )
+        })
+    }
+    return captureLock
 }
 
 const releaseCaptureLock = (tag: string): void => {
@@ -62,13 +70,33 @@ const releaseCaptureLock = (tag: string): void => {
 // The e2e escape hatch is a build-time config flag, not a remote/runtime
 // signal: store builds compile `disableScreenCapturePrevention` to false, so
 // nobody can weaken seed-screen protection on the live fleet.
+//
+// Returns true once the native call has settled — including when it was
+// refused or skipped. A caller that opens its own OS window (an RN `<Modal>`)
+// must hold that window back until then: Android copies FLAG_SECURE into a
+// dialog's window only while creating it, and never afterwards.
 export const usePreventScreenCapture = (
     tag: string,
     enabled: boolean = true,
-): void => {
+): boolean => {
+    const [isLockSettled, setIsLockSettled] = useState(false)
+
     useEffect(() => {
-        if (!enabled || config.disableScreenCapturePrevention) return
-        acquireCaptureLock(tag)
-        return () => releaseCaptureLock(tag)
+        if (!enabled) return
+        if (config.disableScreenCapturePrevention) {
+            setIsLockSettled(true)
+            return
+        }
+        let isHolding = true
+        void acquireCaptureLock(tag).then(() => {
+            if (isHolding) setIsLockSettled(true)
+        })
+        return () => {
+            isHolding = false
+            setIsLockSettled(false)
+            releaseCaptureLock(tag)
+        }
     }, [tag, enabled])
+
+    return isLockSettled
 }

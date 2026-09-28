@@ -32,6 +32,7 @@ import {
     expectApprovalSurfaceUrl,
     openApprovalSurface,
     selectAccountAndArmConnect,
+    tapToConfirm,
     trackPageErrors,
 } from './approval-surface'
 
@@ -222,9 +223,11 @@ test('a clicked connect opens the proposal naming the verified origin; approving
     await expect(
         approvalPage.getByTestId('wc-connect-requester-verified-badge'),
     ).toBeVisible()
+    // Shown without its scheme, and as plain text rather than a link: the e2e
+    // dApp is served over http, which fails the header's https-only gate.
     await expect(
-        approvalPage.getByText(dappOrigin, { exact: false }).first(),
-    ).toBeVisible()
+        approvalPage.getByTestId('wc-connect-peer-url-text'),
+    ).toHaveText(dappOrigin.replace(/^https?:\/\//, ''))
 
     const connectButton = approvalPage.getByTestId('wc-connect-connect')
     await selectAccountAndArmConnect(approvalPage, connectButton)
@@ -296,9 +299,7 @@ test('signTransactions opens the signing review and returns one signed transacti
 
     const confirmControl = approvalPage.getByTestId('signing-confirm-slide')
     await expect(confirmControl).toBeVisible({ timeout: 20_000 })
-    // Web uses tap-to-confirm: the first tap arms, the second confirms.
-    await confirmControl.click()
-    await confirmControl.click()
+    await tapToConfirm(approvalPage, confirmControl)
 
     // Poll BOTH outcomes: waiting on the success one alone turns a decline
     // into a bare timeout with the real reason sitting unread in the DOM.

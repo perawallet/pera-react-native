@@ -35,6 +35,11 @@ import 'fast-text-encoding'
 // Expo registration (replaces AppRegistry.registerComponent)
 import { registerRootComponent } from 'expo'
 import { App } from './src/App'
+// Imports are hoisted, so every module above has evaluated by the time this
+// runs; the call, not the import's position, is what orders startup.
+import { initRuntime } from './src/bootstrap/preReact'
+
+initRuntime()
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in Expo Go or in a native build,

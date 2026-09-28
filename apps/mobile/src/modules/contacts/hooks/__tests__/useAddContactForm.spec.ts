@@ -47,9 +47,7 @@ vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParamsRef.params }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useImagePicker', () => ({
     useImagePicker: () => ({

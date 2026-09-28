@@ -13,6 +13,7 @@
 import LottieView from 'lottie-react-native'
 import type { ComponentProps } from 'react'
 import { StyleSheet } from 'react-native'
+import './configureLottieWasm'
 
 export type PWLottieProps = ComponentProps<typeof LottieView>
 

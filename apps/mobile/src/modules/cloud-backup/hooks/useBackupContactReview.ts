@@ -77,7 +77,7 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
     )
 
     const { mutate } = useBackupReviewActionMutation('contact', {
-        onMutate: ({ address }) => setBusyAddress(address),
+        onMutate: ({ id }) => setBusyAddress(id),
         onSuccess: (_result, { action }) => {
             showToast({
                 title: t(TOAST_KEY[action].success),
@@ -85,10 +85,10 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
                 type: 'success',
             })
         },
-        onError: (error, { action, address }) => {
+        onError: (error, { action, id }) => {
             logger.warn('useBackupContactReview: review action failed', {
                 action,
-                address,
+                address: id,
                 error: error instanceof Error ? error.message : String(error),
             })
             if (error instanceof NoConnectionError) {
@@ -126,15 +126,15 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
         ),
         busyAddress,
         backUpContact: useCallback(
-            (address: string) => mutate({ action: 'backUp', address }),
+            (address: string) => mutate({ action: 'backUp', id: address }),
             [mutate],
         ),
         addFromBackup: useCallback(
-            (address: string) => mutate({ action: 'add', address }),
+            (address: string) => mutate({ action: 'add', id: address }),
             [mutate],
         ),
         deleteFromBackup: useCallback(
-            (address: string) => mutate({ action: 'delete', address }),
+            (address: string) => mutate({ action: 'delete', id: address }),
             [mutate],
         ),
     }

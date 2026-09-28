@@ -14,8 +14,11 @@ import { describe, it, expect } from 'vitest'
 import {
     PASSWORD_RULES,
     addressSchema,
+    createPersonalDetailsSchema,
     dobToIsoDate,
     formatDobInput,
+    formatSsnInput,
+    ssnToApi,
     isoDateToDob,
     passwordSetSchema,
     personalDetailsSchema,
@@ -84,10 +87,27 @@ describe('personalDetailsSchema', () => {
         dateOfBirth: '27/02/1986',
         countryOfNationality: 'GB',
         countryOfBirth: 'GB',
+        ssn: '',
     }
 
     it('accepts a complete, valid record', () => {
         expect(personalDetailsSchema.safeParse(valid).success).toBe(true)
+    })
+
+    it('requires a masked SSN for US residents only', () => {
+        const usSchema = createPersonalDetailsSchema({ isUsResident: true })
+        expect(usSchema.safeParse(valid).success).toBe(false)
+        expect(
+            usSchema.safeParse({ ...valid, ssn: '123-45-678' }).success,
+        ).toBe(false)
+        expect(
+            usSchema.safeParse({ ...valid, ssn: '123-45-6789' }).success,
+        ).toBe(true)
+        expect(
+            createPersonalDetailsSchema({ isUsResident: false }).safeParse(
+                valid,
+            ).success,
+        ).toBe(true)
     })
 
     it('accepts a real leap-day date', () => {
@@ -121,6 +141,27 @@ describe('personalDetailsSchema', () => {
         expect(
             personalDetailsSchema.safeParse({ ...valid, ...override }).success,
         ).toBe(false)
+    })
+})
+
+describe('formatSsnInput', () => {
+    it.each([
+        ['1', '1'],
+        ['123', '123'],
+        ['1234', '123-4'],
+        ['12345', '123-45'],
+        ['123456789', '123-45-6789'],
+        ['123-45-6789', '123-45-6789'],
+        ['1234567890', '123-45-6789'],
+        ['12a3', '123'],
+    ])('masks %s as %s', (raw, expected) => {
+        expect(formatSsnInput(raw)).toBe(expected)
+    })
+})
+
+describe('ssnToApi', () => {
+    it('strips the separators', () => {
+        expect(ssnToApi('123-45-6789')).toBe('123456789')
     })
 })
 

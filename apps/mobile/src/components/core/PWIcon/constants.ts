@@ -39,6 +39,7 @@ import CopyIcon from '@assets/icons/copy.svg'
 import CrossIcon from '@assets/icons/cross.svg'
 import Cube3dIcon from '@assets/icons/cube-3d.svg'
 import DeleteIcon from '@assets/icons/delete.svg'
+import DeviceIcon from '@assets/icons/device.svg'
 import DollarIcon from '@assets/icons/dollar.svg'
 import DotStackIcon from '@assets/icons/dot-stack.svg'
 import EditPenIcon from '@assets/icons/edit-pen.svg'
@@ -55,6 +56,7 @@ import FunnelIcon from '@assets/icons/funnel.svg'
 import GearIcon from '@assets/icons/gear.svg'
 import GiftIcon from '@assets/icons/gift.svg'
 import GlobeIcon from '@assets/icons/globe.svg'
+import GoogleDriveIcon from '@assets/icons/google-drive.svg'
 import HorizontalLineStackIcon from '@assets/icons/horizontal-line-stack.svg'
 import HouseIcon from '@assets/icons/house.svg'
 import ImageOffIcon from '@assets/icons/image-off.svg'
@@ -203,6 +205,7 @@ export const ICON_LIBRARY = {
     cross: CrossIcon,
     'cube-3d': Cube3dIcon,
     delete: DeleteIcon,
+    device: DeviceIcon,
     dollar: DollarIcon,
     'document-download': DocumentDownloadIcon,
     download: DownloadIcon,
@@ -223,6 +226,7 @@ export const ICON_LIBRARY = {
     gear: GearIcon,
     gift: GiftIcon,
     globe: GlobeIcon,
+    'google-drive': GoogleDriveIcon,
     'horizontal-line-stack': HorizontalLineStackIcon,
     house: HouseIcon,
     'image-off': ImageOffIcon,

@@ -17,6 +17,7 @@ import {
     BackupItemStatus,
     DeltaOperation,
     isContactItemKey,
+    isPasskeyItemKey,
     type BackupId,
     type BackupItemKey,
     type DeltaEntry,
@@ -27,12 +28,14 @@ import {
 } from '../models'
 import { collectAccountPayloads } from './collectAccountPayloads'
 import { collectContactPayloads } from './collectContactPayloads'
+import { collectPasskeyPayloads } from './collectPasskeyPayloads'
 import type { CollectPayloadsDeps } from './collectPayloads'
-import type { ContactImportFn, SyncImportFn } from './types'
+import type { ContactImportFn, PasskeyImportFn, SyncImportFn } from './types'
 
 export type ApplyDeltasDeps = CollectPayloadsDeps & {
     importAccounts: SyncImportFn
     importContacts: ContactImportFn
+    importPasskeys: PasskeyImportFn
     readItems: (
         network: Network,
         backupId: BackupId,
@@ -41,9 +44,11 @@ export type ApplyDeltasDeps = CollectPayloadsDeps & {
     ) => Promise<FetchedItem[]>
 }
 
-const isAccountFamilyKey = (key: BackupItemKey): boolean =>
-    key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+const isSecretsKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
+
+const isAccountFamilyKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) || isSecretsKey(key)
 
 export const applyDeltas = async ({
     state,
@@ -81,8 +86,10 @@ export const applyDeltas = async ({
             }
             continue
         }
-        const isContactKey = isContactItemKey(d.key)
-        const isKnownKey = isAccountFamilyKey(d.key) || isContactKey
+        const isKnownKey =
+            isAccountFamilyKey(d.key) ||
+            isContactItemKey(d.key) ||
+            isPasskeyItemKey(d.key)
         // The user deleted this here and another device has since backed it up
         // again. Re-importing would undo that deletion behind their back, so
         // hold it for review instead.
@@ -112,9 +119,10 @@ export const applyDeltas = async ({
         }
         if (d.status !== BackupItemStatus.ACTIVE) continue
         if (!isKnownKey) continue
-        // A held account is never downloaded; a held contact is, because the
-        // cached name is the whole record and the review row has to show it.
-        if (pendingImport && !isContactKey) continue
+        // A held item's own record is still downloaded, because its cached
+        // address is what puts the row on the review screen. Only the secret
+        // stays untouched until the user adds the account back.
+        if (pendingImport && isSecretsKey(d.key)) continue
         const hashChanged =
             !existing ||
             existing.lastRemoteHash !== d.hash ||
@@ -141,9 +149,15 @@ export const applyDeltas = async ({
         items,
         deps,
     })
+    const passkeys = collectPasskeyPayloads({
+        fetched: fetched.filter(item => isPasskeyItemKey(item.key)),
+        items,
+        deps,
+    })
 
     if (accounts.length > 0) await deps.importAccounts(accounts)
     if (contacts.length > 0) await deps.importContacts(contacts)
+    if (passkeys.length > 0) await deps.importPasskeys(passkeys)
 
     return { ...state, items, lastSyncedSeq }
 }

@@ -25,6 +25,9 @@
             "@perawallet/wallet-core-blockchain/*": [
                 "../packages/blockchain/src/*"
             ],
+            "@perawallet/wallet-core-chain-shared": [
+                "../packages/chain-shared/src"
+            ],
             "@perawallet/wallet-core-accounts": ["../packages/accounts/src"],
             "@perawallet/wallet-core-accounts/*": [
                 "../packages/accounts/src/*"

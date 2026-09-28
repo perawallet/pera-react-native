@@ -19,6 +19,7 @@ import {
     deriveBackupSyncStatus,
     deriveBackupAccountReview,
     deriveBackupContactReview,
+    deriveBackupPasskeyReview,
     backupIdToAddress,
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -30,7 +31,10 @@ import {
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
-import { BackupCredentialsSheet } from '../../components/BackupCredentialsSheet'
+import {
+    BackupCredentialsSheet,
+    type BackupCredentialsSheetResult,
+} from '../../components/BackupCredentialsSheet'
 import { ConfirmTurnOffBackupSheet } from '../../components/ConfirmTurnOffBackupSheet'
 import {
     TurnOffBackupSheet,
@@ -42,6 +46,8 @@ import {
     useRemoveCloudBackup,
     useSyncDevicesQr,
     useCloudBackupIntroduction,
+    useStoreBackupCredentials,
+    useProvenPasskeysQuery,
 } from '../../hooks'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
@@ -55,11 +61,18 @@ type UseCloudBackupOverviewResult = {
     accountsNotBackedUp: number
     contactsInSync: number
     contactsNotBackedUp: number
+    passkeysInSync: number
+    passkeysNotBackedUp: number
+    /** False while the passkey counts are still a guess; the row then shows no
+     *  subtitle rather than claiming everything is in sync. */
+    arePasskeysResolved: boolean
     onPressAccounts: () => void
     onPressContacts: () => void
+    onPressPasskeys: () => void
     onPressCredentialAddress: () => Promise<void>
     onPressSyncDevices: () => Promise<void>
     onPressTurnOff: () => Promise<void>
+    isSavingCredentials: boolean
 }
 
 const formatSyncedAt = (millis: number | null): string => {
@@ -88,10 +101,14 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const { removeBackup } = useRemoveCloudBackup()
     const { isSyncing } = useBackupSync()
     const { showSyncQr } = useSyncDevicesQr()
+    const { storeCredentials, isSaving: isSavingCredentials } =
+        useStoreBackupCredentials()
     const backupId = useCloudBackupStore(state => state.backupId)
     const syncState = useBackupSyncStateStore(state => state.syncState)
     const accounts = useAccountsStore(state => state.accounts)
     const contacts = useContactsStore(state => state.contacts)
+    const { passkeys, isResolved: arePasskeysResolved } =
+        useProvenPasskeysQuery()
     const { isIntroductionSeen, markIntroductionSeen } =
         useCloudBackupIntroduction()
 
@@ -109,6 +126,15 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const contactReview = useMemo(
         () => deriveBackupContactReview(syncState, contactAddresses),
         [syncState, contactAddresses],
+    )
+
+    const credentialIds = useMemo(
+        () => passkeys.map(passkey => passkey.credentialId),
+        [passkeys],
+    )
+    const passkeyReview = useMemo(
+        () => deriveBackupPasskeyReview(syncState, credentialIds),
+        [syncState, credentialIds],
     )
 
     const addresses = useMemo(
@@ -146,11 +172,16 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         navigation.navigate('CloudBackupContacts')
     }, [navigation])
 
+    const onPressPasskeys = useCallback(() => {
+        trackEvent(CloudBackupEvent.OverviewPasskeys)
+        navigation.navigate('CloudBackupPasskeys')
+    }, [navigation])
+
     const onPressCredentialAddress = useCallback(async () => {
         trackEvent(CloudBackupEvent.OverviewCredentialAddress)
         if (!(await requirePinVerification())) return
 
-        await requestBottomSheet({
+        const choice = await requestBottomSheet<BackupCredentialsSheetResult>({
             contents: <BackupCredentialsSheet />,
             options: {
                 size: 'auto',
@@ -158,7 +189,11 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
                 autoCreateContainer: false,
             },
         })
-    }, [requirePinVerification, requestBottomSheet])
+        // The PIN above covers this: the sheet it opened already showed the
+        // credentials, so asking again to save them is a second prompt for
+        // something the user has just been shown.
+        if (choice === 'store') await storeCredentials({ hasVerifiedPin: true })
+    }, [requirePinVerification, requestBottomSheet, storeCredentials])
 
     const onPressSyncDevices = useCallback(async () => {
         trackEvent(CloudBackupEvent.OverviewSyncDevices)
@@ -209,10 +244,15 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         accountsNotBackedUp: notBackedUp.length,
         contactsInSync: contactReview.backedUp.size,
         contactsNotBackedUp: contactReview.notBackedUp.length,
+        passkeysInSync: passkeyReview.backedUp.size,
+        passkeysNotBackedUp: passkeyReview.notBackedUp.length,
+        arePasskeysResolved,
         onPressAccounts,
         onPressContacts,
+        onPressPasskeys,
         onPressCredentialAddress,
         onPressSyncDevices,
         onPressTurnOff,
+        isSavingCredentials,
     }
 }

@@ -17,12 +17,19 @@ import {
     sealAesGcm,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import {
-    encodeToBase64,
-    decodeFromBase64,
-} from '@perawallet/wallet-core-shared'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type { Argon2idConfig } from '../models'
+import {
+    decodeBase64Salt,
+    isCanonicalArgon2idConfig,
+    isDerivableArgon2idConfig,
+    isDerivableSaltLength,
+    isPositiveInteger,
+    isRecord,
+    readArgon2idConfig,
+} from './argon2idConfig'
 import { ARGON2ID_CONFIG } from './constants'
+import { serializeArgon2idConfig } from './serializeArgon2idConfig'
 
 export const BACKUP_SYNC_QR_TYPE = 'backup-sync'
 export const BACKUP_SYNC_QR_VERSION = 1
@@ -79,13 +86,6 @@ const deriveQrKey = (
     )
 }
 
-const serializeConfig = (config: Argon2idConfig) => ({
-    time_cost: config.timeCost,
-    memory_cost: config.memoryCost,
-    parallelism: config.parallelism,
-    output_length: config.outputLength,
-})
-
 /**
  * Seals the backup phrase and setup salt under a user-chosen code and returns
  * the QR's string contents. The sealed object is self-contained: a scanner
@@ -104,7 +104,7 @@ export const encryptBackupSyncQr = async ({
             JSON.stringify({
                 mnemonic,
                 salt: backupSalt,
-                argon2id: serializeConfig(ARGON2ID_CONFIG),
+                argon2id: serializeArgon2idConfig(ARGON2ID_CONFIG),
             }),
             key,
             aadFor(BACKUP_SYNC_QR_TYPE, BACKUP_SYNC_QR_VERSION),
@@ -114,7 +114,7 @@ export const encryptBackupSyncQr = async ({
             t: BACKUP_SYNC_QR_TYPE,
             kdf: {
                 salt: encodeToBase64(qrSalt),
-                ...serializeConfig(ARGON2ID_CONFIG),
+                ...serializeArgon2idConfig(ARGON2ID_CONFIG),
             },
             payload,
         })
@@ -123,64 +123,41 @@ export const encryptBackupSyncQr = async ({
     }
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === 'object' && value !== null && !Array.isArray(value)
-
-const isPositiveInteger = (value: unknown): value is number =>
-    typeof value === 'number' && Number.isInteger(value) && value > 0
-
 const readConfig = (value: unknown): Argon2idConfig => {
-    if (!isRecord(value)) throw new BackupSyncQrError()
-    const { time_cost, memory_cost, parallelism, output_length } = value
-    if (
-        !isPositiveInteger(time_cost) ||
-        !isPositiveInteger(memory_cost) ||
-        !isPositiveInteger(parallelism) ||
-        !isPositiveInteger(output_length)
-    ) {
-        throw new BackupSyncQrError()
-    }
-    return {
-        timeCost: time_cost,
-        memoryCost: memory_cost,
-        parallelism,
-        outputLength: output_length,
-    }
+    const config = readArgon2idConfig(value)
+    if (!config) throw new BackupSyncQrError()
+    return config
 }
 
-// Both KDF blocks are attacker-chosen — the inner one only proves whoever built
-// the QR knew the code — and each value sizes an allocation. Bound before deriving.
-const MAX_MEMORY_COST_MIB = 512
-const MAX_TIME_COST = 10
-const MAX_PARALLELISM = 4
-// Argon2's own floor is 8 bytes; this build seals with 16.
-const MIN_SALT_LENGTH = 8
-const MAX_SALT_LENGTH = 64
-// aes-256-gcm takes 32 and nothing else; a bound would let a bad length reach
-// createDecipheriv and surface as a wrong-code error.
-const REQUIRED_OUTPUT_LENGTH = 32
-
+// Both KDF blocks are attacker-chosen: the inner one only proves whoever built
+// the QR knew the code.
+//
+// The envelope's own KDF is bounded rather than pinned, because it protects the
+// QR alone and a later build may legitimately raise it. The inner block is the
+// backup's master-key KDF, which is fixed cross-platform, so anything but the
+// canonical parameters derives a key that opens nothing.
 const assertDerivable = (config: Argon2idConfig): void => {
-    if (
-        config.memoryCost > MAX_MEMORY_COST_MIB ||
-        config.timeCost > MAX_TIME_COST ||
-        config.parallelism > MAX_PARALLELISM ||
-        config.outputLength !== REQUIRED_OUTPUT_LENGTH
-    ) {
+    if (!isDerivableArgon2idConfig(config)) {
         throw new BackupSyncQrError(
             'Sync QR asks for an unreasonable derivation',
         )
     }
 }
 
+const assertCanonical = (config: Argon2idConfig): void => {
+    if (!isCanonicalArgon2idConfig(config)) {
+        throw new BackupSyncQrError(
+            'Sync QR carries non-canonical backup parameters',
+        )
+    }
+}
+
 const readSalt = (value: string): Uint8Array => {
-    let salt: Uint8Array
-    try {
-        salt = decodeFromBase64(value)
-    } catch {
+    const salt = decodeBase64Salt(value)
+    if (!salt) {
         throw new BackupSyncQrError('Not a sync QR payload')
     }
-    if (salt.length < MIN_SALT_LENGTH || salt.length > MAX_SALT_LENGTH) {
+    if (!isDerivableSaltLength(salt.length)) {
         throw new BackupSyncQrError(
             'Sync QR asks for an unreasonable derivation',
         )
@@ -258,7 +235,7 @@ export const decryptBackupSyncQr = async (
             throw new BackupSyncQrError()
         }
         const argon2id = readConfig(opened.argon2id)
-        assertDerivable(argon2id)
+        assertCanonical(argon2id)
         return {
             mnemonic: opened.mnemonic,
             backupSalt: opened.salt,

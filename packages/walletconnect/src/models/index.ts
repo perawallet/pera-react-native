@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-export type AlgorandChainId = 416_001 | 416_002 | 416_003 | 4160
+export type AlgorandWalletConnectChainId = 416_001 | 416_002 | 416_003 | 4160
 
-export const AlgorandChainId = {
+export const AlgorandWalletConnectChainId = {
     mainnet: 416_001,
     testnet: 416_002,
     betanet: 416_003,

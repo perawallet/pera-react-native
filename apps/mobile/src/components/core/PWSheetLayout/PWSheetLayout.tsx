@@ -10,20 +10,24 @@
  limitations under the License
  */
 
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import { useImperativeHandle, useRef, type ReactNode, type Ref } from 'react'
+import {
+    BottomSheetScrollView,
+    type BottomSheetScrollViewMethods,
+} from '@gorhom/bottom-sheet'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useKeyboardState } from 'react-native-keyboard-controller'
 import { getTestProps } from '@utils/test-id-helper'
 import { PWView } from '../PWView'
 import { useStyles } from './styles'
 
-import type { ReactNode } from 'react'
 import type {
     LayoutChangeEvent,
     NativeScrollEvent,
     NativeSyntheticEvent,
 } from 'react-native'
 import type { HorizontalPaddingMode } from '../PWScreen'
+import type { PWSheetLayoutScrollHandle } from './types'
 
 export type PWSheetLayoutProps = {
     /** Sticky top zone — kept on screen while the body scrolls under it. */
@@ -40,6 +44,7 @@ export type PWSheetLayoutProps = {
      * when everything already fits. */
     onLayout?: (event: LayoutChangeEvent) => void
     onContentSizeChange?: (width: number, height: number) => void
+    scrollRef?: Ref<PWSheetLayoutScrollHandle>
     testID?: string
 }
 
@@ -57,8 +62,17 @@ export const PWSheetLayout = ({
     onScroll,
     onLayout,
     onContentSizeChange,
+    scrollRef,
     testID,
 }: PWSheetLayoutProps) => {
+    const scrollViewRef = useRef<BottomSheetScrollViewMethods>(null)
+    useImperativeHandle(
+        scrollRef,
+        () => ({
+            scrollToEnd: options => scrollViewRef.current?.scrollToEnd(options),
+        }),
+        [],
+    )
     const insets = useSafeAreaInsets()
     const isKeyboardVisible = useKeyboardState(state => state.isVisible)
     const styles = useStyles({
@@ -70,6 +84,7 @@ export const PWSheetLayout = ({
 
     const scrollable = (
         <BottomSheetScrollView
+            ref={scrollViewRef}
             style={styles.scrollView}
             stickyHeaderIndices={header != null ? [0] : undefined}
             showsVerticalScrollIndicator={false}

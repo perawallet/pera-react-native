@@ -12,7 +12,13 @@
 
 import { useCallback, useRef, useState } from 'react'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
-import { AppError, logger, toError } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    generateOrderedUniqueId,
+    logger,
+    stripUrlScheme,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import {
     trackEvent,
     WalletConnectEvent,
@@ -22,6 +28,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
+import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
 
 export type UseConnectionApprovalViewResult = {
     selectedAccounts: string[]
@@ -29,6 +36,11 @@ export type UseConnectionApprovalViewResult = {
     handleAccountPress: (address: string) => void
     handleConnect: () => Promise<void>
     handleCancel: () => Promise<void>
+    /** The dApp-asserted url without its scheme; rendered as text, never trusted. */
+    peerUrlLabel?: string
+    /** False when the peer url fails the https gate, so it renders unlinked. */
+    canOpenPeerUrl: boolean
+    handlePressUrl: () => void
 }
 
 // Every action goes straight through `proposal.approve` / `proposal.reject`, so
@@ -41,6 +53,7 @@ export const useConnectionApprovalView = (
     const { errorToast } = useToast()
     const { showError } = useErrorToast()
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
+    const { pushWebView } = useWebView()
     const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
     const [isConnecting, setIsConnecting] = useState(false)
     // Guards both handlers against a double-tap reaching `proposal` twice:
@@ -147,11 +160,21 @@ export const useConnectionApprovalView = (
         t,
     ])
 
+    // dApp-asserted and not yet approved: gated to https:// before the WebView.
+    const handlePressUrl = useCallback(() => {
+        const validatedUrl = toValidatedBrowserUrl(proposal.peer.url)
+        if (!validatedUrl) return
+        pushWebView({ id: generateOrderedUniqueId(), url: validatedUrl })
+    }, [proposal, pushWebView])
+
     return {
         selectedAccounts,
         isConnecting,
         handleAccountPress,
         handleConnect,
         handleCancel,
+        peerUrlLabel: stripUrlScheme(proposal.peer.url),
+        canOpenPeerUrl: toValidatedBrowserUrl(proposal.peer.url) !== null,
+        handlePressUrl,
     }
 }

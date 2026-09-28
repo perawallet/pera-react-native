@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest'
 import {
     WEBVIEW_FALLBACK_LANGUAGE,
     resolveWebviewLanguage,
+    withLanguageParam,
 } from '../webviewLanguage'
 
 describe('resolveWebviewLanguage', () => {
@@ -44,5 +45,31 @@ describe('resolveWebviewLanguage', () => {
 
     it('trims surrounding whitespace instead of forwarding a padded tag', () => {
         expect(resolveWebviewLanguage('  fr  ')).toBe('fr')
+    })
+})
+
+describe('withLanguageParam', () => {
+    it('starts a query string when the url has none', () => {
+        expect(withLanguageParam('https://perawallet.app/terms/', 'de')).toBe(
+            'https://perawallet.app/terms/?lang=de',
+        )
+    })
+
+    it('appends to an existing query string', () => {
+        expect(withLanguageParam('https://perawallet.app/x?a=1', 'fr')).toBe(
+            'https://perawallet.app/x?a=1&lang=fr',
+        )
+    })
+
+    it('falls back to en-US when the locale is empty', () => {
+        expect(withLanguageParam('https://perawallet.app/x', '')).toBe(
+            'https://perawallet.app/x?lang=en-US',
+        )
+    })
+
+    it('keeps a region-qualified tag intact', () => {
+        expect(withLanguageParam('https://perawallet.app/x', 'pt-BR')).toBe(
+            'https://perawallet.app/x?lang=pt-BR',
+        )
     })
 })
