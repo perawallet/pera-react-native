@@ -39,7 +39,6 @@ export const returnedPublicKeyOnly = (seed: Uint8Array) => {
     return { publicKey: keyPair.publicKey }
 }
 
-// Reported: lanekeep doesn't resolve a shorthand property to its binding.
 export const returnedShorthand = (indices: Uint16Array) => {
     const entropy = indicesToEntropy(indices)
     return { entropy }

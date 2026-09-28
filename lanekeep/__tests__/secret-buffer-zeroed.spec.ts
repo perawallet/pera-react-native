@@ -41,7 +41,6 @@ describe('pera/secret-buffer-zeroed', () => {
         expect(await reported('transfers.ts')).toEqual([
             'transfers.ts:34',
             'transfers.ts:39',
-            'transfers.ts:45',
         ])
     })
 

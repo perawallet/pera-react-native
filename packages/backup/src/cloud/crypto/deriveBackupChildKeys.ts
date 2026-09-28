@@ -54,6 +54,5 @@ export const deriveBackupChildKeys = (
     )
     const authSeed = hkdf(sha256, masterKey, EMPTY_SALT, AUTH_SEED_INFO, length)
     const itemKey = hkdf(sha256, masterKey, EMPTY_SALT, ITEM_KEY_INFO, length)
-    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: the keys are returned in shorthand fields, which lanekeep doesn't resolve to their bindings
     return { encryptionKey, authSeed, itemKey }
 }

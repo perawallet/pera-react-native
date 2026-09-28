@@ -85,10 +85,9 @@ const WIPES = [
 ]
 
 // Returning the buffer, or an object holding it, hands it to the caller.
-// lanekeep doesn't resolve a shorthand `{ key }` to its binding, so a
-// shorthand return is still reported.
 const RETURNS = [
     '((return_statement (identifier) @key) @release)',
+    '((return_statement (object (shorthand_property_identifier) @key)) @release)',
     '((return_statement (call_expression) @key) @release)',
     '((return_statement (await_expression (call_expression) @key)) @release)',
     '((return_statement (object (pair value: (identifier) @key))) @release)',

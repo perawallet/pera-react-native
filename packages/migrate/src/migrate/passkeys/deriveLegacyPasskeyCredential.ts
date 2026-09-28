@@ -114,7 +114,6 @@ export const deriveLegacyPasskeyCredentialFromMainKey = async (params: {
     const credentialIdBytes = sha256(
         credentialIdBasis === 'raw-point' ? pubRaw : publicKeySpkiDer,
     )
-    // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: the private key is returned in a shorthand field, which lanekeep doesn't resolve to its binding
     return {
         credentialId: credentialIdBytesToStandardBase64(credentialIdBytes),
         credentialIdBytes,

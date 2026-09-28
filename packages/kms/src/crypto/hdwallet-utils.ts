@@ -227,7 +227,6 @@ export const generateHDMasterKey = async (mnemonicIndices?: Uint16Array) => {
     const mnemonicBytes = indicesToUtf8Bytes(indices)
     try {
         // The checksum check throws, so it runs before the seed exists.
-        // lanekeep-ignore-next-line pera/secret-buffer-zeroed reason: returned in the shorthand entropy field below and zeroed in the catch; lanekeep doesn't resolve shorthand fields
         const entropy = indicesToEntropy(indices)
         try {
             return { seed: await deriveBip39Seed(mnemonicBytes), entropy }
