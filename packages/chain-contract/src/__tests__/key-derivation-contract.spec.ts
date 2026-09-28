@@ -10,16 +10,12 @@
  limitations under the License
  */
 
-export * from './capabilities/resolve'
-export * from './chain-registry'
-export * from './contracts/address-codec'
-export * from './contracts/key-derivation'
-export * from './errors'
-export * from './models/capabilities'
-export * from './models/descriptor'
-export * from './models/domain'
-export * from './models/identity'
-export * from './models/module'
-export * from './native-asset'
-export * from './registry'
-export * from './scope'
+import { keyDerivationContractTests } from './key-derivation-contract'
+import { fixtureCodec, fixtureDerivation } from './fixture-chain'
+
+keyDerivationContractTests(() => fixtureDerivation, {
+    codec: fixtureCodec,
+    deriveOpts: { scheme: 'ed25519', networkId: 'testnet' },
+    unsupportedOpts: { scheme: 'falcon-1024', networkId: 'testnet' },
+    rawKey: new Uint8Array(32).fill(7),
+})

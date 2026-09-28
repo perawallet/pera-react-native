@@ -93,10 +93,12 @@ export interface KeyDerivation {
         bytes: Uint8Array,
         opts: DeriveOpts,
     ): Promise<ImportedAccount>
+    /** `opts` as for `deriveAccount`: the address a probe sees depends on the network. */
     discover(
         kms: ChainKeyStore,
         seedRef: SeedRef,
         probe: AddressProbe,
+        opts: DeriveOpts,
     ): Promise<DiscoveryCandidate[]>
 }
 

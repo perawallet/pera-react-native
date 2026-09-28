@@ -10,16 +10,19 @@
  limitations under the License
  */
 
-export * from './capabilities/resolve'
-export * from './chain-registry'
-export * from './contracts/address-codec'
-export * from './contracts/key-derivation'
-export * from './errors'
-export * from './models/capabilities'
-export * from './models/descriptor'
-export * from './models/domain'
-export * from './models/identity'
-export * from './models/module'
-export * from './native-asset'
-export * from './registry'
-export * from './scope'
+import { fakeRampAdapter } from './fakeRampAdapter'
+import { rampContractTests } from './adapter-contract'
+
+rampContractTests(
+    () =>
+        fakeRampAdapter({
+            toAssetId: token => (token.id === 'NATIVE' ? '0' : token.id),
+        }),
+    {
+        native: { id: 'NATIVE', symbol: 'NAT' },
+        nonNative: {
+            token: { id: '31566704', symbol: 'USDC' },
+            assetId: '31566704',
+        },
+    },
+)

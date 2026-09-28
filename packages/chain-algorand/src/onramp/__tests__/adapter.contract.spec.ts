@@ -10,16 +10,19 @@
  limitations under the License
  */
 
-export * from './capabilities/resolve'
-export * from './chain-registry'
-export * from './contracts/address-codec'
-export * from './contracts/key-derivation'
-export * from './errors'
-export * from './models/capabilities'
-export * from './models/descriptor'
-export * from './models/domain'
-export * from './models/identity'
-export * from './models/module'
-export * from './native-asset'
-export * from './registry'
-export * from './scope'
+import { vi } from 'vitest'
+import { rampContractTests } from '@perawallet/wallet-core-onramp/testing'
+import { algorandRampAdapter } from '../adapter'
+
+// The opt-in hook pulls the React signing stack; the suite never calls it.
+vi.mock('../useEnsureDestinationOptIn', () => ({
+    useEnsureDestinationOptIn: vi.fn(),
+}))
+
+rampContractTests(() => algorandRampAdapter, {
+    native: { id: 'ALGO', symbol: 'ALGO' },
+    nonNative: {
+        token: { id: '31566704', symbol: 'USDC' },
+        assetId: '31566704',
+    },
+})

@@ -1637,6 +1637,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../../packages/chain-contract
       '@perawallet/wallet-extension-connections':
         specifier: workspace:*
         version: link:../connections

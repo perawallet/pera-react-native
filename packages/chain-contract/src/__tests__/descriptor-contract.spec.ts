@@ -14,13 +14,13 @@ import { describe, expect, it } from 'vitest'
 import {
     CHAIN_CAPABILITIES,
     type ChainCapabilities,
-} from '../../models/capabilities'
-import type { ChainDescriptor } from '../../models/descriptor'
-import type { ChainNetwork } from '../../models/identity'
+} from '../models/capabilities'
+import type { ChainDescriptor } from '../models/descriptor'
+import type { ChainNetwork } from '../models/identity'
 import {
     descriptorContractTests,
     descriptorContractViolations,
-} from '../descriptor-contract'
+} from './descriptor-contract'
 
 const network = (
     overrides: Partial<ChainNetwork> & Pick<ChainNetwork, 'id'>,

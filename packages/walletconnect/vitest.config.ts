@@ -107,7 +107,7 @@ export default defineConfig({
             // the shared handler contract suite from there.
             '@perawallet/wallet-core-connections/testing': path.resolve(
                 __dirname,
-                '../connections/src/testing/handler-contract.ts',
+                '../connections/src/__tests__/handler-contract.ts',
             ),
             '@perawallet/wallet-core-connections/handlerKit': path.resolve(
                 __dirname,

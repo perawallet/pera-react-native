@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 
 const {
     mockNavigate,
+    mockPush,
     mockStartScan,
     mockStopScan,
     mockRequestPermissions,
@@ -30,6 +31,7 @@ const {
     expandedTabHandoffState,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
+    mockPush: vi.fn(),
     mockStartScan: vi.fn(),
     mockStopScan: vi.fn(),
     mockRequestPermissions: vi.fn(),
@@ -84,7 +86,7 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
-    useAppNavigation: () => ({ navigate: mockNavigate }),
+    useAppNavigation: () => ({ navigate: mockNavigate, push: mockPush }),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -556,6 +558,78 @@ describe('useLedgerScanScreen', () => {
 
             expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith('ble')
             expect(mockStartScan).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('Bluetooth entry point (route param transportType: "ble")', () => {
+        it('scans BLE-only on web so a single tap opens only the Bluetooth picker', () => {
+            platformState.os = 'web'
+            routeParams.current = { transportType: 'ble' }
+            connectionState.supportedTransportTypes = ['ble', 'usb']
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(connectionState.capturedOptions).toEqual({
+                transportTypes: ['ble'],
+            })
+
+            act(() => {
+                result.current.handleStartScan()
+            })
+
+            expect(mockStartScan).toHaveBeenCalledTimes(1)
+        })
+
+        it('keeps scanning every transport on native', () => {
+            platformState.os = 'android'
+            routeParams.current = { transportType: 'ble' }
+            connectionState.supportedTransportTypes = ['ble', 'usb']
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(connectionState.capturedOptions).toBeUndefined()
+            expect(result.current.isBleUnsupported).toBe(false)
+        })
+
+        it('surfaces the unsupported state instead of the search CTA when the browser lacks Web Bluetooth', () => {
+            platformState.os = 'web'
+            routeParams.current = { transportType: 'ble' }
+            connectionState.supportedTransportTypes = ['usb']
+            bluetoothState.adapterState = 'unsupported'
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBleUnsupported).toBe(true)
+            expect(result.current.needsManualStart).toBe(false)
+            expect(mockStartScan).not.toHaveBeenCalled()
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        })
+
+        it('does not flag unsupported while Web Bluetooth is available', () => {
+            platformState.os = 'web'
+            routeParams.current = { transportType: 'ble' }
+            connectionState.supportedTransportTypes = ['ble', 'usb']
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBleUnsupported).toBe(false)
+            expect(result.current.needsManualStart).toBe(true)
+        })
+
+        it('handleUseUsb opens the USB pairing flow', () => {
+            platformState.os = 'web'
+            routeParams.current = { transportType: 'ble' }
+            connectionState.supportedTransportTypes = ['usb']
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            act(() => {
+                result.current.handleUseUsb()
+            })
+
+            expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
+                transportType: 'usb',
+            })
         })
     })
 

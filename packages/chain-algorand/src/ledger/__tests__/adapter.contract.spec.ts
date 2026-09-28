@@ -10,16 +10,21 @@
  limitations under the License
  */
 
-export * from './capabilities/resolve'
-export * from './chain-registry'
-export * from './contracts/address-codec'
-export * from './contracts/key-derivation'
-export * from './errors'
-export * from './models/capabilities'
-export * from './models/descriptor'
-export * from './models/domain'
-export * from './models/identity'
-export * from './models/module'
-export * from './native-asset'
-export * from './registry'
-export * from './scope'
+import { vi } from 'vitest'
+import { ledgerAppDriverContractTests } from '@perawallet/wallet-extension-hardware-wallet/testing'
+
+const getVersion = vi.hoisted(() => vi.fn())
+
+vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
+    AlgorandApp: class {
+        getVersion = getVersion
+    },
+}))
+
+import { algorandLedgerAppDriver } from '../driver'
+
+ledgerAppDriverContractTests(() => algorandLedgerAppDriver, {
+    arrangeExchangeFailure: error => {
+        getVersion.mockRejectedValueOnce(error)
+    },
+})
