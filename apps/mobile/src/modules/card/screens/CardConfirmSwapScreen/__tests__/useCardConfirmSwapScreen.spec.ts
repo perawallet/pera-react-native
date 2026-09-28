@@ -77,8 +77,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     getKnownAssetId: (
         _key: string,
         { networkId: network }: { networkId: string },
-    ) =>
-        network === 'mainnet' || network === 'testnet' ? 'usdc-id' : null,
+    ) => (network === 'mainnet' || network === 'testnet' ? 'usdc-id' : null),
     useAssetsQuery: () => ({
         data: new Map([
             ['usdc-id', { assetId: 'usdc-id', decimals: 6, unitName: 'USDC' }],

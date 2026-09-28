@@ -28,8 +28,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     getKnownAssetId: (
         _key: string,
         { networkId: network }: { networkId: string },
-    ) =>
-        ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
+    ) => ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
 }))
 
 describe('resolveSwapRouteAssets', () => {

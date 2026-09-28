@@ -61,7 +61,10 @@ const getCurrencyInfo = (
         }
         case 'testusdcalgorand':
         case 'usdcalgorand': {
-            const assetId = getKnownAssetId('USDC', scopeForLegacyNetwork(network))
+            const assetId = getKnownAssetId(
+                'USDC',
+                scopeForLegacyNetwork(network),
+            )
             if (assetId === null) return null
 
             return {
@@ -93,7 +96,9 @@ export const computeBidaliBalances = (
     // asset id here — the existing "user holds no USDC" path. No branch
     // needed.
     const usdcBalance = balance?.assetBalances.find(
-        a => a.assetId === getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
+        a =>
+            a.assetId ===
+            getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
     )?.amount
 
     // Bidali only has mainnet and testnet catalogues; everything that is not

@@ -98,8 +98,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     getKnownAssetId: (
         _key: string,
         { networkId: network }: { networkId: string },
-    ) =>
-        ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
+    ) => ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
     // Imported at module scope by OptInConfirmationContent (rendered via the
     // confirm-opt-in sheet the form hook now requests).
     ALGO_ASSET: { assetId: '0', unitName: 'ALGO', decimals: 6 },

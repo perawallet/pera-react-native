@@ -50,12 +50,18 @@ describe('known asset ids', () => {
 
     test('getKnownAssetId returns null for a network no chain declares', () => {
         expect(
-            getKnownAssetId('USDC', { ...scopeForLegacyNetwork('mainnet'), networkId: 'fnet' }),
+            getKnownAssetId('USDC', {
+                ...scopeForLegacyNetwork('mainnet'),
+                networkId: 'fnet',
+            }),
         ).toBeNull()
     })
 
     test('getKnownAssetId returns null, without throwing, for a chain that is not compiled in', () => {
-        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as unknown as ChainScope
+        const scope = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        } as unknown as ChainScope
 
         expect(() => getKnownAssetId('USDC', scope)).not.toThrow()
         expect(getKnownAssetId('USDC', scope)).toBeNull()

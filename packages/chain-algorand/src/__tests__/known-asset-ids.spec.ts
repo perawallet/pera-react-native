@@ -27,11 +27,7 @@ describe('known asset ids', () => {
     )
 
     it('keeps the MainNet and TestNet USDC ids', () => {
-        expect(KNOWN_ASSET_IDS.USDC.get(scopeKeyOf('mainnet'))).toBe(
-            '31566704',
-        )
-        expect(KNOWN_ASSET_IDS.USDC.get(scopeKeyOf('testnet'))).toBe(
-            '10458941',
-        )
+        expect(KNOWN_ASSET_IDS.USDC.get(scopeKeyOf('mainnet'))).toBe('31566704')
+        expect(KNOWN_ASSET_IDS.USDC.get(scopeKeyOf('testnet'))).toBe('10458941')
     })
 })
