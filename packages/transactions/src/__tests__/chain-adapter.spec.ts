@@ -11,7 +11,10 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    ChainAdapterNotRegisteredError,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
     assetInboxFor,
@@ -34,14 +37,14 @@ describe('assetInboxFor', () => {
         const assetInbox = fakeAssetInbox()
         sendFlowChainAdapters.register({ chainId: 'algorand', assetInbox })
 
-        expect(assetInboxFor('testnet')).toBe(assetInbox)
+        expect(assetInboxFor(scopeForLegacyNetwork('testnet'))).toBe(assetInbox)
     })
 
     it('names the missing feature when no adapter is registered', () => {
-        expect(() => assetInboxFor('mainnet')).toThrow(
+        expect(() => assetInboxFor(scopeForLegacyNetwork('mainnet'))).toThrow(
             ChainAdapterNotRegisteredError,
         )
-        expect(() => assetInboxFor('mainnet')).toThrow(
+        expect(() => assetInboxFor(scopeForLegacyNetwork('mainnet'))).toThrow(
             'No send flow adapter is registered for chain "algorand"',
         )
     })
@@ -49,7 +52,7 @@ describe('assetInboxFor', () => {
     it('fails closed when the chain has no asset inbox', () => {
         sendFlowChainAdapters.register({ chainId: 'algorand' })
 
-        expect(() => assetInboxFor('mainnet')).toThrow(
+        expect(() => assetInboxFor(scopeForLegacyNetwork('mainnet'))).toThrow(
             PeraServiceUnavailableError,
         )
     })

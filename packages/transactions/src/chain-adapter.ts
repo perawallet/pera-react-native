@@ -12,18 +12,17 @@
 
 import {
     createChainAdapterRegistry,
-    scopeForLegacyNetwork,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     PeraServiceUnavailableError,
-    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 export type InboxSendTxsParams = {
-    network: Network
+    scope: ChainScope
     sender: string
     receiver: string
     assetId: bigint
@@ -42,7 +41,7 @@ export type InboxSendTxsParams = {
 }
 
 export type InboxClaimTxsParams = {
-    network: Network
+    scope: ChainScope
     sender: string
     assetId: bigint
     shouldClaimAlgo: boolean
@@ -75,11 +74,9 @@ export interface SendFlowChainAdapter {
 export const sendFlowChainAdapters =
     createChainAdapterRegistry<SendFlowChainAdapter>('send flow')
 
-export const assetInboxFor = (network: Network): AssetInboxSendFlow => {
-    const { assetInbox } = sendFlowChainAdapters.get(
-        scopeForLegacyNetwork(network).chainId,
-    )
-    if (!assetInbox) throw new PeraServiceUnavailableError(network)
+export const assetInboxFor = (scope: ChainScope): AssetInboxSendFlow => {
+    const { assetInbox } = sendFlowChainAdapters.get(scope.chainId)
+    if (!assetInbox) throw new PeraServiceUnavailableError(scope)
 
     return assetInbox
 }
