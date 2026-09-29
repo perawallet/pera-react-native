@@ -16,6 +16,7 @@ import { describe, expect, it } from 'vitest'
 import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain/pq/derivation'
 import { getPQProvider } from '@perawallet/wallet-core-kms/crypto/pq'
 import { quantumAddressCandidates } from '@perawallet/wallet-core-kms/crypto/quantumAddressCandidates'
+import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts/quantum'
 
 import {
     createAlgo25Account,
@@ -113,7 +114,10 @@ describe('quantum derivation conformance', () => {
         const account = await createQuantumAccount(ks)
         const entropy = algosdk.seedFromMnemonic(account.mnemonic)
 
-        const candidates = quantumAddressCandidates(entropy)
+        const candidates = quantumAddressCandidates(
+            entropy,
+            algorandQuantumDerivation,
+        )
         const canonical = candidates.find(
             candidate => candidate.derivation === 'pqk1',
         )
