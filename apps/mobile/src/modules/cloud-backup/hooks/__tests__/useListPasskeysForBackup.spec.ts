@@ -21,6 +21,7 @@ const getDerivedPublicKeyMock = vi.fn()
 const entropyChildIdOfMock = vi.fn<() => string | undefined>()
 const withSecretMock = vi.fn<() => Promise<Uint8Array | null>>()
 const zeroBytesMock = vi.fn<(secret: Uint8Array) => void>()
+const canAccessMock = vi.fn<(key: unknown, domain: string) => boolean>()
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Khovratovich: 32, Peikert: 9 },
@@ -31,6 +32,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
+    BACKUP_ACCESS_DOMAIN: 'backup-flow',
+    canAccess: (key: unknown, domain: string) => canAccessMock(key, domain),
     entropyChildIdOf: () => entropyChildIdOfMock(),
     withSecret: () => withSecretMock(),
     zeroBytes: (secret: Uint8Array) => zeroBytesMock(secret),
@@ -55,6 +58,7 @@ describe('useListPasskeysForBackup', () => {
         entropyChildIdOfMock.mockReset().mockReturnValue(undefined)
         withSecretMock.mockReset().mockResolvedValue(null)
         zeroBytesMock.mockReset()
+        canAccessMock.mockReset().mockReturnValue(true)
     })
 
     it('drops credentials that cannot be re-derived', async () => {
@@ -122,7 +126,11 @@ describe('useListPasskeysForBackup', () => {
     // entropy, and a user's credentials cluster on one wallet, so the sweep
     // reads the secret once and shares one main-key cache across the batch.
     it('reads a seed secret once for every credential that shares it, then zeroes it', async () => {
-        keystoreKeys.mockReturnValue([{ id: 'a' }, { id: 'b' }])
+        keystoreKeys.mockReturnValue([
+            { id: 'a' },
+            { id: 'b' },
+            { id: 'seed-1' },
+        ])
         entropyChildIdOfMock.mockReturnValue('entropy-1')
         const entropy = new Uint8Array([1, 2, 3])
         withSecretMock.mockResolvedValue(entropy)
@@ -150,9 +158,39 @@ describe('useListPasskeysForBackup', () => {
         expect(withSecretMock).toHaveBeenCalledTimes(1)
         // One cache instance for the whole sweep, or every credential derives
         // its own main key.
-        const caches = inputsFor.mock.calls.map(call => call[3])
+        const caches = inputsFor.mock.calls
+            .filter(call => call[0].id !== 'seed-1')
+            .map(call => call[3])
         expect(caches).toHaveLength(2)
         expect(caches[0]).toBe(caches[1])
         expect(zeroBytesMock).toHaveBeenCalledWith(entropy)
+    })
+
+    it('never reads the entropy of a seed whose ACL denies the backup domain', async () => {
+        keystoreKeys.mockReturnValue([{ id: 'a' }, { id: 'seed-1' }])
+        entropyChildIdOfMock.mockReturnValue('entropy-1')
+        withSecretMock.mockResolvedValue(new Uint8Array([1, 2, 3]))
+        canAccessMock.mockReturnValue(false)
+        let resolved: unknown
+        inputsFor.mockImplementation(
+            async (
+                _key: { id: string },
+                resolveEntropy: (seedKeyId: string) => Promise<unknown>,
+            ) => {
+                resolved = await resolveEntropy('seed-1')
+                return null
+            },
+        )
+
+        const { result } = renderHook(() => useListPasskeysForBackup())
+        const passkeys = await result.current()
+
+        expect(canAccessMock).toHaveBeenCalledWith(
+            { id: 'seed-1' },
+            'backup-flow',
+        )
+        expect(resolved).toBeNull()
+        expect(withSecretMock).not.toHaveBeenCalled()
+        expect(passkeys).toEqual([])
     })
 })

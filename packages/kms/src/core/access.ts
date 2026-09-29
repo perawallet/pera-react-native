@@ -15,19 +15,18 @@ import { AccessControlPermission } from '../models'
 import { aclOf } from '../utils'
 import { KeyAccessError } from '../errors'
 
-export const checkAccess = (key: Key, domain: string): void => {
-    // `aclOf` always returns a non-empty ACL (the wallet's own-origin default
-    // for seeds without an explicit one), so this is fail-closed: a domain not
-    // granted ReadPrivate is rejected rather than slipping through the old
-    // empty-ACL bypass.
-    const acl = aclOf(key)
-    const hasAccess = acl.some(
+// `aclOf` always returns a non-empty ACL (the wallet's own-origin default for
+// seeds without an explicit one), so this is fail-closed: a domain not granted
+// ReadPrivate is rejected rather than slipping through the old empty-ACL bypass.
+export const canAccess = (key: Key, domain: string): boolean =>
+    aclOf(key).some(
         entry =>
             entry.domains.includes(domain) &&
             entry.permissions.includes(AccessControlPermission.ReadPrivate),
     )
 
-    if (!hasAccess) {
+export const checkAccess = (key: Key, domain: string): void => {
+    if (!canAccess(key, domain)) {
         throw new KeyAccessError()
     }
 }

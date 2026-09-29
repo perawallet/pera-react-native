@@ -14,7 +14,9 @@ import { useCallback } from 'react'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
+    BACKUP_ACCESS_DOMAIN,
     SeedScheme,
+    canAccess,
     entropyChildIdOf,
     seedSchemeOf,
     useKMS,
@@ -48,6 +50,7 @@ export const useResolveSeedEntropyForBackup = (): SeedEntropyResolver => {
                 if (encodeAlgorandAddress(firstDerived) !== seedAddress) {
                     continue
                 }
+                if (!canAccess(key, BACKUP_ACCESS_DOMAIN)) return null
 
                 const entropyId = entropyChildIdOf(key.id, keys)
                 if (!entropyId) return null

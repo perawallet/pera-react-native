@@ -19,9 +19,11 @@ const {
     getDerivedPublicKeyMock,
     secretBytesById,
     withSecretMock,
+    canAccessMock,
 } = vi.hoisted(() => {
     const secretBytesById = new Map<string, Uint8Array>()
     return {
+        canAccessMock: vi.fn((_key: unknown, _domain: string) => true),
         keystoreKeys: vi.fn().mockReturnValue([]),
         getDerivedPublicKeyMock: vi.fn(),
         secretBytesById,
@@ -52,6 +54,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
+    BACKUP_ACCESS_DOMAIN: 'backup-flow',
+    canAccess: (key: unknown, domain: string) => canAccessMock(key, domain),
     SeedScheme: { Bip39: 'bip39', Algo25: 'algo25', Quantum: 'quantum' },
     seedSchemeOf: (key: { type: string }) =>
         key.type === 'hd-root-key' ? 'bip39' : null,
@@ -83,6 +87,7 @@ describe('useResolveSeedEntropyForBackup', () => {
         secretBytesById.clear()
         getDerivedPublicKeyMock.mockReset()
         withSecretMock.mockClear()
+        canAccessMock.mockClear().mockReturnValue(true)
     })
 
     it('returns the entropy of the seed whose first-derived address matches', async () => {
@@ -174,5 +179,24 @@ describe('useResolveSeedEntropyForBackup', () => {
         expect((await result.current('ADDR-9'))?.seedKeyId).toBe(
             'local-seed-id',
         )
+    })
+
+    it('returns null without reading the entropy of a seed whose ACL denies the backup domain', async () => {
+        keystoreKeys.mockReturnValue([
+            { id: 'seed-1', type: 'hd-root-key', metadata: {} },
+            {
+                id: 'entropy-1',
+                type: 'secret-key',
+                metadata: { parentKeyId: 'seed-1', entropyKey: true },
+            },
+        ])
+        secretBytesById.set('entropy-1', new Uint8Array(32).fill(7))
+        getDerivedPublicKeyMock.mockResolvedValue(new Uint8Array([9]))
+        canAccessMock.mockReturnValue(false)
+
+        const { result } = renderHook(() => useResolveSeedEntropyForBackup())
+
+        expect(await result.current('ADDR-9')).toBeNull()
+        expect(withSecretMock).not.toHaveBeenCalled()
     })
 })

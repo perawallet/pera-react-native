@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { Key } from '@algorandfoundation/keystore-core'
 import { useKMSService, checkAccess } from '../useKMSServices'
+import { canAccess } from '../../core/access'
 import { AccessControlPermission } from '../../models'
 import { SeedScheme } from '../../constants'
 import { KeyAccessError, KeyNotFoundError } from '../../errors'
@@ -153,6 +154,26 @@ describe('useKMSService', () => {
             const { result } = renderHook(() => useKMSService())
 
             expect(result.current.checkAccess).toBe(checkAccess)
+        })
+    })
+
+    describe('canAccess', () => {
+        test('answers what checkAccess enforces, without throwing', () => {
+            const granted = makeKey([
+                {
+                    domains: ['test-domain'],
+                    permissions: [AccessControlPermission.ReadPrivate],
+                },
+            ])
+            const denied = makeKey([
+                {
+                    domains: ['other-domain'],
+                    permissions: [AccessControlPermission.ReadPrivate],
+                },
+            ])
+
+            expect(canAccess(granted, 'test-domain')).toBe(true)
+            expect(canAccess(denied, 'test-domain')).toBe(false)
         })
     })
 

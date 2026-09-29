@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export { canAccess } from './access'
 export { kmsCore } from './kmsCore'
 export { algorandHdDerivationRequest, hdDerivedKeyId } from './hdDerivation'
 export type {
