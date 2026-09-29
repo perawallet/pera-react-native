@@ -21,7 +21,7 @@ import {
     assertWebConfigAllowlisted,
 } from '../web-config.mjs'
 
-const SCRIPT = join(__dirname, '../../../../tools/generate-config.sh')
+const SCRIPT = join(__dirname, '../../../../tools/dev/generate-config.sh')
 
 const emittable = (): Map<string, string> => {
     const source = readFileSync(SCRIPT, 'utf8')

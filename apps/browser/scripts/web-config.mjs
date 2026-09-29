@@ -13,7 +13,7 @@
 /**
  * The generated-env keys the extension may bake. Everything in the zip is one
  * unzip away from any user, so this is fail-closed: a key added to
- * tools/generate-config.sh stays out of the extension until it is listed here.
+ * tools/dev/generate-config.sh stays out of the extension until it is listed here.
  *
  * Deliberately absent: native-only identifiers (App Store id, Play Integrity
  * project, Google Drive OAuth clients) and disableScreenCapturePrevention.

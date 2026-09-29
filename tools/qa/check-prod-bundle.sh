@@ -22,7 +22,7 @@
 
 set -e
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 EXIT_CODE=0
 
 echo "Checking for test-only module leaks in package dist/ trees..."

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# Pins the fallback rule that tools/release-range-start.sh adds on top of
-# tools/previous-release-tag.sh, and that the delivered-ticket list and the Slack
+# Pins the fallback rule that tools/release/range-start.sh adds on top of
+# tools/release/previous-release-tag.sh, and that the delivered-ticket list and the Slack
 # changelog both depend on:
 #
 #   - a prerelease with no predecessor on its channel falls back to the nearest
@@ -12,7 +12,7 @@ set -uo pipefail
 #
 # Throwaway repo rather than this repo's real tags, which move.
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/release-range-start.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/release/range-start.sh"
 REPO=$(mktemp -d)
 trap 'rm -rf "$REPO"' EXIT
 

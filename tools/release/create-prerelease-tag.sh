@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# tools/create-nightly-tag.sh
+# tools/release/create-prerelease-tag.sh
 # Mints a prerelease tag (vX.Y.Z-<channel>.N) on the current HEAD and pushes it
 # to origin, which triggers the release-builds pipeline (prod + staging). Run
 # from GitHub Actions: nightly on the alpha channel, weekly on the rc channel.
@@ -19,7 +19,7 @@ set -euo pipefail
 # Version source: apps/mobile/package.json .version, base part before any
 # prerelease suffix (e.g. "7.0.0-alpha" -> "7.0.0").
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PKG_JSON="${PKG_JSON:-$ROOT_DIR/apps/mobile/package.json}"
 
 VERSION=$(jq -r '.version | split("-")[0]' "$PKG_JSON")

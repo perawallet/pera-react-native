@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# tools/rebuild-native.sh
+# tools/dev/rebuild-native.sh
 # Builds native addons that pnpm skips during `pnpm install` locally.
 #
 # Why this is needed:
@@ -20,7 +20,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Resolve the better-sqlite3 install the database package actually uses, via
 # its symlink. This stays correct across version bumps — no hardcoded path.
