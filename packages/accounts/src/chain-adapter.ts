@@ -24,11 +24,10 @@ import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
 import type { QuantumChainDerivation } from '@perawallet/wallet-core-kms'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import {
-    MultisigAddressUnsupportedError,
     QuantumAccountsUnsupportedError,
     RekeyUnsupportedError,
 } from './errors'
-import type { DerivationType, HDWalletDetails, MultiSigDetails } from './models'
+import type { DerivationType, HDWalletDetails } from './models'
 
 export type AccountHoldingSnapshot = {
     assetId: string
@@ -106,8 +105,6 @@ export interface AccountsChainAdapter {
     assertHdPathMatches(hdPath: string, details: HDWalletDetails): void
     /** Absent on a chain with no post-quantum accounts. */
     readonly quantum?: QuantumChainDerivation
-    /** Absent on a chain whose multisig address can't be derived locally. */
-    deriveMultisigAddress?(details: MultiSigDetails): string
     /** Accounts whose signer is `authAddress`. Absent on a chain without rekey. */
     fetchRekeyedAddresses?(
         authAddress: string,
@@ -150,16 +147,6 @@ export const requireQuantum = (
     return adapter.quantum
 }
 
-/** Throws {@link MultisigAddressUnsupportedError} when the chain can't derive it locally. */
-export const requireMultisigAddress = (
-    adapter: AccountsChainAdapter,
-): NonNullable<AccountsChainAdapter['deriveMultisigAddress']> => {
-    if (!adapter.deriveMultisigAddress) {
-        throw new MultisigAddressUnsupportedError(adapter.chainId)
-    }
-    return adapter.deriveMultisigAddress.bind(adapter)
-}
-
 /** Rejects with {@link RekeyUnsupportedError} on a chain without rekey. */
 export const fetchRekeyedAddresses = async (
     authAddress: string,
@@ -173,11 +160,6 @@ export const fetchRekeyedAddresses = async (
 export const quantumDerivationFor = (
     network: Network,
 ): QuantumChainDerivation => requireQuantum(accountsAdapterFor(network))
-
-export const deriveMultisigAddress = (
-    network: Network,
-    details: MultiSigDetails,
-): string => requireMultisigAddress(accountsAdapterFor(network))(details)
 
 /** Empty on a chain without asset opt-in. */
 export const fetchAssetOptInRounds = async (

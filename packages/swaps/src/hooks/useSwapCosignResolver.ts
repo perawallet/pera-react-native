@@ -221,6 +221,7 @@ export const useSwapCosignResolver = ({
                 })
             }
             return classifyHandoffPoll(detail, {
+                network: handoff.network,
                 multisigAddress: handoff.multisigAddress,
                 msigMetadata: handoff.msigMetadata,
                 expectedRawTransactionsBase64:

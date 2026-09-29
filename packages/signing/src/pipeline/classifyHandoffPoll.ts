@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { rawTransactionsMatch } from '@perawallet/wallet-core-blockchain'
 import {
-    assembleSignedMultisigTransactions,
-    rawTransactionsMatch,
+    multisigAdapterFor,
     type ParticipantResponse,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-multisig'
 import {
     logger,
     type Network,
@@ -79,6 +79,8 @@ export type TerminalHandoffOutcome = Exclude<
  * reuse the classification logic without fabricating WC-only fields.
  */
 export type HandoffAssemblyContext = {
+    /** Picks the chain whose multisig adapter assembles the envelopes. */
+    network: Network
     multisigAddress: string
     msigMetadata: { version: number; threshold: number; addresses: string[] }
     expectedRawTransactionsBase64: string[]
@@ -166,9 +168,10 @@ const classifyReadyPoll = async (
 
     // Assemble one composite SignedTransaction per item, in canonical order:
     // by list, then by position within the list.
+    const multisig = multisigAdapterFor(handoff.network)
     const assembledBytes: Uint8Array[] = []
     for (const list of lists) {
-        const result = await assembleSignedMultisigTransactions({
+        const result = await multisig.assembleSignedTransactions({
             rawTransactionsBase64: list.raw_transactions,
             participantAddresses: handoff.msigMetadata.addresses,
             version: handoff.msigMetadata.version,

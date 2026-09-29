@@ -25,7 +25,7 @@ import {
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain'
+import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig'
 import {
     mockCreateMultisigAccount,
     mockDeleteMultisigImportInbox,

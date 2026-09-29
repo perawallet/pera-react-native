@@ -13,10 +13,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    generateMultisigAddress: vi.fn(
-        (version: number, threshold: number, addresses: string[]) =>
-            `MSIG:v${version}:t${threshold}:${addresses.join(',')}`,
-    ),
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
@@ -25,7 +21,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
-import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    multisigChainAdapters,
+    type MultisigParameters,
+} from '@perawallet/wallet-core-multisig'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import {
     buildWatchAccount,
@@ -50,8 +50,20 @@ const buildLegacyAccount = (
         ...overrides,
     }) as LegacyAccount
 
+const deriveAddress = vi.fn(
+    ({ version, threshold, addresses }: MultisigParameters) =>
+        `MSIG:v${version}:t${threshold}:${addresses.join(',')}`,
+)
+
 beforeEach(() => {
-    vi.mocked(generateMultisigAddress).mockClear()
+    deriveAddress.mockClear()
+    multisigChainAdapters.reset()
+    multisigChainAdapters.register({
+        chainId: LEGACY_CHAIN_ID,
+        deriveAddress,
+        assembleSignedTransactions: vi.fn(),
+        validateSignRequest: vi.fn(),
+    })
 })
 
 describe('buildWatchAccount', () => {
@@ -219,7 +231,7 @@ describe('buildMultiSigAccount', () => {
                 version: 1,
             },
         })
-        expect(generateMultisigAddress).not.toHaveBeenCalled()
+        expect(deriveAddress).not.toHaveBeenCalled()
     })
 
     it('derives the threshold by brute-forcing when not stored', () => {
@@ -236,8 +248,16 @@ describe('buildMultiSigAccount', () => {
         if (account.type !== AccountTypes.multisig)
             throw new Error('expected multisig account')
         expect(account.multisigDetails.threshold).toBe(2)
-        expect(generateMultisigAddress).toHaveBeenCalledWith(1, 1, participants)
-        expect(generateMultisigAddress).toHaveBeenCalledWith(1, 2, participants)
+        expect(deriveAddress).toHaveBeenCalledWith({
+            version: 1,
+            threshold: 1,
+            addresses: participants,
+        })
+        expect(deriveAddress).toHaveBeenCalledWith({
+            version: 1,
+            threshold: 2,
+            addresses: participants,
+        })
     })
 
     it('throws when no candidate threshold matches the stored address', () => {

@@ -17,11 +17,11 @@ import {
     msgpackRawEncode as encodeMsgpack,
 } from 'algosdk'
 import nacl from 'tweetnacl'
+import type { ParticipantResponse } from '@perawallet/wallet-core-multisig'
 import {
     VERIFY_BATCH_SIZE,
     assembleSignedMultisigTransactions,
-    type ParticipantResponse,
-} from '../assembleSignedMultisigTransactions'
+} from '../assemble'
 
 // Test fixtures — real Ed25519 keypairs: the assembler verifies every
 // signature against `"TX" || txnBytes` under the participant pubkey, so

@@ -12,21 +12,17 @@
 
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import { useMultisigDetailsBackfill } from '../useMultisigDetailsBackfill'
-import {
-    fakeAccountsChain,
-    registerFakeAccountsChain,
-} from '../../__tests__/fakeAccountsChain'
 
 import type { WalletAccount } from '../../models'
 
 const mocks = vi.hoisted(() => ({
     updateAccount: vi.fn(),
     useMultisigAccountDetailQuery: vi.fn(),
+    multisigAdapterFor: vi.fn(),
+    deriveAddress: vi.fn(),
 }))
-
-const deriveMultisigAddress = () =>
-    vi.mocked(fakeAccountsChain().adapter.deriveMultisigAddress!)
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
@@ -42,6 +38,7 @@ vi.mock('../../utils', () => ({
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     useMultisigAccountDetailQuery: mocks.useMultisigAccountDetailQuery,
+    multisigAdapterFor: mocks.multisigAdapterFor,
 }))
 
 const detailLessMultisig = {
@@ -53,8 +50,11 @@ const detailLessMultisig = {
 describe('useMultisigDetailsBackfill', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mocks.multisigAdapterFor.mockReturnValue({
+            deriveAddress: mocks.deriveAddress,
+        })
         // default: server data legitimately derives the account's address
-        deriveMultisigAddress().mockReturnValue('MSIG_ADDR')
+        mocks.deriveAddress.mockReturnValue('MSIG_ADDR')
     })
 
     it('enables the detail query only when a multisig account lacks details', () => {
@@ -105,7 +105,8 @@ describe('useMultisigDetailsBackfill', () => {
             useMultisigDetailsBackfill(detailLessMultisig),
         )
 
-        expect(deriveMultisigAddress()).toHaveBeenCalledWith({
+        expect(mocks.multisigAdapterFor).toHaveBeenCalledWith('mainnet')
+        expect(mocks.deriveAddress).toHaveBeenCalledWith({
             version: 1,
             threshold: 2,
             addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
@@ -127,7 +128,7 @@ describe('useMultisigDetailsBackfill', () => {
     })
 
     it('refuses to backfill when the participant set does not derive the address', () => {
-        deriveMultisigAddress().mockReturnValue('A_DIFFERENT_ADDRESS')
+        mocks.deriveAddress.mockReturnValue('A_DIFFERENT_ADDRESS')
         mocks.useMultisigAccountDetailQuery.mockReturnValue({
             data: {
                 threshold: 2,
@@ -143,7 +144,7 @@ describe('useMultisigDetailsBackfill', () => {
     })
 
     it('refuses to backfill when derivation throws on a malformed participant', () => {
-        deriveMultisigAddress().mockImplementation(() => {
+        mocks.deriveAddress.mockImplementation(() => {
             throw new Error('invalid address')
         })
         mocks.useMultisigAccountDetailQuery.mockReturnValue({
@@ -160,8 +161,10 @@ describe('useMultisigDetailsBackfill', () => {
         expect(mocks.updateAccount).not.toHaveBeenCalled()
     })
 
-    it('fails closed on a chain that cannot derive the address locally', () => {
-        registerFakeAccountsChain({ deriveMultisigAddress: undefined })
+    it('fails closed on a chain with no multisig adapter', () => {
+        mocks.multisigAdapterFor.mockImplementation(() => {
+            throw new ChainAdapterNotRegisteredError('multisig', 'algorand')
+        })
         mocks.useMultisigAccountDetailQuery.mockReturnValue({
             data: {
                 threshold: 2,

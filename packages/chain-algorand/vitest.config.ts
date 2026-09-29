@@ -27,6 +27,8 @@ const CONTRACT_SUITES = {
         '../chain-contract/src/__tests__/testing.ts',
     '@perawallet/wallet-core-connections/testing':
         '../connections/src/__tests__/handler-contract.ts',
+    '@perawallet/wallet-core-multisig/testing':
+        '../multisig/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-nfd/testing':
         '../nfd/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-onramp/testing':

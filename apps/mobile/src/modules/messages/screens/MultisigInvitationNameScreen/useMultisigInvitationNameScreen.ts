@@ -24,12 +24,10 @@ import {
     useSelectedAccountAddress,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    generateMultisigAddress,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
+import { multisigAdapterFor } from '@perawallet/wallet-core-multisig'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
@@ -141,11 +139,13 @@ export const useMultisigInvitationNameScreen =
                 // invitation is corrupt or tampered. Checked before the inbox
                 // delete so a bad invitation isn't consumed. Mirrors the QR
                 // import path in useNameMultisigScreen.
-                const derivedAddress = generateMultisigAddress(
-                    invitation.version,
-                    invitation.threshold,
-                    invitation.participantAddresses,
-                )
+                const derivedAddress = multisigAdapterFor(
+                    network,
+                ).deriveAddress({
+                    version: invitation.version,
+                    threshold: invitation.threshold,
+                    addresses: invitation.participantAddresses,
+                })
                 if (derivedAddress !== invitation.address) {
                     errorToast(
                         t('multisig.import.address_mismatch_title'),
@@ -189,6 +189,7 @@ export const useMultisigInvitationNameScreen =
             }
         }, [
             isSaving,
+            network,
             deviceId,
             accounts,
             invitation.address,

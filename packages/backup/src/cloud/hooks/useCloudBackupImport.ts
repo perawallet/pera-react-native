@@ -26,9 +26,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     encodeAlgorandAddress,
-    generateMultisigAddress,
     isValidAlgorandAddress,
 } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     hdDerivedKeyId,
     hexToBytes,
@@ -36,6 +36,7 @@ import {
     useKMS,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
+import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import {
     BackupAccountType,
@@ -114,11 +115,12 @@ const buildWatchAccount = (payload: WatchAddressPayload): WatchAccount => {
 const buildMultisigAccount = (
     payload: MultisigAddressPayload,
 ): MultiSigAccount => {
-    const derived = generateMultisigAddress(
-        payload.version,
-        payload.threshold,
-        payload.participantAddresses,
-    )
+    // The backup format predates chain scopes, so every entry is the legacy chain's.
+    const derived = multisigChainAdapters.get(LEGACY_CHAIN_ID).deriveAddress({
+        version: payload.version,
+        threshold: payload.threshold,
+        addresses: payload.participantAddresses,
+    })
     if (derived !== payload.address) {
         throw new Error(
             `Multisig address mismatch: derived ${derived} != backup ${payload.address}`,

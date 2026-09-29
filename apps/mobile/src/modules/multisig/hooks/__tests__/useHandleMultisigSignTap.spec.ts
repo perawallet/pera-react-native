@@ -57,6 +57,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
+    useNetwork: () => ({ network: 'mainnet' }),
     useTransactionEncoder: () => ({ decodeTransaction: decodeTransactionMock }),
 }))
 
@@ -162,6 +163,7 @@ describe('useHandleMultisigSignTap', () => {
             expect(buildCosignArgsMock).toHaveBeenCalledWith({
                 signRequest,
                 signerAddress: 'A',
+                network: 'mainnet',
                 decodeTransaction: decodeTransactionMock,
                 localAccounts: allAccountsStub,
             })

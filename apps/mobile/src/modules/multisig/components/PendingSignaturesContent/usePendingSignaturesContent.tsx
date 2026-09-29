@@ -291,6 +291,7 @@ export const usePendingSignaturesContent =
                     const cosignRequest = buildMultisigCosignRequest({
                         signRequest,
                         signerAddress: address,
+                        network,
                         decodeTransaction,
                         localAccounts: accounts,
                     })
@@ -309,6 +310,7 @@ export const usePendingSignaturesContent =
             },
             [
                 signRequest,
+                network,
                 decodeTransaction,
                 addSignRequest,
                 accounts,

@@ -15,7 +15,7 @@ import { createHash } from 'node:crypto'
 import algosdk from 'algosdk'
 import { describe, expect, it } from 'vitest'
 
-import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain/utils/multisig'
+import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig/address'
 
 import {
     createAlgo25Account,

@@ -16,6 +16,11 @@ import {
     msgpackRawEncode as encodeMsgpack,
 } from 'algosdk'
 import nacl from 'tweetnacl'
+import { addTxPrefix } from '@perawallet/wallet-core-blockchain'
+import type {
+    AssembleSignedMultisigParams,
+    AssembleSignedMultisigResult,
+} from '@perawallet/wallet-core-multisig'
 import {
     bytesEqual,
     concatBytes,
@@ -23,7 +28,6 @@ import {
     deferToNextCycle,
 } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { addTxPrefix } from './rawTransactions'
 
 // Defence-in-depth caps on base64 fields in the backend cosign response, applied
 // before each decode. A signature is exactly 64 bytes; 128 leaves slack for
@@ -41,47 +45,6 @@ const SIGNATURE_BYTE_LENGTH = 64
 // transaction would still run `16 × participants` synchronous tweetnacl
 // verifies back to back and freeze the thread on any multi-signer group.
 export const VERIFY_BATCH_SIZE = 16
-
-/** `signatures[i]` matches `rawTransactions[i]`; null means "didn't sign". */
-export type ParticipantResponse = {
-    address: string
-    response: 'signed' | 'declined'
-    signatures?: Nullable<string>[]
-}
-
-export type AssembleSignedMultisigParams = {
-    /** Base64-encoded canonical msgpack bytes for each unsigned transaction. */
-    rawTransactionsBase64: string[]
-    /** Multisig participant addresses, in the same order as the on-chain msig. */
-    participantAddresses: string[]
-    /** Multisig version (typically `1`). */
-    version: number
-    /** Threshold (minimum number of signatures required). */
-    threshold: number
-    /** Per-participant responses; only entries with `response: 'signed'` contribute sigs. */
-    responses: ParticipantResponse[]
-    /**
-     * A sender that differs from this is rekeyed to the multisig, so the
-     * envelope gains an `sgnr` field. Omit for plain multisig spends.
-     */
-    multisigAddress?: string
-}
-
-export type AssembleSignedMultisigResult =
-    | { kind: 'success'; signedTransactionsBytes: Uint8Array[] }
-    /**
-     * A transaction index has fewer valid signatures than the threshold.
-     * Distinct from `error` because it's retryable: the backend can flip a
-     * request to `ready` before every signature payload is serialized, so a
-     * poll-driven caller should treat this as "not yet", not a hard failure.
-     */
-    | {
-          kind: 'insufficient-signatures'
-          txIndex: number
-          validCount: number
-          threshold: number
-      }
-    | { kind: 'error'; reason: string }
 
 /** Header for `{ msig, txn }` — see `assembleSignedMultisigTransactions`. */
 const SIGNED_TXN_MAP_HEADER = new Uint8Array([0x82])

@@ -12,36 +12,33 @@
 
 // @vitest-environment node
 
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 let mockIdCounter = 0
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock(import('@perawallet/wallet-core-shared'), async importOriginal => ({
+    ...(await importOriginal()),
     decodeFromBase64: (s: string) => new Uint8Array(Buffer.from(s, 'base64')),
     generateOrderedUniqueId: () => `mock-id-${++mockIdCounter}`,
 }))
 
-// Derivation is stubbed so the builder's checks can be exercised without real
-// base32 participant addresses. The real generateMultisigAddress has its own
-// spec in packages/blockchain. Defaults to the fixture's joint address.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    generateMultisigAddress: vi.fn(() => 'MULTISIG'),
+const mocks = vi.hoisted(() => ({
+    multisigAdapterFor: vi.fn(),
+    validateSignRequest: vi.fn(),
 }))
 
+// The chain adapter owns the derive and sender checks (real-transaction
+// coverage lives in chain-algorand); this spec covers what the builder feeds
+// it and how it maps each verdict.
 vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
     const actual = await importOriginal()
-    return { ...actual }
+    return { ...actual, multisigAdapterFor: mocks.multisigAdapterFor }
 })
 
-import {
-    generateMultisigAddress,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import { buildMultisigCosignRequest } from '../buildMultisigCosignRequest'
 
-// A decoded transaction only needs a `sender` whose toString() the builder
-// compares against the joint account address.
 const txFrom = (sender = 'MULTISIG'): PeraTransaction =>
     ({ sender: { toString: () => sender } }) as unknown as PeraTransaction
 
@@ -78,7 +75,11 @@ const buildSignRequest = (
 
 describe('buildMultisigCosignRequest', () => {
     beforeEach(() => {
-        ;(generateMultisigAddress as Mock).mockReturnValue('MULTISIG')
+        mocks.validateSignRequest.mockReset()
+        mocks.validateSignRequest.mockReturnValue({ kind: 'valid' })
+        mocks.multisigAdapterFor.mockReturnValue({
+            validateSignRequest: mocks.validateSignRequest,
+        })
     })
 
     it('produces a multisig-cosign TransactionSignRequest with the threaded signRequestId', () => {
@@ -87,6 +88,7 @@ describe('buildMultisigCosignRequest', () => {
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
+            network: 'testnet',
             decodeTransaction,
             localAccounts: [],
         })
@@ -103,6 +105,7 @@ describe('buildMultisigCosignRequest', () => {
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
+            network: 'testnet',
             decodeTransaction,
             localAccounts: [],
         })
@@ -118,6 +121,7 @@ describe('buildMultisigCosignRequest', () => {
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'B',
+            network: 'testnet',
             decodeTransaction,
             localAccounts: [],
         })
@@ -135,12 +139,14 @@ describe('buildMultisigCosignRequest', () => {
         const a = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
+            network: 'testnet',
             decodeTransaction,
             localAccounts: [],
         })
         const b = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'B',
+            network: 'testnet',
             decodeTransaction,
             localAccounts: [],
         })
@@ -158,12 +164,14 @@ describe('buildMultisigCosignRequest', () => {
         const first = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
+            network: 'testnet',
             decodeTransaction,
             localAccounts: [],
         })
         const second = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
+            network: 'testnet',
             decodeTransaction,
             localAccounts: [],
         })
@@ -179,136 +187,109 @@ describe('buildMultisigCosignRequest', () => {
             buildMultisigCosignRequest({
                 signRequest,
                 signerAddress: 'A',
+                network: 'testnet',
                 decodeTransaction,
                 localAccounts: [],
             }),
         ).toThrow(/no transaction lists/)
     })
 
-    // a cosignature must never be a standalone-valid single sig.
-    it('throws when a transaction is sent by the co-signer themselves (standalone-single-sig drain)', () => {
-        // The joint account derives correctly, but one tx is sent by the
-        // co-signer's OWN address. useLocalKeyTransactionSigner omits `sgnr`
-        // when signer === sender, so that signature verifies standalone and
-        // drains the co-signer. 'dHgx'/'dHgy' decode to "tx1"/"tx2"; they
-        // differ only in the 3rd byte ('1' vs '2'), so key the offender off it.
-        const decodeTransaction = vi.fn((bytes: Uint8Array) =>
-            bytes[2] === 0x31 ? txFrom('MULTISIG') : txFrom('A'),
-        )
-
-        expect(() =>
-            buildMultisigCosignRequest({
-                signRequest: buildSignRequest(),
-                signerAddress: 'A',
-                decodeTransaction,
-                localAccounts: [],
-            }),
-        ).toThrow(/not authorized by the joint account/)
-    })
-
-    it('allows a sender rekeyed to the joint account — the subsig still binds to sgnr', () => {
-        // Regression: requiring sender === joint account rejected the supported
-        // flow where a watch account is rekeyed to a shared multisig (see the
-        // sign-multisig-rekeyed integration test). Signer !== sender there, so
-        // `sgnr` is set and the signature is not standalone-valid.
-        const decodeTransaction = vi.fn(() => txFrom('REKEYED_SENDER'))
-
-        const result = buildMultisigCosignRequest({
+    const authorizedSendersFor = (localAccounts: WalletAccount[]) => {
+        buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
-            decodeTransaction,
-            localAccounts: [
-                { address: 'REKEYED_SENDER', rekeyAddress: 'MULTISIG' },
-            ] as WalletAccount[],
+            network: 'testnet',
+            decodeTransaction: vi.fn(() => txFrom()),
+            localAccounts,
+        })
+        return mocks.validateSignRequest.mock.calls[0][1] as Set<string>
+    }
+
+    it('validates through the adapter of the given network', () => {
+        const signRequest = buildSignRequest()
+
+        buildMultisigCosignRequest({
+            signRequest,
+            signerAddress: 'A',
+            network: 'testnet',
+            decodeTransaction: vi.fn(() => txFrom()),
+            localAccounts: [],
         })
 
-        expect(result.txs).toHaveLength(2)
-        expect(result.signerOverrides!.get(0)).toBe('A')
+        expect(mocks.multisigAdapterFor).toHaveBeenCalledWith('testnet')
+        expect(mocks.validateSignRequest).toHaveBeenCalledWith(
+            signRequest,
+            new Set(['MULTISIG']),
+        )
+    })
+
+    it('authorizes a local sender rekeyed to the joint account — the subsig still binds to sgnr', () => {
+        // Requiring sender === joint account would reject the supported flow
+        // where a watch account is rekeyed to a shared multisig (see the
+        // sign-multisig-rekeyed integration test).
+        const senders = authorizedSendersFor([
+            { address: 'REKEYED_SENDER', rekeyAddress: 'MULTISIG' },
+        ] as WalletAccount[])
+
+        expect(senders).toEqual(new Set(['MULTISIG', 'REKEYED_SENDER']))
     })
 
     // `sgnr` is not covered by the signature, so a subsig from participant key S
     // stands alone for any sender whose auth-addr is S — not only sender === S.
-    it("throws when a sender is an account the co-signer's own key authorizes", () => {
-        const rekeyedToSigner = {
-            address: 'REKEYED_TO_SIGNER',
-            rekeyAddress: 'A',
-        } as WalletAccount
-        const decodeTransaction = vi.fn(() => txFrom('REKEYED_TO_SIGNER'))
+    it("does not authorize an account the co-signer's own key authorizes", () => {
+        const senders = authorizedSendersFor([
+            { address: 'REKEYED_TO_SIGNER', rekeyAddress: 'A' },
+        ] as WalletAccount[])
 
-        expect(() =>
-            buildMultisigCosignRequest({
-                signRequest: buildSignRequest(),
-                signerAddress: 'A',
-                localAccounts: [rekeyedToSigner],
-                decodeTransaction,
-            }),
-        ).toThrow(/not authorized by the joint account/)
+        expect(senders).toEqual(new Set(['MULTISIG']))
     })
 
     it('ignores a rekey to the joint account recorded on another network', () => {
-        const decodeTransaction = vi.fn(() => txFrom('REKEYED_ELSEWHERE'))
+        const senders = authorizedSendersFor([
+            {
+                address: 'REKEYED_ELSEWHERE',
+                rekeyAddress: 'A',
+                rekeyAddressByNetwork: { mainnet: 'A', testnet: 'MULTISIG' },
+            },
+        ] as unknown as WalletAccount[])
 
-        expect(() =>
-            buildMultisigCosignRequest({
-                signRequest: buildSignRequest(),
-                signerAddress: 'A',
-                localAccounts: [
-                    {
-                        address: 'REKEYED_ELSEWHERE',
-                        rekeyAddress: 'A',
-                        rekeyAddressByNetwork: {
-                            mainnet: 'A',
-                            testnet: 'MULTISIG',
-                        },
-                    },
-                ] as unknown as WalletAccount[],
-                decodeTransaction,
-            }),
-        ).toThrow(/not authorized by the joint account/)
+        expect(senders).toEqual(new Set(['MULTISIG']))
     })
 
-    it('rejects a local sender the joint account does not authorize', () => {
-        const decodeTransaction = vi.fn(() => txFrom('OTHER_LOCAL'))
+    it('does not authorize a local sender the joint account does not authorize', () => {
+        const senders = authorizedSendersFor([
+            { address: 'OTHER_LOCAL' },
+        ] as unknown as WalletAccount[])
 
-        expect(() =>
-            buildMultisigCosignRequest({
-                signRequest: buildSignRequest(),
-                signerAddress: 'A',
-                localAccounts: [
-                    { address: 'OTHER_LOCAL' },
-                ] as unknown as WalletAccount[],
-                decodeTransaction,
-            }),
-        ).toThrow(/not authorized by the joint account/)
+        expect(senders).toEqual(new Set(['MULTISIG']))
     })
 
-    // The negative guard could only name senders the wallet knows; a sender
-    // rekeyed to the co-signer's key on chain but absent locally walked past it.
-    it('rejects a sender the wallet has never seen', () => {
-        const decodeTransaction = vi.fn(() => txFrom('UNKNOWN_SENDER'))
+    it('throws when the adapter reports an unauthorized sender (standalone-single-sig drain)', () => {
+        mocks.validateSignRequest.mockReturnValue({
+            kind: 'unauthorized-sender',
+            txIndex: 1,
+        })
 
         expect(() =>
             buildMultisigCosignRequest({
                 signRequest: buildSignRequest(),
                 signerAddress: 'A',
+                network: 'testnet',
+                decodeTransaction: vi.fn(() => txFrom()),
                 localAccounts: [],
-                decodeTransaction,
             }),
-        ).toThrow(/not authorized by the joint account/)
+        ).toThrow(/transaction 1 is not authorized by the joint account/)
     })
 
     it('throws when the joint account does not derive from its participant set (fabricated request)', () => {
-        // A fabricated request whose claimed joint address is not the real
-        // multisig hash of its participants — e.g. a participant's personal
-        // address dressed up as the "joint account".
-        ;(generateMultisigAddress as Mock).mockReturnValue('DERIVED_ELSEWHERE')
-        const decodeTransaction = vi.fn(() => txFrom())
+        mocks.validateSignRequest.mockReturnValue({ kind: 'address-mismatch' })
 
         expect(() =>
             buildMultisigCosignRequest({
                 signRequest: buildSignRequest(),
                 signerAddress: 'A',
-                decodeTransaction,
+                network: 'testnet',
+                decodeTransaction: vi.fn(() => txFrom()),
                 localAccounts: [],
             }),
         ).toThrow(/does not derive from its participant set/)

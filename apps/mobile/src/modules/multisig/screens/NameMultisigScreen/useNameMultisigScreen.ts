@@ -18,12 +18,12 @@ import {
     useAccountsStore,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useCreateMultisigAccountMutation } from '@perawallet/wallet-core-multisig'
-import { trackEvent, MultisigEvent } from '@analytics'
 import {
-    generateMultisigAddress,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+    multisigAdapterFor,
+    useCreateMultisigAccountMutation,
+} from '@perawallet/wallet-core-multisig'
+import { trackEvent, MultisigEvent } from '@analytics'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -104,11 +104,11 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
 
             await new Promise(resolve => requestAnimationFrame(resolve))
 
-            const multisigAddress = generateMultisigAddress(
+            const multisigAddress = multisigAdapterFor(network).deriveAddress({
                 version,
                 threshold,
                 addresses,
-            )
+            })
 
             // An imported shared account carries the address its QR code
             // claimed. Re-derive it from the same (version, threshold,
@@ -173,6 +173,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         }
     }, [
         isCreating,
+        network,
         deviceId,
         importParams,
         addresses,
