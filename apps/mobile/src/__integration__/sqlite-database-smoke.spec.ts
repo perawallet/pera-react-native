@@ -31,7 +31,7 @@ describe('Integration test plumbing: SQLite database', () => {
     afterAll(teardownTestDatabase)
     beforeEach(resetTestDatabase)
 
-    it('Given a freshly migrated DB with the ALGO seed, when the assets repository reads by id, then ALGO_ASSET is returned', async () => {
+    it('Given a freshly migrated DB with the ALGO seed, when the assets repository reads by id, then the native asset is returned', async () => {
         await seedAlgoAsset('mainnet')
 
         const rows = await getAssetsByIds({

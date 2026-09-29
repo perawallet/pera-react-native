@@ -24,9 +24,11 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
     usePreferredCurrencyPriceQuery: mockUsePreferredCurrencyPriceQuery,
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({ unitName: 'ALGO' }))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPricesQuery: mockUseAssetPricesQuery,
-    ALGO_ASSET: { unitName: 'ALGO' },
+    useNativeAsset: () => NATIVE_ASSET,
 }))
 
 describe('usePreferredAmount', () => {

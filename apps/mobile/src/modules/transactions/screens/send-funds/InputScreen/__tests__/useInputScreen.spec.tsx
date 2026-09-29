@@ -83,10 +83,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     canSignWith: vi.fn(() => false),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({ id: '0', decimals: 6 }))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
-    ALGO_ASSET: { id: '0', decimals: 6 },
+    useNativeAsset: () => NATIVE_ASSET,
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         new Decimal(typeof value === 'bigint' ? value.toString() : value).div(
             new Decimal(10).pow(asset.decimals),

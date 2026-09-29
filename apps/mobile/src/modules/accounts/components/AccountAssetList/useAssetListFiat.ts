@@ -16,7 +16,7 @@ import {
     useCurrency,
     usePreferredCurrencyPriceQuery,
 } from '@perawallet/wallet-core-currencies'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
     isAlgoAssetId,
     type Maybe,
@@ -44,9 +44,10 @@ export type AssetFiatConverter = (
  * identical to the shared display component.
  */
 export const useAssetListFiatConverter = (): AssetFiatConverter => {
+    const nativeAsset = useNativeAsset()
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency()
-    const isPreferredAlgo = preferredCurrency === ALGO_ASSET.unitName
+    const isPreferredAlgo = preferredCurrency === nativeAsset.unitName
 
     // ALGO-denominated holdings can't price in ALGO, so they fall back to the
     // fiat currency — only fetch that rate when the preferred currency is ALGO.

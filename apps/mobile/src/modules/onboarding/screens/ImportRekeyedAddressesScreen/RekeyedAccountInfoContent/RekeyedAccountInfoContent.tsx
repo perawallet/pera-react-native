@@ -21,7 +21,7 @@ import {
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useLanguage } from '@hooks/useLanguage'
@@ -38,6 +38,7 @@ export type RekeyedAccountInfoContentProps = {
 export const RekeyedAccountInfoContent = ({
     account,
 }: RekeyedAccountInfoContentProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
@@ -90,7 +91,7 @@ export const RekeyedAccountInfoContent = ({
                 </PWView>
                 <PWView style={styles.balanceContainer}>
                     <AssetAmount
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         value={rekeyedAccountAlgoValue}
                         showSymbol
                     />
@@ -155,7 +156,7 @@ export const RekeyedAccountInfoContent = ({
                         </PWView>
                         <PWView style={styles.balanceContainer}>
                             <AssetAmount
-                                asset={ALGO_ASSET}
+                                asset={nativeAsset}
                                 value={authAccountAlgoValue}
                                 showSymbol
                             />

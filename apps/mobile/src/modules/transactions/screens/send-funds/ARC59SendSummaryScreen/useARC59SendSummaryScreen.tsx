@@ -23,7 +23,7 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    ALGO_ASSET,
+    useNativeAsset,
     type PeraAsset,
     toWholeUnits,
     useSingleAssetDetailsQuery,
@@ -64,6 +64,7 @@ type UseARC59SendSummaryScreenResult = {
 
 export const useARC59SendSummaryScreen =
     (): UseARC59SendSummaryScreenResult => {
+        const nativeAsset = useNativeAsset()
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const { selectedAssetId, destination, amount, setArc59Summary } =
@@ -104,16 +105,19 @@ export const useARC59SendSummaryScreen =
             const requiredMicroAlgo = getArc59SignedFundingAmount(summary)
 
             if (availableAlgo < requiredMicroAlgo) {
-                const requiredAlgo = toWholeUnits(requiredMicroAlgo, ALGO_ASSET)
+                const requiredAlgo = toWholeUnits(
+                    requiredMicroAlgo,
+                    nativeAsset,
+                )
                 navigation.replace('InsufficientBalance', {
                     requiredBalance: formatCurrency(
                         requiredAlgo,
-                        ALGO_ASSET.decimals,
+                        nativeAsset.decimals,
                         ALGO_ASSET_NAME,
                     ),
                 })
             }
-        }, [summary, accountInfo, navigation])
+        }, [summary, accountInfo, navigation, nativeAsset])
 
         useEffect(() => {
             if (summary) {
@@ -122,7 +126,7 @@ export const useARC59SendSummaryScreen =
         }, [summary, setArc59Summary])
 
         const fee = summary
-            ? toWholeUnits(getArc59SignedFundingAmount(summary), ALGO_ASSET)
+            ? toWholeUnits(getArc59SignedFundingAmount(summary), nativeAsset)
             : null
 
         const [isProcessing, setIsProcessing] = useState(false)

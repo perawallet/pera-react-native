@@ -12,7 +12,7 @@
 
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
@@ -80,6 +80,7 @@ export const WarningItem = ({
     showDivider,
     isGroup,
 }: WarningItemProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
@@ -107,7 +108,7 @@ export const WarningItem = ({
                                 {t('transactions.warning.high_fee_warning', {
                                     fee: formatNumber(
                                         microAlgosToAlgos(warning.totalFee),
-                                        ALGO_ASSET.decimals,
+                                        nativeAsset.decimals,
                                     ),
                                 })}
                             </PWText>

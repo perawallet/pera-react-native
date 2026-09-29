@@ -11,7 +11,7 @@
  */
 
 import { useAccountSummaryQuery } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,6 +20,7 @@ import { useSummaryStyles } from './styles'
 /** Reads the same cheap per-account SQL aggregate the account list already
  *  warms, so adding this line costs no extra query. */
 export const AccountSummaryLine = ({ address }: { address: string }) => {
+    const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const styles = useSummaryStyles()
     const { holdingsCount, portfolioAlgoValue } =
@@ -42,7 +43,7 @@ export const AccountSummaryLine = ({ address }: { address: string }) => {
                 {'・'}
             </PWText>
             <AssetAmount
-                asset={ALGO_ASSET}
+                asset={nativeAsset}
                 value={portfolioAlgoValue}
                 density='compact'
                 variant='body'

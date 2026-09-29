@@ -19,7 +19,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import {
-    ALGO_ASSET,
+    useNativeAsset,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
 import { AssetAmount } from '@components/AssetAmount'
@@ -38,6 +38,7 @@ export const TxTypeDetails = ({
     tx: PeraDisplayableTransaction
     isExternal?: boolean
 }) => {
+    const nativeAsset = useNativeAsset()
     const txType = getTransactionType(tx)
     const { t } = useLanguage()
     const styles = useStyles()
@@ -56,7 +57,7 @@ export const TxTypeDetails = ({
                 const amount = microAlgosToAlgos(tx.paymentTransaction.amount)
                 secondary = (
                     <AssetAmount
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         density='compact'
                         value={amount}
                         showSymbol

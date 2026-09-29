@@ -19,7 +19,7 @@ import { useStyles } from './styles'
 import { useFeeWarning } from './useFeeWarning'
 import { useQuantumFeeExplainer } from './useQuantumFeeExplainer'
 import { useFeeAdjustment } from './useFeeAdjustment'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import type { SigningStackParamList } from '@modules/signing/routes'
@@ -32,6 +32,7 @@ export type FeeDisplayProps = {
 type NavigationProp = StackNavigationProp<SigningStackParamList>
 
 export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
@@ -55,7 +56,7 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
                 </PWText>
                 <PWView style={styles.feeValueContainer}>
                     <AssetAmount
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         value={fee.mul(-1)}
                         showSymbol
                         ignorePrivacyMode

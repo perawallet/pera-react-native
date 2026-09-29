@@ -26,8 +26,15 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useMinFeeForSender: (address: string) => mockUseMinFeeForSender(address),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({
+    assetId: '0',
+    name: 'Algo',
+    unitName: 'ALGO',
+    decimals: 6,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET: { assetId: '0', name: 'Algo', unitName: 'ALGO', decimals: 6 },
+    useNativeAsset: () => NATIVE_ASSET,
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         new Decimal(value.toString()).div(new Decimal(10).pow(asset.decimals)),
 }))

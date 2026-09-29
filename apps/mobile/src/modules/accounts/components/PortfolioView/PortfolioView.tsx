@@ -23,7 +23,7 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { WealthChart } from '@components/WealthChart'
 import {
     formatDatetime,
@@ -59,6 +59,7 @@ export type PortfolioViewProps = {
 } & PWViewProps
 
 export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const { t } = useLanguage()
@@ -181,7 +182,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                                 ? selectedPoint.algoValue
                                 : portfolioAlgoValue
                         }
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         density='compact'
                         style={styles.primaryCurrency}
                         isLoading={isPending}

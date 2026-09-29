@@ -24,7 +24,7 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
 import { AssetAmount } from '@components/AssetAmount'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 
 export type ArbitraryDataSigningDetailsViewProps = {
@@ -36,6 +36,7 @@ export const ArbitraryDataSigningDetailsView = ({
     request,
     dataMessage,
 }: ArbitraryDataSigningDetailsViewProps) => {
+    const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const accounts = useAllAccounts()
     const account = accounts.find(
@@ -75,7 +76,7 @@ export const ArbitraryDataSigningDetailsView = ({
             <PWView style={styles.section}>
                 <KeyValueRow title={t('signing.arbitrary_data_details.amount')}>
                     <AssetAmount
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         value={new Decimal(0)}
                         showSymbol
                         density='compact'
@@ -84,7 +85,7 @@ export const ArbitraryDataSigningDetailsView = ({
                 </KeyValueRow>
                 <KeyValueRow title={t('signing.arbitrary_data_details.fee')}>
                     <AssetAmount
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         value={new Decimal(0)}
                         showSymbol
                         density='compact'

@@ -24,10 +24,11 @@ import {
     resetDatabase,
 } from '@perawallet/wallet-core-database'
 import {
-    ALGO_ASSET,
+    nativeAssetFor,
     upsertAssets,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { testDatabaseService } from './sqlite-database'
 
@@ -65,7 +66,7 @@ export const teardownTestDatabase = async (): Promise<void> => {
 // Add new helpers here as more flows need richer pre-loaded state.
 
 /**
- * Insert ALGO_ASSET into the assets cache. Required by any flow that
+ * Insert the native asset into the assets cache. Required by any flow that
  * goes through `useAssetsQuery(['0'])` (send, receive, asset details,
  * confirmation screens). Defaults to mainnet — pass `network` if your
  * test needs testnet.
@@ -73,7 +74,10 @@ export const teardownTestDatabase = async (): Promise<void> => {
 export const seedAlgoAsset = async (
     network: Network = 'mainnet',
 ): Promise<void> => {
-    await upsertAssets({ items: [ALGO_ASSET], network })
+    await upsertAssets({
+        items: [nativeAssetFor(LEGACY_CHAIN_ID)],
+        network,
+    })
 }
 
 /**

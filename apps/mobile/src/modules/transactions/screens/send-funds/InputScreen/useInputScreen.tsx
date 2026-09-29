@@ -24,7 +24,7 @@ import { useSendDestinationRouter } from '../useSendDestinationRouter'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
-    ALGO_ASSET,
+    useNativeAsset,
     isCollectible,
     toWholeUnits,
     useAssetsQuery,
@@ -43,6 +43,7 @@ import { isAlgoAssetId, type Maybe } from '@perawallet/wallet-core-shared'
 type CloseAccountChoice = 'close' | 'keepOpen'
 
 export const useInputScreen = () => {
+    const nativeAsset = useNativeAsset()
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
@@ -162,51 +163,51 @@ export const useInputScreen = () => {
         if (isAlgoAssetId(selectedAssetId)) {
             const balance = toWholeUnits(
                 accountInformation?.amount ?? 0n,
-                ALGO_ASSET,
+                nativeAsset,
             )
             const minBalance = toWholeUnits(
                 accountInformation?.minBalance ?? 0n,
-                ALGO_ASSET,
+                nativeAsset,
             )
-            const fee = toWholeUnits(minFee ?? 0n, ALGO_ASSET)
+            const fee = toWholeUnits(minFee ?? 0n, nativeAsset)
             return Decimal.max(balance.sub(minBalance).sub(fee), new Decimal(0))
         } else {
             return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
         }
-    }, [selectedAssetId, minFee, accountInformation, tokenBalance])
+    }, [selectedAssetId, minFee, accountInformation, tokenBalance, nativeAsset])
 
     const totalBalance = useMemo(() => {
         if (isAlgoAssetId(selectedAssetId)) {
             const balance = toWholeUnits(
                 accountInformation?.amount ?? 0n,
-                ALGO_ASSET,
+                nativeAsset,
             )
             return Decimal.max(balance, new Decimal(0))
         } else {
             return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
         }
-    }, [selectedAssetId, accountInformation, tokenBalance])
+    }, [selectedAssetId, accountInformation, tokenBalance, nativeAsset])
 
     // A close-out leaves nothing behind: everything moves except the fee that
     // pays for the closing transaction.
     const closeAmount = useMemo(
         () =>
             Decimal.max(
-                totalBalance.sub(toWholeUnits(minFee ?? 0n, ALGO_ASSET)),
+                totalBalance.sub(toWholeUnits(minFee ?? 0n, nativeAsset)),
                 new Decimal(0),
             ),
-        [totalBalance, minFee],
+        [totalBalance, minFee, nativeAsset],
     )
 
     const minBalanceDisplay = useMemo(() => {
         if (isAlgoAssetId(selectedAssetId)) {
             return toWholeUnits(
                 accountInformation?.minBalance ?? 0n,
-                ALGO_ASSET,
+                nativeAsset,
             ).toString()
         }
         return '0'
-    }, [selectedAssetId, accountInformation])
+    }, [selectedAssetId, accountInformation, nativeAsset])
 
     // A rekeyed account can never close out or spend below its minimum
     // balance — the rekey would be lost and the account left unusable. So

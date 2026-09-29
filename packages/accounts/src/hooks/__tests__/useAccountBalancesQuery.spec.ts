@@ -62,8 +62,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET: { assetId: '0', decimals: 6 },
+    useNativeAsset: () => NATIVE_ASSET,
 }))
 
 // Helpers to build enriched holding rows as getAccountHoldingsPage returns them.

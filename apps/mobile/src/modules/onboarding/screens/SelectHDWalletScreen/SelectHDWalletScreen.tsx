@@ -23,7 +23,7 @@ import {
     PWScreen,
 } from '@components/core'
 import type { HDWalletGroup } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
@@ -32,6 +32,7 @@ import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
 
 export const SelectHDWalletScreen = () => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const {
         hdWalletGroups,
@@ -89,7 +90,7 @@ export const SelectHDWalletScreen = () => {
                     </PWView>
                     <PWView style={styles.balanceContainer}>
                         <AssetAmount
-                            asset={ALGO_ASSET}
+                            asset={nativeAsset}
                             value={groupAlgoValue}
                             density='compact'
                             style={styles.algoBalance}

@@ -87,8 +87,15 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         BigInt((await mockGetSuggestedParams()).minFee),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({
+    assetId: '0',
+    decimals: 6,
+    name: 'Algo',
+    unitName: 'ALGO',
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET: { assetId: '0', decimals: 6, name: 'Algo', unitName: 'ALGO' },
+    useNativeAsset: () => NATIVE_ASSET,
     fetchAndPersistAssets: (...args: unknown[]) =>
         mockFetchAndPersistAssets(...args),
 }))

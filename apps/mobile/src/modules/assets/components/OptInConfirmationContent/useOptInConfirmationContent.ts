@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
+import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 
@@ -28,12 +28,13 @@ export const useOptInConfirmationContent = (
     accountAddress: string,
     feeOverride?: Decimal,
 ): UseOptInConfirmationContentResult => {
+    const nativeAsset = useNativeAsset()
     const { minTxnFee } = useMinimumFeeConfig()
     // Sender-aware so a quantum account is quoted the PQ multiple it will
     // actually pay, matching what useAssetOptInMutation builds.
     const { minFee } = useMinFeeForSender(accountAddress)
     return {
         resolvedFee:
-            feeOverride ?? toWholeUnits(minFee ?? minTxnFee, ALGO_ASSET),
+            feeOverride ?? toWholeUnits(minFee ?? minTxnFee, nativeAsset),
     }
 }

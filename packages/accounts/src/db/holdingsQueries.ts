@@ -14,15 +14,16 @@ import { eq, and, notInArray, ne, or, isNull, like, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
-    ALGO_ASSET,
     AssetsNodeSchema,
     AssetsPeraSchema,
     AssetPricesSchema,
     PeraAssetType,
+    nativeAssetFor,
     peraAssetFromColumns,
     type PeraAsset,
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { isAlgoAssetId, type Nullable } from '@perawallet/wallet-core-shared'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
@@ -276,7 +277,7 @@ export type AssetColumnsLite = Pick<
  * Call only for rows you actually render — the parse is cached by raw JSON, so
  * scrolling re-renders stay cheap. Null until node metadata has synced.
  *
- * ALGO falls back to its local constant rather than null, the same way
+ * The native asset falls back to the chain adapter's record rather than null, the same way
  * `useAccountBalancesQuery` treats the enriched rows: its metadata is seeded,
  * never fetched, so a missing row is a local-state failure, and returning null
  * would render the native balance as a skeleton that never resolves.
@@ -285,7 +286,9 @@ export const assetFromHoldingLiteRow = (
     row: AssetColumnsLite,
 ): Nullable<PeraAsset> => {
     if (row.decimals === null || row.totalSupply === null) {
-        return isAlgoAssetId(row.assetId) ? ALGO_ASSET : null
+        return isAlgoAssetId(row.assetId)
+            ? nativeAssetFor(LEGACY_CHAIN_ID)
+            : null
     }
 
     return peraAssetFromColumns({

@@ -162,6 +162,21 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 }))
 
 // Mock @perawallet/wallet-core-assets
+// One instance, as the real adapter returns: consumers compare it by identity.
+const nativeAsset = vi.hoisted(() => ({
+    assetId: '0',
+    name: 'Algo',
+    unitName: 'ALGO',
+    decimals: 6,
+    totalSupply: '10000000000000000',
+    creator: { address: '' },
+    peraMetadata: {
+        isDeleted: false,
+        verificationTier: 'verified',
+        type: 'algo',
+    },
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         Number(value) / Math.pow(10, asset.decimals),
@@ -184,19 +199,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         }
         return ids[key]?.[scope.networkId] ?? null
     }),
-    ALGO_ASSET: {
-        assetId: '0',
-        name: 'Algo',
-        unitName: 'ALGO',
-        decimals: 6,
-        totalSupply: '10000000000000000',
-        creator: { address: '' },
-        peraMetadata: {
-            isDeleted: false,
-            verificationTier: 'verified',
-            type: 'algo',
-        },
-    },
+    useNativeAsset: () => nativeAsset,
+    nativeAssetFor: () => nativeAsset,
     PeraAssetType: {
         algo: 'algo',
         standard_asset: 'standard_asset',

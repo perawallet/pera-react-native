@@ -18,7 +18,7 @@ import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useStyles } from './styles'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useTheme } from '@rneui/themed'
@@ -32,6 +32,7 @@ type PaymentSummaryHeaderProps = {
 export const PaymentSummaryHeader = ({
     transaction,
 }: PaymentSummaryHeaderProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
@@ -56,7 +57,7 @@ export const PaymentSummaryHeader = ({
             </PWView>
             <PWView style={styles.amountContainer}>
                 <AssetAmount
-                    asset={ALGO_ASSET}
+                    asset={nativeAsset}
                     value={microAlgosToAlgos(
                         transaction.paymentTransaction?.amount ?? 0n,
                     )}
