@@ -147,7 +147,7 @@ pipelines:
       # matches this repo's other whole-suite CI jobs (ci-localnet-conformance,
       # security-codeql in .github/workflows) and, unlike those, a hang here
       # also holds the serial queue and the signing host — the android jobs'
-      # 90-minute budget would let a hung test job block a build for as long
+      # 45-minute budget would let a hung test job block a build for as long
       # as the build itself.
       test: { script: ci/jobs/test.sh, env: { VALIDATE_PROFILE: test }, timeout_minutes: 30 }
       # allow_failure: release notes are not worth skipping a release build for.
@@ -166,7 +166,7 @@ pipelines:
           # backwards, which Play rejects as a non-increasing upload.
           BUILD_NUMBER_OFFSET: '0'
         secrets: *android_secrets
-        timeout_minutes: 90
+        timeout_minutes: 45
       # No changelog: TestFlight takes no release notes from this lane.
       ios-production:
         script: ci/jobs/ios.sh
@@ -180,7 +180,7 @@ pipelines:
           # before uploads are enabled, or TestFlight rejects the build number.
           BUILD_NUMBER_OFFSET: '0'
         secrets: *ios_secrets
-        timeout_minutes: 120
+        timeout_minutes: 60
       web-production:
         script: ci/jobs/web.sh
         needs: [test]
@@ -212,13 +212,17 @@ pipelines:
           ENVIRONMENT: staging
           APP_ENV: staging
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+          # Testers install on phones, so staging skips the x86 and x86_64
+          # emulator builds of every native module: about half the native
+          # compile. Production still builds every ABI for Play.
+          ORG_GRADLE_PROJECT_reactNativeArchitectures: arm64-v8a,armeabi-v7a
           # Raise past Bitrise's last BITRISE_BUILD_NUMBER before
           # CI_UPLOADS_ENABLED is turned on for this pipeline — CI_RUN_ID
           # starts at 1 here, and an unraised offset makes versionCode go
           # backwards, which Play rejects as a non-increasing upload.
           BUILD_NUMBER_OFFSET: '0'
         secrets: *android_secrets
-        timeout_minutes: 90
+        timeout_minutes: 45
       ios-staging:
         script: ci/jobs/ios.sh
         needs: [test]
@@ -231,7 +235,7 @@ pipelines:
           # See ios-production.
           BUILD_NUMBER_OFFSET: '0'
         secrets: *ios_secrets
-        timeout_minutes: 120
+        timeout_minutes: 60
       web-staging:
         script: ci/jobs/web.sh
         needs: [test]
