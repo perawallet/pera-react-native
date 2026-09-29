@@ -71,19 +71,25 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    usePeraProvider: () => ({
-        deviceInfo: { getDeviceLocale: () => 'en-US' },
-    }),
-    getProvider: () => ({
-        keyValueStorage: {
-            getItem: vi.fn().mockReturnValue(null),
-            setItem: vi.fn(),
-            removeItem: vi.fn(),
-        },
-        chains: { setCapabilityOverrides: vi.fn() },
-    }),
-}))
+vi.mock('@perawallet/wallet-extension-provider', async () => {
+    const { createChainRegistry } =
+        await import('@perawallet/wallet-core-chain-contract')
+    // The integration setup registers the chains through getProvider().chains.
+    const chains = createChainRegistry()
+    return {
+        usePeraProvider: () => ({
+            deviceInfo: { getDeviceLocale: () => 'en-US' },
+        }),
+        getProvider: () => ({
+            keyValueStorage: {
+                getItem: vi.fn().mockReturnValue(null),
+                setItem: vi.fn(),
+                removeItem: vi.fn(),
+            },
+            chains,
+        }),
+    }
+})
 
 const renderSwapPayInput = (onAmountChange: (a: Nullable<Decimal>) => void) =>
     renderHook(() => {

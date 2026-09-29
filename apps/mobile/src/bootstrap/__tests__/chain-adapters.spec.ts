@@ -10,42 +10,180 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    ChainHttpClientUnavailableError,
+    createChainRegistry,
+    type ChainCapabilityOverrides,
+    type ChainContext,
+    type ChainRegistry,
+    type ChainSetupConfig,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    algorandCapabilityDefaults,
+    algorandDescriptor,
+} from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 const mocks = vi.hoisted(() => ({
-    registerAlgorandChain: vi.fn(),
-    setCapabilityOverrides: vi.fn(),
-    readCapabilityOverrides: vi.fn(),
+    provider: { chains: null as unknown as ChainRegistry },
+    config: {
+        chains: { enabled: ['algorand'], capabilities: {} } as ChainSetupConfig,
+    },
+    registerModule: vi.fn(),
+    readCapabilityOverrides: vi.fn((): ChainCapabilityOverrides => ({})),
+    networkGetState: vi.fn(),
+    kmsCore: { deriveFromSeed: vi.fn(), importRawKey: vi.fn(), sign: vi.fn() },
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
-    registerChain: mocks.registerAlgorandChain,
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => mocks.provider,
+}))
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-config')
+    >()),
+    config: mocks.config,
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
     readCapabilityOverrides: mocks.readCapabilityOverrides,
 }))
 
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        chains: { setCapabilityOverrides: mocks.setCapabilityOverrides },
-    }),
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetworkStore: { getState: mocks.networkGetState },
 }))
+
+vi.mock('@perawallet/wallet-core-kms', () => ({ kmsCore: mocks.kmsCore }))
+
+// The real module pulls in every adapter; the root only needs the module's shape.
+vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
+    const descriptorEntry =
+        await import('@perawallet/wallet-core-chain-algorand/descriptor')
+    return {
+        chainModule: {
+            descriptor: descriptorEntry.algorandDescriptor,
+            capabilityDefaults: descriptorEntry.algorandCapabilityDefaults,
+            register: mocks.registerModule,
+            i18nKeys: () => [],
+        },
+    }
+})
 
 import { registerChainAdapters } from '../chain-adapters'
 
-describe('registerChainAdapters', () => {
-    it('registers the Algorand chain adapters', () => {
-        registerChainAdapters()
+const contextGivenToModule = (): ChainContext =>
+    mocks.registerModule.mock.calls[0]?.[0] as ChainContext
 
-        expect(mocks.registerAlgorandChain).toHaveBeenCalledTimes(1)
+describe('registerChainAdapters', () => {
+    beforeEach(() => {
+        mocks.provider.chains = createChainRegistry()
+        mocks.config.chains = { enabled: ['algorand'], capabilities: {} }
+        mocks.readCapabilityOverrides.mockReturnValue({})
+        mocks.networkGetState.mockReturnValue({
+            selectedNetworkByChain: { algorand: 'mainnet' },
+        })
     })
 
-    it('installs the remote and developer capability layers', () => {
+    it('registers the Algorand descriptor on the provider chain registry', () => {
         registerChainAdapters()
 
-        expect(mocks.setCapabilityOverrides).toHaveBeenCalledWith(
-            mocks.readCapabilityOverrides,
+        expect(mocks.provider.chains.get('algorand').descriptor).toBe(
+            algorandDescriptor,
         )
+    })
+
+    it('registers the Algorand adapters once', () => {
+        registerChainAdapters()
+
+        expect(mocks.registerModule).toHaveBeenCalledOnce()
+    })
+
+    it('keeps a single Algorand entry when it runs again', () => {
+        registerChainAdapters()
+
+        registerChainAdapters()
+
+        expect(mocks.provider.chains.list()).toEqual([algorandDescriptor])
+    })
+
+    it('resolves the module defaults when nothing overrides them', () => {
+        registerChainAdapters()
+
+        expect(mocks.provider.chains.capabilities('algorand')).toEqual(
+            algorandCapabilityDefaults,
+        )
+    })
+
+    it('turns on exactly the capabilities the build lists', () => {
+        mocks.config.chains = {
+            enabled: ['algorand'],
+            capabilities: { algorand: ['swap'] },
+        }
+
+        registerChainAdapters()
+
+        const enabled = Object.entries(
+            mocks.provider.chains.capabilities('algorand'),
+        )
+            .filter(([, isOn]) => isOn)
+            .map(([capability]) => capability)
+        expect(enabled).toEqual(['swap'])
+    })
+
+    it('reads the remote kill switch through the installed override layers', () => {
+        mocks.readCapabilityOverrides.mockReturnValue({
+            chainEnabled: { algorand: false },
+        })
+
+        registerChainAdapters()
+
+        const { chains } = mocks.provider
+        expect(chains.isSwitchedOff('algorand')).toBe(true)
+        expect(Object.values(chains.capabilities('algorand'))).not.toContain(
+            true,
+        )
+        expect(chains.has('algorand')).toBe(true)
+    })
+
+    describe('the chain context', () => {
+        it('reads the selected network on every getScope call', () => {
+            registerChainAdapters()
+            const context = contextGivenToModule()
+
+            const before = context.getScope()
+            mocks.networkGetState.mockReturnValue({
+                selectedNetworkByChain: { algorand: 'testnet' },
+            })
+            const after = context.getScope()
+
+            expect(before).toEqual({
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            })
+            expect(after).toEqual({ chainId: 'algorand', networkId: 'testnet' })
+        })
+
+        it('hands over the setup entry endpoints', () => {
+            registerChainAdapters()
+
+            expect(contextGivenToModule().getEndpoints()).toEqual({})
+        })
+
+        it('hands over the KMS core as the key store', () => {
+            registerChainAdapters()
+
+            expect(contextGivenToModule().kms).toBe(mocks.kmsCore)
+        })
+
+        it('rejects every HTTP request, since no client is wired', async () => {
+            registerChainAdapters()
+
+            await expect(
+                contextGivenToModule().http.request({
+                    url: 'https://example.test',
+                }),
+            ).rejects.toBeInstanceOf(ChainHttpClientUnavailableError)
+        })
     })
 })
