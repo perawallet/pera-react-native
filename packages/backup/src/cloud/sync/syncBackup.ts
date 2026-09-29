@@ -67,6 +67,9 @@ export const syncBackup = async (
             skipped: accounts.skipped,
         })
     }
+    // Outside the catch below, which would swallow the abort: the sweep reads
+    // every owning seed's entropy.
+    abortIfStopped(deps)
     // A KMS/biometric failure here must not block accounts and contacts from
     // pushing; reconcile treats a missing item as "not yet re-derived", never
     // as a delete, so skipping passkeys for this cycle is safe.

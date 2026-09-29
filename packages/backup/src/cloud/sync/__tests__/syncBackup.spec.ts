@@ -389,6 +389,32 @@ describe('syncBackup', () => {
         expect(batchUpsertItems).not.toHaveBeenCalled()
     })
 
+    it('skips the passkey sweep when a stop lands after the accounts are serialized', async () => {
+        let stopped = false
+        const listPasskeys = vi.fn(async () => [])
+
+        await expect(
+            syncBackup(
+                {
+                    ...deps(),
+                    serializeAccount: async (a: WalletAccount) => {
+                        stopped = true
+                        return serializeAccountItems(a, {
+                            updatedAt: 1,
+                            secrets: null,
+                            hashAddress,
+                        })
+                    },
+                    listPasskeys,
+                    isAborted: () => stopped,
+                },
+                createEmptySyncState('b'),
+            ),
+        ).rejects.toThrow(BackupSyncAbortedError)
+
+        expect(listPasskeys).not.toHaveBeenCalled()
+    })
+
     it('imports nothing when a stop lands during the delta fetch', async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g6',
