@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# tools/release-tickets.sh <tag>
+# tools/release/tickets.sh <tag>
 #
 # Prints the PERA keys a release delivered — every ticket named in a commit
 # subject within this tag's range, one per line.
@@ -25,7 +25,7 @@ if [ -z "$TAG" ]; then
     exit 2
 fi
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 IS_STABLE=""
 case "$TAG" in
@@ -34,8 +34,8 @@ case "$TAG" in
 esac
 
 # Shared with the Slack changelog in .bitrise/bitrise.yml, including the
-# prerelease-only fallback — see tools/release-range-start.sh.
-RANGE_START=$("${ROOT_DIR}/tools/release-range-start.sh" "$TAG")
+# prerelease-only fallback — see tools/release/range-start.sh.
+RANGE_START=$("${ROOT_DIR}/tools/release/range-start.sh" "$TAG")
 
 if [ -n "$RANGE_START" ]; then
     RANGE="${RANGE_START}..${TAG}"
