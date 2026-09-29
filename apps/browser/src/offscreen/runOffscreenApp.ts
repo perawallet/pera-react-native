@@ -39,10 +39,7 @@ import {
     getCustomNetworkConfig,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    ALGORAND_CHAIN_ID,
-    registerChain as registerAlgorandChain,
-} from '@perawallet/wallet-core-chain-algorand'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 import {
     bootConnections,
     createConnectionRegistry,
@@ -56,7 +53,6 @@ import {
     createWalletConnectV1Handler,
     importLegacyConnections,
 } from '@perawallet/wallet-core-walletconnect'
-import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
@@ -75,7 +71,14 @@ const REHYDRATE_BY_KEY: Record<
     'kv:polling-store': usePollingStore,
 }
 
-export const runOffscreenApp = async (): Promise<void> => {
+export type OffscreenAppDeps = {
+    // Handed over by the web shell: apps/browser imports no apps/mobile code but the query client.
+    registerChainAdapters: () => void
+}
+
+export const runOffscreenApp = async ({
+    registerChainAdapters,
+}: OffscreenAppDeps): Promise<void> => {
     const services = getPlatformServices()
 
     const worker = new Worker('db-worker.js', { type: 'module' })
@@ -108,8 +111,9 @@ export const runOffscreenApp = async (): Promise<void> => {
         key => void REHYDRATE_BY_KEY[key]?.persist.rehydrate(),
     )
 
-    // Before sync starts: its first tick reads the chain kill switch.
-    getProvider().chains.setCapabilityOverrides(readCapabilityOverrides)
+    // Before sync starts, since its first tick reads the chain kill switch, and
+    // before the dApp handler, which refuses a chain that has no adapter.
+    registerChainAdapters()
     initializeSyncService({
         queryClient,
         stores: createSyncStorePorts(),
@@ -126,9 +130,6 @@ export const runOffscreenApp = async (): Promise<void> => {
     const storage = provider.keyValueStorage
     const sessionKeys = createStorageSessionKeyStore(storage)
     const registry = createConnectionRegistry({ store })
-    // Before the dApp handler starts: it answers any chain without an adapter
-    // with an error, so a request arriving first would be refused.
-    registerAlgorandChain()
     registry.register(
         createWalletConnectV1Handler({
             getNetwork: () => useNetworkStore.getState().network,

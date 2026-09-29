@@ -42,9 +42,8 @@ const {
     dappHandler,
     createDappConnectionHandler,
     importLegacyDappPermissions,
-    registerAlgorandChain,
-    setCapabilityOverrides,
-    readCapabilityOverrides,
+    registerChainAdapters,
+    initializeSyncService,
 } = vi.hoisted(() => {
     const handleControlMessage = vi.fn()
     const registry = { register: vi.fn() }
@@ -83,9 +82,8 @@ const {
         dappHandler,
         createDappConnectionHandler: vi.fn((_options: unknown) => dappHandler),
         importLegacyDappPermissions: vi.fn(async () => ({ imported: 0 })),
-        registerAlgorandChain: vi.fn(),
-        setCapabilityOverrides: vi.fn(),
-        readCapabilityOverrides: vi.fn(),
+        registerChainAdapters: vi.fn(),
+        initializeSyncService: vi.fn(),
     }
 })
 
@@ -110,7 +108,6 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         connections: { store: connectionStore },
-        chains: { setCapabilityOverrides },
         keyValueStorage,
     }),
     // Never settles: this context registers no engine key source, so a boot
@@ -130,7 +127,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 vi.mock('@perawallet/wallet-core-background', () => ({
     createSyncStorePorts: vi.fn(() => ({})),
     getSyncService: vi.fn(() => ({ start: vi.fn() })),
-    initializeSyncService: vi.fn(),
+    initializeSyncService,
     usePollingStore: { persist: { rehydrate: vi.fn() } },
 }))
 // The stores are only read through `.getState()` or stashed for
@@ -154,12 +151,8 @@ vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
     importLegacyDappPermissions,
 }))
-vi.mock('@perawallet/wallet-core-remote-config', () => ({
-    readCapabilityOverrides,
-}))
 vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
     ALGORAND_CHAIN_ID: 'algorand',
-    registerChain: registerAlgorandChain,
 }))
 vi.mock('@perawallet/wallet-core-connections', () => ({
     createConnectionRegistry,
@@ -191,7 +184,7 @@ describe('runOffscreenApp connections wiring', () => {
 
     const boot = async () => {
         const { runOffscreenApp } = await import('../runOffscreenApp')
-        await runOffscreenApp()
+        await runOffscreenApp({ registerChainAdapters })
     }
 
     it('builds the registry on the provider store and registers the v1 handler with the storage-backed key store', async () => {
@@ -226,20 +219,19 @@ describe('runOffscreenApp connections wiring', () => {
         expect(options.getCustomNetworkGenesisHash()).toBe('custom-genesis')
     })
 
-    it('registers the Algorand chain adapters before building the dapp handler', async () => {
+    it('registers the chains once, before sync starts and before either handler is built', async () => {
         await boot()
 
-        expect(registerAlgorandChain).toHaveBeenCalledOnce()
-        expect(registerAlgorandChain.mock.invocationCallOrder[0]).toBeLessThan(
-            createDappConnectionHandler.mock.invocationCallOrder[0],
+        expect(registerChainAdapters).toHaveBeenCalledOnce()
+        const [registeredAt] = registerChainAdapters.mock.invocationCallOrder
+        expect(registeredAt).toBeLessThan(
+            initializeSyncService.mock.invocationCallOrder[0],
         )
-    })
-
-    it('installs the remote and developer capability layers on the chain registry', async () => {
-        await boot()
-
-        expect(setCapabilityOverrides).toHaveBeenCalledWith(
-            readCapabilityOverrides,
+        expect(registeredAt).toBeLessThan(
+            createWalletConnectV1Handler.mock.invocationCallOrder[0],
+        )
+        expect(registeredAt).toBeLessThan(
+            createDappConnectionHandler.mock.invocationCallOrder[0],
         )
     })
 
@@ -358,6 +350,8 @@ describe('runOffscreenApp connections wiring', () => {
     it('boots without awaiting keystore.ready', async () => {
         const { runOffscreenApp } = await import('../runOffscreenApp')
 
-        await expect(runOffscreenApp()).resolves.toBeUndefined()
+        await expect(
+            runOffscreenApp({ registerChainAdapters }),
+        ).resolves.toBeUndefined()
     })
 })

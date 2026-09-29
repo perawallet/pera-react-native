@@ -10,13 +10,43 @@
  limitations under the License
  */
 
-import { registerChain as registerAlgorandChain } from '@perawallet/wallet-core-chain-algorand'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { chainModule as algorandChainModule } from '@perawallet/wallet-core-chain-algorand'
+import {
+    buildChainSetup,
+    ChainHttpClientUnavailableError,
+    registerChainSetup,
+    type ChainContext,
+    type ChainSetupEntry,
+} from '@perawallet/wallet-core-chain-contract'
+import { config } from '@perawallet/wallet-core-config'
+import { kmsCore } from '@perawallet/wallet-core-kms'
 import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+
+const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
+    getScope: () => ({
+        chainId: entry.chainId,
+        networkId:
+            useNetworkStore.getState().selectedNetworkByChain[entry.chainId],
+    }),
+    getEndpoints: () => entry.endpoints,
+    // Nothing implements ChainHttpClient; a module that calls it must fail loudly.
+    http: {
+        request: () =>
+            Promise.reject(new ChainHttpClientUnavailableError(entry.chainId)),
+    },
+    kms: kmsCore,
+})
 
 // The app picks which chains ship: generic packages only define the adapter
 // registries and never import a chain package.
 export const registerChainAdapters = (): void => {
-    getProvider().chains.setCapabilityOverrides(readCapabilityOverrides)
-    registerAlgorandChain()
+    const { chains } = getProvider()
+    chains.setCapabilityOverrides(readCapabilityOverrides)
+    registerChainSetup(
+        buildChainSetup(config.chains, { algorand: algorandChainModule }),
+        chains,
+        chainContextFor,
+    )
 }

@@ -23,16 +23,8 @@ export const COMPOSITION_ROOTS: ExemptPath[] = [
         reason: 'mobile composition root: registers each chain and its per-package adapters',
     },
     {
-        glob: '**/apps/mobile/src/useAppBootstrap.ts',
-        reason: 'mobile composition root: registers each chain with the platform provider',
-    },
-    {
-        glob: '**/apps/mobile/src/App.web.tsx',
-        reason: 'web composition root: registers each chain for the web build the extension renders',
-    },
-    {
         glob: '**/apps/browser/src/offscreen/runOffscreenApp.ts',
-        reason: 'extension offscreen composition root: registers each chain for the offscreen document',
+        reason: 'extension offscreen composition root: passes the Algorand chain id to the dApp handler',
     },
     {
         glob: '**/apps/browser/src/background/index.ts',

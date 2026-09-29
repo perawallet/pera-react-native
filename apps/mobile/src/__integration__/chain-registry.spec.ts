@@ -10,14 +10,72 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { chainModule } from '@perawallet/wallet-core-chain-algorand'
+import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { initRuntime as initNativeRuntime } from '../bootstrap/preReact'
+import { initRuntime as initWebShellRuntime } from '../bootstrap/preReact.web'
+
+// The web-shell case asserts registration; NetInfo, the online binding and the backend headers stay out of it.
+vi.mock('@modules/network', async importOriginal => ({
+    ...(await importOriginal<typeof import('@modules/network')>()),
+    initNetworkStatus: vi.fn(() => Promise.resolve()),
+}))
+
+vi.mock('../bootstrap/query-headers', () => ({
+    updateQueryHeaders: vi.fn(),
+}))
+
+// Pinned so a baked CHAIN_ALGORAND_CAPABILITIES cannot change the expected capabilities.
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    return {
+        ...actual,
+        config: {
+            ...actual.config,
+            chains: { enabled: ['algorand'], capabilities: {} },
+        },
+    }
+})
 
 describe('chain registry', () => {
-    it('exposes an empty chain registry on the provider after bootstrap', () => {
+    it('holds the Algorand chain after the integration setup registers it', () => {
         const { chains } = getProvider()
 
-        expect(chains.list()).toEqual([])
-        expect(chains.byCaip2('algorand:mainnet')).toBeUndefined()
+        expect(chains.get('algorand').descriptor.id).toBe('algorand')
+        expect(chains.capabilities('algorand')).toEqual(
+            chainModule.capabilityDefaults,
+        )
+        expect(dappRequestChainAdapters.has('algorand')).toBe(true)
+    })
+
+    it.each(chainModule.descriptor.networks)(
+        'maps $caip2 back to Algorand $id',
+        network => {
+            expect(getProvider().chains.byCaip2(network.caip2 ?? '')).toEqual({
+                chainId: 'algorand',
+                network,
+            })
+        },
+    )
+
+    it('holds the Algorand chain after the native bootstrap', () => {
+        const { chains } = getProvider()
+        chains.reset()
+
+        initNativeRuntime()
+
+        expect(chains.get('algorand').descriptor.id).toBe('algorand')
+    })
+
+    it('holds the Algorand chain after the web shell bootstrap', () => {
+        const { chains } = getProvider()
+        chains.reset()
+
+        initWebShellRuntime()
+
+        expect(chains.get('algorand').descriptor.id).toBe('algorand')
     })
 })
