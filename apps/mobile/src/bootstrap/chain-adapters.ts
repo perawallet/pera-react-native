@@ -11,9 +11,12 @@
  */
 
 import { registerChain as registerAlgorandChain } from '@perawallet/wallet-core-chain-algorand'
+import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 // The app picks which chains ship: generic packages only define the adapter
 // registries and never import a chain package.
 export const registerChainAdapters = (): void => {
+    getProvider().chains.setCapabilityOverrides(readCapabilityOverrides)
     registerAlgorandChain()
 }

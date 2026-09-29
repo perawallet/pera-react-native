@@ -234,6 +234,12 @@ append_config "CARD_AUTODRAW_TEMPLATE_HASH" "cardAutoDrawTemplateHash" "string"
 append_config "MAINNET_CARD_USDC_ASSET_ID" "mainnetCardUsdcAssetId" "string"
 append_config "TESTNET_CARD_USDC_ASSET_ID" "testnetCardUsdcAssetId" "string"
 
+# Chains this build ships (comma list of chain ids), and per chain the exact
+# capability set to enable (comma list). Unset means the module's defaults. The
+# shell can't enumerate chain ids, so each chain gets its own line.
+append_config "CHAINS" "chainIds" "string"
+append_config "CHAIN_ALGORAND_CAPABILITIES" "chainAlgorandCapabilities" "string"
+
 # Default Network
 if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then
   DEFAULT_NETWORK="$PERA_DEFAULT_NETWORK"

@@ -387,7 +387,12 @@ const { version: packageVersion } = JSON.parse(
 )
 const manifest = stampManifest(
     JSON.parse(readFileSync(path.join(root, 'manifest.json'), 'utf8')),
-    { packageVersion, appEnvironment: config.appEnvironment },
+    {
+        packageVersion,
+        appVersion: process.env.APP_VERSION,
+        buildNumber: process.env.BUILD_NUMBER,
+        appEnvironment: config.appEnvironment,
+    },
 )
 assertStampedManifest(manifest, { appEnvironment: config.appEnvironment })
 manifest.content_security_policy = { extension_pages: extensionPagesCsp }

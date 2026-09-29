@@ -43,6 +43,8 @@ const {
     createDappConnectionHandler,
     importLegacyDappPermissions,
     registerAlgorandChain,
+    setCapabilityOverrides,
+    readCapabilityOverrides,
 } = vi.hoisted(() => {
     const handleControlMessage = vi.fn()
     const registry = { register: vi.fn() }
@@ -82,6 +84,8 @@ const {
         createDappConnectionHandler: vi.fn((_options: unknown) => dappHandler),
         importLegacyDappPermissions: vi.fn(async () => ({ imported: 0 })),
         registerAlgorandChain: vi.fn(),
+        setCapabilityOverrides: vi.fn(),
+        readCapabilityOverrides: vi.fn(),
     }
 })
 
@@ -106,6 +110,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         connections: { store: connectionStore },
+        chains: { setCapabilityOverrides },
         keyValueStorage,
     }),
     // Never settles: this context registers no engine key source, so a boot
@@ -148,6 +153,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
     importLegacyDappPermissions,
+}))
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    readCapabilityOverrides,
 }))
 vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
     ALGORAND_CHAIN_ID: 'algorand',
@@ -224,6 +232,14 @@ describe('runOffscreenApp connections wiring', () => {
         expect(registerAlgorandChain).toHaveBeenCalledOnce()
         expect(registerAlgorandChain.mock.invocationCallOrder[0]).toBeLessThan(
             createDappConnectionHandler.mock.invocationCallOrder[0],
+        )
+    })
+
+    it('installs the remote and developer capability layers on the chain registry', async () => {
+        await boot()
+
+        expect(setCapabilityOverrides).toHaveBeenCalledWith(
+            readCapabilityOverrides,
         )
     })
 

@@ -86,7 +86,7 @@ catalog:
   fast-glob: ^3.3.2
   jsdom: ^30.0.1
   ky: ^2.0.2
-  lanekeep: 0.11.0
+  lanekeep: 0.12.0
   msw: ^2.14.6
   oxfmt: ^0.68.0
   react: 19.2.3
@@ -164,11 +164,15 @@ minimumReleaseAgeExclude:
   - '@joe-p/react-native-falcon'
   - '@perawallet/walletconnect'
   - falcon-1024
-  - fast-uri
   # 3.3.18 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.
   # Same sole maintainer (ai <andrey@sitnik.es>) as 3.3.17, no install scripts,
   # SLSA provenance on both.
   - nanoid
+  # First-party: sole maintainer fredamsouza, SLSA provenance on the launcher and
+  # all four platform packages, no install scripts (checked for 0.12.0). Repeat
+  # those checks before adopting a release younger than the gate.
+  - lanekeep
+  - '@lanekeep/*'
   - expo
   - expo-*
   - '@expo/*'
@@ -320,10 +324,12 @@ overrides:
   # GHSA-7p8r-x3mc-p8w7 (host confusion via backslash authority introducer),
   # then GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf and
   # GHSA-jqff-g426-hqxp (host confusion / SSRF via IDN, IPv6 and
-  # percent-decoding normalization), all patched in 4.1.3. Pinned to the
-  # lowest patched version rather than latest so the resolution stays behind
-  # the minimumReleaseAge window without an exclude entry.
-  fast-uri@<4.1.3: ">=4.1.3"
+  # percent-decoding normalization), patched in 4.1.3; then GHSA-qw65-cvwx-89v3
+  # (authority injection via an unvalidated port) and GHSA-58mr-gqgx-xq4g (host
+  # confusion via an unclosed bracket), patched in 4.1.4. Pinned to the lowest
+  # patched version rather than latest so the resolution stays behind the
+  # minimumReleaseAge window without an exclude entry.
+  fast-uri@<4.1.4: 4.1.4
   flatted@3: 3.4.2
   glob@>=10.2.0 <10.5.0: '>=10.5.0'
   happy-dom@<20.0.0: '>=20.0.0'
@@ -369,7 +375,9 @@ overrides:
   # `removeViewBox`, which svgo v4 dropped from preset-default. An open
   # `>=3.3.4` here resolved to 4.x and made every SVG import log a
   # "trying to configure removeViewBox" warning during bundling.
-  svgo@>=3.0.0 <3.3.4: ^3.3.4
+  svgo@>=3.0.0 <3.3.5: ^3.3.5
+  # GHSA-3wwx-pv8p-q78v (DoS via WebSocket permessage-deflate); dev-only via jsdom.
+  undici@>=8.1.0 <8.10.2: 8.10.2
   uuid@<14: 14.0.0
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'

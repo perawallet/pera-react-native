@@ -23,6 +23,7 @@ import {
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
@@ -91,7 +92,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // does not serve wallet balances to.
     const fundingAccount = useCardFundingAccount()
     const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', network),
+        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
         [network],
     )
     const { data: linkedUsdc, isPending: isLinkedBalancePending } =

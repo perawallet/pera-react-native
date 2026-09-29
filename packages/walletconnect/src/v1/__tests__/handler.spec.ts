@@ -433,7 +433,7 @@ describe('walletconnect v1 handler specifics', () => {
     it('covers every Network member, not just mainnet and testnet', () => {
         // `Network` has four members. A two-branch mainnet/testnet mapping
         // silently mislabels betanet and custom, which is why matchesNetwork
-        // delegates to the exhaustive EXPECTED_CHAIN_ID_BY_NETWORK record.
+        // delegates to getExpectedChainId, which lists every network.
         const handler = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
             sessionKeys,

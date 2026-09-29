@@ -13,6 +13,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { registerStore } from '@perawallet/wallet-core-shared'
 import {
+    handOffSecret,
     mnemonicIndexToWord,
     mnemonicWordsToIndices,
     zeroBytes,
@@ -83,9 +84,10 @@ export const setPendingImportMnemonic = (mnemonic: string): void => {
     // overwritten and left to GC — including the cross-type case where an
     // indexed phrase replaces raw bytes, or vice-versa.
     wipe(usePendingImportMnemonicStore.getState())
+    const pendingIndices = handOffSecret(indices)
     usePendingImportMnemonicStore.setState(
-        indices
-            ? { pendingIndices: indices, pendingRawBytes: null }
+        pendingIndices
+            ? { pendingIndices, pendingRawBytes: null }
             : {
                   pendingIndices: null,
                   pendingRawBytes: new TextEncoder().encode(words.join(' ')),

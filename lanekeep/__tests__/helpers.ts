@@ -59,6 +59,9 @@ export async function createRunner(
         // resolved against the project-root argument passed to `check`; an
         // absolute path is rejected and fails the whole run opaquely.
         rules: [rulePath.startsWith('.') ? rulePath : `./${rulePath}`],
+        // A spec asserts its own rule's reports. Some fixtures are ERROR-rooted
+        // on purpose, and the engine's parse report for them is not the rule's.
+        severity: { 'lanekeep/parse': 'off' },
     }
     await writeFile(configPath, JSON.stringify(config, null, 2))
 

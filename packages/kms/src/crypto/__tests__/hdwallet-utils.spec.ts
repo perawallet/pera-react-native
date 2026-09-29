@@ -11,7 +11,7 @@
  */
 
 // @vitest-environment node
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import { mnemonicToEntropy, mnemonicToSeed } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
 import {
@@ -22,9 +22,75 @@ import {
     indicesToEntropy,
 } from '../hdwallet-utils'
 import {
+    indicesToUtf8Bytes,
     mnemonicIndexToWord,
     mnemonicWordsToIndices,
 } from '../mnemonic-indices'
+
+// Every buffer the real pbkdf2 hands back, so a test can check it was zeroed.
+const pbkdf2Outputs = vi.hoisted((): Uint8Array[] => [])
+// Errors the next pbkdf2 calls fail with instead of deriving.
+const pbkdf2Faults = vi.hoisted((): Error[] => [])
+// Copies of what each zeroBytes call received, taken before the wipe.
+const zeroedContents = vi.hoisted((): Uint8Array[] => [])
+// The buffers themselves, to check which ones ended up zeroed.
+const zeroedBuffers = vi.hoisted((): Array<Uint8Array | Uint16Array> => [])
+
+vi.mock('crypto', async importOriginal => {
+    const actual = await importOriginal<typeof import('crypto')>()
+    return {
+        ...actual,
+        pbkdf2: (
+            ...[
+                password,
+                salt,
+                iterations,
+                keylen,
+                digest,
+                callback,
+            ]: Parameters<typeof actual.pbkdf2>
+        ) => {
+            const fault = pbkdf2Faults.shift()
+            if (fault) {
+                const fail = callback as (err: Error) => void
+                fail(fault)
+                return
+            }
+            actual.pbkdf2(
+                password,
+                salt,
+                iterations,
+                keylen,
+                digest,
+                (err, derivedKey) => {
+                    if (derivedKey) pbkdf2Outputs.push(derivedKey)
+                    callback(err, derivedKey)
+                },
+            )
+        },
+    }
+})
+
+// Spied, not replaced, so a test can see which indices a call derived.
+vi.mock('../mnemonic-indices', async importOriginal => {
+    const actual = await importOriginal<typeof import('../mnemonic-indices')>()
+    return { ...actual, indicesToUtf8Bytes: vi.fn(actual.indicesToUtf8Bytes) }
+})
+
+vi.mock('../secure-memory', async importOriginal => {
+    const actual = await importOriginal<typeof import('../secure-memory')>()
+    return {
+        ...actual,
+        zeroBytes: (...buffers: Parameters<typeof actual.zeroBytes>) => {
+            for (const buf of buffers) {
+                if (!buf) continue
+                zeroedContents.push(Uint8Array.from(buf))
+                zeroedBuffers.push(buf)
+            }
+            actual.zeroBytes(...buffers)
+        },
+    }
+})
 
 const TEST_MNEMONIC =
     'champion say kitchen sock defense example mesh body sample artwork warfare canvas item recall cheese total floor cycle such asthma okay immense lake street'
@@ -53,6 +119,44 @@ describe('generateHDMasterKey', () => {
         expect(Buffer.from(entropy).equals(Buffer.from(expectedEntropy))).toBe(
             true,
         )
+    })
+
+    test('leaves no BIP39 seed on the heap when the mnemonic checksum is wrong', async () => {
+        const badChecksum = TEST_INDICES.slice()
+        // The last word's low 8 bits are the checksum; flipping bit 0 keeps the entropy.
+        badChecksum[badChecksum.length - 1] ^= 1
+        pbkdf2Outputs.length = 0
+
+        await expect(generateHDMasterKey(badChecksum)).rejects.toThrow(
+            'Invalid BIP39 mnemonic checksum',
+        )
+        expect(pbkdf2Outputs.every(buf => buf.every(byte => byte === 0))).toBe(
+            true,
+        )
+    })
+
+    test('zeroes the entropy when seed derivation fails', async () => {
+        const expectedEntropy = Buffer.from(
+            mnemonicToEntropy(TEST_MNEMONIC, wordlist),
+        )
+        pbkdf2Faults.push(new Error('pbkdf2 unavailable'))
+        zeroedContents.length = 0
+
+        await expect(generateHDMasterKey(TEST_INDICES)).rejects.toThrow(
+            'pbkdf2 unavailable',
+        )
+        expect(zeroedContents.some(buf => expectedEntropy.equals(buf))).toBe(
+            true,
+        )
+    })
+
+    test('zeroes the indices it generates when none are supplied', async () => {
+        zeroedBuffers.length = 0
+
+        await generateHDMasterKey()
+
+        const generated = vi.mocked(indicesToUtf8Bytes).mock.calls.at(-1)![0]
+        expect(zeroedBuffers).toContain(generated)
     })
 
     test('generates fresh 256-bit entropy when no indices are supplied', async () => {
@@ -173,6 +277,16 @@ describe('deriveLiquidAuthMainKey', () => {
 
         expect(Buffer.from(key).toString('hex')).toBe(DP256_GOLDEN_HEX)
         expect(key.byteLength).toBe(64)
+    })
+
+    test('zeroes the pbkdf2 output once the key is copied out', async () => {
+        pbkdf2Outputs.length = 0
+
+        const key = await deriveLiquidAuthMainKey(ZERO_MNEMONIC)
+
+        expect(pbkdf2Outputs).toHaveLength(1)
+        expect(pbkdf2Outputs[0]!.every(byte => byte === 0)).toBe(true)
+        expect(Buffer.from(key).toString('hex')).toBe(DP256_GOLDEN_HEX)
     })
 
     test('differs from the BIP39 seed (different salt and iterations)', async () => {

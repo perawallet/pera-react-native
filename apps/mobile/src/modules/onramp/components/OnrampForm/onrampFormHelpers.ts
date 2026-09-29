@@ -13,6 +13,7 @@
 import type { Platform } from 'react-native'
 import type { Decimal } from 'decimal.js'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     ANDROID_EXCLUDED_PAYMENT_METHODS,
     IOS_EXCLUDED_PAYMENT_METHODS,
@@ -54,7 +55,7 @@ export const resolveDestinationAssetId = (
     if (isNativeRampToken(destinationToken, network)) return ALGO_ASSET_NAME
 
     // No known USDC id on this network — there is no ASA to opt into.
-    const usdcAssetId = getKnownAssetId('USDC', network)
+    const usdcAssetId = getKnownAssetId('USDC', scopeForLegacyNetwork(network))
     return usdcAssetId === null ? null : BigInt(usdcAssetId)
 }
 

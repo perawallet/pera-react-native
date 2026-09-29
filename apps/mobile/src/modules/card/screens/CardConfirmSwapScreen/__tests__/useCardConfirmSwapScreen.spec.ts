@@ -74,8 +74,10 @@ vi.mock('@perawallet/wallet-core-card', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane, so
     // the hook's `usdcAssetId !== null` gate is actually reachable here.
-    getKnownAssetId: (_key: string, network: string) =>
-        network === 'mainnet' || network === 'testnet' ? 'usdc-id' : null,
+    getKnownAssetId: (
+        _key: string,
+        { networkId: network }: { networkId: string },
+    ) => (network === 'mainnet' || network === 'testnet' ? 'usdc-id' : null),
     useAssetsQuery: () => ({
         data: new Map([
             ['usdc-id', { assetId: 'usdc-id', decimals: 6, unitName: 'USDC' }],

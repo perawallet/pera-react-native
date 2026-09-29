@@ -24,6 +24,7 @@ import {
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-blockchain'
 import { ALGO_ASSET, getKnownAssetId } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useSigningRequest,
     type TransactionSignRequest,
@@ -60,7 +61,10 @@ const getCurrencyInfo = (
         }
         case 'testusdcalgorand':
         case 'usdcalgorand': {
-            const assetId = getKnownAssetId('USDC', network)
+            const assetId = getKnownAssetId(
+                'USDC',
+                scopeForLegacyNetwork(network),
+            )
             if (assetId === null) return null
 
             return {
@@ -92,7 +96,9 @@ export const computeBidaliBalances = (
     // asset id here — the existing "user holds no USDC" path. No branch
     // needed.
     const usdcBalance = balance?.assetBalances.find(
-        a => a.assetId === getKnownAssetId('USDC', network),
+        a =>
+            a.assetId ===
+            getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
     )?.amount
 
     // Bidali only has mainnet and testnet catalogues; everything that is not
