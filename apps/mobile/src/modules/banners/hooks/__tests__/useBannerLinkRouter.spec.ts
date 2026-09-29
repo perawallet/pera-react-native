@@ -119,6 +119,21 @@ describe('useBannerLinkRouter', () => {
             mockParseDeeplink.mockImplementation(parseDeeplink)
         })
 
+        it('dispatches an HTTPS-spelled opt-in link instead of opening it', () => {
+            const { result } = renderHook(() => useBannerLinkRouter())
+            act(() =>
+                result.current.route({
+                    url: 'HTTPS://perawallet.app/qr/perawallet/asset/opt-in?asset=1',
+                }),
+            )
+            expect(mockHandleDeepLink).toHaveBeenCalledWith(
+                'HTTPS://perawallet.app/qr/perawallet/asset/opt-in?asset=1',
+                false,
+                'in-app',
+            )
+            expect(Linking.openURL).not.toHaveBeenCalled()
+        })
+
         it.each([
             [
                 'an HTTPS-spelled transfer link',

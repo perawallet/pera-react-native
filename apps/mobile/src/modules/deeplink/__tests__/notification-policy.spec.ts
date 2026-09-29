@@ -22,7 +22,6 @@ describe('isNotificationAllowedDeeplinkType', () => {
         DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
         DeeplinkType.KEYREG,
         DeeplinkType.WALLET_CONNECT,
-        DeeplinkType.ASSET_OPT_IN,
         DeeplinkType.ADD_CONTACT,
         DeeplinkType.EDIT_CONTACT,
         DeeplinkType.ADD_WATCH_ACCOUNT,
@@ -38,6 +37,8 @@ describe('isNotificationAllowedDeeplinkType', () => {
         DeeplinkType.ASSET_DETAIL,
         DeeplinkType.ASSET_INBOX,
         DeeplinkType.SIGN_REQUEST,
+        DeeplinkType.ASSET_OPT_IN,
+        DeeplinkType.BUY,
     ])('admits %s', type => {
         expect(isNotificationAllowedDeeplinkType(type)).toBe(true)
     })

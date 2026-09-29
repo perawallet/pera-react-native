@@ -13,10 +13,11 @@
 import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
 
 /**
- * Whether a push or in-app notification may fire a given deeplink.
+ * Whether server-chosen content (a push, an in-app notification or a banner
+ * CTA) may fire a given deeplink.
  *
- * A notification's URL comes from the notifications backend (or whoever holds
- * the FCM sender credentials), and its provenance is itself a trust cue, so
+ * The URL comes from the notifications backend or the CMS (or whoever holds
+ * their credentials), and its provenance is itself a trust cue, so
  * only navigation-shaped types are admitted. Anything that pre-fills a
  * transfer, signs, pairs, or writes wallet state is refused.
  *
@@ -42,12 +43,16 @@ export const DEEPLINK_NOTIFICATION_POLICY: Record<
     // Scheme-gated by `isSafeBrowserUrl`; kept for campaign pushes.
     [DeeplinkType.DISCOVER_BROWSER]: true,
     [DeeplinkType.INTERNAL_BROWSER]: true,
+    // The backend's opt-in-request push. The handler stops at a confirmation
+    // sheet (asset, account, fee) before anything is signed.
+    [DeeplinkType.ASSET_OPT_IN]: true,
+    // Opens the on-ramp section; carries no address or amount.
+    [DeeplinkType.BUY]: true,
 
     [DeeplinkType.ALGO_TRANSFER]: false,
     [DeeplinkType.ASSET_TRANSFER]: false,
     [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: false,
     [DeeplinkType.KEYREG]: false,
-    [DeeplinkType.ASSET_OPT_IN]: false,
     [DeeplinkType.WALLET_CONNECT]: false,
     [DeeplinkType.LIQUID_AUTH]: false,
     [DeeplinkType.RECOVER_ADDRESS]: false,
@@ -58,7 +63,6 @@ export const DEEPLINK_NOTIFICATION_POLICY: Record<
     [DeeplinkType.EDIT_CONTACT]: false,
     [DeeplinkType.ADDRESS_ACTIONS]: false,
     [DeeplinkType.SWAP]: false,
-    [DeeplinkType.BUY]: false,
     [DeeplinkType.SELL]: false,
 }
 
