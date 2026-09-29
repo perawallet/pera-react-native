@@ -15,7 +15,11 @@ import { act } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import { algorandHistoryAdapter } from '@perawallet/wallet-core-chain-algorand/transactions'
+import {
+    historyChainAdapters,
+    type TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useNetworkStatusStore } from '@modules/network'
 import { useTransactionDetailsScreen } from '../useTransactionDetailsScreen'
@@ -89,6 +93,8 @@ describe('useTransactionDetailsScreen', () => {
         mockUseTransactionDetailQuery.mockReturnValue(queryResult({}))
         routeParams.current = {}
         useNetworkStatusStore.getState().setHasInternet(true)
+        historyChainAdapters.reset()
+        historyChainAdapters.register(algorandHistoryAdapter)
     })
 
     it('renders content from the threaded history row while the fetch is paused offline', () => {

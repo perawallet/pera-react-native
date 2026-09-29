@@ -229,10 +229,15 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 // The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so
-// the real transactions package (and its api/history schema, which imports
-// from the mocked shared package) isn't loaded into this unit test's graph.
+// the real transactions package isn't loaded into this unit test's graph. The
+// keyreg handler builds through the chain adapter, so the mock routes each
+// keyreg kind to its builder spy.
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useAssetOptInMutation: () => ({ optIn: vi.fn() }),
+    buildKeyRegistrationTx: (params: { kind: string }) =>
+        params.kind === 'offline'
+            ? mockOfflineKeyRegistration(params)
+            : mockOnlineKeyRegistration(params),
 }))
 
 vi.mock('@modules/connections/hooks/useConnectionPairing', () => ({
@@ -292,12 +297,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
     },
     useNetwork: () => ({ network: 'mainnet' }),
-    useAlgorandClient: () => ({
-        createTransaction: {
-            onlineKeyRegistration: mockOnlineKeyRegistration,
-            offlineKeyRegistration: mockOfflineKeyRegistration,
-        },
-    }),
     useTransactionEncoder: () => ({
         encodeTransaction: (tx: unknown) => tx,
         decodeTransaction: (tx: unknown) => tx,
