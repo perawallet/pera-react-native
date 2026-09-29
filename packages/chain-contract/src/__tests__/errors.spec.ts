@@ -11,7 +11,11 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { InvalidScopeKeyError, ScopeChangedError } from '../errors'
+import {
+    ChainHttpClientUnavailableError,
+    InvalidScopeKeyError,
+    ScopeChangedError,
+} from '../errors'
 import type { ChainScope } from '../models/identity'
 
 describe('ScopeChangedError', () => {
@@ -54,5 +58,19 @@ describe('InvalidScopeKeyError', () => {
         expect(error.name).toBe('InvalidScopeKeyError')
         expect(error.key).toBe('algorand')
         expect(error.message).toBe('Invalid chain scope key: "algorand"')
+    })
+})
+
+describe('ChainHttpClientUnavailableError', () => {
+    it('names the chain whose context has no HTTP client', () => {
+        const error = new ChainHttpClientUnavailableError('algorand')
+
+        expect(error).toBeInstanceOf(Error)
+        expect(error).toBeInstanceOf(ChainHttpClientUnavailableError)
+        expect(error.name).toBe('ChainHttpClientUnavailableError')
+        expect(error.chainId).toBe('algorand')
+        expect(error.message).toBe(
+            'No HTTP client is wired into the chain context for chain "algorand"',
+        )
     })
 })
