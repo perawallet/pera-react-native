@@ -15,31 +15,30 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
+import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
 import { useOnChainAccountInformationQuery } from '../useOnChainAccountInformationQuery'
-
-const mockFetchOnChainAccountInformation = vi.hoisted(() => vi.fn())
-
-vi.mock('../endpoints', () => ({
-    fetchOnChainAccountInformation: mockFetchOnChainAccountInformation,
-}))
+import {
+    fakeAccountsChain,
+    MAINNET_SCOPE,
+} from '../../__tests__/fakeAccountsChain'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
-    useAlgorandClient: () => ({}),
 }))
 
-// A real, round-trippable Algorand address: the mapper promotes the algod
-// string `address` to an algosdk `Address`, which rejects invalid input.
 const mockAddress = 'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM'
 
-const mockResponse = {
+const mockInformation = {
     address: mockAddress,
     amount: 2_000_000n,
     minBalance: 100_000n,
     status: 'Online',
     rewards: 0n,
     assets: [{ assetId: 31566704n, amount: 500_000n, isFrozen: false }],
-}
+} as unknown as AccountInformation
+
+const fetchAccountInformation = () =>
+    vi.mocked(fakeAccountsChain().adapter.fetchAccountInformation)
 
 describe('useOnChainAccountInformationQuery', () => {
     let queryClient: QueryClient
@@ -58,8 +57,8 @@ describe('useOnChainAccountInformationQuery', () => {
             )
     })
 
-    test('fetches and maps on-chain account information', async () => {
-        mockFetchOnChainAccountInformation.mockResolvedValue(mockResponse)
+    test("fetches the account information through the chain's adapter", async () => {
+        fetchAccountInformation().mockResolvedValue(mockInformation)
 
         const { result } = renderHook(
             () => useOnChainAccountInformationQuery(mockAddress),
@@ -68,44 +67,15 @@ describe('useOnChainAccountInformationQuery', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(result.current.data?.address.toString()).toBe(mockAddress)
-        expect({
-            amount: result.current.data?.amount,
-            minBalance: result.current.data?.minBalance,
-            status: result.current.data?.status,
-            rewards: result.current.data?.rewards,
-            assets: result.current.data?.assets,
-        }).toEqual({
-            amount: 2_000_000n,
-            minBalance: 100_000n,
-            status: 'Online',
-            rewards: 0n,
-            assets: [{ assetId: 31566704n, amount: 500_000n, isFrozen: false }],
-        })
-        expect(mockFetchOnChainAccountInformation).toHaveBeenCalledWith(
-            {},
+        expect(result.current.data).toBe(mockInformation)
+        expect(fetchAccountInformation()).toHaveBeenCalledWith(
             mockAddress,
+            MAINNET_SCOPE,
         )
-    })
-
-    test('maps response with no assets to empty array', async () => {
-        mockFetchOnChainAccountInformation.mockResolvedValue({
-            ...mockResponse,
-            assets: undefined,
-        })
-
-        const { result } = renderHook(
-            () => useOnChainAccountInformationQuery(mockAddress),
-            { wrapper },
-        )
-
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-        expect(result.current.data?.assets).toEqual([])
     })
 
     test('serves the fresh cache on remount instead of refetching', async () => {
-        mockFetchOnChainAccountInformation.mockResolvedValue(mockResponse)
+        fetchAccountInformation().mockResolvedValue(mockInformation)
 
         const first = renderHook(
             () => useOnChainAccountInformationQuery(mockAddress),
@@ -120,7 +90,7 @@ describe('useOnChainAccountInformationQuery', () => {
         )
         await waitFor(() => expect(second.result.current.isSuccess).toBe(true))
 
-        expect(mockFetchOnChainAccountInformation).toHaveBeenCalledTimes(1)
+        expect(fetchAccountInformation()).toHaveBeenCalledTimes(1)
     })
 
     test('is disabled when address is empty', () => {

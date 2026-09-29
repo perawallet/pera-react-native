@@ -11,7 +11,7 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
-import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
+import type { PQSchemeId } from './types'
 import { SeedScheme } from '../../constants'
 import { KeyManagementError } from '../../errors'
 import { FALCON_CHILD_KEY_TYPE } from '../../models/keys'

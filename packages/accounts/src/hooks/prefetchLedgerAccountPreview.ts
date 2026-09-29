@@ -11,10 +11,11 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query'
-import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import type { Network } from '@perawallet/wallet-core-shared'
-import { fetchRekeyedAddresses } from '../account-discovery'
-import { fetchOnChainAccountInformation } from './endpoints'
+import {
+    fetchAccountInformation,
+    fetchRekeyedAddresses,
+} from '../chain-adapter'
 import {
     getOnChainAccountInformationQueryKey,
     getRekeyedAddressesQueryKey,
@@ -27,7 +28,6 @@ import {
  */
 export const prefetchLedgerAccountPreview = async (
     queryClient: QueryClient,
-    algokit: AlgorandClient,
     address: string,
     network: Network,
 ): Promise<void> => {
@@ -36,7 +36,7 @@ export const prefetchLedgerAccountPreview = async (
     await Promise.allSettled([
         queryClient.prefetchQuery({
             queryKey: getOnChainAccountInformationQueryKey(address, network),
-            queryFn: () => fetchOnChainAccountInformation(algokit, address),
+            queryFn: () => fetchAccountInformation(address, network),
         }),
         queryClient.prefetchQuery({
             queryKey: getRekeyedAddressesQueryKey(address, network),

@@ -11,7 +11,8 @@
  */
 
 import { sha512_256 } from '@noble/hashes/sha2.js'
-import { DEFAULT_PQ_SCHEME_ID, PQ_SCHEMES, type PQSchemeId } from './schemes'
+import type { PQSchemeId } from '@perawallet/wallet-core-kms'
+import { DEFAULT_PQ_SCHEME_ID, PQ_SCHEMES } from './schemes'
 
 /** `protocol.PostQuantumKey` — go-algorand's PQ keygen-seed domain prefix. */
 const PQ_KEY_PREFIX = new TextEncoder().encode('PQK')

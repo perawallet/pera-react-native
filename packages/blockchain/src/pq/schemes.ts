@@ -11,6 +11,7 @@
  */
 
 import { FALCON_1024_SCHEME } from 'algosdk'
+import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 
 /**
  * Post-quantum signature schemes this wallet can produce.
@@ -50,8 +51,6 @@ import { FALCON_1024_SCHEME } from 'algosdk'
  */
 export const PQ_SCHEMES = {
     falcon1024: FALCON_1024_SCHEME,
-} as const
-
-export type PQSchemeId = keyof typeof PQ_SCHEMES
+} as const satisfies Record<PQSchemeId, Uint8Array>
 
 export const DEFAULT_PQ_SCHEME_ID: PQSchemeId = 'falcon1024'

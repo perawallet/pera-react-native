@@ -17,13 +17,16 @@ import React from 'react'
 import { useRekeyedAddressesQuery } from '../useRekeyedAddressesQuery'
 import { getRekeyedAddressesQueryKey } from '../querykeys'
 
-const mocks = vi.hoisted(() => ({
-    fetchRekeyedAddresses: vi.fn(),
-}))
+import {
+    fakeAccountsChain,
+    MAINNET_SCOPE,
+} from '../../__tests__/fakeAccountsChain'
 
-vi.mock('../../account-discovery', () => ({
-    fetchRekeyedAddresses: mocks.fetchRekeyedAddresses,
-}))
+const mocks = {
+    get fetchRekeyedAddresses() {
+        return vi.mocked(fakeAccountsChain().adapter.fetchRekeyedAddresses!)
+    },
+}
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
@@ -70,7 +73,7 @@ describe('useRekeyedAddressesQuery', () => {
         expect(result.current.isError).toBe(false)
         expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith(
             'ADDR',
-            'mainnet',
+            MAINNET_SCOPE,
         )
     })
 

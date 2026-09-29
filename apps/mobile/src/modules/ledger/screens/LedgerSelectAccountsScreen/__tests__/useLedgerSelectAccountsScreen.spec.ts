@@ -130,7 +130,6 @@ vi.mock('@modules/onboarding/hooks', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => ({}),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
@@ -423,13 +422,11 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'AAA111',
                 'mainnet',
             )
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'BBB222',
                 'mainnet',
             )
@@ -457,7 +454,6 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'REKEYED_A',
                 'mainnet',
             )
@@ -471,7 +467,6 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'AAA111',
                 'mainnet',
             )
@@ -484,7 +479,6 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'CCC333',
                 'mainnet',
             )
@@ -521,7 +515,6 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'CCC333',
                 'mainnet',
             )

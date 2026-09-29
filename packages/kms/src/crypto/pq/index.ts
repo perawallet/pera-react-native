@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export type { PQSignatureProvider } from './types'
+export type { PQSchemeId, PQSignatureProvider } from './types'
 export { createWasmFalconProvider } from './wasmFalconProvider'
 export { createRNFalconProvider } from './rnFalconProvider'
 export { getPQProvider } from './getPQProvider'

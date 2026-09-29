@@ -11,13 +11,10 @@
  */
 
 import {
-    derivePQKeygenSeed,
-    deriveQuantumAddress,
-} from '@perawallet/wallet-core-blockchain'
-import {
     PQ_DERIVATION_CANONICAL,
     PQ_DERIVATION_LEGACY,
     type PQDerivation,
+    type QuantumChainDerivation,
 } from '../models/keys'
 import { getPQProvider } from './pq'
 import { zeroBytes } from './secure-memory'
@@ -35,14 +32,15 @@ export type QuantumAddressCandidate = {
  * derives keys in memory and discards them.
  *
  * Legacy fed Falcon the raw entropy; canonical hashes it first via
- * `derivePQKeygenSeed`. Getting the two seeds swapped would point both
+ * `chain.deriveKeygenSeed`. Getting the two seeds swapped would point both
  * candidates at the wrong addresses.
  */
 export const quantumAddressCandidates = (
     entropy: Uint8Array,
+    chain: QuantumChainDerivation,
 ): QuantumAddressCandidate[] => {
     const provider = getPQProvider()
-    const canonicalSeed = derivePQKeygenSeed(entropy)
+    const canonicalSeed = chain.deriveKeygenSeed(entropy)
     let canonical:
         | ReturnType<typeof provider.generateKeypairFromSeed>
         | undefined
@@ -55,11 +53,11 @@ export const quantumAddressCandidates = (
         return [
             {
                 derivation: PQ_DERIVATION_CANONICAL,
-                address: deriveQuantumAddress(canonical.publicKey),
+                address: chain.addressFromPublicKey(canonical.publicKey),
             },
             {
                 derivation: PQ_DERIVATION_LEGACY,
-                address: deriveQuantumAddress(legacy.publicKey),
+                address: chain.addressFromPublicKey(legacy.publicKey),
             },
         ]
     } finally {
