@@ -61,8 +61,8 @@ const fakeChainAdapter = (
               }
             : { ok: true, payload: params[key] }
     },
-    resolveReportedNetwork: (network, customGenesisHash) => {
-        if (network !== 'custom') return network
+    resolveReportedNetwork: (scope, customGenesisHash) => {
+        if (scope.networkId !== 'custom') return scope.networkId
         return customGenesisHash === KNOWN_GENESIS_HASH ? 'testnet' : undefined
     },
     ...overrides,
