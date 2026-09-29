@@ -98,7 +98,7 @@ describe('RNCloudFileStorageService.getAvailableStores', () => {
 })
 
 describe('RNCloudFileStorageService routing', () => {
-    test('saves to the Drive appDataFolder', async () => {
+    test('saves to Google Drive', async () => {
         await expect(
             service.save('googleDrive', FILE_NAME, CONTENTS),
         ).resolves.toBe('saved')
@@ -117,7 +117,7 @@ describe('RNCloudFileStorageService routing', () => {
         expect(drive.saveToGoogleDrive).not.toHaveBeenCalled()
     })
 
-    test('reads from the Drive appDataFolder', async () => {
+    test('reads from Google Drive', async () => {
         await expect(service.read('googleDrive', options)).resolves.toEqual({
             status: 'read',
             contents: CONTENTS,

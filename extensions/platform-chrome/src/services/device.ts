@@ -43,7 +43,13 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
     }
 
     getAppVersion(): string {
-        return chrome.runtime.getManifest().version
+        // CI builds append the build number as a fourth part (see
+        // apps/browser/scripts/manifest.mjs); the app version is the first three.
+        return chrome.runtime
+            .getManifest()
+            .version.split('.')
+            .slice(0, 3)
+            .join('.')
     }
 
     async getDeviceInstallationID(): Promise<string> {

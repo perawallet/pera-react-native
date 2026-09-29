@@ -13,7 +13,6 @@
 import { Dialog, useTheme } from '@rneui/themed'
 import { formatDatetime, type Network } from '@perawallet/wallet-core-shared'
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
-import { NETWORK_LABEL_KEYS } from '@constants/network-labels'
 
 import {
     PWBadge,
@@ -29,6 +28,7 @@ import { KeyValueRow } from '@components/KeyValueRow'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNetworkLabel } from '@hooks/useNetworkLabel'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { PermissionItem } from '@modules/walletconnect'
 import { useSettingsWalletConnectDetailsScreen } from './useSettingsWalletConnectDetailsScreen'
@@ -45,13 +45,12 @@ export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
 // `custom` names a runtime-configurable node slot, not a network a user picks.
 const ConnectedNetworks = ({ networks }: { networks: Network[] }) => {
     const styles = useStyles()
-    const { t } = useLanguage()
-    const textStyles = {
-        mainnet: styles.mainnetText,
-        testnet: styles.testnetText,
-        betanet: styles.otherNetworkText,
-        custom: styles.otherNetworkText,
-    } satisfies Record<Network, unknown>
+    const networkLabel = useNetworkLabel()
+    const textStyleFor = (network: Network) => {
+        if (network === 'mainnet') return styles.mainnetText
+        if (network === 'testnet') return styles.testnetText
+        return styles.otherNetworkText
+    }
 
     return (
         <PWView style={styles.networkContainer}>
@@ -60,9 +59,9 @@ const ConnectedNetworks = ({ networks }: { networks: Network[] }) => {
                 .map(network => (
                     <PWText
                         key={network}
-                        style={textStyles[network]}
+                        style={textStyleFor(network)}
                     >
-                        {t(NETWORK_LABEL_KEYS[network])}
+                        {networkLabel(network)}
                     </PWText>
                 ))}
         </PWView>

@@ -18,7 +18,6 @@ import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { OfflineBanner } from '@components/OfflineBanner'
-import { NETWORK_LABEL_KEYS } from '@constants/network-labels'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -34,6 +33,7 @@ import { useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview/shell'
 import { PromptContainer } from '@modules/prompts'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNetworkLabel } from '@hooks/useNetworkLabel'
 import { useNotificationDeeplinkListener } from '@modules/deeplink/shell'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
@@ -74,6 +74,7 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     const styles = useStyles(insets)
     const { showError } = useErrorToast()
     const { t } = useLanguage()
+    const networkLabel = useNetworkLabel()
 
     useNetworkStatusListener()
     useTokenListener(fcmToken)
@@ -95,7 +96,7 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                 {!isMainnet && (
                     <PWView style={styles.testnetBar}>
                         <PWText style={styles.testnetText}>
-                            {t(NETWORK_LABEL_KEYS[network])}
+                            {networkLabel(network)}
                         </PWText>
                     </PWView>
                 )}

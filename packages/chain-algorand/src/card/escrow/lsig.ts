@@ -99,11 +99,9 @@ export const renderAutoDrawTeal = ({
 export const verifyAutoDrawProgram = (
     program: Uint8Array,
     network: Network,
-    expected?: Partial<Record<Network, string>>,
+    expected?: string,
 ): void => {
-    const pinned = expected
-        ? expected[network]
-        : getNetworkConfig(network).cardAutoDrawProgramHash
+    const pinned = expected ?? getNetworkConfig(network).cardAutoDrawProgramHash
 
     // Hex is case-insensitive; normalize so a pin pasted in upper case still
     // verifies instead of silently disabling AutoDraw.

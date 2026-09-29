@@ -11,6 +11,7 @@
  */
 
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     ALGO_ASSET_ID,
     type Network,
@@ -36,7 +37,7 @@ export const resolveSwapRouteAssets = (
     const assetOutId =
         params.assetOutId && params.assetOutId !== assetInId
             ? params.assetOutId
-            : getKnownAssetId('USDC', network)
+            : getKnownAssetId('USDC', scopeForLegacyNetwork(network))
 
     // No known USDC to default the output side to — no route to resolve.
     if (assetOutId === null) return null

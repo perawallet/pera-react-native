@@ -32,6 +32,7 @@ const AREAS = [
     'ledger',
     'backup',
     'connect',
+    'descriptor',
 ]
 
 type ExportTarget = { types: string; default: string }
@@ -57,6 +58,7 @@ const barrels: Record<string, () => Promise<unknown>> = {
     './ledger': () => import('../ledger'),
     './backup': () => import('../backup'),
     './connect': () => import('../connect'),
+    './descriptor': () => import('../descriptor'),
 }
 
 describe('chain-algorand exports', () => {

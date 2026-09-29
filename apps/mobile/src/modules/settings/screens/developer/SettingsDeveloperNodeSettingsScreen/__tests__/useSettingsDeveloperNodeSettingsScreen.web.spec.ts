@@ -12,6 +12,7 @@
 
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
 
 const mocks = vi.hoisted(() => ({
@@ -98,12 +99,26 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         )
 
         // Guards against a network being added to the union without a
-        // matching NETWORK_DISPLAY_ORDER entry — a plain Network[] type
+        // matching NETWORK_ROWS entry — a plain Network[] type
         // can't catch that at compile time.
         expect(result.current.networks.map(row => row.network).sort()).toEqual(
             Object.values(Networks).sort(),
         )
     })
+
+    it.each(algorandDescriptor.networks.map(network => network.id))(
+        'has a row with its own label key for declared network %s',
+        networkId => {
+            const { result } = renderHook(() =>
+                useSettingsDeveloperNodeSettingsScreen(),
+            )
+
+            expect(
+                result.current.networks.find(row => row.network === networkId)
+                    ?.labelKey,
+            ).toBe(`settings.developer.node_settings.${networkId}_label`)
+        },
+    )
 
     it('displays MainNet first, followed by TestNet, BetaNet, then Custom', () => {
         const { result } = renderHook(() =>

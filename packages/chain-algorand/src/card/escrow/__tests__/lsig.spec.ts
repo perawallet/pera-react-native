@@ -40,7 +40,8 @@ import {
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
 } from '@perawallet/wallet-core-card'
-import { bytesToHex } from '@perawallet/wallet-core-shared'
+import { bytesToHex, type Network } from '@perawallet/wallet-core-shared'
+import { algorandDescriptor } from '../../../descriptor'
 import {
     renderAutoDrawTeal,
     resolveEscrowChainConfig,
@@ -203,16 +204,16 @@ describe('verifyAutoDrawProgram', () => {
 
     it('accepts a program whose hash matches the pinned value', () => {
         const program = new Uint8Array([1, 2, 3, 4])
-        const pins = { testnet: pinFor(program) }
+        const pin = pinFor(program)
         expect(() =>
-            verifyAutoDrawProgram(program, 'testnet', pins),
+            verifyAutoDrawProgram(program, 'testnet', pin),
         ).not.toThrow()
     })
 
     it('rejects a program whose hash differs from the pinned value', () => {
-        const pins = { testnet: pinFor(new Uint8Array([1, 2, 3, 4])) }
+        const pin = pinFor(new Uint8Array([1, 2, 3, 4]))
         expect(() =>
-            verifyAutoDrawProgram(new Uint8Array([9, 9, 9]), 'testnet', pins),
+            verifyAutoDrawProgram(new Uint8Array([9, 9, 9]), 'testnet', pin),
         ).toThrow(AutoDrawProgramUnverifiedError)
     })
 
@@ -220,9 +221,9 @@ describe('verifyAutoDrawProgram', () => {
     // and whitespace that survives a copy-paste rather than failing closed on it.
     it('accepts an upper-case, padded pin', () => {
         const program = new Uint8Array([1, 2, 3, 4])
-        const pins = { testnet: `  ${pinFor(program).toUpperCase()}  ` }
+        const pin = `  ${pinFor(program).toUpperCase()}  `
         expect(() =>
-            verifyAutoDrawProgram(program, 'testnet', pins),
+            verifyAutoDrawProgram(program, 'testnet', pin),
         ).not.toThrow()
     })
 
@@ -230,15 +231,36 @@ describe('verifyAutoDrawProgram', () => {
     // rather than accidentally comparing equal to anything.
     it('rejects a legacy base64-program pin', () => {
         const program = new Uint8Array([1, 2, 3, 4])
-        const pins = { testnet: 'AQIDBA==' }
-        expect(() => verifyAutoDrawProgram(program, 'testnet', pins)).toThrow(
+        const pin = 'AQIDBA=='
+        expect(() => verifyAutoDrawProgram(program, 'testnet', pin)).toThrow(
             AutoDrawProgramUnverifiedError,
         )
     })
 
-    it('rejects when the network is unpinned (fail closed)', () => {
-        expect(() =>
-            verifyAutoDrawProgram(new Uint8Array([1, 2, 3, 4]), 'testnet', {}),
-        ).toThrow(AutoDrawProgramUnverifiedError)
+    it('rejects an empty pin without falling back to the config (fail closed)', () => {
+        const program = new Uint8Array([1, 2, 3, 4])
+        getNetworkConfig.mockReturnValue({
+            cardAutoDrawProgramHash: pinFor(program),
+        })
+
+        expect(() => verifyAutoDrawProgram(program, 'testnet', '')).toThrow(
+            AutoDrawProgramUnverifiedError,
+        )
     })
+
+    it.each(algorandDescriptor.networks.map(network => network.id))(
+        'reads the %s pin from that network config',
+        networkId => {
+            const program = new Uint8Array([1, 2, 3, 4])
+            getNetworkConfig.mockImplementation((network: string) => ({
+                cardAutoDrawProgramHash:
+                    network === networkId ? pinFor(program) : '',
+            }))
+
+            expect(() =>
+                verifyAutoDrawProgram(program, networkId as Network),
+            ).not.toThrow()
+            expect(getNetworkConfig).toHaveBeenCalledWith(networkId)
+        },
+    )
 })

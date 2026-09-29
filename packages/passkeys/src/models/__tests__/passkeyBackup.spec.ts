@@ -24,12 +24,25 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({ keystoreSubtle: {} }))
 // has no loadable build outside a device runtime. `zeroBytes` itself is a
 // trivial `fill(0)`, so it's reimplemented rather than imported for real.
 vi.mock('@perawallet/wallet-core-kms', () => ({
+    handOffSecret: <T>(secret: T): T => secret,
     zeroBytes: (
         ...buffers: Array<Uint8Array | Uint16Array | null | undefined>
     ) => {
         for (const buf of buffers) buf?.fill(0)
     },
 }))
+
+// Spied, not replaced, so a test can inspect the main key a call derived.
+vi.mock('../../crypto/derivePasskeyCredential', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('../../crypto/derivePasskeyCredential')
+        >()
+    return {
+        ...actual,
+        derivePasskeyMainKey: vi.fn(actual.derivePasskeyMainKey),
+    }
+})
 
 import { toDerivationUserHandle } from '../../authenticator/authenticator'
 import {
@@ -270,6 +283,27 @@ describe('passkeyBackupInputs', () => {
 
         expect(inputs).not.toBeNull()
         expect(inputs?.identity).toBe(identity)
+    })
+
+    it('zeroes the main key it derives when no cache is given', async () => {
+        const key = await buildReproducibleKey('alice')
+
+        await passkeyBackupInputs(key, resolveEntropy, subtle)
+
+        const mainKey: Uint8Array = await vi
+            .mocked(derivePasskeyMainKey)
+            .mock.results.at(-1)!.value
+        expect(mainKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('leaves a cached main key for the cache owner to zero', async () => {
+        const key = await buildReproducibleKey('alice')
+        const cache = new Map<string, Promise<Uint8Array | null>>()
+
+        await passkeyBackupInputs(key, resolveEntropy, subtle, cache)
+
+        const cached = await cache.get(SEED_KEY_ID)
+        expect(cached!.some(byte => byte !== 0)).toBe(true)
     })
 
     it('returns null when no candidate reproduces the stored public key', async () => {

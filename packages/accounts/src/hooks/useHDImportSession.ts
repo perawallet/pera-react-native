@@ -12,7 +12,11 @@
 
 import { useCallback } from 'react'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import { prepareHDMasterKey, useKMS } from '@perawallet/wallet-core-kms'
+import {
+    handOffSecret,
+    prepareHDMasterKey,
+    useKMS,
+} from '@perawallet/wallet-core-kms'
 import { useHDImportSessionStore } from '../import-session'
 import { discoverAccounts, createXHDGetPublicKey } from '../account-discovery'
 import type { HDWalletAccount } from '../models/accounts'
@@ -45,8 +49,8 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
             const derivationType = BIP32DerivationType.Peikert
             useHDImportSessionStore.getState().start({
                 walletKeyId: prepared.keyId,
-                rootKey: prepared.rootKey,
-                entropy: prepared.entropy,
+                rootKey: handOffSecret(prepared.rootKey),
+                entropy: handOffSecret(prepared.entropy),
                 derivationType,
             })
             return { walletKeyId: prepared.keyId, derivationType }

@@ -24,7 +24,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'testnet' }),
 }))
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    getKnownAssetId: () => mocks.knownUsdcId,
+    getKnownAssetId: (_key: string, scope: { networkId: string }) =>
+        scope.networkId === 'testnet' ? mocks.knownUsdcId : null,
 }))
 
 import {
