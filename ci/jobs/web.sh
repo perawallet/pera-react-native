@@ -19,9 +19,10 @@ export BITRISE_GIT_TAG="${CI_TAG%%-rc.*}"
 BUILD_NUMBER=$((CI_RUN_ID + ${BUILD_NUMBER_OFFSET:-0}))
 export BUILD_NUMBER
 export BITRISE_BUILD_NUMBER="$BUILD_NUMBER"
-# apps/browser/scripts/build.mjs stamps the manifest from these. Unlike
-# resolve_app_version, -alpha.N is kept: it lands in the display-only
-# version_name.
+# apps/browser/scripts/build.mjs stamps the manifest from these, so the
+# extension carries the app's version: 7.1.8.<build number>, and -alpha.N in
+# the display-only version_name. Off a tag APP_VERSION is empty and the
+# version comes from apps/browser/package.json.
 export APP_VERSION="${BITRISE_GIT_TAG#v}"
 
 APP_ENV="$ENVIRONMENT" pnpm run generate:config
@@ -36,6 +37,12 @@ pnpm --filter browser bundle
 # commit from the same tag: without it the two zips are indistinguishable once
 # downloaded, and a staging zip installed by mistake looks exactly like a
 # broken production build.
+# A branch build, which has no tag, is named by its build number, as on Bitrise.
 SHA=$(printf '%s' "$CI_SHA" | cut -c1-7)
-NAME="pera-extension-web-${ENVIRONMENT}-${CI_TAG}-${SHA}.zip"
+NAME="pera-extension-web-${ENVIRONMENT}-${CI_TAG:-b$BUILD_NUMBER}-${SHA}.zip"
 (cd apps/browser/dist && zip -r "$CI_ARTIFACT_DIR/$NAME" .)
+# The hash beside the zip, as Bitrise's _web-build writes it: what a store
+# upload or a reviewer checks the zip against. shasum rather than
+# sha256sum, which macOS does not ship.
+(cd "$CI_ARTIFACT_DIR" && shasum -a 256 "$NAME" >"$NAME.sha256")
+cat "$CI_ARTIFACT_DIR/$NAME.sha256"
