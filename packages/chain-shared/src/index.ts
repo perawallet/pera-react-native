@@ -12,3 +12,4 @@
 
 export * from './store/network-store'
 export * from './hooks/useSelectedScope'
+export * from './hooks/useChainCapability'

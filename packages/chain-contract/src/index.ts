@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export * from './capabilities/adapters'
 export * from './capabilities/resolve'
 export * from './chain-registry'
 export * from './contracts/address-codec'
