@@ -201,6 +201,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     }),
     useNativeAsset: () => nativeAsset,
     nativeAssetFor: () => nativeAsset,
+    isNativeAssetId: (_chainId: string, assetId: string) =>
+        assetId === nativeAsset.assetId,
     PeraAssetType: {
         algo: 'algo',
         standard_asset: 'standard_asset',
