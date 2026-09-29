@@ -30,9 +30,9 @@ import {
 import { OnboardingNotVerifiedError } from '../errors'
 import {
     AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
     CardEscrowNotConfiguredError,
-} from '../escrow/lsig'
-import { AutoDrawTealUnverifiedError } from '../escrow/verify-teal'
+} from '../escrow/errors'
 
 type Case = {
     error: AppError

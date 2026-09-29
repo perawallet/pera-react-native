@@ -10,6 +10,12 @@
  limitations under the License
  */
 
-export { useNfdForAddressQuery } from './useNfdForAddressQuery'
-export { useNfdSearchQuery } from './useNfdSearchQuery'
+export {
+    useNfdForAddressQuery,
+    type UseNfdForAddressQueryResult,
+} from './useNfdForAddressQuery'
+export {
+    useNfdSearchQuery,
+    type UseNfdSearchQueryResult,
+} from './useNfdSearchQuery'
 export { nfdQueryKeys, invalidateNfdQueries } from './querykeys'

@@ -22,6 +22,7 @@ import {
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     logger,
     type Maybe,
@@ -80,7 +81,7 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     const fundingAccount = useCardFundingAccount()
 
     const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', network),
+        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
         [network],
     )
     const [pickedAssetId, setPickedAssetId] = useState<Nullable<string>>(null)

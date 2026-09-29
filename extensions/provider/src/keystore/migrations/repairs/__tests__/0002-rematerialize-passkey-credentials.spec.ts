@@ -198,6 +198,43 @@ describe('0002-rematerialize-passkey-credentials', () => {
         vi.restoreAllMocks()
     })
 
+    it('leaves split credentials alone on Android', async () => {
+        const storage = fakeStorage()
+        await seededCredential(storage, {
+            id: 'cred-a',
+            publicKey: new Uint8Array(4).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const before = storage.entries()
+
+        await migration.up(
+            { ...context(storage), platform: 'android' },
+            utils(),
+        )
+
+        expect(storage.entries()).toEqual(before)
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+    })
+
+    it.each([['ios' as const], [undefined]])(
+        'still un-adopts when the platform is %s',
+        async platform => {
+            const storage = fakeStorage()
+            await seededCredential(storage, {
+                id: 'cred-a',
+                publicKey: new Uint8Array(4).fill(4),
+                privateKey: new Uint8Array(32).fill(3),
+            })
+
+            await migration.up({ ...context(storage), platform }, utils())
+
+            expect(
+                storage.getString(`${METADATA_PREFIX}cred-a`),
+            ).toBeUndefined()
+            expect(storage.getString('cred-a')).toBeDefined()
+        },
+    )
+
     it('rematerializes an adopted hd-derived-p256 credential, and it round-trips through the provider envelope', async () => {
         const storage = fakeStorage({})
         await seededCredential(storage, {

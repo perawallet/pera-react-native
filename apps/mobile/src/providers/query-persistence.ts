@@ -40,6 +40,9 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     assets: 'never',
     blockchain: 'never',
     card: 'never',
+    // The proven-passkey sweep: credential metadata, and a cold start re-runs
+    // it before any reader needs it.
+    'cloud-backup': 'never',
     onramp: 'never',
     passkeys: 'never',
     swaps: 'never',

@@ -81,7 +81,7 @@ export const StakingProjectCard = ({
                     {project.description}
                 </PWText>
 
-                {project.tvlInAlgo.gt(0) && (
+                {project.tvlInNative.gt(0) && (
                     <PWView style={styles.tvlRow}>
                         <PWIcon
                             name='locked'
@@ -91,7 +91,7 @@ export const StakingProjectCard = ({
                         <PWView style={styles.tvlValueContainer}>
                             <AssetAmount
                                 asset={ALGO_ASSET}
-                                value={project.tvlInAlgo}
+                                value={project.tvlInNative}
                                 density='compact'
                                 truncateToUnits
                                 showSymbol

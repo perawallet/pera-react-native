@@ -12,7 +12,7 @@
     "paths": {
       "@perawallet/wallet-core-connections": ["../connections/src/index.ts"],
       "@perawallet/wallet-core-connections/testing": [
-        "../connections/src/testing/handler-contract.ts"
+        "../connections/src/__tests__/handler-contract.ts"
       ],
       "@perawallet/wallet-core-connections/pairingOutcome": [
         "../connections/src/pairingOutcome.ts"

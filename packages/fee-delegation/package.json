@@ -18,23 +18,12 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@babel/runtime": "catalog:",
-    "@perawallet/wallet-core-app-integrity": "workspace:*",
-    "@perawallet/wallet-core-blockchain": "workspace:*",
-    "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-core-signing": "workspace:*",
-    "react": "catalog:",
-    "zod": "catalog:"
+    "@perawallet/wallet-core-chain-algorand": "workspace:*"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "catalog:",
-    "@types/react": "catalog:",
-    "msw": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "@perawallet/wallet-core-config": "workspace:*",
-    "react-dom": "catalog:"
+    "vitest": "catalog:"
   }
 }

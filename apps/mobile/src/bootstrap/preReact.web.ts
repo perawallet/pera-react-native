@@ -13,6 +13,7 @@
 import { initDecimalConfig } from '@perawallet/wallet-core-shared'
 import { initNetworkStatus } from '@modules/network'
 import { registerAppBottomSheets } from './bottom-sheet-registrations'
+import { registerChainAdapters } from './chain-adapters'
 import { updateQueryHeaders } from './query-headers'
 
 /**
@@ -24,6 +25,7 @@ import { updateQueryHeaders } from './query-headers'
 export const initRuntime = (): void => {
     initDecimalConfig()
     registerAppBottomSheets()
+    registerChainAdapters()
     // Needs getProvider().deviceInfo, which only resolves after hydration.
     updateQueryHeaders()
     // Without this there is no onlineManager binding and every query treats

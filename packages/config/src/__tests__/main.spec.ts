@@ -19,6 +19,46 @@ import {
 } from '../main'
 
 describe('config/main', () => {
+    describe('chains', () => {
+        test('defaults to Algorand with no capability overrides', () => {
+            expect(getConfig({}).chains).toEqual({
+                enabled: ['algorand'],
+                capabilities: {},
+            })
+        })
+
+        test('reads the enabled chains and a capability list from the flat env values', () => {
+            expect(
+                getConfig({
+                    chainIds: 'algorand',
+                    chainAlgorandCapabilities: 'send, receive',
+                }).chains,
+            ).toEqual({
+                enabled: ['algorand'],
+                capabilities: { algorand: ['send', 'receive'] },
+            })
+        })
+
+        test('rejects an unknown chain id', () => {
+            expect(() => getConfig({ chainIds: 'algorand,dogecoin' })).toThrow()
+        })
+
+        test('rejects an unknown capability', () => {
+            expect(() =>
+                getConfig({ chainAlgorandCapabilities: 'send,teleport' }),
+            ).toThrow()
+        })
+
+        test('rejects a build with no chains', () => {
+            expect(() => getConfig({ chainIds: ' , ' })).toThrow()
+        })
+
+        test('keeps the flat env values out of the config', () => {
+            const result = getConfig({ chainIds: 'algorand' })
+            expect(result).not.toHaveProperty('chainIds')
+        })
+    })
+
     test('config object is frozen', () => {
         expect(Object.isFrozen(config)).toBe(true)
     })

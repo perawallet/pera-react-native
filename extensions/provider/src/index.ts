@@ -44,3 +44,7 @@ export {
     UPSTREAM_KEYSTORE_MODULE_ID,
     type KeystoreMigrationModuleDescriptor,
 } from './keystore/keystoreMigrationModules'
+export { hasKeyMaterial, writePasskeyCredential } from './keystore/maintenance'
+export { isPasskeyCredentialType } from './keystore/passkeyCredentials/passkeyCredentialTypes'
+export type { FlatProviderCredential } from './keystore/passkeyCredentials/splitProviderCredential'
+export type { PasskeySplitResult } from './keystore/passkeyCredentials/splitFlatPasskeyCredentials'

@@ -38,6 +38,7 @@ import {
     useVaultLockState,
 } from '@modules/vault'
 import { OnboardingStackNavigator } from '@modules/onboarding/routes'
+import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
@@ -128,6 +129,7 @@ const ShellRouter = (): React.JSX.Element => {
             onboardingNavigationRef.navigate(screen, params)
         },
     )
+    const handleLedgerTabExit = useLedgerHandoffTabExit()
 
     switch (shellState) {
         case 'resolving': {
@@ -161,6 +163,11 @@ const ShellRouter = (): React.JSX.Element => {
                     ref={onboardingNavigationRef}
                     theme={getNavigationTheme(isDarkMode ? 'dark' : 'light')}
                     onReady={handleOnboardingReady}
+                    onStateChange={() =>
+                        handleLedgerTabExit(
+                            onboardingNavigationRef.getCurrentRoute()?.name,
+                        )
+                    }
                 >
                     <OnboardingStackNavigator />
                     <BottomSheetManager />

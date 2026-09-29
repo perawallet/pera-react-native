@@ -13,11 +13,10 @@
 import { useCallback } from 'react'
 import { QueryObserver, useQueryClient } from '@tanstack/react-query'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
-import {
-    useAlgorandClient,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import { cardAdapterFor } from '../chain-adapter'
 import { cardQueryKeys } from './querykeys'
 
 export const USDC_CREDIT_POLL_INTERVAL_MS = 1500
@@ -31,20 +30,17 @@ export class UsdcCreditTimeoutError extends Error {
     }
 }
 
-type AlgorandClient = ReturnType<typeof useAlgorandClient>
-
 const fetchUsdcBalance = async (
-    algokit: AlgorandClient,
     network: Network,
     address: string,
 ): Promise<bigint> => {
-    const usdcAssetId = getKnownAssetId('USDC', network)
+    const usdcAssetId = getKnownAssetId('USDC', scopeForLegacyNetwork(network))
     if (usdcAssetId === null) return 0n
-    const info = await algokit.client.algod.accountInformation(address).do()
-    const holding = info.assets?.find(
-        asset => String(asset.assetId) === usdcAssetId,
+    return cardAdapterFor(network).getAssetBalance(
+        network,
+        address,
+        usdcAssetId,
     )
-    return holding?.amount ?? 0n
 }
 
 type WaitForUsdcCreditParams = {
@@ -73,20 +69,19 @@ export type UseCardUsdcCreditQueryResult = {
  */
 export const useCardUsdcCreditQuery = (): UseCardUsdcCreditQueryResult => {
     const queryClient = useQueryClient()
-    const algokit = useAlgorandClient()
     const { network } = useNetwork()
 
     const readUsdcBalance = useCallback(
         (address: string): Promise<bigint> =>
             queryClient.fetchQuery({
                 queryKey: cardQueryKeys.usdcBalance(network, address),
-                queryFn: () => fetchUsdcBalance(algokit, network, address),
+                queryFn: () => fetchUsdcBalance(network, address),
                 // A baseline for the next credit: never a cached figure.
                 staleTime: 0,
                 gcTime: 0,
                 retry: false,
             }),
-        [queryClient, algokit, network],
+        [queryClient, network],
     )
 
     const waitForUsdcCredit = useCallback(
@@ -105,8 +100,7 @@ export const useCardUsdcCreditQuery = (): UseCardUsdcCreditQueryResult => {
                 }),
                 queryFn: async () => {
                     const delta =
-                        (await fetchUsdcBalance(algokit, network, address)) -
-                        before
+                        (await fetchUsdcBalance(network, address)) - before
                     if (delta > 0n && delta >= minimum) return delta
                     if (Date.now() >= deadline) {
                         throw new UsdcCreditTimeoutError()
@@ -140,7 +134,7 @@ export const useCardUsdcCreditQuery = (): UseCardUsdcCreditQueryResult => {
                 })
             })
         },
-        [queryClient, algokit, network],
+        [queryClient, network],
     )
 
     return { readUsdcBalance, waitForUsdcCredit }

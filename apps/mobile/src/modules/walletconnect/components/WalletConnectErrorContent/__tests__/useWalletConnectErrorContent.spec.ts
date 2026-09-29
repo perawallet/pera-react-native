@@ -19,6 +19,7 @@ const mockConfig = vi.hoisted(() => ({ debugEnabled: false }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: mockConfig,
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 vi.mock('@hooks/useLanguage')

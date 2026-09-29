@@ -33,8 +33,13 @@ const mocks = vi.hoisted(() => {
         resolvePasskey: vi.fn(),
         rejectPasskey: vi.fn(),
         requireVaultPassword: vi.fn(),
+        useApprovalArming: vi.fn(),
     }
 })
+
+vi.mock('@hooks/useApprovalArming.web', () => ({
+    useApprovalArming: mocks.useApprovalArming,
+}))
 
 vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
@@ -114,6 +119,7 @@ describe('usePasskeyApproval', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.spyOn(window, 'close').mockImplementation(() => {})
+        mocks.useApprovalArming.mockReturnValue(true)
         mocks.getKeystore.mockReturnValue(FAKE_KEYSTORE)
         mocks.getKeystoreStore.mockReturnValue(FAKE_STORE)
         mocks.createKeystoreSigner.mockReturnValue(FAKE_SIGNER)
@@ -248,6 +254,56 @@ describe('usePasskeyApproval', () => {
     // A button press is user PRESENCE. When the RP demands user verification
     // we must actually check a factor before setting the UV bit — mobile gets
     // that from the OS credential-provider ceremony; the extension asks.
+    describe('before the window is armed', () => {
+        beforeEach(() => {
+            mocks.useApprovalArming.mockReturnValue(false)
+            mocks.useDappRequest.mockReturnValue({
+                requestId: 'pk1',
+                approval: CREATE_APPROVAL,
+                isLoading: false,
+            })
+        })
+
+        it('reports that approving is not possible yet', () => {
+            const { result } = renderHook(() => usePasskeyApproval())
+
+            expect(result.current.canApprove).toBe(false)
+        })
+
+        it('approve() runs no ceremony', async () => {
+            const { result } = renderHook(() => usePasskeyApproval())
+
+            await act(async () => {
+                await result.current.approve()
+            })
+
+            expect(mocks.createCredential).not.toHaveBeenCalled()
+            expect(mocks.resolvePasskey).not.toHaveBeenCalled()
+        })
+
+        it('decline() still works', async () => {
+            const { result } = renderHook(() => usePasskeyApproval())
+
+            await act(async () => {
+                await result.current.decline()
+            })
+
+            expect(mocks.rejectPasskey).toHaveBeenCalledWith('pk1', 'declined')
+        })
+    })
+
+    it('can approve once armed', () => {
+        mocks.useDappRequest.mockReturnValue({
+            requestId: 'pk1',
+            approval: CREATE_APPROVAL,
+            isLoading: false,
+        })
+
+        const { result } = renderHook(() => usePasskeyApproval())
+
+        expect(result.current.canApprove).toBe(true)
+    })
+
     describe('when the relying party requires user verification', () => {
         beforeEach(() => {
             mocks.useDappRequest.mockReturnValue({

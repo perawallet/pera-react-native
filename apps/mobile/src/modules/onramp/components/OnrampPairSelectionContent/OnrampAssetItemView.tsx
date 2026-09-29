@@ -14,6 +14,7 @@ import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import { AccountAssetItemView } from '@modules/assets'
 import type { PWTouchableOpacityProps } from '@components/core'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { buildAccountBalanceFromRampToken } from './buildAccountBalanceFromRampToken'
@@ -28,9 +29,10 @@ export const OnrampAssetItemView = ({
     balance,
     ...rest
 }: OnrampAssetItemViewProps) => {
+    const { network } = useNetwork()
     const accountBalance = useMemo(
-        () => buildAccountBalanceFromRampToken(token, balance),
-        [token, balance],
+        () => buildAccountBalanceFromRampToken(token, balance, network),
+        [token, balance, network],
     )
 
     return (

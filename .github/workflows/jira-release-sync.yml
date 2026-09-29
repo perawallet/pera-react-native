@@ -13,7 +13,7 @@ name: Jira / Release Sync
 # conclusion is the gate, which is the same red/green rule the release Slack card
 # applies.
 #
-# A commit is mandatory for every move — see tools/release-tickets.sh. Tickets
+# A commit is mandatory for every move — see tools/release/tickets.sh. Tickets
 # with no branch, PR or commit are never touched and are moved by hand.
 
 on:
@@ -106,7 +106,7 @@ jobs:
               ;;
           esac
 
-          mapfile -t tickets < <(./tools/release-tickets.sh "$TAG")
+          mapfile -t tickets < <(./tools/release/tickets.sh "$TAG")
           if [ "${#tickets[@]}" -eq 0 ]; then
             echo "No ticketed commits in ${TAG} — nothing to sync"
             exit 0

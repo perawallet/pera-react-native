@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -43,7 +43,13 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
     }
 
     getAppVersion(): string {
-        return chrome.runtime.getManifest().version
+        // CI builds append the build number as a fourth part (see
+        // apps/browser/scripts/manifest.mjs); the app version is the first three.
+        return chrome.runtime
+            .getManifest()
+            .version.split('.')
+            .slice(0, 3)
+            .join('.')
     }
 
     async getDeviceInstallationID(): Promise<string> {
@@ -100,10 +106,7 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
     }
 
     getAppEnvironment(): AppEnvironment {
-        // EXPO_PUBLIC_* vars are inlined at build time (Metro bundles this package for the extension's UI surfaces via expo export).
-        const env = process.env.EXPO_PUBLIC_APP_ENV
-        if (env === 'staging' || env === 'production') return env
-        return 'development'
+        return config.appEnvironment
     }
 
     isStoreBuild(): boolean {

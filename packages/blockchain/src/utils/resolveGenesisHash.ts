@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-import {
-    getNetworkConfig,
-    Networks,
-    type Network,
-} from '@perawallet/wallet-core-config'
-import { getCustomNetworkConfig } from '../store'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { getChainConfig, type Network } from '@perawallet/wallet-core-config'
 
 /**
  * The genesis hash to compare signable transactions against.
@@ -29,9 +25,5 @@ import { getCustomNetworkConfig } from '../store'
  * which `assertTransactionsMatchNetwork` rejects outright — an empty hash is never
  * a valid chain identity, so this fails closed.
  */
-export const getExpectedGenesisHash = (network: Network): string => {
-    if (network !== Networks.custom)
-        return getNetworkConfig(network).genesisHash
-
-    return getCustomNetworkConfig()?.genesisHash ?? ''
-}
+export const getExpectedGenesisHash = (network: Network): string =>
+    getChainConfig(scopeForLegacyNetwork(network)).genesisHash

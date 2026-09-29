@@ -92,7 +92,9 @@ describe('Test navigator stand-in', () => {
         await waitFor(() => screen.getByTestId('screen_b'))
 
         fireEvent.click(screen.getByTestId('back'))
-        await waitFor(() => screen.getByTestId('screen_a'))
+        await waitFor(() => {
+            expect(screen.getByTestId('screen_a')).toBeTruthy()
+        })
     })
 
     it('Given screen A, when replace("C"), then screen C renders and goBack does NOT return to A', async () => {

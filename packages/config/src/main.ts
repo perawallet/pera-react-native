@@ -12,6 +12,12 @@
 
 import { z } from 'zod'
 import {
+    CHAIN_CAPABILITIES,
+    CHAIN_IDS,
+    type ChainId,
+    type ChainSetupConfig,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     ONE_DAY,
     ONE_HOUR,
     ONE_MINUTE,
@@ -21,6 +27,14 @@ import {
 } from './constants'
 
 import { generatedEnv } from './generated-env'
+
+const chainSetupSchema = z.object({
+    enabled: z.array(z.enum(CHAIN_IDS)).min(1),
+    capabilities: z.partialRecord(
+        z.enum(CHAIN_IDS),
+        z.array(z.enum(CHAIN_CAPABILITIES)),
+    ),
+}) satisfies z.ZodType<ChainSetupConfig>
 
 /**
  * First-party hosts only. Third-party sandboxes legitimately keep a staging
@@ -100,7 +114,7 @@ export const configSchema = z
 
         // The WalletConnect v2 relay rejects clients with no Reown Cloud
         // project id. Empty in open-source builds, where v2 is unavailable;
-        // a production build without one fails in tools/generate-config.sh.
+        // a production build without one fails in tools/dev/generate-config.sh.
         reownProjectId: z.string(),
 
         notificationRefreshTime: z.number().int(),
@@ -198,6 +212,8 @@ export const configSchema = z
         mainnetCardUsdcAssetId: z.string(),
         testnetCardUsdcAssetId: z.string(),
 
+        chains: chainSetupSchema,
+
         arc59: z.object({
             testnet: z.object({
                 appId: z.bigint(),
@@ -292,7 +308,7 @@ const productionConfig: Omit<
     mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
     // Injected at build time from the BACKEND_API_KEY env var via
-    // tools/generate-config.sh (bitrise secrets in CI, .env locally). Empty
+    // tools/dev/generate-config.sh (bitrise secrets in CI, .env locally). Empty
     // here so no key literal ships in the open-source source tree.
     backendAPIKey: '',
     algodApiKey: '',
@@ -413,7 +429,7 @@ const productionConfig: Omit<
     mainnetBaanxBaseUrl: 'https://api.baanx.com',
     testnetBaanxBaseUrl: 'https://dev.api.baanx.com',
     // PUBLIC client keys (x-client-key) are injected at build time from env
-    // vars (bitrise secrets in CI, .env locally) via tools/generate-config.sh.
+    // vars (bitrise secrets in CI, .env locally) via tools/dev/generate-config.sh.
     mainnetBaanxClientKey: '',
     testnetBaanxClientKey: '',
     // TODO(card): set the real Baanx tenant id for production via the
@@ -434,6 +450,8 @@ const productionConfig: Omit<
     cardAutoDrawTemplateHash: '',
     mainnetCardUsdcAssetId: '31566704',
     testnetCardUsdcAssetId: '10458941',
+
+    chains: { enabled: ['algorand'], capabilities: {} },
 
     arc59: {
         testnet: {
@@ -561,9 +579,60 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     appBuildNumber: 'BITRISE_BUILD_NUMBER',
 }
 
+type ChainCapabilitiesEnvKey = `chain${Capitalize<ChainId>}Capabilities`
+
+/** Comma lists from `CHAINS` and `CHAIN_<ID>_CAPABILITIES`, which generate-config.sh can only emit flat. */
+type ChainEnv = { chainIds?: string } & Partial<
+    Record<ChainCapabilitiesEnvKey, string>
+>
+
+const chainCapabilitiesEnvKey = (chainId: ChainId): ChainCapabilitiesEnvKey =>
+    `chain${chainId.charAt(0).toUpperCase()}${chainId.slice(1)}Capabilities` as ChainCapabilitiesEnvKey
+
+const csv = (value: string): string[] =>
+    value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean)
+
+// Left unvalidated here: configSchema.parse rejects an unknown chain id or
+// capability, so a typo fails at import rather than shipping.
+const chainsFromEnv = (
+    env: ChainEnv,
+    fallback: Config['chains'],
+): Config['chains'] => ({
+    enabled: (env.chainIds ? csv(env.chainIds) : fallback.enabled) as ChainId[],
+    capabilities: {
+        ...fallback.capabilities,
+        ...Object.fromEntries(
+            CHAIN_IDS.flatMap(chainId => {
+                const listed = env[chainCapabilitiesEnvKey(chainId)]
+                return listed === undefined ? [] : [[chainId, csv(listed)]]
+            }),
+        ),
+    },
+})
+
+const withoutChainEnv = (
+    overrides: ConfigOverrides & ChainEnv,
+): ConfigOverrides => {
+    const rest: Record<string, unknown> = { ...overrides }
+    delete rest.chainIds
+    for (const chainId of CHAIN_IDS) {
+        delete rest[chainCapabilitiesEnvKey(chainId)]
+    }
+    return rest as ConfigOverrides
+}
+
 /** Merges the safe production defaults with the generated env configuration. */
-export function getConfig(overrides: ConfigOverrides = generatedEnv): Config {
-    const mergedConfig = { ...productionConfig, ...overrides }
+export function getConfig(
+    overrides: ConfigOverrides & ChainEnv = generatedEnv,
+): Config {
+    const mergedConfig = {
+        ...productionConfig,
+        ...withoutChainEnv(overrides),
+    }
+    mergedConfig.chains = chainsFromEnv(overrides, mergedConfig.chains)
 
     return configSchema.parse({
         ...mergedConfig,

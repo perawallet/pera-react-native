@@ -20,7 +20,7 @@ import {
     CloudStorageError,
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
-import { DRIVE_APPDATA_SCOPE } from '../google-drive-session'
+import { DRIVE_FILE_SCOPE } from '../google-drive-session'
 import { isGoogleDriveConfigured, saveToGoogleDrive } from '../google-drive'
 
 const google = vi.hoisted(() => ({
@@ -35,8 +35,9 @@ const google = vi.hoisted(() => ({
     hasPlayServices: vi.fn(),
 }))
 
-const { writeFile, constructed, mockConfig } = vi.hoisted(() => ({
+const { writeFile, mkdir, constructed, mockConfig } = vi.hoisted(() => ({
     writeFile: vi.fn(),
+    mkdir: vi.fn(),
     constructed: vi.fn(),
     mockConfig: {
         googleIosClientId: 'ios-client.apps.googleusercontent.com',
@@ -66,11 +67,14 @@ vi.mock('react-native-cloud-storage', () => {
         CloudStorageError,
         CloudStorageErrorCode: {
             AUTHENTICATION_FAILED: 'ERR_AUTHENTICATION_FAILED',
+            DIRECTORY_NOT_FOUND: 'ERR_DIRECTORY_NOT_FOUND',
+            FILE_ALREADY_EXISTS: 'ERR_FILE_EXISTS',
         },
         CloudStorageProvider: { ICloud: 'icloud', GoogleDrive: 'googledrive' },
         CloudStorageScope: { Documents: 'documents', AppData: 'app_data' },
         CloudStorage: class {
             writeFile = writeFile
+            mkdir = mkdir
             constructor(...args: unknown[]) {
                 constructed(...args)
             }
@@ -93,7 +97,7 @@ const signedIn = (scopes: string[]) => ({
 
 const driveOptions = (accessToken: string) => ({
     accessToken,
-    scope: 'app_data',
+    scope: 'documents',
     strictFilenames: false,
     timeout: 15_000,
 })
@@ -102,12 +106,13 @@ beforeEach(() => {
     vi.clearAllMocks()
     Platform.OS = 'ios'
     google.hasPreviousSignIn.mockReturnValue(false)
-    google.signIn.mockResolvedValue(signedIn([DRIVE_APPDATA_SCOPE]))
+    google.signIn.mockResolvedValue(signedIn([DRIVE_FILE_SCOPE]))
     google.getTokens.mockResolvedValue({ idToken: '', accessToken: 'token-1' })
     google.clearCachedAccessToken.mockResolvedValue(null)
     google.signOut.mockResolvedValue(null)
     google.hasPlayServices.mockResolvedValue(true)
     writeFile.mockResolvedValue(undefined)
+    mkdir.mockResolvedValue(undefined)
 })
 
 afterEach(() => {
@@ -154,13 +159,13 @@ describe('saveToGoogleDrive', () => {
         expect(google.signIn).not.toHaveBeenCalled()
     })
 
-    test('signs in, then writes the file to the app-data folder with the access token', async () => {
+    test('signs in, then writes the file into the Pera Wallet folder with the access token', async () => {
         await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
             'saved',
         )
 
         expect(google.configure).toHaveBeenCalledWith({
-            scopes: [DRIVE_APPDATA_SCOPE],
+            scopes: [DRIVE_FILE_SCOPE],
             iosClientId: mockConfig.googleIosClientId,
             webClientId: mockConfig.googleWebClientId,
         })
@@ -168,7 +173,10 @@ describe('saveToGoogleDrive', () => {
             'googledrive',
             driveOptions('token-1'),
         )
-        expect(writeFile).toHaveBeenCalledWith(`/${FILE_NAME}`, CONTENTS)
+        expect(writeFile).toHaveBeenCalledWith(
+            `/Pera Wallet/${FILE_NAME}`,
+            CONTENTS,
+        )
     })
 
     test('checks Play Services before signing in', async () => {
@@ -196,7 +204,7 @@ describe('saveToGoogleDrive', () => {
     test('reuses a previous sign-in without prompting', async () => {
         google.hasPreviousSignIn.mockReturnValue(true)
         google.signInSilently.mockResolvedValueOnce(
-            signedIn([DRIVE_APPDATA_SCOPE]),
+            signedIn([DRIVE_FILE_SCOPE]),
         )
 
         await saveToGoogleDrive(FILE_NAME, CONTENTS)
@@ -237,13 +245,13 @@ describe('saveToGoogleDrive', () => {
 
     test('asks for the Drive scope when the account has not granted it', async () => {
         google.signIn.mockResolvedValueOnce(signedIn([]))
-        google.addScopes.mockResolvedValueOnce(signedIn([DRIVE_APPDATA_SCOPE]))
+        google.addScopes.mockResolvedValueOnce(signedIn([DRIVE_FILE_SCOPE]))
 
         await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
             'saved',
         )
         expect(google.addScopes).toHaveBeenCalledWith({
-            scopes: [DRIVE_APPDATA_SCOPE],
+            scopes: [DRIVE_FILE_SCOPE],
         })
     })
 
@@ -317,6 +325,8 @@ describe('saveToGoogleDrive', () => {
             'quota exceeded',
         )
         expect(google.getTokens).toHaveBeenCalledTimes(1)
+        expect(mkdir).not.toHaveBeenCalled()
+        expect(writeFile).toHaveBeenCalledTimes(1)
     })
 })
 
@@ -381,6 +391,101 @@ describe('saveToGoogleDrive escaping the payload for the Drive client', () => {
 
         await saveToGoogleDrive(FILE_NAME, ascii)
 
-        expect(writeFile).toHaveBeenCalledWith(`/${FILE_NAME}`, ascii)
+        expect(writeFile).toHaveBeenCalledWith(
+            `/Pera Wallet/${FILE_NAME}`,
+            ascii,
+        )
+    })
+})
+
+describe('saveToGoogleDrive folder', () => {
+    test('creates the folder on a first save, then retries the write once', async () => {
+        writeFile.mockRejectedValueOnce(
+            new CloudStorageError(
+                'not found',
+                CloudStorageErrorCode.DIRECTORY_NOT_FOUND,
+            ),
+        )
+
+        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
+            'saved',
+        )
+
+        expect(mkdir).toHaveBeenCalledWith('/Pera Wallet')
+        expect(writeFile).toHaveBeenCalledTimes(2)
+        expect(writeFile).toHaveBeenLastCalledWith(
+            `/Pera Wallet/${FILE_NAME}`,
+            CONTENTS,
+        )
+    })
+
+    test('does not create the folder once the write already succeeds', async () => {
+        await saveToGoogleDrive(FILE_NAME, CONTENTS)
+
+        expect(mkdir).not.toHaveBeenCalled()
+        expect(writeFile).toHaveBeenCalledTimes(1)
+    })
+
+    test('treats a racing folder creation as success and still retries the write', async () => {
+        writeFile.mockRejectedValueOnce(
+            new CloudStorageError(
+                'not found',
+                CloudStorageErrorCode.DIRECTORY_NOT_FOUND,
+            ),
+        )
+        mkdir.mockRejectedValueOnce(
+            new CloudStorageError(
+                'exists',
+                CloudStorageErrorCode.FILE_ALREADY_EXISTS,
+            ),
+        )
+
+        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).resolves.toBe(
+            'saved',
+        )
+
+        expect(writeFile).toHaveBeenCalledTimes(2)
+    })
+
+    test('rethrows an mkdir failure that is not the folder already existing, without retrying the write', async () => {
+        writeFile.mockRejectedValueOnce(
+            new CloudStorageError(
+                'not found',
+                CloudStorageErrorCode.DIRECTORY_NOT_FOUND,
+            ),
+        )
+        mkdir.mockRejectedValueOnce(new Error('mkdir failed'))
+
+        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).rejects.toThrow(
+            'mkdir failed',
+        )
+
+        expect(writeFile).toHaveBeenCalledTimes(1)
+    })
+
+    // The library gives no way to close this race, only narrow it: this is
+    // what a second device losing it looks like from here, and it is meant to
+    // reach the generic banner rather than be retried again.
+    test('propagates a directory-not-found that survives the retry write', async () => {
+        writeFile
+            .mockRejectedValueOnce(
+                new CloudStorageError(
+                    'not found',
+                    CloudStorageErrorCode.DIRECTORY_NOT_FOUND,
+                ),
+            )
+            .mockRejectedValueOnce(
+                new CloudStorageError(
+                    'still not found',
+                    CloudStorageErrorCode.DIRECTORY_NOT_FOUND,
+                ),
+            )
+
+        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).rejects.toThrow(
+            'still not found',
+        )
+
+        expect(mkdir).toHaveBeenCalledTimes(1)
+        expect(writeFile).toHaveBeenCalledTimes(2)
     })
 })

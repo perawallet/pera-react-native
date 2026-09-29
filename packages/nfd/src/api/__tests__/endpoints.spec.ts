@@ -26,18 +26,16 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: loggerMock,
 }))
 
-// endpoints → mappers now validates addresses via the blockchain barrel, which
-// pulls native deps that don't load under node — stub the pure validator.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    isValidAlgorandAddress: (address?: string) =>
-        !!address && /^[0-9a-zA-Z]{58}$/.test(address),
-}))
-
 import {
     fetchNfdNamesForAddress,
     fetchNfdBulkRead,
     fetchNfdSearch,
 } from '../endpoints'
+import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
+
+beforeEach(() => {
+    registerFakeNameServiceAdapter()
+})
 
 const validNameResult = {
     name: 'alice.algo',

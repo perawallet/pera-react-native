@@ -16,7 +16,7 @@ import type {
     DatabaseService,
 } from '@perawallet/wallet-extension-platform'
 import { runMigrations } from './migrator'
-import migrations from './migrations'
+import { migrations } from './migrations'
 
 export type { Database }
 

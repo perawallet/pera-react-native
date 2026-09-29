@@ -17,12 +17,12 @@ import {
     type ReadCloudFileOptions,
 } from '@perawallet/wallet-extension-platform'
 import {
-    CloudStorageError,
     CloudStorageErrorCode,
     type CloudStorage,
 } from 'react-native-cloud-storage'
 
-import { resolveCandidate } from './candidates'
+import { resolveCandidate, type ResolvedCandidate } from './candidates'
+import { hasCode } from './cloud-storage-error'
 import { DRIVE_CANCELLED, runOnGoogleDrive } from './google-drive-session'
 
 export { isGoogleDriveConfigured } from './google-drive-session'
@@ -40,31 +40,82 @@ const toAsciiEscaped = (contents: string): string =>
         char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`,
     )
 
+const BACKUP_FOLDER = '/Pera Wallet'
+
+// Another device winning the folder-creation race is a success, not a failure.
+const ensureBackupFolder = async (drive: CloudStorage): Promise<void> => {
+    try {
+        await drive.mkdir(BACKUP_FOLDER)
+    } catch (error) {
+        if (!hasCode(error, CloudStorageErrorCode.FILE_ALREADY_EXISTS))
+            throw error
+    }
+}
+
+// Writing first keeps the steady state to one round trip. Two racing
+// first-saves can still each create a folder here; Drive resolves a path to
+// one folder without ordering, so a duplicate can hide a real backup.
+const writeToFolder = async (
+    drive: CloudStorage,
+    fileName: string,
+    contents: string,
+): Promise<void> => {
+    const path = `${BACKUP_FOLDER}/${fileName}`
+    try {
+        await drive.writeFile(path, contents)
+    } catch (error) {
+        if (!hasCode(error, CloudStorageErrorCode.DIRECTORY_NOT_FOUND))
+            throw error
+        await ensureBackupFolder(drive)
+        await drive.writeFile(path, contents)
+    }
+}
+
 export const saveToGoogleDrive = async (
     fileName: string,
     contents: string,
 ): Promise<CloudFileSaveResult> => {
     const result = await runOnGoogleDrive(drive =>
-        drive.writeFile(`/${fileName}`, toAsciiEscaped(contents)),
+        writeToFolder(drive, fileName, toAsciiEscaped(contents)),
     )
     return result.status === 'cancelled' ? 'cancelled' : 'saved'
 }
 
 const isFileNotFound = (error: unknown): boolean =>
-    error instanceof CloudStorageError &&
-    error.code === CloudStorageErrorCode.FILE_NOT_FOUND
+    hasCode(error, CloudStorageErrorCode.FILE_NOT_FOUND)
 
 const readCandidate = async (
     drive: CloudStorage,
     fileName: string,
 ): Promise<string> => {
     try {
-        return await drive.readFile(`/${fileName}`)
+        return await drive.readFile(`${BACKUP_FOLDER}/${fileName}`)
     } catch (error) {
-        // The listing a moment ago proved it was there, so this is a file
-        // removed mid-session — still "nothing of ours in this account".
+        // The listing just proved the file or its folder was there, so this is
+        // a mid-session delete of either — still "nothing of ours here".
         if (isFileNotFound(error))
             throw new CloudFileNotFoundError('googleDrive')
+        throw error
+    }
+}
+
+const probeEntry = async (
+    drive: CloudStorage,
+    fileName: string,
+    maxBytes: number,
+): Promise<string | null> => {
+    const path = `${BACKUP_FOLDER}/${fileName}`
+    const { size } = await drive.stat(path)
+    return size > maxBytes ? null : drive.readFile(path)
+}
+
+// The library reports a missing directory as FILE_NOT_FOUND, so a folder no
+// first save has created yet is an empty listing rather than a storage error.
+const listBackupFolder = async (drive: CloudStorage): Promise<string[]> => {
+    try {
+        return await drive.readdir(BACKUP_FOLDER)
+    } catch (error) {
+        if (isFileNotFound(error)) return []
         throw error
     }
 }
@@ -76,24 +127,26 @@ export const readFromGoogleDrive = async (
     // session re-runs its operation after a rejected token, so the resolved
     // name is kept out here and reused: prompting `chooseFile` twice would be
     // the regression the single session is meant to remove.
-    let resolved: string | null = null
+    let resolved: ResolvedCandidate | null = null
 
     const result = await runOnGoogleDrive(async drive => {
-        const fileName =
+        const candidate =
             resolved ??
             (await resolveCandidate(
-                await drive.readdir('/'),
+                await listBackupFolder(drive),
                 'googleDrive',
                 options,
+                (fileName, maxBytes) => probeEntry(drive, fileName, maxBytes),
             ))
-        if (fileName === null) return DRIVE_CANCELLED
+        if (candidate === null) return DRIVE_CANCELLED
         if (resolved === null) {
-            resolved = fileName
+            resolved = candidate
             // Nothing but the read is left, so a progress overlay can no
             // longer collide with the picker or the sign-in sheet.
             options.onReading?.()
         }
-        return readCandidate(drive, fileName)
+        if (candidate.contents !== undefined) return candidate.contents
+        return readCandidate(drive, candidate.fileName)
     })
 
     return result.status === 'cancelled'

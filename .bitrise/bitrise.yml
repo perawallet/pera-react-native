@@ -18,12 +18,16 @@ pipelines:
         depends_on:
         - test
         - generate-changelog
+      web-staging:
+        depends_on:
+        - test
       notify-nightly:
         depends_on:
         - test
         - generate-changelog
         - ios-staging
         - android-staging
+        - web-staging
         should_always_run: workflow
     triggers:
       tag:
@@ -40,37 +44,21 @@ pipelines:
         depends_on:
         - test
         - generate-changelog
+      web-production:
+        depends_on:
+        - test
       notify-release:
         depends_on:
         - test
         - generate-changelog
         - ios-production
         - android-production
+        - web-production
         should_always_run: workflow
     triggers:
       tag:
       - name:
           regex: "^v[0-9]+\\.[0-9]+\\.[0-9]+(-rc\\.[0-9]+)?$"
-  web-release-builds:
-    description: Build the browser extension (Web) zip for staging + production.
-      Manual-trigger only for now — no automatic tag/nightly trigger, and no
-      Chrome Web Store upload.
-    workflows:
-      test: {}
-      generate-changelog: {}
-      web-production:
-        depends_on:
-        - test
-      web-staging:
-        depends_on:
-        - test
-      notify-release-web:
-        depends_on:
-        - test
-        - generate-changelog
-        - web-production
-        - web-staging
-        should_always_run: workflow
 workflows:
   test:
     description: Run tests before release
@@ -88,7 +76,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev/validate-env.sh
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
@@ -184,16 +172,16 @@ workflows:
             #
             # Which tag to diff against is one rule shared with the delivered-
             # ticket list, so it lives in a script rather than being spelled out
-            # here — see tools/release-range-start.sh for why alpha and rc need
+            # here — see tools/release/range-start.sh for why alpha and rc need
             # per-channel ranges and why a store release must not fall back.
-            LAST_TAG=$(./tools/release-range-start.sh "${BITRISE_GIT_TAG:-}" || echo "")
+            LAST_TAG=$(./tools/release/range-start.sh "${BITRISE_GIT_TAG:-}" || echo "")
             if [ -n "$LAST_TAG" ]; then
               echo "Generating changelog since tag: $LAST_TAG"
-              CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+              CHANGELOG=$(./tools/release/generate-changelog.sh "$LAST_TAG" || echo "")
               # Same range, unabridged and without Slack markup: the card only
               # ever shows a summary, so this file is the record of what
               # actually shipped and is what the card's link points at.
-              FULL=$(LINK_FORMAT=plain MAX_COUNT=0 ./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+              FULL=$(LINK_FORMAT=plain MAX_COUNT=0 ./tools/release/generate-changelog.sh "$LAST_TAG" || echo "")
             fi
             if [ -z "${CHANGELOG:-}" ]; then
               echo "No previous tag / empty changelog; using fallback"
@@ -207,8 +195,8 @@ workflows:
             # Slack drops the whole payload with `invalid_attachments` once a
             # section block passes 3000 chars, which is what killed the RC
             # cards. Cap before the escape below — cutting escaped text can
-            # split a \n or \" in half. See tools/cap-changelog.sh.
-            CHANGELOG=$(printf '%s' "$CHANGELOG" | ./tools/cap-changelog.sh 2500)
+            # split a \n or \" in half. See tools/release/cap-changelog.sh.
+            CHANGELOG=$(printf '%s' "$CHANGELOG" | ./tools/release/cap-changelog.sh 2500)
 
             # JSON-escape (newlines -> \n, quotes) so the changelog embeds
             # cleanly in the Slack payload "text" field; without it the raw
@@ -296,7 +284,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev/validate-env.sh
     - script@1:
         title: Install Ruby via asdf
         inputs:
@@ -379,7 +367,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/setup-env-secrets.sh
+            ./tools/dev/setup-env-secrets.sh
     - script@1:
         title: Generate Config
         inputs:
@@ -433,6 +421,16 @@ workflows:
             fi
             envman add --key APP_VERSION --value "$VERSION"
             envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
+    - script@1:
+        title: Verify iOS production identity
+        run_if: '{{enveq "ENVIRONMENT" "production"}}'
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # Before the build's own prebuild: the check generates a clean
+            # production project to assert against, which the next step replaces.
+            pnpm --filter mobile verify:ios-identity
     - script@1:
         title: Expo Prebuild
         inputs:
@@ -583,7 +581,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev/validate-env.sh
     - script@1:
         title: Generate Changelog (if not from pipeline)
         inputs:
@@ -604,7 +602,7 @@ workflows:
             LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
             if [ -n "$LAST_TAG" ]; then
               echo "Generating changelog since tag: $LAST_TAG"
-              CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+              CHANGELOG=$(./tools/release/generate-changelog.sh "$LAST_TAG" || echo "")
             fi
             if [ -z "${CHANGELOG:-}" ]; then
               echo "No previous tag / empty changelog; using fallback"
@@ -699,7 +697,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/setup-env-secrets.sh
+            ./tools/dev/setup-env-secrets.sh
     - script@1:
         title: Generate Config
         inputs:
@@ -837,6 +835,19 @@ workflows:
             fi
             envman add --key ANDROID_NDK_HOME --value "$NDK_DIR"
     - script@1:
+        title: Verify Android production identity
+        run_if: '{{enveq "ENVIRONMENT" "production"}}'
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # Needs Java and the SDK for the Gradle manifest merger. The check
+            # regenerates android/ without BUILD_NUMBER, so prebuild the build's
+            # project again afterwards or the release ships the base versionCode.
+            pnpm --filter mobile verify:android-identity
+            export APP_ENV=$ENVIRONMENT
+            pnpm --filter mobile expo:prebuild
+    - script@1:
         title: Android KeyStore
         inputs:
         - content: |
@@ -850,9 +861,9 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # Channel logic lives in tools/resolve-distribution.sh so the
+            # Channel logic lives in tools/release/resolve-distribution.sh so the
             # validate step and this step can't drift (see that script).
-            envman add --key DISTRIBUTION --value "$(./tools/resolve-distribution.sh)"
+            envman add --key DISTRIBUTION --value "$(./tools/release/resolve-distribution.sh)"
     - script@1:
         title: Setup distribution credentials
         inputs:
@@ -985,7 +996,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev/validate-env.sh
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
@@ -1045,7 +1056,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/setup-env-secrets.sh
+            ./tools/dev/setup-env-secrets.sh
     - script@1:
         title: Generate Config
         inputs:
@@ -1055,6 +1066,8 @@ workflows:
             # APP_ENV must be set here so generate-config.sh bakes
             # appEnvironment into the bundled config (defaults to development).
             export APP_ENV="${ENVIRONMENT:-development}"
+            # An rc ships as its stable version, so bake the tag without -rc.N.
+            export BITRISE_GIT_TAG="${BITRISE_GIT_TAG%%-rc.*}"
             pnpm run generate:config
     - script@1:
         title: Build packages
@@ -1069,7 +1082,24 @@ workflows:
             # of a path glob, so it picks up both. `browser` is the package
             # name in apps/browser/package.json — not the directory.
             export APP_ENV="${ENVIRONMENT:-development}"
+            export BITRISE_GIT_TAG="${BITRISE_GIT_TAG%%-rc.*}"
             pnpm exec turbo run build --filter=...browser
+    - script@1:
+        title: Resolve marketing version (tag-driven)
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # The tag is the source of truth. Unlike mobile, only -rc.N is
+            # stripped (an rc ships as its stable version); -alpha.N stays and
+            # lands in the manifest's display-only version_name. Off-tag,
+            # APP_VERSION stays unset and the bundle falls back to
+            # apps/browser/package.json.
+            if [ -n "$BITRISE_GIT_TAG" ]; then
+              VERSION="${BITRISE_GIT_TAG#v}"
+              envman add --key APP_VERSION --value "${VERSION%%-rc.*}"
+            fi
+            envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
     - script@1:
         title: Bundle extension (Web)
         inputs:
@@ -1095,6 +1125,10 @@ workflows:
             NAME="pera-extension-web-${ENVIRONMENT:-unknown}-${BITRISE_GIT_TAG:-b$BITRISE_BUILD_NUMBER}-${SHA:-b$BITRISE_BUILD_NUMBER}.zip"
             DEST="${BITRISE_DEPLOY_DIR}/${NAME}"
             (cd apps/browser/dist && zip -r "$DEST" .)
+            # Deployed next to the zip, so a downloaded copy can be checked
+            # against the build before a store upload.
+            (cd "$BITRISE_DEPLOY_DIR" && sha256sum "$NAME" > "${NAME}.sha256")
+            cat "${DEST}.sha256"
             envman add --key BITRISE_EXTENSION_ZIP_PATH --value "$DEST"
     - deploy-to-bitrise-io@2:
         is_always_run: true
@@ -1133,7 +1167,7 @@ workflows:
             # stderr and only the output path on stdout, so this captures the
             # path directly; pipefail is what makes a codesign failure fail the
             # step rather than assigning its last stdout line to SMOKE_ARTIFACT.
-            PATCHED="$(./tools/patch-ipa-for-browserstack.sh "$BITRISE_IPA_PATH")"
+            PATCHED="$(./tools/qa/patch-ipa-for-browserstack.sh "$BITRISE_IPA_PATH")"
             envman add --key SMOKE_ARTIFACT --value "$PATCHED"
     - script@1:
         title: Run smoke gate
@@ -1142,7 +1176,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -eo pipefail
-            ./tools/smoke-test.sh ios "$SMOKE_ARTIFACT"
+            ./tools/qa/smoke-test.sh ios "$SMOKE_ARTIFACT"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:
@@ -1186,7 +1220,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -eo pipefail
-            ./tools/smoke-test.sh android "$BITRISE_APK_PATH"
+            ./tools/qa/smoke-test.sh android "$BITRISE_APK_PATH"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:
@@ -1239,237 +1273,6 @@ workflows:
             ${ROW_ID}_STATUS
             ${ROW_ID}_URL
             ${ROW_ID}_INSTALL
-  notify-release-web:
-    description: Post one consolidated Web (browser extension) release card (all
-      build statuses + changelog) — mirrors notify-release's structure/format
-      for the RN builds, kept as a separate card since web-release-builds is a
-      separate, manually-triggered pipeline.
-    meta:
-      bitrise.io:
-        stack: ubuntu-noble-24.04-bitrise-2025-android
-        machine_type_id: g2.linux.medium
-    steps:
-    - script@1:
-        is_always_run: true
-        title: Send Web Release Slack Notification
-        inputs:
-        - content: "#!/usr/bin/env bash
-
-            # set -e without -x: keep the Slack webhook URL out of the trace
-            log.
-
-            set -e
-
-
-            # Channel label and tag/branch from tag shape or fallback.
-
-            if [ -n \"${BITRISE_GIT_TAG:-}\" ]; then
-
-            \  TAG_OR_BRANCH=\"$BITRISE_GIT_TAG\"
-
-            \  case \"$BITRISE_GIT_TAG\" in
-
-            \    *-alpha.*) CHANNEL=\"Nightly\" ;;
-
-            \    *-rc.*)    CHANNEL=\"RC\" ;;
-
-            \    v*)        CHANNEL=\"Release\" ;;
-
-            \    *)         CHANNEL=\"Release\" ;;
-
-            \  esac
-
-            else
-
-            \  TAG_OR_BRANCH=\"${BITRISE_GIT_BRANCH:-manual}\"
-
-            \  CHANNEL=\"Manual\"
-
-            fi
-
-
-            # One mrkdwn row per build. Platform/env/destination are static;
-
-            # status + links come from each build's shared pipeline variables
-
-            # (empty status = the build never ran). Literal \\n separates rows.
-
-            row() { # $1 status  $2 build_url  $3 install_url  $4
-            artifact_label  $5 label  $6 dest
-
-            \  local e
-
-            \  # An empty status means the build never ran, which on these
-
-            \  # pipelines only happens when an upstream workflow (`test`,
-
-            \  # `generate-changelog`) already failed. That is a failed
-
-            \  # release, so it reads as ❌ on the build's own row rather
-
-            \  # than as a neutral skip next to a separate Tests row.
-
-            \  case \"$1\" in
-
-            \    ok) e=\"✅\" ;;
-
-            \    *)  e=\"❌\" ;;
-
-            \  esac
-
-            \  local r=\"${e}  *${5}*  →  ${6}\"
-
-            \  if [ -n \"$2\" ]; then r=\"${r}  ·  <${2}|Build>\"; fi
-
-            \  if [ -n \"$3\" ] && [ -n \"$4\" ]; then
-            r=\"${r}  ·  <${3}|${4}>\"; fi
-
-            \  printf '%s' \"$r\"
-
-            }
-
-
-            ROWS=\"$(row \"${WEB_PRODUCTION_STATUS:-}\"
-            \"${WEB_PRODUCTION_URL:-}\" \"${WEB_PRODUCTION_INSTALL:-}\" \"Zip\"
-            \"Web production\" \"Bitrise artifact\")\"
-
-            ROWS=\"${ROWS}\\n$(row \"${WEB_STAGING_STATUS:-}\"
-            \"${WEB_STAGING_URL:-}\" \"${WEB_STAGING_INSTALL:-}\" \"Zip\" \"Web
-            staging\" \"Bitrise artifact\")\"
-
-
-            # Header icon per channel on success (any failed build flips it
-
-            # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
-
-            case \"$CHANNEL\" in
-
-            \  Release) OVERALL=\"🚀\" ;;
-
-            \  RC)      OVERALL=\"⭐\" ;;
-
-            \  Nightly) OVERALL=\"🌙\" ;;
-
-            \  *)       OVERALL=\"📦\" ;;
-
-            esac
-
-            COLOR=\"#36a64f\"
-
-            # Anything that is not an explicit `ok` turns the card red.
-
-            # Matching only on `fail` used to let a failed `test` through as
-
-            # green, because gated builds publish no status at all and the
-
-            # empty string fell into the benign \"skipped\" bucket. TEST_STATUS
-
-            # is checked here deliberately even though tests get no row of
-
-            # their own — the header/colour is the only signal that the skips
-
-            # below were caused by a red test run rather than by nothing.
-
-            for s in \"${TEST_STATUS:-}\" \"${WEB_STAGING_STATUS:-}\"
-            \"${WEB_PRODUCTION_STATUS:-}\"; do
-
-            \  if [ \"$s\" != \"ok\" ]; then OVERALL=\"❌\"; COLOR=\"#ec0000\";
-            fi
-
-            done
-
-
-            # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
-
-            # and the release card silently never arrives. --retry covers
-
-            # transient Slack hiccups (retries only transient failures).
-
-            curl -sS --fail-with-body --retry 2 --max-time 30 -X POST
-            \"$SLACK_WEBHOOK_URL\" \\
-
-            \  -H \"Content-Type: application/json\" \\
-
-            \  -d @- << EOF
-
-            {
-
-            \  \"username\": \"Bitrise\",
-
-            \  \"icon_emoji\": \":bitrise:\",
-
-            \  \"blocks\": [
-
-            \    {
-
-            \      \"type\": \"header\",
-
-            \      \"text\": {
-
-            \        \"type\": \"plain_text\",
-
-            \        \"text\": \"${OVERALL} Web ${CHANNEL} ${TAG_OR_BRANCH}\",
-
-            \        \"emoji\": true
-
-            \      }
-
-            \    }
-
-            \  ],
-
-            \  \"attachments\": [
-
-            \    {
-
-            \      \"color\": \"${COLOR}\",
-
-            \      \"blocks\": [
-
-            \        {
-
-            \          \"type\": \"section\",
-
-            \          \"text\": {
-
-            \            \"type\": \"mrkdwn\",
-
-            \            \"text\": \"${ROWS}\"
-
-            \          }
-
-            \        },
-
-            \        {
-
-            \          \"type\": \"divider\"
-
-            \        },
-
-            \        {
-
-            \          \"type\": \"section\",
-
-            \          \"text\": {
-
-            \            \"type\": \"mrkdwn\",
-
-            \            \"text\": \"*Changes since last
-            build:*\\n${CHANGELOG}\"
-
-            \          }
-
-            \        }
-
-            \      ]
-
-            \    }
-
-            \  ]
-
-            }
-
-            EOF\n"
   notify-nightly:
     description: Post the nightly card — staging builds plus both smoke gates
     envs:
@@ -1594,6 +1397,10 @@ workflows:
             \"${IOS_STAGING_URL:-}\" \"${IOS_STAGING_INSTALL:-}\" \"IPA\" \"iOS
             staging\" \"TestFlight\")\"
 
+            \  ROWS=\"${ROWS}\\n$(row \"${WEB_STAGING_STATUS:-}\"
+            \"${WEB_STAGING_URL:-}\" \"${WEB_STAGING_INSTALL:-}\" \"Zip\" \"Web
+            staging\" \"Bitrise artifact\")\"
+
             \  # No install link: smoke binaries have screen-capture prevention
 
             \  # disabled and are deliberately not published anywhere.
@@ -1615,7 +1422,7 @@ workflows:
 
             \  CHECKS=(\"${TEST_STATUS:-}\" \"${IOS_STAGING_STATUS:-}\"
             \"${ANDROID_STAGING_STATUS:-}\" \"${IOS_SMOKE_STATUS:-}\"
-            \"${ANDROID_SMOKE_STATUS:-}\")
+            \"${ANDROID_SMOKE_STATUS:-}\" \"${WEB_STAGING_STATUS:-}\")
 
             else
 
@@ -1627,8 +1434,12 @@ workflows:
             \"${IOS_PRODUCTION_URL:-}\" \"${IOS_PRODUCTION_INSTALL:-}\" \"IPA\"
             \"iOS production\" \"TestFlight\")\"
 
+            \  ROWS=\"${ROWS}\\n$(row \"${WEB_PRODUCTION_STATUS:-}\"
+            \"${WEB_PRODUCTION_URL:-}\" \"${WEB_PRODUCTION_INSTALL:-}\" \"Zip\"
+            \"Web production\" \"Bitrise artifact\")\"
+
             \  CHECKS=(\"${TEST_STATUS:-}\" \"${IOS_PRODUCTION_STATUS:-}\"
-            \"${ANDROID_PRODUCTION_STATUS:-}\")
+            \"${ANDROID_PRODUCTION_STATUS:-}\" \"${WEB_PRODUCTION_STATUS:-}\")
 
             fi
 

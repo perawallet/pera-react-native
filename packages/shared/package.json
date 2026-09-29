@@ -32,6 +32,7 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "algosdk": "catalog:",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "base64-js": "^1.5.1",

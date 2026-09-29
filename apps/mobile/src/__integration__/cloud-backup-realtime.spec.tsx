@@ -136,6 +136,13 @@ describe('Flow: Cloud backup → real-time manager', () => {
             resolveMnemonic: mnemonicHook.current,
             resolveHd: async () => null,
             isLocked: () => false,
+            listPasskeys: async () => [],
+            importPasskeys: async () => ({
+                imported: 0,
+                skipped: [],
+                failed: [],
+            }),
+            subscribePasskeyChanges: () => () => {},
             socketFactory: fakeSocketFactory,
         })
 

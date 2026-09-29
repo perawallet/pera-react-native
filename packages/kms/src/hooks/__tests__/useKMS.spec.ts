@@ -30,6 +30,9 @@ import { FALCON_CHILD_KEY_TYPE } from '../../models'
 // the platform keystore. useKMS reads from this via useKeystoreKeys() AND
 // directly via getKeystoreStore().state.keys for live (non-React) lookups.
 let mockKeystoreKeys: Key[] = []
+// Ids with sealed material under `m/<id>` on the native provider, per
+// `hasKeyMaterial`. Mocked lazily like `mockKeystoreKeys`.
+let mockMaterialIds = new Set<string>()
 
 vi.mock('../useKeystoreState', () => ({
     useKeystoreKeys: () => mockKeystoreKeys,
@@ -43,6 +46,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
     PASSKEY_MAIN_KEY_SCHEME: 'pbkdf2-p256',
     passkeyMainKeyId: (seedKeyId: string) => `${seedKeyId}-passkey-main`,
+    hasKeyMaterial: (id: string) => mockMaterialIds.has(id),
+    isPasskeyCredentialType: (type: unknown) =>
+        type === 'hd-derived-p256' || type === 'xhd-derived-p256',
 }))
 
 const mockDeleteKey = vi.fn()
@@ -226,6 +232,7 @@ describe('useKMS', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockKeystoreKeys = []
+        mockMaterialIds = new Set()
     })
 
     it('exposes deleteKey from useKMSService', async () => {
@@ -535,6 +542,29 @@ describe('useKMS', () => {
         // The other wallet's chain is untouched at every depth.
         expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('hd-2-passkey-main')
         expect(mockKeyStoreRemove).not.toHaveBeenCalledWith(otherEntropy.id)
+    })
+
+    // A native provider credential carries its own sealed key and keeps signing
+    // after its wallet is gone; the extension's material-less ones cannot.
+    it('removeKeyAndChildren spares a passkey credential that owns sealed material', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        childOf('hd-1-passkey-main', entropy.id, 'hd-root-key')
+        childOf('native-cred', 'hd-1-passkey-main', 'hd-derived-p256')
+        childOf('extension-cred', 'hd-1-passkey-main', 'hd-derived-p256')
+        childOf('account-key', 'hd-1', 'hd-derived-ed25519')
+        mockMaterialIds = new Set(['native-cred', 'account-key'])
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('native-cred')
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('extension-cred')
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('account-key')
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-passkey-main')
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
     })
 
     // The device has exactly one main key and it hangs off whichever root

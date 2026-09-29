@@ -22,10 +22,13 @@ export * from './constants'
 export * from './arc0001'
 export * from './pq'
 
-export { useNetworkStore } from './store/network-store'
 export {
-    useCustomNetworkStore,
+    useNetworkStore,
     getCustomNetworkConfig,
     isCustomNetworkConfigured,
+    setCustomNetwork,
+    clearCustomNetwork,
+    useSelectedScope,
+    useSelectedNetworkId,
     type CustomNetworkConfig,
-} from './store/custom-network-store'
+} from '@perawallet/wallet-core-chain-shared'

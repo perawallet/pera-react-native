@@ -19,7 +19,7 @@ import {
     KeyManagementError,
     KeyNotFoundError,
 } from '../errors'
-import { zeroBytes } from '../crypto/secure-memory'
+import { handOffSecret, zeroBytes } from '../crypto/secure-memory'
 import {
     entropyChildIdOf,
     expiresAtOf,
@@ -35,13 +35,18 @@ export type { QuantumKeyResult } from './useQuantum'
 import { useHDWallet } from './useHDWallet'
 export type { HDWalletKeyResult } from './useHDWallet'
 import { isPasskeyMainKey, usePasskeyMainKey } from './usePasskeyMainKey'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    hasKeyMaterial,
+    isPasskeyCredentialType,
+} from '@perawallet/wallet-extension-provider'
 import { useKMSService } from './useKMSServices'
 import { useKeystoreKeys } from './useKeystoreState'
 import { entropyToIndices } from '../crypto/hdwallet-utils'
 import { algo25SeedToIndices } from '../crypto/algo25-utils'
 import { withSecret } from '../storage/secrets'
 import { resolvePQSigningInfo } from '../crypto/pq/resolvePQSigningInfo'
+import { createKmsCore } from '../core/createKmsCore'
 
 export type ExecuteWithMnemonicHandler<T> = (
     indices: Uint16Array,
@@ -112,13 +117,12 @@ export const useKMS = () => {
      * other caller is wallet creation, and `repairs/0003` is ledgered one-shot),
      * so this does, below.
      *
-     * Credentials are NOT spared as a class: the extension's `hd-derived-p256`
-     * records are `k/` entries parented on the main key and hold no private key
-     * of their own, so this destroys them. The native provider's credentials
-     * survive only because they sit at bare ids
-     * (`PasskeyCredentialStore.swift:310`), outside the `k/` namespace the
-     * keystore driver enumerates (`react-native-keystore/dist/storage/driver.js:123`),
-     * so they never appear in `liveKeys` at all.
+     * Passkey credentials that carry their own sealed material are spared:
+     * every credential the native provider stores, in `k/`+`m/` on Android
+     * and at a bare id on iOS (where it never reaches `liveKeys` at all), keeps
+     * signing after its wallet is gone. The extension's `hd-derived-p256`
+     * records hold no private key of their own and re-derive from the main
+     * key, so they go with it.
      */
     const removeKeyAndChildren = useCallback(
         async (rootKeyId: string): Promise<void> => {
@@ -131,6 +135,8 @@ export const useKMS = () => {
                 grew = false
                 for (const k of liveKeys) {
                     if (doomed.has(k.id)) continue
+                    if (isPasskeyCredentialType(k.type) && hasKeyMaterial(k.id))
+                        continue
                     const parentKeyId = (k.metadata as Record<string, unknown>)
                         ?.parentKeyId
                     if (
@@ -276,21 +282,13 @@ export const useKMS = () => {
         childKeyId: string,
         domain: string,
         encodedTxs: Uint8Array[],
-    ): Promise<Uint8Array[]> => {
-        const seedKey = resolveSeedKey(childKeyId)
-        checkAccess(seedKey, domain)
-        return Promise.all(encodedTxs.map(tx => keyStore.sign(childKeyId, tx)))
-    }
+    ): Promise<Uint8Array[]> => core.signEach(childKeyId, encodedTxs, domain)
 
     const signDataWithKey = async (
         childKeyId: string,
         domain: string,
         data: Uint8Array[],
-    ): Promise<Uint8Array[]> => {
-        const seedKey = resolveSeedKey(childKeyId)
-        checkAccess(seedKey, domain)
-        return Promise.all(data.map(d => keyStore.sign(childKeyId, d)))
-    }
+    ): Promise<Uint8Array[]> => core.signEach(childKeyId, data, domain)
 
     const resolveSeedKey = useCallback(
         (childKeyId: string): Key => {
@@ -306,6 +304,14 @@ export const useKMS = () => {
         },
         [seedIdOf, getKeyOrThrow],
     )
+
+    // The hook's own resolver keeps the reactive lookup and `getKey`'s expiry sweep.
+    const core = createKmsCore({
+        keyStore: () => keyStore,
+        keys: () => getKeystoreStore().state.keys,
+        checkAccess,
+        resolveSeedKey,
+    })
 
     /**
      * Runs `handler` with the mnemonic for the seed that minted `childKeyId`,
@@ -371,7 +377,7 @@ export const useKMS = () => {
             } finally {
                 zeroBytes(seedBytes)
             }
-            return runWithIndices(indices)
+            return runWithIndices(handOffSecret(indices))
         })
     }
 

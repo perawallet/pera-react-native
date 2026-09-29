@@ -39,7 +39,7 @@ const {
     showToastMock: vi.fn(),
     showErrorMock: vi.fn(),
     reviewActionMock: vi.fn(
-        async (_variables: { action: string; address: string }) => undefined,
+        async (_variables: { action: string; id: string }) => undefined,
     ),
     kindMock: { current: '' },
     // One class for both the mock factory below and the tests: `instanceof` is
@@ -150,9 +150,9 @@ describe('useBackupAccountReview', () => {
 
         await waitFor(() => expect(variables()).toHaveLength(3))
         expect(variables()).toEqual([
-            { action: 'backUp', address: 'B' },
-            { action: 'add', address: 'GONE' },
-            { action: 'delete', address: 'GONE' },
+            { action: 'backUp', id: 'B' },
+            { action: 'add', id: 'GONE' },
+            { action: 'delete', id: 'GONE' },
         ])
         expect(kindMock.current).toBe('account')
     })

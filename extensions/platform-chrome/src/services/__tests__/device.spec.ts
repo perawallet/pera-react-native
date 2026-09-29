@@ -13,7 +13,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 
-const configMock = vi.hoisted(() => ({ config: { appBuildNumber: '' } }))
+const configMock = vi.hoisted(() => ({
+    config: { appBuildNumber: '', appEnvironment: 'development' },
+}))
 vi.mock('@perawallet/wallet-core-config', () => configMock)
 
 import { ChromeDeviceInfoService } from '../device'
@@ -32,6 +34,7 @@ describe('ChromeDeviceInfoService', () => {
         globalThis.chrome = fake.chrome
         service = new ChromeDeviceInfoService()
         configMock.config.appBuildNumber = ''
+        configMock.config.appEnvironment = 'development'
         resetBrowserCache()
         vi.stubGlobal('navigator', {
             userAgent: CHROME_UA,
@@ -49,6 +52,15 @@ describe('ChromeDeviceInfoService', () => {
         expect(service.getAppVersion()).toBe('0.1.0')
         expect(service.getAppId()).toBe('test-extension-id')
         expect(service.getAppPackage()).toBe('test-extension-id')
+    })
+
+    it('drops the CI build number from a four-part manifest version', () => {
+        fake.chrome.runtime.getManifest = () => ({
+            manifest_version: 3,
+            name: 'Pera Wallet',
+            version: '7.2.0.1234',
+        })
+        expect(service.getAppVersion()).toBe('7.2.0')
     })
 
     it('reports the web platform', () => {
@@ -90,6 +102,12 @@ describe('ChromeDeviceInfoService', () => {
         ])
         expect(a).toBe(b)
         expect(fake.data.get('device:installation-id')).toBe(a)
+    })
+
+    it('reports the environment baked into config', () => {
+        configMock.config.appEnvironment = 'production'
+
+        expect(service.getAppEnvironment()).toBe('production')
     })
 
     it('is not a store build without an update_url', () => {

@@ -34,8 +34,40 @@ vi.mock('../deriveBackupMasterKey', () => ({
     deriveBackupMasterKey: deriveBackupMasterKeyMock,
 }))
 
+// Spied, not replaced, so a test can inspect the real keys each step produced
+// or make one step fail.
+vi.mock('../deriveBackupChildKeys', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('../deriveBackupChildKeys')>()
+    return {
+        ...actual,
+        deriveBackupChildKeys: vi.fn(actual.deriveBackupChildKeys),
+    }
+})
+vi.mock('../deriveBackupAuthKeypair', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('../deriveBackupAuthKeypair')>()
+    return {
+        ...actual,
+        deriveBackupAuthKeypair: vi.fn(actual.deriveBackupAuthKeypair),
+    }
+})
+vi.mock('../deriveBackupId', async importOriginal => {
+    const actual = await importOriginal<typeof import('../deriveBackupId')>()
+    return { ...actual, deriveBackupId: vi.fn(actual.deriveBackupId) }
+})
+
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { deriveBackupKeys } from '../deriveBackupKeys'
+import {
+    deriveBackupAuthKeypair,
+    type BackupAuthKeypair,
+} from '../deriveBackupAuthKeypair'
+import {
+    deriveBackupChildKeys,
+    type BackupChildKeys,
+} from '../deriveBackupChildKeys'
+import { deriveBackupId } from '../deriveBackupId'
 
 const hex = (bytes: Uint8Array): string =>
     Array.from(bytes)
@@ -94,5 +126,58 @@ describe('deriveBackupKeys', () => {
         await deriveBackupKeys({ mnemonic: ['abandon'], salt: SALT })
 
         expect(deriveBackupMasterKeyMock.mock.calls.at(-1)?.[2]).toBeUndefined()
+    })
+
+    const isZeroed = (bytes: Uint8Array) => bytes.every(byte => byte === 0)
+    const lastChildKeys = (): BackupChildKeys =>
+        vi.mocked(deriveBackupChildKeys).mock.results.at(-1)!.value
+
+    test('zeroes the master key and auth seed once the keys are returned', async () => {
+        const keys = await deriveBackupKeys({
+            mnemonic: ['abandon'],
+            salt: SALT,
+        })
+
+        const masterKey: Uint8Array =
+            await deriveBackupMasterKeyMock.mock.results.at(-1)!.value
+        expect(isZeroed(masterKey)).toBe(true)
+        expect(isZeroed(lastChildKeys().authSeed)).toBe(true)
+        expect(isZeroed(keys.encryptionKey)).toBe(false)
+        expect(isZeroed(keys.itemKey)).toBe(false)
+        expect(isZeroed(keys.authSecretKey)).toBe(false)
+    })
+
+    test('zeroes every child key when the auth keypair derivation throws', async () => {
+        vi.mocked(deriveBackupAuthKeypair).mockImplementationOnce(() => {
+            throw new Error('keypair failed')
+        })
+
+        await expect(
+            deriveBackupKeys({ mnemonic: ['abandon'], salt: SALT }),
+        ).rejects.toThrow('keypair failed')
+
+        const childKeys = lastChildKeys()
+        expect(isZeroed(childKeys.encryptionKey)).toBe(true)
+        expect(isZeroed(childKeys.authSeed)).toBe(true)
+        expect(isZeroed(childKeys.itemKey)).toBe(true)
+    })
+
+    test('zeroes the child keys and auth secret key when the backup id throws', async () => {
+        vi.mocked(deriveBackupId).mockImplementationOnce(() => {
+            throw new Error('id failed')
+        })
+
+        await expect(
+            deriveBackupKeys({ mnemonic: ['abandon'], salt: SALT }),
+        ).rejects.toThrow('id failed')
+
+        const childKeys = lastChildKeys()
+        const keypair: BackupAuthKeypair = vi
+            .mocked(deriveBackupAuthKeypair)
+            .mock.results.at(-1)!.value
+        expect(isZeroed(childKeys.encryptionKey)).toBe(true)
+        expect(isZeroed(childKeys.authSeed)).toBe(true)
+        expect(isZeroed(childKeys.itemKey)).toBe(true)
+        expect(isZeroed(keypair.secretKey)).toBe(true)
     })
 })

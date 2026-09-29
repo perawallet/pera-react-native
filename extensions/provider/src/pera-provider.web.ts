@@ -19,6 +19,7 @@ import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofi
 import { WithConnections } from '@perawallet/wallet-extension-connections'
 import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 import { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
+import { WithChainRegistry } from './withChainRegistry'
 import type {
     PeraExtensions,
     PeraProvider as PeraProviderShape,
@@ -45,6 +46,7 @@ export const PeraProvider: {
     // Before the app's composition root runs, which registers the concrete
     // transports into the `hardwareWalletRegistry` this supplies.
     WithHardwareWalletExtension,
+    WithChainRegistry,
     // `.web.ts` no-op sibling; same slot as the native file.
     WithPeraKeystorePreflight,
     WithKeyStore,

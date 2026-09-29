@@ -14,6 +14,7 @@ export const name = '@perawallet/wallet-core-kms'
 
 export * from './hooks/useKMS'
 export { useKMSService } from './hooks/useKMSServices'
+export * from './core'
 export * from './models'
 export * from './errors'
 export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
@@ -22,7 +23,7 @@ export {
     mnemonicWordsToIndices,
 } from './crypto/mnemonic-indices'
 export { uniformIntBelow, pickDistinctIndexes } from './crypto/random'
-export { zeroBytes } from './crypto/secure-memory'
+export { handOffSecret, zeroBytes } from './crypto/secure-memory'
 export { AesGcmOpenError, openAesGcm, sealAesGcm } from './crypto/aesGcm'
 export { argon2idDerive, type Argon2idParams } from './crypto/argon2id'
 export {

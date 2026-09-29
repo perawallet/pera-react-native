@@ -11,7 +11,7 @@ This skill reproduces how Will (`wjbeau`, tech lead) reviews PRs in the Pera Wal
 
 Match this voice — it changes how findings land:
 
-- **Ask, don't assert.** Most findings are questions: "Should this live in the package?", "Do we need this?", "Won't this reuse the same words?". He leaves room to be wrong ("I could be wrong but…", "feels like…"). Phrase findings as questions when there's any doubt.
+- **Ask, don't assert.** Most findings are questions: "Should this live in the package?", "Do we need this?", "Won't this reuse the same words?". He leaves room to be wrong ("I could be wrong but…", "feels like…"). Phrase findings as questions when there's any doubt. A question still carries the failure: "Won't `!idx` treat the first account as missing?", not "should we double-check this lookup?".
 - **Name the existing thing.** He almost never says "reuse code" abstractly — he names the exact hook/component/util: "we have a `useSignableAccounts`", "just use `EmptyView`", "there's an `errorToast` in `useToast`". Do the legwork: grep for the primitive and name it.
 - **Explain the why**, especially for performance ("creates a new object every render") and security ("hard to clear from the heap"). A finding with a reason gets fixed; a bare rule gets argued.
 - **Separate blocking from not.** He routinely says "not for this PR but ticket it", "doesn't need to block this", "just commenting for awareness". Always tag each finding.
@@ -19,10 +19,37 @@ Match this voice — it changes how findings land:
 
 ## Review procedure
 
-1. Get the diff (`gh pr diff <n>` or `git diff origin/main...HEAD`) and read the touched files **in context**, not just the hunks.
-2. Walk the priority checklist below, top to bottom. The order is his actual emphasis — layering and reuse first, style nits last.
-3. For every "we should reuse X" or "move to package Y" finding, **verify X/Y exists** (grep) before claiming it. An unverified "we probably have a hook for this" is worse than no comment.
-4. Produce the report in the output format below.
+1. Get the diff (`gh pr diff <n>`, or `git diff origin/main...HEAD` plus `git diff HEAD` for uncommitted work) and read the touched files **in context**, not just the hunks. Read the CLAUDE.md files that govern each changed file: the root `CLAUDE.md` and any in an ancestor directory (`apps/mobile/CLAUDE.md`, `packages/CLAUDE.md`).
+2. Run the **correctness pass** below and collect candidates. Don't filter yet.
+3. Walk the priority checklist, top to bottom. The order is his actual emphasis — layering and reuse first, style nits last.
+4. For every "we should reuse X" or "move to package Y" finding, **verify X/Y exists** (grep) before claiming it. An unverified "we probably have a hook for this" is worse than no comment.
+5. **Verify** each correctness candidate, then run the **gap sweep**.
+6. Produce the report in the output format below.
+
+## Correctness pass
+
+Each angle produces candidates, each with `file:line` and a failure scenario: the inputs or state that trigger it, and the wrong result. Pass every candidate with a nameable scenario on to verification. Half-believed candidates that get dropped here are where missed bugs come from.
+
+- **Line by line.** Read every hunk, then the whole enclosing function. A bug in an unchanged line of a touched function is in scope. For each line, ask what input, state, timing or platform makes it wrong: an inverted condition, off-by-one, null/undefined deref, missing `await`, falsy zero (`!idx`, `amount || fallback`), wrong-variable copy-paste, a catch that swallows an error that should propagate.
+- **Removed behaviour.** For every deleted or replaced line, name what it enforced, then find where the new code enforces it again. If you can't find it, that's a candidate: a dropped guard, error path or validation, or a deleted test that covered a real case. Extractions and "no behaviour change" refactors are where guards go missing.
+- **Callers.** Grep the callers of every changed function, hook and store action, across `apps/*` and `packages/*`. Read what each call site does with the result. Does any break on a new precondition, a changed return shape, a return value that now means something narrower, a new throw, or an ordering dependency?
+- **Wrappers.** A type that wraps another (cache, adapter, keystore or storage wrapper) routes every method to the wrapped instance, not back through `getProvider()` or a registry, and forwards every method its callers use.
+- **Hot paths.** Work added to startup, render, a sync loop or a per-row path: repeated I/O, sequential awaits that could run in parallel, a parse or serialisation in a loop. The JS thread is also the UI thread.
+- **Known Pera failure modes.** Races with the sync process running at the same time, double navigation behind a slow query, retries stacked on ky's own retries, stale memoised keys, reused random values.
+
+## Verify
+
+Dedup first: the same defect at the same place is one candidate, and you keep the most concrete version. Then judge each candidate against the code:
+
+- **CONFIRMED**: you can name the triggering inputs or state and the wrong result. Quote the line.
+- **PLAUSIBLE**: the mechanism is real but the trigger is uncertain (timing, environment, config). Say what would confirm it.
+- **REFUTED**: the code doesn't say that (quote it), it's provably impossible (show the type, constant or invariant), it's handled elsewhere (cite the guard), or it has no observable effect.
+
+Keep CONFIRMED and PLAUSIBLE. A realistic but rare state is PLAUSIBLE, not REFUTED: a race, null on an error or cold-cache path, falsy zero, a retry storm, a regex that lost its anchor.
+
+## Gap sweep
+
+With the verified list in hand, re-read the diff and the enclosing functions looking only for defects not already on it: moved or extracted code that dropped a guard, a flipped config default, setup/teardown asymmetry in tests, a predicate function with side effects, a `try`/`finally` or lock scope that shrank. Verify anything new the same way. If nothing new turns up, add nothing.
 
 ## Priority checklist
 
@@ -100,11 +127,7 @@ Magic thresholds, limits, timeouts, page sizes → `config` or `remote-config` w
 
 Terse. He actively fights verbose AI comments: "redundant comment", "the code is self-documenting", "I've been prompting Claude to cut down on comments." Flag comments that restate the code; keep only non-obvious intent/gotchas.
 
-### 13. Correctness — probe edge cases (Socratic)
-
-Hunt the specific failure: null/empty (`shouldn't we check next isn't null?`), races (`does this interfere with the sync process running concurrently?`), double-navigation on slow queries, retry stacking (ky already retries — will this retry 6×?), reused-random-values, stale memoized keys. Ask the pointed question with the concrete scenario.
-
-### 14. Scope & follow-ups
+### 13. Scope & follow-ups
 
 One PR does one thing. Out-of-scope but worth doing → "ticket it / separate PR", don't bundle. Cross-cutting changes (typography, a shared primitive default, `includeFontPadding` app-wide) deserve extra scrutiny and often a "confirm against Figma / are we sure?" — verify before shipping wide blast radius.
 
@@ -116,10 +139,13 @@ One PR does one thing. Out-of-scope but worth doing → "ticket it / separate PR
 <1–2 sentence summary in Will's voice>
 
 ### Blocking
-- <finding> — <why> (`file:line`)
+- <finding> (`file:line`, CONFIRMED | PLAUSIBLE). Fails when: <inputs or state → wrong result>
 
 ### Should-fix
-- ...
+- <same shape; a checklist finding gives its cost in place of "Fails when": what's duplicated, which rule it breaks (quote the CLAUDE.md rule), what it costs per render>
+
+### Earlier findings (re-review only)
+- <each finding from the previous pass>: fixed (seen in the code) / reason holds / still open (why the reason doesn't hold)
 
 ### Nits
 - ...
@@ -137,4 +163,4 @@ Rank most-severe first. Keep nits clearly separated so they don't drown the real
 
 - **Read-only.** Review and report. Do not post comments, approve, push, or edit files unless the user explicitly asks. If asked to post, treat that as a separate, confirmed action.
 - **Verify claims before making them.** Every "we already have X" / "move to package Y" must be grep-confirmed. Being confidently wrong about an existing util erodes the whole review.
-- Cite `file:line`. Don't invent problems to pad the list — a short, correct review beats a long, padded one.
+- Cite `file:line`. The verify step, not your first impression, decides what's reported: a candidate with a nameable failure scenario gets a verdict, and one without a scenario isn't a finding.

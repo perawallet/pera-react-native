@@ -76,7 +76,7 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     )
 
     const { mutate } = useBackupReviewActionMutation('account', {
-        onMutate: ({ address }) => setBusyAddress(address),
+        onMutate: ({ id }) => setBusyAddress(id),
         onSuccess: (_result, { action }) => {
             showToast({
                 title: t(TOAST_KEY[action].success),
@@ -84,10 +84,10 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
                 type: 'success',
             })
         },
-        onError: (error, { action, address }) => {
+        onError: (error, { action, id }) => {
             logger.warn('useBackupAccountReview: review action failed', {
                 action,
-                address,
+                address: id,
                 error: error instanceof Error ? error.message : String(error),
             })
             if (error instanceof NoConnectionError) {
@@ -104,15 +104,15 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     })
 
     const backUpAccount = useCallback(
-        (address: string) => mutate({ action: 'backUp', address }),
+        (address: string) => mutate({ action: 'backUp', id: address }),
         [mutate],
     )
     const addFromBackup = useCallback(
-        (address: string) => mutate({ action: 'add', address }),
+        (address: string) => mutate({ action: 'add', id: address }),
         [mutate],
     )
     const deleteFromBackup = useCallback(
-        (address: string) => mutate({ action: 'delete', address }),
+        (address: string) => mutate({ action: 'delete', id: address }),
         [mutate],
     )
 

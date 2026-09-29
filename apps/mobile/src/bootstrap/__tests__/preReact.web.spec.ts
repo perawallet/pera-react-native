@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => {
         calls,
         initDecimalConfig: record('initDecimalConfig'),
         registerAppBottomSheets: record('registerAppBottomSheets'),
+        registerChainAdapters: record('registerChainAdapters'),
         updateQueryHeaders: record('updateQueryHeaders'),
         initNetworkStatus: vi.fn(() => {
             calls.push('initNetworkStatus')
@@ -35,6 +36,9 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 vi.mock('../bottom-sheet-registrations', () => ({
     registerAppBottomSheets: mocks.registerAppBottomSheets,
+}))
+vi.mock('../chain-adapters', () => ({
+    registerChainAdapters: mocks.registerChainAdapters,
 }))
 vi.mock('../query-headers', () => ({
     updateQueryHeaders: mocks.updateQueryHeaders,
@@ -55,12 +59,13 @@ describe('initRuntime (web)', () => {
         expect(mocks.calls).toEqual([])
     })
 
-    it('configures Decimal, registers sheets, sets backend headers and seeds network status', () => {
+    it('configures Decimal, registers sheets and chain adapters, sets backend headers and seeds network status', () => {
         initRuntime()
 
         expect(mocks.calls).toEqual([
             'initDecimalConfig',
             'registerAppBottomSheets',
+            'registerChainAdapters',
             'updateQueryHeaders',
             'initNetworkStatus',
         ])

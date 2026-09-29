@@ -258,6 +258,13 @@ describe('Flow: Cloud backup → Restore', () => {
             resolveMnemonic: mnemonicHook.current,
             resolveHd: hdHook.current,
             isLocked: () => false,
+            listPasskeys: async () => [],
+            importPasskeys: async () => ({
+                imported: 0,
+                skipped: [],
+                failed: [],
+            }),
+            subscribePasskeyChanges: () => () => {},
         }).syncNow()
 
         expect(

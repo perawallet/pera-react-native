@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, expect, it, vi } from 'vitest'
 import type { Key } from '@algorandfoundation/keystore-core'
 
@@ -30,6 +32,7 @@ import {
     keyToPasskey,
     PASSKEY_MIGRATION_NEEDED,
 } from '../passkey'
+import { fromStandardBase64 } from '../../native/nativeProviderRecord'
 
 const buildPasskeyKey = (metadata: Record<string, unknown>): Key =>
     ({
@@ -38,6 +41,20 @@ const buildPasskeyKey = (metadata: Record<string, unknown>): Key =>
         algorithm: 'P256',
         metadata,
     }) as Key
+
+/**
+ * `k/` as Pera's patch of the Android provider writes it: org.json output of
+ * `saveCredential` then `recordCredentialUsage`, which escapes `/` as `\/`.
+ */
+const ANDROID_K_RECORD = String.raw`{"id":"+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/+\/8=","type":"hd-derived-p256","algorithm":"P256","extractable":false,"keyUsages":["sign"],"name":"Passkey: https:\/\/webauthn.io","publicKey":{"$u8":"BAQEBA=="},"metadata":{"origin":"https:\/\/webauthn.io","userHandle":"alice","userId":"dXNlcg","count":3,"parentKeyId":"hd-1-passkey-main","scheme":"pbkdf2-p256","derivationVersion":1,"lastUsedAt":1727259000000},"privateKeyEnc":{"iv":"AAAAAAAAAAAAAAAA"}}`
+
+/** Parses a `k/` record the way keystore hydration does: `$u8` back to bytes. */
+const parseKeyRecord = (raw: string): Key =>
+    JSON.parse(raw, (_field, value) =>
+        value && typeof value === 'object' && typeof value.$u8 === 'string'
+            ? fromStandardBase64(value.$u8)
+            : value,
+    ) as Key
 
 const buildNativeCredential = (
     overrides: Partial<NativeStoredCredential>,
@@ -123,6 +140,20 @@ describe('keyToPasskey', () => {
         )
 
         expect(passkey?.needsMigration).toBe(false)
+    })
+
+    // A `k/` record JS cannot read fails hydration at the next cold start, so
+    // the Android provider's own output is pinned from the JS side.
+    it('reads the k/ record the Android provider writes', () => {
+        const passkey = keyToPasskey(parseKeyRecord(ANDROID_K_RECORD))
+
+        expect(passkey).toMatchObject({
+            origin: 'https://webauthn.io',
+            userHandle: 'alice',
+            lastUsedAt: 1727259000000,
+            needsMigration: false,
+            source: 'keystore',
+        })
     })
 })
 

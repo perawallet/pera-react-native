@@ -53,6 +53,11 @@ const deps = () => ({
     })),
     importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
     isAborted: () => false,
+    importPasskeys: vi.fn(async () => ({
+        imported: 0,
+        skipped: [],
+        failed: [],
+    })),
 })
 
 describe('pullBackupDeltas', () => {

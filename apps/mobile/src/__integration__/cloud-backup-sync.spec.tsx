@@ -102,6 +102,9 @@ const setupSyncedBackup = async ({
         resolveMnemonic: mnemonicHook.current,
         resolveHd: hdHook ? hdHook.current : async () => null,
         isLocked: () => false,
+        listPasskeys: async () => [],
+        importPasskeys: async () => ({ imported: 0, skipped: [], failed: [] }),
+        subscribePasskeyChanges: () => () => {},
     })
 
     return {
