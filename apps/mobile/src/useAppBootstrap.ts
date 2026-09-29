@@ -17,7 +17,7 @@ import {
     algorandSafeQueryParse,
     derivePQKeygenSeed,
 } from '@perawallet/wallet-core-blockchain'
-import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
+import { seedNativeAssets } from '@perawallet/wallet-core-assets'
 import {
     createSyncStorePorts,
     initializeSyncService,
@@ -205,7 +205,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
                 const databaseBranch = initializeDatabase(
                     provider.database,
-                ).then(() => seedAlgoAsset(getDatabase()))
+                ).then(() => seedNativeAssets(getDatabase()))
 
                 const languageBranch = syncLanguagePreference().catch(err =>
                     logger.error('Language preference sync failed', {

@@ -27,7 +27,7 @@ const wrapper = ({ children }: { children: ReactNode }) =>
 const mockSubmit = vi.fn()
 const mockAccountInformation = vi.fn()
 const mockBuild = vi.fn()
-const mockFetchIndexerAssetDetails = vi.fn()
+const mockFetchOnChainAsset = vi.fn()
 const mockDeleteAssetHoldings = vi.fn().mockResolvedValue(undefined)
 const mockInvalidate = vi.fn()
 const mockAssignFeeToGroup = vi.fn()
@@ -44,8 +44,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    fetchIndexerAssetDetails: (...args: unknown[]) =>
-        mockFetchIndexerAssetDetails(...args),
+    fetchOnChainAsset: (...args: unknown[]) => mockFetchOnChainAsset(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -86,8 +85,8 @@ describe('useAssetOptOutMutation', () => {
                 adjustments: [],
             }),
         )
-        mockFetchIndexerAssetDetails.mockResolvedValue({
-            asset: { params: { creator: 'CREATOR' } },
+        mockFetchOnChainAsset.mockResolvedValue({
+            creator: { address: 'CREATOR' },
         })
     })
 
@@ -129,6 +128,27 @@ describe('useAssetOptOutMutation', () => {
         expect(mockInvalidate).toHaveBeenCalledWith(expect.anything(), [
             'SENDER',
         ])
+    })
+
+    it('looks the creator up on chain when the caller does not pass one', async () => {
+        const { result } = renderHook(() => useAssetOptOutMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.optOut({
+                sender: 'SENDER',
+                assetId: 12345n,
+            })
+        })
+
+        expect(mockFetchOnChainAsset).toHaveBeenCalledWith('12345', 'testnet')
+        expect(mockBuild).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+            optOuts: [
+                { sender: 'SENDER', assetId: 12345n, creator: 'CREATOR' },
+            ],
+        })
     })
 
     it('opts out of multiple assets in a single grouped pipeline request', async () => {

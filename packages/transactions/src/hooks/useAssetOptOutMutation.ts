@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { fetchIndexerAssetDetails } from '@perawallet/wallet-core-assets'
+import { fetchOnChainAsset } from '@perawallet/wallet-core-assets'
 import {
     deleteAssetHoldings,
     fetchAccountInformation,
@@ -60,13 +60,10 @@ const resolveCreator = async (
     if (params.creator) {
         return params as ResolvedOptOutParams
     }
-    const assetDetails = await fetchIndexerAssetDetails(
-        String(params.assetId),
-        network,
-    )
+    const asset = await fetchOnChainAsset(String(params.assetId), network)
     return {
         ...params,
-        creator: assetDetails.asset.params.creator,
+        creator: asset.creator.address,
     }
 }
 

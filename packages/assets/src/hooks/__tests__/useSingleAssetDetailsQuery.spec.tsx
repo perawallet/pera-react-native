@@ -11,29 +11,24 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
-import { Networks } from '@perawallet/wallet-core-config'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
-import {
-    useSingleAssetDetailsQuery,
-    fetchAssetFromApis,
-} from '../useSingleAssetDetailsQuery'
-import { PeraAssetVerificationTier } from '../../models'
-
-import { createWrapper } from './test-utils'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
+import { useSingleAssetDetailsQuery } from '../useSingleAssetDetailsQuery'
+import { getRemoteAssetDetailsQueryKey } from '../querykeys'
+import { assetsChainAdapters } from '../../chain-adapter'
+import {
+    FAKE_NATIVE_ASSET,
+    registerFakeAssetsAdapter,
+} from '../../__tests__/fakeAssetsChain'
+import { createWrapper } from './test-utils'
 
-// Mock endpoints
 const mocks = vi.hoisted(() => ({
-    fetchAssetDetails: vi.fn(),
-    fetchIndexerAssetDetails: vi.fn(),
-    fetchPublicAssetDetails: vi.fn(),
     useNetwork: vi.fn(),
     getAssetById: vi.fn(),
-    getAssetPeraMetadata: vi.fn(),
-    upsertNodeAssets: vi.fn(),
     batchEnqueue: vi.fn(),
+    fetchAsset: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -42,22 +37,21 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('../../db', () => ({
     getAssetById: mocks.getAssetById,
-    getAssetPeraMetadata: mocks.getAssetPeraMetadata,
-    upsertNodeAssets: mocks.upsertNodeAssets,
 }))
 
 vi.mock('../../services/assetBatchQueue', () => ({
     assetBatchQueue: { enqueue: mocks.batchEnqueue },
 }))
 
-vi.mock('../../api', async importOriginal => {
-    const actual = await importOriginal<typeof import('../../api')>()
-    return {
-        ...actual,
-        fetchAssetDetails: mocks.fetchAssetDetails,
-        fetchIndexerAssetDetails: mocks.fetchIndexerAssetDetails,
-        fetchPublicAssetDetails: mocks.fetchPublicAssetDetails,
-    }
+const mainnetScope = { chainId: 'algorand', networkId: 'mainnet' }
+
+const makeAsset = (assetId: string, name: string) => ({
+    assetId,
+    decimals: 6,
+    creator: { address: 'ADDR' },
+    totalSupply: new Decimal(1000),
+    name,
+    unitName: 'TEST',
 })
 
 describe('useSingleAssetDetailsQuery', () => {
@@ -67,17 +61,15 @@ describe('useSingleAssetDetailsQuery', () => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         mocks.getAssetById.mockResolvedValue(null)
-        mocks.getAssetPeraMetadata.mockResolvedValue(null)
-        mocks.upsertNodeAssets.mockResolvedValue(undefined)
-        // Default: the bulk endpoint doesn't know the asset — fall through to
-        // the per-asset detail endpoints.
+        // Default: the bulk endpoint doesn't know the asset, so the read falls
+        // through to the adapter's per-asset read.
         mocks.batchEnqueue.mockResolvedValue(undefined)
+        mocks.fetchAsset.mockImplementation(async (assetId: string) =>
+            makeAsset(assetId, 'Adapter Asset'),
+        )
+        registerFakeAssetsAdapter({ fetchAsset: mocks.fetchAsset })
         queryClient = new QueryClient({
-            defaultOptions: {
-                queries: {
-                    retry: false,
-                },
-            },
+            defaultOptions: { queries: { retry: false } },
         })
     })
 
@@ -87,403 +79,127 @@ describe('useSingleAssetDetailsQuery', () => {
         onlineManager.setOnline(true)
     })
 
-    describe('useSingleAssetDetailsQuery hook', () => {
-        it('serves asset details from SQLite while offline', async () => {
-            onlineManager.setOnline(false)
+    it('serves asset details from SQLite while offline', async () => {
+        onlineManager.setOnline(false)
+        const dbAsset = makeAsset('123', 'Offline DB Asset')
+        mocks.getAssetById.mockResolvedValue(dbAsset)
 
-            const dbAsset = {
-                assetId: '123',
-                decimals: 6,
-                creator: { address: 'ADDR' },
-                totalSupply: new Decimal(1000),
-                name: 'Offline DB Asset',
-                unitName: 'TEST',
-            }
-            mocks.getAssetById.mockResolvedValue(dbAsset)
-
-            const { result } = renderHook(
-                () => useSingleAssetDetailsQuery('123'),
-                {
-                    wrapper: createWrapper(queryClient),
-                },
-            )
-
-            await waitFor(() => expect(result.current.isPending).toBe(false))
-
-            expect(result.current.data).toEqual(dbAsset)
-            expect(mocks.getAssetById).toHaveBeenCalledWith({
-                assetId: '123',
-                network: 'mainnet',
-            })
+        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
+            wrapper: createWrapper(queryClient),
         })
 
-        it('returns ALGO asset details from DB when asset_id is ALGO_ASSET_ID', async () => {
-            mocks.getAssetById.mockResolvedValue({
-                assetId: ALGO_ASSET_ID,
-                name: 'Algo',
-                unitName: 'ALGO',
-                decimals: 6,
-                totalSupply: new Decimal('10000000000000000'),
-                creator: { address: '' },
-            })
+        await waitFor(() => expect(result.current.isPending).toBe(false))
 
-            const { result } = renderHook(
-                () => useSingleAssetDetailsQuery(ALGO_ASSET_ID),
-                {
-                    wrapper: createWrapper(queryClient),
-                },
-            )
-
-            await waitFor(() => expect(result.current.data).toBeDefined())
-
-            expect(result.current.data).toEqual(
-                expect.objectContaining({
-                    assetId: ALGO_ASSET_ID,
-                    name: 'Algo',
-                }),
-            )
-            expect(mocks.getAssetById).toHaveBeenCalledWith({
-                assetId: ALGO_ASSET_ID,
-                network: 'mainnet',
-            })
-        })
-
-        it('reads asset from DB when available', async () => {
-            const dbAsset = {
-                assetId: '123',
-                decimals: 6,
-                creator: { address: 'ADDR' },
-                totalSupply: new Decimal(1000),
-                name: 'DB Asset',
-                unitName: 'TEST',
-            }
-            mocks.getAssetById.mockResolvedValue(dbAsset)
-
-            const { result } = renderHook(
-                () => useSingleAssetDetailsQuery('123'),
-                {
-                    wrapper: createWrapper(queryClient),
-                },
-            )
-
-            await waitFor(() => expect(result.current.isPending).toBe(false))
-
-            expect(result.current.data).toEqual(dbAsset)
-            expect(mocks.getAssetById).toHaveBeenCalledWith({
-                assetId: '123',
-                network: 'mainnet',
-            })
-            // Should NOT call APIs when DB has data
-            expect(mocks.fetchAssetDetails).not.toHaveBeenCalled()
-            expect(mocks.fetchIndexerAssetDetails).not.toHaveBeenCalled()
-        })
-
-        it('falls back to API when asset not in DB', async () => {
-            mocks.getAssetById.mockResolvedValue(null)
-
-            mocks.fetchAssetDetails.mockResolvedValue({
-                asset_id: 123,
-                name: 'Pera Name',
-                fraction_decimals: 6,
-                total: '1000',
-                is_deleted: false,
-                verification_tier: 'unverified',
-                creator: { address: 'ADDR' },
-                category: null,
-            })
-
-            mocks.fetchIndexerAssetDetails.mockResolvedValue({
-                asset: {
-                    index: 123,
-                    params: {
-                        decimals: 6,
-                        'unit-name': 'TEST',
-                        name: 'Indexer Name',
-                        total: 1000,
-                        creator: 'ADDR',
-                    },
-                },
-            })
-
-            mocks.fetchPublicAssetDetails.mockResolvedValue({
-                asset_id: 123,
-                name: 'Public Name',
-            })
-
-            const { result } = renderHook(
-                () => useSingleAssetDetailsQuery('123'),
-                {
-                    wrapper: createWrapper(queryClient),
-                },
-            )
-
-            await waitFor(() => expect(result.current.isPending).toBe(false))
-
-            expect(result.current.data).toBeDefined()
-            expect(result.current.data?.assetId).toBe('123')
-            expect(result.current.data?.name).toBe('Pera Name')
-            expect(result.current.data?.unitName).toBe('TEST')
-        })
-
-        it('preserves peraMetadata fields from pera API when public API overwrites peraMetadata', async () => {
-            mocks.getAssetById.mockResolvedValue(null)
-
-            mocks.fetchAssetDetails.mockResolvedValue({
-                asset_id: 123,
-                name: 'Pera Name',
-                fraction_decimals: 6,
-                total: '1000',
-                is_deleted: false,
-                verification_tier: 'verified',
-                creator: { address: 'ADDR' },
-                category: null,
-                is_favorited: true,
-                is_price_alert_enabled: true,
-                logo: 'https://pera-logo.png',
-            })
-
-            mocks.fetchIndexerAssetDetails.mockResolvedValue({
-                asset: {
-                    index: 123,
-                    params: {
-                        decimals: 6,
-                        'unit-name': 'TEST',
-                        name: 'Indexer Name',
-                        total: 1000,
-                        creator: 'ADDR',
-                    },
-                },
-            })
-
-            mocks.fetchPublicAssetDetails.mockResolvedValue({
-                asset_id: 123,
-                name: 'Public Name',
-                fraction_decimals: 6,
-                total_supply: 1000,
-                total_supply_as_str: '1000',
-                is_deleted: false,
-                verification_tier: 'verified',
-                is_collectible: false,
-                logo: 'https://public-logo.png',
-            })
-
-            const { result } = renderHook(
-                () => useSingleAssetDetailsQuery('123'),
-                {
-                    wrapper: createWrapper(queryClient),
-                },
-            )
-
-            await waitFor(() => expect(result.current.isPending).toBe(false))
-
-            expect(result.current.data?.peraMetadata?.isFavorited).toBe(true)
-            expect(result.current.data?.peraMetadata?.isPriceAlertEnabled).toBe(
-                true,
-            )
-            expect(result.current.data?.peraMetadata?.logo).toBe(
-                'https://pera-logo.png',
-            )
-        })
-
-        it('resolves a DB miss through the batch queue without hitting the detail endpoints', async () => {
-            mocks.getAssetById.mockResolvedValue(null)
-            const bulkAsset = {
-                assetId: '456',
-                decimals: 2,
-                creator: { address: 'ADDR' },
-                totalSupply: new Decimal(10),
-                name: 'Bulk Asset',
-                unitName: 'BULK',
-            }
-            mocks.batchEnqueue.mockResolvedValue(bulkAsset)
-
-            const { result } = renderHook(
-                () => useSingleAssetDetailsQuery('456'),
-                {
-                    wrapper: createWrapper(queryClient),
-                },
-            )
-
-            await waitFor(() => expect(result.current.isPending).toBe(false))
-
-            expect(result.current.data).toEqual(bulkAsset)
-            expect(mocks.batchEnqueue).toHaveBeenCalledWith('456', 'mainnet')
-            expect(mocks.fetchAssetDetails).not.toHaveBeenCalled()
-            expect(mocks.fetchIndexerAssetDetails).not.toHaveBeenCalled()
-        })
-
-        it('skips DB and batch queue entirely with useDB=false and caches under the remote key', async () => {
-            mocks.fetchAssetDetails.mockResolvedValue({
-                asset_id: 789,
-                name: 'Remote Asset',
-                fraction_decimals: 0,
-                total: '1',
-                is_deleted: false,
-                verification_tier: 'unverified',
-                creator: { address: 'ADDR' },
-                category: null,
-            })
-            mocks.fetchIndexerAssetDetails.mockRejectedValue(
-                new Error('irrelevant'),
-            )
-            mocks.fetchPublicAssetDetails.mockRejectedValue(
-                new Error('irrelevant'),
-            )
-
-            const { result } = renderHook(
-                () => useSingleAssetDetailsQuery('789', false),
-                {
-                    wrapper: createWrapper(queryClient),
-                },
-            )
-
-            await waitFor(() => expect(result.current.isPending).toBe(false))
-
-            expect(result.current.data?.name).toBe('Remote Asset')
-            expect(mocks.getAssetById).not.toHaveBeenCalled()
-            expect(mocks.batchEnqueue).not.toHaveBeenCalled()
-        })
-
-        it('handles loading state', () => {
-            mocks.getAssetById.mockReturnValue(new Promise(() => {}))
-
-            const { result } = renderHook(
-                () => useSingleAssetDetailsQuery('123'),
-                {
-                    wrapper: createWrapper(queryClient),
-                },
-            )
-
-            expect(result.current.isLoading).toBe(true)
-        })
-
-        it('handles error state when both DB and API fail', async () => {
-            mocks.getAssetById.mockResolvedValue(null)
-            mocks.fetchAssetDetails.mockRejectedValue(new Error('Pera Error'))
-            mocks.fetchIndexerAssetDetails.mockRejectedValue(
-                new Error('Indexer Error'),
-            )
-            mocks.fetchPublicAssetDetails.mockRejectedValue(
-                new Error('Public Error'),
-            )
-
-            const { result } = renderHook(
-                () => useSingleAssetDetailsQuery('123'),
-                {
-                    wrapper: createWrapper(queryClient),
-                },
-            )
-
-            // The hook uses Promise.allSettled, so individual API failures
-            // won't cause the query to error - it returns partial data
-            await waitFor(() => expect(result.current.isPending).toBe(false))
-
-            expect(result.current.data).toBeDefined()
-            expect(result.current.data?.assetId).toBe('123')
+        expect(result.current.data).toEqual(dbAsset)
+        expect(mocks.getAssetById).toHaveBeenCalledWith({
+            assetId: '123',
+            network: 'mainnet',
         })
     })
-})
 
-describe('fetchAssetFromApis merge precedence', () => {
-    // Same asset id, two different chains: the Pera lane reports 6 decimals —
-    // real TestNet USDC — while the real chain's own indexer reports 0. The
-    // request layer no longer lets a Pera response reach a network with no
-    // deployment at all, so this simulates that invariant breaking: if Pera's
-    // value won here, displayUnitsToBaseUnits would build a transaction for
-    // the wrong amount, and that transaction would succeed on chain.
-    const peraDecimals = 6
-    const indexerDecimals = 0
+    it('reads asset from DB without asking the adapter', async () => {
+        const dbAsset = makeAsset('123', 'DB Asset')
+        mocks.getAssetById.mockResolvedValue(dbAsset)
 
-    beforeEach(() => {
-        vi.clearAllMocks()
-
-        mocks.fetchAssetDetails.mockResolvedValue({
-            asset_id: 10458941,
-            name: 'USDC',
-            unit_name: 'USDC',
-            fraction_decimals: peraDecimals,
-            total: '1000000000000',
-            is_deleted: false,
-            verification_tier: 'verified',
-            creator: { address: 'PERA_TESTNET_CREATOR' },
-            category: null,
+        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
+            wrapper: createWrapper(queryClient),
         })
 
-        mocks.fetchIndexerAssetDetails.mockResolvedValue({
-            asset: {
-                index: 10458941,
-                params: {
-                    decimals: indexerDecimals,
-                    'unit-name': 'FNT',
-                    name: 'FnetThing',
-                    total: 5_000_000,
-                    creator: 'FNET_CHAIN_CREATOR',
-                },
-            },
-        })
+        await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        // The public lane isn't relevant to chain-intrinsic precedence; reject
-        // it so Promise.allSettled simply omits it from the merge.
-        mocks.fetchPublicAssetDetails.mockRejectedValue(
-            new Error('public API not relevant to this test'),
+        expect(result.current.data).toEqual(dbAsset)
+        expect(mocks.batchEnqueue).not.toHaveBeenCalled()
+        expect(mocks.fetchAsset).not.toHaveBeenCalled()
+    })
+
+    it("returns the adapter's native asset when it is not in the DB yet", async () => {
+        const { result } = renderHook(
+            () => useSingleAssetDetailsQuery(FAKE_NATIVE_ASSET.assetId),
+            { wrapper: createWrapper(queryClient) },
         )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(result.current.data).toBe(FAKE_NATIVE_ASSET)
+        expect(mocks.batchEnqueue).not.toHaveBeenCalled()
+        expect(mocks.fetchAsset).not.toHaveBeenCalled()
     })
 
-    it('pera metadata wins on testnet, preserving current behaviour', async () => {
-        const asset = await fetchAssetFromApis('10458941', Networks.testnet)
+    it('resolves a DB miss through the batch queue without the per-asset read', async () => {
+        const bulkAsset = makeAsset('456', 'Bulk Asset')
+        mocks.batchEnqueue.mockResolvedValue(bulkAsset)
 
-        expect(asset.decimals).toBe(peraDecimals)
-        expect(asset.name).toBe('USDC')
+        const { result } = renderHook(() => useSingleAssetDetailsQuery('456'), {
+            wrapper: createWrapper(queryClient),
+        })
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(result.current.data).toEqual(bulkAsset)
+        expect(mocks.batchEnqueue).toHaveBeenCalledWith('456', 'mainnet')
+        expect(mocks.fetchAsset).not.toHaveBeenCalled()
     })
 
-    it('indexer wins on chain-intrinsics for a network with no Pera deployment', async () => {
-        const asset = await fetchAssetFromApis('10458941', Networks.betanet)
+    it("falls back to the adapter's per-asset read when the batch queue finds nothing", async () => {
+        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
+            wrapper: createWrapper(queryClient),
+        })
 
-        expect(asset.decimals).toBe(indexerDecimals)
-        expect(asset.name).toBe('FnetThing')
-        expect(asset.unitName).toBe('FNT')
-        // creator is an object — toEqual, not toBe. The indexer lane's creator
-        // ('FNET_CHAIN_CREATOR') must win over Pera's ('PERA_TESTNET_CREATOR').
-        expect(asset.creator).toEqual({ address: 'FNET_CHAIN_CREATOR' })
-        // totalSupply is a Decimal; compare via toString so a Pera-wins
-        // regression (1000000000000, from the Pera fixture's total) is
-        // distinguishable from the indexer's 5000000.
-        expect(asset.totalSupply.toString()).toBe('5000000')
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(result.current.data?.name).toBe('Adapter Asset')
+        expect(mocks.fetchAsset).toHaveBeenCalledWith('123', mainnetScope)
     })
 
-    it('pera still supplies its own metadata on a network with no Pera deployment', async () => {
-        const asset = await fetchAssetFromApis('10458941', Networks.betanet)
-
-        expect(asset.peraMetadata?.verificationTier).toBe(
-            PeraAssetVerificationTier.verified,
+    it('skips DB and batch queue entirely with useDB=false and caches under the remote key', async () => {
+        const { result } = renderHook(
+            () => useSingleAssetDetailsQuery('789', false),
+            { wrapper: createWrapper(queryClient) },
         )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(result.current.data?.name).toBe('Adapter Asset')
+        expect(mocks.getAssetById).not.toHaveBeenCalled()
+        expect(mocks.batchEnqueue).not.toHaveBeenCalled()
+        expect(
+            queryClient.getQueryData(
+                getRemoteAssetDetailsQueryKey('789', 'mainnet'),
+            ),
+        ).toBeDefined()
     })
 
-    it('persists the chain-intrinsics half so the next read is DB-local', async () => {
-        await fetchAssetFromApis('10458941', Networks.testnet)
+    it('handles loading state', () => {
+        mocks.getAssetById.mockReturnValue(new Promise(() => {}))
 
-        expect(mocks.upsertNodeAssets).toHaveBeenCalledTimes(1)
-        const { items, network } = mocks.upsertNodeAssets.mock.calls[0][0]
-        expect(items).toHaveLength(1)
-        expect(items[0].assetId).toBe('10458941')
-        expect(network).toBe(Networks.testnet)
+        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
+            wrapper: createWrapper(queryClient),
+        })
+
+        expect(result.current.isLoading).toBe(true)
     })
 
-    it('does not persist a merge built only from defaults (every lane failed)', async () => {
-        mocks.fetchAssetDetails.mockRejectedValue(new Error('down'))
-        mocks.fetchIndexerAssetDetails.mockRejectedValue(new Error('down'))
+    it('surfaces an adapter failure as a query error', async () => {
+        mocks.fetchAsset.mockRejectedValue(new Error('adapter down'))
 
-        const asset = await fetchAssetFromApis('10458941', Networks.testnet)
+        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
+            wrapper: createWrapper(queryClient),
+        })
 
-        expect(asset.assetId).toBe('10458941')
-        expect(mocks.upsertNodeAssets).not.toHaveBeenCalled()
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('adapter down')
     })
 
-    it('still returns the merged asset when the persist itself fails', async () => {
-        mocks.upsertNodeAssets.mockRejectedValue(new Error('db locked'))
+    it('ends in ChainAdapterNotRegisteredError on a DB miss when no adapter is registered', async () => {
+        assetsChainAdapters.reset()
 
-        const asset = await fetchAssetFromApis('10458941', Networks.testnet)
+        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
+            wrapper: createWrapper(queryClient),
+        })
 
-        expect(asset.name).toBe('USDC')
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(
+            ChainAdapterNotRegisteredError,
+        )
     })
 })

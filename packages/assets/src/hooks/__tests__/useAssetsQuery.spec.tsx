@@ -13,23 +13,23 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAssetsQuery } from '../useAssetsQuery'
-import { getAssetsQueryKey, getAlgoQueryKey } from '../querykeys'
+import { getAssetsQueryKey } from '../querykeys'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
+import {
+    FAKE_NATIVE_ASSET,
+    registerFakeAssetsAdapter,
+} from '../../__tests__/fakeAssetsChain'
 
 const mocks = vi.hoisted(() => ({
     getAssetsByIds: vi.fn(),
     useNetwork: vi.fn(),
-    fetchAndPersistAssets: vi.fn(),
+    syncAssets: vi.fn(),
 }))
 
 vi.mock('../../db', () => ({
     getAssetsByIds: mocks.getAssetsByIds,
-}))
-
-vi.mock('../../sync/asset-syncer', () => ({
-    fetchAndPersistAssets: mocks.fetchAndPersistAssets,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -43,7 +43,8 @@ describe('useAssetsQuery', () => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         mocks.getAssetsByIds.mockReturnValue([])
-        mocks.fetchAndPersistAssets.mockResolvedValue(undefined)
+        mocks.syncAssets.mockResolvedValue(undefined)
+        registerFakeAssetsAdapter({ syncAssets: mocks.syncAssets })
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -54,15 +55,6 @@ describe('useAssetsQuery', () => {
     })
 
     // getAssetsQueryKey's shape is covered in querykeys.spec.ts.
-
-    describe('getAlgoQueryKey', () => {
-        it('returns correct query keys', () => {
-            expect(getAlgoQueryKey('mainnet')).toEqual([
-                'assets',
-                { algo: '0', network: 'mainnet' },
-            ])
-        })
-    })
 
     describe('useAssetsQuery hook', () => {
         const mockDbAssets = [
@@ -101,7 +93,7 @@ describe('useAssetsQuery', () => {
             )
         })
 
-        it('falls back to the ALGO constant when the seeded row is absent', async () => {
+        it('falls back to the adapter native asset when the seeded row is absent', async () => {
             mocks.getAssetsByIds.mockReturnValue([])
 
             const { result } = renderHook(() => useAssetsQuery(['0', '123']), {
@@ -110,13 +102,11 @@ describe('useAssetsQuery', () => {
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
-            expect(result.current.data.get('0')).toEqual(
-                expect.objectContaining({ assetId: '0', decimals: 6 }),
-            )
+            expect(result.current.data.get('0')).toBe(FAKE_NATIVE_ASSET)
             expect(result.current.data.has('123')).toBe(false)
         })
 
-        it('prefers the stored ALGO row over the constant', async () => {
+        it('prefers the stored native row over the adapter record', async () => {
             mocks.getAssetsByIds.mockReturnValue([
                 {
                     assetId: '0',
@@ -149,7 +139,7 @@ describe('useAssetsQuery', () => {
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
-            expect(mocks.fetchAndPersistAssets).not.toHaveBeenCalled()
+            expect(mocks.syncAssets).not.toHaveBeenCalled()
         })
 
         it('fetches and persists missing assets before reading when fetchMissing is set', async () => {
@@ -162,10 +152,10 @@ describe('useAssetsQuery', () => {
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
-            expect(mocks.fetchAndPersistAssets).toHaveBeenCalledWith(
-                ['123'],
-                'mainnet',
-            )
+            expect(mocks.syncAssets).toHaveBeenCalledWith(['123'], {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            })
             expect(result.current.data.get('123')).toEqual(
                 expect.objectContaining({ assetId: '123', name: 'Test Asset' }),
             )

@@ -51,7 +51,7 @@ import {
     mockAssetDetails,
     mockIndexerAssetDetails,
     mockPublicAssetDetails,
-} from '@perawallet/wallet-core-assets/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import {
     mockAlgodAccountInformation,
     mockAlgodSendRawTransaction,

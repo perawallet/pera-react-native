@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export {}
+export { algorandAssetsAdapter } from './adapter'
+export { fetchAssets } from './api'

@@ -12,10 +12,7 @@
 
 import { z } from 'zod'
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
-import {
-    fetchIndexerAssetDetails,
-    transformIndexerAssetResponse,
-} from '@perawallet/wallet-core-assets'
+import { fetchOnChainAsset } from '@perawallet/wallet-core-assets'
 import {
     DEFAULT_ITEMS_PER_PAGE,
     type TransactionHistoryResult,
@@ -43,9 +40,7 @@ const buildAssetLookup = async (
 
     const settled = await Promise.allSettled(
         ids.map(async id => {
-            const asset = transformIndexerAssetResponse(
-                await fetchIndexerAssetDetails(id, network),
-            )
+            const asset = await fetchOnChainAsset(id, network)
             return { id, asset }
         }),
     )

@@ -17,7 +17,7 @@ import type { PeraAsset } from '../../models'
 const mockFetchAndPersistAssets = vi.hoisted(() => vi.fn())
 const mockGetAssetsByIds = vi.hoisted(() => vi.fn())
 
-vi.mock('../../sync/asset-syncer', () => ({
+vi.mock('../../chain-adapter', () => ({
     fetchAndPersistAssets: mockFetchAndPersistAssets,
 }))
 

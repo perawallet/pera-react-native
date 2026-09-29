@@ -12,18 +12,12 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
-const fetchAssetPricesMock = vi.hoisted(() => vi.fn())
-const fetchPublicAssetDetailsMock = vi.hoisted(() => vi.fn())
+const fetchUsdPricesMock = vi.hoisted(() => vi.fn())
+const fetchNativeUsdPriceMock = vi.hoisted(() => vi.fn())
 const upsertAssetPricesMock = vi.hoisted(() => vi.fn())
 const getStaleOrMissingPriceAssetIdsMock = vi.hoisted(() => vi.fn())
 const recordPriceMissesMock = vi.hoisted(() => vi.fn())
 const clearPriceMissesMock = vi.hoisted(() => vi.fn())
-
-vi.mock('../../api', () => ({
-    fetchAssetPrices: fetchAssetPricesMock,
-    fetchPublicAssetDetails: fetchPublicAssetDetailsMock,
-    ASSET_PRICES_MAX_IDS_PER_REQUEST: 100,
-}))
 
 vi.mock('../../db', () => ({
     upsertAssetPrices: upsertAssetPricesMock,
@@ -32,12 +26,30 @@ vi.mock('../../db', () => ({
     clearPriceMisses: clearPriceMissesMock,
 }))
 
+import { Decimal } from 'decimal.js'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { assetsChainAdapters } from '../../chain-adapter'
+import {
+    fakeAssetsAdapter,
+    registerFakeAssetsAdapter,
+} from '../../__tests__/fakeAssetsChain'
 import { fetchAndPersistPrices } from '../price-syncer'
+
+const mainnetScope = { chainId: 'algorand', networkId: 'mainnet' }
+
+const priced = (assetId: string, usdPrice: string) => ({
+    assetId,
+    usdPrice: new Decimal(usdPrice),
+})
 
 describe('fetchAndPersistPrices', () => {
     beforeEach(() => {
-        fetchAssetPricesMock.mockReset()
-        fetchPublicAssetDetailsMock.mockReset()
+        fetchUsdPricesMock.mockReset()
+        fetchNativeUsdPriceMock.mockReset()
+        registerFakeAssetsAdapter({
+            fetchUsdPrices: fetchUsdPricesMock,
+            fetchNativeUsdPrice: fetchNativeUsdPriceMock,
+        })
         upsertAssetPricesMock.mockReset()
         getStaleOrMissingPriceAssetIdsMock.mockReset()
         recordPriceMissesMock.mockReset()
@@ -49,34 +61,20 @@ describe('fetchAndPersistPrices', () => {
 
     test('no-ops on empty input', async () => {
         await fetchAndPersistPrices([], 'mainnet')
-        expect(fetchAssetPricesMock).not.toHaveBeenCalled()
-        expect(fetchPublicAssetDetailsMock).not.toHaveBeenCalled()
+        expect(fetchUsdPricesMock).not.toHaveBeenCalled()
+        expect(fetchNativeUsdPriceMock).not.toHaveBeenCalled()
     })
 
     test('fetches and persists prices for non-ALGO ids and the ALGO price separately', async () => {
-        fetchAssetPricesMock.mockResolvedValue([
-            { asset_id: '123', price: '2.0', currency: 'USD' },
-        ])
-        fetchPublicAssetDetailsMock.mockResolvedValue({ usd_value: '0.20' })
+        fetchUsdPricesMock.mockResolvedValue([priced('123', '2.0')])
+        fetchNativeUsdPriceMock.mockResolvedValue(new Decimal('0.20'))
 
         await fetchAndPersistPrices(['123', '0'], 'mainnet')
 
-        expect(fetchAssetPricesMock).toHaveBeenCalledWith(['123'], 'mainnet')
-        expect(fetchPublicAssetDetailsMock).toHaveBeenCalledWith('0', 'mainnet')
+        expect(fetchUsdPricesMock).toHaveBeenCalledWith(['123'], mainnetScope)
+        expect(fetchNativeUsdPriceMock).toHaveBeenCalledWith(mainnetScope)
         // 2 upserts: one for batch, one for ALGO
         expect(upsertAssetPricesMock).toHaveBeenCalledTimes(2)
-    })
-
-    test('defaults a missing usd_value to 0 for the ALGO price', async () => {
-        fetchAssetPricesMock.mockResolvedValue([])
-        fetchPublicAssetDetailsMock.mockResolvedValue({}) // no usd_value
-
-        await fetchAndPersistPrices(['123'], 'mainnet')
-
-        const algoCall = upsertAssetPricesMock.mock.calls.find(c =>
-            c[0]?.prices?.some((p: { assetId: string }) => p.assetId === '0'),
-        )
-        expect(algoCall?.[0].prices[0].usdPrice.toString()).toBe('0')
     })
 
     test('skips the ALGO fetch when the ALGO price is fresh', async () => {
@@ -85,33 +83,27 @@ describe('fetchAndPersistPrices', () => {
             async ({ assetIds }: { assetIds: string[] }) =>
                 assetIds.includes('0') ? [] : assetIds,
         )
-        fetchAssetPricesMock.mockResolvedValue([
-            { asset_id: '124', price: '2.0', currency: 'USD' },
-        ])
+        fetchUsdPricesMock.mockResolvedValue([priced('124', '2.0')])
 
         await fetchAndPersistPrices(['124', '0'], 'mainnet')
 
-        expect(fetchPublicAssetDetailsMock).not.toHaveBeenCalled()
-        expect(fetchAssetPricesMock).toHaveBeenCalledWith(['124'], 'mainnet')
+        expect(fetchNativeUsdPriceMock).not.toHaveBeenCalled()
+        expect(fetchUsdPricesMock).toHaveBeenCalledWith(['124'], mainnetScope)
     })
 
     test('skips batch ids whose price row is still fresh', async () => {
         getStaleOrMissingPriceAssetIdsMock.mockResolvedValue(['456'])
-        fetchAssetPricesMock.mockResolvedValue([
-            { asset_id: '456', price: '1.0', currency: 'USD' },
-        ])
-        fetchPublicAssetDetailsMock.mockResolvedValue({ usd_value: '0.20' })
+        fetchUsdPricesMock.mockResolvedValue([priced('456', '1.0')])
+        fetchNativeUsdPriceMock.mockResolvedValue(new Decimal('0.20'))
 
         await fetchAndPersistPrices(['123', '456'], 'mainnet')
 
-        expect(fetchAssetPricesMock).toHaveBeenCalledWith(['456'], 'mainnet')
+        expect(fetchUsdPricesMock).toHaveBeenCalledWith(['456'], mainnetScope)
     })
 
     test('gates batch ids on the persisted miss window', async () => {
-        fetchPublicAssetDetailsMock.mockResolvedValue({ usd_value: '0.20' })
-        fetchAssetPricesMock.mockResolvedValue([
-            { asset_id: '777', price: '1.0', currency: 'USD' },
-        ])
+        fetchNativeUsdPriceMock.mockResolvedValue(new Decimal('0.20'))
+        fetchUsdPricesMock.mockResolvedValue([priced('777', '1.0')])
 
         await fetchAndPersistPrices(['777'], 'testnet')
 
@@ -124,12 +116,9 @@ describe('fetchAndPersistPrices', () => {
         )
     })
 
-    test('records a persisted miss for ids the endpoint returned a null price for', async () => {
-        fetchPublicAssetDetailsMock.mockResolvedValue({ usd_value: '0.20' })
-        fetchAssetPricesMock.mockResolvedValue([
-            { asset_id: '555', price: '1.0', currency: 'USD' },
-            { asset_id: '777', price: null, currency: 'USD' },
-        ])
+    test('records a persisted miss for ids the price source left out', async () => {
+        fetchNativeUsdPriceMock.mockResolvedValue(new Decimal('0.20'))
+        fetchUsdPricesMock.mockResolvedValue([priced('555', '1.0')])
 
         await fetchAndPersistPrices(['555', '777'], 'testnet')
 
@@ -146,10 +135,8 @@ describe('fetchAndPersistPrices', () => {
     })
 
     test('clears persisted misses for ids that returned a price', async () => {
-        fetchPublicAssetDetailsMock.mockResolvedValue({ usd_value: '0.20' })
-        fetchAssetPricesMock.mockResolvedValue([
-            { asset_id: '555', price: '1.0', currency: 'USD' },
-        ])
+        fetchNativeUsdPriceMock.mockResolvedValue(new Decimal('0.20'))
+        fetchUsdPricesMock.mockResolvedValue([priced('555', '1.0')])
 
         await fetchAndPersistPrices(['555', '777'], 'testnet')
 
@@ -160,10 +147,8 @@ describe('fetchAndPersistPrices', () => {
     })
 
     test('records nothing when every id returned a price', async () => {
-        fetchPublicAssetDetailsMock.mockResolvedValue({ usd_value: '0.20' })
-        fetchAssetPricesMock.mockResolvedValue([
-            { asset_id: '555', price: '1.0', currency: 'USD' },
-        ])
+        fetchNativeUsdPriceMock.mockResolvedValue(new Decimal('0.20'))
+        fetchUsdPricesMock.mockResolvedValue([priced('555', '1.0')])
 
         await fetchAndPersistPrices(['555'], 'testnet')
 
@@ -171,20 +156,20 @@ describe('fetchAndPersistPrices', () => {
     })
 
     test('throws when every batch settles as rejected', async () => {
-        fetchAssetPricesMock.mockRejectedValue(new Error('batch failed'))
-        fetchPublicAssetDetailsMock.mockRejectedValue(
+        fetchUsdPricesMock.mockRejectedValue(new Error('batch failed'))
+        fetchNativeUsdPriceMock.mockRejectedValue(
             new Error('algo lookup failed'),
         )
 
         await expect(fetchAndPersistPrices(['999'], 'mainnet')).rejects.toThrow(
             'All price sync batches failed',
         )
-        expect(fetchAssetPricesMock).toHaveBeenCalledWith(['999'], 'mainnet')
+        expect(fetchUsdPricesMock).toHaveBeenCalledWith(['999'], mainnetScope)
     })
 
     test('records misses for every priceless id on a large portfolio (no cap)', async () => {
-        fetchPublicAssetDetailsMock.mockResolvedValue({ usd_value: '0.2' })
-        fetchAssetPricesMock.mockResolvedValue([])
+        fetchNativeUsdPriceMock.mockResolvedValue(new Decimal('0.2'))
+        fetchUsdPricesMock.mockResolvedValue([])
 
         const manyIds = Array.from({ length: 600 }, (_, i) => `${1000 + i}`)
         await fetchAndPersistPrices(manyIds, 'mainnet')
@@ -201,20 +186,77 @@ describe('fetchAndPersistPrices', () => {
             async ({ assetIds }: { assetIds: string[] }) =>
                 assetIds.includes('0') ? [] : assetIds,
         )
-        fetchAssetPricesMock.mockRejectedValue(new Error('batch failed'))
+        fetchUsdPricesMock.mockRejectedValue(new Error('batch failed'))
 
         await expect(
             fetchAndPersistPrices(['123', '0'], 'mainnet'),
         ).rejects.toThrow('All price sync batches failed')
     })
 
+    test('sizes batches by the adapter limit', async () => {
+        assetsChainAdapters.reset()
+        assetsChainAdapters.register(
+            fakeAssetsAdapter({
+                maxPriceIdsPerRequest: 2,
+                fetchUsdPrices: fetchUsdPricesMock,
+                fetchNativeUsdPrice: fetchNativeUsdPriceMock,
+            }),
+        )
+        fetchNativeUsdPriceMock.mockResolvedValue(new Decimal('0.20'))
+        fetchUsdPricesMock.mockResolvedValue([])
+
+        await fetchAndPersistPrices(['11', '12', '13'], 'mainnet')
+
+        expect(fetchUsdPricesMock).toHaveBeenCalledWith(
+            ['11', '12'],
+            mainnetScope,
+        )
+        expect(fetchUsdPricesMock).toHaveBeenCalledWith(['13'], mainnetScope)
+    })
+
+    test('treats the adapter native id, not a literal, as the native asset', async () => {
+        assetsChainAdapters.reset()
+        assetsChainAdapters.register(
+            fakeAssetsAdapter({
+                getNativeAsset: () => ({
+                    ...fakeAssetsAdapter().getNativeAsset(),
+                    assetId: 'native',
+                }),
+                fetchUsdPrices: fetchUsdPricesMock,
+                fetchNativeUsdPrice: fetchNativeUsdPriceMock,
+            }),
+        )
+        fetchNativeUsdPriceMock.mockResolvedValue(new Decimal('0.20'))
+        fetchUsdPricesMock.mockResolvedValue([])
+
+        await fetchAndPersistPrices(['native', '0'], 'mainnet')
+
+        expect(fetchUsdPricesMock).toHaveBeenCalledWith(['0'], mainnetScope)
+        expect(upsertAssetPricesMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                prices: [expect.objectContaining({ assetId: 'native' })],
+            }),
+        )
+    })
+
+    test.each(['mainnet', 'betanet'] as const)(
+        'rejects when no adapter is registered, even on %s',
+        async network => {
+            assetsChainAdapters.reset()
+
+            await expect(
+                fetchAndPersistPrices(['123'], network),
+            ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
+        },
+    )
+
     test.each(['betanet', 'custom'] as const)(
         'no-ops without calling either Pera-backed endpoint on %s',
         async network => {
             await fetchAndPersistPrices(['123', '0'], network)
 
-            expect(fetchAssetPricesMock).not.toHaveBeenCalled()
-            expect(fetchPublicAssetDetailsMock).not.toHaveBeenCalled()
+            expect(fetchUsdPricesMock).not.toHaveBeenCalled()
+            expect(fetchNativeUsdPriceMock).not.toHaveBeenCalled()
         },
     )
 
@@ -230,7 +272,7 @@ describe('fetchAndPersistPrices', () => {
                         setTimeout(() => resolve(assetIds), 10),
                     ),
             )
-            fetchAssetPricesMock.mockResolvedValue([])
+            fetchUsdPricesMock.mockResolvedValue([])
 
             await Promise.all([
                 fetchAndPersistPrices(manyIds, 'mainnet'),
@@ -246,7 +288,7 @@ describe('fetchAndPersistPrices', () => {
             getStaleOrMissingPriceAssetIdsMock.mockImplementation(
                 async ({ assetIds }: { assetIds: string[] }) => assetIds,
             )
-            fetchAssetPricesMock.mockResolvedValue([])
+            fetchUsdPricesMock.mockResolvedValue([])
 
             await Promise.all([
                 fetchAndPersistPrices(manyIds, 'mainnet'),
@@ -267,7 +309,7 @@ describe('fetchAndPersistPrices', () => {
                         setTimeout(() => resolve(assetIds), 10),
                     ),
             )
-            fetchAssetPricesMock.mockResolvedValue([])
+            fetchUsdPricesMock.mockResolvedValue([])
 
             await Promise.all([
                 fetchAndPersistPrices(manyIds, 'mainnet'),
@@ -287,7 +329,7 @@ describe('fetchAndPersistPrices', () => {
                         setTimeout(() => resolve(assetIds), 10),
                     ),
             )
-            fetchAssetPricesMock.mockResolvedValue([])
+            fetchUsdPricesMock.mockResolvedValue([])
 
             // A freshly imported 300-asset account: joining the in-flight
             // whole-wallet pass would resolve without ever pricing its ids.
@@ -312,7 +354,7 @@ describe('fetchAndPersistPrices', () => {
             getStaleOrMissingPriceAssetIdsMock.mockImplementation(
                 async ({ assetIds }: { assetIds: string[] }) => assetIds,
             )
-            fetchAssetPricesMock.mockResolvedValue([])
+            fetchUsdPricesMock.mockResolvedValue([])
 
             await Promise.all([
                 fetchAndPersistPrices(['123'], 'mainnet'),

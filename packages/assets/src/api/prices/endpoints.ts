@@ -18,30 +18,8 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     assetPriceHistoryResponseSchema,
-    assetPricesResponseSchema,
     type AssetPriceHistoryResponse,
-    type AssetPricesResponse,
 } from './schema'
-
-// Capped by the endpoint's own asset_ids validation.
-export const ASSET_PRICES_MAX_IDS_PER_REQUEST = 100
-
-export const fetchAssetPrices = async (
-    assetIDs: string[],
-    network: Network,
-) => {
-    const response = await queryClient<AssetPricesResponse, string[]>({
-        backend: 'pera',
-        network,
-        method: 'GET',
-        url: `/api/v3/asset-prices`,
-        params: {
-            asset_ids: assetIDs.join(','),
-        },
-    })
-
-    return assetPricesResponseSchema.parse(response.data)
-}
 
 export const fetchAssetPriceHistory = async (
     assetID: string,

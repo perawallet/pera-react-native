@@ -19,7 +19,7 @@ import type {
     PeraCollectible,
     CollectibleMediaType,
     CollectibleStandard,
-} from '../../models'
+} from '@perawallet/wallet-core-assets'
 import type {
     AssetResponse,
     CollectibleResponse,

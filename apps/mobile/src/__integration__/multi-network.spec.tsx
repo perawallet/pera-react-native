@@ -47,7 +47,7 @@ import {
     getExpectedGenesisHash,
 } from '@perawallet/wallet-core-blockchain'
 import { fetchTransactionHistory } from '@perawallet/wallet-core-transactions'
-import { fetchAssets } from '@perawallet/wallet-core-assets'
+import { fetchAssets } from '@perawallet/wallet-core-chain-algorand/assets'
 import {
     assertTransactionsMatchNetwork,
     GenesisHashMismatchError,

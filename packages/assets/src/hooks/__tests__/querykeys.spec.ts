@@ -39,8 +39,6 @@ import {
     getAssetPriceHistoryQueryKey,
     getAssetDetailsQueryKey,
     getRemoteAssetDetailsQueryKey,
-    getPublicAssetDetailsQueryKey,
-    getIndexerAssetDetailsQueryKey,
     getAssetAuthoritiesQueryKey,
     isAssetPriceHistoryQuery,
     getAssetsQueryKey,
@@ -138,8 +136,6 @@ describe('isAssetQuery', () => {
             getAssetPriceHistoryQueryKey('123', '7d', 'mainnet'),
             getAssetDetailsQueryKey('123', 'mainnet'),
             getRemoteAssetDetailsQueryKey('123', 'mainnet'),
-            getPublicAssetDetailsQueryKey('123'),
-            getIndexerAssetDetailsQueryKey('123'),
             getAssetAuthoritiesQueryKey('123', 'mainnet'),
             getAssetsQueryKey(['123'], 'mainnet'),
         ]
@@ -187,22 +183,6 @@ describe('detail query keys', () => {
         expect(getRemoteAssetDetailsQueryKey('123', 'mainnet')).not.toEqual(
             getAssetDetailsQueryKey('123', 'mainnet'),
         )
-    })
-
-    test('getPublicAssetDetailsQueryKey includes the public namespace', () => {
-        expect(getPublicAssetDetailsQueryKey('123')).toEqual([
-            MODULE_PREFIX,
-            'public',
-            { assetId: '123' },
-        ])
-    })
-
-    test('getIndexerAssetDetailsQueryKey includes the indexer namespace', () => {
-        expect(getIndexerAssetDetailsQueryKey('123')).toEqual([
-            MODULE_PREFIX,
-            'indexer',
-            { assetId: '123' },
-        ])
     })
 
     test('getAssetAuthoritiesQueryKey includes the authorities namespace', () => {

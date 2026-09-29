@@ -15,8 +15,7 @@ import { Decimal } from 'decimal.js'
 import { Networks } from '@perawallet/wallet-core-shared'
 
 const mockQueryClient = vi.hoisted(() => vi.fn())
-const mockFetchIndexerAssetDetails = vi.hoisted(() => vi.fn())
-const mockTransformIndexerAssetResponse = vi.hoisted(() => vi.fn())
+const mockFetchOnChainAsset = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<
@@ -31,16 +30,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 // Fully replaced (no `importActual`): the real `@perawallet/wallet-core-assets`
 // barrel re-exports Zustand stores backed by react-native-mmkv, which cannot
 // resolve outside the mobile runtime. These tests only need to verify that
-// `indexer/endpoints.ts` wires the two functions it imports correctly, kept
+// `indexer/endpoints.ts` wires the one function it imports correctly, kept
 // deliberately decoupled from the assets package's own internals.
-// `transformIndexerAssetResponse`'s field mapping (decimals/unitName/name/
-// totalSupply/creator) is covered separately in
-// `packages/assets/src/api/assets/__tests__/transformers.spec.ts` — do not
-// assume coverage exists elsewhere without checking; it did not, for this
-// function specifically, until that file was added.
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    fetchIndexerAssetDetails: mockFetchIndexerAssetDetails,
-    transformIndexerAssetResponse: mockTransformIndexerAssetResponse,
+    fetchOnChainAsset: mockFetchOnChainAsset,
 }))
 
 const { fetchIndexerTransactionHistory, fetchMoreIndexerTransactions } =
@@ -78,13 +71,8 @@ const pageWithAsset = {
     statusText: 'OK',
 }
 
-// `fetchIndexerAssetDetails` is mocked opaquely here — its raw indexer-response
-// shape is covered by its own test in
-// `packages/assets/src/api/assets/__tests__/endpoints.spec.ts`
-// ('fetchIndexerAssetDetails hits the indexer backend'). Only
-// `transformIndexerAssetResponse`'s (also mocked) output shape matters to
-// `buildAssetLookup`'s own logic, which is what this file tests.
-const mockRawAssetResponse = { asset: { index: '888' }, 'current-round': 10 }
+// `fetchOnChainAsset` is mocked opaquely here: only its output shape matters
+// to `buildAssetLookup`'s own logic, which is what this file tests.
 const mockPeraAsset = {
     assetId: '888',
     name: 'Foo Coin',
@@ -120,20 +108,16 @@ describe('fetchIndexerTransactionHistory', () => {
 
     it('enriches results with asset facts resolved from the indexer', async () => {
         mockQueryClient.mockResolvedValue(pageWithAsset)
-        mockFetchIndexerAssetDetails.mockResolvedValue(mockRawAssetResponse)
-        mockTransformIndexerAssetResponse.mockReturnValue(mockPeraAsset)
+        mockFetchOnChainAsset.mockResolvedValue(mockPeraAsset)
 
         const result = await fetchIndexerTransactionHistory({
             accountAddress: 'ABC123',
             network: Networks.betanet,
         })
 
-        expect(mockFetchIndexerAssetDetails).toHaveBeenCalledWith(
+        expect(mockFetchOnChainAsset).toHaveBeenCalledWith(
             '888',
             Networks.betanet,
-        )
-        expect(mockTransformIndexerAssetResponse).toHaveBeenCalledWith(
-            mockRawAssetResponse,
         )
         expect(result.transactions[0]?.asset).toEqual({
             assetId: '888',
@@ -145,7 +129,7 @@ describe('fetchIndexerTransactionHistory', () => {
 
     it('still returns the page when an asset lookup fails', async () => {
         mockQueryClient.mockResolvedValue(pageWithAsset)
-        mockFetchIndexerAssetDetails.mockRejectedValue(
+        mockFetchOnChainAsset.mockRejectedValue(
             new Error('indexer unreachable'),
         )
 

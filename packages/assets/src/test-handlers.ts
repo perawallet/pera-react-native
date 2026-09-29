@@ -11,27 +11,9 @@
  */
 
 export {
-    mockAssetPrices,
     mockAssetPriceHistory,
-    type MockAssetPricesParams,
     type MockAssetPriceHistoryParams,
 } from './api/prices/msw-handlers'
-
-export {
-    mockAssets,
-    mockAssetDetails,
-    mockPublicAssetDetails,
-    mockIndexerAssetDetails,
-    type MockAssetsParams,
-    type MockAssetDetailsParams,
-    type MockPublicAssetDetailsParams,
-    type MockIndexerAssetDetailsParams,
-} from './api/assets/msw-handlers'
-
-export {
-    mockAssetSearch,
-    type MockAssetSearchParams,
-} from './api/assets/search-msw-handlers'
 
 export {
     mockToggleAssetFavorite,

@@ -12,7 +12,7 @@
 
 import { BatchQueue } from '@perawallet/wallet-core-shared/queue'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-import { fetchAndPersistAssets } from '../sync/asset-syncer'
+import { fetchAndPersistAssets } from '../chain-adapter'
 import { getAssetsByIds } from '../db'
 import type { PeraAsset } from '../models'
 

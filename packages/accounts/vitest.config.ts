@@ -83,6 +83,12 @@ export default defineConfig({
                 __dirname,
                 '../database/src/index.ts',
             ),
+            // Test-only fake, never built or exported. Before the bare
+            // specifier: an alias key also prefix-matches its subpaths.
+            '@perawallet/wallet-core-assets/testing': path.resolve(
+                __dirname,
+                '../assets/src/__tests__/fakeAssetsChain.ts',
+            ),
             '@perawallet/wallet-core-assets': path.resolve(
                 __dirname,
                 '../assets/src/index.ts',

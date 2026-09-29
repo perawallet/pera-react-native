@@ -11,6 +11,7 @@
  */
 
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import {
     addressCodecs,
     keyDerivations,
@@ -27,6 +28,7 @@ import { algorandHistoryAdapter, algorandSendFlowAdapter } from './transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { algorandLedgerAppDriver } from './ledger/driver'
 import { algorandSwapAdapter } from './swaps'
+import { algorandAssetsAdapter } from './assets'
 import { algorandNameServiceAdapter } from './nfd'
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
@@ -47,6 +49,7 @@ export const registerChain = (): void => {
     addressCodecs.register(algorandAddressCodec)
     keyDerivations.register(algorandKeyDerivation)
     accountsChainAdapters.register(algorandAccountsAdapter)
+    assetsChainAdapters.register(algorandAssetsAdapter)
     ledgerAppDriverRegistry.register(algorandLedgerAppDriver)
     swapChainAdapters.register(algorandSwapAdapter)
     dappRequestChainAdapters.register(algorandDappRequestAdapter)

@@ -11,5 +11,4 @@
  */
 
 export * from './prices'
-export * from './assets'
 export * from './settings'
