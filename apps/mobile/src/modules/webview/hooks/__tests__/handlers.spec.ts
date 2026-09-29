@@ -151,7 +151,7 @@ describe('sanitizeErrorForWebview', () => {
             chainId: 'algorand',
             relayableErrorNames: ['Arc0001Error'],
             parseSigningParams: () => ({ ok: true, payload: [] }),
-            resolveReportedNetwork: network => network,
+            resolveReportedNetwork: scope => scope.networkId,
         })
 
         expect(sanitizeErrorForWebview(protocolError())).toBe(

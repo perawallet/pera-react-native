@@ -306,7 +306,8 @@ export type ConnectionApprovalRequest =
           pairingId?: string
           connectionKind: ConnectionKind
           peer: ConnectionPeer
-          requested: { networks: Network[]; methods: string[] }
+          /** Chain-reported network ids (`ChainScope['networkId']`), not the legacy `Network`. */
+          requested: { networks: string[]; methods: string[] }
           expiresAt: number
           /** See `ConnectionsControlMessage`'s `pair.requesterOrigin`. */
           requesterOrigin?: string

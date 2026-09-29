@@ -19,6 +19,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
+import type { Network } from '@perawallet/wallet-core-shared'
 import { PWButton, PWFlatList, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from '@components/ConnectionApproval/styles'
@@ -76,7 +77,10 @@ export const ConnectionApprovalView = ({
                 ListHeaderComponent={
                     <ConnectionApprovalViewHeader
                         peer={proposal.peer}
-                        networks={proposal.requested.networks}
+                        // Only Algorand reports networks today, so this is
+                        // still one of the legacy values the badge i18n keys
+                        // are named after.
+                        networks={proposal.requested.networks as Network[]}
                         methods={proposal.requested.methods}
                         peerUrlLabel={peerUrlLabel}
                         canOpenPeerUrl={canOpenPeerUrl}
