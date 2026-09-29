@@ -111,11 +111,14 @@ describe('history adapter conformance', () => {
             url: first.pagination.nextUrl as string,
             accountAddress: sender.address,
         })
-        expect(second.transactions.map(txn => txn.id)).toEqual([older.txId])
+        // The next-token carries no limit, so this page is default-sized.
+        const secondIds = second.transactions.map(txn => txn.id)
+        expect(secondIds[0]).toBe(older.txId)
+        expect(secondIds).not.toContain(newer.txId)
         expect(second.transactions[0].amount).toEqual(new Decimal(71_000))
     })
 
-    it('reports the swept balance of a close-out, and null for a plain payment', async () => {
+    it('reports the swept balance of a close-out, and zero for a plain payment', async () => {
         const closer = await createAlgo25Account(keyStore)
         await fundAccount(closer.address, 3_000_000n)
         const closerBalanceBefore = await balanceOf(closer.address)
@@ -127,9 +130,11 @@ describe('history adapter conformance', () => {
         await expect(
             fetchIndexerCloseAmount(close.txId, network),
         ).resolves.toBe(swept.toString())
+        // The indexer reports close-amount 0, not an absent field, on a payment
+        // with no close leg; the backfill only looks up rows with a close-to.
         await expect(
             fetchIndexerCloseAmount(plain.txId, network),
-        ).resolves.toBeNull()
+        ).resolves.toBe('0')
 
         const { transactions } = await fetchTransactionHistory({
             network,
