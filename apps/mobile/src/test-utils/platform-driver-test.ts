@@ -18,7 +18,6 @@
 // The vitest config aliases the package here, so every
 // `getPlatformServices` import resolves to this at test time.
 import {
-    MemoryKeyValueStorage,
     DevicePlatforms,
     type AnalyticsService,
     type AppIntegrityService,
@@ -36,7 +35,10 @@ import {
     type WalletProvisioningService,
     type CloudFileStorageService,
 } from '@perawallet/wallet-extension-platform'
-import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import {
+    MemoryAppLifecycleService,
+    MemoryKeyValueStorage,
+} from '@perawallet/wallet-extension-platform/test-utils'
 import { testDatabaseService } from './sqlite-database'
 
 const buildServices = (): PlatformServices => {
@@ -177,8 +179,6 @@ const buildServices = (): PlatformServices => {
         markMigrationComplete: async () => {},
         clearMigrationComplete: async () => {},
         getMigrationPlans: async () => [],
-        simulateLegacyDatabase: async () => {},
-        simulatePreSixxAccounts: async () => {},
         resetLegacyData: async () => {},
         getCompletedStepVersions: async () => null,
         setCompletedStepVersions: async () => {},
@@ -195,7 +195,7 @@ const buildServices = (): PlatformServices => {
         database,
         deviceInfo,
         appIntegrity,
-        hardwareWalletRegistry: createHardwareWalletRegistry(),
+        appLifecycle: new MemoryAppLifecycleService(),
         migration,
         walletProvisioning,
         cloudFileStorage,

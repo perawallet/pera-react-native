@@ -29,23 +29,27 @@ export class BackupMnemonicParseError extends Error {
 
 export const CLOUD_BACKUP_ENC_KEY_ID = 'cloud-backup/k-enc'
 export const CLOUD_BACKUP_AUTH_KEY_ID = 'cloud-backup/k-auth-priv'
+export const CLOUD_BACKUP_ITEM_KEY_ID = 'cloud-backup/k-item'
 export const CLOUD_BACKUP_MNEMONIC_ID = 'cloud-backup/mnemonic'
 
 const CLOUD_BACKUP_SECRET_IDS = [
     CLOUD_BACKUP_ENC_KEY_ID,
     CLOUD_BACKUP_AUTH_KEY_ID,
+    CLOUD_BACKUP_ITEM_KEY_ID,
     CLOUD_BACKUP_MNEMONIC_ID,
 ]
 
 type PersistBackupKeysParams = {
     encryptionKey: Uint8Array
     authSecretKey: Uint8Array
+    itemKey: Uint8Array
     mnemonic: string[]
 }
 
 export const persistBackupKeys = async ({
     encryptionKey,
     authSecretKey,
+    itemKey,
     mnemonic,
 }: PersistBackupKeysParams): Promise<void> => {
     // Copied before the first `await`: the caller owns these buffers and can
@@ -54,6 +58,7 @@ export const persistBackupKeys = async ({
     // an otherwise valid backup.
     const encryptionKeyCopy = new Uint8Array(encryptionKey)
     const authSecretKeyCopy = new Uint8Array(authSecretKey)
+    const itemKeyCopy = new Uint8Array(itemKey)
     // `commitSecret` zeroes only its own copy, so these are ours to wipe.
     let mnemonicBytes: Uint8Array | null = null
     try {
@@ -65,6 +70,10 @@ export const persistBackupKeys = async ({
             id: CLOUD_BACKUP_AUTH_KEY_ID,
             bytes: authSecretKeyCopy,
         })
+        await commitSecret({
+            id: CLOUD_BACKUP_ITEM_KEY_ID,
+            bytes: itemKeyCopy,
+        })
         mnemonicBytes = new TextEncoder().encode(mnemonic.join(' '))
         await commitSecret({
             id: CLOUD_BACKUP_MNEMONIC_ID,
@@ -72,14 +81,19 @@ export const persistBackupKeys = async ({
         })
     } catch (error) {
         // `removeSecret` is a no-op for an id that was never written, so
-        // clearing all three undoes however far the sequence got. Leaving the
+        // clearing them all undoes however far the sequence got. Leaving the
         // phrase behind would strand it under a backup nobody can activate.
         await Promise.allSettled(
             CLOUD_BACKUP_SECRET_IDS.map(id => removeSecret(id)),
         )
         throw error
     } finally {
-        zeroBytes(encryptionKeyCopy, authSecretKeyCopy, mnemonicBytes)
+        zeroBytes(
+            encryptionKeyCopy,
+            authSecretKeyCopy,
+            itemKeyCopy,
+            mnemonicBytes,
+        )
     }
 }
 
@@ -116,6 +130,10 @@ export const withBackupAuthSecretKey = async <T>(
 export const withBackupEncryptionKey = async <T>(
     handler: (bytes: Uint8Array) => T | Promise<T>,
 ): Promise<Nullable<T>> => withSecret(CLOUD_BACKUP_ENC_KEY_ID, handler)
+
+export const withBackupItemKey = async <T>(
+    handler: (bytes: Uint8Array) => T | Promise<T>,
+): Promise<Nullable<T>> => withSecret(CLOUD_BACKUP_ITEM_KEY_ID, handler)
 
 export const hasBackupCredentials = (): boolean =>
     hasSecret(CLOUD_BACKUP_AUTH_KEY_ID)

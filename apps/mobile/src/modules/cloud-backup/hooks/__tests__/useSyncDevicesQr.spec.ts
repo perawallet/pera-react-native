@@ -51,9 +51,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: showErrorMock }),
 }))
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 vi.mock('../../components/SyncDevicesQrSheet', () => ({
     SyncDevicesQrSheet: () => null,
 }))

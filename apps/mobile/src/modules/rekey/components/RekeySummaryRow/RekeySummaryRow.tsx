@@ -12,7 +12,7 @@
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
-import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import { AccountIcon } from '@components/AccountIcon'
 import { useStyles } from './styles'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'

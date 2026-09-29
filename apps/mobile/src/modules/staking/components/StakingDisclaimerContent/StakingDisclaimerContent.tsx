@@ -13,7 +13,7 @@
 import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@modules/webview'
+import { useWebView, withLanguageParam } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStakingDisclaimerSheet } from './useStakingDisclaimerContent'
@@ -34,7 +34,7 @@ const DISCLAIMER_BULLET_KEYS = [
 
 export const StakingDisclaimerContent = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
+    const { t, currentLanguage } = useLanguage()
     const { pushWebView } = useWebView()
     const { resolve, dismiss } = useBottomSheetResult<boolean>()
     const {
@@ -47,7 +47,7 @@ export const StakingDisclaimerContent = () => {
     const handleTermsPress = () => {
         dismiss()
         pushWebView({
-            url: config.termsOfServiceUrl,
+            url: withLanguageParam(config.termsOfServiceUrl, currentLanguage),
         })
     }
 

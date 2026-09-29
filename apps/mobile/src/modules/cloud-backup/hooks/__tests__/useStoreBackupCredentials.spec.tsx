@@ -47,7 +47,12 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
 // global unit-test stub) must survive here — only logger is overridden.
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<Record<string, unknown>>()),
-    logger: { error: mockLoggerError },
+    logger: {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: mockLoggerError,
+    },
 }))
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequest }),
@@ -63,9 +68,7 @@ vi.mock('@hooks/useToast', () => ({
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 vi.mock('../../components/StoreBackupCredentialsSheet', () => ({
     StoreBackupCredentialsSheet: () => null,
 }))

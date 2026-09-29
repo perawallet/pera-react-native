@@ -11,7 +11,7 @@
  */
 
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import type { AccountStackParamsList } from '@modules/accounts/routes'
+import type { AccountStackParamsList } from '@modules/accounts'
 import {
     PWButton,
     PWChip,

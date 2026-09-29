@@ -35,7 +35,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 // deliberately decoupled from the assets package's own internals.
 // `transformIndexerAssetResponse`'s field mapping (decimals/unitName/name/
 // totalSupply/creator) is covered separately in
-// `packages/assets/src/api/assets/__tests__/transformers.test.ts` — do not
+// `packages/assets/src/api/assets/__tests__/transformers.spec.ts` — do not
 // assume coverage exists elsewhere without checking; it did not, for this
 // function specifically, until that file was added.
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -80,7 +80,7 @@ const pageWithAsset = {
 
 // `fetchIndexerAssetDetails` is mocked opaquely here — its raw indexer-response
 // shape is covered by its own test in
-// `packages/assets/src/api/assets/__tests__/endpoints.test.ts`
+// `packages/assets/src/api/assets/__tests__/endpoints.spec.ts`
 // ('fetchIndexerAssetDetails hits the indexer backend'). Only
 // `transformIndexerAssetResponse`'s (also mocked) output shape matters to
 // `buildAssetLookup`'s own logic, which is what this file tests.

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Algo25Account,
     HDWalletAccount,
@@ -19,14 +19,18 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import type {
     AddressBackupPayload,
+    BackupAccountType,
     BackupId,
     BackupItemKey,
     BackupItemType,
     ContactBackupPayload,
     DeviceId,
+    PasskeyBackupPayload,
     SecretsBackupPayload,
+    SyncState,
 } from '../models'
 import type { Contact } from '@perawallet/wallet-core-contacts'
+import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import type { PulledAccount } from '../restore'
 
 export class UnsupportedBackupAccountTypeError extends Error {
@@ -49,14 +53,34 @@ export type BackupActionOutcome = 'settled' | 'queued' | 'refused'
 export type SerializedItem = {
     key: BackupItemKey
     type: BackupItemType
-    payload: AddressBackupPayload | SecretsBackupPayload | ContactBackupPayload
+    payload:
+        | AddressBackupPayload
+        | SecretsBackupPayload
+        | ContactBackupPayload
+        | PasskeyBackupPayload
+}
+
+/** A credential this device has already proven it can re-derive. `seedAddress`
+ *  is the first-derived address of the owning seed, which is how the seed's
+ *  `secrets/` item is keyed. */
+export type BackupPasskey = {
+    credentialId: string
+    origin: string
+    identity: string
+    counter: number
+    publicKeySpkiDer: string
+    seedAddress: string
+    userId?: string
+    userName?: string
+    displayName?: string
+    createdAt: number
 }
 
 export type SerializedAccount = {
     address: SerializedItem
     secrets: SerializedItem | null
-    /** Shared items emitted alongside this account (e.g. the hdSeed secret
-     *  keyed at secrets/<seedFirstDerivedAddress>); deduped by key downstream. */
+    /** Shared items emitted alongside this account (e.g. the hdSeed secret keyed
+     *  at the hashed seedFirstDerivedAddress); deduped by key downstream. */
     extraItems?: SerializedItem[]
 }
 
@@ -77,8 +101,14 @@ export type SerializeHdResolver = (account: HDWalletAccount) => Promise<{
     entropyHex: string
 } | null>
 
-/** A local item with its content hash (sha256 of canonical payload sans updatedAt). */
-export type LocalItem = SerializedItem & { contentHash: string }
+/** A local item with its content hash (sha256 of canonical payload sans
+ *  updatedAt). `address`/`accountType` are lifted out of the payload for the
+ *  tracked item to cache; `accountType` is null for contacts. */
+export type LocalItem = SerializedItem & {
+    contentHash: string
+    address: string
+    accountType: BackupAccountType | null
+}
 
 export type LocalSnapshot = {
     items: LocalItem[]
@@ -104,12 +134,31 @@ export type ContactImportFn = (
     contacts: ContactBackupPayload[],
 ) => Promise<ContactImportSummary>
 
+/** Why a credential in the backup was not written to this device. */
+export type PasskeySkipReason =
+    | 'seed-missing'
+    | 'pubkey-mismatch'
+    | 'already-present'
+
+export type PasskeyImportSummary = {
+    imported: number
+    skipped: { credentialId: string; reason: PasskeySkipReason }[]
+    failed: { credentialId: string; reason: string }[]
+}
+
+export type PasskeyImportFn = (
+    passkeys: PasskeyBackupPayload[],
+) => Promise<PasskeyImportSummary>
+
 export type SyncEngineDeps = {
     network: Network
     backupId: BackupId
     deviceId: DeviceId
     /** AES-256-GCM item key; held only for the duration of one sync run. */
     encryptionKey: Uint8Array
+    /** Closes over `K_item`, so it is only valid inside the keystore scope that
+     *  produced it. */
+    hashAddress: ItemKeyHasher
     /** Snapshot of local accounts to serialize/push. */
     listAccounts: () => WalletAccount[]
     /** Account → payload objects; `null` for unsupported (HD) accounts. Async
@@ -123,6 +172,34 @@ export type SyncEngineDeps = {
     listContacts: () => Contact[]
     /** Decrypted remote contacts → contacts store (insert or update). */
     importContacts: ContactImportFn
+    /** Credentials this device has proven it can re-derive. Async because
+     *  proving one runs a PBKDF2 per owning seed inside a KMS session. */
+    listPasskeys: () => Promise<BackupPasskey[]>
+    /** Decrypted remote credentials → native provider records. */
+    importPasskeys: PasskeyImportFn
+}
+
+/** The wallet state the sync manager reads and watches but does not own. */
+export type BackupSyncSources = {
+    getNetwork: () => Network
+    listAccounts: () => WalletAccount[]
+    /** Fires on every accounts change; the manager diffs by fingerprint. */
+    subscribeAccounts: (
+        listener: (accounts: WalletAccount[]) => void,
+    ) => () => void
+    listContacts: () => Contact[]
+    subscribeContacts: (listener: (contacts: Contact[]) => void) => () => void
+}
+
+/** The backup's own persisted state, which the sync manager reads and writes. */
+export type BackupSyncStatePort = {
+    getBackupId: () => Nullable<BackupId>
+    getDeviceId: (network: Network) => Nullable<DeviceId>
+    getSyncState: () => Nullable<SyncState>
+    setSyncState: (state: SyncState) => void
+    setIsSyncing: (isSyncing: boolean) => void
+    /** Wipes config, sync state and activity so the backup reads "not set up". */
+    reset: () => void
 }
 
 export type { PulledAccount }

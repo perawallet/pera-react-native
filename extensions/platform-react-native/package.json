@@ -19,10 +19,8 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
-    "@algorandfoundation/wallet-provider": "catalog:",
     "@expensify/react-native-wallet": "^0.1.22",
     "@perawallet/wallet-extension-platform": "workspace:*",
-    "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "react": "catalog:",
@@ -44,7 +42,6 @@
     "expo-device": "catalog:",
     "expo-local-authentication": "catalog:",
     "expo-localization": "catalog:",
-    "zustand": "catalog:",
     "expo": "catalog:"
   },
   "devDependencies": {
@@ -54,6 +51,8 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@testing-library/react": "catalog:",
-    "@perawallet/wallet-core-devtools": "workspace:*"
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@types/better-sqlite3": "^7.6.0",
+    "better-sqlite3": "^13.0.3"
   }
 }

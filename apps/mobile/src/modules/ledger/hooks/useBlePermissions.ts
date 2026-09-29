@@ -12,9 +12,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 // PermissionsAndroid is Android-only by design and is always guarded by
-// Platform.OS checks below, so a platform-specific file split is unnecessary.
+// isAndroid() checks below, so a platform-specific file split is unnecessary.
 // eslint-disable-next-line react-native/split-platform-components
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native'
+import { isAndroid, isIOS } from '@utils/platform'
 
 type UseBlePermissionsResult = {
     hasPermissions: boolean
@@ -45,12 +46,12 @@ type UseBlePermissionsResult = {
  * - Android < 12: Requires ACCESS_FINE_LOCATION for BLE scanning.
  */
 export const useBlePermissions = (): UseBlePermissionsResult => {
-    const [hasPermissions, setHasPermissions] = useState(Platform.OS === 'ios')
-    const [isChecking, setIsChecking] = useState(Platform.OS !== 'ios')
+    const [hasPermissions, setHasPermissions] = useState(isIOS())
+    const [isChecking, setIsChecking] = useState(!isIOS())
     const [isBlocked, setIsBlocked] = useState(false)
 
     const checkAndroidPermissions = useCallback(async (): Promise<boolean> => {
-        if (Platform.OS !== 'android') return true
+        if (!isAndroid()) return true
 
         const apiLevel = Number(Platform.Version)
 
@@ -70,7 +71,7 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
     }, [])
 
     const refresh = useCallback(async () => {
-        if (Platform.OS === 'ios') return
+        if (isIOS()) return
         try {
             const granted = await checkAndroidPermissions()
             setHasPermissions(granted)
@@ -88,7 +89,7 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
     // changed the setting from system Settings sees the permission state
     // update automatically instead of having to tap a retry button first.
     useEffect(() => {
-        if (Platform.OS === 'ios') return
+        if (isIOS()) return
         const subscription = AppState.addEventListener('change', state => {
             if (state === 'active') void refresh()
         })
@@ -96,7 +97,7 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
     }, [refresh])
 
     const requestPermissions = useCallback(async (): Promise<boolean> => {
-        if (Platform.OS === 'ios') return true
+        if (isIOS()) return true
 
         const apiLevel = Number(Platform.Version)
 
@@ -140,7 +141,7 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
     }, [])
 
     const openLocationSettings = useCallback(async () => {
-        if (Platform.OS === 'android') {
+        if (isAndroid()) {
             try {
                 await Linking.sendIntent(
                     'android.settings.LOCATION_SOURCE_SETTINGS',

@@ -10,5 +10,13 @@
  limitations under the License
  */
 
-export * from './repository'
-export * from './schema'
+export {
+    getOpenSubmissionAttempts,
+    getOpenSubmissionAttemptsForIntent,
+    getSubmissionAttemptsByTxIds,
+    markSubmissionUnknown,
+    pruneResolvedSubmissionAttempts,
+    recordSubmissionAttempt,
+    resolveSubmissionAttempt,
+} from './repository'
+export { SubmissionAttemptsSchema } from './schema'

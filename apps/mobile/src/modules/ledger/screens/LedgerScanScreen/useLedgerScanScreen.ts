@@ -11,7 +11,6 @@
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react'
-import { Platform } from 'react-native'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -26,6 +25,7 @@ import {
     LedgerScanTimeoutError,
 } from '@perawallet/wallet-core-ledger'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { isAndroid, isIOS } from '@utils/platform'
 
 import {
     useBlePermissions,
@@ -34,6 +34,7 @@ import {
     useLedgerExpandedTabHandoff,
 } from '../../hooks'
 import { sanitizeDeviceName } from '../../utils'
+import { isScanGestureRequired } from '../../utils/scanGesture'
 
 /**
  * Per-state copy for the Bluetooth warning toast, mirroring iOS's
@@ -87,6 +88,12 @@ type UseLedgerScanScreenResult = {
      */
     isUsbOnly: boolean
     /**
+     * True when the Bluetooth entry point was chosen in a browser without Web
+     * Bluetooth (Brave by default, Firefox, Safari). The screen offers the USB
+     * flow instead of a scan that can only time out.
+     */
+    isBleUnsupported: boolean
+    /**
      * True on web until the user taps "Search for Ledger" at least once.
      * WebHID/Web Bluetooth's device-picker prompt (`requestDevice()`) is only
      * allowed by the browser inside a genuine click — the screen mounting
@@ -107,10 +114,12 @@ type UseLedgerScanScreenResult = {
     handleRequestPermissions: () => void
     handleOpenLocationSettings: () => void
     handleTroubleshoot: () => void
+    handleUseUsb: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
 const USB_ONLY_TRANSPORTS: LedgerTransportType[] = ['usb']
+const BLE_ONLY_TRANSPORTS: LedgerTransportType[] = ['ble']
 
 type LedgerScanRouteParams = {
     LedgerScan: Optional<{ transportType?: LedgerTransportType }>
@@ -129,6 +138,12 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     // warning. Absent (reached via the general "Pair Ledger" BLE entry
     // point) this is undefined and behavior is unchanged.
     const isUsbOnly = route.params?.transportType === 'usb'
+    // The browser shows one device picker at a time: scanning both transports
+    // from one tap lets the WebHID picker replace the Web Bluetooth one, which
+    // rejects the BLE scan and fails it. Native scans have no picker and keep
+    // listing USB devices from the Bluetooth entry point.
+    const isBleOnly =
+        isScanGestureRequired && route.params?.transportType === 'ble'
     const {
         hasPermissions,
         isChecking: isCheckingPermissions,
@@ -145,19 +160,30 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     // iOS has no runtime BLE permission request (useBlePermissions reports
     // granted) — a denial surfaces as the adapter's `unauthorized` state and
     // only OS Settings can change it.
-    const isIosBluetoothDenied =
-        Platform.OS === 'ios' && adapterState === 'unauthorized'
+    const isIosBluetoothDenied = isIOS() && adapterState === 'unauthorized'
     const canScanBle = !isUsbOnly && hasPermissions && !isIosBluetoothDenied
 
     // USB HID needs no Bluetooth permission, so a denied BLE permission must
     // not block it: fall back to a USB-only scan when the platform supports
     // one.
-    const { devices, startScan, stopScan, error, supportedTransportTypes } =
-        useLedgerConnection(
-            canScanBle ? undefined : { transportTypes: USB_ONLY_TRANSPORTS },
-        )
+    const {
+        devices,
+        startScan,
+        stopScan,
+        error,
+        isReady,
+        supportedTransportTypes,
+    } = useLedgerConnection(
+        !canScanBle
+            ? { transportTypes: USB_ONLY_TRANSPORTS }
+            : isBleOnly
+              ? { transportTypes: BLE_ONLY_TRANSPORTS }
+              : undefined,
+    )
     const isUsbFallbackScan =
         !canScanBle && supportedTransportTypes.includes('usb')
+    const isBleUnsupported =
+        isBleOnly && isReady && !supportedTransportTypes.includes('ble')
 
     const [hasRequestedPermissions, setHasRequestedPermissions] =
         useState(false)
@@ -172,7 +198,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     // again on the same flip would immediately cancel that in-flight
     // `requestDevice()` prompt. The effect only needs the ref's current
     // value for its OTHER triggers (e.g. Bluetooth-recovery restarts).
-    const hasStartedOnWebRef = useRef(Platform.OS !== 'web')
+    const hasStartedOnWebRef = useRef(!isScanGestureRequired)
     const [hasStartedOnWeb, setHasStartedOnWeb] = useState(
         hasStartedOnWebRef.current,
     )
@@ -236,6 +262,8 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         // An explicit USB-only choice never warns about BLE state — that
         // state is irrelevant to a USB pairing attempt.
         if (isUsbOnly) return
+        // The unsupported-browser state owns its own messaging.
+        if (isBleUnsupported) return
         // Permission denial owns its own messaging; don't double up.
         if (isCheckingPermissions || !hasPermissions) return
 
@@ -257,6 +285,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         }
     }, [
         isUsbOnly,
+        isBleUnsupported,
         adapterState,
         isBluetoothReady,
         hasPermissions,
@@ -328,6 +357,10 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         navigation.navigate('LedgerTroubleshooting')
     }, [navigation])
 
+    const handleUseUsb = useCallback(() => {
+        navigation.push('LedgerInstructions', { transportType: 'usb' })
+    }, [navigation])
+
     // The blocking denied state only renders when no scan can run at all —
     // a USB fallback scan keeps the device list usable while BLE is denied.
     const isBleDenied =
@@ -342,16 +375,16 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     // this actionable state Android-scoped (the error can't originate on iOS
     // anyway — this is defensive).
     const isLocationServicesDisabled =
-        Platform.OS === 'android' &&
-        error instanceof LedgerLocationServicesDisabledError
+        isAndroid() && error instanceof LedgerLocationServicesDisabledError
 
     const isScanTimeout = error instanceof LedgerScanTimeoutError
 
     const needsManualStart =
-        Platform.OS === 'web' &&
+        isScanGestureRequired &&
         !hasStartedOnWeb &&
         !isCheckingPermissions &&
-        !isPermissionDenied
+        !isPermissionDenied &&
+        !isBleUnsupported
 
     return {
         devices,
@@ -363,6 +396,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         isLocationServicesDisabled,
         isScanTimeout,
         isUsbOnly,
+        isBleUnsupported,
         needsManualStart,
         isPopupSurface,
         handleDevicePress,
@@ -371,6 +405,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         handleRequestPermissions,
         handleOpenLocationSettings,
         handleTroubleshoot,
+        handleUseUsb,
         t,
     }
 }

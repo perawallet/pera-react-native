@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorCategory,
@@ -97,5 +98,65 @@ export class DuplicateAccountError extends AccountError {
             undefined,
             { params: { address } },
         )
+    }
+}
+
+/**
+ * Why a BIP44 path failed validation.
+ *
+ * - `'malformed'`: the path string isn't a well-formed BIP44 path for the chain.
+ * - `'mismatch'`: the path parses cleanly but points to a different
+ *   account/change/keyIndex than the HDWalletDetails being compared against.
+ */
+export type Bip44PathFailureReason = 'malformed' | 'mismatch'
+
+/**
+ * Thrown when a chain's `assertHdPathMatches` rejects a path. Carries a
+ * machine-readable `reason` so callers can map to domain-specific errors
+ * (e.g. ARC-60's `ERROR_FAILED_HD_PATH`) without re-parsing the message.
+ */
+export class InvalidBip44PathError extends AccountError {
+    readonly reason: Bip44PathFailureReason
+    readonly hdPath: string
+
+    constructor(
+        hdPath: string,
+        reason: Bip44PathFailureReason,
+        detail: string,
+    ) {
+        super(`Invalid BIP44 path "${hdPath}": ${detail}`, undefined, {
+            params: { hdPath, reason, detail },
+        })
+        this.reason = reason
+        this.hdPath = hdPath
+    }
+}
+
+class ChainFeatureUnsupportedError extends AccountError {
+    readonly chainId: ChainId
+
+    constructor(feature: string, chainId: ChainId) {
+        super(`${feature} is not supported on ${chainId}`, undefined, {
+            params: { chainId },
+        })
+        this.chainId = chainId
+    }
+}
+
+export class RekeyUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Rekey', chainId)
+    }
+}
+
+export class QuantumAccountsUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Post-quantum accounts', chainId)
+    }
+}
+
+export class MultisigAddressUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Local multisig address derivation', chainId)
     }
 }

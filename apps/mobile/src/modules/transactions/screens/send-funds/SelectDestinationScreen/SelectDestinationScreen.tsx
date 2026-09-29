@@ -13,7 +13,7 @@
 import { PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import { useStyles } from './styles'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'

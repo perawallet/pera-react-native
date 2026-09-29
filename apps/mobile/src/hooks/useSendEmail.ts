@@ -45,6 +45,7 @@ export const useSendEmail = (): UseSendEmailResult => {
                 .join('&')
             const url = `mailto:${to}${query ? `?${query}` : ''}`
 
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- app-built mailto:
             Linking.openURL(url).catch(() => {
                 errorToast(
                     t('common.email_failed.title'),

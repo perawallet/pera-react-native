@@ -20,19 +20,27 @@ pipeline, so a new protocol needs a handler and nothing else. The bridge runs bo
 whose peer stops waiting for an answer reports `onRequestExpired`, and the adapter withdraws the
 sign request it is holding for the user, since answering late would only fail on the wire.
 
-`src/testing/handler-contract.ts` is the contract suite every handler runs against. An assertion a
+`src/__tests__/handler-contract.ts` is the contract suite every handler runs against. An assertion a
 legitimate handler cannot satisfy is an interface finding, not a reason to bend the handler.
+
+`src/handlerKit.ts` (`createHandlerKit`) is the scaffolding a handler closure would otherwise
+repeat: the context guard, error reporting with pairing/connection scopes, `lastActiveAt` stamping
+and pending pair-time origins. Handlers import it from the `./handlerKit` subpath, not the barrel,
+which would pull signing and blockchain into the walletconnect and dapp module graphs.
 
 ## Client and host surfaces
 
 `ConnectionRegistry` is split by type. `ConnectionRegistryClient` is what a UI context holds: pair,
 abandon a pairing, describe a URI, list a connection's networks, disconnect, subscribe to proposals
-and errors. The full `ConnectionRegistry` adds `register`, `initialize`, `teardown` and
-`subscribeToMessages`, and only the composition root that owns handlers holds one.
+and errors. The full `ConnectionRegistry` adds `register`, `initialize`, `teardown`, `reconnect` and
+`subscribeToMessages`, and only the composition root that owns handlers holds one. `reconnect` fans
+out to each handler's optional `reconnect()`, for a transport the platform suspends and nothing
+revives on its own: WalletConnect v1's per-session bridge sockets. In the extension the service
+worker's connections heartbeat alarm asks for it with `reconnect-all`.
 
 The split exists for the browser extension. There the live handlers run in the offscreen document,
 and the popup, expanded tab and approval window cannot hold an in-process registry. Those realms get
-`createRemoteConnectionRegistry` (`extensions/platform-chrome/src/connections/remote-registry.ts`),
+`createRemoteConnectionRegistry` (`packages/browser-runtime/src/connections/remote-registry.ts`),
 a `ConnectionRegistryClient` whose descriptors are answered locally by handler instances that are
 constructed but never initialised, whose lifecycle calls are request/response messages to the
 offscreen host, and whose proposals and errors are re-emitted from a broadcast. The host surface is
@@ -46,26 +54,26 @@ promise semantics honest: a proxied `respond()` that had to reject on a failed d
 message port is exactly what would have been lost.
 
 The remote registry is served from its own package entry,
-`@perawallet/wallet-extension-platform-chrome/remote-registry`, and is kept off the main barrel: it
-is the one platform-chrome module with a runtime dependency on the connections package, whose barrel
+`@perawallet/wallet-core-browser-runtime/remote-registry`, and is kept off the main barrel: it is
+the one browser-runtime module with a runtime dependency on the connections package, whose barrel
 reaches react-native, and the service worker imports the main barrel.
 
 ## Message scopes
 
-Defined in `extensions/platform-chrome/src/connections/protocol.ts`, and the `pera-dapp-*` ones in
-`extensions/platform-chrome/src/dapp/dapp-wire.ts`; every listener is gated to extension-origin
+Defined in `packages/browser-runtime/src/connections/protocol.ts`, and the `pera-dapp-*` ones in
+`packages/browser-runtime/src/dapp/dapp-wire.ts`; every listener is gated to extension-origin
 senders because content scripts share `chrome.runtime.onMessage`.
 
-| Scope                      | Direction                | Carries                                                                                                                                       |
-| -------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pera-connections-control` | UI or SW to offscreen    | pair, abandon-pairing, disconnect(-all), reconnect-all, approve/reject-proposal, respond; request/response, retried while the host is booting |
-| `pera-connections-request` | offscreen to SW          | connection-proposal, connection-request, connection-request-withdrawn, connection-error; acked                                                |
-| `pera-connections-event`   | offscreen to every realm | proposal summaries and errors with scope; fire-and-forget                                                                                     |
-| `pera-wc-page-pair`        | content script to SW     | a page's pair request; the SW stamps the browser-verified `requesterOrigin`                                                                   |
-| `pera-dapp-page-request`   | content script to SW     | a page's JSON-RPC request plus the relay's user-activation stamp; acked as accepted, or refused with a response                               |
-| `pera-dapp-host-request`   | SW to offscreen          | the same request with the browser-verified origin, favicon and return tab stamped; retried while the host boots                               |
-| `pera-dapp-host-response`  | offscreen to SW          | a response addressed to a tab, or a notification for every tab of an origin; acked once delivered                                             |
-| `pera-dapp-page-response`  | SW to content script     | delivered with `chrome.tabs.sendMessage`; the relay drops anything not for its own origin                                                     |
+| Scope                      | Direction                | Carries                                                                                                                                                             |
+| -------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pera-connections-control` | UI or SW to offscreen    | pair, abandon-pairing, disconnect(-all), reconnect-all, approve/reject-proposal, respond; request/response, retried while the host is booting                       |
+| `pera-connections-request` | offscreen to SW          | connection-proposal, connection-request, connection-request-withdrawn, connection-error; acked                                                                      |
+| `pera-connections-event`   | offscreen to every realm | proposal summaries and errors with scope; fire-and-forget                                                                                                           |
+| `pera-wc-page-pair`        | content script to SW     | a page's pair request plus the relay's user-activation stamp; the SW requires the stamp, budgets pairs per origin and stamps the browser-verified `requesterOrigin` |
+| `pera-dapp-page-request`   | content script to SW     | a page's JSON-RPC request plus the relay's user-activation stamp; acked as accepted, or refused with a response                                                     |
+| `pera-dapp-host-request`   | SW to offscreen          | the same request with the browser-verified origin, favicon and return tab stamped; retried while the host boots                                                     |
+| `pera-dapp-host-response`  | offscreen to SW          | a response addressed to a tab, or a notification for every tab of an origin; acked once delivered                                                                   |
+| `pera-dapp-page-response`  | SW to content script     | delivered with `chrome.tabs.sendMessage`; the relay drops anything not for its own origin                                                                           |
 
 Two ack meanings on the request scope: a proposal or request acks acceptance (the decision comes
 back later on the control scope, so waiting for it would deadlock the host); an error notice acks
@@ -99,6 +107,8 @@ A handler added on web must be constructed in both `useConnectionsProvider.web.t
 and `networksFor` are answered) and `runOffscreenApp.ts` (so it is live).
 
 WalletConnect v2 is native-only. The browser bundle must not carry `@reown/walletkit` (CI greps
+<!-- doc-hygiene-ignore-next-line stale-path reason: build output dir, produced by CI before the grep -->
+
 `apps/browser/dist` for it), so the handler ships from the walletconnect package's `./v2` subpath and
 neither web realm constructs it; a v2 URI there fails as `no-handler` rather than silently.
 
@@ -106,7 +116,7 @@ neither web realm constructs it; a v2 URI there fails as `no-handler` rather tha
 
 `packages/dapp` is the `window.pera` transport ([dApp bridge](DAPP_BRIDGE.md)) as a handler. It is
 origin-identified — no `pair`, no URI — and the origin is the connection id, so the connections list,
-the per-origin approval cap in `extensions/platform-chrome/src/dapp/approval-bridge.ts` and
+the per-origin approval cap in `packages/browser-runtime/src/dapp/approval-bridge.ts` and
 `disconnect` all key on one value. It is network-agnostic (`matchesNetwork` is always true) and
 reports the active network at connect time instead.
 
@@ -128,6 +138,16 @@ hydration. The legacy importer reads the keystore synchronously and reports "abs
 hydration, and a handler restored before the import has written its records reports zero sessions,
 which reconciliation would then delete.
 
+## WalletConnect v1 sockets
+
+The v1 handler owns its connectors as instance state, one bridge socket per session, and sweeps
+them itself on a foreground or network-regain edge. Nothing is module-global, so the descriptor-only
+handler a UI realm constructs can never reach the offscreen document's sockets. `teardown` leaves
+the sockets alive and a re-initialised handler rebinds them. On native the multisig handoff
+resolver, which mounts beside the connections provider, answers a resumed request through the
+handler that `useConnectionsProvider.ts` publishes in
+`apps/mobile/src/modules/walletconnect/utils/activeV1Delivery.ts`.
+
 ## WalletConnect v1 session keys
 
 `packages/walletconnect/src/v1/handler.ts` takes a `WalletConnectV1SessionKeyStore`
@@ -140,6 +160,10 @@ socket's lifetime either way.
 the legacy blob only once every committed key reads back, and is crash-resumable. It keeps its own
 set of imported ids: the blob outlives a partial pass, and the live store alone cannot tell a record
 that was never imported from one the user has since disconnected.
+
+The native-app upgrade path, `migrateWalletConnect` in `packages/migrate`, takes the store too,
+through `MigrationDeps.walletConnectSessionKeys`. All three writers build the record with
+`buildWalletConnectV1Connection` (`src/v1/connection.ts`), so the persisted shape has one definition.
 
 ## WalletConnect v2 key material
 

@@ -10,19 +10,22 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
-import { AlgorandChainId } from '../models'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import { AlgorandWalletConnectChainId } from '../models'
 import { getExpectedChainId } from './expectedChainId'
 
 /**
- * The 4160 wildcard ("any Algorand chain") is always acceptable; an explicit id
- * must match exactly. A missing chain id is rejected rather than guessed.
+ * The 4160 wildcard ("any Algorand chain") is acceptable on any network we
+ * have an id for; an explicit id must match exactly. A missing chain id, or a
+ * network with no expected id, is rejected rather than guessed.
  */
 export const isChainIdAcceptable = (
     chainId: number | undefined,
-    network: Network,
+    network: NetworkId,
 ): boolean => {
     if (chainId === undefined) return false
-    if (chainId === AlgorandChainId.all) return true
-    return chainId === getExpectedChainId(network)
+    const expected = getExpectedChainId(network)
+    if (expected === null) return false
+    if (chainId === AlgorandWalletConnectChainId.all) return true
+    return chainId === expected
 }

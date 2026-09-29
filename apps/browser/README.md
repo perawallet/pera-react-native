@@ -3,11 +3,18 @@
 ## Build and load
 
 Requires a repo-root `.env` with `BACKEND_API_KEY=<staging key>` (the same
-variable Bitrise injects for mobile; see `tools/generate-config.sh`).
+variable Bitrise injects for mobile; see `tools/dev/generate-config.sh`).
 Without it, Pera-backend calls (should-refresh, asset metadata, prices,
 history) 401 against staging; `bundle` still succeeds but prints a warning.
+A production build (`APP_ENV=production`) fails instead.
 
-    pnpm --filter extension bundle
+The bundle stamps `manifest.json`: `version` is the numeric part of this
+package's `version` (Chrome accepts only integers and needs a higher one for
+every store upload), `version_name` keeps any pre-release tag, and non-production
+builds get "(development build)" or "(staging build)" appended to the
+description. Bump `version` in `package.json` to release.
+
+    pnpm --filter browser bundle
 
 Then open `chrome://extensions`, enable Developer mode, "Load unpacked",
 select the `dist/` folder the bundle writes into. Click the toolbar icon to
@@ -26,6 +33,6 @@ open the popup.
 
 ## E2E
 
-    pnpm --filter extension bundle
-    pnpm --filter extension exec playwright install chromium
-    pnpm --filter extension test:e2e
+    pnpm --filter browser bundle
+    pnpm --filter browser exec playwright install chromium
+    pnpm --filter browser test:e2e

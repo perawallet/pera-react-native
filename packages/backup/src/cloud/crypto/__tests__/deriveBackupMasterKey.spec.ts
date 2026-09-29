@@ -13,7 +13,6 @@
 // @vitest-environment node
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { argon2d, argon2i, argon2id } from '@noble/hashes/argon2.js'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
 
 const { argon2Mock } = vi.hoisted(() => ({ argon2Mock: vi.fn() }))
@@ -24,19 +23,7 @@ vi.mock('crypto', async importOriginal => {
 })
 
 import { deriveBackupMasterKey } from '../deriveBackupMasterKey'
-
-type Argon2Algorithm = 'argon2d' | 'argon2i' | 'argon2id'
-
-type Argon2Params = {
-    message: Uint8Array
-    nonce: Uint8Array
-    parallelism: number
-    tagLength: number
-    memory: number
-    passes: number
-}
-
-const ARGON2_BY_ALGORITHM = { argon2d, argon2i, argon2id }
+import { argon2OffThread } from './argon2OffThread'
 
 /**
  * `crypto.argon2` landed in Node 24 and reaches production through
@@ -46,23 +33,7 @@ const ARGON2_BY_ALGORITHM = { argon2d, argon2i, argon2id }
  * different bytes and fail the vector below.
  */
 const useRealArgon2 = () => {
-    argon2Mock.mockImplementation(
-        (
-            algorithm: Argon2Algorithm,
-            params: Argon2Params,
-            callback: (error: Error | null, result: Uint8Array) => void,
-        ) => {
-            callback(
-                null,
-                ARGON2_BY_ALGORITHM[algorithm](params.message, params.nonce, {
-                    t: params.passes,
-                    m: params.memory,
-                    p: params.parallelism,
-                    dkLen: params.tagLength,
-                }),
-            )
-        },
-    )
+    argon2Mock.mockImplementation(argon2OffThread)
 }
 
 /**
@@ -150,8 +121,7 @@ describe('deriveBackupMasterKey', () => {
         ).rejects.toThrow('argon2 failed')
     })
 
-    // Pure-JS Argon2id at 256 MiB is seconds, not milliseconds — the timeout is
-    // the machine allowance, not a hang guard.
+    // One real 256 MiB derive; the timeout is the machine allowance, not a hang guard.
     test('derives the reference key from a real Argon2id', async () => {
         useRealArgon2()
 

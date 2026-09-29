@@ -17,7 +17,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardStepRow } from '../../components/CardStepRow'
 import { useCardWithdrawStatusScreen } from './useCardWithdrawStatusScreen'

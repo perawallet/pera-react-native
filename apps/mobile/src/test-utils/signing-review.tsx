@@ -29,7 +29,7 @@
 import React, { useEffect, useRef } from 'react'
 import { createHash } from 'crypto'
 import { expect, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, renderHook } from '@testing-library/react'
 import { Address, Transaction, TransactionType } from 'algosdk'
 import {
     useSigningRequest,
@@ -49,14 +49,14 @@ import {
     useAccountsStore,
     type QuantumAccount,
     type WalletAccount,
+    quantumDerivationFor,
 } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
     decodeFromBase64,
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
-import { renderHook } from '@testing-library/react'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { SigningOverlays } from '@modules/signing/shell'
 import { renderWithNavigation } from './renderWithNavigation'
 import {
     ALGO25_TEST_ADDRESS,
@@ -123,6 +123,7 @@ export const seedQuantumSigner = async (): Promise<WalletAccount> => {
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
+            chain: quantumDerivationFor('mainnet'),
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()

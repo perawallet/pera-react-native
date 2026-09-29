@@ -38,9 +38,9 @@ const { mockCanSignWith, mockUseAllAccounts, mockGetArc59Config } = vi.hoisted(
     }),
 )
 
-const mockVerifyNfdAddress = vi.hoisted(() => vi.fn())
+const mockVerifyNameAddress = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    verifyNfdAddress: mockVerifyNfdAddress,
+    verifyNameAddress: mockVerifyNameAddress,
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -65,9 +65,7 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
@@ -498,20 +496,20 @@ describe('useSelectDestinationScreen', () => {
                 result.current.handleSelected(EXTERNAL_ADDR)
             })
 
-            expect(mockVerifyNfdAddress).not.toHaveBeenCalled()
+            expect(mockVerifyNameAddress).not.toHaveBeenCalled()
             expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
         })
 
         it('routes a name only after the contract vouches for its address', async () => {
             algoSend()
-            mockVerifyNfdAddress.mockResolvedValue('verified')
+            mockVerifyNameAddress.mockResolvedValue('verified')
             const { result } = renderHook(() => useSelectDestinationScreen())
 
             await act(async () => {
                 result.current.handleSelected(EXTERNAL_ADDR, NFD_NAME)
             })
 
-            expect(mockVerifyNfdAddress).toHaveBeenCalledWith(
+            expect(mockVerifyNameAddress).toHaveBeenCalledWith(
                 expect.objectContaining({
                     name: NFD_NAME,
                     address: EXTERNAL_ADDR,
@@ -524,7 +522,7 @@ describe('useSelectDestinationScreen', () => {
 
         it('blocks a name whose address the contract does not list', async () => {
             algoSend()
-            mockVerifyNfdAddress.mockResolvedValue('mismatch')
+            mockVerifyNameAddress.mockResolvedValue('mismatch')
             const { result } = renderHook(() => useSelectDestinationScreen())
 
             await act(async () => {
@@ -544,7 +542,7 @@ describe('useSelectDestinationScreen', () => {
 
         it('blocks, rather than trusts, when the contract cannot be read', async () => {
             algoSend()
-            mockVerifyNfdAddress.mockResolvedValue('unavailable')
+            mockVerifyNameAddress.mockResolvedValue('unavailable')
             const { result } = renderHook(() => useSelectDestinationScreen())
 
             await act(async () => {

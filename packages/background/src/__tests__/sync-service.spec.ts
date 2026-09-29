@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { SyncService } from '../service/sync-service'
+import { createSyncStorePorts } from '../service/store-ports'
 import type { SyncServiceDeps } from '../models'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
 
@@ -83,11 +84,18 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     },
 }))
 
+let mockChainSwitchedOff = false
+const mockIsSwitchedOff = vi.fn(() => mockChainSwitchedOff)
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({ chains: { isSwitchedOff: mockIsSwitchedOff } }),
+}))
+
 vi.mock('@perawallet/wallet-core-config', () => ({
     isPeraBackedNetwork: (n: string) => n === 'mainnet' || n === 'testnet',
 }))
 
-vi.mock('@perawallet/wallet-core-polling', () => ({
+vi.mock('../polling', () => ({
     sendShouldRefreshRequest: (...args: unknown[]) =>
         mockSendShouldRefreshRequest(...args),
     usePollingStore: {
@@ -160,6 +168,7 @@ describe('SyncService', () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         mockNetwork = 'mainnet'
+        mockChainSwitchedOff = false
         // A couple of tests reassign useNetworkStore.getState directly (to a
         // closure that doesn't read mockNetwork) and restore it to a
         // hardcoded 'mainnet' closure in their finally block — reset it back
@@ -169,7 +178,12 @@ describe('SyncService', () => {
             await import('@perawallet/wallet-core-blockchain')
         useNetworkStore.getState = () => ({ network: mockNetwork })
         queryClient = new QueryClient()
-        service = new SyncService({ queryClient })
+        // The store-backed ports over the mocked stores, so the tests below
+        // also cover createSyncStorePorts' absent-key semantics.
+        service = new SyncService({
+            queryClient,
+            stores: createSyncStorePorts(),
+        })
 
         // Re-establish default success implementations. clearAllMocks() clears
         // call history but not implementations set by individual tests, so reset
@@ -452,6 +466,33 @@ describe('SyncService', () => {
         service.stop()
     })
 
+    it('does no network work for a switched-off chain, and force-syncs once it is back on', async () => {
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: false,
+            round: null,
+        })
+        mockChainSwitchedOff = true
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+        expect(mockIsSwitchedOff).toHaveBeenCalledWith('algorand')
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        expect(mockReconcileOpenSubmissions).not.toHaveBeenCalled()
+        expect(fetchAndPersistAccount).not.toHaveBeenCalled()
+
+        mockChainSwitchedOff = false
+        await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+        // The first tick that runs is still the unconditional force-sync.
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        expect(fetchAndPersistAccount).toHaveBeenCalled()
+
+        service.stop()
+    })
+
     it('calls shouldRefresh for the active network on subsequent ticks', async () => {
         mockSendShouldRefreshRequest.mockResolvedValue({
             refresh: false,
@@ -712,8 +753,7 @@ describe('SyncService', () => {
         )
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
-        const { usePollingStore } =
-            await import('@perawallet/wallet-core-polling')
+        const { usePollingStore } = await import('../polling')
 
         // Pretend we already completed the initial force-sync so the next
         // tick goes through checkShouldRefresh. lastRefreshedRound must be
@@ -856,8 +896,7 @@ describe('SyncService', () => {
         })
         mockSendShouldRefreshRequest.mockRejectedValue(authError)
         const { logger } = await import('@perawallet/wallet-core-shared')
-        const { usePollingStore } =
-            await import('@perawallet/wallet-core-polling')
+        const { usePollingStore } = await import('../polling')
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
 
@@ -890,8 +929,7 @@ describe('SyncService', () => {
     it('force-syncs a network absent from the persisted round map, sending null (not undefined) for its last-refreshed round', async () => {
         const { useNetworkStore } =
             await import('@perawallet/wallet-core-blockchain')
-        const { usePollingStore } =
-            await import('@perawallet/wallet-core-polling')
+        const { usePollingStore } = await import('../polling')
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
 
@@ -901,7 +939,7 @@ describe('SyncService', () => {
         // betanet/custom, which now short-circuit before this request
         // entirely and so can no longer demonstrate the wire-payload
         // assertion below). testnet's key is absent here to simulate a
-        // partially-seeded persisted map, mirroring how packages/polling's
+        // partially-seeded persisted map, mirroring how the polling
         // store can have a network key genuinely absent rather than an
         // explicit null.
         useNetworkStore.getState = vi.fn(() => ({ network: 'testnet' }))
@@ -1318,6 +1356,7 @@ describe('SyncService', () => {
             const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
             const custom = new SyncService({
                 queryClient,
+                stores: createSyncStorePorts(),
                 pollIntervalMs: 12345,
             } as SyncServiceDeps)
 
@@ -1418,8 +1457,7 @@ describe('SyncService', () => {
         it('keeps syncing a Pera-less network (custom) on subsequent ticks without ever calling should-refresh', async () => {
             const { fetchAndPersistAccount } =
                 await import('@perawallet/wallet-core-accounts')
-            const { usePollingStore } =
-                await import('@perawallet/wallet-core-polling')
+            const { usePollingStore } = await import('../polling')
 
             mockNetwork = 'custom'
             // Already synced (a number, not null) so neverSynced is false —
@@ -1462,8 +1500,7 @@ describe('SyncService', () => {
         }, 8000)
 
         it('control: still calls should-refresh for a Pera-backed network (mainnet)', async () => {
-            const { usePollingStore } =
-                await import('@perawallet/wallet-core-polling')
+            const { usePollingStore } = await import('../polling')
 
             usePollingStore.getState = vi.fn(() => ({
                 lastRefreshedRound: { mainnet: 100, testnet: null },
@@ -1638,8 +1675,7 @@ describe('SyncService', () => {
         })
 
         it('backs off when shouldRefresh keeps failing after the first sync', async () => {
-            const { usePollingStore } =
-                await import('@perawallet/wallet-core-polling')
+            const { usePollingStore } = await import('../polling')
             const originalGetState = usePollingStore.getState
             usePollingStore.getState = (() => ({
                 lastRefreshedRound: { mainnet: 42, testnet: null },
@@ -1709,6 +1745,40 @@ describe('SyncService', () => {
             ).toBeGreaterThan(callsAfterRecovery)
 
             service.stop()
+        })
+    })
+
+    describe('injected store ports', () => {
+        it('syncs the ported accounts on the ported network and writes the checkpoint back through the ports', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            vi.mocked(fetchAndPersistAccount).mockResolvedValue({
+                changed: false,
+                holdingsChanged: false,
+                observedRound: 77,
+            } as never)
+            const stores: SyncServiceDeps['stores'] = {
+                getAccountAddresses: vi.fn(() => ['PORT1']),
+                getActiveNetwork: vi.fn(() => 'testnet' as const),
+                getLastRefreshedRound: vi.fn(() => null),
+                setLastRefreshedRound: vi.fn(),
+            }
+            const ported = new SyncService({ queryClient, stores })
+
+            ported.start()
+            await flushMicrotasks()
+            ported.stop()
+
+            expect(fetchAndPersistAccount).toHaveBeenCalledTimes(1)
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'PORT1',
+                'testnet',
+            )
+            expect(stores.setLastRefreshedRound).toHaveBeenCalledWith(
+                'testnet',
+                77,
+            )
+            expect(mockSetLastRefreshedRound).not.toHaveBeenCalled()
         })
     })
 })

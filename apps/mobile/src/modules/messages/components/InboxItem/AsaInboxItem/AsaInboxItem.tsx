@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { PWIcon } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import { AccountIcon } from '@components/AccountIcon'
 import { InboxItemShell } from '../InboxItemShell'
 
 type AsaInboxItemModel = Extract<InboxItemModel, { type: 'asa_inbox' }>

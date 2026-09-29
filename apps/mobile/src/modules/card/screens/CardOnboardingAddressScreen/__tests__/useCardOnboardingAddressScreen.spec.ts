@@ -42,7 +42,7 @@ let mockSettings:
       }
     | undefined
 // The gate's own derivation is unit-tested in the card package
-// (useOnboardingKycGate.test.ts); here only the screen's wiring matters.
+// (useOnboardingKycGate.spec.ts); here only the screen's wiring matters.
 let mockIsKycRequired = false
 const mockMarkServerRefused = vi.fn()
 
@@ -142,6 +142,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 const mockPushWebView = vi.fn()
 vi.mock('@modules/webview', () => ({
     useWebView: () => ({ pushWebView: mockPushWebView }),
+    withLanguageParam: (url: string, locale: string) => `${url}?lang=${locale}`,
 }))
 
 const mockOpenURL = vi.fn()
@@ -180,9 +181,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useCardOnboardingAddressScreen } from '../useCardOnboardingAddressScreen'
 
@@ -578,7 +577,7 @@ describe('useCardOnboardingAddressScreen', () => {
         // The second checkbox is Pera's own T&C.
         act(() => result.current.handleOpenPlatformTerms())
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: config.termsOfServiceUrl,
+            url: `${config.termsOfServiceUrl}?lang=en`,
             id: 'platform-terms',
         })
         expect(mockOpenURL).not.toHaveBeenCalled()
@@ -592,7 +591,9 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(mockOpenURL).toHaveBeenCalledWith('https://baanx/intl-terms.pdf')
 
         act(() => result.current.handleOpenPlatformTerms())
-        expect(mockOpenURL).toHaveBeenCalledWith(config.termsOfServiceUrl)
+        expect(mockOpenURL).toHaveBeenCalledWith(
+            `${config.termsOfServiceUrl}?lang=en`,
+        )
         expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
@@ -618,7 +619,7 @@ describe('useCardOnboardingAddressScreen', () => {
 
         act(() => result.current.handleOpenCardTerms())
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: config.termsOfServiceUrl,
+            url: `${config.termsOfServiceUrl}?lang=en`,
             id: 'card-terms',
         })
     })
@@ -631,7 +632,7 @@ describe('useCardOnboardingAddressScreen', () => {
 
         act(() => result.current.handleOpenCardTerms())
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: config.termsOfServiceUrl,
+            url: `${config.termsOfServiceUrl}?lang=en`,
             id: 'card-terms',
         })
     })

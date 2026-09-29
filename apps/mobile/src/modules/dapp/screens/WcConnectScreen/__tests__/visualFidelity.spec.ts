@@ -16,8 +16,7 @@
 // drifts — the twin gets a tweak, mobile doesn't, and "make it look the same"
 // quietly stops being true.
 //
-// Source-scanning rather than rendering, for the same reason
-// webConnectorOwnership.test.ts scans source: the claim is about what the code
+// Source-scanning rather than rendering: the claim is about what the code
 // references, which a render can't observe. A snapshot would pin the twin to
 // itself, not to mobile — exactly the drift this needs to catch.
 import { describe, it, expect } from 'vitest'
@@ -72,8 +71,7 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
     })
 
     it('takes those styles from the shared approval stylesheet instead of redeclaring them', () => {
-        const shared =
-            "from '@modules/walletconnect/components/connection-approval/styles'"
+        const shared = "from '@components/ConnectionApproval/styles'"
         expect(twinHeader).toContain(shared)
         expect(twinView).toContain(shared)
 

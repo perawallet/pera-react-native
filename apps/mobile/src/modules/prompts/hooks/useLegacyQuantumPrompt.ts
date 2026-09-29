@@ -20,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { isLegacyQuantumChild } from '@modules/accounts/utils/legacyQuantum'
+import { isLegacyQuantumChild } from '@modules/accounts'
 
 export type UseLegacyQuantumPromptResult = {
     /** The wallet holds at least one legacy-derivation quantum account. */

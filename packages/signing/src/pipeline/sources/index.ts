@@ -11,12 +11,6 @@
  */
 
 export {
-    createLocalSource,
-    createExternalSource,
-    createFetchSource,
-} from './factories'
-
-export {
     assignMinimumFeesToGroup,
     groupHasQuantumSigner,
 } from './assignMinimumFeesToGroup'
@@ -27,8 +21,5 @@ export type {
     FeeAdjustmentReason,
 } from './assignMinimumFeesToGroup'
 
-export { createMinFeeResolver, resolveMinFeeForSender } from './minFeeResolver'
-export type {
-    MinFeeResolverDependencies,
-    ResolveMinFeeForSenderParams,
-} from './minFeeResolver'
+export { resolveMinFeeForSender } from './minFeeResolver'
+export type { ResolveMinFeeForSenderParams } from './minFeeResolver'

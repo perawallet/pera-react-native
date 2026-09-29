@@ -16,12 +16,6 @@ import {
     getTransactionType,
     classifyPeraTransaction,
     classifyDisplayableTransaction,
-    isPaymentTransaction,
-    isAssetTransferTransaction,
-    isAssetConfigTransaction,
-    isAssetFreezeTransaction,
-    isKeyRegistrationTransaction,
-    isAppCallTransaction,
     getAssetTransferType,
     getAssetConfigType,
 } from '../transactions'
@@ -171,21 +165,6 @@ describe('transactions utils', () => {
             expect(
                 result?.applicationTransaction?.globalStateSchema?.numUint,
             ).toBe(2)
-        })
-    })
-
-    describe('isPaymentTransaction helper', () => {
-        it('should return true for payment type', () => {
-            const tx = {
-                txType: 'pay',
-                paymentTransaction: {},
-            } as PeraDisplayableTransaction
-            expect(isPaymentTransaction(tx)).toBe(true)
-        })
-
-        it('should return false for other types', () => {
-            const tx = { txType: 'axfer' } as PeraDisplayableTransaction
-            expect(isPaymentTransaction(tx)).toBe(false)
         })
     })
 
@@ -743,63 +722,6 @@ describe('transactions utils', () => {
         it('should return unknown for unknown type', () => {
             const tx = { txType: 'other' } as any
             expect(classifyDisplayableTransaction(tx)).toBe('unknown')
-        })
-    })
-
-    describe('Type Guards', () => {
-        it('should validate Asset Transfer', () => {
-            expect(
-                isAssetTransferTransaction({
-                    txType: 'axfer',
-                    assetTransferTransaction: {},
-                } as any),
-            ).toBe(true)
-            expect(isAssetTransferTransaction({ txType: 'pay' } as any)).toBe(
-                false,
-            )
-        })
-
-        it('should validate Asset Config', () => {
-            expect(
-                isAssetConfigTransaction({
-                    txType: 'acfg',
-                    assetConfigTransaction: {},
-                } as any),
-            ).toBe(true)
-            expect(isAssetConfigTransaction({ txType: 'pay' } as any)).toBe(
-                false,
-            )
-        })
-
-        it('should validate Asset Freeze', () => {
-            expect(
-                isAssetFreezeTransaction({
-                    txType: 'afrz',
-                    assetFreezeTransaction: {},
-                } as any),
-            ).toBe(true)
-            expect(isAssetFreezeTransaction({ txType: 'pay' } as any)).toBe(
-                false,
-            )
-        })
-
-        it('should validate Key Registration', () => {
-            expect(
-                isKeyRegistrationTransaction({ txType: 'keyreg' } as any),
-            ).toBe(true)
-            expect(isKeyRegistrationTransaction({ txType: 'pay' } as any)).toBe(
-                false,
-            )
-        })
-
-        it('should validate App Call', () => {
-            expect(
-                isAppCallTransaction({
-                    txType: 'appl',
-                    applicationTransaction: {},
-                } as any),
-            ).toBe(true)
-            expect(isAppCallTransaction({ txType: 'pay' } as any)).toBe(false)
         })
     })
 })

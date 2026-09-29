@@ -31,6 +31,8 @@ import { CloudBackupAccountsScreen } from '../screens/CloudBackupAccountsScreen'
 import { CloudBackupAccountsReviewScreen } from '../screens/CloudBackupAccountsReviewScreen'
 import { CloudBackupContactsScreen } from '../screens/CloudBackupContactsScreen'
 import { CloudBackupContactsReviewScreen } from '../screens/CloudBackupContactsReviewScreen'
+import { CloudBackupPasskeysScreen } from '../screens/CloudBackupPasskeysScreen'
+import { CloudBackupPasskeysReviewScreen } from '../screens/CloudBackupPasskeysReviewScreen'
 import { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
 import { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
 import { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'
@@ -155,6 +157,20 @@ export const CloudBackupStackNavigator = () => {
                 component={CloudBackupContactsReviewScreen}
             />
             <CloudBackupStack.Screen
+                name='CloudBackupPasskeys'
+                options={{
+                    title: 'cloud_backup.passkeys.title',
+                }}
+                component={CloudBackupPasskeysScreen}
+            />
+            <CloudBackupStack.Screen
+                name='CloudBackupPasskeysReview'
+                options={{
+                    title: 'cloud_backup.passkeys.review_title',
+                }}
+                component={CloudBackupPasskeysReviewScreen}
+            />
+            <CloudBackupStack.Screen
                 name='CloudBackupRestorePassphrase'
                 options={{
                     title: '',
@@ -178,3 +194,8 @@ export const CloudBackupStackNavigator = () => {
         </CloudBackupStack.Navigator>
     )
 }
+
+// Restore screens the onboarding import flow mounts in its own stack.
+export { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
+export { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
+export { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'

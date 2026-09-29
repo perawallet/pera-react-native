@@ -639,6 +639,11 @@
             "contacts_in_sync_one": "{{count}} kişi eşitlendi",
             "contacts_not_backed_up": "Yedeklenmemiş {{count}} kişin var",
             "contacts_not_backed_up_one": "Yedeklenmemiş {{count}} kişin var",
+            "passkeys": "Passkey’ler",
+            "passkeys_in_sync": "{{count}} passkey eşitlendi",
+            "passkeys_in_sync_one": "{{count}} passkey eşitlendi",
+            "passkeys_not_backed_up": "Yedeklenmemiş {{count}} passkey’in var",
+            "passkeys_not_backed_up_one": "Yedeklenmemiş {{count}} passkey’in var",
             "backup_details": "Yedekleme detayları",
             "credential_address": "Kimlik bilgisi adresi",
             "sync_devices": "Diğer cihazlarla eşitle",
@@ -722,6 +727,39 @@
             "delete_success": "Cloud Backup'tan kaldırıldı",
             "delete_error": "Bu kişi yedekten kaldırılamadı. Lütfen tekrar dene.",
             "keep_error": "Bu kişi bu cihazdan kaldırılamadı. Lütfen tekrar dene."
+        },
+        "passkeys": {
+            "title": "Passkey’ler",
+            "review_title": "İncelenecek passkey’ler",
+            "review_action": "İncele",
+            "not_backed_up_count": "{{count}} yedeklenmedi",
+            "not_backed_up_count_one": "{{count}} yedeklenmedi",
+            "available_count": "{{count}} yedekten eklenebilir",
+            "available_count_one": "{{count}} yedekten eklenebilir",
+            "device_title": "Passkey’ler",
+            "device_subtitle": "Bu cihazda mevcut",
+            "add_from_backup_title": "Yedekten ekle",
+            "add_from_backup_subtitle": "Cloud Backup'ında var, bu cihazda yok",
+            "not_backed_up_title": "Yedeklenmedi",
+            "not_backed_up_subtitle": "Bu cihazda var, Cloud Backup'ında yok",
+            "back_up_action": "Yedekle",
+            "add_action": "Ekle",
+            "unnamed": "İsimsiz passkey",
+            "empty_title": "Henüz passkey yok",
+            "empty_body": "Bu cihazda oluşturduğun passkey’ler Cloud Backup'ın tarafından korunur.",
+            "unsupported_title": "Bu passkey’ler yedeklenemez",
+            "unsupported_body": "Pera yalnızca bir Universal Wallet’in kurtarma passphrase’inden yeniden oluşturabildiği passkey’leri yedekler. Bu cihazdakiler başka bir yolla oluşturulmuş, bu yüzden sadece burada kalır.",
+            "review_empty_title": "İncelenecek bir şey yok",
+            "review_empty_body": "Bu cihazdaki her passkey Cloud Backup'ında.",
+            "back_up_success": "Passkey yedeklendi",
+            "back_up_error": "Bu passkey yedeklenemedi. Lütfen tekrar dene.",
+            "add_success": "Passkey eklendi",
+            "add_error": "Bu passkey eklenemedi. Lütfen tekrar dene.",
+            "delete_sheet_title": "Cloud Backup'tan silinsin mi?",
+            "delete_sheet_body": "Bu işlem, passkey’in buluttaki yedeğini kalıcı olarak kaldırır. Dilediğin zaman cihazından yeniden yedekleyebilirsin.",
+            "delete_success": "Cloud Backup'tan kaldırıldı",
+            "delete_error": "Bu passkey yedekten kaldırılamadı. Lütfen tekrar dene.",
+            "keep_error": "Bu passkey bu cihazdan kaldırılamadı. Lütfen tekrar dene."
         },
         "turn_off_sheet": {
             "title": "Bulut yedeklemeyi kapat",
@@ -1040,16 +1078,25 @@
                 "body": "Sunucu isteğini işlerken bir sorunla karşılaştı. Tekrar dene."
             }
         },
-        "validation": {
-            "generic": "Veriler geçersiz görünüyor.",
-            "invalid_address": "Adres geçersiz görünüyor: {{address}}",
-            "invalid_amount": "Miktar geçersiz görünüyor: {{amount}}",
-            "invalid_mnemonic": "Kurtarma passphrase’i geçersiz görünüyor.",
-            "required_field": "Zorunlu bir alan eksik: {{field}}"
-        },
         "transaction": {
             "title": "Bu işlem gerçekleştirilirken bir hata oluştu",
-            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç."
+            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç.",
+            "insufficient_balance_for_opt_in": {
+                "title": "Yetersiz ALGO",
+                "body": "Bu varlığı eklemek için {{shortfall}} ALGO daha gerekiyor. Hesabın minimum bakiyesini korumalı ve işlem ücretini karşılamalı."
+            },
+            "already_opted_in": {
+                "title": "Zaten eklendi",
+                "body": "Bu hesap bu varlığı zaten ekledi."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "Varlığın hâlâ bakiyesi var",
+                "body": "Yalnızca bakiyesi sıfır olan bir varlığı kaldırabilirsin. Önce kalan tutarı gönder veya takas et."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Bu varlık kaldırılamaz",
+                "body": "Bu varlığı bu hesap oluşturdu, bu yüzden hesap varlığı kaldıramaz."
+            }
         },
         "kms": {
             "key_not_found": "Bu hesabın imza anahtarı bulunamadı.",
@@ -1123,9 +1170,6 @@
             "overview_tab": "Genel bakış",
             "card_details_tab": "Kart bilgileri",
             "balance": "Bakiye",
-            "spendable_per_tx": "≈{{amount}} {{currency}} kullanılabilir",
-            "spendable_info_title": "İşlem başına kullanılabilir",
-            "spendable_info_body": "Tek bir alışverişin çekebileceği en yüksek tutar: kart bakiyen ve iade bakiyen, ayrıca otomatik fonlama açıkken bağlı hesabından {{limit}} tutarına kadar.",
             "withdraw": "Çek",
             "add_funds": "Ekle",
             "credits_title": "Krediler",
@@ -1250,8 +1294,6 @@
             "balance": "Bakiye: {{amount}} USDC",
             "confirm_title": "Talebi onayla",
             "confirm_button": "Onayla",
-            "fee_label": "Ağ ücreti",
-            "fee_loading": "Tahmin ediliyor...",
             "success_title": "Talep gönderildi",
             "history_title": "Hareketler"
         },
@@ -2038,6 +2080,7 @@
             "pair_ledger_description": "Ledger hardware wallet’ımdaki bir Algorand hesabını Bluetooth ile kurtarmak istiyorum",
             "pair_ledger_usb_title": "Ledger’ı USB ile eşleştir",
             "pair_ledger_usb_description": "Ledger hardware wallet’ımdaki bir Algorand hesabını USB kablosu ile kurtarmak istiyorum",
+            "pair_ledger_unsupported_description": "Bu tarayıcı veya cihaz tarafından desteklenmiyor",
             "pera_web_title": "Pera Web’den içe aktar",
             "pera_web_description": "Pera Web’den Algorand hesapları içe aktarmak istiyorum",
             "cloud_backup_title": "Bulut yedeklemeden içe aktar",
@@ -2573,6 +2616,7 @@
         "input": {
             "max": "MAKS",
             "next": "İleri",
+            "amount_label": "Tutar",
             "error_title": "Geçersiz miktar",
             "error_body": "Lütfen {{min}} değerinden büyük bir miktar gir.",
             "exceeds_max_title": "Yetersiz bakiye",
@@ -2624,8 +2668,9 @@
         },
         "close_account": {
             "title": "Hesabı kapat",
-            "body": "Bu hesapta eklenmiş varlık yok. Bakiyenin tamamını göndermek, hesabı Algorand ağında kapatır.",
+            "body": "Bu hesapta eklenmiş varlık olmadığından hesabı kapatıp bakiyenin tamamını gönderebilirsin. Bazı borsalar hesap kapatan işlemleri kabul etmez. Hesabı açık tutarsan minimum bakiye olan {{minBalance}} ALGO hesapta kalır.",
             "confirm": "Hesabı kapat ve gönder",
+            "keep_open": "Kapatmadan gönder",
             "warning": "Bu işlem, hesabını Algorand ağında kapatacak.",
             "success_title": "Hesap kapatıldı",
             "success_subtitle": "Hesabın Algorand ağında kapatıldı."
@@ -2757,6 +2802,7 @@
                 "fetch_from_node": "Node’dan al",
                 "fetch_failed": "Bu node’a ulaşılamadı. Değerleri elle gir.",
                 "invalid_url": "Geçerli bir http:// veya https:// URL gir",
+                "invalid_https_url": "Geçerli bir https:// URL gir",
                 "genesis_required": "Genesis hash’i al veya gir",
                 "genesis_id_required": "Genesis ID’yi al veya gir",
                 "save": "Kaydet ve geç",
@@ -3328,6 +3374,7 @@
         "execution": {
             "error_title": "Swap başarısız",
             "error_body": "Swap sırasında bir şeyler ters gitti. Lütfen tekrar dene.",
+            "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
             "insufficient_algo_title": "Yetersiz ALGO",
             "insufficient_algo_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} ALGO daha gerekiyor. Daha fazla ALGO ekle ve tekrar dene.",
             "success_title": "Swap tamamlandı",
@@ -3554,6 +3601,9 @@
             "grant_permission": "İzin ver",
             "open_settings": "Ayarları aç",
             "web_start_title": "Aramaya hazır",
+            "web_ble_unsupported_title": "Bluetooth kullanılamıyor",
+            "web_ble_unsupported_body": "Bu tarayıcı Ledger’a Bluetooth ile bağlanamıyor. Bunun yerine USB ile eşleştir ya da Chrome gibi Bluetooth destekleyen bir tarayıcı kullan.",
+            "use_usb": "USB ile eşleştir",
             "web_start_body": "Tarayıcın Ledger cihazını seçmeni isteyecek.",
             "web_start_button": "Ledger ara",
             "popup_launch_title": "Eşleştirmeye hazır",
@@ -3707,7 +3757,11 @@
         "scan_header": {
             "having_issues": "Sorun mu yaşıyorsun?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Ledger hesabı eklendi",
+            "body": "Artık onu Pera uzantısında kullanabilirsin."
+        }
     },
     "countries": {
         "AC": "Ascension Adası",
@@ -4017,7 +4071,17 @@
             "error_invalid_password": "Hatalı şifre. Lütfen tekrar dene.",
             "corrupted_error": "Vault verilerin bozulmuş ve kilidi açılamıyor. Uzantıyı sıfırlayıp yedeklemenden geri yüklemen gerekebilir.",
             "passkey_error": "Passkey ile kilit açma başarısız oldu. Bunun yerine şifreni kullan.",
-            "lockout_countdown": "Çok fazla deneme yapıldı. {{time}} sonra tekrar dene"
+            "lockout_countdown": "Çok fazla deneme yapıldı. {{time}} sonra tekrar dene",
+            "forgot_password": "Şifreni mi unuttun?"
+        },
+        "reset": {
+            "title": "Cüzdanını sıfırlamak istiyor musun?",
+            "body": "Şifren kurtarılamaz. Sıfırlama, Pera Wallet’ın bu tarayıcıda sakladığı her şeyi siler; ardından yeni bir şifre belirleyebilirsin.",
+            "restore_note": "Ardından hesaplarını kurtarma passphrase’leriyle geri yükle. Kurtarma passphrase’i yedeklenmemiş her hesap kaybolur.",
+            "hardware_note": "Ledger hesapları ve izleme hesapları bir passphrase ile geri yüklenemez. Sıfırlamadan sonra onları yeniden ekle.",
+            "acknowledge": "Bunun verilerimi sileceğini ve geri alınamayacağını anlıyorum",
+            "confirm_button": "Cüzdanı sıfırla",
+            "error": "Cüzdan sıfırlanamadı. Lütfen tekrar dene."
         },
         "security": {
             "autolock_title": "Otomatik kilitleme süresi",
@@ -4044,9 +4108,6 @@
         "approval": {
             "placeholder": "Onay ekranı — M4’te geliyor."
         },
-        "expanded": {
-            "redirecting": "Yeni sekmede devam ediliyor…"
-        },
         "reauth": {
             "title": "Sen olduğunu doğrula",
             "confirm_button": "Onayla",
@@ -4063,5 +4124,8 @@
             "continue": "Devam et",
             "do_not_show_again": "Bir daha gösterme"
         }
+    },
+    "integrityCheck": {
+        "frame_title": "Pera Wallet doğrulaması"
     }
 }

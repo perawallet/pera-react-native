@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-import {
-    useMutation,
-    useQueryClient,
-    type UseMutationResult,
-} from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { Nullable, Network } from '@perawallet/wallet-core-shared'
 import { addSignature } from '../api/endpoints'
 import type { ProposeSignRequestResponse } from '../api/schema'
 import { getSignRequestDetailQueryKey } from './querykeys'
@@ -30,17 +26,26 @@ type DeclineSignRequestInput = {
     deviceId: string
 }
 
+export type UseDeclineSignRequestMutationResult = {
+    data: ProposeSignRequestResponse | undefined
+    error: Nullable<Error>
+    isError: boolean
+    isIdle: boolean
+    isPending: boolean
+    isSuccess: boolean
+    mutate: (params: DeclineSignRequestInput) => void
+    mutateAsync: (
+        params: DeclineSignRequestInput,
+    ) => Promise<ProposeSignRequestResponse>
+}
+
 export const useDeclineSignRequestMutation = ({
     network,
     signRequestId,
-}: UseDeclineSignRequestMutationParams): UseMutationResult<
-    ProposeSignRequestResponse,
-    Error,
-    DeclineSignRequestInput
-> => {
+}: UseDeclineSignRequestMutationParams): UseDeclineSignRequestMutationResult => {
     const rqClient = useQueryClient()
 
-    return useMutation({
+    const mutation = useMutation({
         mutationFn: ({ address, deviceId }: DeclineSignRequestInput) =>
             addSignature(network, signRequestId, [
                 {
@@ -55,4 +60,15 @@ export const useDeclineSignRequestMutation = ({
             })
         },
     })
+
+    return {
+        data: mutation.data,
+        error: mutation.error,
+        isError: mutation.isError,
+        isIdle: mutation.isIdle,
+        isPending: mutation.isPending,
+        isSuccess: mutation.isSuccess,
+        mutate: mutation.mutate,
+        mutateAsync: mutation.mutateAsync,
+    }
 }

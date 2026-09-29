@@ -56,9 +56,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // Runs the scheduled callback synchronously so tests don't need fake timers —
 // the delay itself isn't this hook's behavior under test.

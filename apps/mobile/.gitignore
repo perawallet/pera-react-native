@@ -34,6 +34,10 @@ local.properties
 !debug.keystore
 .kotlin/
 
+# CI decodes these into config/ from secrets; never commit the real files.
+config/api-key.json
+config/firebase-service-account.json
+
 # node.js
 #
 node_modules/

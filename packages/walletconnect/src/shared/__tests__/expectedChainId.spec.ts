@@ -11,23 +11,21 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { AlgorandChainId } from '../../models'
-import {
-    EXPECTED_CHAIN_ID_BY_NETWORK,
-    getExpectedChainId,
-} from '../expectedChainId'
+import { AlgorandWalletConnectChainId } from '../../models'
+import { getExpectedChainId } from '../expectedChainId'
 
 describe('getExpectedChainId', () => {
     it('resolves mainnet to its registered chain id', () => {
         expect(getExpectedChainId(Networks.mainnet)).toBe(
-            AlgorandChainId.mainnet,
+            AlgorandWalletConnectChainId.mainnet,
         )
     })
 
     it('resolves testnet to its registered chain id', () => {
         expect(getExpectedChainId(Networks.testnet)).toBe(
-            AlgorandChainId.testnet,
+            AlgorandWalletConnectChainId.testnet,
         )
     })
 
@@ -38,10 +36,10 @@ describe('getExpectedChainId', () => {
         // so a correctly-configured betanet dApp presenting 416_003 was
         // rejected outright.
         expect(getExpectedChainId(Networks.betanet)).toBe(
-            AlgorandChainId.betanet,
+            AlgorandWalletConnectChainId.betanet,
         )
         expect(getExpectedChainId(Networks.betanet)).not.toBe(
-            AlgorandChainId.mainnet,
+            AlgorandWalletConnectChainId.mainnet,
         )
     })
 
@@ -53,16 +51,18 @@ describe('getExpectedChainId', () => {
         // branch), so a dApp presenting MainNet's 416_001 was WRONGLY
         // accepted while on a network with no id of its own.
         expect(getExpectedChainId(Networks.custom)).toBe(
-            AlgorandChainId.testnet,
+            AlgorandWalletConnectChainId.testnet,
         )
     })
 
-    it('maps every network, with custom borrowing testnet id', () => {
-        expect(EXPECTED_CHAIN_ID_BY_NETWORK).toEqual({
-            mainnet: AlgorandChainId.mainnet,
-            testnet: AlgorandChainId.testnet,
-            betanet: AlgorandChainId.betanet,
-            custom: AlgorandChainId.testnet,
-        })
+    it.each(algorandDescriptor.networks.map(network => network.id))(
+        'has a chain id for the declared network %s',
+        networkId => {
+            expect(getExpectedChainId(networkId)).not.toBeNull()
+        },
+    )
+
+    it('has no chain id for a network no chain declares', () => {
+        expect(getExpectedChainId('fnet')).toBeNull()
     })
 })

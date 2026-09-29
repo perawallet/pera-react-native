@@ -15,6 +15,7 @@ import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
     CardAccountLinkedElsewhereError,
     CardCreateInProgressError,
     CardCreateUnavailableError,
@@ -255,6 +256,10 @@ describe('resolveCardErrorCopy', () => {
         ],
         [
             new AutoDrawProgramUnverifiedError('testnet'),
+            'peraCard.account.auto_funding_unavailable',
+        ],
+        [
+            new AutoDrawTealUnverifiedError(),
             'peraCard.account.auto_funding_unavailable',
         ],
     ])('maps %s to its own copy', (error, prefix) => {

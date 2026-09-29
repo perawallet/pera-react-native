@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 const MODULE_PREFIX = 'staking'
 
-export const getStakingProjectsQueryKey = (network: Network) => {
-    return [MODULE_PREFIX, 'projects', { network }]
+export const getStakingProjectsQueryKey = (scope: ChainScope) => {
+    return [MODULE_PREFIX, 'projects', { scope: toScopeKey(scope) }]
 }

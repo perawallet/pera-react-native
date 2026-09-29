@@ -11,7 +11,7 @@
  */
 
 export * from './api/query-client'
-export * from './api/integrity-bypass'
+export * from './api/integrity-token-provider'
 export * from './api/mutation-policy'
 export * from './api/query-render-state'
 export * from './api/account-fast-lookup'
@@ -24,6 +24,5 @@ export * from './utils'
 // Error infrastructure
 export * from './errors/base'
 export * from './errors/expected'
-export * from './errors/network-validation'
 export * from './errors/network'
 export * from './errors/pera-service'

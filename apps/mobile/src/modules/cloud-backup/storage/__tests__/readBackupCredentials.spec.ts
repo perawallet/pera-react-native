@@ -13,6 +13,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
     buildBackupCredentialsFile,
+    isBackupCredentialsFileContents,
     isBackupCredentialsFileName,
     InvalidCredentialsFileError,
     UnsupportedCredentialsFileError,
@@ -80,6 +81,7 @@ describe('readBackupCredentials', () => {
             })
             expect(read).toHaveBeenCalledWith(store, {
                 isCandidate: isBackupCredentialsFileName,
+                isCandidateContents: isBackupCredentialsFileContents,
                 chooseFile,
                 onReading,
                 signal,

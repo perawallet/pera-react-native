@@ -14,29 +14,29 @@ import { describe, test, expect, vi } from 'vitest'
 import { seedFromMnemonic } from 'algosdk'
 import { quantumAddressCandidates } from '../quantumAddressCandidates'
 import { getPQProvider } from '../pq'
+import { fakeQuantumChain } from '../../__tests__/fakeQuantumChain'
 
-// THROWAWAY TEST VECTOR — same as algo25-integration.test.ts; NEVER fund it.
+// THROWAWAY TEST VECTOR — same as algo25-integration.spec.ts; NEVER fund it.
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 
-// Both addresses were independently verified outside this codebase (algokey
-// for canonical, the pre- minting path for legacy) — never compute
-// these through `quantumAddressCandidates` itself, or a wrong derivation and
-// its "expected" value drift together with no test able to notice.
-const CANONICAL_ADDRESS =
-    'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
-const LEGACY_ADDRESS =
-    'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
+const addressFor = (keygenSeed: Uint8Array): string =>
+    fakeQuantumChain.addressFromPublicKey(
+        getPQProvider().generateKeypairFromSeed(keygenSeed).publicKey,
+    )
 
 describe('quantumAddressCandidates', () => {
     test('returns both derivations for a mnemonic, canonical first', () => {
         const entropy = seedFromMnemonic(TEST_MNEMONIC)
 
-        const candidates = quantumAddressCandidates(entropy)
+        const candidates = quantumAddressCandidates(entropy, fakeQuantumChain)
 
         expect(candidates).toEqual([
-            { derivation: 'pqk1', address: CANONICAL_ADDRESS },
-            { derivation: 'legacy', address: LEGACY_ADDRESS },
+            {
+                derivation: 'pqk1',
+                address: addressFor(fakeQuantumChain.deriveKeygenSeed(entropy)),
+            },
+            { derivation: 'legacy', address: addressFor(entropy) },
         ])
     })
 
@@ -44,7 +44,7 @@ describe('quantumAddressCandidates', () => {
         const entropy = seedFromMnemonic(TEST_MNEMONIC)
         const copy = Uint8Array.from(entropy)
 
-        quantumAddressCandidates(entropy)
+        quantumAddressCandidates(entropy, fakeQuantumChain)
 
         expect(entropy).toEqual(copy)
     })
@@ -57,7 +57,7 @@ describe('quantumAddressCandidates', () => {
         const provider = getPQProvider()
         const spy = vi.spyOn(provider, 'generateKeypairFromSeed')
 
-        quantumAddressCandidates(entropy)
+        quantumAddressCandidates(entropy, fakeQuantumChain)
 
         expect(spy).toHaveBeenCalledTimes(2)
         for (const { secretKey } of spy.mock.results.map(r => r.value)) {

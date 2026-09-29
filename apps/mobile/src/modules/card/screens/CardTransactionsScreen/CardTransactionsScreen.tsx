@@ -22,7 +22,7 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
-import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
+import { TransactionDateHeader } from '@modules/transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import type { CardTransaction } from '@perawallet/wallet-core-card'
 import { CardTransactionListItem } from '../../components/CardTransactionListItem'

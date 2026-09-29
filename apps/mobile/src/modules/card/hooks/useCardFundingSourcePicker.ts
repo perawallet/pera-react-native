@@ -25,7 +25,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     AccountMenuContent,
     type AccountMenuContentResult,
-} from '@modules/accounts/components/AccountMenuContent'
+} from '@modules/accounts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ConnectAccountHeader } from '../components/ConnectAccountHeader'
 import { useCardAddAccount } from './useCardAddAccount'

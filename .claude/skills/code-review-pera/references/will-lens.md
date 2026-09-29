@@ -100,7 +100,7 @@ Representative real comments from `wjbeau` across ~500 recent PR reviews, groupe
 - "Should these things be in config or even in remote-config just to make them a little easier to change?"
 - "Should we move this to remote-config with sensible defaults?"
 - "I think we can probably bump this up — the backend maybe supports 100, so that would cut down the number of queries by 4."
-- Secrets at build time: "we can inject this at build time using bitrise secrets and locally using env vars — check out `tools/generate-config.sh`." / "one GoogleService-Info.plist and overwrite it from bitrise secrets in the build."
+- Secrets at build time: "we can inject this at build time using bitrise secrets and locally using env vars — check out `tools/dev/generate-config.sh`." / "one GoogleService-Info.plist and overwrite it from bitrise secrets in the build."
 
 ## 12. Comments
 
@@ -109,7 +109,7 @@ Representative real comments from `wjbeau` across ~500 recent PR reviews, groupe
 - "I've recently been prompting Claude to cut down on the comments. It's so verbose and over the top imo." / "so many overly long comments it makes it hard to read."
 - "We should probably remove comments that refer to a previous implementation — that isn't so valuable going forwards."
 
-## 13. Correctness — Socratic edge-case probing
+## Correctness pass — Socratic edge-case probing
 
 - "not sure what the expected behavior is but shouldn't we be checking that `next` is not null?"
 - "I think this `shuffle(pool)` is wrong because you'll end up reusing the same words since you're not removing them from the pool each time."
@@ -119,7 +119,7 @@ Representative real comments from `wjbeau` across ~500 recent PR reviews, groupe
 - "I think this is more correct — you don't know how long the memoized version of the keys will stick around … you could be accessing 10-day-old keys."
 - "I am not seeing where we are initiating the signing pipeline. Maybe I'm missing it but we definitely need to do that."
 
-## 14. Scope & follow-ups / cross-cutting caution
+## 13. Scope & follow-ups / cross-cutting caution
 
 - "I don't think that needs to block this PR but maybe create a ticket for Yasin or Fred to implement?"
 - "Not for this PR but maybe something to ticket." / "We can definitely do that but it should be a separate PR since it would have implications across the code base."

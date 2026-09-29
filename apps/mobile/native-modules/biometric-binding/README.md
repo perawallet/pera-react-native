@@ -175,9 +175,15 @@ about `armBinding` or `unwrapToken`; every step below needs physical hardware.
     not the same as a destroyed key.
 11. Cancel the iOS prompt with the cancel button, again with the side button,
     and again by choosing "Enter Passcode": the first and third must reject
-    `user-cancel`, the second `system-cancel` — the lock screen retries only on
-    `system-cancel`. Fail the ceremony 5 times running to confirm `lockout`.
-12. PIN lockout on a cold start: lock the app, fail the PIN until it locks out,
+    `user-cancel`, the second `system-cancel` — the lock screen retries a
+    `system-cancel` at once, and anything else only after the app has been in
+    the background. Fail the ceremony 5 times running to confirm `lockout`.
+12. Cancel the Android prompt four ways. All four reject `user-cancel`, so only
+    the app leaving the foreground tells them apart: lock the device, and press
+    Home — the sheet must come back when the app is resumed. Press Back, and tap
+    the negative button — the user must stay on the PIN pad with no second
+    sheet.
+13. PIN lockout on a cold start: lock the app, fail the PIN until it locks out,
     kill the app and reopen it. No biometric sheet may appear, and the pad must
     show the countdown rather than silently refusing input.
 

@@ -43,9 +43,7 @@
     "decimal.js": "catalog:",
     "drizzle-orm": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
     "xstate": "catalog:",
-    "@xstate/react": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:"
   },
@@ -56,6 +54,7 @@
     "@types/react": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "react-dom": "catalog:"
   }
 }

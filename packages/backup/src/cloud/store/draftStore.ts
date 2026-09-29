@@ -12,6 +12,7 @@
 
 import { create } from 'zustand'
 import {
+    handOffSecret,
     mnemonicIndexToWord,
     mnemonicWordsToIndices,
     zeroBytes,
@@ -32,6 +33,7 @@ export type CloudBackupRegistration = {
     deviceId: DeviceId
     encryptionKey: Uint8Array
     authSecretKey: Uint8Array
+    itemKey: Uint8Array
 }
 
 type CloudBackupDraftState = BaseStoreState & {
@@ -72,6 +74,7 @@ export const useCloudBackupDraftStore = create<CloudBackupDraftStore>()((
             mnemonicIndices,
             registration?.encryptionKey,
             registration?.authSecretKey,
+            registration?.itemKey,
         )
     }
 
@@ -110,13 +113,18 @@ export const useCloudBackupDraftStore = create<CloudBackupDraftStore>()((
                 zeroBytes(
                     registration.encryptionKey,
                     registration.authSecretKey,
+                    registration.itemKey,
                 )
                 return false
             }
             // Every write path that drops key buffers scrubs them first; a
             // re-register would otherwise orphan the last attempt's keys.
             if (previous && previous !== registration) {
-                zeroBytes(previous.encryptionKey, previous.authSecretKey)
+                zeroBytes(
+                    previous.encryptionKey,
+                    previous.authSecretKey,
+                    previous.itemKey,
+                )
             }
             set({ registration })
             return true
@@ -188,9 +196,13 @@ export const useCloudBackupRestoreDraftStore =
                 const indices = mnemonicWordsToIndices(mnemonic)
                 const { mnemonicIndices, mnemonicRawBytes } = get()
                 zeroBytes(mnemonicIndices, mnemonicRawBytes)
+                const nextIndices = handOffSecret(indices)
                 set(
-                    indices
-                        ? { mnemonicIndices: indices, mnemonicRawBytes: null }
+                    nextIndices
+                        ? {
+                              mnemonicIndices: nextIndices,
+                              mnemonicRawBytes: null,
+                          }
                         : {
                               mnemonicIndices: null,
                               mnemonicRawBytes: new TextEncoder().encode(

@@ -20,9 +20,7 @@ const { resolveMock } = vi.hoisted(() => ({ resolveMock: vi.fn() }))
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: () => ({ resolve: resolveMock, dismiss: vi.fn() }),
 }))
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const SETUP_TITLE = 'cloud_backup.encryption_code.setup_title'
 const CONFIRM_TITLE = 'cloud_backup.encryption_code.confirm_title'

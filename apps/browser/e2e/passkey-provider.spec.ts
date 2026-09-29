@@ -32,6 +32,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
 import {
+    armApprovalAction,
     expectApprovalSurfaceUrl,
     openApprovalSurface,
     trackPageErrors,
@@ -309,6 +310,7 @@ test('interception on: create() opens the Pera consent screen; approving returns
 
     const approveButton = approvalPage.getByTestId('dapp-passkey-approve')
     await expect(approveButton).toBeVisible()
+    await armApprovalAction(approvalPage, approveButton)
     await approveButton.click()
 
     // Deliberately generous: the FIRST passkey on a wallet also mints the
@@ -334,7 +336,11 @@ test('interception on: create() opens the Pera consent screen; approving returns
     // Only one passkey exists at this point, so locate the row structurally
     // rather than by testID (see createdPasskeyRowTestId).
     await reloadAndReturnToPasskeysSettings()
-    const row = page.locator('[data-testid^="settings_passkeys_item_"]')
+    // The row's trash button carries `<row testID>_remove`, which the prefix
+    // alone would also match.
+    const row = page.locator(
+        '[data-testid^="settings_passkeys_item_"]:not([data-testid$="_remove"])',
+    )
     await expect(row).toBeVisible({ timeout: 20_000 })
     await expect(row).toHaveCount(1)
     createdPasskeyRowTestId = (await row.getAttribute('data-testid')) ?? ''
@@ -367,6 +373,7 @@ test('interception on: get() asserts against the stored credential and the RP pa
 
     const approveButton = approvalPage.getByTestId('dapp-passkey-approve')
     await expect(approveButton).toBeVisible()
+    await armApprovalAction(approvalPage, approveButton)
     await approveButton.click()
 
     await expect
@@ -465,9 +472,8 @@ test('declining the consent screen falls through to the native virtual authentic
     expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
 })
 
-// Runs last, once test 3 no longer needs the credential. Neither the trash
-// icon nor the confirm sheet carries a testID in production code, so both are
-// selected structurally.
+// Runs last, once test 3 no longer needs the credential. The confirm sheet
+// carries no testID in production code, so it is selected by its label.
 test('the passkey created in test 2 is deletable from Settings', async () => {
     expect(
         createdPasskeyRowTestId.length,
@@ -476,8 +482,10 @@ test('the passkey created in test 2 is deletable from Settings', async () => {
     const row = page.getByTestId(createdPasskeyRowTestId)
     await expect(row).toBeVisible({ timeout: 20_000 })
 
-    // Two icons per row: the decorative header one, then the trash touchable.
-    await clickThroughPinPrompt(page, row.locator('svg').last())
+    await clickThroughPinPrompt(
+        page,
+        page.getByTestId(`${createdPasskeyRowTestId}_remove`),
+    )
 
     await clickThroughPinPrompt(page, page.getByText('Remove', { exact: true }))
 

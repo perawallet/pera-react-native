@@ -47,7 +47,7 @@ import {
 import type {
     WebauthnCeremonyRequest,
     WebauthnCeremonyResponse,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 
 // Must be captured BEFORE anything assigns to navigator.credentials — running
 // after installProvider() would stash our own wrapper as "the original" and

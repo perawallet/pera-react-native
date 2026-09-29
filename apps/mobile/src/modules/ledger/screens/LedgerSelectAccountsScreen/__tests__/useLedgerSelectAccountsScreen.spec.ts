@@ -101,7 +101,12 @@ const {
 // AccountTypes / useRekeyTransition are needed because
 // useLedgerAccountInfoContent → AccountDisplay → useAccountTypeLabel pulls
 // these in at module evaluation time.
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    // Real enums (models/accounts has no runtime imports): components reached
+    // through module barrels read them at import time.
+    ...(await vi.importActual<object>(
+        '@packages/accounts/src/models/accounts',
+    )),
     useAllAccounts: () => mockAllAccounts(),
     prefetchLedgerAccountPreview: mockPrefetch,
     useLedgerAccountPreview: vi.fn(),
@@ -125,7 +130,6 @@ vi.mock('@modules/onboarding/hooks', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => ({}),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
@@ -418,13 +422,11 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'AAA111',
                 'mainnet',
             )
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'BBB222',
                 'mainnet',
             )
@@ -452,7 +454,6 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'REKEYED_A',
                 'mainnet',
             )
@@ -466,7 +467,6 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'AAA111',
                 'mainnet',
             )
@@ -479,13 +479,12 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'CCC333',
                 'mainnet',
             )
         })
 
-        const aaaCalls = mockPrefetch.mock.calls.filter(c => c[2] === 'AAA111')
+        const aaaCalls = mockPrefetch.mock.calls.filter(c => c[1] === 'AAA111')
         expect(aaaCalls).toHaveLength(1)
     })
 
@@ -516,7 +515,6 @@ describe('useLedgerSelectAccountsScreen', () => {
         await waitFor(() => {
             expect(mockPrefetch).toHaveBeenCalledWith(
                 mockQueryClient,
-                expect.anything(),
                 'CCC333',
                 'mainnet',
             )

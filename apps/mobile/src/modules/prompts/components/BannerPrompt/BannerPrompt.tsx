@@ -21,8 +21,8 @@ import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 // Direct subpath, not the module barrel: the barrel deliberately excludes the
 // carousel so screens that only want HomeBannersStrip don't drag it in. This
 // surface genuinely renders banners, so it takes the carousel knowingly.
-import { BannerCarousel } from '@modules/banners/components/BannerCarousel'
-import { useBannerLinkRouter } from '@modules/banners/hooks/useBannerLinkRouter'
+import { BannerCarousel } from '@modules/banners/carousel'
+import { useBannerLinkRouter } from '@modules/banners'
 import type { PromptViewProps } from '@modules/prompts/models'
 import { useStyles } from './styles'
 

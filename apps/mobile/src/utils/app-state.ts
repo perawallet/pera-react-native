@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import { isIOS } from '@utils/platform'
 
 const ACTIVE_STATE = 'active'
 const IOS_BACKGROUND_LIKE_STATES = new Set(['inactive', 'background'])
@@ -25,7 +25,7 @@ export type AppStateTransition = {
 }
 
 export const getAppStatePlatform = (): AppStatePlatform =>
-    Platform.OS === 'ios' ? 'ios' : 'android'
+    isIOS() ? 'ios' : 'android'
 
 export const isActiveAppState = (state: AppStateValue): boolean =>
     state === ACTIVE_STATE

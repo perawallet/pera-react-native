@@ -11,8 +11,6 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query'
-import { Decimal } from 'decimal.js'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
     fetchAndPersistAssets,
     fetchAndPersistPrices,
@@ -26,21 +24,14 @@ import {
 // Imported directly (not via the hooks barrel) to avoid a module cycle:
 // hooks/useEnsureAccountEnriched imports from this file.
 import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
-import { HOLDINGS_PAGE_LIMIT } from '../constants'
 import { useAccountsStore } from '../store'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { accountsAdapterFor } from '../chain-adapter'
 import {
-    ALGO_ASSET_ID,
     logger,
     type Network,
     type Nullable,
-    type Optional,
 } from '@perawallet/wallet-core-shared'
-
-// algod rejects a full account read with HTTP 400 once total resources exceed
-// MaxAPIResourcesPerAccount (default 1000). Below that, one call returns balance
-// AND holdings from the same round — unlike the indexer, which lags by seconds
-// and can hand back pre-transaction holdings right after a confirmation.
-const MAX_INLINE_RESOURCES = 1000
 
 export type AccountSyncResult = {
     /** True if the balance row or holdings changed — drives query invalidation. */
@@ -54,8 +45,6 @@ export type AccountSyncResult = {
      */
     observedRound: Nullable<number>
 }
-
-type HoldingInput = { assetId: string; amount: Decimal; isFrozen: boolean }
 
 // On a fresh import the background sync and every balance/summary query call
 // this with no balance row yet, firing N parallel account and holdings fetches
@@ -153,94 +142,12 @@ export async function syncAndEnrichNewAccount(
     }
 }
 
-const isResourceLimitError = (error: unknown): boolean =>
-    error instanceof Error &&
-    'status' in error &&
-    (error as { status: unknown }).status === 400
-
-const toRound = (round: Optional<bigint>): Nullable<number> =>
-    round === undefined ? null : Number(round)
-
-const minRound = (
-    a: Nullable<number>,
-    b: Nullable<number>,
-): Nullable<number> => (a === null ? b : b === null ? a : Math.min(a, b))
-
-/**
- * Prefers a single algod read so balance and holdings come from the same round.
- * Falls back to the split read (algod info plus paginated indexer holdings) when
- * the account exceeds algod's inline-resource cap — pre-emptively from the last
- * persisted counts, or reactively on a 400.
- */
-async function fetchAccountSnapshot(
-    algokit: ReturnType<typeof getAlgorandClient>,
-    address: string,
-    priorResourceCount: number,
-) {
-    if (priorResourceCount < MAX_INLINE_RESOURCES) {
-        try {
-            const info = await algokit.client.algod
-                .accountInformation(address)
-                .do()
-            const holdings: HoldingInput[] = (info.assets ?? []).map(asset => ({
-                assetId: `${asset.assetId}`,
-                amount: new Decimal((asset.amount ?? 0n).toString()),
-                isFrozen: asset.isFrozen ?? false,
-            }))
-            return { info, holdings, observedRound: toRound(info.round) }
-        } catch (error) {
-            if (!isResourceLimitError(error)) throw error
-        }
-    }
-
-    const info = await algokit.client.algod
-        .accountInformation(address)
-        .exclude('all')
-        .do()
-    const { holdings, currentRound } = await fetchAllHoldings(algokit, address)
-    return {
-        info,
-        holdings,
-        observedRound: minRound(toRound(info.round), currentRound),
-    }
-}
-
-async function fetchAllHoldings(
-    algokit: ReturnType<typeof getAlgorandClient>,
-    address: string,
-): Promise<{ holdings: HoldingInput[]; currentRound: Nullable<number> }> {
-    const holdings: HoldingInput[] = []
-    let currentRound: Nullable<number> = null
-    let next: Optional<string>
-
-    do {
-        let request = algokit.client.indexer
-            .lookupAccountAssets(address)
-            .limit(HOLDINGS_PAGE_LIMIT)
-        if (next) request = request.nextToken(next)
-        const page = await request.do()
-        currentRound = minRound(currentRound, toRound(page.currentRound))
-        for (const asset of page.assets ?? []) {
-            holdings.push({
-                assetId: `${asset.assetId}`,
-                amount: new Decimal((asset.amount ?? 0n).toString()),
-                isFrozen: asset.isFrozen ?? false,
-            })
-        }
-        next = page.nextToken
-    } while (next)
-
-    return { holdings, currentRound }
-}
-
 async function doFetchAndPersistAccount(
     address: string,
     network: Network,
 ): Promise<AccountSyncResult> {
-    const algokit = getAlgorandClient(network)
-
-    // The prior balance row both gates the inline-holdings read (its resource
-    // counts say whether the account fits algod's cap) and feeds the
+    // The prior balance row both tells the chain how large the account was at
+    // its last sync (which can decide its read strategy) and feeds the
     // changed-account diff below.
     const prior = await getAccountBalance({ accountAddress: address, network })
     const priorResourceCount = prior
@@ -249,19 +156,22 @@ async function doFetchAndPersistAccount(
           prior.totalAppsOptedIn
         : 0
 
-    const { info, holdings, observedRound } = await fetchAccountSnapshot(
-        algokit,
+    // The Algorand-only fields fall back to the balance row's column defaults.
+    const {
+        nativeBalance: algoBalance,
+        minBalance,
+        totalAssetsOptedIn = 0,
+        totalCreatedAssets = 0,
+        totalAppsOptedIn = 0,
+        status = 'Offline',
+        authAddress,
+        holdings,
+        observedRound,
+    } = await accountsAdapterFor(network).fetchAccountState(
         address,
-        priorResourceCount,
+        scopeForLegacyNetwork(network),
+        { priorResourceCount },
     )
-
-    const authAddress = info.authAddr?.toString() ?? null
-    const algoBalance = new Decimal(info.amount.toString()).div(1_000_000)
-    const totalAssetsOptedIn = info.totalAssetsOptedIn ?? 0
-    const totalCreatedAssets = info.totalCreatedAssets ?? 0
-    const totalAppsOptedIn = info.totalAppsOptedIn ?? 0
-    const minBalance = new Decimal(info.minBalance.toString()).div(1_000_000)
-    const status = info.status ?? 'Offline'
 
     // Diff against the persisted balance row so the sync service can tell
     // whether the account changed at all this tick. ASA amount changes are
@@ -292,16 +202,6 @@ async function doFetchAndPersistAccount(
     useAccountsStore
         .getState()
         .updateAccountRekeyAddress(address, authAddress, network)
-
-    // ALGO is persisted as a regular holding in base units, so the home-screen
-    // reads sort, filter and paginate it uniformly alongside ASAs with no
-    // synthetic-row union in the hot path. Its metadata is seeded at startup and
-    // its price syncs under id '0', so the join resolves it like any asset.
-    holdings.unshift({
-        assetId: ALGO_ASSET_ID,
-        amount: new Decimal(info.amount.toString()),
-        isFrozen: false,
-    })
 
     const holdingsChanged = await refreshAccountHoldings({
         accountAddress: address,

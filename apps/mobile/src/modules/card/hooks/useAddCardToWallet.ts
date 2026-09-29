@@ -22,7 +22,7 @@ import {
     useWalletProvisioningStatusQuery,
 } from '@perawallet/wallet-core-card'
 import { useIsCardPushProvisioningEnabled } from '@hooks/useIsCardPushProvisioningEnabled'
-import { isIOS } from '../../../platform/utils'
+import { isIOS } from '@utils/platform'
 import {
     fetchAppleProvisioningPayload,
     fetchGoogleProvisioningPayload,

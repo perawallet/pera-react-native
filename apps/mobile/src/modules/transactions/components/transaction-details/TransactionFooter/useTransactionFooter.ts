@@ -15,7 +15,7 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
-import { useWebView } from '@modules/webview/hooks'
+import { useWebView } from '@modules/webview'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { generateUniqueId, type Optional } from '@perawallet/wallet-core-shared'
 

@@ -79,6 +79,13 @@ export interface ConnectionHandler<
     disconnectAll(): Promise<void>
 
     /**
+     * Fire-and-forget revival of any transport the platform suspended (a
+     * foreground or network-regain edge). Leave undeclared when the transport
+     * recovers on its own. Must not throw.
+     */
+    reconnect?(): void
+
+    /**
      * Authoritative: the registry removes stored records of this `kind` that
      * are missing from the result, so omitting a connection is what deletes it.
      */

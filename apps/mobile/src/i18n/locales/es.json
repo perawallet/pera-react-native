@@ -639,6 +639,11 @@
             "contacts_in_sync_one": "{{count}} contacto sincronizado",
             "contacts_not_backed_up": "Tienes {{count}} contactos sin copia de seguridad",
             "contacts_not_backed_up_one": "Tienes {{count}} contacto sin copia de seguridad",
+            "passkeys": "Passkeys",
+            "passkeys_in_sync": "{{count}} passkeys sincronizadas",
+            "passkeys_in_sync_one": "{{count}} passkey sincronizada",
+            "passkeys_not_backed_up": "Tienes {{count}} passkeys sin copia de seguridad",
+            "passkeys_not_backed_up_one": "Tienes {{count}} passkey sin copia de seguridad",
             "backup_details": "Detalles de la copia de seguridad",
             "credential_address": "Dirección de credenciales",
             "sync_devices": "Sincronizar con otros dispositivos",
@@ -722,6 +727,39 @@
             "delete_success": "Eliminado del Cloud Backup",
             "delete_error": "No se pudo eliminar este contacto de la copia de seguridad. Inténtalo de nuevo.",
             "keep_error": "No se pudo eliminar este contacto de este dispositivo. Inténtalo de nuevo."
+        },
+        "passkeys": {
+            "title": "Passkeys",
+            "review_title": "Passkeys por revisar",
+            "review_action": "Revisar",
+            "not_backed_up_count": "{{count}} sin copia de seguridad",
+            "not_backed_up_count_one": "{{count}} sin copia de seguridad",
+            "available_count": "{{count}} disponibles desde la copia de seguridad",
+            "available_count_one": "{{count}} disponible desde la copia de seguridad",
+            "device_title": "Passkeys",
+            "device_subtitle": "Disponibles en este dispositivo",
+            "add_from_backup_title": "Añadir desde la copia de seguridad",
+            "add_from_backup_subtitle": "En tu Cloud Backup, no en este dispositivo",
+            "not_backed_up_title": "Sin copia de seguridad",
+            "not_backed_up_subtitle": "En este dispositivo, no en tu Cloud Backup",
+            "back_up_action": "Respaldar",
+            "add_action": "Añadir",
+            "unnamed": "Passkey sin nombre",
+            "empty_title": "Aún no hay passkeys",
+            "empty_body": "Las passkeys que crees en este dispositivo estarán protegidas por tu Cloud Backup.",
+            "unsupported_title": "Estas passkeys no se pueden respaldar",
+            "unsupported_body": "Pera solo puede respaldar una passkey que pueda volver a crear desde la passphrase de recuperación de una Universal Wallet. Las de este dispositivo se crearon de otra forma, así que se quedan solo aquí.",
+            "review_empty_title": "Nada por revisar",
+            "review_empty_body": "Todas las passkeys de este dispositivo están en tu Cloud Backup.",
+            "back_up_success": "Passkey respaldada",
+            "back_up_error": "No se pudo respaldar esta passkey. Inténtalo de nuevo.",
+            "add_success": "Passkey añadida",
+            "add_error": "No se pudo añadir esta passkey. Inténtalo de nuevo.",
+            "delete_sheet_title": "¿Eliminar del Cloud Backup?",
+            "delete_sheet_body": "Esto eliminará de forma permanente la copia de seguridad de esta passkey en la nube. Puedes volver a respaldarla desde tu dispositivo cuando quieras.",
+            "delete_success": "Eliminada del Cloud Backup",
+            "delete_error": "No se pudo eliminar esta passkey de la copia de seguridad. Inténtalo de nuevo.",
+            "keep_error": "No se pudo eliminar esta passkey de este dispositivo. Inténtalo de nuevo."
         },
         "turn_off_sheet": {
             "title": "Desactivar la copia de seguridad en la nube",
@@ -1040,16 +1078,25 @@
                 "body": "El servidor tuvo un problema al procesar tu solicitud. Inténtalo de nuevo."
             }
         },
-        "validation": {
-            "generic": "Los datos no parecen ser válidos.",
-            "invalid_address": "La dirección no parece ser válida: {{address}}",
-            "invalid_amount": "El cantidad no parece ser válido: {{amount}}",
-            "invalid_mnemonic": "La passphrase de recuperación no parece ser válida.",
-            "required_field": "Falta un campo obligatorio: {{field}}"
-        },
         "transaction": {
             "title": "Error al procesar esta transacción",
-            "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa."
+            "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa.",
+            "insufficient_balance_for_opt_in": {
+                "title": "ALGO insuficiente",
+                "body": "Necesitas {{shortfall}} ALGO más para añadir este activo. Tu cuenta debe mantener su saldo mínimo y cubrir la comisión de la transacción."
+            },
+            "already_opted_in": {
+                "title": "Activo ya añadido",
+                "body": "Esta cuenta ya ha añadido este activo."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "El activo aún tiene saldo",
+                "body": "Solo puedes eliminar un activo con saldo cero. Envía o intercambia primero el importe restante."
+            },
+            "creator_cannot_opt_out": {
+                "title": "No se puede eliminar este activo",
+                "body": "Esta cuenta creó este activo, así que no puede eliminarlo."
+            }
         },
         "kms": {
             "key_not_found": "No se pudo encontrar la clave de firma de esta cuenta.",
@@ -1123,9 +1170,6 @@
             "overview_tab": "Resumen",
             "card_details_tab": "Datos de tarjeta",
             "balance": "Saldo",
-            "spendable_per_tx": "≈{{amount}} {{currency}} disponibles",
-            "spendable_info_title": "Disponible por transacción",
-            "spendable_info_body": "El máximo que puede cubrir una sola compra: el saldo de tu tarjeta más tu saldo de reembolsos y, con la financiación automática, hasta {{limit}} de tu cuenta vinculada.",
             "withdraw": "Retirar",
             "add_funds": "Añadir fondos",
             "credits_title": "Créditos",
@@ -1250,8 +1294,6 @@
             "balance": "Saldo: {{amount}} USDC",
             "confirm_title": "Confirmar reclamo",
             "confirm_button": "Confirmar",
-            "fee_label": "Comisión de red",
-            "fee_loading": "Estimando...",
             "success_title": "Reclamo enviado",
             "history_title": "Actividad"
         },
@@ -2038,6 +2080,7 @@
             "pair_ledger_description": "Quiero recuperar una cuenta de Algorand respaldada por mi hardware wallet Ledger por Bluetooth",
             "pair_ledger_usb_title": "Vincular Ledger por USB",
             "pair_ledger_usb_description": "Quiero recuperar una cuenta de Algorand respaldada por mi hardware wallet Ledger por cable USB",
+            "pair_ledger_unsupported_description": "No compatible con este navegador o dispositivo",
             "pera_web_title": "Importar desde Pera Web",
             "pera_web_description": "Quiero importar cuentas de Algorand desde Pera Web",
             "cloud_backup_title": "Importar desde la copia de seguridad en la nube",
@@ -2573,6 +2616,7 @@
         "input": {
             "max": "MÁX",
             "next": "Siguiente",
+            "amount_label": "Importe",
             "error_title": "Cantidad no válida",
             "error_body": "Introduce una cantidad mayor que {{min}}.",
             "exceeds_max_title": "Saldo insuficiente",
@@ -2624,8 +2668,9 @@
         },
         "close_account": {
             "title": "Cerrar cuenta",
-            "body": "Esta cuenta no tiene ningún activo añadido. Enviar todo el saldo cerrará la cuenta en la red de Algorand.",
+            "body": "Esta cuenta no tiene ningún activo añadido, así que puedes cerrarla y enviar todo el saldo. Algunos exchanges no aceptan transacciones que cierran una cuenta. Si mantienes la cuenta abierta, el saldo mínimo de {{minBalance}} ALGO se queda en ella.",
             "confirm": "Cerrar cuenta y enviar",
+            "keep_open": "Enviar sin cerrar",
             "warning": "Esta transacción cerrará tu cuenta en la red de Algorand.",
             "success_title": "Cuenta cerrada",
             "success_subtitle": "Tu cuenta se ha cerrado en la red de Algorand."
@@ -2757,6 +2802,7 @@
                 "fetch_from_node": "Obtener del nodo",
                 "fetch_failed": "No se pudo conectar con ese nodo. Introduce los valores manualmente.",
                 "invalid_url": "Introduce una URL http:// o https:// válida",
+                "invalid_https_url": "Introduce una URL https:// válida",
                 "genesis_required": "Obtén o introduce el hash génesis",
                 "genesis_id_required": "Obtén o introduce el ID génesis",
                 "save": "Guardar y cambiar",
@@ -3328,6 +3374,7 @@
         "execution": {
             "error_title": "Swap fallido",
             "error_body": "Algo salió mal durante el swap. Vuelve a intentarlo.",
+            "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
             "insufficient_algo_title": "ALGO insuficiente",
             "insufficient_algo_body": "Esta cuenta necesita al menos {{amount}} ALGO más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más ALGO y vuelve a intentarlo.",
             "success_title": "Swap completado",
@@ -3554,6 +3601,9 @@
             "grant_permission": "Conceder permiso",
             "open_settings": "Abrir ajustes",
             "web_start_title": "Listo para buscar",
+            "web_ble_unsupported_title": "Bluetooth no disponible",
+            "web_ble_unsupported_body": "Este navegador no puede conectarse a un Ledger por Bluetooth. Vincúlalo por USB o usa un navegador compatible con Bluetooth, como Chrome.",
+            "use_usb": "Vincular por USB",
             "web_start_body": "Tu navegador te pedirá que selecciones tu dispositivo Ledger.",
             "web_start_button": "Buscar Ledger",
             "popup_launch_title": "Listo para emparejar",
@@ -3707,7 +3757,11 @@
         "scan_header": {
             "having_issues": "¿Tienes problemas?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Cuenta Ledger añadida",
+            "body": "Ya puedes usarla en la extensión de Pera."
+        }
     },
     "countries": {
         "AC": "Isla de la Ascensión",
@@ -4017,7 +4071,17 @@
             "error_invalid_password": "Contraseña incorrecta. Vuelve a intentarlo.",
             "corrupted_error": "Los datos de tu Vault están dañados y no se pueden desbloquear. Puede que tengas que restablecer la extensión y restaurarla desde tu copia de seguridad.",
             "passkey_error": "El desbloqueo con passkey falló. Usa tu contraseña en su lugar.",
-            "lockout_countdown": "Demasiados intentos. Vuelve a intentarlo en {{time}}"
+            "lockout_countdown": "Demasiados intentos. Vuelve a intentarlo en {{time}}",
+            "forgot_password": "¿Olvidaste tu contraseña?"
+        },
+        "reset": {
+            "title": "¿Restablecer tu wallet?",
+            "body": "Tu contraseña no se puede recuperar. Al restablecer se borra todo lo que Pera Wallet guarda en este navegador y después podrás crear una contraseña nueva.",
+            "restore_note": "Después, restaura tus cuentas con su passphrase de recuperación. Cualquier cuenta cuya passphrase de recuperación no esté respaldada se perderá.",
+            "hardware_note": "Las cuentas Ledger y las cuentas de observación no se restauran con una passphrase. Vuelve a añadirlas después del restablecimiento.",
+            "acknowledge": "Entiendo que esto borra mis datos y no se puede deshacer",
+            "confirm_button": "Restablecer wallet",
+            "error": "No se pudo restablecer la wallet. Inténtalo de nuevo."
         },
         "security": {
             "autolock_title": "Bloqueo automático tras",
@@ -4044,9 +4108,6 @@
         "approval": {
             "placeholder": "Interfaz de aprobación — próximamente en M4."
         },
-        "expanded": {
-            "redirecting": "Continuando en una pestaña nueva…"
-        },
         "reauth": {
             "title": "Confirma que eres tú",
             "confirm_button": "Confirmar",
@@ -4063,5 +4124,8 @@
             "continue": "Continuar",
             "do_not_show_again": "No volver a mostrar"
         }
+    },
+    "integrityCheck": {
+        "frame_title": "Verificación de Pera Wallet"
     }
 }

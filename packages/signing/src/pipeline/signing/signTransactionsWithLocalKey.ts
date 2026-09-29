@@ -19,7 +19,6 @@ import {
     type PeraSignedTransaction,
     type PeraTransaction,
     type PeraTransactionGroup,
-    type PQSchemeId,
 } from '@perawallet/wallet-core-blockchain'
 import {
     isAlgo25Account,
@@ -27,6 +26,7 @@ import {
     isQuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 /**

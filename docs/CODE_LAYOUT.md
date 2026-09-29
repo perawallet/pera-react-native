@@ -55,7 +55,7 @@ modules/transactions/components/
 │   │   ├── index.ts
 │   │   └── __tests__/BalanceImpactView.spec.tsx
 │   └── TransactionSigningView/
-└── TransactionIcon/            # Component folder (PascalCase)
+└── TransactionListItem/        # Component folder (PascalCase)
 ```
 
 Subcomponents live beside their parent and are not re-exported from the barrel.
@@ -67,6 +67,8 @@ Subcomponents live beside their parent and are not re-exported from the barrel.
 | Reusable button, card, modal    | `apps/mobile/src/components/`                                         |
 | Account list screen             | `apps/mobile/src/modules/accounts/screens/AccountScreen/`             |
 | Component used only in accounts | `apps/mobile/src/modules/accounts/components/`                        |
+| Component many modules render   | `apps/mobile/src/components/` (e.g. `AccountDisplay`, `AssetIcon`)    |
+| A module's API for other code   | Its entry files; see "Module Boundaries" in `apps/mobile/CLAUDE.md`   |
 | Domain-level hooks (shared)     | `apps/mobile/src/modules/[module]/hooks/`                             |
 | Screen-specific hook            | Same folder as the screen (e.g., `AccountScreen/useAccountScreen.ts`) |
 | Component-specific hook         | Same folder as the component (e.g., `AccountCard/useAccountCard.ts`)  |

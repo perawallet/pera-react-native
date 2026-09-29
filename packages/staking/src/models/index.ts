@@ -14,7 +14,8 @@ import type { Decimal } from 'decimal.js'
 import type { StakingProjectInfo } from './schema'
 
 export type StakingProject = StakingProjectInfo & {
-    tvlInAlgo: Decimal
+    /** Display units of the native asset of the chain the project was fetched for. */
+    tvlInNative: Decimal
     tvlInUsd: Decimal
 }
 

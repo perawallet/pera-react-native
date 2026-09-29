@@ -12,6 +12,9 @@
 
 import { randomBytes, createCipheriv, createDecipheriv } from 'crypto'
 import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
     concatBytes,
     decodeFromBase64,
     encodeToBase64,
@@ -26,9 +29,13 @@ const AES_GCM_TAG_LENGTH = 16
  * `reason` is the discriminant callers branch on. Matching on the message
  * instead would break silently the first time it is reworded.
  */
-export class AesGcmOpenError extends Error {
+export class AesGcmOpenError extends AppError {
     constructor(readonly reason: 'too-short' | 'open-failed' = 'open-failed') {
-        super(`Failed to open AES-GCM payload: ${reason}`)
+        super(`Failed to open AES-GCM payload: ${reason}`, {
+            severity: ErrorSeverity.HIGH,
+            category: ErrorCategory.KMS,
+            recoverable: false,
+        })
         this.name = 'AesGcmOpenError'
     }
 }

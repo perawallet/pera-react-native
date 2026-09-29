@@ -18,12 +18,10 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@algorandfoundation/algokit-utils": "catalog:",
-    "algosdk": "catalog:",
-    "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-currencies": "workspace:*",
     "@perawallet/wallet-core-database": "workspace:*",
@@ -32,23 +30,22 @@
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-multisig": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "decimal.js": "catalog:",
     "drizzle-orm": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
-    "@scure/bip39": "catalog:",
+    "algosdk": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "msw": "catalog:"
+    "msw": "catalog:",
+    "react-dom": "catalog:"
   }
 }

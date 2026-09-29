@@ -24,22 +24,27 @@ export type NetworkRow = {
     isSelected: boolean
 }
 
-// Static keys: pnpm lint:i18n cannot verify an interpolated key.
-const LABEL_KEYS: Record<Network, string> = {
-    [Networks.mainnet]: 'settings.developer.node_settings.mainnet_label',
-    [Networks.testnet]: 'settings.developer.node_settings.testnet_label',
-    [Networks.betanet]: 'settings.developer.node_settings.betanet_label',
-    [Networks.custom]: 'settings.developer.node_settings.custom_label',
-}
-
 // Explicit display order: MainNet first. Object.values(Networks) follows the
 // declaration order in packages/config, which is testnet-first, and a screen's
 // row order should not be hostage to an unrelated object literal's ordering.
-const NETWORK_DISPLAY_ORDER: Network[] = [
-    Networks.mainnet,
-    Networks.testnet,
-    Networks.betanet,
-    Networks.custom,
+// Static keys: the i18n lint rules cannot verify an interpolated key.
+const NETWORK_ROWS: readonly { network: Network; labelKey: string }[] = [
+    {
+        network: Networks.mainnet,
+        labelKey: 'settings.developer.node_settings.mainnet_label',
+    },
+    {
+        network: Networks.testnet,
+        labelKey: 'settings.developer.node_settings.testnet_label',
+    },
+    {
+        network: Networks.betanet,
+        labelKey: 'settings.developer.node_settings.betanet_label',
+    },
+    {
+        network: Networks.custom,
+        labelKey: 'settings.developer.node_settings.custom_label',
+    },
 ]
 
 type UseSettingsDeveloperNodeSettingsScreenResult = {
@@ -57,10 +62,9 @@ export const useSettingsDeveloperNodeSettingsScreen =
 
         const networks = useMemo(
             () =>
-                NETWORK_DISPLAY_ORDER.map<NetworkRow>(network => ({
-                    network,
-                    labelKey: LABEL_KEYS[network],
-                    isSelected: network === activeNetwork,
+                NETWORK_ROWS.map<NetworkRow>(row => ({
+                    ...row,
+                    isSelected: row.network === activeNetwork,
                 })),
             [activeNetwork],
         )

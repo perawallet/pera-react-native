@@ -64,7 +64,7 @@ const deriveBip39Seed = (mnemonicBytes: Uint8Array): Promise<Buffer> => {
 }
 
 // Byte-identical to `@algorandfoundation/dp256`'s `genDerivedMainKeyWithBIP39`
-// (equivalence guard in `__tests__/hdwallet-utils.test.ts`).
+// (equivalence guard in `__tests__/hdwallet-utils.spec.ts`).
 const LIQUID_AUTH_PBKDF2_ITERATIONS = 210_000
 const LIQUID_AUTH_MAIN_KEY_LENGTH = 64
 const LIQUID_AUTH_PBKDF2_DIGEST = 'sha512'
@@ -87,8 +87,13 @@ export const deriveLiquidAuthMainKey = (
             LIQUID_AUTH_MAIN_KEY_LENGTH,
             LIQUID_AUTH_PBKDF2_DIGEST,
             (err, derivedKey) => {
-                if (err) reject(err)
-                else resolve(new Uint8Array(derivedKey))
+                if (err) {
+                    reject(err)
+                    return
+                }
+                const mainKey = new Uint8Array(derivedKey)
+                zeroBytes(derivedKey)
+                resolve(mainKey)
             },
         )
     })
@@ -104,7 +109,7 @@ export const entropyToMnemonic = (entropy: Uint8Array): string => {
  * in 11-bit groups — but stops at the indices instead of mapping to words, so
  * the phrase never becomes a `string` on the heap. Byte-identical to
  * `mnemonicWordsToIndices(entropyToMnemonic(entropy).split(' '))` (equivalence
- * guard in `__tests__/hdwallet-utils.test.ts`).
+ * guard in `__tests__/hdwallet-utils.spec.ts`).
  */
 export const entropyToIndices = (entropy: Uint8Array): Uint16Array => {
     const entropyBits = entropy.length * BITS_PER_BYTE
@@ -145,7 +150,7 @@ export const entropyToIndices = (entropy: Uint8Array): Uint16Array => {
  * Inverse of `entropyToIndices`: recovers BIP39 entropy from wordlist indices,
  * verifying the checksum bits against SHA-256(entropy). The index-native
  * counterpart to `@scure/bip39`'s `mnemonicToEntropy` (equivalence guard in
- * `__tests__/hdwallet-utils.test.ts`), so the phrase never has to exist as a
+ * `__tests__/hdwallet-utils.spec.ts`), so the phrase never has to exist as a
  * string to be decoded. Supports every BIP39 size (12–24 words / 128–256 bits).
  *
  * Throws on an invalid word count, out-of-range index, or checksum mismatch,
@@ -200,33 +205,39 @@ export const indicesToEntropy = (indices: Uint16Array): Uint8Array => {
  * runs PBKDF2 natively via JSI — orders of magnitude faster than the pure-JS
  * path inside `@scure/bip39`'s `mnemonicToSeed` (HMAC-SHA512 × 2048 iterations
  * on the JS thread). Output is byte-identical to scure's `mnemonicToSeed`;
- * see `__tests__/hdwallet-utils.test.ts` for the equivalence guard.
+ * see `__tests__/hdwallet-utils.spec.ts` for the equivalence guard.
  */
 export const generateHDMasterKey = async (mnemonicIndices?: Uint16Array) => {
     // Generate path: fresh entropy encoded to indices — same construction as
     // scure's `generateMnemonic` (entropyToMnemonic over CSPRNG bytes), minus
     // the string.
     let indices: Uint16Array
+    // Set only when the indices are generated here; supplied ones are the
+    // caller's to zero.
+    let generatedIndices: Uint16Array | undefined
     if (mnemonicIndices) {
         indices = mnemonicIndices
     } else {
         const freshEntropy = randomBytes(HD_MNEMONIC_STRENGTH / BITS_PER_BYTE)
         try {
-            indices = entropyToIndices(freshEntropy)
+            generatedIndices = entropyToIndices(freshEntropy)
         } finally {
             zeroBytes(freshEntropy)
         }
+        indices = generatedIndices
     }
 
     const mnemonicBytes = indicesToUtf8Bytes(indices)
     try {
-        const seed = await deriveBip39Seed(mnemonicBytes)
+        // The checksum check throws, so it runs before the seed exists.
         const entropy = indicesToEntropy(indices)
-        return { seed, entropy }
+        try {
+            return { seed: await deriveBip39Seed(mnemonicBytes), entropy }
+        } catch (error) {
+            zeroBytes(entropy)
+            throw error
+        }
     } finally {
-        zeroBytes(mnemonicBytes)
-        // Generated indices are owned here; caller-supplied ones are the
-        // caller's to zero.
-        if (!mnemonicIndices) zeroBytes(indices)
+        zeroBytes(mnemonicBytes, generatedIndices)
     }
 }

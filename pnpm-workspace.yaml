@@ -7,12 +7,12 @@ packages:
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.2
   "@algorandfoundation/dp256": 1.1.0
-  "@algorandfoundation/keystore-core": 1.0.0-canary.3
-  "@algorandfoundation/keystore-web": 1.0.0-canary.3
+  "@algorandfoundation/keystore-core": 1.0.0-canary.4
+  "@algorandfoundation/keystore-web": 1.0.0-canary.4
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
   "@algorandfoundation/provider-migrations": 1.0.0-canary.1
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.19
-  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.26
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.20
+  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.27
   "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.19.16
@@ -23,7 +23,6 @@ catalog:
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": ^6.39.1
-  "@noble/ciphers": ^2.2.0
   "@noble/hashes": ^2.3.0
   "@notifee/react-native": ^9.1.8
   "@perawallet/walletconnect": 1.0.3
@@ -61,7 +60,6 @@ catalog:
   # encodes the namespace rules the relay and the dApp both enforce, so a copy
   # out of step with core's would build sessions core then rejects.
   "@walletconnect/utils": 2.23.10
-  "@xstate/react": ^6.1.0
   # 3.7.0 is a floor, not a preference: the `pqsig` field and the
   # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
   # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
@@ -84,11 +82,11 @@ catalog:
   expo-localization: ~57.0.1
   expo-sqlite: ~57.0.1
   fake-indexeddb: 6.2.5
-  falcon-1024: ^0.2.0
+  falcon-1024: 0.2.0
   fast-glob: ^3.3.2
   jsdom: ^30.0.1
   ky: ^2.0.2
-  lanekeep: 0.11.0
+  lanekeep: 0.12.0
   msw: ^2.14.6
   oxfmt: ^0.68.0
   react: 19.2.3
@@ -148,8 +146,8 @@ auditConfig:
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
-  # workspace depends on it (extensions/keystore-chrome vendors the flat
-  # canary.17 API locally), so it needs no freshness exemption of its own.
+  # workspace depends on it (extensions/keystore-chrome vendors the canary.17
+  # key types it needs), so it needs no freshness exemption of its own.
   # keystore-core and keystore-web ARE direct dependencies that share the
   # keystore canary publish date, so they keep their exemption independent of
   # the removed keystore pin: keystore-core is consumed by
@@ -166,11 +164,15 @@ minimumReleaseAgeExclude:
   - '@joe-p/react-native-falcon'
   - '@perawallet/walletconnect'
   - falcon-1024
-  - fast-uri
   # 3.3.18 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.
   # Same sole maintainer (ai <andrey@sitnik.es>) as 3.3.17, no install scripts,
   # SLSA provenance on both.
   - nanoid
+  # First-party: sole maintainer fredamsouza, SLSA provenance on the launcher and
+  # all four platform packages, no install scripts (checked for 0.12.0). Repeat
+  # those checks before adopting a release younger than the gate.
+  - lanekeep
+  - '@lanekeep/*'
   - expo
   - expo-*
   - '@expo/*'
@@ -202,22 +204,35 @@ patchedDependencies:
   # the intermittent half of apps/browser/e2e/dapp-sign.spec.ts. Creation now
   # happens under a Web Lock with a re-read once held, so the first caller
   # creates and the rest read what it wrote. Drop once upstream takes it.
-  "@algorandfoundation/keystore-web@1.0.0-canary.3": patches/@algorandfoundation__keystore-web@1.0.0-canary.3.patch
-  # Three unrelated reasons. The Android credential provider keeps the legacy
-  # native app's service class name so Credential Manager carries the user's
-  # enablement across the upgrade, relying-party scoping so the credential
-  # provider doesn't hand every stored passkey to any caller (PERA-4714), and
-  # every user-facing string the package ships names "Rocca Wallet" — its own
-  # product, shown verbatim in the iOS Face ID / passcode prompts. None of the
-  # three is configurable through plugin options.
-  # canary.26 shipped the derivedParentSecret fix upstream (parent.bytes), so
-  # that hunk is dropped rather than carried forward.
-  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.26": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.26.patch
+  "@algorandfoundation/keystore-web@1.0.0-canary.4": patches/@algorandfoundation__keystore-web@1.0.0-canary.4.patch
+  # Four unrelated reasons, none configurable through plugin options:
+  # - The Android credential provider keeps the legacy native app's service
+  #   class name, so Credential Manager carries the user's enablement across
+  #   the upgrade.
+  # - Android WebAuthn through a browser: clientData names the page's origin,
+  #   read through Google's privileged-browser allowlist, not the browser's app
+  #   identity. A caller's clientDataHash is honoured only from such a browser;
+  #   upstream's assertion path signs it for any app, which could then pass off a
+  #   clientData it forged for a web origin. Registration also returns the
+  #   authenticatorData / publicKeyAlgorithm / publicKey fields without which
+  #   Chrome rejects it.
+  # - The package's iOS strings name its own product ("Rocca"), including the
+  #   Face ID usage text and the biometric / passcode prompt reasons.
+  # - Android credentials live in the keystore's `k/`+`m/` split layout: the
+  #   credential chooser lists plaintext `k/` metadata without decrypting
+  #   anything, and one credential's sealed `m/` material is opened only after
+  #   the user selects it. Upstream lists flat records by opening each one.
+  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.27.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
   # qualify to Swift.abs to disambiguate. Drop once Expo ships a toolchain-compatible release.
   "expo-modules-jsi@57.0.4": patches/expo-modules-jsi@57.0.4.patch
+  # The CJS build's Emscripten glue reads a bare `__filename`, which a Metro web
+  # bundle never defines, so evaluating it throws a ReferenceError. The value
+  # only seeds a script-directory lookup the inlined WASM never uses; guard it
+  # with `typeof`. Drop once upstream's build stops emitting the bare read.
+  "falcon-1024@0.2.0": patches/falcon-1024@0.2.0.patch
   # Android: ScreenFragment.onDestroy never clears Screen.fragmentWrapper, and
   # Fabric's tagToViewState keeps the Screen view alive for the surface's
   # lifetime, so every dismissed screen's fragment (plus its view subtree) is
@@ -239,14 +254,15 @@ overrides:
   # it on every pre-push.
 
   # No @algorandfoundation/keystore override, and no catalog entry either:
-  # keystore-chrome vendors the flat canary.17 API locally (src/keystore/), so
-  # nothing in the workspace depends on this package. The catalog pin was
+  # keystore-chrome vendors the canary.17 key types and error class its WebAuthn
+  # signer uses (src/keystore/), so nothing in the workspace depends on this
+  # package. The catalog pin was
   # dropped because it resolved to nothing in the lockfile — no importer, no
   # resolution — leaving Dependabot to bump a spec no consumer used and no test
   # could validate.
-  '@algorandfoundation/keystore-core': 1.0.0-canary.3
-  '@algorandfoundation/keystore-web': 1.0.0-canary.3
-  '@algorandfoundation/react-native-keystore': 1.0.0-canary.19
+  '@algorandfoundation/keystore-core': 1.0.0-canary.4
+  '@algorandfoundation/keystore-web': 1.0.0-canary.4
+  '@algorandfoundation/react-native-keystore': 1.0.0-canary.20
   # Four upstream packages (keystore-core, keystore@canary.17,
   # provider-migrations, react-native-keystore) pin `wallet-provider` at exact
   # `1.0.0-canary.5`, so bumping the catalog alone can't drag them forward and
@@ -308,10 +324,12 @@ overrides:
   # GHSA-7p8r-x3mc-p8w7 (host confusion via backslash authority introducer),
   # then GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf and
   # GHSA-jqff-g426-hqxp (host confusion / SSRF via IDN, IPv6 and
-  # percent-decoding normalization), all patched in 4.1.3. Pinned to the
-  # lowest patched version rather than latest so the resolution stays behind
-  # the minimumReleaseAge window without an exclude entry.
-  fast-uri@<4.1.3: ">=4.1.3"
+  # percent-decoding normalization), patched in 4.1.3; then GHSA-qw65-cvwx-89v3
+  # (authority injection via an unvalidated port) and GHSA-58mr-gqgx-xq4g (host
+  # confusion via an unclosed bracket), patched in 4.1.4. Pinned to the lowest
+  # patched version rather than latest so the resolution stays behind the
+  # minimumReleaseAge window without an exclude entry.
+  fast-uri@<4.1.4: 4.1.4
   flatted@3: 3.4.2
   glob@>=10.2.0 <10.5.0: '>=10.5.0'
   happy-dom@<20.0.0: '>=20.0.0'
@@ -357,7 +375,9 @@ overrides:
   # `removeViewBox`, which svgo v4 dropped from preset-default. An open
   # `>=3.3.4` here resolved to 4.x and made every SVG import log a
   # "trying to configure removeViewBox" warning during bundling.
-  svgo@>=3.0.0 <3.3.4: ^3.3.4
+  svgo@>=3.0.0 <3.3.5: ^3.3.5
+  # GHSA-3wwx-pv8p-q78v (DoS via WebSocket permessage-deflate); dev-only via jsdom.
+  undici@>=8.1.0 <8.10.2: 8.10.2
   uuid@<14: 14.0.0
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'

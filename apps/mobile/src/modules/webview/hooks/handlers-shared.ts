@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { JsonRpcErrorCode } from '@perawallet/wallet-core-dapp/wire'
+import { Linking } from 'react-native'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { dappRelayableErrorNames } from '@perawallet/wallet-core-connections/dappRequest'
+import {
+    JsonRpcErrorCode,
+    sanitizeErrorForWebview as sanitizeDappError,
+} from '@perawallet/wallet-core-dapp/wire'
 import { logger, bytesToHex } from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
 
@@ -18,11 +24,13 @@ import { toLoadableUrl } from '../components/PWWebView/toLoadableUrl'
 
 // One codec for the in-app webview and the extension's window.pera bridge.
 // The `/wire` subpath, not the barrel: the barrel reaches the handler and its
-// config graph, which nothing in the webview bridge needs.
-export {
-    JsonRpcErrorCode,
-    sanitizeErrorForWebview,
-} from '@perawallet/wallet-core-dapp/wire'
+// connections graph, which nothing in the webview bridge needs.
+export { JsonRpcErrorCode } from '@perawallet/wallet-core-dapp/wire'
+
+// The in-app bridge speaks ARC-0001, which only the legacy networks' chain
+// does, so it relays that chain's adapter errors on top of the codec default.
+export const sanitizeErrorForWebview = (error: Error): string =>
+    sanitizeDappError(error, dappRelayableErrorNames(LEGACY_CHAIN_ID))
 
 export type RequireSecureContext = {
     operation: string
@@ -147,6 +155,54 @@ export const toValidatedBrowserUrl = (raw: unknown): string | null => {
     if (!trimmed || trimmed.startsWith('//')) return null
     const normalized = toLoadableUrl(trimmed)
     return isSafeBrowserUrl(normalized) ? normalized : null
+}
+
+const SCHEME_PATTERN = /^([a-z][a-z\d+.-]*):/i
+
+// Script/document-carrying schemes, and the ones that address the browser or
+// the extension itself, which a page must never reach through the wallet.
+const BLOCKED_NATIVE_URI_SCHEMES = new Set([
+    'javascript',
+    'data',
+    'blob',
+    'file',
+    'about',
+    'chrome',
+    'chrome-extension',
+    'moz-extension',
+])
+
+/**
+ * Gates a dApp-supplied URI for the OS (custom schemes are the point here, so
+ * no https-only rule). It must carry an explicit scheme: react-native-web
+ * resolves a scheme-less string against the current `chrome-extension://` page.
+ */
+export const toValidatedNativeUri = (raw: unknown): string | null => {
+    if (typeof raw !== 'string') return null
+    const trimmed = raw.trim()
+    const scheme = SCHEME_PATTERN.exec(trimmed)?.[1]?.toLowerCase()
+    if (!scheme || BLOCKED_NATIVE_URI_SCHEMES.has(scheme)) return null
+    return trimmed
+}
+
+/**
+ * The only way a peer-, backend- or metadata-supplied URL may reach
+ * `Linking.openURL`: react-native-web resolves a relative string against the
+ * current page, which in the extension is a `chrome-extension://` surface.
+ * Returns false (and opens nothing) when {@link toValidatedBrowserUrl} rejects it.
+ */
+export const openValidatedBrowserUrl = (raw: unknown): boolean => {
+    const url = toValidatedBrowserUrl(raw)
+    if (!url) {
+        logger.warn('Refused to open unvalidated external URL', { url: raw })
+        return false
+    }
+    // No OS handler for the URL is a device condition, not our bug.
+    // oxlint-disable-next-line pera/no-unvalidated-open-url -- validated just above
+    Linking.openURL(url).catch(err =>
+        logger.warn('Failed to open external URL', { url, err }),
+    )
+    return true
 }
 
 const RELATIVE_PATH_BASE = 'https://perawallet.invalid/'

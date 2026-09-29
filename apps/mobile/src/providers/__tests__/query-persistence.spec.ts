@@ -41,8 +41,8 @@ const asQuery = (
 // Keys below are literals (not built via the packages' query-key factories,
 // which stay package-internal) whose shapes are pinned by the package-level
 // predicate tests added in Tasks 1-2:
-// packages/accounts/src/hooks/__tests__/querykeys.test.ts and
-// packages/assets/src/hooks/__tests__/querykeys.test.ts.
+// packages/accounts/src/hooks/__tests__/querykeys.spec.ts and
+// packages/assets/src/hooks/__tests__/querykeys.spec.ts.
 const balanceHistoryKey: QueryKey = [
     'accounts',
     'balance-history',

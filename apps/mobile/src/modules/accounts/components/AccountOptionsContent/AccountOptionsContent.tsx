@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { BottomSheetView } from '@gorhom/bottom-sheet'
 import {
+    PWBottomSheetView,
     PWDivider,
     PWIcon,
     PWSheetLayout,
@@ -109,7 +109,7 @@ export const AccountOptionsContent = ({
     // sheet keeps the list's height around them.
     if (removeConfirmView === 'backup-warning') {
         return (
-            <BottomSheetView>
+            <PWBottomSheetView>
                 <ConfirmActionContent
                     icon='trash'
                     iconVariant='error'
@@ -128,13 +128,13 @@ export const AccountOptionsContent = ({
                     onConfirm={handleConfirmBackupWarning}
                     onCancel={handleCancelRemove}
                 />
-            </BottomSheetView>
+            </PWBottomSheetView>
         )
     }
 
     if (removeConfirmView === 'remove-confirm') {
         return (
-            <BottomSheetView>
+            <PWBottomSheetView>
                 <ConfirmActionContent
                     icon='trash'
                     iconVariant='error'
@@ -153,19 +153,19 @@ export const AccountOptionsContent = ({
                     onConfirm={handleConfirmRemove}
                     onCancel={handleCancelRemove}
                 />
-            </BottomSheetView>
+            </PWBottomSheetView>
         )
     }
 
     if (removeConfirmView === 'cloud-backup-delete') {
         return (
-            <BottomSheetView>
+            <PWBottomSheetView>
                 <DeleteFromBackupSheet
                     declineLabel={t('cloud_backup.accounts.keep_action')}
                     onConfirm={() => void handleDeleteFromBackup()}
                     onDecline={() => void handleKeepInBackup()}
                 />
-            </BottomSheetView>
+            </PWBottomSheetView>
         )
     }
 

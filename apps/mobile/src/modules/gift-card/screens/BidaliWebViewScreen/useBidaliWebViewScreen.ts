@@ -16,7 +16,7 @@ import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 // Imported from the handlers file directly (not the module barrel) so this
 // hook doesn't drag the whole webview stack into its dependency graph.
-import { isTrustedWebviewOrigin } from '@modules/webview/hooks/handlers'
+import { isTrustedWebviewOrigin } from '@modules/webview'
 import { useBidali } from '../../hooks/useBidali'
 import { useBidaliClose } from '../../hooks/useBidaliClose'
 import {
@@ -83,6 +83,7 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
         (request: ShouldStartLoadRequest): boolean => {
             if (isTrustedWebviewOrigin(request.url, [url])) return true
             if (/^https?:/i.test(request.url)) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- http(s) check above, native webview only
                 void Linking.openURL(request.url)
             }
             return false

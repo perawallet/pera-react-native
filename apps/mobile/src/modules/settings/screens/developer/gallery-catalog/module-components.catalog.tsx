@@ -16,14 +16,14 @@ import { makeStyles, useTheme } from '@rneui/themed'
 
 import { PWView } from '@components/core'
 
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import { AccountDisplay } from '@components/AccountDisplay'
+import { AccountIcon } from '@components/AccountIcon'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 import { NftEmptyState } from '@modules/accounts/components/NftEmptyState'
 import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
 
 import { AssetFavoriteButton } from '@modules/assets/components/AssetFavoriteButton'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { AssetNotificationButton } from '@modules/assets/components/AssetNotificationButton'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
@@ -36,7 +36,7 @@ import { CollectibleThumbnail as AssetsCollectibleThumbnail } from '@modules/ass
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
 
 import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
+import { TransactionIcon } from '@components/TransactionIcon'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
 import { TransactionStatusBadge } from '@modules/transactions/components/TransactionStatusBadge'
 
@@ -555,7 +555,7 @@ const mockStakingProject: StakingProject = {
     logoUrl: 'https://perawallet.app/static/folks-finance.png',
     link: 'https://folks.finance',
     type: 'liquid',
-    tvlInAlgo: new Decimal('12500000'),
+    tvlInNative: new Decimal('12500000'),
     tvlInUsd: new Decimal('3750000'),
 }
 

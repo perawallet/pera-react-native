@@ -18,12 +18,12 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@algorandfoundation/algokit-utils": "catalog:",
     "@babel/runtime": "catalog:",
     "@noble/hashes": "catalog:",
-    "algosdk": "catalog:",
     "@perawallet/wallet-core-app-integrity": "workspace:*",
+    "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
@@ -33,8 +33,6 @@
     "ky": "catalog:",
     "zod": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
-    "tweetnacl": "catalog:",
     "zustand": "catalog:",
     "@tanstack/react-query": "catalog:"
   },
@@ -45,6 +43,7 @@
     "msw": "catalog:",
     "@types/react": "catalog:",
     "@testing-library/react": "catalog:",
-    "@perawallet/wallet-core-devtools": "workspace:*"
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "react-dom": "catalog:"
   }
 }

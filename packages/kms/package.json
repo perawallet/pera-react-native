@@ -26,13 +26,11 @@
     "@algorandfoundation/algokit-utils": "catalog:",
     "algosdk": "catalog:",
     "@algorandfoundation/keystore-core": "catalog:",
-    "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
     "@joe-p/react-native-falcon": "catalog:",
     "@noble/hashes": "catalog:",
     "@perawallet/wallet-extension-provider": "workspace:*",
-    "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@scure/bip39": "catalog:",
     "react": "catalog:",
@@ -50,6 +48,7 @@
     "react-native-nitro-modules": "0.36.5",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@algorandfoundation/react-native-keystore": "catalog:"
   }
 }

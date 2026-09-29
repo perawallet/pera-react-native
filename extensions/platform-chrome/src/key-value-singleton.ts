@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,8 +13,8 @@
 import { ChromeKeyValueStorageService } from './services/key-value-storage'
 
 // Separate from resources.ts so the pre-hydration ./bootstrap subpath can import
-// hydratePlatform without dragging in ChromeDatabaseService and the hardware-wallet
-// registry; resources.ts imports this same singleton.
+// hydratePlatform without dragging in ChromeDatabaseService; resources.ts
+// imports this same singleton.
 export const keyValueStorage = new ChromeKeyValueStorageService()
 
 /**

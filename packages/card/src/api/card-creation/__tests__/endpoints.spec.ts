@@ -1,0 +1,259 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const { request } = vi.hoisted(() => ({ request: vi.fn() }))
+vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
+
+import { createCard, fetchFundingAddressLink } from '../endpoints'
+import {
+    CardAccountLinkedElsewhereError,
+    CardCreateInProgressError,
+    CardCreateUnavailableError,
+    CardOwnershipProofRejectedError,
+    CardSetupIncompleteError,
+} from '../errors'
+
+const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
+
+describe('createCard', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('POSTs /api/v3/baanx/escrow-card on the proxy route', async () => {
+        request.mockResolvedValue({
+            data: { cardAddress: 'ESCROW_CARD', txId: 'TX123' },
+        })
+
+        const result = await createCard({
+            network: 'testnet',
+            address: 'FUNDING_ADDR',
+            baanxUserId: 'baanx-user-1',
+            currency: 'usdc',
+            signData,
+            signature: 'c2ln',
+        })
+
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                route: 'proxy',
+                method: 'POST',
+                path: '/api/v3/baanx/escrow-card',
+                // Minting waits on chain confirmation, so the 10 s default is too short.
+                timeoutMs: 60_000,
+                data: {
+                    address: 'FUNDING_ADDR',
+                    baanx_user_id: 'baanx-user-1',
+                    currency: 'usdc',
+                    signData,
+                    signature: 'c2ln',
+                },
+            }),
+        )
+        // Integrity headers are the proxy transport's job, applied once there.
+        expect(request.mock.calls[0][0].headers).toBeUndefined()
+        expect(result).toEqual({ cardAddress: 'ESCROW_CARD', txId: 'TX123' })
+    })
+
+    it('rejects on a malformed response', async () => {
+        request.mockResolvedValue({ data: { cardAddress: 'ESCROW_CARD' } })
+
+        await expect(
+            createCard({
+                network: 'testnet',
+                address: 'FUNDING_ADDR',
+                currency: 'usdc',
+                signData,
+                signature: 'c2ln',
+            }),
+        ).rejects.toThrow()
+    })
+})
+
+describe('createCard error mapping', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    const params = {
+        network: 'testnet',
+        address: 'FUNDING_ADDR',
+        baanxUserId: 'baanx-user-1',
+        currency: 'usdc',
+        signData,
+        signature: 'c2ln',
+    } as const
+
+    it('maps the backend 400 (address linked to a different Baanx user) to CardAccountLinkedElsewhereError', async () => {
+        request.mockRejectedValue(
+            Object.assign(new Error('Bad Request'), {
+                response: { status: 400 },
+                data: {
+                    status: 400,
+                    error: 'Account address is already linked to another Baanx user',
+                },
+            }),
+        )
+
+        await expect(createCard(params)).rejects.toThrow(
+            CardAccountLinkedElsewhereError,
+        )
+    })
+
+    const rejectWith = (status: number, code?: string) =>
+        request.mockRejectedValue(
+            Object.assign(new Error(`HTTP ${status}`), {
+                response: { status },
+                data: code ? { status, code, error: code } : undefined,
+            }),
+        )
+
+    it('maps ACCOUNT_LINKED_ELSEWHERE by code regardless of status', async () => {
+        rejectWith(409, 'ACCOUNT_LINKED_ELSEWHERE')
+
+        await expect(createCard(params)).rejects.toThrow(
+            CardAccountLinkedElsewhereError,
+        )
+    })
+
+    it('maps the 409 creation lock to CardCreateInProgressError', async () => {
+        rejectWith(409, 'CREATE_IN_PROGRESS')
+
+        await expect(createCard(params)).rejects.toThrow(
+            CardCreateInProgressError,
+        )
+    })
+
+    it('maps a missing Baanx card record to CardSetupIncompleteError', async () => {
+        rejectWith(404, 'BAANX_ACCOUNT_NOT_FOUND')
+
+        await expect(createCard(params)).rejects.toThrow(
+            CardSetupIncompleteError,
+        )
+    })
+
+    it('maps a rejected ownership proof (401) and keeps the backend code', async () => {
+        rejectWith(401, 'ARC60_SIGNATURE_INVALID')
+
+        await expect(createCard(params)).rejects.toMatchObject({
+            name: 'CardOwnershipProofRejectedError',
+            code: 'ARC60_SIGNATURE_INVALID',
+        })
+        await expect(createCard(params)).rejects.toThrow(
+            CardOwnershipProofRejectedError,
+        )
+    })
+
+    it('maps every 5xx to CardCreateUnavailableError with the backend code', async () => {
+        rejectWith(502, 'CARD_CREATE_FAILED')
+        await expect(createCard(params)).rejects.toMatchObject({
+            name: 'CardCreateUnavailableError',
+            code: 'CARD_CREATE_FAILED',
+        })
+
+        rejectWith(503, 'ALGOD_UNAVAILABLE')
+        await expect(createCard(params)).rejects.toThrow(
+            CardCreateUnavailableError,
+        )
+
+        rejectWith(500)
+        await expect(createCard(params)).rejects.toThrow(
+            CardCreateUnavailableError,
+        )
+    })
+
+    it('propagates rejections it cannot classify unchanged', async () => {
+        request.mockRejectedValue(
+            Object.assign(new Error('unprocessable'), {
+                response: { status: 422 },
+                data: { status: 422, code: 'VALIDATION' },
+            }),
+        )
+
+        await expect(createCard(params)).rejects.toThrow('unprocessable')
+    })
+})
+
+describe('fetchFundingAddressLink', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('GETs /api/v3/baanx/card-address on the proxy route with both query params', async () => {
+        request.mockResolvedValue({
+            data: {
+                address: 'FUNDING_ADDR',
+                linkState: 'unlinked',
+                cardAddress: null,
+            },
+        })
+
+        const result = await fetchFundingAddressLink({
+            network: 'testnet',
+            address: 'FUNDING_ADDR',
+            baanxUserId: 'baanx-user-1',
+        })
+
+        expect(result).toEqual({ state: 'unlinked', cardAddress: null })
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                route: 'proxy',
+                method: 'GET',
+                path: '/api/v3/baanx/card-address',
+                params: {
+                    address: 'FUNDING_ADDR',
+                    baanx_user_id: 'baanx-user-1',
+                },
+            }),
+        )
+        expect(request.mock.calls[0][0].headers).toBeUndefined()
+    })
+
+    // The resumable case: linked to this user, but cardCreate never finished.
+    it("returns the caller's link with no card when creation never finished", async () => {
+        request.mockResolvedValue({
+            data: {
+                address: 'FUNDING_ADDR',
+                linkState: 'linked_to_caller',
+                cardAddress: null,
+            },
+        })
+
+        await expect(
+            fetchFundingAddressLink({
+                network: 'testnet',
+                address: 'FUNDING_ADDR',
+                baanxUserId: 'baanx-user-1',
+            }),
+        ).resolves.toEqual({ state: 'linked_to_caller', cardAddress: null })
+    })
+
+    it('rejects a response whose linkState is not one we model', async () => {
+        request.mockResolvedValue({
+            data: {
+                address: 'FUNDING_ADDR',
+                linkState: 'something_new',
+                cardAddress: null,
+            },
+        })
+
+        await expect(
+            fetchFundingAddressLink({
+                network: 'testnet',
+                address: 'FUNDING_ADDR',
+                baanxUserId: 'baanx-user-1',
+            }),
+        ).rejects.toThrow()
+    })
+})

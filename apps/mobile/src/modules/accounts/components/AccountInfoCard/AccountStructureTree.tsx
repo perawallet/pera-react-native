@@ -22,7 +22,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { AccountIcon } from '../AccountIcon'
+import { AccountIcon } from '@components/AccountIcon'
 
 type AccountStructureTreeProps = {
     label: string

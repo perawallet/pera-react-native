@@ -16,6 +16,7 @@ import {
     useCardPendingWithdrawalQuery,
     useCardStore,
     useEscrowWithdrawal,
+    useSubmitAndConfirmMutation,
     type PendingWithdrawal,
 } from '@perawallet/wallet-core-card'
 import {
@@ -23,6 +24,7 @@ import {
     invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     baseUnitsToDisplayUnits,
     displayUnitsToBaseUnits,
@@ -38,7 +40,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
 import { CardEscrowUnavailableError } from './useCardManualDeposit'
 import { useCardOwnerAccount } from './useCardOwnerAccount'
-import { useSubmitAndConfirm } from './useSubmitAndConfirm'
 
 // The contract compares against the block timestamp, which trails wall-clock
 // time by a few seconds, and the completing call itself lands a block later.
@@ -88,7 +89,7 @@ export type UseCardWithdrawResult = {
 export const useCardWithdraw = (): UseCardWithdrawResult => {
     const { network } = useNetwork()
     const queryClient = useQueryClient()
-    const submit = useSubmitAndConfirm()
+    const { mutateAsync: submit } = useSubmitAndConfirmMutation()
     const { assignFeeToGroup } = useMinimumFeeCalculator()
     const { buildRequest, buildWithdraw, buildCancel } = useEscrowWithdrawal()
     const {
@@ -101,7 +102,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
 
     const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', network),
+        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
         [network],
     )
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])

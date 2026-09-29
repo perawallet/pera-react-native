@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import {
-    assertAlgorandBip44PathMatches,
+    accountsAdapterFor,
     canSignArbitraryData,
     InvalidBip44PathError,
     isAlgo25Account,
@@ -21,15 +21,18 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 import {
-    Arc60FailedHdPathError,
-    Arc60InvalidSignerError,
     buildArc60AuthSigningPayload,
     validateArc60AuthRequest,
 } from '../utils/arc60'
+import {
+    Arc60FailedHdPathError,
+    Arc60InvalidSignerError,
+} from '../utils/arc60-errors'
 
 export type UseLocalKeyArc60SignerResult = {
     /**
@@ -50,6 +53,7 @@ export type UseLocalKeyArc60SignerResult = {
 export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
     const { signDataWithKey } = useKMS()
     const accounts = useAllAccounts()
+    const { network } = useNetwork()
 
     const signArc60 = useCallback(
         async (
@@ -85,7 +89,7 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
             if (isHDWalletAccount(account)) {
                 if (hdPath) {
                     try {
-                        assertAlgorandBip44PathMatches(
+                        accountsAdapterFor(network).assertHdPathMatches(
                             hdPath,
                             account.hdWalletDetails,
                         )
@@ -135,7 +139,7 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
         // validateArc60AuthRequest; without it the callback would validate
         // against the account list as of first render and fail open on a
         // rekey revoked after mount.
-        [signDataWithKey, accounts],
+        [signDataWithKey, accounts, network],
     )
 
     return { signArc60 }

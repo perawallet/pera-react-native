@@ -62,14 +62,8 @@ vi.mock('../../AccountOptionsContent', () => ({
     AccountOptionsContent: () => null,
 }))
 
-vi.mock(
-    '@modules/transactions/components/receive-funds/ReceiveFundsContent',
-    () => ({
-        ReceiveFundsContent: () => null,
-    }),
-)
-
-vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
+vi.mock('@modules/transactions/routes', () => ({
+    ReceiveFundsContent: () => null,
     SendFundsContent: () => null,
     SEND_FUNDS_SHEET_ID: 'send-funds',
 }))
@@ -86,7 +80,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useEnsureAccountEnriched: vi.fn(),
 }))
 
-vi.mock('@modules/transactions/hooks', () => ({
+vi.mock('@modules/transactions', () => ({
     useReceiveFunds: vi.fn(() => ({
         setSelectedAccount: mockSetSelectedAccount,
         setCanSelectAccount: mockSetCanSelectAccount,

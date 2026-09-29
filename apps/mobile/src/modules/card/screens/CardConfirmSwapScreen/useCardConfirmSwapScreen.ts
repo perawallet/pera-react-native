@@ -29,6 +29,8 @@ import {
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { useCardUsdcCreditQuery } from '@perawallet/wallet-core-card'
 import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
 import {
     logger,
@@ -43,7 +45,6 @@ import {
     useCardErrorToast,
     useCardFundingAccount,
     useCardManualDeposit,
-    useCardUsdcCredit,
 } from '../../hooks'
 import type { CardStepStatus } from '../../components/CardStepRow'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
@@ -123,7 +124,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     const { successToast, errorToast, infoToast } = useToast()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const { deposit } = useCardManualDeposit()
-    const { readUsdcBalance, waitForUsdcCredit } = useCardUsdcCredit()
+    const { readUsdcBalance, waitForUsdcCredit } = useCardUsdcCreditQuery()
     const showDepositError = useCardErrorToast({
         titleKey: 'peraCard.add_funds.swap_deposit_failed_title',
         bodyKey: 'peraCard.add_funds.swap_deposit_failed_body',
@@ -139,7 +140,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     const account = useCardFundingAccount()
 
     const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', network),
+        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
         [network],
     )
     const assetIds = useMemo(

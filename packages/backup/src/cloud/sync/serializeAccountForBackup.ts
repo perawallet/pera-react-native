@@ -21,6 +21,7 @@ import {
     BackupItemType,
     type SecretsBackupPayload,
 } from '../models'
+import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import { serializeAccountItems } from './serializeAccountItems'
 import type {
     SerializedAccount,
@@ -31,6 +32,7 @@ import type {
 
 type Deps = {
     updatedAt: number
+    hashAddress: ItemKeyHasher
     /** Omitted/null => the account is skipped rather than backed up without
      *  its secret. */
     resolveMnemonic?: SerializeMnemonicResolver
@@ -43,10 +45,10 @@ type Deps = {
  *  the KMS; secret-less types => address-only. */
 export const serializeAccountForBackup = async (
     account: WalletAccount,
-    { updatedAt, resolveMnemonic, resolveHd }: Deps,
+    { updatedAt, hashAddress, resolveMnemonic, resolveHd }: Deps,
 ): Promise<SerializedAccount | null> => {
     if (account.type === AccountTypes.hdWallet) {
-        return serializeHdAccount(account, updatedAt, resolveHd)
+        return serializeHdAccount(account, updatedAt, hashAddress, resolveHd)
     }
 
     let secrets: SecretsBackupPayload | null = null
@@ -57,16 +59,17 @@ export const serializeAccountForBackup = async (
         if (!resolveMnemonic) return null
         const mnemonic = await resolveMnemonic(account)
         if (!mnemonic) return null
-        secrets = { type: account.type, mnemonic }
+        secrets = { type: account.type, mnemonic, address: account.address }
     }
-    return serializeAccountItems(account, { updatedAt, secrets })
+    return serializeAccountItems(account, { updatedAt, secrets, hashAddress })
 }
 
 /** HD child -> hdWallet address item; the seed rides as a shared hdSeed secret
- *  at secrets/<seedFirstDerivedAddress> (deduped by buildLocalItems). */
+ *  at secrets/<hash of seedFirstDerivedAddress> (deduped by buildLocalItems). */
 const serializeHdAccount = async (
     account: HDWalletAccount,
     updatedAt: number,
+    hashAddress: ItemKeyHasher,
     resolveHd?: SerializeHdResolver,
 ): Promise<SerializedAccount | null> => {
     if (!resolveHd) return null
@@ -76,6 +79,7 @@ const serializeHdAccount = async (
     const base = serializeAccountItems(account, {
         updatedAt,
         secrets: null,
+        hashAddress,
         hd: {
             seedFirstDerivedAddress: resolved.seedFirstDerivedAddress,
             publicKeyHex: resolved.publicKeyHex,
@@ -84,12 +88,13 @@ const serializeHdAccount = async (
     if (!base) return null
 
     const seedSecret: SerializedItem = {
-        key: secretsItemKey(resolved.seedFirstDerivedAddress),
+        key: secretsItemKey(hashAddress(resolved.seedFirstDerivedAddress)),
         type: BackupItemType.ACCOUNT,
         payload: {
             type: BackupAccountType.hdSeed,
             seed: resolved.seedHex,
             entropy: resolved.entropyHex,
+            address: resolved.seedFirstDerivedAddress,
         },
     }
     return { ...base, extraItems: [seedSecret] }

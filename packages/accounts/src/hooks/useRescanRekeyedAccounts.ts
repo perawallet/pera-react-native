@@ -12,11 +12,8 @@
 
 import { useCallback } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
-import {
-    isValidAlgorandAddress,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
-import { fetchRekeyedAddresses } from '../account-discovery'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { addressCodecFor, fetchRekeyedAddresses } from '../chain-adapter'
 import { useAccountsStore } from '../store'
 
 export type RekeyedScanResult = {
@@ -196,7 +193,8 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
             // that doesn't actually sign through `sourceAddress`. The next
             // sync corrects classification, but the address stays imported.
             // Acceptable trade-off for now; revisit if indexer trust changes.
-            const valid = addresses.filter(isValidAlgorandAddress)
+            const codec = addressCodecFor(network)
+            const valid = addresses.filter(address => codec.isValid(address))
             if (valid.length === 0) return 0
 
             return addRekeyedWatchAccounts(sourceAddress, valid, network)

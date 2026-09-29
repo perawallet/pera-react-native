@@ -17,10 +17,12 @@ import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
 import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 
-import { AssetTransferRequestsScreen } from '@modules/transactions/screens/claim-assets/AssetTransferRequestsScreen/AssetTransferRequestsScreen'
-import { AssetClaimDetailScreen } from '@modules/transactions/screens/claim-assets/AssetClaimDetailScreen/AssetClaimDetailScreen'
-import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
-import { ClaimProcessingScreen } from '@modules/transactions/screens/claim-assets/ClaimProcessingScreen/ClaimProcessingScreen'
+import {
+    AssetTransferRequestsScreen,
+    AssetClaimDetailScreen,
+    TransactionSuccessScreen,
+    ClaimProcessingScreen,
+} from '@modules/transactions/routes'
 import type { MessagesStackParamList } from './types'
 import { MessagesScreen } from '../screens/MessagesScreen'
 import { MultisigInvitationNameScreen } from '../screens/MultisigInvitationNameScreen'

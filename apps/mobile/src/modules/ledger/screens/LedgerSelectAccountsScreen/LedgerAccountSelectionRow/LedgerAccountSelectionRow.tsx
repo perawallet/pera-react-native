@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { PWChip, PWRoundIcon } from '@components/core'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
+import { SelectableAccountCheckboxRow } from '@modules/accounts'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type LedgerAccountSelectionRowProps = {

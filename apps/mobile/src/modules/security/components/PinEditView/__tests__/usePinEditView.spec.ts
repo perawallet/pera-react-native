@@ -17,7 +17,6 @@ import type { BiometricUnlockOutcome } from '@perawallet/wallet-core-security'
 const mocks = vi.hoisted(() => ({
     verifyPin: vi.fn(),
     savePin: vi.fn(),
-    handleFailedAttempt: vi.fn(),
     resetFailedAttempts: vi.fn(),
     isLockedOut: false,
     checkBiometricsEnabled: vi.fn(),
@@ -29,7 +28,6 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: () => ({
         savePin: mocks.savePin,
         verifyPin: mocks.verifyPin,
-        handleFailedAttempt: mocks.handleFailedAttempt,
         resetFailedAttempts: mocks.resetFailedAttempts,
         isLockedOut: mocks.isLockedOut,
     }),
@@ -39,9 +37,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mocks.showError }),

@@ -38,6 +38,7 @@ export const SettingsDeveloperScreen = () => {
 
     const openDispenser = () => {
         if (!routeCapabilities.inAppWebView) {
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config
             void Linking.openURL(dispenserUrl)
             return
         }

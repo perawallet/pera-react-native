@@ -29,13 +29,13 @@ import {
     TransactionsFilterContent,
     type CustomDateRange,
     type TransactionsFilterResult,
-} from '../../../../accounts/components/TransactionsFilterContent'
+    getFilterTimes,
+} from '@modules/accounts'
 import type { AppStackParamList } from '@routes/types'
-import { getFilterTimes } from '../../../../accounts/components/AccountHistory/utils'
 import {
     buildTransactionListRows,
     type TransactionListRow,
-} from '@modules/transactions/utils/transactionListRows'
+} from '@modules/transactions'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     PeraServiceUnavailableError,

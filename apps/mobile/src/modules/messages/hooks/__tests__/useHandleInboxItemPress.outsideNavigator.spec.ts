@@ -24,7 +24,8 @@ import { useHandleInboxItemPress } from '../useHandleInboxItemPress'
  * runs above the container, and any `useNavigation`/`useAppNavigation` in its
  * tree throws during render on every launch.
  *
- * The mock below is the load-bearing part. `vitest.setup.ts:1587` globally mocks
+ * The mock below is the load-bearing part. The unit setup
+ * (`src/test-utils/mocks/navigation.ts`) globally mocks
  * `@react-navigation/native` so that `useNavigation()` returns a working stub
  * and never throws, no matter where a component sits — which means no ordinary
  * unit test in this repo can observe an out-of-container navigation call. That

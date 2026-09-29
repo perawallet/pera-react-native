@@ -47,6 +47,7 @@ const derivedKeys = () => ({
     encryptionKey: new Uint8Array(32).fill(5),
     authPublicKey: AUTH_PUBLIC_KEY,
     authSecretKey: new Uint8Array(64).fill(4),
+    itemKey: new Uint8Array(32).fill(6),
 })
 
 describe('registerCloudBackup', () => {
@@ -91,6 +92,9 @@ describe('registerCloudBackup', () => {
         expect(Array.from(result.authSecretKey)).toEqual(
             Array.from(new Uint8Array(64).fill(4)),
         )
+        expect(Array.from(result.itemKey)).toEqual(
+            Array.from(new Uint8Array(32).fill(6)),
+        )
     })
 
     test('zeroes the derived secrets and rethrows when register fails', async () => {
@@ -104,5 +108,6 @@ describe('registerCloudBackup', () => {
 
         expect(keys.encryptionKey.every(byte => byte === 0)).toBe(true)
         expect(keys.authSecretKey.every(byte => byte === 0)).toBe(true)
+        expect(keys.itemKey.every(byte => byte === 0)).toBe(true)
     })
 })

@@ -10,14 +10,15 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import type { DexSwapAsset } from '../../models'
 import type { DexSwapAssetApiResponse } from './schema'
 
+// The backend sends no asset_id for the chain's native asset.
 export const transformDexSwapAsset = (
     data: DexSwapAssetApiResponse,
+    nativeAssetId: string,
 ): DexSwapAsset => ({
-    assetId: data.asset_id ?? ALGO_ASSET_ID,
+    assetId: data.asset_id ?? nativeAssetId,
     logo: data.logo ?? undefined,
     name: data.name,
     unitName: data.unit_name,

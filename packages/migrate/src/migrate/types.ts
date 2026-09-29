@@ -16,6 +16,7 @@ import type {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { useKMS } from '@perawallet/wallet-core-kms'
+import type { WalletConnectV1SessionKeyStore } from '@perawallet/wallet-core-walletconnect'
 import type {
     LegacyAccount,
     LegacyHDWallet,
@@ -41,6 +42,8 @@ export type MigrationDeps = {
     createHDWalletKey: ReturnType<typeof useKMS>['createHDWalletKey']
     hasSeedWithEntropy: ReturnType<typeof useKMS>['hasSeedWithEntropy']
     markAccountBackedUp?: (account: WalletAccount) => void
+    /** Defaults to the keystore, as the v1 handler and blob importer do. */
+    walletConnectSessionKeys?: WalletConnectV1SessionKeyStore
 }
 
 export type ImportedHdRoot = {

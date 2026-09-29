@@ -15,7 +15,7 @@ import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
 import { PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
-import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
+import { AccountAssetSelectionList } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 

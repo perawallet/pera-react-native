@@ -12,29 +12,17 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                'test-utils/index': resolve(
-                    __dirname,
-                    'src/test-utils/index.ts',
-                ),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            'test-utils/index': resolve(__dirname, 'src/test-utils/index.ts'),
         },
-        rollupOptions: {
-            external: [
-                'drizzle-orm',
-                'drizzle-orm/sqlite-core',
-                'drizzle-orm/better-sqlite3',
-                'better-sqlite3',
-                '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-extension-provider',
-            ],
-        },
-    },
-})
+        // Only the test-utils entry opens it; consumers' test runs supply the
+        // native module, and bundling it would inline a node-gyp binding.
+        external: ['better-sqlite3'],
+    }),
+)

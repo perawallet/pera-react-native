@@ -15,6 +15,7 @@ describe('pera/no-chrome-imports-outside-web', () => {
         expect(locations(found)).toEqual([
             'chrome-imports.bad.ts:1',
             'chrome-imports.bad.ts:2',
+            'chrome-imports.bad.ts:3',
         ])
     })
 

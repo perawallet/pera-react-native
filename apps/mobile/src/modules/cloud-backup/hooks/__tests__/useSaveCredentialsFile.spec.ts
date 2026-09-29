@@ -40,9 +40,7 @@ vi.mock('@hooks/useToast', () => ({
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 vi.mock('../../storage', async importOriginal => ({
     ...(await importOriginal<Record<string, unknown>>()),
     saveCredentialsFile,

@@ -16,7 +16,7 @@ import { PWIcon, PWText, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { AssetIcon } from '../AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import { useMemo } from 'react'
 import type { TypographyVariant } from '@theme/typography'
 

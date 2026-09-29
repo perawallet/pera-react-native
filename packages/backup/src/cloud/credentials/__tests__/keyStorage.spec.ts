@@ -52,11 +52,13 @@ import {
     BackupMnemonicParseError,
     CLOUD_BACKUP_AUTH_KEY_ID,
     CLOUD_BACKUP_ENC_KEY_ID,
+    CLOUD_BACKUP_ITEM_KEY_ID,
     CLOUD_BACKUP_MNEMONIC_ID,
     deleteBackupKeys,
     hasBackupCredentials,
     persistBackupKeys,
     withBackupEncryptionKey,
+    withBackupItemKey,
     withBackupMnemonicIndices,
 } from '../keyStorage'
 
@@ -79,14 +81,16 @@ describe('persistBackupKeys', () => {
         return committed
     }
 
-    test('commits the encryption key, auth secret key, and mnemonic under stable ids', async () => {
+    test('commits the encryption key, auth secret key, item key, and mnemonic under stable ids', async () => {
         const encryptionKey = new Uint8Array(32).fill(1)
         const authSecretKey = new Uint8Array(64).fill(2)
+        const itemKey = new Uint8Array(32).fill(3)
         const committed = captureCommits()
 
         await persistBackupKeys({
             encryptionKey,
             authSecretKey,
+            itemKey,
             mnemonic: MNEMONIC,
         })
 
@@ -95,6 +99,9 @@ describe('persistBackupKeys', () => {
         )
         expect(committed.get(CLOUD_BACKUP_AUTH_KEY_ID)).toEqual(
             Array.from(authSecretKey),
+        )
+        expect(committed.get(CLOUD_BACKUP_ITEM_KEY_ID)).toEqual(
+            Array.from(itemKey),
         )
         expect(committed.get(CLOUD_BACKUP_MNEMONIC_ID)).toEqual(
             Array.from(new TextEncoder().encode(MNEMONIC.join(' '))),
@@ -106,17 +113,20 @@ describe('persistBackupKeys', () => {
     test('commits the keys it was handed even when the caller zeroes them mid-write', async () => {
         const encryptionKey = new Uint8Array(32).fill(1)
         const authSecretKey = new Uint8Array(64).fill(2)
+        const itemKey = new Uint8Array(32).fill(3)
         const committed = captureCommits()
         commitSecretMock.mockImplementationOnce(async ({ id, bytes }) => {
             committed.set(id, Array.from(bytes))
             encryptionKey.fill(0)
             authSecretKey.fill(0)
+            itemKey.fill(0)
             return undefined
         })
 
         await persistBackupKeys({
             encryptionKey,
             authSecretKey,
+            itemKey,
             mnemonic: MNEMONIC,
         })
 
@@ -125,6 +135,9 @@ describe('persistBackupKeys', () => {
         )
         expect(committed.get(CLOUD_BACKUP_AUTH_KEY_ID)).toEqual(
             Array.from(new Uint8Array(64).fill(2)),
+        )
+        expect(committed.get(CLOUD_BACKUP_ITEM_KEY_ID)).toEqual(
+            Array.from(new Uint8Array(32).fill(3)),
         )
     })
 
@@ -138,10 +151,11 @@ describe('persistBackupKeys', () => {
         await persistBackupKeys({
             encryptionKey: new Uint8Array(32).fill(1),
             authSecretKey: new Uint8Array(64).fill(2),
+            itemKey: new Uint8Array(32).fill(3),
             mnemonic: MNEMONIC,
         })
 
-        expect(handed).toHaveLength(2)
+        expect(handed).toHaveLength(3)
         expect(handed.every(copy => copy.every(byte => byte === 0))).toBe(true)
     })
 
@@ -155,6 +169,7 @@ describe('persistBackupKeys', () => {
         await persistBackupKeys({
             encryptionKey: new Uint8Array(32).fill(1),
             authSecretKey: new Uint8Array(64).fill(2),
+            itemKey: new Uint8Array(32).fill(3),
             mnemonic: MNEMONIC,
         })
 
@@ -174,6 +189,7 @@ describe('persistBackupKeys', () => {
             persistBackupKeys({
                 encryptionKey: new Uint8Array(32).fill(1),
                 authSecretKey: new Uint8Array(64).fill(2),
+                itemKey: new Uint8Array(32).fill(3),
                 mnemonic: MNEMONIC,
             }),
         ).rejects.toThrow('keystore full')
@@ -191,12 +207,14 @@ describe('persistBackupKeys', () => {
             persistBackupKeys({
                 encryptionKey: new Uint8Array(32).fill(1),
                 authSecretKey: new Uint8Array(64).fill(2),
+                itemKey: new Uint8Array(32).fill(3),
                 mnemonic: MNEMONIC,
             }),
         ).rejects.toThrow('keystore full')
 
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_ENC_KEY_ID)
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_AUTH_KEY_ID)
+        expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_ITEM_KEY_ID)
     })
 
     // A half-written commit would leave the phrase readable on a device whose
@@ -205,18 +223,21 @@ describe('persistBackupKeys', () => {
         commitSecretMock
             .mockResolvedValueOnce(undefined)
             .mockResolvedValueOnce(undefined)
+            .mockResolvedValueOnce(undefined)
             .mockRejectedValueOnce(new Error('keystore full'))
 
         await expect(
             persistBackupKeys({
                 encryptionKey: new Uint8Array(32).fill(1),
                 authSecretKey: new Uint8Array(64).fill(2),
+                itemKey: new Uint8Array(32).fill(3),
                 mnemonic: MNEMONIC,
             }),
         ).rejects.toThrow('keystore full')
 
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_ENC_KEY_ID)
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_AUTH_KEY_ID)
+        expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_ITEM_KEY_ID)
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_MNEMONIC_ID)
     })
 
@@ -224,9 +245,10 @@ describe('persistBackupKeys', () => {
         commitSecretMock
             .mockResolvedValueOnce(undefined)
             .mockResolvedValueOnce(undefined)
+            .mockResolvedValueOnce(undefined)
             .mockRejectedValueOnce(new Error('keystore full'))
         // The first rollback is the encryption key's; its failure must not
-        // abandon the two ids behind it.
+        // abandon the ids behind it.
         removeSecretMock.mockImplementationOnce(async () => {
             throw new Error('keystore busy')
         })
@@ -235,6 +257,7 @@ describe('persistBackupKeys', () => {
             persistBackupKeys({
                 encryptionKey: new Uint8Array(32).fill(1),
                 authSecretKey: new Uint8Array(64).fill(2),
+                itemKey: new Uint8Array(32).fill(3),
                 mnemonic: MNEMONIC,
             }),
             // The commit failure, not the rollback's.
@@ -347,6 +370,49 @@ describe('withBackupEncryptionKey', () => {
     })
 })
 
+describe('withBackupItemKey', () => {
+    beforeEach(() => {
+        commitSecretMock.mockReset()
+        withSecretMock.mockReset()
+        // Snapshotted on write: `persistBackupKeys` wipes the buffer it handed
+        // over once the commit resolves.
+        const stored = new Map<string, Uint8Array>()
+        commitSecretMock.mockImplementation(async ({ id, bytes }) => {
+            stored.set(id, bytes.slice())
+            return undefined
+        })
+        withSecretMock.mockImplementation(
+            async (id: string, handler: (bytes: Uint8Array) => unknown) => {
+                const bytes = stored.get(id)
+                return bytes ? handler(bytes) : null
+            },
+        )
+    })
+
+    test('reads back the item key that was persisted', async () => {
+        await persistBackupKeys({
+            encryptionKey: new Uint8Array(32).fill(1),
+            authSecretKey: new Uint8Array(64).fill(2),
+            itemKey: new Uint8Array(32).fill(3),
+            mnemonic: MNEMONIC,
+        })
+
+        const itemKey = await withBackupItemKey(bytes => Array.from(bytes))
+
+        expect(withSecretMock).toHaveBeenCalledWith(
+            CLOUD_BACKUP_ITEM_KEY_ID,
+            expect.any(Function),
+        )
+        expect(itemKey).toEqual(Array.from(new Uint8Array(32).fill(3)))
+    })
+
+    test('returns null when no item key is stored', async () => {
+        const result = await withBackupItemKey(bytes => bytes)
+
+        expect(result).toBeNull()
+    })
+})
+
 describe('deleteBackupKeys', () => {
     beforeEach(() => {
         removeSecretMock.mockClear()
@@ -357,6 +423,7 @@ describe('deleteBackupKeys', () => {
 
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_ENC_KEY_ID)
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_AUTH_KEY_ID)
+        expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_ITEM_KEY_ID)
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_MNEMONIC_ID)
     })
 
@@ -370,6 +437,7 @@ describe('deleteBackupKeys', () => {
 
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_ENC_KEY_ID)
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_AUTH_KEY_ID)
+        expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_ITEM_KEY_ID)
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_MNEMONIC_ID)
     })
 })

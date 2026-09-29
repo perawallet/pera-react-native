@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import type { modelsv2 } from 'algosdk'
 import {
     CHART_QUERY_TIMEOUT_MS,
     queryClient,
@@ -23,45 +21,6 @@ import type {
     AccountAssetBalanceHistoryResponse,
     AccountBalanceHistoryResponse,
 } from '../models'
-import { HOLDINGS_PAGE_LIMIT } from '../constants'
-
-export type OnChainAccountInformationResponse = Awaited<
-    ReturnType<typeof fetchOnChainAccountInformation>
->
-
-export const fetchOnChainAccountInformation = (
-    algokit: AlgorandClient,
-    address: string,
-): Promise<modelsv2.Account> =>
-    algokit.client.algod.accountInformation(address).do()
-
-/**
- * Opt-in round per held asset, keyed by decimal asset-id string. Read from the
- * indexer, the only source that exposes it (algod and the Pera API don't).
- * Rounds fit safely in a JS number.
- */
-export const fetchAccountAssetOptInRounds = async (
-    algokit: AlgorandClient,
-    address: string,
-): Promise<Map<string, number>> => {
-    const rounds = new Map<string, number>()
-    let next: string | undefined
-
-    do {
-        let request = algokit.client.indexer
-            .lookupAccountAssets(address)
-            .limit(HOLDINGS_PAGE_LIMIT)
-        if (next) request = request.nextToken(next)
-        const page = await request.do()
-        for (const holding of page.assets ?? []) {
-            if (holding.optedInAtRound === undefined) continue
-            rounds.set(`${holding.assetId}`, Number(holding.optedInAtRound))
-        }
-        next = page.nextToken
-    } while (next)
-
-    return rounds
-}
 
 export const getAccountsBalanceHistoryEndpointPath = () => `/v1/wallet/wealth/`
 

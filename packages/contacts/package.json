@@ -22,11 +22,8 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "react": "catalog:",
-    "react-dom": "catalog:",
-    "uuid": "catalog:",
     "zod": "catalog:",
-    "zustand": "catalog:",
-    "@tanstack/react-query": "catalog:"
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",
@@ -34,6 +31,7 @@
     "vitest": "catalog:",
     "@types/react": "catalog:",
     "@testing-library/react": "catalog:",
-    "@perawallet/wallet-core-devtools": "workspace:*"
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "react-dom": "catalog:"
   }
 }

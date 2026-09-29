@@ -1,0 +1,23 @@
+{
+  "extends": [
+    "./tsconfig.json",
+    "@perawallet/wallet-core-devtools/tsconfig/emit.json"
+  ],
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "types": []
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/__tests__/**",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/handlers.ts",
+    "**/*-handlers.ts"
+  ]
+}

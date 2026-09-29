@@ -11,7 +11,8 @@
  */
 
 import { addressFromPQKey, SignedTransaction, type Transaction } from 'algosdk'
-import { DEFAULT_PQ_SCHEME_ID, PQ_SCHEMES, type PQSchemeId } from './schemes'
+import type { PQSchemeId } from '@perawallet/wallet-core-kms'
+import { DEFAULT_PQ_SCHEME_ID, PQ_SCHEMES } from './schemes'
 import type { PQSignature } from '../models'
 
 /**

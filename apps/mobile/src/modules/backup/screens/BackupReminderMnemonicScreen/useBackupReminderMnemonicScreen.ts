@@ -21,6 +21,7 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { logger } from '@perawallet/wallet-core-shared'
+import { routeCapabilities } from '@routes/capabilities'
 import { useMnemonicForAddress } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
@@ -69,7 +70,10 @@ export const useBackupReminderMnemonicScreen =
         useEffect(() => {
             let cancelled = false
             void (async () => {
-                const isPinEnabled = await checkPinEnabled()
+                // Web has no PIN, and a leftover one from an older build
+                // would raise a PIN pad the user can no longer manage.
+                const isPinEnabled =
+                    routeCapabilities.pin && (await checkPinEnabled())
                 if (cancelled) return
                 if (isPinEnabled) {
                     setIsPinVisible(true)

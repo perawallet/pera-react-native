@@ -20,6 +20,8 @@ import { getSyncService } from '@perawallet/wallet-core-background'
 import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { routeCapabilities } from '@routes/capabilities'
+import { lockWallet } from './lockWallet'
 
 export type UseAccountHeaderMenuOptions = {
     showChartToggle?: boolean
@@ -86,6 +88,15 @@ export const useAccountHeaderMenu = ({
             })
         }
 
+        if (lockWallet) {
+            baseItems.push({
+                label: t('vault.security.lock_now'),
+                icon: 'locked',
+                // VaultGate observes the lock and takes over the screen.
+                onPress: () => void lockWallet?.(),
+            })
+        }
+
         if (isDeveloperMenuEnabled) {
             baseItems.push({
                 label: isMainnet
@@ -94,7 +105,9 @@ export const useAccountHeaderMenu = ({
                 icon: 'globe',
                 onPress: () => void handleNetworkSwitch(),
             })
+        }
 
+        if (isDeveloperMenuEnabled && routeCapabilities.developerGallery) {
             baseItems.push({
                 label: 'Screen Gallery',
                 icon: 'grid-view',

@@ -13,13 +13,17 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Decimal } from 'decimal.js'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCardStore } from '@perawallet/wallet-core-card'
+import {
+    useCardStore,
+    useSubmitAndConfirmMutation,
+} from '@perawallet/wallet-core-card'
 import {
     getOnChainAccountInformationQueryKey,
     invalidateAccountQueriesForAddresses,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     displayUnitsToBaseUnits,
     useAlgorandClient,
@@ -28,7 +32,6 @@ import {
 import { useMinimumFeeCalculator } from '@perawallet/wallet-core-signing'
 import { assertOnline, toError } from '@perawallet/wallet-core-shared'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
-import { useSubmitAndConfirm } from './useSubmitAndConfirm'
 
 /**
  * Thrown when there is no escrow card to act on: none has been created on this
@@ -69,11 +72,11 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
     const { network } = useNetwork()
     const algokit = useAlgorandClient()
     const queryClient = useQueryClient()
-    const submit = useSubmitAndConfirm()
+    const { mutateAsync: submit } = useSubmitAndConfirmMutation()
     const { assignFeeToGroup } = useMinimumFeeCalculator()
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
     const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', network),
+        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
         [network],
     )
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])

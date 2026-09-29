@@ -15,16 +15,21 @@ import { renderHook, act } from '@testing-library/react'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { canonify } from 'canonify'
 import { encodeToBase64, type Optional } from '@perawallet/wallet-core-shared'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useLocalKeyArc60Signer } from '../useLocalKeyArc60Signer'
 import {
-    ARC60_SCOPE_AUTH,
+    accountsChainAdapters,
+    InvalidBip44PathError,
+    type AccountsChainAdapter,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useLocalKeyArc60Signer } from '../useLocalKeyArc60Signer'
+import { ARC60_SCOPE_AUTH } from '../../utils/arc60'
+import {
     Arc60BadJsonError,
     Arc60DomainMismatchError,
     Arc60FailedHdPathError,
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
-} from '../../utils/arc60'
+} from '../../utils/arc60-errors'
 import type { Arc60Metadata, Arc60StdSigData } from '../../pipeline/types'
 
 const mockSignDataWithKey = vi.fn()
@@ -57,6 +62,21 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useAllAccounts: () => mockAccounts,
     }
 })
+
+// The chain owns the path format; this stub stands in for Algorand's so the
+// spec pins how the signer maps a rejection, not how a path is parsed.
+const MATCHING_HD_PATH = "m/44'/283'/0'/0/1"
+const registerPathCheck = () => {
+    accountsChainAdapters.reset()
+    accountsChainAdapters.register({
+        chainId: 'algorand',
+        assertHdPathMatches: (hdPath: string) => {
+            if (hdPath !== MATCHING_HD_PATH) {
+                throw new InvalidBip44PathError(hdPath, 'mismatch', 'stub')
+            }
+        },
+    } as unknown as AccountsChainAdapter)
+}
 
 const hdAccount = {
     address: 'HD_ADDR',
@@ -125,6 +145,7 @@ const validMetadata: Arc60Metadata = {
 describe('useLocalKeyArc60Signer', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerPathCheck()
         mockAccounts = []
         mockSignDataWithKey.mockResolvedValue([new Uint8Array([0])])
     })
@@ -216,7 +237,7 @@ describe('useLocalKeyArc60Signer', () => {
             act(async () => {
                 await result.current.signArc60(
                     hdAccount,
-                    { ...validStdSigData, hdPath: "m/44'/283'/0'/0/1" },
+                    { ...validStdSigData, hdPath: MATCHING_HD_PATH },
                     validMetadata,
                 )
             }),

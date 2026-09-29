@@ -31,6 +31,7 @@ import {
     type LegacyWalletConnectV2Session,
     MIGRATION_SENTINEL_KEY,
     MIGRATION_STEPS_KEY,
+    type MigrationDevTools,
     type MigrationPlanSummary,
     type MigrationSentinelValue,
     type MigrationService,
@@ -129,24 +130,31 @@ export class RNMigrationService implements MigrationService {
         return raw as MigrationPlanSummary[]
     }
 
-    async simulateLegacyDatabase(
-        args: SimulateLegacyDatabaseArgs,
-    ): Promise<void> {
-        const module = getNativeModule()
-        if (!module || typeof module.simulateLegacyDatabase !== 'function') {
-            return
-        }
-        await module.simulateLegacyDatabase(args)
-        this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
-    }
-
-    async simulatePreSixxAccounts(): Promise<void> {
-        const module = getNativeModule()
-        if (!module || typeof module.simulatePreSixxAccounts !== 'function') {
-            return
-        }
-        await module.simulatePreSixxAccounts()
-        this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
+    readonly devTools: MigrationDevTools = {
+        simulateLegacyDatabase: async (
+            args: SimulateLegacyDatabaseArgs,
+        ): Promise<void> => {
+            const module = getNativeModule()
+            if (
+                !module ||
+                typeof module.simulateLegacyDatabase !== 'function'
+            ) {
+                return
+            }
+            await module.simulateLegacyDatabase(args)
+            this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
+        },
+        simulatePreSixxAccounts: async (): Promise<void> => {
+            const module = getNativeModule()
+            if (
+                !module ||
+                typeof module.simulatePreSixxAccounts !== 'function'
+            ) {
+                return
+            }
+            await module.simulatePreSixxAccounts()
+            this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
+        },
     }
 
     async resetLegacyData(): Promise<void> {

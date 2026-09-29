@@ -10,25 +10,38 @@
  limitations under the License
  */
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchNfdSearch } from '../api'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdSearchResult } from '../models'
 
+export type UseNfdSearchQueryResult = {
+    data: NfdSearchResult[]
+    isLoading: boolean
+}
+
+// One stable empty array, so memos that depend on `data` don't re-run every render.
+const NO_RESULTS: NfdSearchResult[] = []
+
 export const useNfdSearchQuery = (
     name: string,
     options?: { enabled?: boolean },
-): UseQueryResult<NfdSearchResult[]> => {
+): UseNfdSearchQueryResult => {
     const { network } = useNetwork()
     // NFD names are case-insensitive; normalize so "BruNo.aLgo" matches "bruno.algo".
     const normalizedName = name.toLowerCase()
     const enabled = (options?.enabled ?? true) && normalizedName.length > 0
 
-    return useQuery({
+    const query = useQuery({
         queryKey: nfdQueryKeys.search(normalizedName, network),
         queryFn: ({ signal }) =>
             fetchNfdSearch({ name: normalizedName, network, signal }),
         enabled,
     })
+
+    return {
+        data: query.data ?? NO_RESULTS,
+        isLoading: query.isLoading,
+    }
 }

@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { AppState } from 'react-native'
 import { onlineManager } from '@tanstack/react-query'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
-import { reconnectAllConnectors } from '../connection'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { getAppStatePlatform, isForegroundTransition } from '../utils/app-state'
 
 // Trailing delay after an offline→online edge, so a flapping link (captive
@@ -24,11 +23,12 @@ const NETWORK_RECONNECT_DEBOUNCE_MS = 1000
  * The OS suspends each session's socket while backgrounded, and v1's own
  * network-regain reconnect is dead code in React Native (its NetworkMonitor
  * binds `window` 'online' events RN never emits), so both edges are swept here.
- * Re-entrant: concurrent sweeps share recreations via `ensureConnectorReady`.
+ * Re-entrant: concurrent sweeps share recreations through the connector registry.
  */
-export const startReconnectSweep = (): (() => void) => {
+export const startReconnectSweep = (reconnect: () => void): (() => void) => {
     const platform = getAppStatePlatform()
-    let previousAppState: Maybe<string> = AppState.currentState
+    const { appLifecycle } = getProvider()
+    let previousAppState: Maybe<string> = appLifecycle.getCurrentState()
     let wasOnline = onlineManager.isOnline()
     let debounceTimer: Nullable<ReturnType<typeof setTimeout>> = null
 
@@ -39,17 +39,14 @@ export const startReconnectSweep = (): (() => void) => {
         }
     }
 
-    const appStateSubscription = AppState.addEventListener(
-        'change',
-        nextAppState => {
-            const priorState = previousAppState
-            previousAppState = nextAppState
+    const unsubscribeAppState = appLifecycle.addChangeListener(nextAppState => {
+        const priorState = previousAppState
+        previousAppState = nextAppState
 
-            if (isForegroundTransition(priorState, nextAppState, platform)) {
-                reconnectAllConnectors()
-            }
-        },
-    )
+        if (isForegroundTransition(priorState, nextAppState, platform)) {
+            reconnect()
+        }
+    })
 
     const unsubscribeOnline = onlineManager.subscribe(isOnline => {
         const cameOnline = !wasOnline && isOnline
@@ -65,12 +62,12 @@ export const startReconnectSweep = (): (() => void) => {
         clearPendingSweep()
         debounceTimer = setTimeout(() => {
             debounceTimer = null
-            reconnectAllConnectors()
+            reconnect()
         }, NETWORK_RECONNECT_DEBOUNCE_MS)
     })
 
     return () => {
-        appStateSubscription.remove()
+        unsubscribeAppState()
         unsubscribeOnline()
         clearPendingSweep()
     }

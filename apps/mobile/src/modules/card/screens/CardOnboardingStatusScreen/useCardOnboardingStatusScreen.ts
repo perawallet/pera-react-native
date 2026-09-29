@@ -18,10 +18,12 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
+    CardAccountLinkedElsewhereError,
     FundingType,
     isKycSubmitted as isKycStateSubmitted,
     OnboardingStep,
     useCardStore,
+    useFundingAddressLinkMutation,
     useOnboardingKycPoll,
     VerificationState,
 } from '@perawallet/wallet-core-card'
@@ -36,6 +38,7 @@ import { trackEvent, CardEvent } from '@analytics'
 import {
     canAutoFund,
     useCardFundingSourcePicker,
+    useCardErrorToast,
     useCardOnboardingLogout,
     useEscrowCardCreation,
     useOpenCardSupport,
@@ -294,6 +297,10 @@ export const useCardOnboardingStatusScreen =
         const { pickFundingSource } = useCardFundingSourcePicker({
             accountFilter: isSigningCapableFundingSource,
         })
+        const { checkFundingAddress } = useFundingAddressLinkMutation()
+        // Same copy the post-signature failure shows, resolved from the same
+        // error type rather than restating its keys here.
+        const showCardError = useCardErrorToast()
         const handleConnectAccount = useCallback(
             (source: 'connect' | 'change') => {
                 trackEvent(
@@ -304,6 +311,21 @@ export const useCardOnboardingStatusScreen =
                 void (async () => {
                     const account = await pickFundingSource()
                     if (!account) return
+                    // Ask before the ownership signature whether the backend
+                    // would even accept this address: creation links it to the
+                    // Baanx user and refuses one held by someone else, which
+                    // the user would otherwise hit three prompts later. An
+                    // unanswerable preflight is not a refusal, so only an
+                    // explicit `linked_to_other` stops the connect.
+                    const link = await checkFundingAddress(
+                        account.address,
+                    ).catch(() => null)
+                    if (link?.state === 'linked_to_other') {
+                        await showCardError(
+                            new CardAccountLinkedElsewhereError(),
+                        )
+                        return
+                    }
                     trackEvent(CardEvent.CreateVerifyAccountSelect)
                     // Purely local, the card gets created and linked to this account by the Pera backend
                     useCardStore
@@ -311,7 +333,7 @@ export const useCardOnboardingStatusScreen =
                         .setConnectedFundingSourceAddress(account.address)
                 })()
             },
-            [pickFundingSource],
+            [pickFundingSource, checkFundingAddress, showCardError],
         )
 
         // Only `canCreateCard` is needed here — the actual creation sequence
