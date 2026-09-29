@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import { microAlgo } from '@algorandfoundation/algokit-utils'
 import { beforeAll, describe, expect, it } from 'vitest'
+
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    buildRekeyTx,
+    buildTransferTxs,
+} from '@perawallet/wallet-core-chain-algorand/transactions/builders'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 
 import {
     createAlgo25Account,
@@ -21,15 +27,20 @@ import {
 import type { TxnIntent } from '../../harness/assert/intent'
 import { expectConformant } from '../../harness/assert/roundTrip'
 import {
-    buildTxn,
+    onlyTxn,
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { authAddrOf, balanceOf } from '../../harness/client'
+import {
+    authAddrOf,
+    balanceOf,
+    getConformanceClient,
+} from '../../harness/client'
 import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
+import { localNetScope } from '../../harness/scope'
 
 /**
  * Full rekey lifecycle against a real node. A mock signer would happily sign
@@ -40,12 +51,20 @@ import {
  * caught.
  */
 describe('rekey construction conformance', () => {
+    let scope: ChainScope
+    /** µAlgo; algod's suggested minimum, what an Ed25519 signer resolves to. */
+    let baseMinFee: bigint
     let keyStore: ConformanceKeyStore
     let source: ConformanceAccount
     let newAuth: ConformanceAccount
     let receiver: ConformanceAccount
 
     beforeAll(async () => {
+        scope = await localNetScope()
+        const { minFee } = await getConformanceClient()
+            .client.algod.getTransactionParams()
+            .do()
+        baseMinFee = BigInt(minFee)
         keyStore = await createConformanceKeyStore()
         source = await createAlgo25Account(keyStore)
         newAuth = await createAlgo25Account(keyStore)
@@ -59,16 +78,17 @@ describe('rekey construction conformance', () => {
     it('rekey-in: source auth-addr becomes newAuth', async () => {
         const senderBalanceBefore = await balanceOf(source.address)
 
-        // Mirrors useSubmitRekeyMutation: a 0-amount self-payment carrying
+        // useSubmitRekeyMutation's builder: a 0-amount self-payment carrying
         // rekeyTo, signed by the CURRENT auth (source's own key, pre-rekey).
-        const txn = await buildTxn(composer => {
-            composer.addPayment({
-                sender: source.address,
-                receiver: source.address,
-                amount: microAlgo(0n),
-                rekeyTo: newAuth.address,
-            })
+        const txn = await buildRekeyTx({
+            scope,
+            sourceAddress: source.address,
+            rekeyToAddress: newAuth.address,
+            minFee: baseMinFee,
         })
+        // An Ed25519 minimum never exceeds the auto-sized fee, so the builder
+        // keeps AlgoKit's draft rather than pinning one.
+        expect(txn.fee).toBe(baseMinFee)
         const signedBytes = await signWithKeystore(keyStore, source, txn)
         const { txId } = await submitAndConfirm(signedBytes)
 
@@ -97,13 +117,15 @@ describe('rekey construction conformance', () => {
     // authorized, and this case would silently pass under a mock signer that
     // never checks auth-addr against the node's account state.
     it('rejects a spend signed by the original key once rekeyed', async () => {
-        const txn = await buildTxn(composer => {
-            composer.addPayment({
+        const txn = onlyTxn(
+            await buildTransferTxs({
+                scope,
                 sender: source.address,
                 receiver: receiver.address,
-                amount: microAlgo(1000n),
-            })
-        })
+                assetId: ALGO_ASSET_ID,
+                amount: 1000n,
+            }),
+        )
         const signedBytes = await signWithKeystore(keyStore, source, txn)
 
         await expect(submitAndConfirm(signedBytes)).rejects.toThrow(
@@ -115,13 +137,15 @@ describe('rekey construction conformance', () => {
         const senderBalanceBefore = await balanceOf(source.address)
         const amount = 1000n
 
-        const txn = await buildTxn(composer => {
-            composer.addPayment({
+        const txn = onlyTxn(
+            await buildTransferTxs({
+                scope,
                 sender: source.address,
                 receiver: receiver.address,
-                amount: microAlgo(amount),
-            })
-        })
+                assetId: ALGO_ASSET_ID,
+                amount,
+            }),
+        )
         // source's spending key is now newAuth's; signWithKeystore names it in
         // `sgnr` because newAuth.address !== txn.sender.
         const signedBytes = await signWithKeystore(keyStore, newAuth, txn)
@@ -146,13 +170,11 @@ describe('rekey construction conformance', () => {
     it('rekey-out: source auth-addr clears once rekeyed back to itself', async () => {
         const senderBalanceBefore = await balanceOf(source.address)
 
-        const txn = await buildTxn(composer => {
-            composer.addPayment({
-                sender: source.address,
-                receiver: source.address,
-                amount: microAlgo(0n),
-                rekeyTo: source.address,
-            })
+        const txn = await buildRekeyTx({
+            scope,
+            sourceAddress: source.address,
+            rekeyToAddress: source.address,
+            minFee: baseMinFee,
         })
         // Still authorized by newAuth until this transaction confirms.
         const signedBytes = await signWithKeystore(keyStore, newAuth, txn)

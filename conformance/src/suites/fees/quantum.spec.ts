@@ -18,6 +18,13 @@ import {
     calculatePQFeeSurcharge,
     calculateMinTxnFee,
 } from '@perawallet/wallet-core-blockchain/fees/feeCalculator'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    buildRekeyTx,
+    buildTransferTxs,
+} from '@perawallet/wallet-core-chain-algorand/transactions/builders'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { resolveMinFeeForSender } from '@perawallet/wallet-core-signing/pipeline/sources/minFeeResolver'
 
 import {
     createAlgo25Account,
@@ -30,14 +37,20 @@ import { expectConformant } from '../../harness/assert/roundTrip'
 import {
     buildGroup,
     buildTxn,
+    onlyTxn,
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { balanceOf, getConformanceClient } from '../../harness/client'
+import {
+    authAddrOf,
+    balanceOf,
+    getConformanceClient,
+} from '../../harness/client'
 import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
+import { localNetScope } from '../../harness/scope'
 
 describe('quantum fee conformance', () => {
     let keyStore: ConformanceKeyStore
@@ -250,5 +263,105 @@ describe('quantum fee conformance', () => {
             await signWithKeystore(keyStore, sibling, legZeroNaive),
         ]
         await expect(submitAndConfirm(signedNaive)).rejects.toThrow(/less than/)
+    })
+})
+
+// The app's builders, given the fee `resolveMinFeeForSender` resolves for a
+// Falcon signer, the way the send and rekey hooks call them. A builder that
+// dropped the fee, or kept AlgoKit's Ed25519-sized draft, is rejected here.
+describe('quantum fee through the app builders', () => {
+    let scope: ChainScope
+    let keyStore: ConformanceKeyStore
+    let sender: ConformanceAccount
+    let receiver: ConformanceAccount
+    /** µAlgo; algod's suggested minimum. */
+    let suggestedMinFee: bigint
+    /** µAlgo; the PQ-aware minimum the hooks resolve for `sender`. */
+    let resolvedFee: bigint
+
+    beforeAll(async () => {
+        scope = await localNetScope()
+        keyStore = await createConformanceKeyStore()
+        sender = await createQuantumAccount(keyStore)
+        receiver = await createAlgo25Account(keyStore)
+        await fundAccount(sender.address, 10_000_000n)
+
+        const { minFee } = await getConformanceClient()
+            .client.algod.getTransactionParams()
+            .do()
+        suggestedMinFee = BigInt(minFee)
+        resolvedFee = resolveMinFeeForSender({
+            senderAddress: sender.address,
+            accounts: [sender.walletAccount],
+            suggestedMinFee,
+            configMinTxnFee: suggestedMinFee,
+            pqMultiplier: FALLBACK_PQ_MULTIPLIER,
+        })
+    })
+
+    it('resolves a fee above the suggested minimum, so the hooks pass it on', () => {
+        expect(resolvedFee).toBeGreaterThan(suggestedMinFee)
+    })
+
+    it('carries the resolved PQ fee on a transfer the node accepts', async () => {
+        const senderBalanceBefore = await balanceOf(sender.address)
+        const amount = 42_000n
+
+        const txn = onlyTxn(
+            await buildTransferTxs({
+                scope,
+                sender: sender.address,
+                receiver: receiver.address,
+                assetId: ALGO_ASSET_ID,
+                amount,
+                fee: resolvedFee,
+            }),
+        )
+        const signedBytes = await signWithKeystore(keyStore, sender, txn)
+        const { txId } = await submitAndConfirm(signedBytes)
+
+        await expectConformant({
+            intent: {
+                type: 'pay',
+                sender: sender.address,
+                receiver: receiver.address,
+                amount,
+                fee: resolvedFee,
+            },
+            signedBytes,
+            txId,
+            senderBalanceBefore,
+        })
+    })
+
+    it('rebuilds a rekey at the PQ minimum when it exceeds the auto-sized fee', async () => {
+        const senderBalanceBefore = await balanceOf(sender.address)
+
+        // Rekeyed to itself so the account's auth is unchanged for later cases.
+        const txn = await buildRekeyTx({
+            scope,
+            sourceAddress: sender.address,
+            rekeyToAddress: sender.address,
+            minFee: resolvedFee,
+        })
+        expect(txn.fee).toBe(resolvedFee)
+
+        const signedBytes = await signWithKeystore(keyStore, sender, txn)
+        const { txId } = await submitAndConfirm(signedBytes)
+
+        await expectConformant({
+            intent: {
+                type: 'pay',
+                sender: sender.address,
+                receiver: sender.address,
+                amount: 0n,
+                rekeyTo: sender.address,
+                fee: resolvedFee,
+            },
+            signedBytes,
+            txId,
+            senderBalanceBefore,
+        })
+        expect(await authAddrOf(sender.address)).toBeUndefined()
     })
 })
