@@ -78,16 +78,15 @@ const AppContent = () => {
         <ThemeProvider theme={theme}>
             <SafeAreaProvider>
                 {!bootstrapped && <FullScreenLoadingView />}
-                {bootstrapped &&
-                    persister && (
-                        // The app's only GestureHandlerRootView: gesture handlers
-                        // and bottom-sheet portals must all render beneath it.
-                        <GestureHandlerRootView>
-                            <AppProviders persister={persister}>
-                                <RootComponent fcmToken={fcmToken} />
-                            </AppProviders>
-                        </GestureHandlerRootView>
-                    )}
+                {bootstrapped && persister && (
+                    // The app's only GestureHandlerRootView: gesture handlers
+                    // and bottom-sheet portals must all render beneath it.
+                    <GestureHandlerRootView>
+                        <AppProviders persister={persister}>
+                            <RootComponent fcmToken={fcmToken} />
+                        </AppProviders>
+                    </GestureHandlerRootView>
+                )}
             </SafeAreaProvider>
         </ThemeProvider>
     )

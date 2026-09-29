@@ -662,9 +662,11 @@ describe('credential storage plugins', () => {
 
 describe('buildAppConfig — iOS ccache', () => {
     const ccacheEnabled = (env: Record<string, string | undefined>) =>
-        (pluginOptions(build(env), 'expo-build-properties') as {
-            ios: { ccacheEnabled: boolean }
-        }).ios.ccacheEnabled
+        (
+            pluginOptions(build(env), 'expo-build-properties') as {
+                ios: { ccacheEnabled: boolean }
+            }
+        ).ios.ccacheEnabled
 
     it('is on when CI found ccache on the host', () => {
         expect(ccacheEnabled({ APP_ENV: 'production', USE_CCACHE: '1' })).toBe(
