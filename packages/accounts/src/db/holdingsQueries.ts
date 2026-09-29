@@ -18,13 +18,14 @@ import {
     AssetsPeraSchema,
     AssetPricesSchema,
     PeraAssetType,
+    isNativeAssetId,
     nativeAssetFor,
     peraAssetFromColumns,
     type PeraAsset,
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { isAlgoAssetId, type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
 import type { AccountHoldingsFilters } from './holdingsRepository'
@@ -286,7 +287,7 @@ export const assetFromHoldingLiteRow = (
     row: AssetColumnsLite,
 ): Nullable<PeraAsset> => {
     if (row.decimals === null || row.totalSupply === null) {
-        return isAlgoAssetId(row.assetId)
+        return isNativeAssetId(LEGACY_CHAIN_ID, row.assetId)
             ? nativeAssetFor(LEGACY_CHAIN_ID)
             : null
     }
