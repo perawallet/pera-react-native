@@ -20,8 +20,8 @@ import algosdk from 'algosdk'
 
 // Deep imports rather than the package barrel on purpose: the barrel pulls
 // in every accounts hook (multisig, staking, currencies), none of which is
-// reachable from a Node suite. `models/accounts` and `bip44` have no
-// dependencies beyond types and one error class.
+// reachable from a Node suite. `models/accounts` has no dependencies beyond
+// types.
 import {
     AccountTypes,
     DerivationTypes,
@@ -32,7 +32,7 @@ import {
     type QuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts/models/accounts'
-import { assertAlgorandBip44PathMatches } from '@perawallet/wallet-core-accounts/bip44'
+import { assertAlgorandBip44PathMatches } from '@perawallet/wallet-core-chain-algorand/accounts/bip44'
 import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain/pq/derivation'
 import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain/pq/quantumAdapter'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain/utils/addresses'

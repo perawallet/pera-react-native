@@ -12,7 +12,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { fetchRekeyedAddresses } from '../account-discovery'
+import { fetchRekeyedAddresses } from '../chain-adapter'
 import { getRekeyedAddressesQueryKey } from './querykeys'
 
 type UseRekeyedAddressesQueryResult = {

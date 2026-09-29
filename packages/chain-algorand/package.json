@@ -86,6 +86,7 @@
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
     "@algorandfoundation/ledger-algorand-js": "catalog:",
+    "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
     "@noble/hashes": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
@@ -96,6 +97,7 @@
     "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-connections": "workspace:*",
+    "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-nfd": "workspace:*",
     "@perawallet/wallet-core-onramp": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
@@ -114,6 +116,7 @@
   "devDependencies": {
     "@algorandfoundation/algokit-client-generator": "6.0.1",
     "@perawallet/wallet-core-devtools": "workspace:*",
+    "@scure/bip39": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

@@ -18,19 +18,19 @@ import {
     getRekeyedAddressesQueryKey,
 } from '../querykeys'
 
-const mocks = vi.hoisted(() => ({
-    fetchOnChainAccountInformation: vi.fn(),
-    fetchRekeyedAddresses: vi.fn(),
-}))
+import {
+    fakeAccountsChain,
+    MAINNET_SCOPE,
+} from '../../__tests__/fakeAccountsChain'
 
-// Paths are relative to THIS test file (hooks/__tests__/). The util lives in
-// hooks/ and imports './endpoints' and '../account-discovery'.
-vi.mock('../endpoints', () => ({
-    fetchOnChainAccountInformation: mocks.fetchOnChainAccountInformation,
-}))
-vi.mock('../../account-discovery', () => ({
-    fetchRekeyedAddresses: mocks.fetchRekeyedAddresses,
-}))
+const mocks = {
+    get fetchOnChainAccountInformation() {
+        return vi.mocked(fakeAccountsChain().adapter.fetchAccountInformation)
+    },
+    get fetchRekeyedAddresses() {
+        return vi.mocked(fakeAccountsChain().adapter.fetchRekeyedAddresses!)
+    },
+}
 
 describe('prefetchLedgerAccountPreview', () => {
     beforeEach(() => {
@@ -50,14 +50,7 @@ describe('prefetchLedgerAccountPreview', () => {
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
-        const algokit = {} as never
-
-        await prefetchLedgerAccountPreview(
-            queryClient,
-            algokit,
-            'ADDR',
-            'mainnet',
-        )
+        await prefetchLedgerAccountPreview(queryClient, 'ADDR', 'mainnet')
 
         expect(
             queryClient.getQueryData(
@@ -70,12 +63,12 @@ describe('prefetchLedgerAccountPreview', () => {
             ),
         ).toBeDefined()
         expect(mocks.fetchOnChainAccountInformation).toHaveBeenCalledWith(
-            algokit,
             'ADDR',
+            MAINNET_SCOPE,
         )
         expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith(
             'ADDR',
-            'mainnet',
+            MAINNET_SCOPE,
         )
     })
 
@@ -86,12 +79,7 @@ describe('prefetchLedgerAccountPreview', () => {
         })
 
         await expect(
-            prefetchLedgerAccountPreview(
-                queryClient,
-                {} as never,
-                'ADDR',
-                'mainnet',
-            ),
+            prefetchLedgerAccountPreview(queryClient, 'ADDR', 'mainnet'),
         ).resolves.toBeUndefined()
     })
 })

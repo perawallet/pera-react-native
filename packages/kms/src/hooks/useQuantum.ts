@@ -17,16 +17,13 @@ import {
     logger,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import {
-    deriveQuantumAddress,
-    derivePQKeygenSeed,
-} from '@perawallet/wallet-core-blockchain'
 import { indicesToAlgo25Seed } from '../crypto/algo25-utils'
 import {
     FALCON_CHILD_KEY_TYPE,
     PQ_DERIVATION_CANONICAL,
     PQ_DERIVATION_LEGACY,
     type PQDerivation,
+    type QuantumChainDerivation,
     quantumSignKeyId,
 } from '../models'
 import { useKMSService } from './useKMSServices'
@@ -46,7 +43,8 @@ export type QuantumKeyResult = {
 export const useQuantum = () => {
     const { keyStore } = useKMSService()
 
-    const createQuantumKey = async (params?: {
+    const createQuantumKey = async (params: {
+        chain: QuantumChainDerivation
         id?: string
         /** Wordlist indices (`mnemonicWordsToIndices`) — never the phrase
          * itself, so no mnemonic string reaches the key path. */
@@ -55,15 +53,15 @@ export const useQuantum = () => {
         /** Attach a second child to an existing seed record instead of importing a new one. */
         reuseSeedId?: string
     }): Promise<QuantumKeyResult> => {
-        if (params?.id && params?.reuseSeedId) {
+        if (params.id && params.reuseSeedId) {
             throw new KeyManagementError(
                 '`id` and `reuseSeedId` are mutually exclusive',
             )
         }
 
-        const derivation = params?.derivation ?? PQ_DERIVATION_CANONICAL
+        const derivation = params.derivation ?? PQ_DERIVATION_CANONICAL
         const seedKeyId =
-            params?.reuseSeedId ?? params?.id ?? generateOrderedUniqueId()
+            params.reuseSeedId ?? params.id ?? generateOrderedUniqueId()
 
         let seed: Optional<Uint8Array>
         let keygenSeed: Optional<Uint8Array>
@@ -73,7 +71,7 @@ export const useQuantum = () => {
             // The quantum mnemonic format IS algo25 (24 data words + 1 checksum
             // word over 32 bytes of entropy), so the indices→seed path is the
             // algo25 codec — no quantum-specific mnemonic code exists.
-            seed = params?.mnemonicIndices
+            seed = params.mnemonicIndices
                 ? indicesToAlgo25Seed(params.mnemonicIndices)
                 : nacl.randomBytes(QUANTUM_SEED_LENGTH)
 
@@ -84,7 +82,7 @@ export const useQuantum = () => {
             // children can share one seed record; importing it twice would
             // persist the same entropy at rest twice, which is worse than
             // the derivation bug this exists to fix.
-            if (!params?.reuseSeedId) {
+            if (!params.reuseSeedId) {
                 // Pass the seed buffer directly (no defensive copy) so the
                 // `finally`'s `zeroBytes(seed)` wipes the same Uint8Array
                 const seedData: Omit<Seed, 'id'> & { id: string } = {
@@ -104,16 +102,15 @@ export const useQuantum = () => {
             // keypair from `keygenSeed` and seals the private half itself.
             //
             // The keystore feeds `params.seed` straight to Falcon keygen, so
-            // the canonical hop has to happen here: go-algorand's algokey
-            // derives SHA512_256("PQK" || scheme || entropy) first, and Falcon
-            // seeded with the bare entropy yields a different account than the
-            // same mnemonic produces in every other Algorand tool. Legacy IS
-            // the raw entropy — it must reach Falcon unmodified, or it mints
-            // an address no existing legacy account was ever created at.
+            // the chain's canonical hop has to happen here, or the mnemonic
+            // restores a different account in every other tool for that
+            // chain. Legacy IS the raw entropy — it must reach Falcon
+            // unmodified, or it mints an address no existing legacy account
+            // was ever created at.
             keygenSeed =
                 derivation === PQ_DERIVATION_LEGACY
                     ? seed
-                    : derivePQKeygenSeed(seed)
+                    : params.chain.deriveKeygenSeed(seed)
 
             // `id` and `parentKeyId` ride the untyped `params` bag: the engine
             // resolves the entry id as `params.id ?? randomUUID()`, and strips
@@ -142,7 +139,7 @@ export const useQuantum = () => {
                     `Quantum child ${signKeyId} has no public key to derive an address from`,
                 )
             }
-            const address = deriveQuantumAddress(publicKey)
+            const address = params.chain.addressFromPublicKey(publicKey)
 
             return {
                 seedKey: {

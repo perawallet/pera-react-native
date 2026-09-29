@@ -46,6 +46,7 @@ import {
     AccountTypes,
     useAccountsStore,
     type WalletAccount,
+    quantumDerivationFor,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
@@ -90,6 +91,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
+            chain: quantumDerivationFor('mainnet'),
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()

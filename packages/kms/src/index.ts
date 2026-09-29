@@ -44,7 +44,11 @@ export {
 // Re-exported so consumers that need to derive a real Falcon keypair outside
 // the hook (e.g. quantum test fixtures) use the same PQ provider `useQuantum`
 // and `useKMS` do, rather than hand-rolling their own derivation.
-export { getPQProvider, type PQSignatureProvider } from './crypto/pq'
+export {
+    getPQProvider,
+    type PQSchemeId,
+    type PQSignatureProvider,
+} from './crypto/pq'
 export {
     resolvePQSigningInfo,
     resolveSeedKeyFrom,
@@ -73,7 +77,6 @@ export {
     isSeedKey,
     seedSchemeOf,
 } from './utils'
-export { hdDerivedKeyId } from './hooks/useHDWallet'
 export {
     findPasskeyMainKey,
     passkeyMainKeyId,

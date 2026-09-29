@@ -1087,6 +1087,12 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../packages/blockchain
+      '@perawallet/wallet-core-chain-algorand':
+        specifier: workspace:*
+        version: link:../packages/chain-algorand
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../packages/chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../packages/config
@@ -1708,12 +1714,6 @@ importers:
 
   packages/accounts:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
-      '@algorandfoundation/xhd-wallet-api':
-        specifier: 'catalog:'
-        version: 2.0.0-canary.1
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -1723,6 +1723,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -1753,9 +1756,6 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -1772,15 +1772,15 @@ importers:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
-      '@scure/bip39':
-        specifier: 'catalog:'
-        version: 2.2.0
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/react':
         specifier: ~19.2.14
         version: 19.2.17
+      algosdk:
+        specifier: 'catalog:'
+        version: 3.7.0
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
@@ -2189,6 +2189,9 @@ importers:
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../database
+      '@perawallet/wallet-core-kms':
+        specifier: workspace:*
+        version: link:../kms
       '@perawallet/wallet-core-remote-config':
         specifier: workspace:*
         version: link:../remote-config
@@ -2384,6 +2387,9 @@ importers:
       '@algorandfoundation/ledger-algorand-js':
         specifier: 'catalog:'
         version: 1.4.3
+      '@algorandfoundation/xhd-wallet-api':
+        specifier: 'catalog:'
+        version: 2.0.0-canary.1
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2414,6 +2420,9 @@ importers:
       '@perawallet/wallet-core-connections':
         specifier: workspace:*
         version: link:../connections
+      '@perawallet/wallet-core-kms':
+        specifier: workspace:*
+        version: link:../kms
       '@perawallet/wallet-core-nfd':
         specifier: workspace:*
         version: link:../nfd
@@ -2463,6 +2472,9 @@ importers:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
+      '@scure/bip39':
+        specifier: 'catalog:'
+        version: 2.2.0
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -3010,9 +3022,6 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.3.0
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
