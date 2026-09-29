@@ -104,11 +104,14 @@ export const App = (): React.JSX.Element => {
             await hydratePlatform()
 
             if (isOffscreen) {
-                // Headless surface; store-bearing imports stay behind this dynamic
-                // import (same boot-order contract as AppShell).
-                const mod = await import('@browser/offscreen/runOffscreenApp')
+                // Headless surface; store-bearing imports stay behind these dynamic
+                // imports (same boot-order contract as AppShell).
+                const [mod, { registerChainAdapters }] = await Promise.all([
+                    import('@browser/offscreen/runOffscreenApp'),
+                    import('./bootstrap/chain-adapters'),
+                ])
                 await registerTransports()
-                await mod.runOffscreenApp()
+                await mod.runOffscreenApp({ registerChainAdapters })
                 setShell(() => OffscreenStatus)
                 return
             }
