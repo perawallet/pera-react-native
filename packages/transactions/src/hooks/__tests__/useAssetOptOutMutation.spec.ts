@@ -142,7 +142,10 @@ describe('useAssetOptOutMutation', () => {
             })
         })
 
-        expect(mockFetchOnChainAsset).toHaveBeenCalledWith('12345', 'testnet')
+        expect(mockFetchOnChainAsset).toHaveBeenCalledWith('12345', {
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         expect(mockBuild).toHaveBeenCalledWith({
             scope: { chainId: 'algorand', networkId: 'testnet' },
             optOuts: [

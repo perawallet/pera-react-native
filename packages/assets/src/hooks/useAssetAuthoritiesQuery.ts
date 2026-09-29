@@ -32,7 +32,7 @@ export const useAssetAuthoritiesQuery = (
         assetId.length > 0 && assetId !== adapter.getNativeAsset().assetId
 
     const query = useQuery<AssetAuthorities, Error>({
-        queryKey: getAssetAuthoritiesQueryKey(assetId, network),
+        queryKey: getAssetAuthoritiesQueryKey(assetId, scope),
         queryFn: () => adapter.fetchAssetAuthorities(assetId, scope),
         enabled,
         staleTime: Infinity,

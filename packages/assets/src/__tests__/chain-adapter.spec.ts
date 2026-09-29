@@ -20,6 +20,7 @@ import {
     assetsChainAdapters,
     fetchAndPersistAssets,
     fetchOnChainAsset,
+    isNativeAssetId,
     nativeAssetFor,
 } from '../chain-adapter'
 import { fetchAndPersistPrices } from '../sync/price-syncer'
@@ -32,14 +33,26 @@ describe('assetsAdapterFor / nativeAssetFor', () => {
         expect(assetsAdapterFor(scopeForLegacyNetwork('testnet'))).toBe(adapter)
         expect(nativeAssetFor('algorand')).toBe(FAKE_NATIVE_ASSET)
     })
+
+    it('isNativeAssetId matches only the registered chain native id', () => {
+        registerFakeAssetsAdapter()
+
+        expect(isNativeAssetId('algorand', FAKE_NATIVE_ASSET.assetId)).toBe(
+            true,
+        )
+        expect(isNativeAssetId('algorand', '31566704')).toBe(false)
+    })
 })
 
-describe('network wrappers', () => {
-    it('fetchAndPersistAssets hands the adapter the legacy network as a scope', async () => {
+describe('scope wrappers', () => {
+    it('fetchAndPersistAssets hands the adapter the scope it was given', async () => {
         const syncAssets = vi.fn().mockResolvedValue(undefined)
         registerFakeAssetsAdapter({ syncAssets })
 
-        await fetchAndPersistAssets(['1', '2'], 'testnet')
+        await fetchAndPersistAssets(
+            ['1', '2'],
+            scopeForLegacyNetwork('testnet'),
+        )
 
         expect(syncAssets).toHaveBeenCalledWith(['1', '2'], {
             chainId: 'algorand',
@@ -51,7 +64,10 @@ describe('network wrappers', () => {
         const fetchOnChain = vi.fn().mockResolvedValue({ assetId: '7' })
         registerFakeAssetsAdapter({ fetchOnChainAsset: fetchOnChain })
 
-        const asset = await fetchOnChainAsset('7', 'mainnet')
+        const asset = await fetchOnChainAsset(
+            '7',
+            scopeForLegacyNetwork('mainnet'),
+        )
 
         expect(asset).toEqual({ assetId: '7' })
         expect(fetchOnChain).toHaveBeenCalledWith('7', {
@@ -74,11 +90,11 @@ describe('with no adapter registered', () => {
         assetsChainAdapters.reset()
 
         await expect(
-            fetchAndPersistAssets(['1'], 'mainnet'),
+            fetchAndPersistAssets(['1'], scopeForLegacyNetwork('mainnet')),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
-        await expect(fetchOnChainAsset('1', 'mainnet')).rejects.toBeInstanceOf(
-            ChainAdapterNotRegisteredError,
-        )
+        await expect(
+            fetchOnChainAsset('1', scopeForLegacyNetwork('mainnet')),
+        ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchAndPersistPrices(['1'], 'mainnet'),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)

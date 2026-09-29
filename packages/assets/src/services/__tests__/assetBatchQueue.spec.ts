@@ -12,6 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset } from '../../models'
 
 const mockFetchAndPersistAssets = vi.hoisted(() => vi.fn())
@@ -56,7 +57,7 @@ describe('assetBatchQueue (adapter)', () => {
         expect(mockFetchAndPersistAssets).toHaveBeenCalledTimes(1)
         const [ids, network] = mockFetchAndPersistAssets.mock.calls[0]
         expect(new Set(ids)).toEqual(new Set(['1', '2', '3']))
-        expect(network).toBe('mainnet')
+        expect(network).toEqual(scopeForLegacyNetwork('mainnet'))
 
         expect(r1).toEqual(a)
         expect(r2).toEqual(b)
@@ -73,7 +74,9 @@ describe('assetBatchQueue (adapter)', () => {
         ])
 
         expect(mockFetchAndPersistAssets).toHaveBeenCalledTimes(2)
-        const networks = mockFetchAndPersistAssets.mock.calls.map(c => c[1])
+        const networks = mockFetchAndPersistAssets.mock.calls.map(
+            c => c[1].networkId,
+        )
         expect(networks.sort()).toEqual(['mainnet', 'testnet'])
     })
 

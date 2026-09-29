@@ -14,6 +14,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useStableIdList } from '@perawallet/wallet-core-shared'
 import { getAssetsByIds } from '../db'
@@ -45,6 +46,7 @@ export const useAssetsQuery = (
     { fetchMissing = false }: UseAssetsQueryOptions = {},
 ): UseAssetsQueryResult => {
     const { network } = useNetwork()
+    const scope = scopeForLegacyNetwork(network)
     const nativeAsset = useNativeAsset()
 
     // Keep a stable reference to ids — only update when the actual content
@@ -57,8 +59,8 @@ export const useAssetsQuery = (
         // entry — a DB-only caller must never satisfy it from cache (with
         // staleTime Infinity that would strand the missing assets).
         queryKey: fetchMissing
-            ? [...getAssetsQueryKey(stableIds, network), { fetchMissing: true }]
-            : getAssetsQueryKey(stableIds, network),
+            ? [...getAssetsQueryKey(stableIds, scope), { fetchMissing: true }]
+            : getAssetsQueryKey(stableIds, scope),
         staleTime: Infinity,
         // No ids → nothing to fetch. Skip the query entirely so callers that
         // already supply the asset (e.g. the asset-list rows pass skipFetch and
@@ -66,7 +68,7 @@ export const useAssetsQuery = (
         enabled: stableIds.length > 0,
         queryFn: async () => {
             if (fetchMissing) {
-                await fetchAndPersistAssets(stableIds, network)
+                await fetchAndPersistAssets(stableIds, scope)
             }
             return getAssetsByIds({ assetIds: stableIds, network })
         },

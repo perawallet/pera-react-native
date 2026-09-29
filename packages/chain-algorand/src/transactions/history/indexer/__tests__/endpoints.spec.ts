@@ -115,10 +115,10 @@ describe('fetchIndexerTransactionHistory', () => {
             network: Networks.betanet,
         })
 
-        expect(mockFetchOnChainAsset).toHaveBeenCalledWith(
-            '888',
-            Networks.betanet,
-        )
+        expect(mockFetchOnChainAsset).toHaveBeenCalledWith('888', {
+            chainId: 'algorand',
+            networkId: Networks.betanet,
+        })
         expect(result.transactions[0]?.asset).toEqual({
             assetId: '888',
             name: 'Foo Coin',

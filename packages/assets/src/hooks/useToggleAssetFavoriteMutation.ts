@@ -11,6 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
@@ -80,11 +81,11 @@ export const useToggleAssetFavoriteMutation = ({
         onMutate: async variables => {
             const queryKey = getAssetDetailsQueryKey(
                 variables.assetID,
-                variables.network,
+                scopeForLegacyNetwork(variables.network),
             )
             const remoteQueryKey = getRemoteAssetDetailsQueryKey(
                 variables.assetID,
-                variables.network,
+                scopeForLegacyNetwork(variables.network),
             )
             await queryClient.cancelQueries({ queryKey })
             await queryClient.cancelQueries({ queryKey: remoteQueryKey })
@@ -143,7 +144,7 @@ export const useToggleAssetFavoriteMutation = ({
                     queryClient.setQueryData(
                         getAssetDetailsQueryKey(
                             variables.assetID,
-                            variables.network,
+                            scopeForLegacyNetwork(variables.network),
                         ),
                         context.previousData,
                     )
@@ -152,7 +153,7 @@ export const useToggleAssetFavoriteMutation = ({
                     queryClient.setQueryData(
                         getRemoteAssetDetailsQueryKey(
                             variables.assetID,
-                            variables.network,
+                            scopeForLegacyNetwork(variables.network),
                         ),
                         context.previousRemoteData,
                     )

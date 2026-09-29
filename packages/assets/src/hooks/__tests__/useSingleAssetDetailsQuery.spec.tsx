@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
@@ -164,7 +165,10 @@ describe('useSingleAssetDetailsQuery', () => {
         expect(mocks.batchEnqueue).not.toHaveBeenCalled()
         expect(
             queryClient.getQueryData(
-                getRemoteAssetDetailsQueryKey('789', 'mainnet'),
+                getRemoteAssetDetailsQueryKey(
+                    '789',
+                    scopeForLegacyNetwork('mainnet'),
+                ),
             ),
         ).toBeDefined()
     })

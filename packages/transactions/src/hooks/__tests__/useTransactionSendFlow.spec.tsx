@@ -547,10 +547,10 @@ describe('useTransactionSendFlow', () => {
             network: 'mainnet',
             amount: new Decimal(250),
         })
-        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(
-            ['99'],
-            'mainnet',
-        )
+        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['99'], {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(mockInvalidateBalances).toHaveBeenCalled()
     })
 

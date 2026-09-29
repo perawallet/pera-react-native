@@ -123,10 +123,10 @@ describe('useAssetOptInMutation', () => {
             assetId: '12345',
             network: 'testnet',
         })
-        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(
-            ['12345'],
-            'testnet',
-        )
+        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['12345'], {
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         // The scoped invalidation is what refreshes every staleTime-Infinity
         // account read (balances, holdings page, NFT gallery sort caches).
         expect(mockInvalidate).toHaveBeenCalledTimes(1)

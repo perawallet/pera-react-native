@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     getAllHeldAssetIdsForNetwork,
     fetchAndPersistAccount,
@@ -154,7 +155,10 @@ export const syncAssetsPhase = async (
     const results = await Promise.allSettled(
         kinds.map(kind =>
             kind === 'assets'
-                ? fetchAndPersistAssets(assetIds, network)
+                ? fetchAndPersistAssets(
+                      assetIds,
+                      scopeForLegacyNetwork(network),
+                  )
                 : fetchAndPersistPrices(assetIds, network),
         ),
     )

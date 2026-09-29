@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAssetsQuery } from '../useAssetsQuery'
@@ -228,7 +229,10 @@ describe('useAssetsQuery', () => {
             // keep its identity for effects that dep on an asset.
             await act(async () => {
                 await queryClient.refetchQueries({
-                    queryKey: getAssetsQueryKey(['123'], 'mainnet'),
+                    queryKey: getAssetsQueryKey(
+                        ['123'],
+                        scopeForLegacyNetwork('mainnet'),
+                    ),
                 })
             })
 

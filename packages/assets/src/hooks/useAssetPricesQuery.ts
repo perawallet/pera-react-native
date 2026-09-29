@@ -14,6 +14,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { AssetPrices } from '../models'
 import { getAssetPricesQueryKey } from './querykeys'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useStableIdList } from '@perawallet/wallet-core-shared'
 import { getAssetPricesByIds } from '../db'
@@ -39,7 +40,10 @@ export const useAssetPricesQuery = (
     const stableIds = useStableIdList(ids)
 
     const query = useQuery({
-        queryKey: getAssetPricesQueryKey(stableIds, network),
+        queryKey: getAssetPricesQueryKey(
+            stableIds,
+            scopeForLegacyNetwork(network),
+        ),
         enabled: enabled ?? true,
         staleTime: Infinity,
         queryFn: () => getAssetPricesByIds({ assetIds: stableIds, network }),

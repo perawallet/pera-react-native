@@ -34,8 +34,8 @@ export const useSingleAssetDetailsQuery = (
         // getRemoteAssetDetailsQueryKey for why it can't share the canonical
         // one.
         queryKey: useDB
-            ? getAssetDetailsQueryKey(assetId, network)
-            : getRemoteAssetDetailsQueryKey(assetId, network),
+            ? getAssetDetailsQueryKey(assetId, scope)
+            : getRemoteAssetDetailsQueryKey(assetId, scope),
         queryFn: async (): Promise<PeraAsset> => {
             // Try DB first (data synced by sync service)
             if (useDB) {

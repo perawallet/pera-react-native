@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { describe, test, expect, vi } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
 
@@ -92,24 +93,28 @@ describe('getAssetsQueryKey', () => {
     test('keeps the ids out of the key so hashing it stays O(1)', () => {
         const key = getAssetsQueryKey(
             Array.from({ length: 20_000 }, (_, i) => String(i)),
-            'mainnet',
+            scopeForLegacyNetwork('mainnet'),
         )
 
         expect(JSON.stringify(key).length).toBeLessThan(100)
     })
 
     test('is derivable from the ids alone, so cache seeding still matches', () => {
-        expect(getAssetsQueryKey(['123'], 'mainnet')).toEqual(
-            getAssetsQueryKey(['123'], 'mainnet'),
-        )
-        expect(getAssetsQueryKey(['123'], 'mainnet')).not.toEqual(
-            getAssetsQueryKey(['456'], 'mainnet'),
+        expect(
+            getAssetsQueryKey(['123'], scopeForLegacyNetwork('mainnet')),
+        ).toEqual(getAssetsQueryKey(['123'], scopeForLegacyNetwork('mainnet')))
+        expect(
+            getAssetsQueryKey(['123'], scopeForLegacyNetwork('mainnet')),
+        ).not.toEqual(
+            getAssetsQueryKey(['456'], scopeForLegacyNetwork('mainnet')),
         )
     })
 
     test('partitions by network', () => {
-        expect(getAssetsQueryKey(['123'], 'mainnet')).not.toEqual(
-            getAssetsQueryKey(['123'], 'testnet'),
+        expect(
+            getAssetsQueryKey(['123'], scopeForLegacyNetwork('mainnet')),
+        ).not.toEqual(
+            getAssetsQueryKey(['123'], scopeForLegacyNetwork('testnet')),
         )
     })
 })
@@ -117,9 +122,14 @@ describe('getAssetsQueryKey', () => {
 describe('isAssetQuery', () => {
     test('returns true for any key whose first element is the module prefix', () => {
         expect(isAssetQuery([MODULE_PREFIX, 'prices', 'usd'])).toBe(true)
-        expect(isAssetQuery(getAssetPricesQueryKey(['123'], 'mainnet'))).toBe(
-            true,
-        )
+        expect(
+            isAssetQuery(
+                getAssetPricesQueryKey(
+                    ['123'],
+                    scopeForLegacyNetwork('mainnet'),
+                ),
+            ),
+        ).toBe(true)
     })
 
     test('returns false for keys from other modules', () => {
@@ -132,12 +142,22 @@ describe('isAssetQuery', () => {
     // refresh a cleared freeze address.
     test('every key factory in this module is reachable by the invalidator', () => {
         const keys = [
-            getAssetPricesQueryKey(['123'], 'mainnet'),
-            getAssetPriceHistoryQueryKey('123', '7d', 'mainnet'),
-            getAssetDetailsQueryKey('123', 'mainnet'),
-            getRemoteAssetDetailsQueryKey('123', 'mainnet'),
-            getAssetAuthoritiesQueryKey('123', 'mainnet'),
-            getAssetsQueryKey(['123'], 'mainnet'),
+            getAssetPricesQueryKey(['123'], scopeForLegacyNetwork('mainnet')),
+            getAssetPriceHistoryQueryKey(
+                '123',
+                '7d',
+                scopeForLegacyNetwork('mainnet'),
+            ),
+            getAssetDetailsQueryKey('123', scopeForLegacyNetwork('mainnet')),
+            getRemoteAssetDetailsQueryKey(
+                '123',
+                scopeForLegacyNetwork('mainnet'),
+            ),
+            getAssetAuthoritiesQueryKey(
+                '123',
+                scopeForLegacyNetwork('mainnet'),
+            ),
+            getAssetsQueryKey(['123'], scopeForLegacyNetwork('mainnet')),
         ]
 
         for (const key of keys) {
@@ -167,7 +187,9 @@ describe('invalidateAssetQueries', () => {
 
 describe('detail query keys', () => {
     test('getAssetDetailsQueryKey includes id and network', () => {
-        expect(getAssetDetailsQueryKey('123', 'mainnet')).toEqual([
+        expect(
+            getAssetDetailsQueryKey('123', scopeForLegacyNetwork('mainnet')),
+        ).toEqual([
             MODULE_PREFIX,
             'detail',
             { assetId: '123', network: 'mainnet' },
@@ -175,18 +197,33 @@ describe('detail query keys', () => {
     })
 
     test('getRemoteAssetDetailsQueryKey is distinct from the canonical entry', () => {
-        expect(getRemoteAssetDetailsQueryKey('123', 'mainnet')).toEqual([
+        expect(
+            getRemoteAssetDetailsQueryKey(
+                '123',
+                scopeForLegacyNetwork('mainnet'),
+            ),
+        ).toEqual([
             MODULE_PREFIX,
             'detail-remote',
             { assetId: '123', network: 'mainnet' },
         ])
-        expect(getRemoteAssetDetailsQueryKey('123', 'mainnet')).not.toEqual(
-            getAssetDetailsQueryKey('123', 'mainnet'),
+        expect(
+            getRemoteAssetDetailsQueryKey(
+                '123',
+                scopeForLegacyNetwork('mainnet'),
+            ),
+        ).not.toEqual(
+            getAssetDetailsQueryKey('123', scopeForLegacyNetwork('mainnet')),
         )
     })
 
     test('getAssetAuthoritiesQueryKey includes the authorities namespace', () => {
-        expect(getAssetAuthoritiesQueryKey('123', 'mainnet')).toEqual([
+        expect(
+            getAssetAuthoritiesQueryKey(
+                '123',
+                scopeForLegacyNetwork('mainnet'),
+            ),
+        ).toEqual([
             MODULE_PREFIX,
             'authorities',
             { assetId: '123', network: 'mainnet' },
@@ -194,7 +231,13 @@ describe('detail query keys', () => {
     })
 
     test('getAssetPriceHistoryQueryKey includes asset id, period, and network', () => {
-        expect(getAssetPriceHistoryQueryKey('123', '7d', 'mainnet')).toEqual([
+        expect(
+            getAssetPriceHistoryQueryKey(
+                '123',
+                '7d',
+                scopeForLegacyNetwork('mainnet'),
+            ),
+        ).toEqual([
             MODULE_PREFIX,
             'prices',
             'history',
@@ -205,7 +248,11 @@ describe('detail query keys', () => {
 
 describe('isAssetPriceHistoryQuery', () => {
     test('matches the asset price-history key', () => {
-        const key = getAssetPriceHistoryQueryKey('123', 'one-week', 'mainnet')
+        const key = getAssetPriceHistoryQueryKey(
+            '123',
+            'one-week',
+            scopeForLegacyNetwork('mainnet'),
+        )
 
         expect(isAssetPriceHistoryQuery(key)).toBe(true)
     })
@@ -214,15 +261,40 @@ describe('isAssetPriceHistoryQuery', () => {
         // ['assets','prices','usd',…] shares two segments — the third must gate it.
         expect(
             isAssetPriceHistoryQuery(
-                getAssetPricesQueryKey(['123'], 'mainnet'),
+                getAssetPricesQueryKey(
+                    ['123'],
+                    scopeForLegacyNetwork('mainnet'),
+                ),
             ),
         ).toBe(false)
         expect(
-            isAssetPriceHistoryQuery(getAssetsQueryKey(['123'], 'mainnet')),
+            isAssetPriceHistoryQuery(
+                getAssetsQueryKey(['123'], scopeForLegacyNetwork('mainnet')),
+            ),
         ).toBe(false)
         expect(isAssetPriceHistoryQuery(['accounts', 'balance-history'])).toBe(
             false,
         )
+    })
+})
+
+describe('custom-network sweep', () => {
+    test('every network-scoped key carries the bare network, which clearCustomNetworkCache matches on', () => {
+        const custom = scopeForLegacyNetwork('custom')
+        const keys = [
+            getAssetPricesQueryKey(['123'], custom),
+            getAssetPriceHistoryQueryKey('123', '7d', custom),
+            getAssetDetailsQueryKey('123', custom),
+            getRemoteAssetDetailsQueryKey('123', custom),
+            getAssetAuthoritiesQueryKey('123', custom),
+            getAssetsQueryKey(['123'], custom),
+        ]
+
+        for (const key of keys) {
+            expect(JSON.stringify(key), JSON.stringify(key)).toContain(
+                '"network":"custom"',
+            )
+        }
     })
 })
 

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
 import { fetchOnChainAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -60,7 +61,10 @@ const resolveCreator = async (
     if (params.creator) {
         return params as ResolvedOptOutParams
     }
-    const asset = await fetchOnChainAsset(String(params.assetId), network)
+    const asset = await fetchOnChainAsset(
+        String(params.assetId),
+        scopeForLegacyNetwork(network),
+    )
     return {
         ...params,
         creator: asset.creator.address,

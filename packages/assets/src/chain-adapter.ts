@@ -12,16 +12,11 @@
 
 import {
     createChainAdapterRegistry,
-    scopeForLegacyNetwork,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Decimal } from 'decimal.js'
-import type {
-    Network,
-    Nullable,
-    Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { AssetPriceRow } from './db/pricesRepository'
 import type { DisplayableAsset, PeraAsset } from './models'
 
@@ -86,20 +81,21 @@ export const assetsAdapterFor = (scope: ChainScope): AssetsChainAdapter =>
 export const nativeAssetFor = (chainId: ChainId): PeraAsset =>
     assetsChainAdapters.get(chainId).getNativeAsset()
 
+/** @throws ChainAdapterNotRegisteredError */
+export const isNativeAssetId = (chainId: ChainId, assetId: string): boolean =>
+    nativeAssetFor(chainId).assetId === assetId
+
 // The wrappers below are async so a missing adapter rejects instead of
 // throwing synchronously past a caller's `.catch`.
 export const fetchAndPersistAssets = async (
     assetIds: string[],
-    network: Network,
+    scope: ChainScope,
 ): Promise<void> => {
-    const scope = scopeForLegacyNetwork(network)
     await assetsAdapterFor(scope).syncAssets(assetIds, scope)
 }
 
 export const fetchOnChainAsset = async (
     assetId: string,
-    network: Network,
-): Promise<PeraAsset> => {
-    const scope = scopeForLegacyNetwork(network)
-    return assetsAdapterFor(scope).fetchOnChainAsset(assetId, scope)
-}
+    scope: ChainScope,
+): Promise<PeraAsset> =>
+    assetsAdapterFor(scope).fetchOnChainAsset(assetId, scope)

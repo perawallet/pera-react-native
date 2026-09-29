@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { z } from 'zod'
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import { fetchOnChainAsset } from '@perawallet/wallet-core-assets'
@@ -40,7 +41,10 @@ const buildAssetLookup = async (
 
     const settled = await Promise.allSettled(
         ids.map(async id => {
-            const asset = await fetchOnChainAsset(id, network)
+            const asset = await fetchOnChainAsset(
+                id,
+                scopeForLegacyNetwork(network),
+            )
             return { id, asset }
         }),
     )
