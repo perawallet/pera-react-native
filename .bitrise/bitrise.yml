@@ -18,12 +18,16 @@ pipelines:
         depends_on:
         - test
         - generate-changelog
+      web-staging:
+        depends_on:
+        - test
       notify-nightly:
         depends_on:
         - test
         - generate-changelog
         - ios-staging
         - android-staging
+        - web-staging
         should_always_run: workflow
     triggers:
       tag:
@@ -40,37 +44,21 @@ pipelines:
         depends_on:
         - test
         - generate-changelog
+      web-production:
+        depends_on:
+        - test
       notify-release:
         depends_on:
         - test
         - generate-changelog
         - ios-production
         - android-production
+        - web-production
         should_always_run: workflow
     triggers:
       tag:
       - name:
           regex: "^v[0-9]+\\.[0-9]+\\.[0-9]+(-rc\\.[0-9]+)?$"
-  web-release-builds:
-    description: Build the browser extension (Web) zip for staging + production.
-      Manual-trigger only for now — no automatic tag/nightly trigger, and no
-      Chrome Web Store upload.
-    workflows:
-      test: {}
-      generate-changelog: {}
-      web-production:
-        depends_on:
-        - test
-      web-staging:
-        depends_on:
-        - test
-      notify-release-web:
-        depends_on:
-        - test
-        - generate-changelog
-        - web-production
-        - web-staging
-        should_always_run: workflow
 workflows:
   test:
     description: Run tests before release
@@ -1285,237 +1273,6 @@ workflows:
             ${ROW_ID}_STATUS
             ${ROW_ID}_URL
             ${ROW_ID}_INSTALL
-  notify-release-web:
-    description: Post one consolidated Web (browser extension) release card (all
-      build statuses + changelog) — mirrors notify-release's structure/format
-      for the RN builds, kept as a separate card since web-release-builds is a
-      separate, manually-triggered pipeline.
-    meta:
-      bitrise.io:
-        stack: ubuntu-noble-24.04-bitrise-2025-android
-        machine_type_id: g2.linux.medium
-    steps:
-    - script@1:
-        is_always_run: true
-        title: Send Web Release Slack Notification
-        inputs:
-        - content: "#!/usr/bin/env bash
-
-            # set -e without -x: keep the Slack webhook URL out of the trace
-            log.
-
-            set -e
-
-
-            # Channel label and tag/branch from tag shape or fallback.
-
-            if [ -n \"${BITRISE_GIT_TAG:-}\" ]; then
-
-            \  TAG_OR_BRANCH=\"$BITRISE_GIT_TAG\"
-
-            \  case \"$BITRISE_GIT_TAG\" in
-
-            \    *-alpha.*) CHANNEL=\"Nightly\" ;;
-
-            \    *-rc.*)    CHANNEL=\"RC\" ;;
-
-            \    v*)        CHANNEL=\"Release\" ;;
-
-            \    *)         CHANNEL=\"Release\" ;;
-
-            \  esac
-
-            else
-
-            \  TAG_OR_BRANCH=\"${BITRISE_GIT_BRANCH:-manual}\"
-
-            \  CHANNEL=\"Manual\"
-
-            fi
-
-
-            # One mrkdwn row per build. Platform/env/destination are static;
-
-            # status + links come from each build's shared pipeline variables
-
-            # (empty status = the build never ran). Literal \\n separates rows.
-
-            row() { # $1 status  $2 build_url  $3 install_url  $4
-            artifact_label  $5 label  $6 dest
-
-            \  local e
-
-            \  # An empty status means the build never ran, which on these
-
-            \  # pipelines only happens when an upstream workflow (`test`,
-
-            \  # `generate-changelog`) already failed. That is a failed
-
-            \  # release, so it reads as ❌ on the build's own row rather
-
-            \  # than as a neutral skip next to a separate Tests row.
-
-            \  case \"$1\" in
-
-            \    ok) e=\"✅\" ;;
-
-            \    *)  e=\"❌\" ;;
-
-            \  esac
-
-            \  local r=\"${e}  *${5}*  →  ${6}\"
-
-            \  if [ -n \"$2\" ]; then r=\"${r}  ·  <${2}|Build>\"; fi
-
-            \  if [ -n \"$3\" ] && [ -n \"$4\" ]; then
-            r=\"${r}  ·  <${3}|${4}>\"; fi
-
-            \  printf '%s' \"$r\"
-
-            }
-
-
-            ROWS=\"$(row \"${WEB_PRODUCTION_STATUS:-}\"
-            \"${WEB_PRODUCTION_URL:-}\" \"${WEB_PRODUCTION_INSTALL:-}\" \"Zip\"
-            \"Web production\" \"Bitrise artifact\")\"
-
-            ROWS=\"${ROWS}\\n$(row \"${WEB_STAGING_STATUS:-}\"
-            \"${WEB_STAGING_URL:-}\" \"${WEB_STAGING_INSTALL:-}\" \"Zip\" \"Web
-            staging\" \"Bitrise artifact\")\"
-
-
-            # Header icon per channel on success (any failed build flips it
-
-            # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
-
-            case \"$CHANNEL\" in
-
-            \  Release) OVERALL=\"🚀\" ;;
-
-            \  RC)      OVERALL=\"⭐\" ;;
-
-            \  Nightly) OVERALL=\"🌙\" ;;
-
-            \  *)       OVERALL=\"📦\" ;;
-
-            esac
-
-            COLOR=\"#36a64f\"
-
-            # Anything that is not an explicit `ok` turns the card red.
-
-            # Matching only on `fail` used to let a failed `test` through as
-
-            # green, because gated builds publish no status at all and the
-
-            # empty string fell into the benign \"skipped\" bucket. TEST_STATUS
-
-            # is checked here deliberately even though tests get no row of
-
-            # their own — the header/colour is the only signal that the skips
-
-            # below were caused by a red test run rather than by nothing.
-
-            for s in \"${TEST_STATUS:-}\" \"${WEB_STAGING_STATUS:-}\"
-            \"${WEB_PRODUCTION_STATUS:-}\"; do
-
-            \  if [ \"$s\" != \"ok\" ]; then OVERALL=\"❌\"; COLOR=\"#ec0000\";
-            fi
-
-            done
-
-
-            # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
-
-            # and the release card silently never arrives. --retry covers
-
-            # transient Slack hiccups (retries only transient failures).
-
-            curl -sS --fail-with-body --retry 2 --max-time 30 -X POST
-            \"$SLACK_WEBHOOK_URL\" \\
-
-            \  -H \"Content-Type: application/json\" \\
-
-            \  -d @- << EOF
-
-            {
-
-            \  \"username\": \"Bitrise\",
-
-            \  \"icon_emoji\": \":bitrise:\",
-
-            \  \"blocks\": [
-
-            \    {
-
-            \      \"type\": \"header\",
-
-            \      \"text\": {
-
-            \        \"type\": \"plain_text\",
-
-            \        \"text\": \"${OVERALL} Web ${CHANNEL} ${TAG_OR_BRANCH}\",
-
-            \        \"emoji\": true
-
-            \      }
-
-            \    }
-
-            \  ],
-
-            \  \"attachments\": [
-
-            \    {
-
-            \      \"color\": \"${COLOR}\",
-
-            \      \"blocks\": [
-
-            \        {
-
-            \          \"type\": \"section\",
-
-            \          \"text\": {
-
-            \            \"type\": \"mrkdwn\",
-
-            \            \"text\": \"${ROWS}\"
-
-            \          }
-
-            \        },
-
-            \        {
-
-            \          \"type\": \"divider\"
-
-            \        },
-
-            \        {
-
-            \          \"type\": \"section\",
-
-            \          \"text\": {
-
-            \            \"type\": \"mrkdwn\",
-
-            \            \"text\": \"*Changes since last
-            build:*\\n${CHANGELOG}\"
-
-            \          }
-
-            \        }
-
-            \      ]
-
-            \    }
-
-            \  ]
-
-            }
-
-            EOF\n"
   notify-nightly:
     description: Post the nightly card — staging builds plus both smoke gates
     envs:
@@ -1640,6 +1397,10 @@ workflows:
             \"${IOS_STAGING_URL:-}\" \"${IOS_STAGING_INSTALL:-}\" \"IPA\" \"iOS
             staging\" \"TestFlight\")\"
 
+            \  ROWS=\"${ROWS}\\n$(row \"${WEB_STAGING_STATUS:-}\"
+            \"${WEB_STAGING_URL:-}\" \"${WEB_STAGING_INSTALL:-}\" \"Zip\" \"Web
+            staging\" \"Bitrise artifact\")\"
+
             \  # No install link: smoke binaries have screen-capture prevention
 
             \  # disabled and are deliberately not published anywhere.
@@ -1661,7 +1422,7 @@ workflows:
 
             \  CHECKS=(\"${TEST_STATUS:-}\" \"${IOS_STAGING_STATUS:-}\"
             \"${ANDROID_STAGING_STATUS:-}\" \"${IOS_SMOKE_STATUS:-}\"
-            \"${ANDROID_SMOKE_STATUS:-}\")
+            \"${ANDROID_SMOKE_STATUS:-}\" \"${WEB_STAGING_STATUS:-}\")
 
             else
 
@@ -1673,8 +1434,12 @@ workflows:
             \"${IOS_PRODUCTION_URL:-}\" \"${IOS_PRODUCTION_INSTALL:-}\" \"IPA\"
             \"iOS production\" \"TestFlight\")\"
 
+            \  ROWS=\"${ROWS}\\n$(row \"${WEB_PRODUCTION_STATUS:-}\"
+            \"${WEB_PRODUCTION_URL:-}\" \"${WEB_PRODUCTION_INSTALL:-}\" \"Zip\"
+            \"Web production\" \"Bitrise artifact\")\"
+
             \  CHECKS=(\"${TEST_STATUS:-}\" \"${IOS_PRODUCTION_STATUS:-}\"
-            \"${ANDROID_PRODUCTION_STATUS:-}\")
+            \"${ANDROID_PRODUCTION_STATUS:-}\" \"${WEB_PRODUCTION_STATUS:-}\")
 
             fi
 
