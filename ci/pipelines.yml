@@ -188,9 +188,9 @@ pipelines:
           VALIDATE_PROFILE: web
           ENVIRONMENT: production
           APP_ENV: production
-          # As android's: raise past Bitrise's last BITRISE_BUILD_NUMBER
-          # before uploads are enabled, or the manifest version goes backwards.
-          BUILD_NUMBER_OFFSET: '0'
+          # As android's: the same 1000, so the extension's build number stays
+          # above Bitrise's and in step with the mobile builds of the tag.
+          BUILD_NUMBER_OFFSET: '1000'
         secrets: *web_secrets
         timeout_minutes: 30
       notify:
@@ -244,7 +244,7 @@ pipelines:
           APP_ENV: staging
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
           # See web-production.
-          BUILD_NUMBER_OFFSET: '0'
+          BUILD_NUMBER_OFFSET: '1000'
         secrets: *web_secrets
         timeout_minutes: 30
       # The release gate, nightly-only as on Bitrise: only the staging builds
