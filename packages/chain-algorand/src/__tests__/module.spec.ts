@@ -126,7 +126,7 @@ describe('chainModule', () => {
 
 // A sibling suite, not nested under `chainModule`: its own chain registry and
 // its own one-time setup, untouched by that describe's per-test resetAdapters.
-describe('capability-to-adapter parity', () => {
+describe('capability-to-adapter parity (algorand)', () => {
     const chains = createChainRegistry()
 
     beforeAll(() => {
