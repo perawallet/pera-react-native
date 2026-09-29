@@ -34,14 +34,15 @@ export const verifyNameAddress = async ({
     network,
     signal,
 }: VerifyNameAddressParams): Promise<NfdAddressVerification> => {
-    const adapter = nameServiceAdapterFor(network)
+    const scope = scopeForLegacyNetwork(network)
+    const adapter = nameServiceAdapterFor(scope)
     // Without an on-chain check there is nothing to trust the address on, so
     // the name stays unusable as a destination rather than passing unchecked.
     if (!adapter.verifyForwardResolution) return 'unavailable'
     return adapter.verifyForwardResolution({
         name,
         address,
-        scope: scopeForLegacyNetwork(network),
+        scope,
         signal,
     })
 }

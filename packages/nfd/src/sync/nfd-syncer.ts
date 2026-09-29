@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     mapWithConcurrency,
     partition,
@@ -43,7 +44,7 @@ export async function fetchAndPersistNfds(
     // every requested address commits as a fresh negative-cache row for no reason.
     if (!isPeraBackedNetwork(network)) return
 
-    const adapter = nameServiceAdapterFor(network)
+    const adapter = nameServiceAdapterFor(scopeForLegacyNetwork(network))
     const dedup = Array.from(
         new Set(addresses.filter(addr => adapter.isValidAddress(addr))),
     )

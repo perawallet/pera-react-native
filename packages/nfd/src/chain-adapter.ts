@@ -12,11 +12,9 @@
 
 import {
     createChainAdapterRegistry,
-    scopeForLegacyNetwork,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
 import type { NfdAddressVerification } from './models'
 
 export type VerifyForwardResolutionParams = {
@@ -43,8 +41,6 @@ export interface NameServiceChainAdapter {
 export const nameServiceChainAdapters =
     createChainAdapterRegistry<NameServiceChainAdapter>('name service')
 
-// Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
 export const nameServiceAdapterFor = (
-    network: Network,
-): NameServiceChainAdapter =>
-    nameServiceChainAdapters.get(scopeForLegacyNetwork(network).chainId)
+    scope: ChainScope,
+): NameServiceChainAdapter => nameServiceChainAdapters.get(scope.chainId)

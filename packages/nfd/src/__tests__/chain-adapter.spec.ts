@@ -11,7 +11,10 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    ChainAdapterNotRegisteredError,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     nameServiceAdapterFor,
     nameServiceChainAdapters,
@@ -27,15 +30,17 @@ describe('nameServiceAdapterFor', () => {
         const adapter = fakeNameServiceAdapter()
         nameServiceChainAdapters.register(adapter)
 
-        expect(nameServiceAdapterFor('betanet')).toBe(adapter)
+        expect(nameServiceAdapterFor(scopeForLegacyNetwork('betanet'))).toBe(
+            adapter,
+        )
     })
 
     it('names the missing feature when no adapter is registered', () => {
-        expect(() => nameServiceAdapterFor('mainnet')).toThrow(
-            ChainAdapterNotRegisteredError,
-        )
-        expect(() => nameServiceAdapterFor('mainnet')).toThrow(
-            'No name service adapter is registered for chain "algorand"',
-        )
+        expect(() =>
+            nameServiceAdapterFor(scopeForLegacyNetwork('mainnet')),
+        ).toThrow(ChainAdapterNotRegisteredError)
+        expect(() =>
+            nameServiceAdapterFor(scopeForLegacyNetwork('mainnet')),
+        ).toThrow('No name service adapter is registered for chain "algorand"')
     })
 })
