@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
+export { resolveAssetFacts, type AssetDisplayFacts } from './algoAssetFacts'
 export { getDebitedAddress, isOutgoingFor } from './direction'

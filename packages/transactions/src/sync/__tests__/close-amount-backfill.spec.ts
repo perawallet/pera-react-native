@@ -20,6 +20,7 @@ import {
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import type { TransactionHistoryItem } from '../../models/types'
 import { upsertTransactions, getTransactionHistory } from '../../db'
+import { historyChainAdapters } from '../../history-adapter'
 import { backfillMissingCloseAmounts } from '../close-amount-backfill'
 
 const makeTx = (
@@ -132,5 +133,30 @@ describe('backfillMissingCloseAmounts', () => {
         })
 
         expect(fetchCloseAmount).not.toHaveBeenCalled()
+    })
+
+    it('defaults to the chain adapter lookup and skips a chain that has none', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx({ id: 'TXSTALE' })],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+        historyChainAdapters.reset()
+        historyChainAdapters.register({
+            chainId: 'algorand',
+            fetchHistory: vi.fn(),
+            fetchMoreHistory: vi.fn(),
+            toDisplayable: vi.fn(),
+        })
+
+        await backfillMissingCloseAmounts({ db, network: 'mainnet' })
+
+        const [row] = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+        expect(row.closeAmount).toBeNull()
     })
 })

@@ -20,12 +20,30 @@ export * from './models'
 export * from './hooks'
 export {
     sendFlowChainAdapters,
+    sendFlowFeatureFor,
+    buildKeyRegistrationTx,
     type SendFlowChainAdapter,
     type AssetInboxSendFlow,
     type InboxSendTxsParams,
     type InboxClaimTxsParams,
     type InboxRejectTxsParams,
+    type TransferTxsParams,
+    type ExpressTransferTxsParams,
+    type AssetOptInTxsParams,
+    type AssetOptOutTxsParams,
+    type RekeyTxParams,
+    type KeyRegistrationTxParams,
 } from './chain-adapter'
+export {
+    historyChainAdapters,
+    fetchTransactionHistory,
+    fetchMoreTransactions,
+    fetchCloseAmount,
+    mapHistoryItemToDisplayableTransaction,
+    type HistoryChainAdapter,
+    type FetchTransactionHistoryParams,
+    type FetchMoreTransactionsParams,
+} from './history-adapter'
 export * from './utils'
 
 // Export DB functions for sync service and other consumers
@@ -35,14 +53,6 @@ export {
     getLatestTransactionRoundTime,
     deleteTransactionsForAccount,
 } from './db'
-
-// Export API functions for advanced usage
-export {
-    fetchTransactionHistory,
-    fetchMoreTransactions,
-    type FetchTransactionHistoryParams,
-    type FetchMoreTransactionsParams,
-} from './api/history'
 
 // Export syncer for sync service
 export { fetchAndPersistTransactions } from './sync/transaction-syncer'

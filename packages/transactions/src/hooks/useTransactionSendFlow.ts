@@ -18,7 +18,6 @@ import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     displayUnitsToBaseUnits,
-    useAlgorandClient,
     useFetchSuggestedMinFee,
     useMinimumFeeConfig,
     useNetwork,
@@ -30,14 +29,15 @@ import {
 } from '@perawallet/wallet-core-signing'
 import {
     addToAssetHolding,
+    fetchAccountInformation,
     isAssetFrozen,
     useAccountBalancesInvalidator,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { assetInboxFor } from '../chain-adapter'
+import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
 import { AssetFrozenError, InvalidSendParamsError } from '../errors'
-import { isAlgoAssetId, logger } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type BaseSendParams = {
@@ -92,7 +92,6 @@ type UseTransactionSendFlowResult = {
 }
 
 export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
-    const algokit = useAlgorandClient()
     const { submit } = useSignAndSubmitGroup()
     const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
@@ -105,8 +104,8 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
      * signs the funding/transfer legs, the receiver the opt-in.
      * `resolveMinFeeForSender` resolves the effective signer per address, so a
      * rekeyed party pays its auth account's rate, and owns the congestion guard.
-     * `staticFee` only overrides AlgoKit's auto-sizing when the resolved fee
-     * exceeds the suggested minimum, so a non-quantum party is unchanged.
+     * A fee is passed on only when the resolved fee exceeds the suggested
+     * minimum, so a non-quantum party is unchanged.
      */
     const buildExpressTxs = useCallback(
         async (params: {
@@ -116,10 +115,11 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             amount: bigint
         }): Promise<PeraTransaction[]> => {
             const { sender, receiver, assetId, amount } = params
+            const scope = scopeForLegacyNetwork(network)
 
             // Look up receiver's current balance to determine funding needed
             const { amount: currentBalance, minBalance: currentMbr } =
-                await algokit.client.algod.accountInformation(receiver).do()
+                await fetchAccountInformation(receiver, network)
 
             const suggestedMinFee = await fetchSuggestedMinFee()
             const senderFee = resolveMinFeeForSender({
@@ -143,62 +143,38 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             // instead of the flat network minimum.
             const mbrAfterOptIn = currentMbr + assetMbr
             const balanceNeeded = mbrAfterOptIn + receiverFee
-            const fundingNeeded =
+            const funding =
                 balanceNeeded > currentBalance
                     ? balanceNeeded - currentBalance
                     : 0n
 
-            const composer = algokit.newGroup()
-
-            // Only add payment if the receiver needs funding
-            if (fundingNeeded > 0n) {
-                composer.addPayment({
-                    sender,
-                    receiver,
-                    amount: fundingNeeded.microAlgo(),
-                    ...(senderFee > suggestedMinFee
-                        ? { staticFee: senderFee.microAlgo() }
-                        : {}),
-                })
-            }
-
-            composer
-                .addAssetOptIn({
-                    sender: receiver,
-                    assetId,
-                    ...(receiverFee > suggestedMinFee
-                        ? { staticFee: receiverFee.microAlgo() }
-                        : {}),
-                })
-                .addAssetTransfer({
-                    sender,
-                    receiver,
-                    amount,
-                    assetId,
-                    ...(senderFee > suggestedMinFee
-                        ? { staticFee: senderFee.microAlgo() }
-                        : {}),
-                })
-
-            const { transactions } = await composer.build()
-            return transactions.map(t => t.txn)
+            return sendFlowFeatureFor(scope, 'express').buildTxs({
+                scope,
+                sender,
+                receiver,
+                assetId,
+                amount,
+                funding,
+                senderFee: senderFee > suggestedMinFee ? senderFee : undefined,
+                receiverFee:
+                    receiverFee > suggestedMinFee ? receiverFee : undefined,
+            })
         },
         [
-            algokit,
             accounts,
             fetchSuggestedMinFee,
             minTxnFee,
             pqMultiplier,
             assetMbr,
+            network,
         ],
     )
 
     /**
      * `resolveMinFeeForSender` resolves the effective signer, so a sender
      * rekeyed to a quantum auth pays the PQ rate even though `params.sender`
-     * still names the rekeyed account. `staticFee` only overrides AlgoKit's
-     * auto-sizing when the resolved fee exceeds the suggested minimum, so a
-     * non-quantum sender is unchanged.
+     * still names the rekeyed account. A fee is passed on only when the resolved
+     * fee exceeds the suggested minimum, so a non-quantum sender is unchanged.
      */
     const buildNormalTxs = useCallback(
         async (params: SendTransactionParams): Promise<PeraTransaction[]> => {
@@ -228,39 +204,19 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 configMinTxnFee: minTxnFee,
                 pqMultiplier,
             })
-            const feeOverride =
-                resolvedFee > suggestedMinFee
-                    ? { staticFee: resolvedFee.microAlgo() }
-                    : {}
-
-            const composer = algokit.newGroup()
-            if (isAlgoAssetId(params.asset.assetId)) {
-                composer.addPayment({
-                    sender: params.sender.address,
-                    receiver: params.receiver,
-                    amount: params.isCloseAccount
-                        ? BigInt(0).microAlgo()
-                        : amountInBaseUnits.microAlgo(),
-                    ...(params.isCloseAccount && {
-                        closeRemainderTo: params.receiver,
-                    }),
-                    note: params.note,
-                    ...feeOverride,
-                })
-            } else {
-                composer.addAssetTransfer({
-                    sender: params.sender.address,
-                    receiver: params.receiver,
-                    amount: amountInBaseUnits,
-                    assetId: BigInt(params.asset.assetId),
-                    note: params.note,
-                    ...feeOverride,
-                })
-            }
-            const { transactions } = await composer.build()
-            return transactions.map(t => t.txn)
+            const scope = scopeForLegacyNetwork(network)
+            return sendFlowChainAdapters.get(scope.chainId).buildTransferTxs({
+                scope,
+                sender: params.sender.address,
+                receiver: params.receiver,
+                assetId: params.asset.assetId,
+                amount: amountInBaseUnits,
+                note: params.note,
+                isCloseAccount: params.isCloseAccount,
+                fee: resolvedFee > suggestedMinFee ? resolvedFee : undefined,
+            })
         },
-        [algokit, accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier],
+        [accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier, network],
     )
 
     const executeSend = useCallback(
@@ -315,8 +271,9 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     if (!params.arc59Summary) {
                         throw new InvalidSendParamsError()
                     }
-                    const assetInbox = assetInboxFor(
+                    const assetInbox = sendFlowFeatureFor(
                         scopeForLegacyNetwork(network),
+                        'assetInbox',
                     )
                     const suggestedMinFee = await fetchSuggestedMinFee()
                     const senderMinFee = resolveMinFeeForSender({
@@ -373,7 +330,10 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 throw new InvalidSendParamsError()
             }
 
-            const assetInbox = assetInboxFor(scopeForLegacyNetwork(network))
+            const assetInbox = sendFlowFeatureFor(
+                scopeForLegacyNetwork(network),
+                'assetInbox',
+            )
             const suggestedMinFee = await fetchSuggestedMinFee()
             const senderMinFee = resolveMinFeeForSender({
                 senderAddress: params.sender.address,

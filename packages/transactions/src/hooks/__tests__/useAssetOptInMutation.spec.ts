@@ -24,6 +24,7 @@ import {
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
 } from '../useAssetOptInMutation'
+import { sendFlowChainAdapters } from '../../chain-adapter'
 
 const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: new QueryClient() }, children)
@@ -31,10 +32,6 @@ const wrapper = ({ children }: { children: ReactNode }) =>
 const mockSubmit = vi.fn()
 const mockAccountInformation = vi.fn()
 const mockBuild = vi.fn()
-const mockNewGroup = vi.fn(() => ({
-    addAssetOptIn: vi.fn().mockReturnThis(),
-    build: mockBuild,
-}))
 const mockInsertAssetHolding = vi.fn().mockResolvedValue(undefined)
 const mockFetchAndPersistAssets = vi.fn().mockResolvedValue(undefined)
 const mockInvalidate = vi.fn()
@@ -49,6 +46,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    fetchAccountInformation: (...args: unknown[]) =>
+        mockAccountInformation(...args),
     insertAssetHolding: (...args: unknown[]) => mockInsertAssetHolding(...args),
     invalidateAccountQueriesForAddresses: (...args: unknown[]) =>
         mockInvalidate(...args),
@@ -61,14 +60,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'testnet' }),
-    useAlgorandClient: () => ({
-        client: {
-            algod: {
-                accountInformation: () => ({ do: mockAccountInformation }),
-            },
-        },
-        newGroup: mockNewGroup,
-    }),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
 }))
 
@@ -80,8 +71,12 @@ describe('useAssetOptInMutation', () => {
             minBalance: 100000n,
             assets: [],
         })
-        mockBuild.mockResolvedValue({
-            transactions: [{ txn: { sender: 'SENDER', fee: 1000n } }],
+        mockBuild.mockResolvedValue([{ sender: 'SENDER', fee: 1000n }])
+        sendFlowChainAdapters.reset()
+        sendFlowChainAdapters.register({
+            chainId: 'algorand',
+            buildTransferTxs: vi.fn(),
+            assetHolding: { buildOptInTxs: mockBuild, buildOptOutTxs: vi.fn() },
         })
         // Default: pass-through, which is what the calculator does for a
         // non-quantum sender.
@@ -100,7 +95,7 @@ describe('useAssetOptInMutation', () => {
         })
     })
 
-    it('builds an opt-in via composer and submits via the pipeline helper', async () => {
+    it('builds an opt-in through the chain adapter and submits via the pipeline helper', async () => {
         const { result } = renderHook(() => useAssetOptInMutation(), {
             wrapper,
         })
@@ -113,7 +108,11 @@ describe('useAssetOptInMutation', () => {
             expect(res.txIds).toEqual(['tx1'])
         })
 
-        expect(mockNewGroup).toHaveBeenCalledTimes(1)
+        expect(mockBuild).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+            sender: 'SENDER',
+            assetId: 12345n,
+        })
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [{ sender: 'SENDER', fee: 1000n }],
@@ -235,7 +234,7 @@ describe('useAssetOptInMutation', () => {
     it('submits the fee-raised group returned by the minimum-fee calculator', async () => {
         const built = { sender: 'SENDER', fee: 1000n }
         const raised = { sender: 'SENDER', fee: 3000n }
-        mockBuild.mockResolvedValueOnce({ transactions: [{ txn: built }] })
+        mockBuild.mockResolvedValueOnce([built])
         mockAssignFeeToGroup.mockResolvedValueOnce({
             transactions: [raised],
             adjustments: [

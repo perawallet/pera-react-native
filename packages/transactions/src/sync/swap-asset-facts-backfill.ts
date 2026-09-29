@@ -13,6 +13,7 @@
 import { logger, type Network } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import type { TransactionHistoryResult } from '../models/types'
+import { fetchTransactionHistory } from '../history-adapter'
 import {
     getSwapRowsMissingAssetFacts,
     persistResolvedSwapAssetFacts,
@@ -27,13 +28,8 @@ type FetchHistoryPage = (params: {
     limit: number
 }) => Promise<TransactionHistoryResult>
 
-// Lazy for the same reason as close-amount-backfill: the endpoints module
-// reaches react-native-mmkv through queryClient, which cannot load in the node
-// test environment.
-const defaultFetchHistory: FetchHistoryPage = async params => {
-    const { fetchTransactionHistory } = await import('../api/history')
-    return fetchTransactionHistory(params)
-}
+const defaultFetchHistory: FetchHistoryPage = params =>
+    fetchTransactionHistory(params)
 
 type BackfillParams = {
     db?: Database

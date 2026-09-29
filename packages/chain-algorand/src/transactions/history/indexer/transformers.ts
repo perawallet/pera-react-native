@@ -11,7 +11,7 @@
  */
 
 import { logger } from '@perawallet/wallet-core-shared'
-import { resolveAssetFacts } from '../../../utils/algoAssetFacts'
+import { resolveAssetFacts } from '@perawallet/wallet-core-transactions'
 import { computeBalanceImpacts } from './balance-impacts'
 import {
     indexerTransactionSchema,

@@ -15,7 +15,7 @@ import {
     toBigInt,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { TransactionTypes, type TransactionHistoryItem } from '../models'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
 const toAmountBigInt = (amount: TransactionHistoryItem['amount']): bigint =>
     toBigInt(amount ?? new Decimal(0))
@@ -51,7 +51,7 @@ export const mapHistoryItemToDisplayableTransaction = (
     }
 
     switch (item.txType) {
-        case TransactionTypes.PAY: {
+        case 'pay': {
             return {
                 ...base,
                 paymentTransaction: {
@@ -62,7 +62,7 @@ export const mapHistoryItemToDisplayableTransaction = (
                 },
             }
         }
-        case TransactionTypes.AXFER: {
+        case 'axfer': {
             if (!item.asset) {
                 return null
             }
@@ -78,7 +78,7 @@ export const mapHistoryItemToDisplayableTransaction = (
                 },
             }
         }
-        case TransactionTypes.APPL: {
+        case 'appl': {
             return {
                 ...base,
                 innerTransactionCount: item.innerTransactionCount ?? undefined,

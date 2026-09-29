@@ -30,6 +30,10 @@ export const sendFlowContractTests = (
             expect(adapter.chainId).toMatch(/\S/)
         })
 
+        it('builds transfers', () => {
+            expect(adapter.buildTransferTxs).toBeTypeOf('function')
+        })
+
         if (!adapter.assetInbox) return
 
         it('ships inbox fixtures', () => {

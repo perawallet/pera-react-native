@@ -16,8 +16,10 @@ import {
     fetchIndexerAssetDetails,
     transformIndexerAssetResponse,
 } from '@perawallet/wallet-core-assets'
-import { DEFAULT_ITEMS_PER_PAGE } from '../../../models/constants'
-import type { TransactionHistoryResult } from '../../../models/types'
+import {
+    DEFAULT_ITEMS_PER_PAGE,
+    type TransactionHistoryResult,
+} from '@perawallet/wallet-core-transactions'
 import { transformTransactionHistoryResponse } from '../transformers'
 import {
     collectAssetIds,

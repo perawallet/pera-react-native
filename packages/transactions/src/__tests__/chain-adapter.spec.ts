@@ -17,10 +17,14 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
-    assetInboxFor,
+    buildKeyRegistrationTx,
     sendFlowChainAdapters,
+    sendFlowFeatureFor,
     type AssetInboxSendFlow,
+    type SendFlowChainAdapter,
 } from '../chain-adapter'
+
+const scope = scopeForLegacyNetwork('testnet')
 
 const fakeAssetInbox = (): AssetInboxSendFlow => ({
     buildSendTxs: vi.fn(),
@@ -28,32 +32,70 @@ const fakeAssetInbox = (): AssetInboxSendFlow => ({
     buildRejectTxs: vi.fn(),
 })
 
-describe('assetInboxFor', () => {
+const bareAdapter = (): SendFlowChainAdapter => ({
+    chainId: 'algorand',
+    buildTransferTxs: vi.fn(),
+})
+
+describe('sendFlowFeatureFor', () => {
     beforeEach(() => {
         sendFlowChainAdapters.reset()
     })
 
     it("resolves a legacy network to its chain's asset inbox", () => {
         const assetInbox = fakeAssetInbox()
-        sendFlowChainAdapters.register({ chainId: 'algorand', assetInbox })
+        sendFlowChainAdapters.register({ ...bareAdapter(), assetInbox })
 
-        expect(assetInboxFor(scopeForLegacyNetwork('testnet'))).toBe(assetInbox)
+        expect(sendFlowFeatureFor(scope, 'assetInbox')).toBe(assetInbox)
     })
 
     it('names the missing feature when no adapter is registered', () => {
-        expect(() => assetInboxFor(scopeForLegacyNetwork('mainnet'))).toThrow(
+        expect(() => sendFlowFeatureFor(scope, 'assetInbox')).toThrow(
             ChainAdapterNotRegisteredError,
         )
-        expect(() => assetInboxFor(scopeForLegacyNetwork('mainnet'))).toThrow(
+        expect(() => sendFlowFeatureFor(scope, 'assetInbox')).toThrow(
             'No send flow adapter is registered for chain "algorand"',
         )
     })
 
-    it('fails closed when the chain has no asset inbox', () => {
-        sendFlowChainAdapters.register({ chainId: 'algorand' })
+    it.each([
+        'express',
+        'assetInbox',
+        'assetHolding',
+        'rekey',
+        'keyRegistration',
+    ] as const)('fails closed when the chain has no %s feature', feature => {
+        sendFlowChainAdapters.register(bareAdapter())
 
-        expect(() => assetInboxFor(scopeForLegacyNetwork('mainnet'))).toThrow(
+        expect(() => sendFlowFeatureFor(scope, feature)).toThrow(
             PeraServiceUnavailableError,
         )
+    })
+})
+
+describe('buildKeyRegistrationTx', () => {
+    beforeEach(() => {
+        sendFlowChainAdapters.reset()
+    })
+
+    it("delegates to the scope's chain adapter", async () => {
+        const tx = { id: 'keyreg' }
+        const buildTx = vi.fn().mockResolvedValue(tx)
+        sendFlowChainAdapters.register({
+            ...bareAdapter(),
+            keyRegistration: { buildTx },
+        })
+        const params = { kind: 'offline', scope, sender: 'SENDER' } as const
+
+        await expect(buildKeyRegistrationTx(params)).resolves.toBe(tx)
+        expect(buildTx).toHaveBeenCalledWith(params)
+    })
+
+    it('fails closed on a chain without key registration', async () => {
+        sendFlowChainAdapters.register(bareAdapter())
+
+        await expect(
+            buildKeyRegistrationTx({ kind: 'offline', scope, sender: 'S' }),
+        ).rejects.toBeInstanceOf(PeraServiceUnavailableError)
     })
 })

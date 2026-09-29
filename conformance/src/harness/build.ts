@@ -59,9 +59,8 @@ const buildClient = (): AlgorandClient => {
 
 /**
  * Builds an unsigned group by making the same `newGroup().addX(...)` composer
- * calls the app's send hooks make, which is as close to the app's builders as
- * headless code can get: every builder in `packages/transactions` is a React
- * hook with no pure entry point.
+ * calls the Algorand send-flow builders make, so the groups match what the app
+ * signs.
  *
  * AlgoKit assigns the group id during `build()` whenever there is more than one
  * transaction, exactly as it does in the app.

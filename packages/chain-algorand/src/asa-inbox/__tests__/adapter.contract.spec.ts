@@ -16,7 +16,10 @@ import { sendFlowContractTests } from '@perawallet/wallet-core-transactions/test
 
 // Builders stubbed to succeed, so a rejection can only come from the
 // adapter's own validation of the quote.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-blockchain')
+    >()),
     createWalletAlgorandClient: vi.fn(() => ({})),
 }))
 vi.mock('../builders', () => ({
@@ -25,7 +28,7 @@ vi.mock('../builders', () => ({
     buildArc59RejectTxs: vi.fn(async () => [{}]),
 }))
 
-import { algorandSendFlowAdapter } from '../adapter'
+import { algorandSendFlowAdapter } from '../../transactions'
 
 sendFlowContractTests(() => algorandSendFlowAdapter, {
     inboxSend: {

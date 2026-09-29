@@ -36,6 +36,7 @@ const fakeRegistry = (registered: boolean) => ({
 
 const registries = (registered: boolean): CapabilityAdapterRegistries => ({
     'send flow': fakeRegistry(registered),
+    'transaction history': fakeRegistry(registered),
     swap: fakeRegistry(registered),
     'name service': fakeRegistry(registered),
     card: fakeRegistry(registered),

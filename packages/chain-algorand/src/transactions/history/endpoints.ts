@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     parseTransactionHistoryResponse,
@@ -21,60 +21,12 @@ import {
     fetchIndexerTransactionHistory,
     fetchMoreIndexerTransactions,
 } from './indexer/endpoints'
-import { DEFAULT_ITEMS_PER_PAGE } from '../../models/constants'
-import type { TransactionHistoryResult } from '../../models/types'
-
-/**
- * Parameters for fetching transaction history.
- */
-export type FetchTransactionHistoryParams = {
-    /** The Algorand account address to fetch transactions for */
-    accountAddress: string
-    /** The network to fetch transactions from */
-    network: Network
-    /** Optional: Filter transactions to only show those involving a specific asset */
-    assetId?: string
-    /** Optional: Only return transactions confirmed after this date (YYYY-MM-DD) */
-    afterTime?: string
-    /** Optional: Only return transactions confirmed before this date (YYYY-MM-DD) */
-    beforeTime?: string
-    /** Optional: Maximum number of transactions to return per request */
-    limit?: number
-    /** Optional: AbortSignal for cancellation */
-    signal?: AbortSignal
-}
-
-/**
- * Parameters for fetching more transactions using a pagination URL.
- */
-export type FetchMoreTransactionsParams = {
-    /**
-     * A full URL on Pera-backed networks; the indexer's opaque `next-token`
-     * elsewhere, since the indexer has no absolute next-page URL to replay.
-     */
-    url: string
-    /** The network to fetch transactions from */
-    network: Network
-    /**
-     * Indexer-backed networks only: it paginates by account, and its next-token
-     * encodes no address the way a Pera pagination URL does.
-     */
-    accountAddress?: string
-    /**
-     * The indexer's `next-token` doesn't encode the first page's filters, so
-     * they must be re-sent every page. Ignored on the Pera path, which replays
-     * `url` as-is.
-     */
-    assetId?: string
-    /** Indexer-backed networks only: see `assetId`. */
-    afterTime?: string
-    /** Indexer-backed networks only: see `assetId`. */
-    beforeTime?: string
-    /** Indexer-backed networks only: see `assetId`. */
-    limit?: number
-    /** Optional: AbortSignal for cancellation */
-    signal?: AbortSignal
-}
+import {
+    DEFAULT_ITEMS_PER_PAGE,
+    type FetchMoreTransactionsParams,
+    type FetchTransactionHistoryParams,
+    type TransactionHistoryResult,
+} from '@perawallet/wallet-core-transactions'
 
 /**
  * Builds query parameters object for the API request.

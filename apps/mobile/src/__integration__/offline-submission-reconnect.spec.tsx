@@ -52,7 +52,7 @@ import {
 import {
     mockTransactionHistory,
     type MockTransactionHistoryParams,
-} from '@perawallet/wallet-core-transactions/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import {
     getOpenSubmissionAttempts,
     reconcileOpenSubmissions,

@@ -11,7 +11,10 @@
  */
 
 import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
-import { insertAssetHolding } from '@perawallet/wallet-core-accounts'
+import {
+    fetchAccountInformation,
+    insertAssetHolding,
+} from '@perawallet/wallet-core-accounts'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import {
     assertOnline,
@@ -22,6 +25,7 @@ import {
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
 } from '../errors'
+import { sendFlowFeatureFor } from '../chain-adapter'
 import { useAssetHoldingMutation } from './useAssetHoldingMutation'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -63,23 +67,27 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
             source: SOURCE,
             run: async (
                 { sender, assetId },
-                { algokit, network, buildGroup, submit },
+                { scope, network, assignFees, submit },
             ) => {
                 assertOnline()
 
-                const accountInfo = await algokit.client.algod
-                    .accountInformation(sender)
-                    .do()
-                const isOptedIn = accountInfo.assets?.some(
+                const accountInfo = await fetchAccountInformation(
+                    sender,
+                    network,
+                )
+                const isOptedIn = accountInfo.assets.some(
                     a => a.assetId === assetId,
                 )
                 if (isOptedIn) {
                     throw new AlreadyOptedInError()
                 }
 
-                const unsignedTxs = await buildGroup(composer => {
-                    composer.addAssetOptIn({ sender, assetId })
-                })
+                const unsignedTxs = await assignFees(
+                    await sendFlowFeatureFor(
+                        scope,
+                        'assetHolding',
+                    ).buildOptInTxs({ scope, sender, assetId }),
+                )
 
                 // Check against the fee actually being submitted: reading it
                 // back off the built group is what keeps a quantum sender's

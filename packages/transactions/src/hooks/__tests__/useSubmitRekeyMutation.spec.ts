@@ -24,19 +24,9 @@ import {
     NoConnectionError,
 } from '@perawallet/wallet-core-shared'
 
-// BigInt.prototype.microAlgo() is a runtime extension added by algokit-utils.
-// Patch the prototype so `0n.microAlgo()` works in the test environment.
-;(BigInt.prototype as unknown as { microAlgo: () => bigint }).microAlgo =
-    function () {
-        return this as unknown as bigint
-    }
-
-const mockPayment = vi.fn()
+const mockBuildRekeyTx = vi.fn()
 const mockGetSuggestedParams = vi.fn()
-const mockAlgokit = {
-    createTransaction: { payment: mockPayment },
-    getSuggestedParams: mockGetSuggestedParams,
-}
+const mockAlgokit = {}
 
 const mockAddSignRequest = vi.fn()
 const mockEncodeSignedTransactions = vi.fn()
@@ -84,6 +74,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
 import { RekeyError } from '../../errors'
+import { sendFlowChainAdapters } from '../../chain-adapter'
 
 const SIGNING_METADATA = {
     name: 'Source account',
@@ -118,6 +109,12 @@ describe('useSubmitRekeyMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
+        sendFlowChainAdapters.reset()
+        sendFlowChainAdapters.register({
+            chainId: 'algorand',
+            buildTransferTxs: vi.fn(),
+            rekey: { buildTx: mockBuildRekeyTx },
+        })
         mockUseMinimumFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
@@ -127,8 +124,7 @@ describe('useSubmitRekeyMutation', () => {
         // Default: no open ledger row — the previous attempt resolved, so
         // the rebuild is allowed to proceed.
         mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
-        // Default: no PQ signer in the chain — resolver returns the base
-        // fee, which must never force a staticFee override (regression).
+        // Default: no PQ signer in the chain — resolver returns the base fee.
         mockResolveMinFeeForSender.mockReturnValue(1000n)
     })
 
@@ -167,7 +163,7 @@ describe('useSubmitRekeyMutation', () => {
         expect(mockAddSignRequest).not.toHaveBeenCalled()
         // assertOnline short-circuits before any network / build work.
         expect(mockGetSuggestedParams).not.toHaveBeenCalled()
-        expect(mockPayment).not.toHaveBeenCalled()
+        expect(mockBuildRekeyTx).not.toHaveBeenCalled()
         expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
     })
 
@@ -198,13 +194,13 @@ describe('useSubmitRekeyMutation', () => {
             // window must not block this address's rekey forever.
             unevaluatableBefore: expect.any(Number),
         })
-        expect(mockPayment).not.toHaveBeenCalled()
+        expect(mockBuildRekeyTx).not.toHaveBeenCalled()
         expect(mockAddSignRequest).not.toHaveBeenCalled()
         expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
     })
 
     it('rebuilds once the previous attempt resolved failed', async () => {
-        mockPayment.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
         mockAddSignRequest.mockImplementationOnce(
             (request: MockSignRequest) => {
                 void request.approve?.([{ id: 'signed-txn' }])
@@ -225,16 +221,16 @@ describe('useSubmitRekeyMutation', () => {
         })
 
         expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledTimes(1)
-        expect(mockPayment).toHaveBeenCalledTimes(1)
+        expect(mockBuildRekeyTx).toHaveBeenCalledTimes(1)
         expect(mockSubmitAndAutoRefresh).toHaveBeenCalledTimes(1)
     })
 
-    it('builds a 0-amount rekey payment, requests a signature, and submits the signed group', async () => {
+    it('builds the rekey transaction, requests a signature, and submits the signed group', async () => {
         const unsignedTxn = { id: 'unsigned-txn' }
         const signedTxs = [{ id: 'signed-txn' }]
         const txIds = ['TX_ID_1']
 
-        mockPayment.mockResolvedValueOnce(unsignedTxn)
+        mockBuildRekeyTx.mockResolvedValueOnce(unsignedTxn)
         mockAddSignRequest.mockImplementationOnce(
             (request: MockSignRequest) => {
                 void request.approve?.(signedTxs)
@@ -257,15 +253,12 @@ describe('useSubmitRekeyMutation', () => {
             })
         })
 
-        expect(mockPayment).toHaveBeenCalledWith(
-            expect.objectContaining({
-                sender: 'SRC',
-                receiver: 'SRC',
-                rekeyTo: 'TGT',
-            }),
-        )
-        // No explicit fee — AlgoKit sizes it from the encoded transaction.
-        expect(mockPayment.mock.calls[0][0]).not.toHaveProperty('staticFee')
+        expect(mockBuildRekeyTx).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+            sourceAddress: 'SRC',
+            rekeyToAddress: 'TGT',
+            minFee: 1000n,
+        })
         expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
         const request = mockAddSignRequest.mock.calls[0][0]
         expect(request.txs).toEqual([unsignedTxn])
@@ -284,7 +277,7 @@ describe('useSubmitRekeyMutation', () => {
     })
 
     it('rejects with a user_rejected RekeyError when the signing pipeline rejects', async () => {
-        mockPayment.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
         mockAddSignRequest.mockImplementationOnce(
             (request: MockSignRequest) => {
                 void request.reject?.()
@@ -309,7 +302,7 @@ describe('useSubmitRekeyMutation', () => {
 
     it('wraps a failed payment build in a build_failed RekeyError', async () => {
         const buildError = new Error('cannot build payment')
-        mockPayment.mockRejectedValueOnce(buildError)
+        mockBuildRekeyTx.mockRejectedValueOnce(buildError)
 
         const { result } = renderHook(
             () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
@@ -332,7 +325,7 @@ describe('useSubmitRekeyMutation', () => {
 
     it('wraps algod submission errors in a submission_failed RekeyError', async () => {
         const algodError = new Error('algod unreachable')
-        mockPayment.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
         mockAddSignRequest.mockImplementationOnce(
             (request: MockSignRequest) => {
                 void request.approve?.([{ id: 'signed' }])
@@ -387,7 +380,7 @@ describe('useSubmitRekeyMutation', () => {
         const ledgerTimeout = new Error(
             'Connect to Ledger timed out after 10000ms',
         )
-        mockPayment.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
         mockAddSignRequest.mockImplementationOnce(
             (request: MockSignRequest) => {
                 void (
@@ -422,16 +415,13 @@ describe('useSubmitRekeyMutation', () => {
         expect(() => rerender()).not.toThrow()
     })
 
-    it('overrides the fee with the PQ-resolved staticFee for a quantum sender', async () => {
+    it('builds with the PQ-resolved minimum fee for a quantum sender', async () => {
         mockUseAllAccounts.mockReturnValue([
             { address: 'SRC', type: 'quantum' },
         ])
-        // resolveMinFeeForSender (1000n base * 3n multiplier = 3000n) exceeds
-        // the network's suggested minFee (1000n) and must be forced in.
+        // resolveMinFeeForSender: 1000n base * 3n multiplier = 3000n.
         mockResolveMinFeeForSender.mockReturnValue(3000n)
-        mockPayment
-            .mockResolvedValueOnce({ id: 'draft', fee: 1000n })
-            .mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
         mockAddSignRequest.mockImplementationOnce(
             (request: MockSignRequest) => {
                 void request.approve?.([{ id: 'signed' }])
@@ -451,12 +441,10 @@ describe('useSubmitRekeyMutation', () => {
             })
         })
 
-        // Sized from a fee-less draft first, then rebuilt with the override.
-        expect(mockPayment).toHaveBeenCalledTimes(2)
-        expect(mockPayment.mock.calls[0][0]).not.toHaveProperty('staticFee')
-        expect(mockPayment.mock.calls[1][0]).toMatchObject({
-            staticFee: 3000n,
-        })
+        expect(mockBuildRekeyTx).toHaveBeenCalledTimes(1)
+        expect(mockBuildRekeyTx).toHaveBeenCalledWith(
+            expect.objectContaining({ minFee: 3000n }),
+        )
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
             senderAddress: 'SRC',
             accounts: [{ address: 'SRC', type: 'quantum' }],
@@ -466,59 +454,24 @@ describe('useSubmitRekeyMutation', () => {
         })
     })
 
-    it('never forces a staticFee below the auto-sized built fee (congestion pricing)', async () => {
-        // Per-byte congestion pricing: AlgoKit auto-sizes the built fee
-        // above the PQ-resolved minimum — the override must not undercut
-        // it, and display (max(resolved, built)) must match what is paid.
-        mockResolveMinFeeForSender.mockReturnValue(1500n)
-        mockPayment.mockResolvedValueOnce({ id: 'draft', fee: 2000n })
-        mockAddSignRequest.mockImplementationOnce(
-            (request: MockSignRequest) => {
-                void request.approve?.([{ id: 'signed' }])
-            },
-        )
-        mockSubmitAndAutoRefresh.mockResolvedValueOnce(['TX_ID'])
+    it('surfaces a chain without rekey as a build_failed RekeyError', async () => {
+        sendFlowChainAdapters.reset()
+        sendFlowChainAdapters.register({
+            chainId: 'algorand',
+            buildTransferTxs: vi.fn(),
+        })
 
         const { result } = renderHook(
             () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
             { wrapper },
         )
 
-        await act(async () => {
-            await result.current.submitAsync({
+        await expect(
+            result.current.submitAsync({
                 sourceAddress: 'SRC',
                 rekeyToAddress: 'TGT',
-            })
-        })
-
-        // The auto-sized draft already pays enough — no rebuild, no override.
-        expect(mockPayment).toHaveBeenCalledTimes(1)
-        expect(mockPayment.mock.calls[0][0]).not.toHaveProperty('staticFee')
-    })
-
-    it('regression: builds without a staticFee key for an algo25 sender', async () => {
-        mockUseAllAccounts.mockReturnValue([{ address: 'SRC', type: 'algo25' }])
-        mockResolveMinFeeForSender.mockReturnValue(1000n)
-        mockPayment.mockResolvedValueOnce({ id: 'unsigned-txn' })
-        mockAddSignRequest.mockImplementationOnce(
-            (request: MockSignRequest) => {
-                void request.approve?.([{ id: 'signed' }])
-            },
-        )
-        mockSubmitAndAutoRefresh.mockResolvedValueOnce(['TX_ID'])
-
-        const { result } = renderHook(
-            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
-            { wrapper },
-        )
-
-        await act(async () => {
-            await result.current.submitAsync({
-                sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
-            })
-        })
-
-        expect(mockPayment.mock.calls[0][0]).not.toHaveProperty('staticFee')
+            }),
+        ).rejects.toMatchObject({ reason: 'build_failed' })
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
     })
 })

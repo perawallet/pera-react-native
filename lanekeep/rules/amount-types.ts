@@ -45,7 +45,7 @@ export default {
             ...TEST_SUPPORT,
             // Indexer JSON wire shapes (the schema and the raw-transaction subset
             // balance-impacts reads): amounts arrive as number, string or bigint.
-            'packages/transactions/src/api/history/indexer/{schema,balance-impacts}.ts',
+            'packages/chain-algorand/src/transactions/history/indexer/{schema,balance-impacts}.ts',
             // The boundary helpers themselves: they accept every raw shape they convert.
             '**/shared/src/utils/unit-conversion.ts',
         ],

@@ -28,15 +28,9 @@ import {
 import React from 'react'
 
 import { useTransactionHistoryQuery } from '../useTransactionHistoryQuery'
-import * as endpoints from '../../api/history'
+import * as endpoints from '../../history-adapter'
 
-// Explicit factory (not a blanket automock): automocking `../../api/history`
-// would first load the real module to introspect its shape, which now
-// transitively imports `@perawallet/wallet-core-assets` (via
-// `./indexer/endpoints`) and, through it, react-native-mmkv — unavailable
-// under this package's jsdom test environment. Listing exactly the two
-// functions this hook uses avoids ever touching that real module graph.
-vi.mock('../../api/history', () => ({
+vi.mock('../../history-adapter', () => ({
     fetchTransactionHistory: vi.fn(),
     fetchMoreTransactions: vi.fn(),
 }))

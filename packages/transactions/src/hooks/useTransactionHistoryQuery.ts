@@ -18,7 +18,10 @@ import {
     getOpenSubmissionAttempts,
     type SubmissionAttempt,
 } from '@perawallet/wallet-core-signing'
-import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
+import {
+    fetchTransactionHistory,
+    fetchMoreTransactions,
+} from '../history-adapter'
 import { transactionQueryKeys } from './querykeys'
 import type {
     TransactionHistoryItem,

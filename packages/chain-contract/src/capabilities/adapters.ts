@@ -25,6 +25,7 @@ import type { ChainCapability } from '../models/capabilities'
  */
 export const CAPABILITY_ADAPTERS = {
     send: 'send flow',
+    history: 'transaction history',
     swap: 'swap',
     nameService: 'name service',
     card: 'card',

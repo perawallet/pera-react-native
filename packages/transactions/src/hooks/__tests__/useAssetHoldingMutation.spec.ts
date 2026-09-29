@@ -24,12 +24,6 @@ const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: new QueryClient() }, children)
 
 const mockSubmit = vi.fn()
-const mockBuild = vi.fn()
-const mockAddAssetOptIn = vi.fn()
-const mockNewGroup = vi.fn(() => ({
-    addAssetOptIn: mockAddAssetOptIn,
-    build: mockBuild,
-}))
 const mockAssignFeeToGroup = vi.fn()
 const mockInvalidate = vi.fn()
 
@@ -47,7 +41,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'testnet' }),
-    useAlgorandClient: () => ({ newGroup: mockNewGroup }),
 }))
 
 const SOURCE = { name: 'test-source', description: 'Test source' }
@@ -65,9 +58,6 @@ const renderCore = (run: Run) =>
 describe('useAssetHoldingMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockBuild.mockResolvedValue({
-            transactions: [{ txn: { sender: 'SENDER', fee: 1000n } }],
-        })
         mockAssignFeeToGroup.mockResolvedValue({
             transactions: [{ sender: 'SENDER', fee: 3000n }],
             adjustments: [],
@@ -75,11 +65,11 @@ describe('useAssetHoldingMutation', () => {
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
     })
 
-    it('builds through the fee calculator and submits with the source', async () => {
-        const run: Run = async (_params, { buildGroup, submit }) => {
-            const unsignedTxs = await buildGroup(composer => {
-                composer.addAssetOptIn({ sender: 'SENDER', assetId: 1n })
-            })
+    it('assigns fees through the fee calculator and submits with the source', async () => {
+        const run: Run = async (_params, { assignFees, submit }) => {
+            const unsignedTxs = await assignFees([
+                { sender: 'SENDER', fee: 1000n },
+            ] as never)
             const { txIds } = await submit(unsignedTxs)
             return { txIds, sender: 'SENDER' }
         }
@@ -91,10 +81,6 @@ describe('useAssetHoldingMutation', () => {
         })
 
         expect(response).toEqual({ txIds: ['tx1'] })
-        expect(mockAddAssetOptIn).toHaveBeenCalledWith({
-            sender: 'SENDER',
-            assetId: 1n,
-        })
         expect(mockAssignFeeToGroup).toHaveBeenCalledWith({
             transactions: [{ sender: 'SENDER', fee: 1000n }],
         })
@@ -104,10 +90,14 @@ describe('useAssetHoldingMutation', () => {
         })
     })
 
-    it('passes the network and invalidates the returned sender after run resolves', async () => {
+    it('passes the scope and network and invalidates the returned sender after run resolves', async () => {
         const order: string[] = []
         mockInvalidate.mockImplementation(() => order.push('invalidate'))
-        const run = vi.fn<Run>(async (_params, { network }) => {
+        const run = vi.fn<Run>(async (_params, { network, scope }) => {
+            expect(scope).toEqual({
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
             order.push(`run:${network}`)
             return { txIds: [], sender: 'OTHER' }
         })

@@ -12,7 +12,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type { TransactionHistoryItem } from '../../models'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
 // Faithful reimplementation of toBigInt — the real module pulls in
 // react-native-mmkv, which cannot load in the node test environment.

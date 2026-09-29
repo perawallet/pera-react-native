@@ -11,7 +11,7 @@
  */
 
 import type { Network, Optional } from '@perawallet/wallet-core-shared'
-import { fetchTransactionHistory } from '../api/history'
+import { fetchTransactionHistory } from '../history-adapter'
 import { getLatestTransactionRoundTime, upsertTransactions } from '../db'
 import { backfillMissingCloseAmounts } from './close-amount-backfill'
 import { backfillSwapAssetFacts } from './swap-asset-facts-backfill'

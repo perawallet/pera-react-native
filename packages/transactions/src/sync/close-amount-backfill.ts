@@ -13,22 +13,11 @@
 import { Decimal } from 'decimal.js'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
+import { fetchCloseAmount as defaultFetchCloseAmount } from '../history-adapter'
 import {
     getCloseRowsMissingCloseAmount,
     updateTransactionCloseAmount,
 } from '../db'
-
-// Lazy: the endpoints module reaches react-native-mmkv through queryClient,
-// which cannot load in the node test environment. Deferring the import keeps
-// this module (and everything that imports it) collectable there.
-const defaultFetchCloseAmount = async (
-    txId: string,
-    network: Network,
-): Promise<string | null> => {
-    const { fetchIndexerCloseAmount } =
-        await import('../api/history/indexer/endpoints')
-    return fetchIndexerCloseAmount(txId, network)
-}
 
 type BackfillParams = {
     db?: Database
@@ -36,8 +25,7 @@ type BackfillParams = {
     /**
      * Resolves a transaction's swept close amount (base units, decimal
      * string) from the chain indexer; null when the transaction has no close
-     * leg. Injectable for tests; defaults to the indexer lookup the detail
-     * screen uses.
+     * leg or the chain has no lookup. Injectable for tests.
      */
     fetchCloseAmount?: (
         txId: string,

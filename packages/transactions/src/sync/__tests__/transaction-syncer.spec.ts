@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
     backfillSwapAssetFacts: vi.fn(),
 }))
 
-vi.mock('../../api/history', () => ({
+vi.mock('../../history-adapter', () => ({
     fetchTransactionHistory: mocks.fetchTransactionHistory,
 }))
 
