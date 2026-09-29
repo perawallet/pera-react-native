@@ -190,6 +190,11 @@ import {
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import { BackupSyncAbortedError } from '../types'
 import type { BackupSyncSources, BackupSyncStatePort } from '../types'
+import type { BackupSettings } from '../../models'
+import { TEST_SETTINGS } from './testSettings'
+
+const settingsState = { current: TEST_SETTINGS as BackupSettings }
+const settingsListeners = { current: [] as (() => void)[] }
 
 // Must match the key mockWithBackupItemKey hands the manager.
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
@@ -213,6 +218,16 @@ const makeSources = (): BackupSyncSources => ({
     subscribeAccounts: subscribeTo(accountsListeners as never),
     listContacts: () => contactsState.current as never,
     subscribeContacts: subscribeTo(contactsListeners as never),
+    getSettings: () => settingsState.current,
+    subscribeSettings: listener => {
+        settingsListeners.current.push(listener)
+        return () => {
+            settingsListeners.current = settingsListeners.current.filter(
+                entry => entry !== listener,
+            )
+        }
+    },
+    importSettings: vi.fn(),
 })
 
 const makeDeps = () => ({
@@ -256,6 +271,11 @@ const holdNextSync = () => {
     return held
 }
 
+const setSettings = (settings: BackupSettings) => {
+    settingsState.current = settings
+    for (const listener of [...settingsListeners.current]) listener()
+}
+
 const setAccounts = (accounts: { address: string; name?: string }[]) => {
     accountsState.current = accounts
     for (const listener of [...accountsListeners.current]) {
@@ -291,6 +311,8 @@ describe('BackupSyncManager', () => {
         accountsListeners.current = []
         contactsState.current = []
         contactsListeners.current = []
+        settingsState.current = TEST_SETTINGS
+        settingsListeners.current = []
         mockWithBackupEncryptionKey.mockImplementation(
             async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
         )
@@ -744,6 +766,8 @@ describe('BackupSyncManager account watcher', () => {
         accountsListeners.current = []
         contactsState.current = []
         contactsListeners.current = []
+        settingsState.current = TEST_SETTINGS
+        settingsListeners.current = []
         mockWithBackupEncryptionKey.mockImplementation(
             async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
         )
@@ -822,6 +846,30 @@ describe('BackupSyncManager account watcher', () => {
         mgr.stop()
     })
 
+    it('syncs when a synced setting changes', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+        await mgr.start()
+        mockSyncBackup.mockClear()
+
+        setSettings({ ...TEST_SETTINGS, language: 'tr' })
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+
+        expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        mgr.stop()
+    })
+
+    it('does not sync for a settings-store write that touches no synced setting', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+        await mgr.start()
+        mockSyncBackup.mockClear()
+
+        setSettings({ ...TEST_SETTINGS })
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+
+        expect(mockSyncBackup).not.toHaveBeenCalled()
+        mgr.stop()
+    })
+
     it('does not sync for a store write the backup cannot see', async () => {
         const mgr = new BackupSyncManager(makeDeps())
         accountsState.current = [{ address: 'A', name: 'Same' }]
@@ -842,9 +890,11 @@ describe('BackupSyncManager account watcher', () => {
         mockSyncBackup.mockClear()
 
         setAccounts([{ address: 'A' }])
+        setSettings({ ...TEST_SETTINGS, language: 'tr' })
         await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
 
         expect(mockSyncBackup).not.toHaveBeenCalled()
+        expect(settingsListeners.current).toHaveLength(0)
     })
 
     it('still syncs a change that arrived while a sync was running', async () => {
@@ -892,6 +942,8 @@ describe('BackupSyncManager passkey watcher', () => {
         accountsListeners.current = []
         contactsState.current = []
         contactsListeners.current = []
+        settingsState.current = TEST_SETTINGS
+        settingsListeners.current = []
         mockWithBackupEncryptionKey.mockImplementation(
             async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
         )

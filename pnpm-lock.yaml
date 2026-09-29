@@ -2037,6 +2037,9 @@ importers:
       '@perawallet/wallet-core-contacts':
         specifier: workspace:*
         version: link:../contacts
+      '@perawallet/wallet-core-currencies':
+        specifier: workspace:*
+        version: link:../currencies
       '@perawallet/wallet-core-device':
         specifier: workspace:*
         version: link:../device
@@ -2049,6 +2052,9 @@ importers:
       '@perawallet/wallet-core-passkeys':
         specifier: workspace:*
         version: link:../passkeys
+      '@perawallet/wallet-core-settings':
+        specifier: workspace:*
+        version: link:../settings
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared

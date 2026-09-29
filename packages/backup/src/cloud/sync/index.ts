@@ -47,6 +47,11 @@ export {
 export type { BackupSyncManagerDeps } from './backupSyncManager'
 export { createBackupSyncStatePort } from './backupSyncStatePort'
 export { createBackupSyncStoreSources } from './backupSyncStoreSources'
+export {
+    applyBackupSettings,
+    readBackupSettings,
+    subscribeBackupSettings,
+} from './backupSettingsStores'
 export type { BackupDeleteResult } from './reviewActions'
 export {
     BackupWebSocketMessageType,
@@ -76,6 +81,7 @@ export type {
     PasskeyImportFn,
     PasskeyImportSummary,
     PasskeySkipReason,
+    SettingsImportFn,
     SerializeHdResolver,
     SerializeMnemonicResolver,
 } from './types'

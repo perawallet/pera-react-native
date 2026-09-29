@@ -16,10 +16,12 @@ import {
     contactBackupPayloadSchema,
     passkeyBackupPayloadSchema,
     secretsBackupPayloadSchema,
+    settingsBackupPayloadSchema,
     type AddressBackupPayload,
     type ContactBackupPayload,
     type PasskeyBackupPayload,
     type SecretsBackupPayload,
+    type SettingsBackupPayload,
 } from '../models'
 
 export class BackupPayloadParseError extends Error {
@@ -64,3 +66,6 @@ export const parseContactPayload = (raw: string): ContactBackupPayload =>
 
 export const parsePasskeyPayload = (raw: string): PasskeyBackupPayload =>
     parsePayload(passkeyBackupPayloadSchema, raw, 'passkey')
+
+export const parseSettingsPayload = (raw: string): SettingsBackupPayload =>
+    parsePayload(settingsBackupPayloadSchema, raw, 'settings')

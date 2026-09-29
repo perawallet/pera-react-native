@@ -23,6 +23,7 @@ import {
     isAccountItemKey,
     isContactItemKey,
     isPasskeyItemKey,
+    isSettingsItemKey,
     BackupItemStatus,
     type BackupId,
     type BackupItemKey,
@@ -31,6 +32,7 @@ import {
     type SyncState,
 } from '../models'
 import { canonicalJson } from './canonicalize'
+import { settingsDocumentToPayload } from './settingsDocument'
 import { BackupSyncAbortedError } from './types'
 import type { LocalItem } from './types'
 
@@ -71,6 +73,21 @@ const withUpdatedAt = (
             ? { ...(item.payload as Record<string, unknown>), updatedAt }
             : item.payload
     return canonicalJson(payload)
+}
+
+/** Null when there is nothing to send: a local item that is not on this
+ *  device right now, or a settings item never reconciled. */
+const plaintextFor = (
+    key: BackupItemKey,
+    tracked: SyncItemState,
+    local: LocalItem | undefined,
+): string | null => {
+    if (isSettingsItemKey(key)) {
+        return tracked.settingsFields
+            ? canonicalJson(settingsDocumentToPayload(tracked.settingsFields))
+            : null
+    }
+    return local ? withUpdatedAt(local, tracked.localUpdatedAt) : null
 }
 
 export const pushDirty = async ({
@@ -127,9 +144,8 @@ export const pushDirty = async ({
 
     const entries = dirtyKeys
         .map(key => {
-            const local = localByKey.get(key)
-            if (!local) return null
-            const plaintext = withUpdatedAt(local, items[key].localUpdatedAt)
+            const plaintext = plaintextFor(key, items[key], localByKey.get(key))
+            if (plaintext === null) return null
             const payload = encryptItemPayload(plaintext, {
                 encryptionKey: deps.encryptionKey,
                 backupId: deps.backupId,
@@ -137,7 +153,7 @@ export const pushDirty = async ({
             })
             return {
                 key,
-                type: local.type,
+                type: items[key].type,
                 expected_ver: items[key].baseVer,
                 status: items[key].status,
                 payload,

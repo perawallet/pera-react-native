@@ -52,6 +52,7 @@ import {
 } from './reviewActions'
 import { accountFingerprint } from './accountFingerprint'
 import { contactsFingerprint } from './contactsFingerprint'
+import { canonicalJson } from './canonicalize'
 import { syncBackup } from './syncBackup'
 import { pullBackupDeltas } from './pullBackupDeltas'
 import { serializeAccountForBackup } from './serializeAccountForBackup'
@@ -112,10 +113,12 @@ export class BackupSyncManager {
     private unwatchAccounts: Nullable<() => void> = null
     private unwatchContacts: Nullable<() => void> = null
     private unwatchPasskeys: Nullable<() => void> = null
+    private unwatchSettings: Nullable<() => void> = null
     private localChangeTimer: Nullable<ReturnType<typeof setTimeout>> = null
     private stopEpoch = 0
     private accountsFingerprint = ''
     private contactsFingerprint = ''
+    private settingsFingerprint = ''
     private readonly state: BackupSyncStatePort
 
     constructor(private readonly deps: BackupSyncManagerDeps) {
@@ -174,6 +177,9 @@ export class BackupSyncManager {
                         importContacts: this.deps.importContacts,
                         listPasskeys: this.deps.listPasskeys,
                         importPasskeys: this.deps.importPasskeys,
+                        getSettings: () => this.deps.sources.getSettings(),
+                        importSettings: settings =>
+                            this.deps.sources.importSettings(settings),
                     }),
                 ),
             ),
@@ -378,6 +384,16 @@ export class BackupSyncManager {
             this.scheduleLocalSync()
         })
 
+        // The settings stores also hold state that is not synced (theme,
+        // preferences), so every write fires this; the fingerprint drops those.
+        this.settingsFingerprint = canonicalJson(sources.getSettings())
+        this.unwatchSettings = sources.subscribeSettings(() => {
+            const next = canonicalJson(sources.getSettings())
+            if (next === this.settingsFingerprint) return
+            this.settingsFingerprint = next
+            this.scheduleLocalSync()
+        })
+
         // A credential minted by the OS provider extension is written outside
         // the JS process and fires nothing here; the periodic and foreground
         // syncs are what pick those up. The cheap filtering that keeps a
@@ -424,6 +440,7 @@ export class BackupSyncManager {
         this.unwatchAccounts?.()
         this.unwatchContacts?.()
         this.unwatchPasskeys?.()
+        this.unwatchSettings?.()
         this.watchLocalStores()
         const epoch = this.stopEpoch
         await this.syncNow()
@@ -454,6 +471,8 @@ export class BackupSyncManager {
         this.unwatchContacts = null
         this.unwatchPasskeys?.()
         this.unwatchPasskeys = null
+        this.unwatchSettings?.()
+        this.unwatchSettings = null
         this.socket?.disconnect()
         this.socket = null
     }

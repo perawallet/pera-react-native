@@ -20,6 +20,7 @@ import { backupIdToAddress } from '../crypto/backupIdToAddress'
 import {
     BACKUP_CONTACTS_KEY_PREFIX,
     BACKUP_PASSKEYS_KEY_PREFIX,
+    BACKUP_SETTINGS_KEY_PREFIX,
     BackupItemType,
 } from '../models'
 import type { BackupId, BackupItemKey } from '../models'
@@ -129,6 +130,8 @@ export const itemTypeOf = (key: string): BackupItemType => {
         return BackupItemType.CONTACT
     if (key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX))
         return BackupItemType.PASSKEY
+    if (key.startsWith(BACKUP_SETTINGS_KEY_PREFIX))
+        return BackupItemType.SETTINGS
     return BackupItemType.ACCOUNT
 }
 

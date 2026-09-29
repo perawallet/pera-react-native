@@ -62,6 +62,9 @@ vi.mock('../useCloudBackupPasskeyImport', () => ({
         importPasskeys: importPasskeysMock,
     }),
 }))
+vi.mock('../../sync/backupSettingsStores', () => ({
+    applyBackupSettings: vi.fn(),
+}))
 vi.mock('../useResolveSeedEntropyForBackup', () => ({
     useResolveSeedEntropyForBackup: () => vi.fn(),
 }))
@@ -73,6 +76,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => deviceIdMock.value,
 }))
 
+import { applyBackupSettings } from '../../sync/backupSettingsStores'
 import { useRestoreCloudBackupMutation } from '../useRestoreCloudBackupMutation'
 
 const SALT = 'c2FsdA=='
@@ -132,6 +136,7 @@ describe('useRestoreCloudBackupMutation', () => {
             importAccounts: importAccountsMock,
             importContacts: expect.any(Function),
             importPasskeys: importPasskeysMock,
+            importSettings: applyBackupSettings,
         })
         expect(setConfiguredMock).toHaveBeenCalledWith({
             backupId: 'did:pera:abc',

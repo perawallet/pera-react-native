@@ -19,6 +19,8 @@ import {
     createEmptySyncState,
 } from '../../models'
 import { applyDeltas } from '../applyDeltas'
+import { reconcileSettings } from '../reconcileSettings'
+import { TEST_SETTINGS } from './testSettings'
 
 const encryptionKey = new Uint8Array(32).fill(7)
 const baseDeps = () => ({
@@ -32,6 +34,8 @@ const baseDeps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 1, failed: [] })),
+    getSettings: () => TEST_SETTINGS,
+    importSettings: vi.fn(),
     importPasskeys: vi.fn(async () => ({
         imported: 0,
         skipped: [],
@@ -665,6 +669,142 @@ describe('applyDeltas: passkeys', () => {
         expect(next.items['passkeys/P1']).toMatchObject({
             pendingImport: true,
             label: 'Alice',
+        })
+    })
+
+    describe('settings', () => {
+        const SETTINGS_KEY = 'settings/S'
+
+        const settingsDelta = (over: Record<string, unknown> = {}) => ({
+            seq: 9,
+            key: SETTINGS_KEY,
+            type: BackupItemType.SETTINGS,
+            ver: 4,
+            status: BackupItemStatus.ACTIVE,
+            op: DeltaOperation.UPSERT,
+            hash: 'rh',
+            ...over,
+        })
+
+        const trackedSettings = (now: number, local = TEST_SETTINGS) =>
+            reconcileSettings(
+                createEmptySyncState('b'),
+                SETTINGS_KEY,
+                local,
+                now,
+            )
+
+        const serving = (payload: Record<string, unknown>) => {
+            const deps = baseDeps()
+            deps.readItems.mockResolvedValue([
+                { key: SETTINGS_KEY, ver: 4, hash: 'rh', payload: 'enc' },
+            ])
+            deps.decrypt.mockReturnValue(JSON.stringify(payload))
+            return deps
+        }
+
+        it('applies a newer remote setting and adopts the remote version', async () => {
+            const deps = serving({
+                language: { value: 'de', updatedAt: 50 },
+            })
+
+            const next = await applyDeltas({
+                state: trackedSettings(1),
+                deltas: [settingsDelta()],
+                deps,
+            })
+
+            expect(deps.importSettings).toHaveBeenCalledWith({
+                language: 'de',
+            })
+            expect(next.items[SETTINGS_KEY]).toMatchObject({
+                knownVer: 4,
+                baseVer: 4,
+                lastRemoteHash: 'rh',
+                // The remote lacks the other fields this device holds.
+                isDirty: true,
+            })
+            expect(next.items[SETTINGS_KEY].settingsFields?.language).toEqual({
+                value: 'de',
+                updatedAt: 50,
+                observed: null,
+            })
+        })
+
+        it('keeps a later local edit and stays dirty to push it', async () => {
+            const state = reconcileSettings(
+                trackedSettings(1),
+                SETTINGS_KEY,
+                { ...TEST_SETTINGS, language: 'tr' },
+                100,
+            )
+            const deps = serving({
+                currency: {
+                    value: { preferred: 'USD', fallback: 'USD' },
+                    updatedAt: 0,
+                },
+                language: { value: 'de', updatedAt: 50 },
+                confirmationMode: { value: 'slide', updatedAt: 0 },
+                launchAccount: {
+                    value: { mode: 'lastUsed', address: null },
+                    updatedAt: 0,
+                },
+            })
+
+            const next = await applyDeltas({
+                state,
+                deltas: [settingsDelta()],
+                deps,
+            })
+
+            expect(deps.importSettings).not.toHaveBeenCalled()
+            expect(next.items[SETTINGS_KEY]).toMatchObject({
+                isDirty: true,
+                baseVer: 4,
+            })
+            expect(
+                next.items[SETTINGS_KEY].settingsFields?.language?.value,
+            ).toBe('tr')
+        })
+
+        it('never holds a returning settings item for review', async () => {
+            const deps = serving({ language: { value: 'de', updatedAt: 50 } })
+            const state = trackedSettings(1)
+            state.items[SETTINGS_KEY] = {
+                ...state.items[SETTINGS_KEY],
+                status: BackupItemStatus.IGNORED,
+            }
+
+            const next = await applyDeltas({
+                state,
+                deltas: [settingsDelta()],
+                deps,
+            })
+
+            expect(next.items[SETTINGS_KEY].pendingImport).toBe(false)
+            expect(deps.importSettings).toHaveBeenCalledWith({
+                language: 'de',
+            })
+        })
+
+        it('skips a payload that does not parse', async () => {
+            const deps = baseDeps()
+            deps.readItems.mockResolvedValue([
+                { key: SETTINGS_KEY, ver: 4, hash: 'rh', payload: 'enc' },
+            ])
+            deps.decrypt.mockReturnValue('not json')
+            const state = trackedSettings(1)
+
+            const next = await applyDeltas({
+                state,
+                deltas: [settingsDelta()],
+                deps,
+            })
+
+            expect(deps.importSettings).not.toHaveBeenCalled()
+            expect(next.items[SETTINGS_KEY].settingsFields).toEqual(
+                state.items[SETTINGS_KEY].settingsFields,
+            )
         })
     })
 })

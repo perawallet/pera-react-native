@@ -35,6 +35,7 @@ import {
 } from '../../models'
 import { pullBackupDeltas } from '../pullBackupDeltas'
 import { BackupSyncAbortedError } from '../types'
+import { TEST_SETTINGS } from './testSettings'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const ACCOUNT_KEY = accountItemKey(hashAddress('X'))
@@ -46,6 +47,7 @@ const deps = () => ({
     backupId: 'b',
     deviceId: 'dev',
     encryptionKey,
+    hashAddress,
     importAccounts: vi.fn(async () => ({
         imported: 0,
         skippedDuplicate: 0,
@@ -53,6 +55,8 @@ const deps = () => ({
     })),
     importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
     isAborted: () => false,
+    getSettings: () => TEST_SETTINGS,
+    importSettings: vi.fn(),
     importPasskeys: vi.fn(async () => ({
         imported: 0,
         skipped: [],
