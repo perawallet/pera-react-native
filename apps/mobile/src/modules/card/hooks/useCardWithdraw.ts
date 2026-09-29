@@ -24,6 +24,7 @@ import {
     invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     baseUnitsToDisplayUnits,
     displayUnitsToBaseUnits,
@@ -101,7 +102,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
 
     const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', network),
+        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
         [network],
     )
     const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])

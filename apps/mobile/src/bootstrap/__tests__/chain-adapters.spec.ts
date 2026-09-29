@@ -12,10 +12,24 @@
 
 import { describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ registerAlgorandChain: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+    registerAlgorandChain: vi.fn(),
+    setCapabilityOverrides: vi.fn(),
+    readCapabilityOverrides: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
     registerChain: mocks.registerAlgorandChain,
+}))
+
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    readCapabilityOverrides: mocks.readCapabilityOverrides,
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        chains: { setCapabilityOverrides: mocks.setCapabilityOverrides },
+    }),
 }))
 
 import { registerChainAdapters } from '../chain-adapters'
@@ -25,5 +39,13 @@ describe('registerChainAdapters', () => {
         registerChainAdapters()
 
         expect(mocks.registerAlgorandChain).toHaveBeenCalledTimes(1)
+    })
+
+    it('installs the remote and developer capability layers', () => {
+        registerChainAdapters()
+
+        expect(mocks.setCapabilityOverrides).toHaveBeenCalledWith(
+            mocks.readCapabilityOverrides,
+        )
     })
 })

@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+    buildChainSetup,
     createChainRegistry,
     registerChainSetup,
     type ChainSetupEntry,
@@ -25,7 +26,7 @@ import {
     type ChainCapabilities,
 } from '../models/capabilities'
 import type { ChainDescriptor } from '../models/descriptor'
-import type { ChainNetwork } from '../models/identity'
+import type { ChainId, ChainNetwork } from '../models/identity'
 import type { ChainContext, ChainModule } from '../models/module'
 import { descriptorContractViolations } from './descriptor-contract'
 
@@ -182,6 +183,31 @@ describe('createChainRegistry', () => {
         expect(registry.capabilities('algorand')).toEqual(build)
     })
 
+    it('keeps a switched-off chain registered', () => {
+        registry.register(descriptor, build)
+        registry.setCapabilityOverrides(() => ({
+            chainEnabled: { algorand: false },
+        }))
+
+        expect(registry.has('algorand')).toBe(true)
+        expect(registry.get('algorand').descriptor).toBe(descriptor)
+    })
+
+    it('reports a chain switched off only for an explicit false, registered or not', () => {
+        expect(registry.isSwitchedOff('algorand')).toBe(false)
+
+        registry.setCapabilityOverrides(() => ({
+            chainEnabled: { algorand: 'false' },
+        }))
+        expect(registry.isSwitchedOff('algorand')).toBe(false)
+
+        registry.setCapabilityOverrides(() => ({
+            chainEnabled: { algorand: false },
+        }))
+        expect(registry.has('algorand')).toBe(false)
+        expect(registry.isSwitchedOff('algorand')).toBe(true)
+    })
+
     it('drops the overrides on reset', () => {
         registry.register(descriptor, build)
         registry.setCapabilityOverrides(() => ({
@@ -291,5 +317,70 @@ describe('registerChainSetup', () => {
         expect(contextFor).toHaveBeenCalledWith(entry)
         expect(module.register).toHaveBeenCalledTimes(1)
         expect(module.register).toHaveBeenCalledWith(context)
+    })
+})
+
+describe('buildChainSetup', () => {
+    const chains = createChainRegistry()
+
+    beforeEach(() => {
+        chains.reset()
+    })
+
+    it('registers only the modules of enabled chains', () => {
+        const algorand = moduleWith()
+        const other = moduleWith({
+            descriptor: { ...descriptor, id: 'other' as ChainId },
+        })
+        const modules = { algorand, other } as Record<ChainId, ChainModule>
+
+        const setup = buildChainSetup(
+            { enabled: ['algorand'], capabilities: {} },
+            modules,
+        )
+        registerChainSetup(setup, chains, () => context)
+
+        expect(chains.list()).toEqual([descriptor])
+        expect(algorand.register).toHaveBeenCalledTimes(1)
+        expect(other.register).not.toHaveBeenCalled()
+    })
+
+    it('leaves the module defaults alone when the build lists no capabilities', () => {
+        const [entry] = buildChainSetup(
+            { enabled: ['algorand'], capabilities: {} },
+            { algorand: moduleWith() },
+        )
+
+        expect(entry).toEqual({
+            chainId: 'algorand',
+            enabled: true,
+            module: expect.anything(),
+            endpoints: {},
+        })
+    })
+
+    it('turns a listed capability set into the exact enabled set', () => {
+        const [entry] = buildChainSetup(
+            {
+                enabled: ['algorand'],
+                capabilities: { algorand: ['send', 'receive'] },
+            },
+            { algorand: moduleWith() },
+        )
+
+        expect(entry.capabilities).toEqual({
+            ...allFalse,
+            send: true,
+            receive: true,
+        })
+    })
+
+    it('throws when an enabled chain has no module', () => {
+        expect(() =>
+            buildChainSetup(
+                { enabled: ['algorand'], capabilities: {} },
+                {} as Record<ChainId, ChainModule>,
+            ),
+        ).toThrow(/no chain module/)
     })
 })

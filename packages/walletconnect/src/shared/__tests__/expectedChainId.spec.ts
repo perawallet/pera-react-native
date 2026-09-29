@@ -11,12 +11,10 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { AlgorandWalletConnectChainId } from '../../models'
-import {
-    EXPECTED_CHAIN_ID_BY_NETWORK,
-    getExpectedChainId,
-} from '../expectedChainId'
+import { getExpectedChainId } from '../expectedChainId'
 
 describe('getExpectedChainId', () => {
     it('resolves mainnet to its registered chain id', () => {
@@ -57,12 +55,14 @@ describe('getExpectedChainId', () => {
         )
     })
 
-    it('maps every network, with custom borrowing testnet id', () => {
-        expect(EXPECTED_CHAIN_ID_BY_NETWORK).toEqual({
-            mainnet: AlgorandWalletConnectChainId.mainnet,
-            testnet: AlgorandWalletConnectChainId.testnet,
-            betanet: AlgorandWalletConnectChainId.betanet,
-            custom: AlgorandWalletConnectChainId.testnet,
-        })
+    it.each(algorandDescriptor.networks.map(network => network.id))(
+        'has a chain id for the declared network %s',
+        networkId => {
+            expect(getExpectedChainId(networkId)).not.toBeNull()
+        },
+    )
+
+    it('has no chain id for a network no chain declares', () => {
+        expect(getExpectedChainId('fnet')).toBeNull()
     })
 })

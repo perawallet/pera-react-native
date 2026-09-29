@@ -350,11 +350,35 @@ describe('useSwapExecution', () => {
         })
     })
 
-    it('maps a backend prepare rejection to API copy, never the algod node fallback', async () => {
+    it.each([
+        ['4xx', new PeraNetworkError('client', { status: 400 })],
+        ['5xx', new PeraNetworkError('server', { status: 502 })],
+    ])(
+        'points a backend prepare %s at another provider under the swap headline',
+        async (_label, error) => {
+            failWith({ phase: 'prepare', reason: 'prepare-failed', error })
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await executeOnce(result.current.execute)
+
+            // No title: the caller falls back to swap.execution.error_title.
+            expect(outcome).toEqual({
+                kind: 'error',
+                phase: 'prepare',
+                message: 'swap.execution.provider_failed_body',
+            })
+            expect(result.current.error).toEqual({
+                phase: 'prepare',
+                message: 'swap.execution.provider_failed_body',
+            })
+        },
+    )
+
+    it('keeps the timeout copy for a prepare that never got an answer', async () => {
         failWith({
             phase: 'prepare',
             reason: 'prepare-failed',
-            error: new PeraNetworkError('client', { status: 400 }),
+            error: new PeraNetworkError('timeout'),
         })
         const { result } = renderHook(() => useSwapExecution())
 
@@ -363,8 +387,8 @@ describe('useSwapExecution', () => {
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'prepare',
-            message: 'errors.api.generic.body',
-            title: 'errors.api.generic.title',
+            message: 'errors.network.timeout.body',
+            title: 'errors.network.timeout.title',
         })
     })
 

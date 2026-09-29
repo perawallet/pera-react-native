@@ -3397,6 +3397,7 @@
         "execution": {
             "error_title": "Falha na conversão",
             "error_body": "Algo deu errado durante a conversão. Tente novamente.",
+            "provider_failed_body": "Este provedor não conseguiu concluir a conversão. Tente outro provedor.",
             "insufficient_algo_title": "ALGO insuficiente",
             "insufficient_algo_body": "Esta conta precisa de pelo menos {{amount}} ALGO a mais para cobrir esta conversão, as taxas e o saldo mínimo. Adicione mais ALGO e tente novamente.",
             "success_title": "Conversão concluída",

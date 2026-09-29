@@ -11,8 +11,7 @@
  */
 
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { NETWORK_LABEL_KEYS } from '@constants/network-labels'
-import { useLanguage } from '@hooks/useLanguage'
+import { useNetworkLabel } from '@hooks/useNetworkLabel'
 
 type UseTestnetIndicatorResult = {
     isVisible: boolean
@@ -24,12 +23,12 @@ type UseTestnetIndicatorResult = {
 // frame accents) rendered by TestnetIndicator.tsx when off MainNet.
 export const useTestnetIndicator = (): UseTestnetIndicatorResult => {
     const { network, isMainnet } = useNetwork()
-    const { t } = useLanguage()
+    const networkLabel = useNetworkLabel()
 
     return {
         // Any network that is not MainNet gets the badge — the point is "this
         // is not the real network", not "this is TestNet".
         isVisible: !isMainnet,
-        label: t(NETWORK_LABEL_KEYS[network]),
+        label: networkLabel(network),
     }
 }

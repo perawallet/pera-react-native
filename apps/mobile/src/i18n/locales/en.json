@@ -3374,6 +3374,7 @@
         "execution": {
             "error_title": "Swap Failed",
             "error_body": "Something went wrong during the swap. Please try again.",
+            "provider_failed_body": "This provider couldn't complete the swap. Try another provider.",
             "insufficient_algo_title": "Insufficient ALGO",
             "insufficient_algo_body": "This account needs at least {{amount}} more ALGO to cover this swap, its fees, and the minimum balance. Add more ALGO and try again.",
             "success_title": "Swap Complete",

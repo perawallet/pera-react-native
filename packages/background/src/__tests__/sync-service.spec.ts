@@ -84,6 +84,13 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     },
 }))
 
+let mockChainSwitchedOff = false
+const mockIsSwitchedOff = vi.fn(() => mockChainSwitchedOff)
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({ chains: { isSwitchedOff: mockIsSwitchedOff } }),
+}))
+
 vi.mock('@perawallet/wallet-core-config', () => ({
     isPeraBackedNetwork: (n: string) => n === 'mainnet' || n === 'testnet',
 }))
@@ -161,6 +168,7 @@ describe('SyncService', () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         mockNetwork = 'mainnet'
+        mockChainSwitchedOff = false
         // A couple of tests reassign useNetworkStore.getState directly (to a
         // closure that doesn't read mockNetwork) and restore it to a
         // hardcoded 'mainnet' closure in their finally block — reset it back
@@ -454,6 +462,33 @@ describe('SyncService', () => {
         vi.useFakeTimers()
 
         expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+
+        service.stop()
+    })
+
+    it('does no network work for a switched-off chain, and force-syncs once it is back on', async () => {
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: false,
+            round: null,
+        })
+        mockChainSwitchedOff = true
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+        expect(mockIsSwitchedOff).toHaveBeenCalledWith('algorand')
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        expect(mockReconcileOpenSubmissions).not.toHaveBeenCalled()
+        expect(fetchAndPersistAccount).not.toHaveBeenCalled()
+
+        mockChainSwitchedOff = false
+        await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+        // The first tick that runs is still the unconditional force-sync.
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        expect(fetchAndPersistAccount).toHaveBeenCalled()
 
         service.stop()
     })

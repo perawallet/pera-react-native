@@ -5,35 +5,194 @@
 import { defineRule } from 'lanekeep'
 import { TEST_SUPPORT, productionSource } from '../shared/scope.js'
 
-const ACQUIRE =
-    '^(seedFromMnemonic|mnemonicToSeed|mnemonicToEntropy|derivePQKeygenSeed)$'
+// Calls that return key material. The rule is blind to a producer missing
+// here. Callback-style `pbkdf2` can't be listed (its key arrives as a callback
+// parameter, which lanekeep doesn't track), so its promise wrappers are.
+const PRODUCERS = [
+    'algo25SecretKeyToIndices',
+    'algo25SeedToIndices',
+    'argon2id',
+    'argon2idDerive',
+    'backupMnemonicToPassword',
+    'computeArgon2id',
+    'decodePrivateKeyBytes',
+    'deriveArgon2id',
+    'deriveBackupAuthKeypair',
+    'deriveBackupChildKeys',
+    'deriveBackupKeys',
+    'deriveBackupMasterKey',
+    'deriveBip39Seed',
+    'deriveLegacyPasskeyCredentialFromMainKey',
+    'deriveLiquidAuthMainKey',
+    'deriveMainKey',
+    'derivePasskeyCredential',
+    'derivePasskeyMainKey',
+    'derivePQKeygenSeed',
+    'entropyToIndices',
+    'fromSeed',
+    'genDerivedMainKeyWithSubtle',
+    'genDomainSpecificKeyPair',
+    'generateHDMasterKey',
+    'generateKeypairFromSeed',
+    'hashPin',
+    'hkdf',
+    'indicesToAlgo25Seed',
+    'indicesToEntropy',
+    'indicesToUtf8Bytes',
+    'mnemonicWordsToIndices',
+    'prepareHDMasterKey',
+    'requireSessionMasterKey',
+    'unwrapMasterKeyWithPassword',
+    // bip39/algosdk calls with no production caller, listed so a new one is checked.
+    'mnemonicToEntropy',
+    'mnemonicToSeed',
+    'seedFromMnemonic',
+]
+const ACQUIRE = `^(${PRODUCERS.join('|')})$`
+const WIPERS = '^(zeroBytes|wipeBytes)$'
+// A field of a result counts only under one of these names: wiping or
+// returning `keyPair.publicKey` leaves `keyPair.secretKey` behind. lanekeep
+// tracks the result, not each field, so one secret field wiped or returned
+// still discharges the others.
+const SECRET_FIELDS =
+    '^(authSecretKey|authSeed|encryptionKey|entropy|itemKey|masterKey|privateKey|rootKey|secretKey|seed)$'
+const SECRET_FIELD = new RegExp(SECRET_FIELDS)
+
+// lanekeep doesn't treat a throw as an exit, so only a wipe sitting directly
+// in a finally block is known to run on every path.
+const inFinally = (call: string, predicates: string) =>
+    `((finally_clause (statement_block (expression_statement ${call} @release))) ${predicates})`
+
+const fillZero = (object: string) =>
+    `(call_expression function: (member_expression object: ${object} property: (property_identifier) @method) arguments: (arguments . (number) @zero .))`
+const secretField = (object: string) =>
+    `(member_expression object: ${object} property: (property_identifier) @field)`
+
+// A wiped or handed-off buffer is named, not computed: `c ? other : seed`
+// would discharge `seed` on the arm that leaves it behind.
+const WIPES = [
+    inFinally(
+        fillZero('(identifier) @key'),
+        '(#eq? @method "fill") (#eq? @zero "0")',
+    ),
+    inFinally(
+        '(call_expression function: (identifier) @fn arguments: (arguments (identifier) @key))',
+        `(#match? @fn "${WIPERS}")`,
+    ),
+    inFinally(
+        fillZero(secretField('(identifier) @key')),
+        `(#eq? @method "fill") (#eq? @zero "0") (#match? @field "${SECRET_FIELDS}")`,
+    ),
+    inFinally(
+        `(call_expression function: (identifier) @fn arguments: (arguments ${secretField('(identifier) @key')}))`,
+        `(#match? @fn "${WIPERS}") (#match? @field "${SECRET_FIELDS}")`,
+    ),
+]
+
+// Returning the buffer, or an object holding it, hands it to the caller.
+const RETURNS = [
+    '((return_statement (identifier) @key) @release)',
+    '((return_statement (object (shorthand_property_identifier) @key)) @release)',
+    '((return_statement (call_expression) @key) @release)',
+    '((return_statement (await_expression (call_expression) @key)) @release)',
+    '((return_statement (object (pair value: (identifier) @key))) @release)',
+    `((return_statement (object (pair value: ${secretField('(identifier) @key')}))) @release (#match? @field "${SECRET_FIELDS}"))`,
+    '((return_statement (object (pair value: (call_expression) @key))) @release)',
+    '((return_statement (object (pair value: (await_expression (call_expression) @key)))) @release)',
+    '((return_statement (call_expression function: (member_expression object: (call_expression) @key property: (property_identifier) @method))) @release (#eq? @method "finally"))',
+    '((arrow_function body: (call_expression) @key @release))',
+]
+
+// A transfer list detaches the buffer, so a posted key is no longer this
+// realm's to zero. Posting without one sends a copy and keeps the original,
+// and a WebView's postMessage takes a string and ignores the list, so only a
+// worker's, a port's or the global scope's counts.
+const TRANSFER_TARGETS = '^(self|globalThis|worker|port)$|(Worker|Port)$'
+const transferList =
+    'arguments: (arguments . (identifier) @key . (object (pair key: (property_identifier) @option value: (array (member_expression object: (identifier) @transferred property: (property_identifier) @part)))))'
+const TRANSFERRED =
+    '(#eq? @fn "postMessage") (#eq? @option "transfer") (#eq? @part "buffer") (#eq? @transferred @key)'
+const TRANSFERS = [
+    `((call_expression function: (identifier) @fn ${transferList}) @release ${TRANSFERRED})`,
+    `((call_expression function: (member_expression object: (identifier) @target property: (property_identifier) @fn) ${transferList}) @release ${TRANSFERRED} (#match? @target "${TRANSFER_TARGETS}"))`,
+]
+
+// handOffSecret marks where a buffer moves to an owner that zeroes it: a
+// store, a cache or a helper. The rule can't verify that owner, so the marker
+// is the claim, made at the one buffer rather than over a whole line.
+const HAND_OFFS = [
+    '((call_expression function: (identifier) @fn arguments: (arguments . [(identifier) @key (call_expression) @key (await_expression (call_expression) @key)] .)) @release (#eq? @fn "handOffSecret"))',
+    `((call_expression function: (identifier) @fn arguments: (arguments . ${secretField('(identifier) @key')} .)) @release (#eq? @fn "handOffSecret") (#match? @field "${SECRET_FIELDS}"))`,
+]
+
+// `if (!key) return` leaves on the path where the producer returned nothing.
+const NULL_GUARDS = [
+    '((if_statement condition: (parenthesized_expression (unary_expression operator: "!" argument: (identifier) @key)) consequence: [(return_statement) (throw_statement)] @release))',
+    '((if_statement condition: (parenthesized_expression (unary_expression operator: "!" argument: (identifier) @key)) consequence: (statement_block . [(return_statement) (throw_statement)] @release .)))',
+]
 
 export default defineRule({
     id: 'pera/secret-buffer-zeroed',
     severity: 'error',
     requires: ['dataflow'],
     card: {
-        message: 'a secret buffer is not zeroed on every path',
+        message: 'secret key material is not zeroed on every path',
         remediation:
-            'Zero it in a finally block, with zeroBytes(buffer) from packages/kms/src/crypto/secure-memory.ts or buffer.fill(0), so every return and throw clears the key material from memory.',
+            'Zero it in a finally block, with zeroBytes(buffer) from packages/kms/src/crypto/secure-memory.ts or buffer.fill(0), or return it so the caller owns it. A wipe outside finally is skipped when anything before it throws. When the buffer moves to an owner that zeroes it (a store, a cache, a helper), pass it through handOffSecret(buffer) where it moves; a worker postMessage must list buffer.buffer in transfer.',
         examples: {
-            bad: 'const seed = seedFromMnemonic(phrase)\nreturn sign(seed)',
-            good: 'const seed = seedFromMnemonic(phrase)\ntry { return sign(seed) } finally { seed.fill(0) }',
+            bad: 'const entropy = indicesToEntropy(indices)\nsign(entropy)\nentropy.fill(0)',
+            good: 'const entropy = indicesToEntropy(indices)\ntry { return sign(entropy) } finally { entropy.fill(0) }',
         },
     },
     gates: productionSource({ pathNotMatches: [...TEST_SUPPORT] }),
+    // lanekeep gives every name destructured from a result the result's
+    // identity, so a destructuring that binds no secret field (only
+    // `publicKey`) would let the unbound secret leak unreported. And
+    // handOffSecret names its owner only by where its result goes, so a
+    // result thrown away hands the buffer to nothing.
+    query: [
+        `((variable_declarator name: (object_pattern) @pattern value: [(call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)]) (await_expression (call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)]))]) (#match? @fn "${ACQUIRE}"))`,
+        '((expression_statement (call_expression function: (identifier) @handOff)) @discarded (#eq? @handOff "handOffSecret"))',
+    ].join('\n'),
+    check(ctx, match) {
+        if (match.discarded) {
+            ctx.report(
+                match.discarded,
+                "handOffSecret's result is discarded, so no owner takes the buffer",
+            )
+            return
+        }
+        const bindsSecret = ctx.namedChildren(match.pattern!).some(entry => {
+            const kind = ctx.kind(entry)
+            if (kind === 'rest_pattern') return true
+            const name =
+                kind === 'pair_pattern' || kind === 'object_assignment_pattern'
+                    ? ctx.namedChildren(entry)[0]
+                    : entry
+            return name !== undefined && SECRET_FIELD.test(ctx.text(name))
+        })
+        if (!bindsSecret) {
+            ctx.report(
+                match.pattern!,
+                'the destructuring binds no secret field of the result, so the secret can never be zeroed',
+            )
+        }
+    },
     obligation: {
         acquire: [
             `((call_expression function: (identifier) @fn) @acquire @key (#match? @fn "${ACQUIRE}"))`,
             `((call_expression function: (member_expression property: (property_identifier) @fn)) @acquire @key (#match? @fn "${ACQUIRE}"))`,
         ],
         release: [
-            '((call_expression function: (member_expression object: (_) @key property: (property_identifier) @method) arguments: (arguments . (number) @zero .)) @release (#eq? @method "fill") (#eq? @zero "0"))',
-            '((call_expression function: (identifier) @fn arguments: (arguments (_) @key)) @release (#eq? @fn "zeroBytes"))',
+            ...WIPES,
+            ...RETURNS,
+            ...TRANSFERS,
+            ...HAND_OFFS,
+            ...NULL_GUARDS,
         ],
         scope: 'function',
-        // A release discharges only the buffer it zeroes, not every
-        // acquisition in the function.
+        // A release discharges only the buffer it zeroes or returns, not
+        // every acquisition in the function.
         keyBy: 'binding',
     },
     checkObligation(ctx, unmet) {
@@ -41,7 +200,7 @@ export default defineRule({
             unmet.exit,
             unmet.partial
                 ? 'the secret buffer is zeroed on some paths, not all'
-                : 'the secret buffer is never zeroed',
+                : 'the secret buffer is never zeroed in a finally block or returned',
         )
     },
 })

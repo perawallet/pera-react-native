@@ -3374,6 +3374,7 @@
         "execution": {
             "error_title": "Échec du swap",
             "error_body": "Une erreur est survenue pendant le swap. Veuillez réessayer.",
+            "provider_failed_body": "Ce fournisseur n’a pas pu effectuer le swap. Veuillez essayer un autre fournisseur.",
             "insufficient_algo_title": "ALGO insuffisant",
             "insufficient_algo_body": "Ce compte a besoin d’au moins {{amount}} ALGO supplémentaires pour couvrir ce swap, ses frais et le solde minimum. Ajoutez plus d’ALGO, puis réessayez.",
             "success_title": "Swap effectué",

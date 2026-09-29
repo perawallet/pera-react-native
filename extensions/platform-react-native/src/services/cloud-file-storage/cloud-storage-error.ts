@@ -10,16 +10,10 @@
  limitations under the License
  */
 
-import { Networks, type Network } from '@perawallet/wallet-core-shared'
+import {
+    CloudStorageError,
+    type CloudStorageErrorCode,
+} from 'react-native-cloud-storage'
 
-/**
- * i18n keys for each network's display name. Static strings: the i18n lint
- * rules cannot verify an interpolated key, so no
- * `common.network_label.${network}`.
- */
-export const NETWORK_LABEL_KEYS: Record<Network, string> = {
-    [Networks.mainnet]: 'common.network_label.mainnet',
-    [Networks.testnet]: 'common.network_label.testnet',
-    [Networks.betanet]: 'common.network_label.betanet',
-    [Networks.custom]: 'common.network_label.custom',
-}
+export const hasCode = (error: unknown, code: CloudStorageErrorCode): boolean =>
+    error instanceof CloudStorageError && error.code === code

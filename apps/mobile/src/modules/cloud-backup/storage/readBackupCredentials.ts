@@ -11,6 +11,7 @@
  */
 
 import {
+    isBackupCredentialsFileContents,
     isBackupCredentialsFileName,
     parseBackupCredentialsFile,
     type BackupEncryptionKey,
@@ -47,6 +48,7 @@ const readFrom = (
         ? readFromDevice()
         : getProvider().cloudFileStorage.read(source, {
               isCandidate: isBackupCredentialsFileName,
+              isCandidateContents: isBackupCredentialsFileContents,
               chooseFile,
               onReading,
               signal,

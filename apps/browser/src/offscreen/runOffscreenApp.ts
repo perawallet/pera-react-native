@@ -56,6 +56,7 @@ import {
     createWalletConnectV1Handler,
     importLegacyConnections,
 } from '@perawallet/wallet-core-walletconnect'
+import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
@@ -107,6 +108,8 @@ export const runOffscreenApp = async (): Promise<void> => {
         key => void REHYDRATE_BY_KEY[key]?.persist.rehydrate(),
     )
 
+    // Before sync starts: its first tick reads the chain kill switch.
+    getProvider().chains.setCapabilityOverrides(readCapabilityOverrides)
     initializeSyncService({
         queryClient,
         stores: createSyncStorePorts(),

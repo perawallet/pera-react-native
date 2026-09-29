@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+// @vitest-environment node
+import { describe, test, expect, vi } from 'vitest'
 import {
     PIN_RECORD_VERSION,
     applyDuressPin,
@@ -21,6 +22,37 @@ import {
     verifyPinAgainstDuressSlot,
     verifyPinAgainstRecord,
 } from '../pinRecord'
+
+// Every buffer the real pbkdf2 hands back, so a test can check it was zeroed.
+const pbkdf2Outputs = vi.hoisted((): Uint8Array[] => [])
+
+vi.mock('crypto', async importOriginal => {
+    const actual = await importOriginal<typeof import('crypto')>()
+    return {
+        ...actual,
+        pbkdf2: (
+            ...[
+                password,
+                salt,
+                iterations,
+                keylen,
+                digest,
+                callback,
+            ]: Parameters<typeof actual.pbkdf2>
+        ) =>
+            actual.pbkdf2(
+                password,
+                salt,
+                iterations,
+                keylen,
+                digest,
+                (err, derivedKey) => {
+                    if (derivedKey) pbkdf2Outputs.push(derivedKey)
+                    callback(err, derivedKey)
+                },
+            ),
+    }
+})
 
 describe('pinRecord', () => {
     test('createPinRecord produces versioned record with random salt/hash', async () => {
@@ -47,6 +79,18 @@ describe('pinRecord', () => {
         // Random fill, not a fixed sentinel — two records must differ.
         expect(a.duressSalt).not.toBe(b.duressSalt)
         expect(a.duressHash).not.toBe(b.duressHash)
+    }, 30_000)
+
+    test('hashing a PIN leaves no pbkdf2 output on the heap', async () => {
+        pbkdf2Outputs.length = 0
+
+        const record = await createPinRecord('123456')
+        await verifyPinAgainstRecord('123456', record)
+
+        expect(pbkdf2Outputs).toHaveLength(2)
+        expect(pbkdf2Outputs.every(buf => buf.every(byte => byte === 0))).toBe(
+            true,
+        )
     }, 30_000)
 
     test('verifyPinAgainstRecord accepts correct PIN and rejects wrong PIN', async () => {

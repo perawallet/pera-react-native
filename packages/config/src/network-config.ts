@@ -179,8 +179,7 @@ const EMPTY_PERA_SERVICES = {
 /**
  * `Record<Network, …>`, not `Partial<…>` plus a fallback: a fifth network added
  * to the union fails TypeScript here until someone decides its Pera services,
- * rather than silently resolving to TestNet's deployment. Same reasoning as
- * `EXPECTED_CHAIN_ID_BY_NETWORK` in the walletconnect package.
+ * rather than silently resolving to TestNet's deployment.
  */
 const peraServicesByNetwork: Record<Network, PeraServices> = {
     [Networks.mainnet]: {

@@ -34,8 +34,9 @@ import {
 } from 'react-native-cloud-storage'
 import { config } from '@perawallet/wallet-core-config'
 
-export const DRIVE_APPDATA_SCOPE =
-    'https://www.googleapis.com/auth/drive.appdata'
+import { hasCode } from './cloud-storage-error'
+
+export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
 
 // The library's 3 s default is too short for an upload on a mobile network.
 const DRIVE_TIMEOUT_MS = 15_000
@@ -62,14 +63,14 @@ export const isGoogleDriveConfigured = (): boolean =>
 const configureGoogleSignIn = (): void => {
     if (!isGoogleDriveConfigured()) throw new GoogleDriveNotConfiguredError()
     GoogleSignin.configure({
-        scopes: [DRIVE_APPDATA_SCOPE],
+        scopes: [DRIVE_FILE_SCOPE],
         iosClientId: config.googleIosClientId || undefined,
         webClientId: config.googleWebClientId || undefined,
     })
 }
 
 const hasDriveScope = (user: User): boolean =>
-    user.scopes.includes(DRIVE_APPDATA_SCOPE)
+    user.scopes.includes(DRIVE_FILE_SCOPE)
 
 const signIn = async (): Promise<User | null> => {
     if (GoogleSignin.hasPreviousSignIn()) {
@@ -88,7 +89,7 @@ const signIn = async (): Promise<User | null> => {
 const grantDriveScope = async (user: User): Promise<boolean> => {
     if (hasDriveScope(user)) return true
     const response = await GoogleSignin.addScopes({
-        scopes: [DRIVE_APPDATA_SCOPE],
+        scopes: [DRIVE_FILE_SCOPE],
     })
     return (
         response !== null &&
@@ -100,8 +101,7 @@ const grantDriveScope = async (user: User): Promise<boolean> => {
 // The library only names a 401 AUTHENTICATION_FAILED when the body says
 // `UNAUTHENTICATED`; anything else keeps the raw status of the HTTP failure.
 const isAuthFailure = (error: unknown): boolean =>
-    (error instanceof CloudStorageError &&
-        error.code === CloudStorageErrorCode.AUTHENTICATION_FAILED) ||
+    hasCode(error, CloudStorageErrorCode.AUTHENTICATION_FAILED) ||
     (error as { status?: unknown } | null)?.status === 401
 
 // The library's `statusCodes` reads native constants, so it is undefined
@@ -122,8 +122,7 @@ const isTransportFailure = (error: unknown): boolean => {
     }
     return (
         name === 'AbortError' ||
-        (error instanceof CloudStorageError &&
-            error.code === CloudStorageErrorCode.NETWORK_ERROR) ||
+        hasCode(error, CloudStorageErrorCode.NETWORK_ERROR) ||
         /network request failed/i.test(String(message ?? ''))
     )
 }
@@ -153,12 +152,12 @@ const asDriveError = (error: unknown): unknown => {
     return error
 }
 
-// appDataFolder has no server-side uniqueness and users can't see it to clean
-// up, so a duplicate from a racing save must not make every later call fail.
+// Drive enforces no server-side filename uniqueness, so a duplicate from a
+// racing save must not make every later call fail; resolveCandidate picks.
 const driveWithToken = (accessToken: string): CloudStorage =>
     new CloudStorage(CloudStorageProvider.GoogleDrive, {
         accessToken,
-        scope: CloudStorageScope.AppData,
+        scope: CloudStorageScope.Documents,
         strictFilenames: false,
         timeout: DRIVE_TIMEOUT_MS,
     })
@@ -223,7 +222,7 @@ const runSession = async <T>(
  * it must be safe to repeat. Failures are mapped here rather than inside, so
  * the token retry still sees the original 401.
  *
- * A session that reached the operation gives the `drive.appdata` grant back on
+ * A session that reached the operation gives the `drive.file` grant back on
  * the way out rather than leaving a refreshable token alive — from a `finally`,
  * because a read has several exits and each one has to release. A cancellation
  * keeps the sign-in: the user may retry straight away.

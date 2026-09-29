@@ -20,22 +20,19 @@ import {
 } from '@perawallet/wallet-extension-platform'
 import {
     CloudStorage,
-    CloudStorageError,
     CloudStorageErrorCode,
     CloudStorageProvider,
     CloudStorageScope,
 } from 'react-native-cloud-storage'
 
 import { resolveCandidate } from './candidates'
+import { hasCode } from './cloud-storage-error'
 
 // 20 × 500 ms of sleeping is the floor of the wait, not its ceiling: each
 // attempt also makes a triggerSync and a read round trip, neither of which is
 // bounded here.
 const POLL_INTERVAL_MS = 500
 const POLL_ATTEMPTS = 20
-
-const hasCode = (error: unknown, code: CloudStorageErrorCode): boolean =>
-    error instanceof CloudStorageError && error.code === code
 
 // Past the availability check this means no container for this app: the build
 // lacks the entitlement, or iCloud Drive is switched off for Pera. Telling the
@@ -46,11 +43,11 @@ const throwIfContainerMissing = (error: unknown): void => {
     }
 }
 
-// AppData is the container root, hidden from the Files app: the file is for the
-// app to read back on restore, not for the user to move around.
+// The library's Expo plugin publishes this scope to Files and names it after
+// `config.slug`, so the user sees "pera" / "pera-staging", not a display name.
 const openICloud = (): CloudStorage =>
     new CloudStorage(CloudStorageProvider.ICloud, {
-        scope: CloudStorageScope.AppData,
+        scope: CloudStorageScope.Documents,
     })
 
 const wait = (ms: number, signal?: AbortSignal): Promise<void> =>
@@ -108,6 +105,18 @@ const readIfPresent = async (
     }
 }
 
+const probeEntry = async (
+    iCloud: CloudStorage,
+    fileName: string,
+    maxBytes: number,
+): Promise<string | null> => {
+    const path = `/${fileName}`
+    const { size } = await iCloud.stat(path)
+    // A placeholder still downloading reads as absent, so it is not a candidate
+    // either: only a file this device can already read can be recognised here.
+    return size > maxBytes ? null : readIfPresent(iCloud, path)
+}
+
 const startDownload = async (
     iCloud: CloudStorage,
     path: string,
@@ -152,15 +161,19 @@ export const readFromICloud = async (
     const iCloud = openICloud()
     if (!(await iCloud.isCloudAvailable())) throw new ICloudUnavailableError()
 
-    const fileName = await resolveCandidate(
+    const candidate = await resolveCandidate(
         await listEntries(iCloud),
         'icloud',
         options,
+        (fileName, maxBytes) => probeEntry(iCloud, fileName, maxBytes),
     )
-    if (fileName === null) return { status: 'cancelled' }
+    if (candidate === null) return { status: 'cancelled' }
 
     // Nothing but the read is left, so a progress overlay can no longer
     // collide with the picker.
     options.onReading?.()
-    return readWhenDownloaded(iCloud, `/${fileName}`, options.signal)
+    if (candidate.contents !== undefined) {
+        return { status: 'read', contents: candidate.contents }
+    }
+    return readWhenDownloaded(iCloud, `/${candidate.fileName}`, options.signal)
 }

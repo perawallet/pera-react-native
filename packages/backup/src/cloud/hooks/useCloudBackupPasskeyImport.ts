@@ -23,7 +23,7 @@ import {
     passkeyMainKeyIdFromSeedKeyId,
     writeNativePasskeyEntry,
 } from '@perawallet/wallet-core-passkeys'
-import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { handOffSecret, zeroBytes } from '@perawallet/wallet-core-kms'
 import type { PasskeyImportFn, PasskeyImportSummary } from '../sync/types'
 
 /** The owning seed as this device knows it. `seedKeyId` is local — the id the
@@ -78,18 +78,24 @@ export const useCloudBackupPasskeyImport = (
                             const resolved = await resolveSeedEntropy(
                                 payload.seedAddress,
                             )
-                            seeds.set(
-                                payload.seedAddress,
-                                resolved === null
-                                    ? null
-                                    : {
-                                          seedKeyId: resolved.seedKeyId,
-                                          mainKey: await derivePasskeyMainKey(
-                                              resolved.entropy,
-                                          ),
-                                      },
-                            )
-                            if (resolved !== null) zeroBytes(resolved.entropy)
+                            try {
+                                seeds.set(
+                                    payload.seedAddress,
+                                    resolved === null
+                                        ? null
+                                        : {
+                                              seedKeyId: resolved.seedKeyId,
+                                              mainKey: handOffSecret(
+                                                  await derivePasskeyMainKey(
+                                                      resolved.entropy,
+                                                  ),
+                                              ),
+                                          },
+                                )
+                            } finally {
+                                if (resolved !== null)
+                                    zeroBytes(resolved.entropy)
+                            }
                         }
                         const seed = seeds.get(payload.seedAddress) ?? null
                         if (seed === null) {
@@ -108,47 +114,52 @@ export const useCloudBackupPasskeyImport = (
                             counter: payload.counter,
                         })
 
-                        // The collecting device proved these inputs derive this key,
-                        // so a disagreement here is corruption, not a wrong guess.
-                        if (
-                            encodeToBase64(derived.publicKeySpkiDer) !==
-                            payload.publicKeySpkiDer
-                        ) {
-                            logger.warn(
-                                'useCloudBackupPasskeyImport: derived key does not match',
-                                { origin: payload.origin },
-                            )
-                            summary.skipped.push({
-                                credentialId,
-                                reason: 'pubkey-mismatch',
-                            })
-                            continue
-                        }
+                        try {
+                            // The collecting device proved these inputs derive this key,
+                            // so a disagreement here is corruption, not a wrong guess.
+                            if (
+                                encodeToBase64(derived.publicKeySpkiDer) !==
+                                payload.publicKeySpkiDer
+                            ) {
+                                logger.warn(
+                                    'useCloudBackupPasskeyImport: derived key does not match',
+                                    { origin: payload.origin },
+                                )
+                                summary.skipped.push({
+                                    credentialId,
+                                    reason: 'pubkey-mismatch',
+                                })
+                                continue
+                            }
 
-                        await writeNativePasskeyEntry({
-                            credentialId,
-                            origin: payload.origin,
-                            userId: payload.userId ?? payload.identity,
-                            userName: payload.userName,
-                            displayName: payload.displayName,
-                            publicKeySpkiDer: decodeFromBase64(
-                                payload.publicKeySpkiDer,
-                            ),
-                            privateKey: derived.privateKey,
-                            // The proven string, not a guess: `identityCandidates`
-                            // cannot rebuild it from the fields this device writes.
-                            identity: payload.identity,
-                            // The derivation counter, which is what
-                            // `passkeyBackupInputs` re-derives from; the WebAuthn
-                            // signature counter starts fresh on this device.
-                            counter: payload.counter,
-                            // Without this the credential is unprovable here, so
-                            // the device that just restored it would report it as
-                            // one it cannot back up.
-                            parentKeyId:
-                                passkeyMainKeyIdFromSeedKeyId(seedKeyId),
-                        })
-                        summary.imported += 1
+                            await writeNativePasskeyEntry({
+                                credentialId,
+                                origin: payload.origin,
+                                userId: payload.userId ?? payload.identity,
+                                userName: payload.userName,
+                                displayName: payload.displayName,
+                                publicKeySpkiDer: decodeFromBase64(
+                                    payload.publicKeySpkiDer,
+                                ),
+                                privateKey: derived.privateKey,
+                                // The proven string, not a guess: `identityCandidates`
+                                // cannot rebuild it from the fields this device writes.
+                                identity: payload.identity,
+                                // The derivation counter, which is what
+                                // `passkeyBackupInputs` re-derives from; the WebAuthn
+                                // signature counter starts fresh on this device.
+                                counter: payload.counter,
+                                // Without this the credential is unprovable here, so
+                                // the device that just restored it would report it as
+                                // one it cannot back up.
+                                parentKeyId:
+                                    passkeyMainKeyIdFromSeedKeyId(seedKeyId),
+                            })
+                            summary.imported += 1
+                        } finally {
+                            // writeNativePasskeyEntry seals its own copy; this one is ours.
+                            zeroBytes(derived.privateKey)
+                        }
                     } catch (error) {
                         summary.failed.push({
                             credentialId,

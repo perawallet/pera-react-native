@@ -12,6 +12,12 @@
 
 import { z } from 'zod'
 import {
+    CHAIN_CAPABILITIES,
+    CHAIN_IDS,
+    type ChainId,
+    type ChainSetupConfig,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     ONE_DAY,
     ONE_HOUR,
     ONE_MINUTE,
@@ -21,6 +27,14 @@ import {
 } from './constants'
 
 import { generatedEnv } from './generated-env'
+
+const chainSetupSchema = z.object({
+    enabled: z.array(z.enum(CHAIN_IDS)).min(1),
+    capabilities: z.partialRecord(
+        z.enum(CHAIN_IDS),
+        z.array(z.enum(CHAIN_CAPABILITIES)),
+    ),
+}) satisfies z.ZodType<ChainSetupConfig>
 
 /**
  * First-party hosts only. Third-party sandboxes legitimately keep a staging
@@ -197,6 +211,8 @@ export const configSchema = z
         cardAutoDrawTemplateHash: z.string(),
         mainnetCardUsdcAssetId: z.string(),
         testnetCardUsdcAssetId: z.string(),
+
+        chains: chainSetupSchema,
 
         arc59: z.object({
             testnet: z.object({
@@ -435,6 +451,8 @@ const productionConfig: Omit<
     mainnetCardUsdcAssetId: '31566704',
     testnetCardUsdcAssetId: '10458941',
 
+    chains: { enabled: ['algorand'], capabilities: {} },
+
     arc59: {
         testnet: {
             appId: 643_020_148n,
@@ -561,9 +579,60 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     appBuildNumber: 'BITRISE_BUILD_NUMBER',
 }
 
+type ChainCapabilitiesEnvKey = `chain${Capitalize<ChainId>}Capabilities`
+
+/** Comma lists from `CHAINS` and `CHAIN_<ID>_CAPABILITIES`, which generate-config.sh can only emit flat. */
+type ChainEnv = { chainIds?: string } & Partial<
+    Record<ChainCapabilitiesEnvKey, string>
+>
+
+const chainCapabilitiesEnvKey = (chainId: ChainId): ChainCapabilitiesEnvKey =>
+    `chain${chainId.charAt(0).toUpperCase()}${chainId.slice(1)}Capabilities` as ChainCapabilitiesEnvKey
+
+const csv = (value: string): string[] =>
+    value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean)
+
+// Left unvalidated here: configSchema.parse rejects an unknown chain id or
+// capability, so a typo fails at import rather than shipping.
+const chainsFromEnv = (
+    env: ChainEnv,
+    fallback: Config['chains'],
+): Config['chains'] => ({
+    enabled: (env.chainIds ? csv(env.chainIds) : fallback.enabled) as ChainId[],
+    capabilities: {
+        ...fallback.capabilities,
+        ...Object.fromEntries(
+            CHAIN_IDS.flatMap(chainId => {
+                const listed = env[chainCapabilitiesEnvKey(chainId)]
+                return listed === undefined ? [] : [[chainId, csv(listed)]]
+            }),
+        ),
+    },
+})
+
+const withoutChainEnv = (
+    overrides: ConfigOverrides & ChainEnv,
+): ConfigOverrides => {
+    const rest: Record<string, unknown> = { ...overrides }
+    delete rest.chainIds
+    for (const chainId of CHAIN_IDS) {
+        delete rest[chainCapabilitiesEnvKey(chainId)]
+    }
+    return rest as ConfigOverrides
+}
+
 /** Merges the safe production defaults with the generated env configuration. */
-export function getConfig(overrides: ConfigOverrides = generatedEnv): Config {
-    const mergedConfig = { ...productionConfig, ...overrides }
+export function getConfig(
+    overrides: ConfigOverrides & ChainEnv = generatedEnv,
+): Config {
+    const mergedConfig = {
+        ...productionConfig,
+        ...withoutChainEnv(overrides),
+    }
+    mergedConfig.chains = chainsFromEnv(overrides, mergedConfig.chains)
 
     return configSchema.parse({
         ...mergedConfig,
