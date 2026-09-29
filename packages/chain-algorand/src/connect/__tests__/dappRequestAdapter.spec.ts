@@ -16,6 +16,7 @@ import {
     Arc0001Error,
     Arc0001ErrorCode,
 } from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
 import {
     CannotSignError,
@@ -119,33 +120,41 @@ describe('algorandDappRequestAdapter', () => {
     describe('resolveReportedNetwork', () => {
         it('passes a baked network through', () => {
             expect(
-                adapter.resolveReportedNetwork(Networks.mainnet, undefined),
+                adapter.resolveReportedNetwork(
+                    scopeForLegacyNetwork(Networks.mainnet),
+                    undefined,
+                ),
             ).toBe(Networks.mainnet)
             expect(
-                adapter.resolveReportedNetwork(Networks.testnet, 'ignored'),
+                adapter.resolveReportedNetwork(
+                    scopeForLegacyNetwork(Networks.testnet),
+                    'ignored',
+                ),
             ).toBe(Networks.testnet)
         })
 
         it('maps a custom network onto the baked network sharing its genesis hash', () => {
             const hash = getNetworkConfig(Networks.testnet).genesisHash
 
-            expect(adapter.resolveReportedNetwork(Networks.custom, hash)).toBe(
-                Networks.testnet,
-            )
+            expect(
+                adapter.resolveReportedNetwork(
+                    scopeForLegacyNetwork(Networks.custom),
+                    hash,
+                ),
+            ).toBe(Networks.testnet)
         })
 
         it('refuses a custom network whose genesis hash matches no baked network', () => {
+            const customScope = scopeForLegacyNetwork(Networks.custom)
+
             expect(
-                adapter.resolveReportedNetwork(
-                    Networks.custom,
-                    'not-a-real-hash',
-                ),
+                adapter.resolveReportedNetwork(customScope, 'not-a-real-hash'),
             ).toBeUndefined()
             expect(
-                adapter.resolveReportedNetwork(Networks.custom, undefined),
+                adapter.resolveReportedNetwork(customScope, undefined),
             ).toBeUndefined()
             expect(
-                adapter.resolveReportedNetwork(Networks.custom, ''),
+                adapter.resolveReportedNetwork(customScope, ''),
             ).toBeUndefined()
         })
     })

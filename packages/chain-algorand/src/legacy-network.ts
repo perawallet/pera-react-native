@@ -12,7 +12,7 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
-import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { ALGORAND_CHAIN_ID } from './chain-id'
 
 const NETWORKS: readonly string[] = Object.values(Networks)
 

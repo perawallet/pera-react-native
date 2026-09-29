@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { ExecuteSwapParams } from '@perawallet/wallet-core-swaps'
 import { swapContractTests } from '@perawallet/wallet-core-swaps/testing'
 import { algorandSwapAdapter } from '../adapter'
@@ -26,7 +27,7 @@ swapContractTests(() => algorandSwapAdapter, {
         isCancelled: () => false,
     } as unknown as ExecuteSwapParams,
     makeContext: () => ({
-        network: 'testnet',
+        scope: scopeForLegacyNetwork('testnet'),
         assetOptInMinBalance: 100_000n,
         deviceId: null,
         addSignRequest: vi.fn(),

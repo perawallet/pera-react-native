@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { dappRequestContractTests } from '@perawallet/wallet-core-connections/testing'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
@@ -22,9 +23,9 @@ dappRequestContractTests(() => algorandDappRequestAdapter, {
         })),
     },
     disclosed: {
-        network: 'custom',
+        scope: scopeForLegacyNetwork('custom'),
         customGenesisHash: getNetworkConfig('mainnet').genesisHash,
         reportedAs: 'mainnet',
     },
-    undisclosed: { network: 'custom' },
+    undisclosed: { scope: scopeForLegacyNetwork('custom') },
 })

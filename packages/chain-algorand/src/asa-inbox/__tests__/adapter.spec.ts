@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ZodError } from 'zod'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandSendFlowAdapter } from '../adapter'
 
@@ -59,9 +60,9 @@ describe('algorandSendFlowAdapter', () => {
         expect(algorandSendFlowAdapter.chainId).toBe(ALGORAND_CHAIN_ID)
     })
 
-    it("builds an inbox send with the network's wallet client", async () => {
+    it("builds an inbox send with the scope's wallet client", async () => {
         const result = await inbox.buildSendTxs({
-            network: 'testnet',
+            scope: scopeForLegacyNetwork('testnet'),
             sender: 'SENDER',
             receiver: 'RECEIVER',
             assetId: 7n,
@@ -88,7 +89,7 @@ describe('algorandSendFlowAdapter', () => {
     it('refuses to build from a summary that fails the ARC-59 schema', async () => {
         await expect(
             inbox.buildSendTxs({
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 sender: 'SENDER',
                 receiver: 'RECEIVER',
                 assetId: 7n,
@@ -100,7 +101,7 @@ describe('algorandSendFlowAdapter', () => {
         expect(mocks.buildArc59SendViaInboxTxs).not.toHaveBeenCalled()
     })
 
-    it('builds claims and rejects on the requested network', async () => {
+    it('builds claims and rejects on the requested scope', async () => {
         const claim = {
             sender: 'SENDER',
             assetId: 7n,
@@ -108,10 +109,11 @@ describe('algorandSendFlowAdapter', () => {
             inboxAddress: 'INBOX',
             senderMinFee: 1000n,
         }
+        const scope = scopeForLegacyNetwork('mainnet')
 
-        await inbox.buildClaimTxs({ network: 'mainnet', ...claim })
+        await inbox.buildClaimTxs({ scope, ...claim })
         await inbox.buildRejectTxs({
-            network: 'mainnet',
+            scope,
             ...claim,
             assetCreator: 'CREATOR',
         })
