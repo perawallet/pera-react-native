@@ -193,6 +193,12 @@ describe('services/security/store', () => {
         expect(result.current.autoLockStartedAt).toBeNull()
     })
 
+    test('isAppLockActive starts locked so a pre-listener read fails closed', async () => {
+        const { useSecurityStore } = await import('../store')
+
+        expect(useSecurityStore.getState().isAppLockActive).toBe(true)
+    })
+
     test('setAppLockActive toggles the transient overlay flag', async () => {
         const { useSecurityStore } = await import('../store')
 

@@ -15,26 +15,16 @@ import { renderHook } from '@testing-library/react'
 import type { HDWalletAccount } from '@perawallet/wallet-core-accounts'
 
 const {
-    keystoreKeys,
-    secretBytes,
-    exportedKeyData,
     getDerivedPublicKeyMock,
     withSecretMock,
+    withExportedKeyMock,
+    executeWithMnemonicMock,
     loggerWarnMock,
 } = vi.hoisted(() => ({
-    keystoreKeys: {
-        value: [] as { id: string; type: string; metadata?: unknown }[],
-    },
-    secretBytes: { value: new Uint8Array([0xde, 0xad]) },
-    exportedKeyData: {
-        value: { id: 'seed-1', privateKey: new Uint8Array([0xbe, 0xef]) } as {
-            id: string
-            privateKey?: Uint8Array
-            metadata?: Record<string, unknown>
-        },
-    },
     getDerivedPublicKeyMock: vi.fn(),
     withSecretMock: vi.fn(),
+    withExportedKeyMock: vi.fn(),
+    executeWithMnemonicMock: vi.fn(),
     loggerWarnMock: vi.fn(),
 }))
 
@@ -46,49 +36,32 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     encodeAlgorandAddress: (pub: Uint8Array) => `ADDR-${pub[0]}`,
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    bytesToHex: (bytes: Uint8Array) =>
-        Array.from(bytes)
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join(''),
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     logger: { warn: loggerWarnMock },
 }))
 
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getKeystoreStore: () => ({ state: { keys: keystoreKeys.value } }),
-}))
-
-vi.mock('@perawallet/wallet-core-kms', () => ({
-    // Mirrors the real `entropyChildIdOf`, whose metadata contract is pinned by
-    // kms's own utils tests — same approach as migratePasskeys.spec.
-    entropyChildIdOf: (
-        seedKeyId: string,
-        keys: { id: string; type: string; metadata?: unknown }[],
-    ) =>
-        keys.find(k => {
-            const meta = (k.metadata ?? {}) as {
-                parentKeyId?: unknown
-                entropyKey?: unknown
-            }
-            return (
-                k.type === 'secret-key' &&
-                meta.parentKeyId === seedKeyId &&
-                meta.entropyKey === true
-            )
-        })?.id,
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
+    ...(await importOriginal<typeof import('@perawallet/wallet-core-kms')>()),
     withSecret: withSecretMock,
     useKMS: () => ({
         seedIdOf: (childId?: string) =>
             childId === 'child-1' ? 'seed-1' : undefined,
         getDerivedPublicKey: getDerivedPublicKeyMock,
-        withExportedKey: async <T>(
-            _keyId: string,
-            handler: (keyData: unknown) => T | Promise<T>,
-        ) => handler(exportedKeyData.value),
+        withExportedKey: withExportedKeyMock,
+        executeWithMnemonic: executeWithMnemonicMock,
     }),
 }))
 
+import {
+    BACKUP_ACCESS_DOMAIN,
+    entropyToIndices,
+} from '@perawallet/wallet-core-kms'
 import { useResolveHdSeedForBackup } from '../useResolveHdSeedForBackup'
+
+const ENTROPY = Uint8Array.from({ length: 16 }, (_, i) => i)
 
 const account = {
     id: 'acc-1',
@@ -99,22 +72,10 @@ const account = {
 } as unknown as HDWalletAccount
 
 describe('useResolveHdSeedForBackup', () => {
+    let grantedDomain: string
+
     beforeEach(() => {
-        // The seed's own metadata carries no entropy — `persistHDMasterKey`
-        // keeps it in a `secret-key` child, which is what B7 missed.
-        keystoreKeys.value = [
-            { id: 'seed-1', type: 'hd-root-key', metadata: {} },
-            {
-                id: 'entropy-1',
-                type: 'secret-key',
-                metadata: { parentKeyId: 'seed-1', entropyKey: true },
-            },
-        ]
-        exportedKeyData.value = {
-            id: 'seed-1',
-            privateKey: new Uint8Array([0xbe, 0xef]),
-            metadata: {},
-        }
+        grantedDomain = BACKUP_ACCESS_DOMAIN
         getDerivedPublicKeyMock
             .mockReset()
             .mockImplementation(
@@ -125,44 +86,82 @@ describe('useResolveHdSeedForBackup', () => {
             .mockReset()
             .mockImplementation(
                 async (_id: string, handler: (b: Uint8Array) => unknown) =>
-                    handler(secretBytes.value),
+                    handler(ENTROPY),
+            )
+        withExportedKeyMock
+            .mockReset()
+            .mockImplementation(
+                async (
+                    _keyId: string,
+                    domain: string,
+                    handler: (keyData: { privateKey: Uint8Array }) => unknown,
+                ) => {
+                    if (domain !== grantedDomain) {
+                        throw new Error('KeyAccessError')
+                    }
+                    return handler({ privateKey: new Uint8Array([0xbe, 0xef]) })
+                },
+            )
+        executeWithMnemonicMock
+            .mockReset()
+            .mockImplementation(
+                async (
+                    _keyId: string,
+                    domain: string,
+                    handler: (indices: Uint16Array) => unknown,
+                ) => {
+                    if (domain !== grantedDomain) {
+                        throw new Error('KeyAccessError')
+                    }
+                    return handler(
+                        await withSecretMock('entropy-1', entropyToIndices),
+                    )
+                },
             )
         loggerWarnMock.mockReset()
     })
 
-    it('resolves the seed root plus the entropy held in its secret-key child', async () => {
+    it('resolves the seed root plus the entropy the mnemonic session hands over', async () => {
         const { result } = renderHook(() => useResolveHdSeedForBackup())
 
         const resolved = await result.current(account)
 
-        expect(withSecretMock).toHaveBeenCalledWith(
-            'entropy-1',
+        expect(executeWithMnemonicMock).toHaveBeenCalledWith(
+            'child-1',
+            BACKUP_ACCESS_DOMAIN,
             expect.any(Function),
         )
         expect(resolved).toEqual({
             seedFirstDerivedAddress: 'ADDR-1',
             publicKeyHex: '02',
             seedHex: 'beef',
-            entropyHex: 'dead',
+            entropyHex: '000102030405060708090a0b0c0d0e0f',
         })
         // The dedup key is always acc0/idx0/Peikert, never the child's own path.
         expect(getDerivedPublicKeyMock).toHaveBeenCalledWith('seed-1', 0, 0, 9)
         expect(getDerivedPublicKeyMock).toHaveBeenCalledWith('seed-1', 3, 7, 9)
     })
 
-    it('skips the account and warns when the seed has no entropy child', async () => {
-        keystoreKeys.value = [
-            { id: 'seed-1', type: 'hd-root-key', metadata: {} },
-        ]
+    it('reads no entropy when the seed ACL does not grant the backup domain', async () => {
+        grantedDomain = 'pera.accounts'
         const { result } = renderHook(() => useResolveHdSeedForBackup())
 
         const resolved = await result.current(account)
 
         expect(resolved).toBeNull()
         expect(withSecretMock).not.toHaveBeenCalled()
-        expect(loggerWarnMock).toHaveBeenCalledWith(
-            'useResolveHdSeedForBackup: seed has no entropy child',
-            { seedKeyId: 'seed-1' },
+    })
+
+    it('skips the account without exporting the seed when it has no entropy', async () => {
+        executeWithMnemonicMock.mockRejectedValue(
+            new Error('HD seed is missing its entropy secret'),
         )
+        const { result } = renderHook(() => useResolveHdSeedForBackup())
+
+        const resolved = await result.current(account)
+
+        expect(resolved).toBeNull()
+        expect(withExportedKeyMock).not.toHaveBeenCalled()
+        expect(loggerWarnMock).toHaveBeenCalled()
     })
 })

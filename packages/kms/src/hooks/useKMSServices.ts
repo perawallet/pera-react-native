@@ -15,9 +15,13 @@ import type {
     KeyData,
     KeyId,
 } from '@algorandfoundation/keystore-core'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    getProvider,
+} from '@perawallet/wallet-extension-provider'
 import { zeroBytes } from '../crypto/secure-memory'
 import { checkAccess } from '../core/access'
+import { KeyNotFoundError } from '../errors'
 import { useCallback } from 'react'
 import {
     commitSecret,
@@ -32,6 +36,7 @@ export { checkAccess }
 
 type WithExportedKey = <T>(
     keyId: KeyId,
+    domain: string,
     handler: (keyData: KeyData) => T | Promise<T>,
 ) => Promise<T>
 
@@ -63,7 +68,13 @@ export const useKMSService = (): UseKMSServiceResult => {
         [keyStore],
     )
 
-    const withExportedKey: WithExportedKey = async (keyId, handler) => {
+    const withExportedKey: WithExportedKey = async (keyId, domain, handler) => {
+        // The gate lives here rather than at the call sites: this is the raw
+        // private-key read, and a caller that forgets `checkAccess` skips it.
+        const key = getKeystoreStore().state.keys.find(k => k.id === keyId)
+        if (!key) throw new KeyNotFoundError(keyId)
+        checkAccess(key, domain)
+
         const keyData = await keyStore.export(keyId)
         try {
             return await handler(keyData)

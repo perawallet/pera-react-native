@@ -18,6 +18,8 @@ import {
     useProvenPasskeysStore,
 } from '@perawallet/wallet-core-backup'
 import {
+    BACKUP_ACCESS_DOMAIN,
+    canAccess,
     entropyChildIdOf,
     useKMS,
     withSecret,
@@ -39,6 +41,10 @@ const readSeedEntropy = async (
     seedKeyId: string,
 ): Promise<Uint8Array | null> => {
     const keys = getKeystoreStore().state.keys
+    const seedKey = keys.find(key => key.id === seedKeyId)
+    // Gated like the HD seed read, so a seed that denies the backup domain
+    // keeps its credentials out of the backup instead of being read around.
+    if (!seedKey || !canAccess(seedKey, BACKUP_ACCESS_DOMAIN)) return null
     const entropyId = entropyChildIdOf(seedKeyId, keys)
     if (!entropyId) return null
     // `withSecret` zeroes its buffer once the handler returns, so the handler

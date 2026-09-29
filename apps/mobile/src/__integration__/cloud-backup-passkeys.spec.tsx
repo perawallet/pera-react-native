@@ -145,6 +145,7 @@ const startRealSyncManager = () => {
         resolveMnemonic: mnemonicHook.current,
         listPasskeys: listHook.current,
         importPasskeys: passkeyImportHook.current.importPasskeys,
+        isLocked: () => false,
         subscribePasskeyChanges: () => () => {},
     })
 }

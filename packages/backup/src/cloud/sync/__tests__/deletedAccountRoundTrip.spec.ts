@@ -89,6 +89,7 @@ const pushDeps = () => ({
         }),
     ),
     deleteItem: vi.fn(async () => ({ seq: 6 })),
+    isAborted: () => false,
 })
 
 const pullDeps = () => ({

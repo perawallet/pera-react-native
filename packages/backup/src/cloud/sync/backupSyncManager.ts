@@ -61,6 +61,7 @@ import {
     type BackupSocketFactory,
     type BackupWebSocketEvent,
 } from './webSocketClient'
+import { BackupSyncAbortedError } from './types'
 import type {
     BackupActionOutcome,
     BackupSyncSources,
@@ -84,6 +85,8 @@ export type BackupSyncManagerDeps = {
     resolveMnemonic: SerializeMnemonicResolver
     /** Hook-bound HD seed/derived resolver, injected from RootComponent. */
     resolveHd: SerializeHdResolver
+    /** App-lock state from the app layer; nothing syncs or pulls while it holds. */
+    isLocked: () => boolean
     listPasskeys: SyncEngineDeps['listPasskeys']
     importPasskeys: SyncEngineDeps['importPasskeys']
     /** Fires on any keystore write that could touch a passkey; the manager
@@ -110,6 +113,7 @@ export class BackupSyncManager {
     private unwatchContacts: Nullable<() => void> = null
     private unwatchPasskeys: Nullable<() => void> = null
     private localChangeTimer: Nullable<ReturnType<typeof setTimeout>> = null
+    private stopEpoch = 0
     private accountsFingerprint = ''
     private contactsFingerprint = ''
     private readonly state: BackupSyncStatePort
@@ -143,6 +147,7 @@ export class BackupSyncManager {
         ctx: { network: Network; backupId: string; deviceId: string },
         run: (deps: SyncEngineDeps) => Promise<T>,
     ): Promise<Nullable<T>> {
+        const epoch = this.stopEpoch
         // Nested, not sequenced: each scope zeroes its key material on exit,
         // and the hasher's copy of K_item outlives the keystore's buffer.
         return withBackupEncryptionKey(encryptionKey =>
@@ -154,6 +159,8 @@ export class BackupSyncManager {
                         deviceId: ctx.deviceId,
                         encryptionKey,
                         hashAddress,
+                        isAborted: () =>
+                            this.stopEpoch !== epoch || this.deps.isLocked(),
                         listAccounts: () => this.deps.sources.listAccounts(),
                         serializeAccount: account =>
                             serializeAccountForBackup(account, {
@@ -418,13 +425,21 @@ export class BackupSyncManager {
         this.unwatchContacts?.()
         this.unwatchPasskeys?.()
         this.watchLocalStores()
+        const epoch = this.stopEpoch
         await this.syncNow()
+        // Stale once a stop() lands during that await, even if a newer start()
+        // followed: installing here too would leak a socket and an interval.
+        if (this.stopEpoch !== epoch) return
         this.connectSocket()
-        this.periodic = setInterval(() => void this.syncNow(), PERIODIC_SYNC_MS)
+        this.periodic = setInterval(() => {
+            if (!this.running) return
+            void this.syncNow()
+        }, PERIODIC_SYNC_MS)
     }
 
     stop(): void {
         this.running = false
+        this.stopEpoch += 1
         if (this.periodic != null) {
             clearInterval(this.periodic)
             this.periodic = null
@@ -459,7 +474,7 @@ export class BackupSyncManager {
     }
 
     async syncNow(): Promise<void> {
-        if (this.syncInProgress) return
+        if (this.syncInProgress || this.deps.isLocked()) return
         const ctx = this.context()
         if (!ctx) {
             logger.warn('BackupSyncManager: sync skipped, no backup context')
@@ -480,6 +495,8 @@ export class BackupSyncManager {
                 )
             }
         } catch (error) {
+            // A stop mid-run is deliberate, not a failed sync.
+            if (error instanceof BackupSyncAbortedError) return
             logger.warn('BackupSyncManager: sync failed', {
                 error: error instanceof Error ? error.message : String(error),
             })
@@ -495,7 +512,7 @@ export class BackupSyncManager {
     }
 
     private async runPull(): Promise<void> {
-        if (this.syncInProgress) return
+        if (this.syncInProgress || this.deps.isLocked()) return
         const ctx = this.context()
         if (!ctx) return
         this.setSyncing(true)
@@ -507,6 +524,7 @@ export class BackupSyncManager {
             )
             if (next) this.state.setSyncState(next)
         } catch (error) {
+            if (error instanceof BackupSyncAbortedError) return
             logger.warn('BackupSyncManager: pull failed', {
                 error: error instanceof Error ? error.message : String(error),
             })

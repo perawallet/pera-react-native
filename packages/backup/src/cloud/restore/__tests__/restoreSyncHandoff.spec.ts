@@ -114,6 +114,7 @@ const versionCheckingBackend = () => {
             encryptionKey: new Uint8Array(32).fill(7),
             batchUpsertItems,
             deleteItem: vi.fn(),
+            isAborted: () => false,
         } as never,
     }
 }

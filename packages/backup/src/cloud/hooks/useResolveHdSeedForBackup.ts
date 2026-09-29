@@ -15,37 +15,36 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import type { HDWalletAccount } from '@perawallet/wallet-core-accounts'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
-    entropyChildIdOf,
+    BACKUP_ACCESS_DOMAIN,
+    indicesToEntropy,
     useKMS,
-    withSecret,
+    zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import type { SerializeHdResolver } from '../sync/types'
 
 type KMS = ReturnType<typeof useKMS>
 
-/**
- * Entropy is a `secret-key` child located by metadata, never the seed's own —
- * `persistHDMasterKey` keeps it out of the seed snapshot and out of
- * `keyStore.export()`.
- */
-const readEntropyHex = async (seedKeyId: string): Promise<string | null> => {
-    const entropyId = entropyChildIdOf(seedKeyId, getKeystoreStore().state.keys)
-    if (!entropyId) {
-        logger.warn('useResolveHdSeedForBackup: seed has no entropy child', {
-            seedKeyId,
-        })
-        return null
-    }
-    return withSecret(entropyId, entropy => bytesToHex(entropy))
-}
+/** Through the mnemonic session rather than the raw entropy secret, so the
+ *  seed's ACL gates the recovery phrase the same way it gates the root. */
+const readEntropyHex = async (
+    executeWithMnemonic: KMS['executeWithMnemonic'],
+    keyPairId: string,
+): Promise<string> =>
+    executeWithMnemonic(keyPairId, BACKUP_ACCESS_DOMAIN, indices => {
+        const entropy = indicesToEntropy(indices)
+        try {
+            return bytesToHex(entropy)
+        } finally {
+            zeroBytes(entropy)
+        }
+    })
 
 const readSeedHex = async (
     withExportedKey: KMS['withExportedKey'],
     seedKeyId: string,
 ): Promise<string | null> =>
-    withExportedKey(seedKeyId, keyData =>
+    withExportedKey(seedKeyId, BACKUP_ACCESS_DOMAIN, keyData =>
         keyData.privateKey ? bytesToHex(keyData.privateKey) : '',
     )
 
@@ -71,7 +70,12 @@ const derivePublicKeys = async (
 /** Resolves null when the seed is unavailable, which skips that account.
  *  `seedHex`/`entropyHex` are hex; the first-derived address is acc0/idx0/Peikert. */
 export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
-    const { seedIdOf, getDerivedPublicKey, withExportedKey } = useKMS()
+    const {
+        seedIdOf,
+        getDerivedPublicKey,
+        withExportedKey,
+        executeWithMnemonic,
+    } = useKMS()
 
     return useCallback<SerializeHdResolver>(
         async (account: HDWalletAccount) => {
@@ -83,8 +87,10 @@ export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
                     seedKeyId,
                     account.hdWalletDetails,
                 )
-                const entropyHex = await readEntropyHex(seedKeyId)
-                if (!entropyHex) return null
+                const entropyHex = await readEntropyHex(
+                    executeWithMnemonic,
+                    account.keyPairId,
+                )
 
                 const seedHex = await readSeedHex(withExportedKey, seedKeyId)
                 if (!seedHex) return null
@@ -105,6 +111,6 @@ export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
                 return null
             }
         },
-        [seedIdOf, getDerivedPublicKey, withExportedKey],
+        [seedIdOf, getDerivedPublicKey, withExportedKey, executeWithMnemonic],
     )
 }
