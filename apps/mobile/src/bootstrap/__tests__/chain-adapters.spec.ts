@@ -146,6 +146,20 @@ describe('registerChainAdapters', () => {
         expect(chains.has('algorand')).toBe(true)
     })
 
+    it('applies the remote and developer override layers', () => {
+        mocks.readCapabilityOverrides.mockReturnValue({
+            remote: { algorand: { swap: false } },
+            developer: { algorand: { card: false } },
+        })
+
+        registerChainAdapters()
+
+        const capabilities = mocks.provider.chains.capabilities('algorand')
+        expect(capabilities.swap).toBe(false)
+        expect(capabilities.card).toBe(false)
+        expect(capabilities.send).toBe(true)
+    })
+
     describe('the chain context', () => {
         it('reads the selected network on every getScope call', () => {
             registerChainAdapters()
