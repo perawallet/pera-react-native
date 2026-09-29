@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { fakeSwapAdapter } from './fakeSwapAdapter'
 import type { ExecuteSwapParams } from '../execution'
 import { isQuoteFresh } from '../utils/quoteFreshness'
@@ -34,7 +35,7 @@ swapContractTests(() => adapter, {
         quote: { quoteIdStr: 'quote-1', fetchedAt: Date.now() },
     } as unknown as ExecuteSwapParams,
     makeContext: () => ({
-        network: 'mainnet',
+        scope: scopeForLegacyNetwork('mainnet'),
         assetOptInMinBalance: 0n,
         deviceId: null,
         addSignRequest: vi.fn(),

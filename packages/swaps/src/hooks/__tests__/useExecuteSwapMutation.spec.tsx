@@ -131,7 +131,7 @@ describe('useExecuteSwapMutation', () => {
                 signer: { address: 'signer-of-SELECTED' },
             },
             {
-                network: 'testnet',
+                scope: { chainId: 'algorand', networkId: 'testnet' },
                 assetOptInMinBalance: 100_000n,
                 deviceId: 'device-testnet',
                 addSignRequest: mockAddSignRequest,

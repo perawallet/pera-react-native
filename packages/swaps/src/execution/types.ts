@@ -11,9 +11,10 @@
  */
 
 import type { Decimal } from 'decimal.js'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     PrepareTransactionsRequest,
     SwapStatusUpdateRequest,
@@ -93,7 +94,7 @@ export type UpdateSwapStatusFn = (params: {
 
 /** The chain-neutral collaborators an execution needs from the app. */
 export type SwapExecutionContext = {
-    network: Network
+    scope: ChainScope
     /**
      * Extra balance an account must hold to receive an asset it does not hold
      * yet, in base units of the native asset.

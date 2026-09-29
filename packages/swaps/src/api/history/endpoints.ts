@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import {
     swapHistoryResponseSchema,
@@ -44,7 +45,7 @@ export const fetchSwapHistory = async (
     })
 
     const parsed = swapHistoryResponseSchema.parse(response.data)
-    const { nativeAssetId } = swapAdapterFor(network)
+    const { nativeAssetId } = swapAdapterFor(scopeForLegacyNetwork(network))
     return {
         results: parsed.results.map(item =>
             transformSwapHistoryItem(item, nativeAssetId),
@@ -71,7 +72,7 @@ export const fetchDistinctPairsHistory = async (
     })
 
     const parsed = swapDistinctPairsHistoryResponseSchema.parse(response.data)
-    const { nativeAssetId } = swapAdapterFor(network)
+    const { nativeAssetId } = swapAdapterFor(scopeForLegacyNetwork(network))
     return parsed.results.map(pair =>
         transformSwapDistinctPairItem(pair, nativeAssetId),
     )

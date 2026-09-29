@@ -12,6 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     queryClient,
     type Network,
@@ -125,7 +126,7 @@ export const createQuotes = async (
         }
     }
 
-    const { nativeAssetId } = swapAdapterFor(network)
+    const { nativeAssetId } = swapAdapterFor(scopeForLegacyNetwork(network))
     return parsed.results.map(quote => ({
         id: quote.id,
         quoteIdStr: quote.quote_id_str,

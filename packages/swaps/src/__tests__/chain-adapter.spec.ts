@@ -11,7 +11,10 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    ChainAdapterNotRegisteredError,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     submitCosignedSwapGroup,
     swapAdapterFor,
@@ -29,14 +32,14 @@ describe('swapAdapterFor', () => {
         const adapter = fakeSwapAdapter()
         swapChainAdapters.register(adapter)
 
-        expect(swapAdapterFor('testnet')).toBe(adapter)
+        expect(swapAdapterFor(scopeForLegacyNetwork('testnet'))).toBe(adapter)
     })
 
     it('names the missing feature when no adapter is registered', () => {
-        expect(() => swapAdapterFor('mainnet')).toThrow(
+        expect(() => swapAdapterFor(scopeForLegacyNetwork('mainnet'))).toThrow(
             ChainAdapterNotRegisteredError,
         )
-        expect(() => swapAdapterFor('mainnet')).toThrow(
+        expect(() => swapAdapterFor(scopeForLegacyNetwork('mainnet'))).toThrow(
             'No swap adapter is registered for chain "algorand"',
         )
     })
@@ -51,11 +54,12 @@ describe('submitCosignedSwapGroup', () => {
         const submitSignedGroup = vi.fn().mockResolvedValue(['TX1'])
         swapChainAdapters.register(fakeSwapAdapter({ submitSignedGroup }))
         const signed = [new Uint8Array([1])]
+        const scope = scopeForLegacyNetwork('mainnet')
 
-        const txIds = await submitCosignedSwapGroup('mainnet', signed)
+        const txIds = await submitCosignedSwapGroup(scope, signed)
 
         expect(txIds).toEqual(['TX1'])
-        expect(submitSignedGroup).toHaveBeenCalledWith('mainnet', signed)
+        expect(submitSignedGroup).toHaveBeenCalledWith(scope, signed)
     })
 
     it('refuses when the chain has no co-sign support', async () => {
@@ -64,7 +68,9 @@ describe('submitCosignedSwapGroup', () => {
         )
 
         await expect(
-            submitCosignedSwapGroup('mainnet', [new Uint8Array([1])]),
+            submitCosignedSwapGroup(scopeForLegacyNetwork('mainnet'), [
+                new Uint8Array([1]),
+            ]),
         ).rejects.toBeInstanceOf(SwapCosignUnsupportedError)
     })
 })
