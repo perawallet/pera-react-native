@@ -484,7 +484,7 @@ describe('useLedgerSelectAccountsScreen', () => {
             )
         })
 
-        const aaaCalls = mockPrefetch.mock.calls.filter(c => c[2] === 'AAA111')
+        const aaaCalls = mockPrefetch.mock.calls.filter(c => c[1] === 'AAA111')
         expect(aaaCalls).toHaveLength(1)
     })
 
