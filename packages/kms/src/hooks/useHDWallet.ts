@@ -11,10 +11,7 @@
  */
 
 import type { Key, KeyData, KeyId } from '@algorandfoundation/keystore-core'
-import {
-    BIP32DerivationType,
-    KeyContext,
-} from '@algorandfoundation/xhd-wallet-api'
+import type { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { buildSeedMetadata, entropyChildMetadata } from '../utils'
@@ -25,7 +22,7 @@ import { commitSecret } from '../storage/secrets'
 import { handOffSecret, zeroBytes } from '../crypto/secure-memory'
 import { SeedScheme, SIGNING_ACCESS_DOMAIN } from '../constants'
 import { createKmsCore } from '../core/createKmsCore'
-import type { KmsDerivationRequest } from '../core/types'
+import { algorandHdDerivationRequest } from '../core/hdDerivation'
 
 export type HDWalletKeyResult = {
     seedKey: Key
@@ -140,7 +137,7 @@ export const useHDWallet = () => {
     ): Promise<KeyId> =>
         core.deriveChild(
             seedKeyId,
-            algorandDerivationRequest(
+            algorandHdDerivationRequest(
                 seedKeyId,
                 account,
                 keyIndex,
@@ -171,7 +168,7 @@ export const useHDWallet = () => {
     ): Promise<Uint8Array> => {
         const { publicKey } = await core.deriveFromSeed(
             seedKeyId,
-            algorandDerivationRequest(
+            algorandHdDerivationRequest(
                 seedKeyId,
                 account,
                 keyIndex,
@@ -189,53 +186,3 @@ export const useHDWallet = () => {
         getDerivedPublicKey,
     }
 }
-
-// BIP44 Algorand address path (coin type 283). The rn-keystore's `parsePath`
-// adds the hardened bit (0x80000000) to apostrophe-suffixed components, so
-// the raw numbers are passed through here.
-const buildAddressPath = (account: number, keyIndex: number): string =>
-    `m/44'/283'/${account}'/0/${keyIndex}`
-
-const algorandDerivationRequest = (
-    seedKeyId: KeyId,
-    account: number,
-    keyIndex: number,
-    derivationType: BIP32DerivationType,
-): KmsDerivationRequest => {
-    const path = buildAddressPath(account, keyIndex)
-    return {
-        scheme: 'ed25519',
-        path,
-        id: hdDerivedKeyId(seedKeyId, account, keyIndex, derivationType),
-        params: {
-            mode:
-                derivationType === BIP32DerivationType.Khovratovich
-                    ? 'standard'
-                    : 'peikert',
-            // Stamp the full metadata `signXHDEd25519` reads. rn-keystore sets
-            // `keyIndex` (NOT `index`) and never sets `derivation`, so without
-            // this the signing path silently builds a BIP44 path with
-            // undefined segments and the signature fails dApp verification.
-            metadata: {
-                path,
-                context: KeyContext.Address,
-                account,
-                index: keyIndex,
-                derivation: derivationType,
-            },
-        },
-    }
-}
-
-/**
- * Deterministic keystore id for an `hd-derived-ed25519` child of a bip39
- * seed at the given XHD coords. Exported so consumers can compute the id
- * up-front (e.g. account-discovery wants to stamp `account.keyPairId`
- * before the child is actually committed).
- */
-export const hdDerivedKeyId = (
-    seedKeyId: KeyId,
-    account: number,
-    keyIndex: number,
-    derivationType: BIP32DerivationType,
-): string => `${seedKeyId}-acc${account}-idx${keyIndex}-dt${derivationType}`

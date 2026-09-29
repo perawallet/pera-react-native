@@ -13,7 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { isValidAddress, seedFromMnemonic } from 'algosdk'
+import { seedFromMnemonic } from 'algosdk'
 
 const mockKeyStoreImport = vi.fn()
 const mockKeyStoreRemove = vi.fn()
@@ -51,31 +51,19 @@ import {
 import { SeedScheme } from '../../constants'
 import { mnemonicWordsToIndices } from '../../crypto/mnemonic-indices'
 import { getPQProvider } from '../../crypto/pq'
-import {
-    deriveQuantumAddress,
-    derivePQKeygenSeed,
-} from '@perawallet/wallet-core-blockchain'
+import { fakeQuantumChain } from '../../__tests__/fakeQuantumChain'
 
 // THROWAWAY TEST VECTOR — same as algo25-integration.spec.ts; NEVER fund it.
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 const TEST_MNEMONIC_INDICES = mnemonicWordsToIndices(TEST_MNEMONIC.split(' '))!
 
-// The canonical (algokey-compatible) address for TEST_MNEMONIC. Derived
-// independently of this codebase: `SHA512_256("PQK" || "f1" || entropy)` fed to
-// Falcon keygen, per go-algorand `cmd/algokey/pq_scheme.go`. The previous value
-// here — TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU — is what
-// raw-entropy derivation produced, and remains the address of accounts minted
-// before.
-const CANONICAL_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC =
-    'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
+const TEST_ENTROPY = seedFromMnemonic(TEST_MNEMONIC)
 
-/** The pre- address for TEST_MNEMONIC: raw entropy fed straight to
- * Falcon keygen, with no SHA512_256("PQK" || scheme || entropy) hop. This is
- * the address of every legacy quantum account minted before the fix, so the
- * `legacy` derivation must keep producing it forever. */
-const LEGACY_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC =
-    'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
+const expectedAddressFor = (keygenSeed: Uint8Array): string =>
+    fakeQuantumChain.addressFromPublicKey(
+        getPQProvider().generateKeypairFromSeed(keygenSeed).publicKey,
+    )
 
 /** Public keys the keystore double minted, keyed by the id it minted them under. */
 const generatedKeys = new Map<string, Uint8Array>()
@@ -116,6 +104,7 @@ describe('useQuantum', () => {
             await act(async () => {
                 keyResult = await result.current.createQuantumKey({
                     id: 'my-key',
+                    chain: fakeQuantumChain,
                     mnemonicIndices: TEST_MNEMONIC_INDICES,
                 })
             })
@@ -128,8 +117,11 @@ describe('useQuantum', () => {
             expect(keyResult!.signKeyId).toBe(
                 quantumSignKeyId('my-key', PQ_DERIVATION_CANONICAL),
             )
-            expect(keyResult!.address).toHaveLength(58)
-            expect(isValidAddress(keyResult!.address)).toBe(true)
+            expect(keyResult!.address).toBe(
+                expectedAddressFor(
+                    fakeQuantumChain.deriveKeygenSeed(TEST_ENTROPY),
+                ),
+            )
         })
 
         test('persists the seed with scheme=quantum metadata and zeroes the buffer after import', async () => {
@@ -150,6 +142,7 @@ describe('useQuantum', () => {
             await act(async () => {
                 await result.current.createQuantumKey({
                     id: 'my-key',
+                    chain: fakeQuantumChain,
                     mnemonicIndices: TEST_MNEMONIC_INDICES,
                 })
             })
@@ -183,6 +176,7 @@ describe('useQuantum', () => {
             await act(async () => {
                 created = await result.current.createQuantumKey({
                     id: 'my-key',
+                    chain: fakeQuantumChain,
                     mnemonicIndices: TEST_MNEMONIC_INDICES,
                 })
             })
@@ -201,17 +195,21 @@ describe('useQuantum', () => {
                 quantumSignKeyId('my-key', PQ_DERIVATION_CANONICAL),
             )!
             expect(publicKey).toHaveLength(getPQProvider().publicKeyLength)
-            expect(created!.address).toBe(deriveQuantumAddress(publicKey))
+            expect(created!.address).toBe(
+                fakeQuantumChain.addressFromPublicKey(publicKey),
+            )
         })
 
         test('generates a random 32-byte seed and a uuid id when no params given', async () => {
             const { result } = renderHook(() => useQuantum())
             let keyResult: Optional<QuantumKeyResult>
             await act(async () => {
-                keyResult = await result.current.createQuantumKey()
+                keyResult = await result.current.createQuantumKey({
+                    chain: fakeQuantumChain,
+                })
             })
             expect(keyResult!.seedKey.id).toBe('mock-uuid-v7')
-            expect(isValidAddress(keyResult!.address)).toBe(true)
+            expect(keyResult!.address).toMatch(/^fake-/)
         })
 
         test('same mnemonic produces the same public key and address across fresh hook instances', async () => {
@@ -221,6 +219,7 @@ describe('useQuantum', () => {
                 await act(async () => {
                     const created = await result.current.createQuantumKey({
                         id: `key-${i}`,
+                        chain: fakeQuantumChain,
                         mnemonicIndices: TEST_MNEMONIC_INDICES,
                     })
                     addresses.push(created.address)
@@ -252,6 +251,7 @@ describe('useQuantum', () => {
                 act(async () => {
                     await result.current.createQuantumKey({
                         id: 'my-key',
+                        chain: fakeQuantumChain,
                         mnemonicIndices: TEST_MNEMONIC_INDICES,
                     })
                 }),
@@ -260,21 +260,22 @@ describe('useQuantum', () => {
             expect(mockKeyStoreRemove).toHaveBeenCalledWith('my-key')
         })
 
-        test('derives the real Falcon address matching the adapter for a fixed mnemonic', async () => {
+        test("feeds Falcon the chain's canonical keygen seed and encodes the minted key through the chain", async () => {
             const { result } = renderHook(() => useQuantum())
 
             let created: Optional<QuantumKeyResult>
             await act(async () => {
                 created = await result.current.createQuantumKey({
+                    chain: fakeQuantumChain,
                     mnemonicIndices: TEST_MNEMONIC_INDICES,
                 })
             })
 
-            const seed = seedFromMnemonic(TEST_MNEMONIC)
-            const { publicKey } = getPQProvider().generateKeypairFromSeed(
-                derivePQKeygenSeed(seed),
+            expect(created!.address).toBe(
+                expectedAddressFor(
+                    fakeQuantumChain.deriveKeygenSeed(TEST_ENTROPY),
+                ),
             )
-            expect(created!.address).toBe(deriveQuantumAddress(publicKey))
         })
 
         test('mints the signing child through the keystore Falcon generator', async () => {
@@ -284,6 +285,7 @@ describe('useQuantum', () => {
             await act(async () => {
                 created = await result.current.createQuantumKey({
                     mnemonicIndices: TEST_MNEMONIC_INDICES,
+                    chain: fakeQuantumChain,
                 })
             })
 
@@ -303,24 +305,6 @@ describe('useQuantum', () => {
             )
         })
 
-        // The address is derived from the Falcon public key, so a regression in
-        // derivation would silently move every quantum account minted from
-        // this mnemonic to a different address.
-        test('derives the canonical (algokey-compatible) address for a fixed mnemonic', async () => {
-            const { result } = renderHook(() => useQuantum())
-
-            let created: Optional<QuantumKeyResult>
-            await act(async () => {
-                created = await result.current.createQuantumKey({
-                    mnemonicIndices: TEST_MNEMONIC_INDICES,
-                })
-            })
-
-            expect(created!.address).toBe(
-                CANONICAL_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC,
-            )
-        })
-
         // `id` is not a declared field on GenerateOptions — the engine resolves
         // it as `params?.id ?? crypto.randomUUID()`. Nothing type-checks that,
         // so pin it: a silently random id would break account.keyPairId and
@@ -332,6 +316,7 @@ describe('useQuantum', () => {
             await act(async () => {
                 created = await result.current.createQuantumKey({
                     mnemonicIndices: TEST_MNEMONIC_INDICES,
+                    chain: fakeQuantumChain,
                 })
             })
 
@@ -347,29 +332,31 @@ describe('useQuantum', () => {
             const { result } = renderHook(() => useQuantum())
             const created = await result.current.createQuantumKey({
                 id: 'my-key',
+                chain: fakeQuantumChain,
                 mnemonicIndices: TEST_MNEMONIC_INDICES,
                 derivation: PQ_DERIVATION_LEGACY,
             })
 
             // Legacy IS the raw entropy — the seed handed to Falcon must be the
-            // entropy itself, and the address must be the pre- one.
+            // entropy itself, never the chain's canonical hash of it.
             expect(created.signKeyId).toBe(
                 quantumSignKeyId('my-key', PQ_DERIVATION_LEGACY),
             )
-            expect(created.address).toBe(
-                LEGACY_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC,
-            )
+            expect(created.address).toBe(expectedAddressFor(TEST_ENTROPY))
         })
 
         test('defaults to canonical when derivation is omitted', async () => {
             const { result } = renderHook(() => useQuantum())
             const created = await result.current.createQuantumKey({
                 id: 'my-key',
+                chain: fakeQuantumChain,
                 mnemonicIndices: TEST_MNEMONIC_INDICES,
             })
 
             expect(created.address).toBe(
-                CANONICAL_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC,
+                expectedAddressFor(
+                    fakeQuantumChain.deriveKeygenSeed(TEST_ENTROPY),
+                ),
             )
         })
 
@@ -377,12 +364,14 @@ describe('useQuantum', () => {
             const { result } = renderHook(() => useQuantum())
             await result.current.createQuantumKey({
                 id: 'seed-1',
+                chain: fakeQuantumChain,
                 mnemonicIndices: TEST_MNEMONIC_INDICES,
             })
             mockKeyStoreImport.mockClear()
 
             const second = await result.current.createQuantumKey({
                 reuseSeedId: 'seed-1',
+                chain: fakeQuantumChain,
                 mnemonicIndices: TEST_MNEMONIC_INDICES,
                 derivation: PQ_DERIVATION_LEGACY,
             })
@@ -399,6 +388,7 @@ describe('useQuantum', () => {
             await expect(
                 result.current.createQuantumKey({
                     id: 'a',
+                    chain: fakeQuantumChain,
                     reuseSeedId: 'b',
                     mnemonicIndices: TEST_MNEMONIC_INDICES,
                 }),
@@ -412,6 +402,7 @@ describe('useQuantum', () => {
             await expect(
                 result.current.createQuantumKey({
                     reuseSeedId: 'seed-1',
+                    chain: fakeQuantumChain,
                     mnemonicIndices: TEST_MNEMONIC_INDICES,
                     derivation: PQ_DERIVATION_LEGACY,
                 }),

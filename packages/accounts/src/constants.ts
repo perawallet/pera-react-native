@@ -14,10 +14,6 @@ import type { ImportAccountType } from './models'
 
 export const KEY_DOMAIN = 'pera.accounts'
 
-// Max holdings per indexer page (account-syncer fallback path and the
-// opt-in-rounds read share it).
-export const HOLDINGS_PAGE_LIMIT = 1000
-
 // gcTime for query entries that hold a hydrated per-holding row array, which
 // scales with the account (tens of MB at 10k assets). The 1-hour default
 // would retain every unobserved variant (filters, old network) and ratchet

@@ -30,10 +30,7 @@ import {
 } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import {
-    useAlgorandClient,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
@@ -93,7 +90,6 @@ export const useLedgerSelectAccountsScreen =
         const { errorToast } = useToast()
 
         const queryClient = useQueryClient()
-        const algokit = useAlgorandClient()
         const { network } = useNetwork()
         const { request } = useBottomSheet()
         const { exitAccountFlow } = useExitAccountFlow()
@@ -150,14 +146,9 @@ export const useLedgerSelectAccountsScreen =
                 const key = `${network}:${address}`
                 if (prefetchedRef.current.has(key)) continue
                 prefetchedRef.current.add(key)
-                void prefetchLedgerAccountPreview(
-                    queryClient,
-                    algokit,
-                    address,
-                    network,
-                )
+                void prefetchLedgerAccountPreview(queryClient, address, network)
             }
-        }, [selectableAccounts, queryClient, algokit, network])
+        }, [selectableAccounts, queryClient, network])
 
         const selectableByAddress = useMemo(() => {
             const m = new Map<string, LedgerSelectableAccount>()

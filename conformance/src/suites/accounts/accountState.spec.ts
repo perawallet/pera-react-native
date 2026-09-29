@@ -13,7 +13,7 @@
 import { Decimal } from 'decimal.js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { fetchAccountAssetOptInRounds } from '@perawallet/wallet-core-accounts/hooks/endpoints'
+import { fetchAccountAssetOptInRounds } from '@perawallet/wallet-core-chain-algorand/accounts/endpoints'
 import {
     FALLBACK_ASSET_MBR,
     FALLBACK_BASE_ACCOUNT_MBR,

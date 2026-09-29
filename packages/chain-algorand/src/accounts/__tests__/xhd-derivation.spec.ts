@@ -13,13 +13,10 @@
 // @vitest-environment node
 import { describe, test, expect } from 'vitest'
 import { mnemonicToSeed } from '@scure/bip39'
-import {
-    BIP32DerivationType,
-    fromSeed,
-    KeyContext,
-    XHDWalletAPI,
-} from '@algorandfoundation/xhd-wallet-api'
-import { encodeAddress } from 'algosdk'
+import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
+import { DerivationTypes } from '@perawallet/wallet-core-accounts'
+import { algorandAddressCodec } from '../address-codec'
+import { createXHDGetPublicKey } from '../discovery'
 
 const USER_MNEMONIC =
     'achieve plunge scare have music possible will garden expect kangaroo impulse deny obvious inhale expand process betray voice crash insane electric mean test rude'
@@ -29,34 +26,40 @@ const EXPECTED_FUNDED_ADDRESS =
 const EXPECTED_MASTER_ADDRESS =
     'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM'
 
-describe('HD wallet derivation ground truth (account-discovery test vector)', () => {
+describe('XHD public-key getter ground truth', () => {
     test('derives the funded address at account=1 keyIndex=0 (Peikert)', async () => {
         const seed = await mnemonicToSeed(USER_MNEMONIC)
         const rootKey = fromSeed(seed)
-        const api = new XHDWalletAPI()
+        const getPublicKey = createXHDGetPublicKey(rootKey)
 
-        const pubKey = await api.keyGen(
-            rootKey,
-            KeyContext.Address,
-            1,
-            0,
-            BIP32DerivationType.Peikert,
-        )
-        expect(encodeAddress(pubKey)).toBe(EXPECTED_FUNDED_ADDRESS)
+        const pubKey = await getPublicKey({
+            account: 1,
+            keyIndex: 0,
+            derivationType: DerivationTypes.Peikert,
+        })
+        expect(
+            algorandAddressCodec.fromPublicKey(pubKey, {
+                scheme: 'ed25519',
+                networkId: 'mainnet',
+            }),
+        ).toBe(EXPECTED_FUNDED_ADDRESS)
     })
 
     test('derives the empty master at account=0 keyIndex=0 (Peikert)', async () => {
         const seed = await mnemonicToSeed(USER_MNEMONIC)
         const rootKey = fromSeed(seed)
-        const api = new XHDWalletAPI()
+        const getPublicKey = createXHDGetPublicKey(rootKey)
 
-        const pubKey = await api.keyGen(
-            rootKey,
-            KeyContext.Address,
-            0,
-            0,
-            BIP32DerivationType.Peikert,
-        )
-        expect(encodeAddress(pubKey)).toBe(EXPECTED_MASTER_ADDRESS)
+        const pubKey = await getPublicKey({
+            account: 0,
+            keyIndex: 0,
+            derivationType: DerivationTypes.Peikert,
+        })
+        expect(
+            algorandAddressCodec.fromPublicKey(pubKey, {
+                scheme: 'ed25519',
+                networkId: 'mainnet',
+            }),
+        ).toBe(EXPECTED_MASTER_ADDRESS)
     })
 })

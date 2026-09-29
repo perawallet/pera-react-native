@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import type { Key } from '@algorandfoundation/keystore-core'
-import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
+import type { PQSchemeId } from '../crypto/pq/types'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     InvalidKeyError,
