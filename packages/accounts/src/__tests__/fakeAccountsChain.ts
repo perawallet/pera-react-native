@@ -90,7 +90,6 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
             fakeEncode(publicKey),
         ),
     },
-    deriveMultisigAddress: vi.fn(),
     fetchRekeyedAddresses: vi.fn(async () => []),
 })
 

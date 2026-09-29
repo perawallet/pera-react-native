@@ -19,7 +19,6 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    requireMultisigAddress,
     requireQuantum,
     requireRekey,
     type AccountsChainAdapter,
@@ -213,15 +212,6 @@ export const accountsContractTests = (
             expect(entropy).toEqual(new Uint8Array(32).fill(5))
             expect(seed.length).toBeGreaterThan(0)
             expect(seed).not.toBe(entropy)
-        })
-
-        it('refuses local multisig derivation when the chain has none', () => {
-            const adapter = makeAdapter()
-            if (adapter.deriveMultisigAddress) return
-
-            expect(() => requireMultisigAddress(adapter)).toThrow(
-                expect.objectContaining({ chainId: adapter.chainId }),
-            )
         })
     })
 }

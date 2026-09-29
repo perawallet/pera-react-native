@@ -25,7 +25,7 @@ const mockSetSelectedAccountAddress = vi.fn()
 const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
 const mockErrorToast = vi.fn()
-const mockGenerateMultisigAddress = vi.fn(
+const mockDeriveMultisigAddress = vi.fn(
     (_version: number, _threshold: number, _addresses: string[]) =>
         'NEW_MULTISIG_ADDR',
 )
@@ -103,6 +103,17 @@ vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
     useCreateMultisigAccountMutation: () => ({
         mutateAsync: mockMutateAsync,
     }),
+    multisigAdapterFor: () => ({
+        deriveAddress: ({
+            version,
+            threshold,
+            addresses,
+        }: {
+            version: number
+            threshold: number
+            addresses: string[]
+        }) => mockDeriveMultisigAddress(version, threshold, addresses),
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
@@ -111,8 +122,6 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     )
     return {
         ...actual,
-        generateMultisigAddress: (v: number, t: number, addrs: string[]) =>
-            mockGenerateMultisigAddress(v, t, addrs),
         useNetwork: () => ({ network: 'mainnet' }),
     }
 })
@@ -172,7 +181,7 @@ describe('multisig creation flow', () => {
         )
         mockUseAllAccounts.mockReturnValue([])
         mockMutateAsync.mockResolvedValue(undefined)
-        mockGenerateMultisigAddress.mockReturnValue('NEW_MULTISIG_ADDR')
+        mockDeriveMultisigAddress.mockReturnValue('NEW_MULTISIG_ADDR')
         useMultisigCreationStore.getState().resetState()
     })
 
@@ -223,7 +232,7 @@ describe('multisig creation flow', () => {
             participant_addresses: ['ADDR_A', 'ADDR_B'],
             device_id: 'device-id',
         })
-        expect(mockGenerateMultisigAddress).toHaveBeenCalledWith(1, 2, [
+        expect(mockDeriveMultisigAddress).toHaveBeenCalledWith(1, 2, [
             'ADDR_A',
             'ADDR_B',
         ])

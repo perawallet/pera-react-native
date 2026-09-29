@@ -207,6 +207,7 @@ describe('swaps/useSwapCosignResolver', () => {
 
         config().classify(detail, handoff)
         expect(mocks.classifyHandoffPoll).toHaveBeenCalledWith(detail, {
+            network: handoff.network,
             multisigAddress: 'JOINT_ADDR',
             msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
             expectedRawTransactionsBase64: ['cmF3'],

@@ -30,7 +30,7 @@ const mockAddListener = vi.fn(
 const mockSetOptions = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 const mockUseDeviceID = vi.fn(() => 'device-id')
-const mockGenerateMultisigAddress = vi.fn(
+const mockDeriveMultisigAddress = vi.fn(
     (_version: number, _threshold: number, _addresses: string[]) =>
         'MULTISIG_ADDR',
 )
@@ -72,6 +72,17 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
     useCreateMultisigAccountMutation: () => ({
         mutateAsync: mockMutateAsync,
     }),
+    multisigAdapterFor: () => ({
+        deriveAddress: ({
+            version,
+            threshold,
+            addresses,
+        }: {
+            version: number
+            threshold: number
+            addresses: string[]
+        }) => mockDeriveMultisigAddress(version, threshold, addresses),
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
@@ -80,11 +91,6 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     )
     return {
         ...actual,
-        generateMultisigAddress: (
-            version: number,
-            threshold: number,
-            addresses: string[],
-        ) => mockGenerateMultisigAddress(version, threshold, addresses),
         useNetwork: () => ({ network: 'mainnet' }),
     }
 })
@@ -153,7 +159,7 @@ describe('useNameMultisigScreen', () => {
         mockUseAllAccounts.mockReturnValue([])
         mockUseDeviceID.mockReturnValue('device-id')
         mockMutateAsync.mockResolvedValue(undefined)
-        mockGenerateMultisigAddress.mockReturnValue('MULTISIG_ADDR')
+        mockDeriveMultisigAddress.mockReturnValue('MULTISIG_ADDR')
         mockAddListener.mockReturnValue(vi.fn())
         mockUseRoute.mockReturnValue({ params: undefined })
 
@@ -254,7 +260,7 @@ describe('useNameMultisigScreen', () => {
             participant_addresses: ['ADDR1', 'ADDR2'],
             device_id: 'device-id',
         })
-        expect(mockGenerateMultisigAddress).toHaveBeenCalledWith(1, 2, [
+        expect(mockDeriveMultisigAddress).toHaveBeenCalledWith(1, 2, [
             'ADDR1',
             'ADDR2',
         ])
@@ -280,7 +286,7 @@ describe('useNameMultisigScreen', () => {
 
     it('handleFinish shows duplicate-account toast and skips mutation when an account with the generated multisig address already exists', async () => {
         // Pre-seed the wallet with an account holding the address
-        // generateMultisigAddress will produce — same participants +
+        // the multisig adapter will derive — same participants +
         // threshold deterministically yield the same address, so re-creating
         // the configuration must not silently append a second copy. (Mirror
         // of the algo25/HD duplicate-prevention behavior.)
@@ -427,7 +433,7 @@ describe('useNameMultisigScreen', () => {
             // (version, threshold, participants) must equal the address the
             // QR payload carried, or handleFinish aborts on the mismatch
             // guard before persisting.
-            mockGenerateMultisigAddress.mockReturnValue('IMPORTED_SHARED_ADDR')
+            mockDeriveMultisigAddress.mockReturnValue('IMPORTED_SHARED_ADDR')
         })
 
         it('handleFinish verifies the derived address, then saves the imported account', async () => {
@@ -442,7 +448,7 @@ describe('useNameMultisigScreen', () => {
 
             // The address is re-derived locally and verified against the
             // scanned payload before persisting.
-            expect(mockGenerateMultisigAddress).toHaveBeenCalledWith(1, 3, [
+            expect(mockDeriveMultisigAddress).toHaveBeenCalledWith(1, 3, [
                 'IMP1',
                 'IMP2',
                 'IMP3',
@@ -504,9 +510,7 @@ describe('useNameMultisigScreen', () => {
             // multisig address from its (version, threshold, participants)
             // yields a different address — the payload is corrupt or
             // tampered with. handleFinish must refuse to persist.
-            mockGenerateMultisigAddress.mockReturnValue(
-                'DERIVED_DIFFERENT_ADDR',
-            )
+            mockDeriveMultisigAddress.mockReturnValue('DERIVED_DIFFERENT_ADDR')
             mockUseAllAccounts.mockReturnValue([])
 
             const { result } = renderHook(() => useNameMultisigScreen())

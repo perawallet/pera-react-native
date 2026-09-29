@@ -15,20 +15,15 @@ import {
     walletConnectHandoffs,
     type PendingWalletConnectHandoff,
 } from '../walletConnectHandoffs'
-import type { SignRequestResponse } from '@perawallet/wallet-core-multisig'
+import {
+    multisigChainAdapters,
+    type SignRequestResponse,
+} from '@perawallet/wallet-core-multisig'
 
 const { assembleMock, loggerWarnMock } = vi.hoisted(() => ({
     assembleMock: vi.fn(),
     loggerWarnMock: vi.fn(),
 }))
-
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return { ...actual, assembleSignedMultisigTransactions: assembleMock }
-})
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
@@ -53,6 +48,16 @@ import {
 } from '../classifyHandoffPoll'
 
 const SIGN_REQUEST_ID = 'sr-1'
+
+beforeEach(() => {
+    multisigChainAdapters.reset()
+    multisigChainAdapters.register({
+        chainId: 'algorand',
+        deriveAddress: vi.fn(),
+        assembleSignedTransactions: assembleMock,
+        validateSignRequest: vi.fn(),
+    })
+})
 
 // Valid base64 of distinct byte strings — the classifier byte-compares the
 // poll's raw transactions against the handoff's pinned (proposed) bytes

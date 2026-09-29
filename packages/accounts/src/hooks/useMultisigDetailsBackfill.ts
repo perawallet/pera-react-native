@@ -12,10 +12,12 @@
 
 import { useEffect, useRef } from 'react'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useMultisigAccountDetailQuery } from '@perawallet/wallet-core-multisig'
+import {
+    multisigAdapterFor,
+    useMultisigAccountDetailQuery,
+} from '@perawallet/wallet-core-multisig'
 import { logger } from '@perawallet/wallet-core-shared'
 import { isMultisigAccount } from '../utils'
-import { deriveMultisigAddress } from '../chain-adapter'
 import { useUpdateAccount } from './useUpdateAccount'
 
 import type { WalletAccount } from '../models'
@@ -57,14 +59,14 @@ export const useMultisigDetailsBackfill = (
         // a wrong or malicious backend response — leave the account un-healed.
         let derivedAddress: string | null = null
         try {
-            derivedAddress = deriveMultisigAddress(network, {
+            derivedAddress = multisigAdapterFor(network).deriveAddress({
                 version: data.version,
                 threshold: data.threshold,
                 addresses: data.participantAddresses,
             })
         } catch {
-            // Malformed participant address, or a chain that can't derive the
-            // address locally: both leave the account un-healed below.
+            // Malformed participant address, or a chain with no multisig
+            // adapter: both leave the account un-healed below.
         }
         if (derivedAddress !== account.address) {
             logger.warn(

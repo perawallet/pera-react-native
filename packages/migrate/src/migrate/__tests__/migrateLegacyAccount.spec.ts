@@ -16,10 +16,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // buildKeylessAccount below loads the real blockchain package (algosdk), which
 // under CI's coverage instrumentation takes ~5s — right at the test timeout.
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    generateMultisigAddress: vi.fn(
-        (version: number, threshold: number, addresses: string[]) =>
-            `MSIG:v${version}:t${threshold}:${addresses.join(',')}`,
-    ),
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),

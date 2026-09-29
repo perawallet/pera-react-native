@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { generateMultisigAddress } from '../multisig'
+import { generateMultisigAddress } from '../address'
 import { encodeAddress } from 'algosdk'
 
 const makeAddress = (fill: number) => {

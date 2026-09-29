@@ -10,13 +10,19 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-multisig'
+import { multisigContractTests } from './adapter-contract'
+import {
+    fakeMultisigAdapter,
+    fakeRawTransactionFrom,
+} from './fakeMultisigAdapter'
 
-export * from './api'
-export * from './chain-adapter'
-export * from './constants'
-export * from './errors'
-export * from './hooks'
-export * from './mappers'
-export * from './models'
-export * from './stores'
+const adapter = fakeMultisigAdapter()
+const parameters = { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] }
+
+multisigContractTests(() => adapter, {
+    parameters,
+    rawTransactionBase64: fakeRawTransactionFrom(
+        adapter.deriveAddress(parameters),
+    ),
+    malformedAddress: 'not-an-address',
+})

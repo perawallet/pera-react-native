@@ -30,7 +30,7 @@ const mockAddListener = vi.fn(
 const mockSetOptions = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 const mockUseDeviceID = vi.fn(() => 'device-id')
-const mockGenerateMultisigAddress = vi.fn()
+const mockDeriveMultisigAddress = vi.fn()
 
 const invitation: MultisigInvitationParam = {
     customId: 'invite-1',
@@ -86,8 +86,26 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     return {
         ...actual,
         useNetwork: () => ({ network: 'mainnet' }),
-        generateMultisigAddress: (...args: unknown[]) =>
-            mockGenerateMultisigAddress(...args),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-multisig', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-multisig',
+    )
+    return {
+        ...actual,
+        multisigAdapterFor: () => ({
+            deriveAddress: ({
+                version,
+                threshold,
+                addresses,
+            }: {
+                version: number
+                threshold: number
+                addresses: string[]
+            }) => mockDeriveMultisigAddress(version, threshold, addresses),
+        }),
     }
 })
 
@@ -143,7 +161,7 @@ describe('useMultisigInvitationNameScreen', () => {
         mockMutateAsync.mockResolvedValue(undefined)
         mockAddListener.mockReturnValue(vi.fn())
         // Default: re-derived address matches the invitation's claimed address.
-        mockGenerateMultisigAddress.mockReturnValue(invitation.address)
+        mockDeriveMultisigAddress.mockReturnValue(invitation.address)
     })
 
     it('initializes with auto-numbered default name (#1) when no shared accounts exist', () => {
@@ -298,7 +316,7 @@ describe('useMultisigInvitationNameScreen', () => {
     it('handleFinish refuses to persist (and does not consume the invitation) when the re-derived address does not match the claimed address', async () => {
         // Backend-supplied address disagrees with what the participant set
         // actually derives to — corrupt or tampered invitation.
-        mockGenerateMultisigAddress.mockReturnValue('DERIVED_DIFFERENT_ADDR')
+        mockDeriveMultisigAddress.mockReturnValue('DERIVED_DIFFERENT_ADDR')
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
 
@@ -306,7 +324,7 @@ describe('useMultisigInvitationNameScreen', () => {
             await result.current.handleFinish()
         })
 
-        expect(mockGenerateMultisigAddress).toHaveBeenCalledWith(
+        expect(mockDeriveMultisigAddress).toHaveBeenCalledWith(
             invitation.version,
             invitation.threshold,
             invitation.participantAddresses,

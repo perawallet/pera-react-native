@@ -29,7 +29,7 @@ const {
     getDerivedPublicKeyMock,
     generateDerivedKeyMock,
     encodeAlgorandAddressMock,
-    generateMultisigAddressMock,
+    deriveMultisigAddressMock,
     isValidAlgorandAddressMock,
     hdDerivedKeyIdMock,
     callOrder,
@@ -54,7 +54,7 @@ const {
         getDerivedPublicKeyMock: vi.fn(),
         generateDerivedKeyMock: vi.fn(),
         encodeAlgorandAddressMock: vi.fn(),
-        generateMultisigAddressMock: vi.fn(),
+        deriveMultisigAddressMock: vi.fn(),
         isValidAlgorandAddressMock: vi.fn(() => true),
         hdDerivedKeyIdMock: vi.fn(() => 'derived-key-id'),
         callOrder: [] as string[],
@@ -98,8 +98,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     encodeAlgorandAddress: encodeAlgorandAddressMock,
-    generateMultisigAddress: generateMultisigAddressMock,
     isValidAlgorandAddress: isValidAlgorandAddressMock,
+}))
+
+vi.mock('@perawallet/wallet-core-multisig', () => ({
+    multisigChainAdapters: {
+        get: () => ({ deriveAddress: deriveMultisigAddressMock }),
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -360,7 +365,7 @@ describe('useCloudBackupImport', () => {
     })
 
     test('refuses a multisig account whose address does not re-derive', async () => {
-        generateMultisigAddressMock.mockReturnValue('SOMETHING_ELSE')
+        deriveMultisigAddressMock.mockReturnValue('SOMETHING_ELSE')
         const { current } = renderImport()
 
         const summary = await current.importAccounts([

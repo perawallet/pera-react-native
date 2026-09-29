@@ -10,18 +10,19 @@
  limitations under the License
  */
 
-import {
-    generateMultisigAddress,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import { decodeFromBase64, type Network } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
+import {
+    multisigAdapterFor,
+    type MultisigSignRequest,
+} from '@perawallet/wallet-core-multisig'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
 type BuildMultisigCosignRequestParams = {
     signRequest: MultisigSignRequest
     signerAddress: string
+    network: Network
     decodeTransaction: (bytes: Uint8Array) => PeraTransaction
     /** Used to recognise senders the joint account authorizes via a rekey. */
     localAccounts: WalletAccount[]
@@ -36,6 +37,7 @@ type BuildMultisigCosignRequestParams = {
 export const buildMultisigCosignRequest = ({
     signRequest,
     signerAddress,
+    network,
     decodeTransaction,
     localAccounts,
 }: BuildMultisigCosignRequestParams): TransactionSignRequest => {
@@ -51,43 +53,37 @@ export const buildMultisigCosignRequest = ({
         decodeTransaction(decodeFromBase64(base64)),
     )
 
-    // A cosignature is only ever a subsig of the joint (multisig) account, and
-    // the backend is a relay — not a trust anchor — for what we sign. Two hard
-    // checks close the standalone-single-sig drain:
-    const { address, version, threshold, participantAddresses } =
-        signRequest.multisigAccount
-
-    // 1. The joint account must actually derive from its own participant set.
-    //    This pins `address` to a genuine multisig hash, so a fabricated
-    //    request can't pass off a participant's *personal* address as the
-    //    "joint account" (which would make check 2 vacuous).
-    if (
-        generateMultisigAddress(version, threshold, participantAddresses) !==
-        address
-    ) {
-        throw new Error(
-            `Sign request ${signRequest.id}: joint account address does not derive from its participant set`,
-        )
-    }
-
-    // 2. Every transaction must be sent by the joint account or by a local
-    //    account rekeyed to it on this network. An allowlist, not "not sent by
-    //    the co-signer": the signature covers `"TX" || txn` only, so a
-    //    participant's sig stands alone for any sender whose auth-addr is that
-    //    key.
+    // The backend is a relay, not a trust anchor, for what we sign.
+    const { address } = signRequest.multisigAccount
     const jointAuthorizedSenders = new Set([
         address,
         ...localAccounts
             .filter(account => account.rekeyAddress === address)
             .map(account => account.address),
     ])
-    const offenderIndex = txs.findIndex(
-        tx => !jointAuthorizedSenders.has(tx.sender.toString()),
+    const validation = multisigAdapterFor(network).validateSignRequest(
+        signRequest,
+        jointAuthorizedSenders,
     )
-    if (offenderIndex !== -1) {
-        throw new Error(
-            `Sign request ${signRequest.id}: transaction ${offenderIndex} is not authorized by the joint account ${address}`,
-        )
+    switch (validation.kind) {
+        case 'valid': {
+            break
+        }
+        case 'address-mismatch': {
+            throw new Error(
+                `Sign request ${signRequest.id}: joint account address does not derive from its participant set`,
+            )
+        }
+        case 'no-transactions': {
+            throw new Error(
+                `Sign request ${signRequest.id} has no transaction lists`,
+            )
+        }
+        case 'unauthorized-sender': {
+            throw new Error(
+                `Sign request ${signRequest.id}: transaction ${validation.txIndex} is not authorized by the joint account ${address}`,
+            )
+        }
     }
 
     return {

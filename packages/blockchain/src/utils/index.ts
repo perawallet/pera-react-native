@@ -31,8 +31,6 @@ export * from './addresses'
 export * from './transactions'
 export * from './rawTransactions'
 export * from './json'
-export * from './multisig'
-export * from './assembleSignedMultisigTransactions'
 export * from './transact'
 export {
     baseUnitsToDisplayUnits,

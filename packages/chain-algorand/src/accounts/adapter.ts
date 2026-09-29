@@ -11,7 +11,6 @@
  */
 
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
-import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { fetchAlgorandAccountState } from './account-state'
 import { assertAlgorandBip44PathMatches } from './bip44'
@@ -42,8 +41,6 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     createPublicKeyGetter: createXHDGetPublicKey,
     assertHdPathMatches: assertAlgorandBip44PathMatches,
     quantum: algorandQuantumDerivation,
-    deriveMultisigAddress: ({ version, threshold, addresses }) =>
-        generateMultisigAddress(version, threshold, addresses),
     fetchRekeyedAddresses: (authAddress, scope) =>
         fetchAlgorandRekeyedAddresses(authAddress, algorandNetworkOf(scope)),
 }

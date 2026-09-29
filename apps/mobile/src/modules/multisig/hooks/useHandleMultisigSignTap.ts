@@ -12,7 +12,10 @@
 
 import { useCallback } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useTransactionEncoder } from '@perawallet/wallet-core-blockchain'
+import {
+    useNetwork,
+    useTransactionEncoder,
+} from '@perawallet/wallet-core-blockchain'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
     type MultisigSignRequest,
@@ -52,6 +55,7 @@ export type UseHandleMultisigSignTapResult = (
 export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
     const openSheet = usePendingSignaturesSheetStore(state => state.openSheet)
     const accounts = useAllAccounts()
+    const { network } = useNetwork()
     const { decodeTransaction } = useTransactionEncoder()
     const { addSignRequest, pendingSignRequests } = useSigningRequest()
     const { t } = useLanguage()
@@ -79,6 +83,7 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                                 buildMultisigCosignRequest({
                                     signRequest,
                                     signerAddress: address,
+                                    network,
                                     decodeTransaction,
                                     localAccounts: accounts,
                                 }),
@@ -109,6 +114,7 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
         [
             openSheet,
             accounts,
+            network,
             decodeTransaction,
             addSignRequest,
             pendingSignRequests,

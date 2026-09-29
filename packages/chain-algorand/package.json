@@ -98,6 +98,7 @@
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-connections": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
+    "@perawallet/wallet-core-multisig": "workspace:*",
     "@perawallet/wallet-core-nfd": "workspace:*",
     "@perawallet/wallet-core-onramp": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
@@ -111,6 +112,7 @@
     "buffer": "catalog:",
     "decimal.js": "catalog:",
     "react": "catalog:",
+    "tweetnacl": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -14,7 +14,8 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 
@@ -76,8 +77,15 @@ const deriveMultisigThreshold = (
     version: number,
     participants: string[],
 ): number => {
+    const multisig = multisigChainAdapters.get(LEGACY_CHAIN_ID)
     for (let k = 1; k <= participants.length; k += 1) {
-        if (generateMultisigAddress(version, k, participants) === address)
+        if (
+            multisig.deriveAddress({
+                version,
+                threshold: k,
+                addresses: participants,
+            }) === address
+        )
             return k
     }
     throw new Error(

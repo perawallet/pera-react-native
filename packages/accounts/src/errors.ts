@@ -154,9 +154,3 @@ export class QuantumAccountsUnsupportedError extends ChainFeatureUnsupportedErro
         super('Post-quantum accounts', chainId)
     }
 }
-
-export class MultisigAddressUnsupportedError extends ChainFeatureUnsupportedError {
-    constructor(chainId: ChainId) {
-        super('Local multisig address derivation', chainId)
-    }
-}

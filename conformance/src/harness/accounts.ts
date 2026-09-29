@@ -36,7 +36,7 @@ import { assertAlgorandBip44PathMatches } from '@perawallet/wallet-core-chain-al
 import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain/pq/derivation'
 import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain/pq/quantumAdapter'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain/utils/addresses'
-import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain/utils/multisig'
+import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig/address'
 import { entropyToMnemonic } from '@perawallet/wallet-core-kms/crypto/hdwallet-utils'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms/crypto/mnemonic-indices'
 import { prepareHDMasterKey } from '@perawallet/wallet-core-kms/crypto/prepare-hd-master-key'

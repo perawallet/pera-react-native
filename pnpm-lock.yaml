@@ -2031,6 +2031,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2043,6 +2046,9 @@ importers:
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
+      '@perawallet/wallet-core-multisig':
+        specifier: workspace:*
+        version: link:../multisig
       '@perawallet/wallet-core-passkeys':
         specifier: workspace:*
         version: link:../passkeys
@@ -2216,9 +2222,6 @@ importers:
       react:
         specifier: 19.2.3
         version: 19.2.3
-      tweetnacl:
-        specifier: 'catalog:'
-        version: 1.0.3
       zod:
         specifier: 'catalog:'
         version: 4.4.3
@@ -2423,6 +2426,9 @@ importers:
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
+      '@perawallet/wallet-core-multisig':
+        specifier: workspace:*
+        version: link:../multisig
       '@perawallet/wallet-core-nfd':
         specifier: workspace:*
         version: link:../nfd
@@ -2462,6 +2468,9 @@ importers:
       react:
         specifier: 19.2.3
         version: 19.2.3
+      tweetnacl:
+        specifier: 'catalog:'
+        version: 1.0.3
       zod:
         specifier: 'catalog:'
         version: 4.4.3
@@ -3208,6 +3217,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -3226,6 +3238,9 @@ importers:
       '@perawallet/wallet-core-messages':
         specifier: workspace:*
         version: link:../messages
+      '@perawallet/wallet-core-multisig':
+        specifier: workspace:*
+        version: link:../multisig
       '@perawallet/wallet-core-passkeys':
         specifier: workspace:*
         version: link:../passkeys
@@ -3299,6 +3314,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
