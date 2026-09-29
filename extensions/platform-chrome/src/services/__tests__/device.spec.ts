@@ -54,6 +54,15 @@ describe('ChromeDeviceInfoService', () => {
         expect(service.getAppPackage()).toBe('test-extension-id')
     })
 
+    it('drops the CI build number from a four-part manifest version', () => {
+        fake.chrome.runtime.getManifest = () => ({
+            manifest_version: 3,
+            name: 'Pera Wallet',
+            version: '7.2.0.1234',
+        })
+        expect(service.getAppVersion()).toBe('7.2.0')
+    })
+
     it('reports the web platform', () => {
         expect(service.getDevicePlatform()).toBe('web')
     })

@@ -1078,6 +1078,8 @@ workflows:
             # APP_ENV must be set here so generate-config.sh bakes
             # appEnvironment into the bundled config (defaults to development).
             export APP_ENV="${ENVIRONMENT:-development}"
+            # An rc ships as its stable version, so bake the tag without -rc.N.
+            export BITRISE_GIT_TAG="${BITRISE_GIT_TAG%%-rc.*}"
             pnpm run generate:config
     - script@1:
         title: Build packages
@@ -1092,7 +1094,24 @@ workflows:
             # of a path glob, so it picks up both. `browser` is the package
             # name in apps/browser/package.json — not the directory.
             export APP_ENV="${ENVIRONMENT:-development}"
+            export BITRISE_GIT_TAG="${BITRISE_GIT_TAG%%-rc.*}"
             pnpm exec turbo run build --filter=...browser
+    - script@1:
+        title: Resolve marketing version (tag-driven)
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # The tag is the source of truth. Unlike mobile, only -rc.N is
+            # stripped (an rc ships as its stable version); -alpha.N stays and
+            # lands in the manifest's display-only version_name. Off-tag,
+            # APP_VERSION stays unset and the bundle falls back to
+            # apps/browser/package.json.
+            if [ -n "$BITRISE_GIT_TAG" ]; then
+              VERSION="${BITRISE_GIT_TAG#v}"
+              envman add --key APP_VERSION --value "${VERSION%%-rc.*}"
+            fi
+            envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
     - script@1:
         title: Bundle extension (Web)
         inputs:
