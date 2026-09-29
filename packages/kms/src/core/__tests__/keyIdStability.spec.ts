@@ -44,7 +44,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-import { hdDerivedKeyId, useHDWallet } from '../../hooks/useHDWallet'
+import { useHDWallet } from '../../hooks/useHDWallet'
+import { hdDerivedKeyId } from '../hdDerivation'
 import {
     algo25SignKeyId,
     PQ_DERIVATION_CANONICAL,

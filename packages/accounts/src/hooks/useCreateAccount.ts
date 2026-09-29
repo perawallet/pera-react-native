@@ -12,11 +12,11 @@
 
 import { useAccountsStore } from '../store'
 import { AccountTypes, type WalletAccount } from '../models'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { keyDerivations } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     algo25SignKeyId,
-    hdDerivedKeyId,
+    kmsCore,
     KeyNotFoundError,
     PQ_DERIVATION_CANONICAL,
     quantumSignKeyId,
@@ -25,6 +25,12 @@ import {
 import { NoHDWalletError } from '../errors'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
+    accountsAdapterFor,
+    addressCodecFor,
+    ed25519DeriveOpts,
+    quantumDerivationFor,
+} from '../chain-adapter'
+import {
     setPendingAccountRollback,
     clearPendingAccountRollback,
 } from '../store/pendingAccountCreation'
@@ -32,25 +38,25 @@ import {
 export type Algo25SeedReference = {
     /** Keystore id of the algo25 seed entry. */
     seedKeyId: string
-    /** Encoded Algorand address derived from the seed. */
+    /** Address derived from the seed. */
     address: string
 }
 
 export type QuantumSeedReference = {
     /** Keystore id of the quantum seed entry. */
     seedKeyId: string
-    /** Encoded Algorand address derived from the seed. */
+    /** Address derived from the seed. */
     address: string
 }
 
 export const useCreateAccount = () => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
+    const { network } = useNetwork()
     const {
         getKey,
         createHDWalletKey,
         createAlgo25Key,
         createQuantumKey,
-        getDerivedPublicKey,
         removeKeyAndChildren,
     } = useKMS()
 
@@ -66,7 +72,7 @@ export const useCreateAccount = () => {
     // derive the child at (account, keyIndex) and build the WalletAccount.
     // Skips `getKey()` so it's safe to call right after `createHDWalletKey`
     // in the same React tick — the keystore snapshot from `useKeystoreKeys`
-    // would still be stale, but `getDerivedPublicKey` reads the live store.
+    // would still be stale, but `kmsCore` reads the live store.
     const buildHdWalletAccountForSeed = async ({
         seedKeyId,
         account,
@@ -76,31 +82,28 @@ export const useCreateAccount = () => {
         account: number
         keyIndex: number
     }): Promise<WalletAccount> => {
-        const derivationType = BIP32DerivationType.Peikert
-        const publicKey = await getDerivedPublicKey(
-            seedKeyId,
-            account,
-            keyIndex,
-            derivationType,
-        )
-        if (!publicKey) throw new NoHDWalletError(seedKeyId)
+        const derived = await keyDerivations
+            .get(accountsAdapterFor(network).chainId)
+            .deriveAccount(
+                kmsCore,
+                seedKeyId,
+                account,
+                keyIndex,
+                ed25519DeriveOpts(network),
+            )
+        if (!derived.publicKey) throw new NoHDWalletError(seedKeyId)
 
         return {
             id: generateOrderedUniqueId(),
-            address: encodeAlgorandAddress(publicKey),
+            address: derived.address,
             type: AccountTypes.hdWallet,
             hdWalletDetails: {
                 account,
                 change: 0,
                 keyIndex,
-                derivationType,
+                derivationType: accountsAdapterFor(network).hdDerivationType,
             },
-            keyPairId: hdDerivedKeyId(
-                seedKeyId,
-                account,
-                keyIndex,
-                derivationType,
-            ),
+            keyPairId: derived.keyPairId,
         }
     }
 
@@ -165,8 +168,9 @@ export const useCreateAccount = () => {
                 if (existing) {
                     resolved = {
                         seedKeyId: existing.id,
-                        address: encodeAlgorandAddress(
+                        address: addressCodecFor(network).fromPublicKey(
                             existing.publicKey ?? new Uint8Array(),
+                            ed25519DeriveOpts(network),
                         ),
                     }
                 } else {
@@ -228,7 +232,10 @@ export const useCreateAccount = () => {
             }
         }
 
-        const result = await createQuantumKey({ id })
+        const result = await createQuantumKey({
+            id,
+            chain: quantumDerivationFor(network),
+        })
         const createdKeyId = result.seedKey.id
         try {
             const newAccount: WalletAccount = {

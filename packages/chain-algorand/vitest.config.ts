@@ -19,10 +19,12 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const CONTRACT_SUITES = {
+    '@perawallet/wallet-core-accounts/testing':
+        '../accounts/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-card/testing':
         '../card/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-chain-contract/testing':
-        '../chain-contract/src/__tests__/descriptor-contract.ts',
+        '../chain-contract/src/__tests__/testing.ts',
     '@perawallet/wallet-core-connections/testing':
         '../connections/src/__tests__/handler-contract.ts',
     '@perawallet/wallet-core-nfd/testing':
@@ -57,6 +59,14 @@ export default defineConfig({
                     name,
                     path.resolve(__dirname, file),
                 ]),
+            ),
+            '@perawallet/wallet-core-blockchain/test-handlers': path.resolve(
+                __dirname,
+                '../blockchain/src/test-handlers.ts',
+            ),
+            '@perawallet/wallet-core-shared/test-handlers': path.resolve(
+                __dirname,
+                '../shared/src/test-handlers.ts',
             ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,

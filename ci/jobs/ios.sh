@@ -16,7 +16,7 @@ trap cleanup_signing EXIT
 
 # Secret values are single-line only on the daemon, and the App Store Connect
 # key is a multi-line .p8, so it is stored base64-encoded and decoded into the
-# name validate-env.sh and the Fastfile read.
+# name tools/dev/validate-env.sh and the Fastfile read.
 set +x
 echo "pera-ci: decoding APP_STORE_CONNECT_API_KEY_CONTENT_BASE64"
 APP_STORE_CONNECT_API_KEY_CONTENT=$(printf '%s' "$APP_STORE_CONNECT_API_KEY_CONTENT_BASE64" | base64 --decode)
@@ -25,10 +25,10 @@ set -x
 
 install_pinned_pnpm
 
-./tools/validate-env.sh
+./tools/dev/validate-env.sh
 pnpm install --frozen-lockfile --prefer-offline
 APP_ENV="$ENVIRONMENT" pnpm run generate:config
-# build:packages re-runs generate-config.sh, so APP_ENV is needed again.
+# build:packages re-runs tools/dev/generate-config.sh, so APP_ENV is needed again.
 APP_ENV="$ENVIRONMENT" pnpm run build:packages
 
 # app.config.builder.js bakes both into the generated native project, so they
@@ -86,7 +86,7 @@ done
 # failure is left to the gate to report rather than failing a build that
 # already shipped.
 if [ "${SMOKE_PATCH_IPA:-false}" = "true" ]; then
-  if ./tools/patch-ipa-for-browserstack.sh "$CI_ARTIFACT_DIR/${NAME}.ipa" "$CI_ARTIFACT_DIR/${NAME}-browserstack.ipa" >/dev/null; then
+  if ./tools/qa/patch-ipa-for-browserstack.sh "$CI_ARTIFACT_DIR/${NAME}.ipa" "$CI_ARTIFACT_DIR/${NAME}-browserstack.ipa" >/dev/null; then
     echo "smoke_ipa=$CI_ARTIFACT_DIR/${NAME}-browserstack.ipa" >>"$CI_OUTPUT"
   else
     echo "pera-ci: patching the IPA for BrowserStack failed; smoke-ios will fail"

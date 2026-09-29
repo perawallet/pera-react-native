@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-// Type-only import: erased at compile time, so this does NOT pull algosdk (or
-// anything else) into the pure-crypto seam at runtime. It exists so the
-// provider contract names the same scheme-id vocabulary the rest of the app
-// uses, rather than a hardcoded literal that a second PQ scheme would have to
-// widen by hand.
-import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
+/**
+ * Post-quantum signature schemes the keystore can mint keys for. kms owns this
+ * vocabulary because it generates the keys; the chain packages map each id to
+ * their own wire identifier.
+ */
+export type PQSchemeId = 'falcon1024'
 
 /**
  * Pure post-quantum signature provider contract: scheme identity plus

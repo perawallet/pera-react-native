@@ -17,4 +17,4 @@ export APP_VERSION
 # In the artifact dir so the Robot report outlives the run; it matters most
 # when the gate is red.
 export SMOKE_RESULTS_DIR="$CI_ARTIFACT_DIR/smoke-results-$SMOKE_PLATFORM"
-./tools/smoke-test.sh "$SMOKE_PLATFORM" "$ARTIFACT"
+./tools/qa/smoke-test.sh "$SMOKE_PLATFORM" "$ARTIFACT"

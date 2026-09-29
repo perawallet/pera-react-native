@@ -10,21 +10,14 @@
  limitations under the License
  */
 
-import {
-    describe,
-    test,
-    expect,
-    beforeAll,
-    beforeEach,
-    afterEach,
-    afterAll,
-    vi,
-} from 'vitest'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { setupServer } from 'msw/node'
 import algosdk from 'algosdk'
 import { createHash } from 'crypto'
-import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
+import {
+    derivePQKeygenSeed,
+    deriveQuantumAddress,
+} from '@perawallet/wallet-core-blockchain'
 import {
     indicesToAlgo25Seed,
     mnemonicIndexToWord,
@@ -36,12 +29,19 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { useImportAccount } from '../useImportAccount'
 import { useAccountsStore } from '../../store'
-import { DuplicateAccountError } from '../../errors'
+import {
+    DuplicateAccountError,
+    QuantumAccountsUnsupportedError,
+} from '../../errors'
+import {
+    fakeAccountsChain,
+    registerFakeAccountsChain,
+} from '../../__tests__/fakeAccountsChain'
 
 // Pinned quantum test vector — same mnemonic and independently-verified
 // addresses as packages/kms/src/crypto/__tests__/quantumAddressCandidates.spec.ts,
 // so the on-chain probe (real Falcon derivation, not mocked here) resolves to
-// addresses this file can register MSW handlers for.
+// addresses this file can stub existence for.
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 const CANONICAL_ADDRESS =
@@ -52,19 +52,32 @@ const TEST_MNEMONIC_INDICES = mnemonicWordsToIndices(TEST_MNEMONIC.split(' '))!
 // The algo25/HD KMS hooks are mocked, so any 25-entry buffer will do there.
 const DUMMY_INDICES = new Uint16Array(25)
 
-const server = setupServer()
+// The real Algorand quantum derivation, so the candidates are the pinned
+// addresses above; the on-chain probe is the adapter's `accountExists`.
+const algorandQuantum = {
+    deriveKeygenSeed: (entropy: Uint8Array) => derivePQKeygenSeed(entropy),
+    addressFromPublicKey: (publicKey: Uint8Array) =>
+        deriveQuantumAddress(publicKey),
+}
+
+/** `'error'` makes the probe for that address reject. */
+const mockOnChain = (existence: Record<string, boolean | 'error'>) =>
+    vi
+        .mocked(fakeAccountsChain().adapter.accountExists)
+        .mockImplementation(async address => {
+            const exists = existence[address]
+            if (exists === 'error') throw new Error('probe failed')
+            if (exists === undefined) {
+                throw new Error(`unexpected probe of ${address}`)
+            }
+            return exists
+        })
 
 // Fallback used by tests that don't care about the probe outcome — neither
 // candidate has on-chain activity, so the decision collapses to "canonical
 // only" and the rest of the test can behave like the old single-derivation flow.
 const mockNeitherQuantumAddressExists = () =>
-    server.use(
-        mockAlgodAccountInformation({
-            address: CANONICAL_ADDRESS,
-            response: {},
-        }),
-        mockAlgodAccountInformation({ address: LEGACY_ADDRESS, response: {} }),
-    )
+    mockOnChain({ [CANONICAL_ADDRESS]: false, [LEGACY_ADDRESS]: false })
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 
@@ -78,24 +91,12 @@ const deriveTestQuantumAddress = (seed: Uint8Array): string =>
         new Uint8Array(createHash('sha512-256').update(seed).digest()),
     )
 
-vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
-    BIP32DerivationType: { Peikert: 9 },
-    KeyContext: { Address: 0 },
-    XHDWalletAPI: class {},
-    fromSeed: vi.fn(),
-}))
-
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-blockchain')
     >('@perawallet/wallet-core-blockchain')
     return {
         ...actual,
-        // getAlgorandClient stays real — the quantum probe's on-chain reads
-        // go through it and MSW intercepts the underlying fetch calls.
-        encodeAlgorandAddress: vi.fn((address: Uint8Array) =>
-            Buffer.from(address).toString('base64'),
-        ),
         useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     }
 })
@@ -169,11 +170,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 describe('useImportAccount', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-    afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
-
     beforeEach(() => {
+        registerFakeAccountsChain({ quantum: algorandQuantum })
         useAccountsStore.setState({ accounts: [] })
         vi.clearAllMocks()
         uuidSpies.v7.mockReset()
@@ -439,6 +437,7 @@ describe('useImportAccount', () => {
         })
 
         expect(kmsMock.createQuantumKey).toHaveBeenCalledWith({
+            chain: algorandQuantum,
             mnemonicIndices: TEST_MNEMONIC_INDICES,
             derivation: PQ_DERIVATION_CANONICAL,
             reuseSeedId: undefined,
@@ -488,16 +487,10 @@ describe('useImportAccount', () => {
         // sibling child has already been minted onto the same seed — the
         // old post-mint sweep would have deleted canonical's just-persisted
         // keys along with the "duplicate" legacy attempt.
-        server.use(
-            mockAlgodAccountInformation({
-                address: CANONICAL_ADDRESS,
-                response: { amount: 1_000_000 },
-            }),
-            mockAlgodAccountInformation({
-                address: LEGACY_ADDRESS,
-                response: { amount: 5_000_000 },
-            }),
-        )
+        mockOnChain({
+            [CANONICAL_ADDRESS]: true,
+            [LEGACY_ADDRESS]: true,
+        })
         useAccountsStore.setState({
             accounts: [
                 {
@@ -526,6 +519,7 @@ describe('useImportAccount', () => {
         // leg was never attempted.
         expect(kmsMock.createQuantumKey).toHaveBeenCalledTimes(1)
         expect(kmsMock.createQuantumKey).toHaveBeenCalledWith({
+            chain: algorandQuantum,
             mnemonicIndices: TEST_MNEMONIC_INDICES,
             derivation: PQ_DERIVATION_CANONICAL,
             reuseSeedId: undefined,
@@ -564,16 +558,10 @@ describe('useImportAccount', () => {
     })
 
     test('imports both accounts when both derivations exist on chain', async () => {
-        server.use(
-            mockAlgodAccountInformation({
-                address: CANONICAL_ADDRESS,
-                response: { amount: 1_000_000 },
-            }),
-            mockAlgodAccountInformation({
-                address: LEGACY_ADDRESS,
-                response: { amount: 5_000_000 },
-            }),
-        )
+        mockOnChain({
+            [CANONICAL_ADDRESS]: true,
+            [LEGACY_ADDRESS]: true,
+        })
         let counter = 0
         uuidSpies.v7.mockImplementation(() => `ACC${++counter}`)
 
@@ -595,16 +583,10 @@ describe('useImportAccount', () => {
     })
 
     test('shares a single seed record between both derivations instead of creating two', async () => {
-        server.use(
-            mockAlgodAccountInformation({
-                address: CANONICAL_ADDRESS,
-                response: { amount: 1_000_000 },
-            }),
-            mockAlgodAccountInformation({
-                address: LEGACY_ADDRESS,
-                response: { amount: 5_000_000 },
-            }),
-        )
+        mockOnChain({
+            [CANONICAL_ADDRESS]: true,
+            [LEGACY_ADDRESS]: true,
+        })
         let counter = 0
         uuidSpies.v7.mockImplementation(() => `ACC${++counter}`)
 
@@ -631,16 +613,10 @@ describe('useImportAccount', () => {
     })
 
     test('imports only the legacy account when just the legacy derivation exists on chain', async () => {
-        server.use(
-            mockAlgodAccountInformation({
-                address: CANONICAL_ADDRESS,
-                response: {},
-            }),
-            mockAlgodAccountInformation({
-                address: LEGACY_ADDRESS,
-                response: { amount: 2_000_000 },
-            }),
-        )
+        mockOnChain({
+            [CANONICAL_ADDRESS]: false,
+            [LEGACY_ADDRESS]: true,
+        })
         uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
 
         const { result } = renderHook(() => useImportAccount())
@@ -657,58 +633,34 @@ describe('useImportAccount', () => {
         expect(imported[0].address).toBe(LEGACY_ADDRESS)
         expect(imported[0].keyPairId).toBe('QSEED1-quantum')
         expect(kmsMock.createQuantumKey).toHaveBeenCalledWith({
+            chain: algorandQuantum,
             mnemonicIndices: TEST_MNEMONIC_INDICES,
             derivation: PQ_DERIVATION_LEGACY,
             reuseSeedId: undefined,
         })
     })
 
-    test('treats a zero-balance account with held assets as existing on chain', async () => {
-        // Requirement: "exists" is any on-chain footprint, not balance alone
-        // — an account can be meaningful (an asset/app holder, or another
-        // account's auth-addr) while holding zero ALGO.
-        server.use(
-            mockAlgodAccountInformation({
-                address: CANONICAL_ADDRESS,
-                response: {
-                    amount: 0,
-                    assets: [{ 'asset-id': 1, amount: 5, 'is-frozen': false }],
-                },
-            }),
-            mockAlgodAccountInformation({
-                address: LEGACY_ADDRESS,
-                response: {},
-            }),
-        )
-        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+    test('fails closed on a chain without post-quantum accounts, minting nothing', async () => {
+        registerFakeAccountsChain({ quantum: undefined })
 
         const { result } = renderHook(() => useImportAccount())
 
-        let imported: any
         await act(async () => {
-            imported = await result.current({
-                mnemonicIndices: TEST_MNEMONIC_INDICES,
-                type: 'quantum',
-            })
+            await expect(
+                result.current({
+                    mnemonicIndices: TEST_MNEMONIC_INDICES,
+                    type: 'quantum',
+                }),
+            ).rejects.toBeInstanceOf(QuantumAccountsUnsupportedError)
         })
-
-        expect(imported).toHaveLength(1)
-        expect(imported[0].address).toBe(CANONICAL_ADDRESS)
+        expect(kmsMock.createQuantumKey).not.toHaveBeenCalled()
     })
 
     test('imports both derivations when the on-chain probe fails', async () => {
-        server.use(
-            mockAlgodAccountInformation({
-                address: CANONICAL_ADDRESS,
-                response: {},
-                status: 500,
-            }),
-            mockAlgodAccountInformation({
-                address: LEGACY_ADDRESS,
-                response: {},
-                status: 500,
-            }),
-        )
+        mockOnChain({
+            [CANONICAL_ADDRESS]: 'error',
+            [LEGACY_ADDRESS]: 'error',
+        })
         let counter = 0
         uuidSpies.v7.mockImplementation(() => `ACC${++counter}`)
 
@@ -738,17 +690,12 @@ describe('useImportAccount', () => {
 
         const [canonical, legacy] = quantumAddressCandidates(
             algosdk.seedFromMnemonic(mnemonic),
+            algorandQuantum,
         )
-        server.use(
-            mockAlgodAccountInformation({
-                address: canonical.address,
-                response: {},
-            }),
-            mockAlgodAccountInformation({
-                address: legacy.address,
-                response: {},
-            }),
-        )
+        mockOnChain({
+            [canonical.address]: false,
+            [legacy.address]: false,
+        })
 
         kmsMock.createAlgo25Key.mockImplementation(
             async ({
@@ -825,6 +772,7 @@ describe('useImportAccount', () => {
         // the second import as the identical address it really is.
         const [canonical, legacy] = quantumAddressCandidates(
             algosdk.seedFromMnemonic(mnemonic),
+            algorandQuantum,
         )
         kmsMock.createQuantumKey.mockImplementation(
             async (params?: { derivation?: string }) => ({
@@ -842,16 +790,10 @@ describe('useImportAccount', () => {
                 signKeyId: 'QSEED1-quantum',
             }),
         )
-        server.use(
-            mockAlgodAccountInformation({
-                address: canonical.address,
-                response: {},
-            }),
-            mockAlgodAccountInformation({
-                address: legacy.address,
-                response: {},
-            }),
-        )
+        mockOnChain({
+            [canonical.address]: false,
+            [legacy.address]: false,
+        })
 
         uuidSpies.v7.mockImplementation(() => 'ACC1')
 

@@ -12,11 +12,11 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { useHDImportSession } from '../useHDImportSession'
 import { useHDImportSessionStore } from '../../import-session'
 import { useAccountsStore } from '../../store'
 import { HDImportSessionNotFoundError } from '../../errors'
+import { DerivationTypes } from '../../models'
 
 const kmsMock = vi.hoisted(() => ({
     persistHDMasterKey: vi.fn(),
@@ -31,12 +31,8 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    encodeAlgorandAddress: vi.fn((b: Uint8Array) => `ADDR:${b[0]}`),
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
-    getAlgorandClient: () => ({
-        client: { indexer: { searchForAccounts: vi.fn() } },
-    }),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -78,7 +74,7 @@ describe('useHDImportSession', () => {
             prep = await result.current.prepareImport({ mnemonic: 'm' })
         })
         expect(prep.walletKeyId).toBe('w-1')
-        expect(prep.derivationType).toBe(BIP32DerivationType.Peikert)
+        expect(prep.derivationType).toBe(DerivationTypes.Peikert)
         expect(useHDImportSessionStore.getState().pending?.walletKeyId).toBe(
             'w-1',
         )
@@ -109,7 +105,7 @@ describe('useHDImportSession', () => {
                     account: 1,
                     change: 0,
                     keyIndex: 0,
-                    derivationType: BIP32DerivationType.Peikert,
+                    derivationType: DerivationTypes.Peikert,
                 },
             },
         ]

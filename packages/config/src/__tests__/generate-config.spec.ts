@@ -18,7 +18,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
 import { getConfig, overrideEnvironmentMap, type Config } from '../main'
 
-const SCRIPT = join(__dirname, '../../../../tools/generate-config.sh')
+const SCRIPT = join(__dirname, '../../../../tools/dev/generate-config.sh')
 
 /**
  * Env var names the script's production guard refuses to leave unset, read out
@@ -47,7 +47,7 @@ const isHashedByTurbo = (name: string, globalEnv: string[]): boolean =>
             : entry === name,
     )
 
-describe('tools/generate-config.sh', () => {
+describe('tools/dev/generate-config.sh', () => {
     let dir: string
 
     beforeEach(() => {

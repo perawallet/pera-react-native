@@ -10,13 +10,8 @@
  limitations under the License
  */
 
-import type { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import type { modelsv2 } from 'algosdk'
-import {
-    getAlgorandClient,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     indicesToAlgo25Seed,
     PQ_DERIVATION_CANONICAL,
@@ -34,30 +29,23 @@ import { useHDImportSession } from './useHDImportSession'
 import { useAccountsStore } from '../store'
 import {
     AccountTypes,
+    type DerivationType,
     type ImportAccountType,
     type WalletAccount,
 } from '../models'
 import { DuplicateAccountError } from '../errors'
+import { accountsAdapterFor, quantumDerivationFor } from '../chain-adapter'
 
 export type ImportHDPendingResult = {
     type: 'hdWallet'
     walletKeyId: string
-    derivationType: BIP32DerivationType
+    derivationType: DerivationType
 }
 
 export type ImportAccountResult =
     | WalletAccount
     | WalletAccount[]
     | ImportHDPendingResult
-
-// "Exists" is any on-chain footprint, not just a funded balance — an account
-// can be meaningful (another account's auth-addr, or asset/app holder) at a
-// zero ALGO balance.
-const existsOnChain = (account: modelsv2.Account): boolean =>
-    account.amount > 0n ||
-    (account.assets?.length ?? 0) > 0 ||
-    (account.appsLocalState?.length ?? 0) > 0 ||
-    account.authAddr !== undefined
 
 /**
  * Which of the two quantum derivations to mint. A probe failure returns both
@@ -70,13 +58,11 @@ const resolveQuantumCandidatesToImport = async (
     network: Network,
 ): Promise<QuantumAddressCandidate[]> => {
     try {
-        const algokit: AlgorandClient = getAlgorandClient(network)
+        const adapter = accountsAdapterFor(network)
+        const scope = scopeForLegacyNetwork(network)
         const existence = await Promise.all(
             candidates.map(candidate =>
-                algokit.client.algod
-                    .accountInformation(candidate.address)
-                    .do()
-                    .then(existsOnChain),
+                adapter.accountExists(candidate.address, scope),
             ),
         )
         const existing = candidates.filter((_, index) => existence[index])
@@ -161,10 +147,11 @@ export const useImportAccount = () => {
             // derivation's address depending on which tool minted the
             // account originally, so probe both on chain and adopt whatever
             // actually exists (see quantumAddressCandidates/).
+            const chain = quantumDerivationFor(network)
             const entropy = indicesToAlgo25Seed(mnemonicIndices)
             let candidates: QuantumAddressCandidate[]
             try {
-                candidates = quantumAddressCandidates(entropy)
+                candidates = quantumAddressCandidates(entropy, chain)
             } finally {
                 zeroBytes(entropy)
             }
@@ -197,6 +184,7 @@ export const useImportAccount = () => {
             let seedKeyId: string | undefined
             for (const candidate of newCandidates) {
                 const result = await createQuantumKey({
+                    chain,
                     mnemonicIndices,
                     derivation: candidate.derivation,
                     reuseSeedId: seedKeyId,

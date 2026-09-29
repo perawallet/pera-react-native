@@ -12,13 +12,10 @@
 
 import { describe, test, expect } from 'vitest'
 import { seedFromMnemonic } from 'algosdk'
-import {
-    deriveQuantumAddress,
-    derivePQKeygenSeed,
-} from '@perawallet/wallet-core-blockchain'
 import { algo25SeedToIndices } from '../algo25-utils'
 import { mnemonicIndexToWord } from '../mnemonic-indices'
 import { getPQProvider } from '../pq'
+import { fakeQuantumChain } from '../../__tests__/fakeQuantumChain'
 
 /**
  * Integration tests for the quantum key pipeline. The quantum
@@ -46,9 +43,12 @@ describe('quantum integration', () => {
         const deriveOnce = (): { publicKey: Uint8Array; address: string } => {
             const seed = seedFromMnemonic(TEST_MNEMONIC)
             const { publicKey } = getPQProvider().generateKeypairFromSeed(
-                derivePQKeygenSeed(seed),
+                fakeQuantumChain.deriveKeygenSeed(seed),
             )
-            return { publicKey, address: deriveQuantumAddress(publicKey) }
+            return {
+                publicKey,
+                address: fakeQuantumChain.addressFromPublicKey(publicKey),
+            }
         }
 
         const first = deriveOnce()
@@ -58,6 +58,5 @@ describe('quantum integration', () => {
             Array.from(second.publicKey),
         )
         expect(first.address).toBe(second.address)
-        expect(first.address).toHaveLength(58)
     })
 })

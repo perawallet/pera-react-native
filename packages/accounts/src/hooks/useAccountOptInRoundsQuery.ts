@@ -11,11 +11,8 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import {
-    useAlgorandClient,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
-import { fetchAccountAssetOptInRounds } from './endpoints'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { fetchAssetOptInRounds } from '../chain-adapter'
 import { getAccountOptInRoundsQueryKey } from './querykeys'
 
 // Opt-in rounds only change when holdings change, and every sync tick already
@@ -37,11 +34,10 @@ export const useAccountOptInRoundsQuery = (
     enabled = true,
 ): UseAccountOptInRoundsQueryResult => {
     const { network } = useNetwork()
-    const algokit = useAlgorandClient()
 
     const { data, isPending, isFetching } = useQuery({
         queryKey: getAccountOptInRoundsQueryKey(address ?? '', network),
-        queryFn: () => fetchAccountAssetOptInRounds(algokit, address ?? ''),
+        queryFn: () => fetchAssetOptInRounds(address ?? '', network),
         enabled: !!address && enabled,
         staleTime: OPT_IN_ROUNDS_STALE_TIME_MS,
     })

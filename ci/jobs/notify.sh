@@ -45,9 +45,9 @@ else
 fi
 
 # Capped before it goes into the JSON: Slack drops the whole payload once a
-# section passes 3000 characters. See tools/cap-changelog.sh.
+# section passes 3000 characters. See tools/release/cap-changelog.sh.
 CHANGELOG="${CI_OUT_CHANGELOG_TEXT:-Release build - see git history for changes}"
-CHANGELOG=$(printf '%s' "$CHANGELOG" | ./tools/cap-changelog.sh 2500)
+CHANGELOG=$(printf '%s' "$CHANGELOG" | ./tools/release/cap-changelog.sh 2500)
 
 PAYLOAD=$(jq -n \
   --arg header "${OVERALL} RN ${CHANNEL} ${CI_TAG}" \

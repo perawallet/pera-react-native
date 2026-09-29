@@ -15,9 +15,9 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import {
     discoverAccounts as baseDiscoverAccounts,
     discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
-    type GetPublicKey,
 } from '../account-discovery'
-import type { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import type { GetPublicKey } from '../chain-adapter'
+import type { DerivationType } from '../models'
 
 export const useAccountDiscovery = () => {
     const { getDerivedPublicKey } = useKMS()
@@ -40,7 +40,7 @@ export const useAccountDiscovery = () => {
     const discoverAccounts = useCallback(
         async (params: {
             walletKeyId: string
-            derivationType: BIP32DerivationType
+            derivationType: DerivationType
             accountGapLimit?: number
             keyIndexGapLimit?: number
         }) => {

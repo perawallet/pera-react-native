@@ -49,6 +49,18 @@ export type PQDerivation =
     | typeof PQ_DERIVATION_CANONICAL
 
 /**
+ * The chain's half of quantum key creation. kms generates and seals the Falcon
+ * key; the canonical keygen-seed hash and the address encoding are the chain's
+ * protocol rules, so the chain package supplies them.
+ */
+export type QuantumChainDerivation = {
+    /** Canonical Falcon keygen seed for 32 bytes of entropy. Secret material;
+     * the caller zeroes it. Must not mutate `entropy`. */
+    deriveKeygenSeed(entropy: Uint8Array): Uint8Array
+    addressFromPublicKey(publicKey: Uint8Array): string
+}
+
+/**
  * Deterministic keystore id for the quantum signing child of a quantum seed.
  *
  * Scheme-agnostic (`-quantum`, not `-falcon`) because accounts persist this as
