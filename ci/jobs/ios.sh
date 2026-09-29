@@ -5,6 +5,7 @@ source ci/jobs/lib/toolchain.sh
 source ci/jobs/lib/ios-keychain.sh
 use_pinned_node
 use_pinned_ruby
+use_ccache_if_available
 
 cleanup_signing() {
   ios_keychain_teardown
