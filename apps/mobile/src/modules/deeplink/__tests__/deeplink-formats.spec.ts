@@ -73,8 +73,12 @@ const {
     mockSetPendingAmountBaseUnits: vi.fn(),
     mockSendFundsReset: vi.fn(),
     mockSelectedAccountAddress: { current: null as string | null },
-    mockOnlineKeyRegistration: vi.fn(async () => ({ mock: 'online-keyreg' })),
-    mockOfflineKeyRegistration: vi.fn(async () => ({ mock: 'offline-keyreg' })),
+    mockOnlineKeyRegistration: vi.fn(async (_params: unknown) => ({
+        mock: 'online-keyreg',
+    })),
+    mockOfflineKeyRegistration: vi.fn(async (_params: unknown) => ({
+        mock: 'offline-keyreg',
+    })),
     mockErrorToast: vi.fn(),
     mockInfoToast: vi.fn(),
     mockPeraWebSetQr: vi.fn(),
