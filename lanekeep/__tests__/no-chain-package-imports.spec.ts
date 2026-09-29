@@ -12,7 +12,7 @@ import { locations, runRule, type Violation } from './helpers.js'
 
 const RULE = 'lanekeep/rules/no-chain-package-imports.ts'
 const FIXTURES =
-    'lanekeep/__tests__/fixtures/**/{chain-imports.*,chain-adapters,index}.ts'
+    'lanekeep/__tests__/fixtures/**/{chain-imports.*,chain-adapters,index,useAppBootstrap,App.web}.{ts,tsx}'
 
 const inFile = (found: Violation[], suffix: string) =>
     locations(found.filter(v => v.file.endsWith(suffix)))
@@ -43,6 +43,15 @@ describe('pera/no-chain-package-imports', () => {
         const found = await runRule(RULE, FIXTURES)
 
         expect(inFile(found, 'bootstrap/chain-adapters.ts')).toEqual([])
+    })
+
+    it('reports a chain-package import from the app bootstrap hook and the web entry', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(inFile(found, 'src/useAppBootstrap.ts')).toEqual([
+            'useAppBootstrap.ts:6',
+        ])
+        expect(inFile(found, 'src/App.web.tsx')).toEqual(['App.web.tsx:6'])
     })
 
     it('allows a chain package to import itself', async () => {
