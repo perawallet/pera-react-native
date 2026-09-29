@@ -10,6 +10,11 @@
  limitations under the License
  */
 
+import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import {
+    addressCodecs,
+    keyDerivations,
+} from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
@@ -24,11 +29,19 @@ import { cardChainAdapters } from '@perawallet/wallet-core-card'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { algorandCardAdapter } from './card'
 import { algorandRampAdapter } from './onramp'
+import {
+    algorandAccountsAdapter,
+    algorandAddressCodec,
+    algorandKeyDerivation,
+} from './accounts'
 
 // Adapters must be module-level instances, not built in here: the registries
 // ignore a repeat of the same instance but reject a new one, which is what
 // keeps a second call harmless.
 export const registerChain = (): void => {
+    addressCodecs.register(algorandAddressCodec)
+    keyDerivations.register(algorandKeyDerivation)
+    accountsChainAdapters.register(algorandAccountsAdapter)
     ledgerAppDriverRegistry.register(algorandLedgerAppDriver)
     swapChainAdapters.register(algorandSwapAdapter)
     dappRequestChainAdapters.register(algorandDappRequestAdapter)

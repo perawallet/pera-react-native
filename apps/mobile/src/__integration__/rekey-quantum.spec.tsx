@@ -50,6 +50,7 @@ import {
     upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
+    quantumDerivationFor,
 } from '@perawallet/wallet-core-accounts'
 import {
     useKMS,
@@ -234,6 +235,7 @@ const seedSignableRekeyOutAccounts = async (): Promise<{
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
+            chain: quantumDerivationFor('mainnet'),
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()

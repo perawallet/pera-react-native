@@ -42,6 +42,10 @@ export const TEST_PATHS: ExemptPath[] = [
         glob: '**/__integration__/**',
         reason: 'integration harness: registers the real chain for flow tests, never bundled',
     },
+    {
+        glob: '**/conformance/src/**',
+        reason: 'conformance harness: runs the real chain code against LocalNet, never bundled',
+    },
 ]
 
 // Only whole-move shims and the app files that still reach their subpaths live

@@ -416,6 +416,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             multisig: 'multisig',
             watch: 'watch',
         },
+        DerivationTypes: {
+            Khovratovich: 32,
+            Peikert: 9,
+        },
         AccountSortModes: {
             alphabeticalAsc: 'alphabeticalAsc',
             alphabeticalDesc: 'alphabeticalDesc',

@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { AccountError } from './errors'
-import type { HDWalletDetails } from './models'
+import {
+    InvalidBip44PathError,
+    type HDWalletDetails,
+} from '@perawallet/wallet-core-accounts'
 
 /**
  * Algorand's SLIP-0044 coin type. Used as the second segment of BIP44 paths
@@ -27,38 +29,6 @@ export type ParsedAlgorandBip44Path = {
     account: number
     change: number
     keyIndex: number
-}
-
-/**
- * Why a BIP44 path failed validation.
- *
- * - `'malformed'`: the path string isn't a well-formed Algorand BIP44 path.
- * - `'mismatch'`: the path parses cleanly but points to a different
- *   account/change/keyIndex than the HDWalletDetails being compared against.
- */
-export type Bip44PathFailureReason = 'malformed' | 'mismatch'
-
-/**
- * Thrown when {@link parseAlgorandBip44Path} or
- * {@link assertAlgorandBip44PathMatches} reject a path. Carries a machine-
- * readable `reason` so callers can map to domain-specific errors (e.g.
- * ARC-60's `ERROR_FAILED_HD_PATH`) without re-parsing the message.
- */
-export class InvalidBip44PathError extends AccountError {
-    readonly reason: Bip44PathFailureReason
-    readonly hdPath: string
-
-    constructor(
-        hdPath: string,
-        reason: Bip44PathFailureReason,
-        detail: string,
-    ) {
-        super(`Invalid BIP44 path "${hdPath}": ${detail}`, undefined, {
-            params: { hdPath, reason, detail },
-        })
-        this.reason = reason
-        this.hdPath = hdPath
-    }
 }
 
 /**

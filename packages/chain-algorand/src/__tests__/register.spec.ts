@@ -11,6 +11,11 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
+import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import {
+    addressCodecs,
+    keyDerivations,
+} from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
@@ -26,6 +31,11 @@ import { cardChainAdapters } from '@perawallet/wallet-core-card'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { algorandCardAdapter } from '../card'
 import { algorandRampAdapter } from '../onramp'
+import {
+    algorandAccountsAdapter,
+    algorandAddressCodec,
+    algorandKeyDerivation,
+} from '../accounts'
 
 describe('registerChain', () => {
     beforeEach(() => {
@@ -36,6 +46,21 @@ describe('registerChain', () => {
         nameServiceChainAdapters.reset()
         cardChainAdapters.reset()
         rampChainAdapters.reset()
+        addressCodecs.reset()
+        keyDerivations.reset()
+        accountsChainAdapters.reset()
+    })
+
+    it('registers the Algorand accounts adapter, address codec and key derivation', () => {
+        registerChain()
+
+        expect(accountsChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandAccountsAdapter,
+        )
+        expect(addressCodecs.get(ALGORAND_CHAIN_ID)).toBe(algorandAddressCodec)
+        expect(keyDerivations.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandKeyDerivation,
+        )
     })
 
     it('registers the Algorand swap adapter', () => {

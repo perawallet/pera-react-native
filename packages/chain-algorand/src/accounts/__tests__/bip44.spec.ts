@@ -15,10 +15,13 @@ import {
     ALGORAND_COIN_TYPE,
     assertAlgorandBip44PathMatches,
     hdPathMatchesDetails,
-    InvalidBip44PathError,
     parseAlgorandBip44Path,
 } from '../bip44'
-import { DerivationTypes, type HDWalletDetails } from '../models'
+import {
+    DerivationTypes,
+    InvalidBip44PathError,
+    type HDWalletDetails,
+} from '@perawallet/wallet-core-accounts'
 
 const details: HDWalletDetails = {
     account: 0,

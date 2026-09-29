@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Key } from '@algorandfoundation/keystore-core'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain'
+import { fakeQuantumChain } from '../../__tests__/fakeQuantumChain'
 import {
     InvalidKeyError,
     KeyAccessError,
@@ -950,9 +950,15 @@ describe('useKMS', () => {
             const { result } = renderHook(() => useKMS())
             let keyResult: any
             await act(async () => {
-                keyResult = await result.current.createQuantumKey({ id: 'f-1' })
+                keyResult = await result.current.createQuantumKey({
+                    id: 'f-1',
+                    chain: fakeQuantumChain,
+                })
             })
-            expect(mockCreateQuantumKey).toHaveBeenCalledWith({ id: 'f-1' })
+            expect(mockCreateQuantumKey).toHaveBeenCalledWith({
+                id: 'f-1',
+                chain: fakeQuantumChain,
+            })
             expect(keyResult).toEqual(mockResult)
         })
 
@@ -961,7 +967,7 @@ describe('useKMS', () => {
                 const { seedFromMnemonic } = await import('algosdk')
                 const seed = seedFromMnemonic(TEST_MNEMONIC)
                 const { publicKey } = getPQProvider().generateKeypairFromSeed(
-                    derivePQKeygenSeed(seed),
+                    fakeQuantumChain.deriveKeygenSeed(seed),
                 )
 
                 seedQuantumRoot('quantum-1')
@@ -1032,7 +1038,7 @@ describe('useKMS', () => {
             const { seedFromMnemonic } = await import('algosdk')
             const seed = seedFromMnemonic(TEST_MNEMONIC)
             const { publicKey } = getPQProvider().generateKeypairFromSeed(
-                derivePQKeygenSeed(seed),
+                fakeQuantumChain.deriveKeygenSeed(seed),
             )
 
             seedQuantumRoot('quantum-1')
