@@ -96,8 +96,6 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         createAlgo25Key: vi.fn(),
         createHDWalletKey: vi.fn(),
         persistHDMasterKey: vi.fn(),
-        generateDerivedKey: vi.fn(),
-        getDerivedPublicKey: vi.fn(),
         removeKeyAndChildren: vi.fn(async () => {}),
         keyStore: {},
         withExportedKey: vi.fn(),

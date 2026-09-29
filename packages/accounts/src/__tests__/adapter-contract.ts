@@ -23,7 +23,7 @@ import {
     requireRekey,
     type AccountsChainAdapter,
 } from '../chain-adapter'
-import type { HDWalletDetails } from '../models'
+import { DerivationTypes, type HDWalletDetails } from '../models'
 
 type ChainState = {
     address: string
@@ -161,6 +161,25 @@ export const accountsContractTests = (
                 networkId: scope.networkId,
             })
             expect(codec.isValid(address, scope.networkId)).toBe(true)
+        })
+
+        it('names the HD child key id deterministically per coordinate and derivation type', () => {
+            const adapter = makeAdapter()
+            const { details } = fixtures.hdPath
+            const idOf = (overrides: Partial<HDWalletDetails> = {}) =>
+                adapter.hdKeyPairId('seed-1', { ...details, ...overrides })
+
+            expect(idOf()).toBe(idOf())
+            expect(idOf({ account: details.account + 1 })).not.toBe(idOf())
+            expect(idOf({ keyIndex: details.keyIndex + 1 })).not.toBe(idOf())
+            expect(
+                idOf({
+                    derivationType:
+                        details.derivationType === DerivationTypes.Peikert
+                            ? DerivationTypes.Khovratovich
+                            : DerivationTypes.Peikert,
+                }),
+            ).not.toBe(idOf())
         })
 
         it('accepts the matching HD path and rejects the others with their reason', () => {

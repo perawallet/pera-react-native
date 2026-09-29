@@ -14,22 +14,21 @@ import React from 'react'
 import { expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 
 import { createTestQueryClient } from '@test-utils/render'
 import {
     AccountTypes,
+    deriveHdAccount,
     DerivationTypes,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     useKMS,
-    hdDerivedKeyId,
     entropyChildIdOf,
     withSecret,
 } from '@perawallet/wallet-core-kms'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     derivePasskeyCredential,
@@ -113,24 +112,18 @@ export const seedHDWalletAccounts = async (params?: {
         keyIndex: number,
         name: string,
     ): Promise<WalletAccount> => {
-        const pub = await kms.current.getDerivedPublicKey(
+        const derived = await deriveHdAccount(
+            useNetworkStore.getState().network,
             seedKeyId,
-            account,
-            keyIndex,
-            BIP32DerivationType.Peikert,
+            { account, keyIndex },
         )
         return {
             // Scoped to the seed so a second wallet's accounts don't collide
             // with the first's on `id`.
             id: `hd-${seedKeyId}-${account}-${keyIndex}`,
             type: AccountTypes.hdWallet,
-            address: encodeAlgorandAddress(pub),
-            keyPairId: hdDerivedKeyId(
-                seedKeyId,
-                account,
-                keyIndex,
-                BIP32DerivationType.Peikert,
-            ),
+            address: derived.address,
+            keyPairId: derived.keyPairId,
             name,
             hdWalletDetails: {
                 account,
@@ -176,8 +169,6 @@ export const seedPasskey = async (params: {
         origin = 'example.com',
         identity = 'user@example.com',
     } = params
-    const { result: kms } = renderHook(() => useKMS())
-
     const entropyId = entropyChildIdOf(seedKeyId, getKeystoreStore().state.keys)
     expect(entropyId).toBeTruthy()
     const entropy = await withSecret(entropyId!, bytes => new Uint8Array(bytes))
@@ -212,16 +203,15 @@ export const seedPasskey = async (params: {
         ],
     }))
 
-    const firstDerived = await kms.current.getDerivedPublicKey(
+    const firstDerived = await deriveHdAccount(
+        useNetworkStore.getState().network,
         seedKeyId,
-        0,
-        0,
-        BIP32DerivationType.Peikert,
+        { account: 0, keyIndex: 0 },
     )
 
     return {
         credentialId: derived.credentialId,
-        seedAddress: encodeAlgorandAddress(firstDerived),
+        seedAddress: firstDerived.address,
         publicKeySpkiDer: encodeToBase64(derived.publicKeySpkiDer),
     }
 }

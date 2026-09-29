@@ -20,7 +20,7 @@ const {
     persistBackupKeysMock,
     deleteBackupKeysMock,
     pullBackupItemsMock,
-    getDerivedPublicKeyMock,
+    deriveHdAccountMock,
     keystoreKeysMock,
     secretBytesById,
     withSecretMock,
@@ -33,7 +33,7 @@ const {
         persistBackupKeysMock: vi.fn(),
         deleteBackupKeysMock: vi.fn(),
         pullBackupItemsMock: vi.fn(),
-        getDerivedPublicKeyMock: vi.fn(),
+        deriveHdAccountMock: vi.fn(),
         keystoreKeysMock: vi.fn().mockReturnValue([]),
         secretBytesById,
         // Mirrors `withSecret`'s real contract: hands the handler a live
@@ -62,13 +62,16 @@ vi.mock('../../credentials/keyStorage', () => ({
 vi.mock('../pullBackupItems', () => ({
     pullBackupItems: pullBackupItemsMock,
 }))
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    deriveHdAccount: deriveHdAccountMock,
+}))
 // Real `entropyChildIdOf`/`seedSchemeOf`/`SeedScheme`/`zeroBytes`, so the
 // acceptance test below exercises the actual seed-lookup logic; only the
-// KMS session (`useKMS`) and the secret read (`withSecret`, which needs a
-// real keystore backend) are faked.
+// secret read (`withSecret`, which needs a real keystore backend) and the
+// seed's first derive (`deriveHdAccount`) are faked.
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     ...(await importOriginal<object>()),
-    useKMS: () => ({ getDerivedPublicKey: getDerivedPublicKeyMock }),
     withSecret: withSecretMock,
 }))
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -508,7 +511,9 @@ describe('restoreCloudBackup: passkey acceptance', () => {
 
         // A single on-device bip39 seed ("device B") whose first-derived
         // address matches the payload's `seedAddress`.
-        getDerivedPublicKeyMock.mockReset().mockResolvedValue(SEED_PUBKEY)
+        deriveHdAccountMock
+            .mockReset()
+            .mockResolvedValue({ address: SEED_ADDRESS })
         keystoreKeysMock.mockReturnValue([
             {
                 id: 'seed-b',

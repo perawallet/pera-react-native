@@ -22,7 +22,6 @@ import {
     generateOrderedUniqueId,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { hdDerivedKeyId } from '@perawallet/wallet-core-kms'
 import {
     accountsAdapterFor,
     addressCodecFor,
@@ -91,12 +90,11 @@ async function scanAccountKeys({
                 id: generateOrderedUniqueId(),
                 address,
                 type: AccountTypes.hdWallet,
-                keyPairId: hdDerivedKeyId(
-                    walletKeyId,
-                    accountIdx,
-                    currentKeyIdx,
+                keyPairId: adapter.hdKeyPairId(walletKeyId, {
+                    account: accountIdx,
+                    keyIndex: currentKeyIdx,
                     derivationType,
-                ),
+                }),
                 hdWalletDetails: {
                     account: accountIdx,
                     change: 0,

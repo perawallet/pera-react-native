@@ -14,6 +14,7 @@ import type { Decimal } from 'decimal.js'
 import {
     addressCodecs,
     createChainAdapterRegistry,
+    keyDerivations,
     scopeForLegacyNetwork,
     type AddressCodec,
     type ChainId,
@@ -21,9 +22,13 @@ import {
     type DeriveOpts,
 } from '@perawallet/wallet-core-chain-contract'
 import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
-import type { QuantumChainDerivation } from '@perawallet/wallet-core-kms'
+import {
+    kmsCore,
+    type QuantumChainDerivation,
+} from '@perawallet/wallet-core-kms'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import {
+    HdDerivationTypeUnsupportedError,
     QuantumAccountsUnsupportedError,
     RekeyUnsupportedError,
 } from './errors'
@@ -101,6 +106,18 @@ export interface AccountsChainAdapter {
     ): Promise<Map<string, boolean>>
     /** Public keys from an in-memory root key, for discovery before the seed is persisted. */
     createPublicKeyGetter(rootKey: Uint8Array): GetPublicKey
+    /**
+     * Keystore id of the HD child at these coordinates, computed without
+     * deriving. Stored accounts reference this id, so its format never changes,
+     * and it must equal the `keyPairId` the chain's `KeyDerivation` returns.
+     */
+    hdKeyPairId(
+        seedKeyId: string,
+        details: Pick<
+            HDWalletDetails,
+            'account' | 'keyIndex' | 'derivationType'
+        >,
+    ): string
     /** Throws `InvalidBip44PathError` when `hdPath` is malformed or names other coordinates. */
     assertHdPathMatches(hdPath: string, details: HDWalletDetails): void
     /** Absent on a chain with no post-quantum accounts. */
@@ -126,6 +143,45 @@ export const ed25519DeriveOpts = (network: Network): DeriveOpts => ({
     scheme: 'ed25519',
     networkId: scopeForLegacyNetwork(network).networkId,
 })
+
+export type HdAccountCoordinates = {
+    account: number
+    keyIndex: number
+    /** Defaults to the chain's `hdDerivationType`; a backup payload's is unvalidated, hence `number`. */
+    derivationType?: number
+}
+
+/**
+ * Derives the HD child through the chain's registered `KeyDerivation`.
+ * `KeyDerivation.deriveAccount` only derives the chain's own `hdDerivationType`, so
+ * any other requested type throws {@link HdDerivationTypeUnsupportedError} rather
+ * than yielding a key that doesn't match the type a record names.
+ */
+export const deriveHdAccount = async (
+    network: Network,
+    seedKeyId: string,
+    { account, keyIndex, derivationType }: HdAccountCoordinates,
+) => {
+    const adapter = accountsAdapterFor(network)
+    if (
+        derivationType !== undefined &&
+        derivationType !== adapter.hdDerivationType
+    ) {
+        throw new HdDerivationTypeUnsupportedError(
+            derivationType,
+            adapter.chainId,
+        )
+    }
+    return keyDerivations
+        .get(adapter.chainId)
+        .deriveAccount(
+            kmsCore,
+            seedKeyId,
+            account,
+            keyIndex,
+            ed25519DeriveOpts(network),
+        )
+}
 
 /** Throws {@link RekeyUnsupportedError} on a chain without rekey. */
 export const requireRekey = (

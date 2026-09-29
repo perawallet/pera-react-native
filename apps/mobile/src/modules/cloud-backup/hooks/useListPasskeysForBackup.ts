@@ -11,8 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { deriveHdAccount } from '@perawallet/wallet-core-accounts'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     type BackupPasskey,
     useProvenPasskeysStore,
@@ -21,7 +21,6 @@ import {
     BACKUP_ACCESS_DOMAIN,
     canAccess,
     entropyChildIdOf,
-    useKMS,
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
@@ -135,7 +134,7 @@ const collectCandidateKeys = async (): Promise<KeystoreKey[]> => {
 export const useListPasskeysForBackup = (): (() => Promise<
     BackupPasskey[]
 >) => {
-    const { getDerivedPublicKey } = useKMS()
+    const { network } = useNetwork()
     const setProvenPasskeys = useProvenPasskeysStore(
         state => state.setProvenPasskeys,
     )
@@ -167,16 +166,11 @@ export const useListPasskeysForBackup = (): (() => Promise<
             // First-derived (acc0/idx0/Peikert) address, the same dedup key
             // `useResolveHdSeedForBackup` derives, joining to the seed's own
             // `secrets/` backup item.
-            const firstDerived = await getDerivedPublicKey(
-                seedKeyId,
-                0,
-                0,
-                BIP32DerivationType.Peikert,
-            )
-            passkeys.push({
-                ...rest,
-                seedAddress: encodeAlgorandAddress(firstDerived),
+            const firstDerived = await deriveHdAccount(network, seedKeyId, {
+                account: 0,
+                keyIndex: 0,
             })
+            passkeys.push({ ...rest, seedAddress: firstDerived.address })
         }
 
         // Proving the credentials costs a PBKDF2 per owning seed, so this
@@ -184,5 +178,5 @@ export const useListPasskeysForBackup = (): (() => Promise<
         // synchronously instead of re-deriving on a render path.
         setProvenPasskeys(passkeys)
         return passkeys
-    }, [getDerivedPublicKey, setProvenPasskeys])
+    }, [network, setProvenPasskeys])
 }

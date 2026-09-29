@@ -11,9 +11,11 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { seedFromMnemonic } from 'algosdk'
-import { algo25SeedToIndices } from '../algo25-utils'
-import { mnemonicIndexToWord } from '../mnemonic-indices'
+import { algo25SeedToIndices, indicesToAlgo25Seed } from '../algo25-utils'
+import {
+    mnemonicIndexToWord,
+    mnemonicWordsToIndices,
+} from '../mnemonic-indices'
 import { getPQProvider } from '../pq'
 import { fakeQuantumChain } from '../../__tests__/fakeQuantumChain'
 
@@ -28,6 +30,9 @@ import { fakeQuantumChain } from '../../__tests__/fakeQuantumChain'
 
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
+
+const seedFromMnemonic = (mnemonic: string): Uint8Array =>
+    indicesToAlgo25Seed(mnemonicWordsToIndices(mnemonic.split(' '))!)
 
 describe('quantum integration', () => {
     test('import → export roundtrip: mnemonic → seed → indices reproduces the same 25 words', () => {

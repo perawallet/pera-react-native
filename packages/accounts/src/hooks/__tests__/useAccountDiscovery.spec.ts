@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountDiscovery } from '../useAccountDiscovery'
+import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
 const mockBaseDiscoverAccounts = vi.fn()
 const mockBaseDiscoverRekeyedAccounts = vi.fn()
@@ -23,30 +24,19 @@ vi.mock('../../account-discovery', () => ({
         mockBaseDiscoverRekeyedAccounts(...args),
 }))
 
-vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
-    BIP32DerivationType: { Peikert: 9 },
-}))
-
-const kmsMock = vi.hoisted(() => ({
-    getDerivedPublicKey: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-kms', () => ({
-    useKMS: () => kmsMock,
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 describe('useAccountDiscovery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        kmsMock.getDerivedPublicKey.mockResolvedValue(
-            new Uint8Array(32).fill(7),
-        )
         mockBaseDiscoverAccounts.mockResolvedValue(['acc'])
         mockBaseDiscoverRekeyedAccounts.mockResolvedValue(['rekeyed'])
     })
 
     describe('discoverAccounts', () => {
-        it('passes a getPublicKey callback that delegates to kms.getDerivedPublicKey', async () => {
+        it('passes a getPublicKey callback that derives through the registered key derivation', async () => {
             const { result } = renderHook(() => useAccountDiscovery())
 
             let discovered: unknown
@@ -60,9 +50,9 @@ describe('useAccountDiscovery', () => {
                 })
             })
 
-            // Lazy: getDerivedPublicKey isn't invoked until the discovery
-            // callback fires.
-            expect(kmsMock.getDerivedPublicKey).not.toHaveBeenCalled()
+            // Lazy: nothing is derived until the discovery callback fires.
+            const { deriveAccount } = fakeAccountsChain().derivation
+            expect(deriveAccount).not.toHaveBeenCalled()
 
             const baseCall = mockBaseDiscoverAccounts.mock.calls[0]?.[0]
             expect(baseCall).toMatchObject({
@@ -78,13 +68,14 @@ describe('useAccountDiscovery', () => {
                 keyIndex: 0,
                 derivationType: 9,
             })
-            expect(kmsMock.getDerivedPublicKey).toHaveBeenCalledWith(
+            expect(deriveAccount).toHaveBeenCalledWith(
+                expect.anything(),
                 'WALLET1',
                 1,
                 0,
-                9,
+                expect.objectContaining({ scheme: 'ed25519' }),
             )
-            expect(pubKey).toBeInstanceOf(Uint8Array)
+            expect(Array.from(pubKey)).toEqual([1, 0, 0xfa, 0xce])
 
             expect(discovered).toEqual(['acc'])
         })
@@ -101,7 +92,9 @@ describe('useAccountDiscovery', () => {
                 })
             })
 
-            expect(kmsMock.getDerivedPublicKey).not.toHaveBeenCalled()
+            expect(
+                fakeAccountsChain().derivation.deriveAccount,
+            ).not.toHaveBeenCalled()
             expect(mockBaseDiscoverRekeyedAccounts).toHaveBeenCalledWith({
                 accountAddresses: ['A', 'B'],
             })

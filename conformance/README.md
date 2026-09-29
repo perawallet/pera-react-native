@@ -111,21 +111,21 @@ The point of this suite is to put Pera's own functions in front of a real
 node. Where a third-party library appears, it is on the _other_ side of the
 comparison as an independent oracle, never on both.
 
-| Area                                                                  | The app code under test                                                                                                                       |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Envelope construction (`sig`, `sgnr`, `pqsig`, batching)              | `signTransactionsWithLocalKey`, the pure pipeline function `useLocalKeyTransactionSigner` delegates to                                        |
-| Signature-scheme decision                                             | `resolvePQSigningInfo`, reading a live keystore snapshot                                                                                      |
-| Strategy layer (capability gate, progress, backend signature payload) | `createLocalKeyStrategy`                                                                                                                      |
-| Signer dispatch and rekey resolution                                  | `buildGroupSignerTypeMap`, `resolveSigningAccount`                                                                                            |
-| Group fee assignment and re-grouping                                  | `assignMinimumFeesToGroup`, `groupHasQuantumSigner`                                                                                           |
-| Fee arithmetic                                                        | `calculateMinTxnFee`, `calculatePQFeeSurcharge`                                                                                               |
-| Address derivation                                                    | `algo25SeedToAddress`, `deriveQuantumAddress`, `derivePQKeygenSeed`, `generateMultisigAddress`, `encodeAlgorandAddress`, `prepareHDMasterKey` |
-| In-memory PQ keygen (import probe, legacy-account notice)             | `getPQProvider().generateKeypairFromSeed`, `quantumAddressCandidates`                                                                         |
-| Account state                                                         | `fetchOnChainAccountInformation` + `mapOnChainAccountInformation`, `fetchAccountAssetOptInRounds`                                             |
-| Transaction history                                                   | `transformIndexerTransactions`, `collectAssetIds`, `computeBalanceImpacts`                                                                    |
-| Multisig assembly                                                     | `assembleSignedMultisigTransactions`                                                                                                          |
-| Submission                                                            | `submitAndAutoRefreshCore`                                                                                                                    |
-| Error classification                                                  | `toAlgodError` / `parseAlgodMessage`                                                                                                          |
+| Area                                                                  | The app code under test                                                                                                                        |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Envelope construction (`sig`, `sgnr`, `pqsig`, batching)              | `signTransactionsWithLocalKey`, the pure pipeline function `useLocalKeyTransactionSigner` delegates to                                         |
+| Signature-scheme decision                                             | `resolvePQSigningInfo`, reading a live keystore snapshot                                                                                       |
+| Strategy layer (capability gate, progress, backend signature payload) | `createLocalKeyStrategy`                                                                                                                       |
+| Signer dispatch and rekey resolution                                  | `buildGroupSignerTypeMap`, `resolveSigningAccount`                                                                                             |
+| Group fee assignment and re-grouping                                  | `assignMinimumFeesToGroup`, `groupHasQuantumSigner`                                                                                            |
+| Fee arithmetic                                                        | `calculateMinTxnFee`, `calculatePQFeeSurcharge`                                                                                                |
+| Address derivation                                                    | `algorandAddressCodec`, `deriveQuantumAddress`, `derivePQKeygenSeed`, `generateMultisigAddress`, `encodeAlgorandAddress`, `prepareHDMasterKey` |
+| In-memory PQ keygen (import probe, legacy-account notice)             | `getPQProvider().generateKeypairFromSeed`, `quantumAddressCandidates`                                                                          |
+| Account state                                                         | `fetchOnChainAccountInformation` + `mapOnChainAccountInformation`, `fetchAccountAssetOptInRounds`                                              |
+| Transaction history                                                   | `transformIndexerTransactions`, `collectAssetIds`, `computeBalanceImpacts`                                                                     |
+| Multisig assembly                                                     | `assembleSignedMultisigTransactions`                                                                                                           |
+| Submission                                                            | `submitAndAutoRefreshCore`                                                                                                                     |
+| Error classification                                                  | `toAlgodError` / `parseAlgodMessage`                                                                                                           |
 
 Two files under `harness/__tests__/` are deliberate exceptions, and say so in
 their own headers: `algokey.spec.ts` self-tests the oracle (so a broken oracle

@@ -16,12 +16,6 @@ import nacl from 'tweetnacl'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 const mockIndicesToAlgo25Seed = vi.fn()
-const mockEncodeAddress = vi.fn()
-
-vi.mock('algosdk', async importOriginal => ({
-    ...(await importOriginal<typeof import('algosdk')>()),
-    encodeAddress: (...args: any[]) => mockEncodeAddress(...args),
-}))
 
 vi.mock('../../crypto/algo25-utils', async importOriginal => ({
     ...(await importOriginal<typeof import('../../crypto/algo25-utils')>()),
@@ -71,10 +65,13 @@ describe('useAlgo25', () => {
     })
 
     describe('createAlgo25Key', () => {
-        test('imports the seed, generates an ed25519 child, and returns address + seedKey + signKeyId', async () => {
+        test('imports the seed, generates an ed25519 child, and returns publicKey + seedKey + signKeyId', async () => {
             const fakeSeed = new Uint8Array(32).fill(1)
             mockIndicesToAlgo25Seed.mockReturnValue(fakeSeed)
-            mockEncodeAddress.mockReturnValue('ALGO25ADDR')
+            // The seed buffer is wiped once createAlgo25Key returns.
+            const expectedPublicKey = Array.from(
+                nacl.sign.keyPair.fromSeed(fakeSeed).publicKey,
+            )
 
             const { result } = renderHook(() => useAlgo25())
 
@@ -86,7 +83,7 @@ describe('useAlgo25', () => {
                 })
             })
 
-            expect(keyResult!.address).toBe('ALGO25ADDR')
+            expect(Array.from(keyResult!.publicKey)).toEqual(expectedPublicKey)
             expect(keyResult!.seedKey.id).toBe('my-key')
             expect(keyResult!.seedKey.type).toBe('seed')
             expect((keyResult!.seedKey.metadata as any).scheme).toBe(
@@ -99,7 +96,6 @@ describe('useAlgo25', () => {
             const fakeSeed = new Uint8Array(32).fill(1)
             const expectedBytes = Array.from(fakeSeed)
             mockIndicesToAlgo25Seed.mockReturnValue(fakeSeed)
-            mockEncodeAddress.mockReturnValue('ADDR')
 
             // Snapshot the privateKey contents synchronously when import
             // fires — `createAlgo25Key` now passes the seed buffer
@@ -146,7 +142,6 @@ describe('useAlgo25', () => {
         test('imports the ed25519 sign child keyed to the seed, not a fresh random key', async () => {
             const fakeSeed = new Uint8Array(32).fill(1)
             mockIndicesToAlgo25Seed.mockReturnValue(fakeSeed)
-            mockEncodeAddress.mockReturnValue('ADDR')
             // Both the expectations and the recorded call have to be captured
             // before `createAlgo25Key` zeroes the seed buffer in its finally —
             // the child rides that same reference.
@@ -189,7 +184,6 @@ describe('useAlgo25', () => {
 
         test('zeroes every nacl secretKey it allocates before returning', async () => {
             mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(7))
-            mockEncodeAddress.mockReturnValue('ADDR')
             const fromSeedSpy = vi.spyOn(nacl.sign.keyPair, 'fromSeed')
 
             const { result } = renderHook(() => useAlgo25())
@@ -200,10 +194,10 @@ describe('useAlgo25', () => {
                 })
             })
 
-            // Two allocations: algo25SeedToAddress and the sign child. Each
-            // secretKey carries the seed in its first 32 bytes, so an orphaned
-            // one leaves recovery material on the heap after zeroBytes(seed).
-            expect(fromSeedSpy).toHaveBeenCalledTimes(2)
+            // The secretKey carries the seed in its first 32 bytes, so an
+            // orphaned one leaves recovery material on the heap after
+            // zeroBytes(seed); one pair serves both address and sign child.
+            expect(fromSeedSpy).toHaveBeenCalledTimes(1)
             for (const call of fromSeedSpy.mock.results) {
                 const keyPair = call.value as nacl.SignKeyPair
                 expect(Array.from(keyPair.secretKey)).toEqual(
@@ -215,7 +209,6 @@ describe('useAlgo25', () => {
 
         test('zeroes the sign-child secretKey even when its import throws', async () => {
             mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(7))
-            mockEncodeAddress.mockReturnValue('ADDR')
             mockKeyStoreImport
                 .mockResolvedValueOnce('my-key')
                 .mockRejectedValueOnce(new Error('boom'))
@@ -242,7 +235,6 @@ describe('useAlgo25', () => {
 
         test('does not mint the sign child through generate', async () => {
             mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(1))
-            mockEncodeAddress.mockReturnValue('ADDR')
 
             const { result } = renderHook(() => useAlgo25())
             await act(async () => {
@@ -259,7 +251,6 @@ describe('useAlgo25', () => {
 
         test('generates a uuid id when not provided', async () => {
             mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32))
-            mockEncodeAddress.mockReturnValue('ADDR')
             const { result } = renderHook(() => useAlgo25())
             let keyResult: Optional<Algo25KeyResult>
             await act(async () => {
@@ -272,7 +263,6 @@ describe('useAlgo25', () => {
 
         test('rolls back the seed if the ed25519 child fails to import', async () => {
             mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32))
-            mockEncodeAddress.mockReturnValue('ADDR')
             // First import is the seed; the second is the signing child.
             mockKeyStoreImport
                 .mockResolvedValueOnce('my-key')
@@ -293,7 +283,6 @@ describe('useAlgo25', () => {
 
         test('reports which step failed when the signing-child import throws', async () => {
             mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(1))
-            mockEncodeAddress.mockReturnValue('ADDR')
             mockKeyStoreImport
                 .mockResolvedValueOnce('my-key')
                 .mockRejectedValueOnce(new Error('keystore rejected'))
@@ -316,7 +305,6 @@ describe('useAlgo25', () => {
 
         test('reports the seedImport stage when the seed import throws', async () => {
             mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(1))
-            mockEncodeAddress.mockReturnValue('ADDR')
             mockKeyStoreImport.mockRejectedValueOnce(
                 new Error('keystore rejected'),
             )

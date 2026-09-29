@@ -18,7 +18,6 @@ import {
     type ChainId,
     type KeyDerivation,
 } from '@perawallet/wallet-core-chain-contract'
-import { hdDerivedKeyId } from '@perawallet/wallet-core-kms'
 import {
     accountsChainAdapters,
     type AccountsChainAdapter,
@@ -33,6 +32,11 @@ export const TESTNET_SCOPE = { chainId: FAKE_CHAIN_ID, networkId: 'testnet' }
 
 export const fakeEncode = (publicKey: Uint8Array): string =>
     Buffer.from(publicKey).toString('base64')
+
+const fakeHdKeyPairId: AccountsChainAdapter['hdKeyPairId'] = (
+    seedKeyId,
+    { account, keyIndex, derivationType },
+) => `${seedKeyId}-acc${account}-idx${keyIndex}-dt${derivationType}`
 
 const BASE32_ADDRESS = /^[A-Z2-7]{58}$/
 
@@ -57,12 +61,11 @@ const createFakeKeyDerivation = (): KeyDerivation => ({
     deriveAccount: vi.fn(async (_kms, seedRef, account, keyIndex) => {
         const publicKey = new Uint8Array([account, keyIndex, 0xfa, 0xce])
         return {
-            keyPairId: hdDerivedKeyId(
-                seedRef,
+            keyPairId: fakeHdKeyPairId(seedRef, {
                 account,
                 keyIndex,
-                DerivationTypes.Peikert,
-            ),
+                derivationType: DerivationTypes.Peikert,
+            }),
             publicKey,
             address: fakeEncode(publicKey),
         }
@@ -83,6 +86,7 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
             new Map(addresses.map(address => [address, false])),
     ),
     createPublicKeyGetter: vi.fn(() => async () => new Uint8Array(32)),
+    hdKeyPairId: vi.fn(fakeHdKeyPairId),
     assertHdPathMatches: vi.fn(),
     quantum: {
         deriveKeygenSeed: vi.fn((entropy: Uint8Array) => entropy.slice()),

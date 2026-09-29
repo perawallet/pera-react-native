@@ -34,7 +34,12 @@ import {
     type WalletAccount,
 } from '../models'
 import { DuplicateAccountError } from '../errors'
-import { accountsAdapterFor, quantumDerivationFor } from '../chain-adapter'
+import {
+    accountsAdapterFor,
+    addressCodecFor,
+    ed25519DeriveOpts,
+    quantumDerivationFor,
+} from '../chain-adapter'
 
 export type ImportHDPendingResult = {
     type: 'hdWallet'
@@ -221,7 +226,13 @@ export const useImportAccount = () => {
 
         // Algo25: derive the key, then check whether the wallet already holds
         // this address before persisting the account.
-        const { seedKey, address } = await createAlgo25Key({ mnemonicIndices })
+        const { seedKey, publicKey } = await createAlgo25Key({
+            mnemonicIndices,
+        })
+        const address = addressCodecFor(network).fromPublicKey(
+            publicKey,
+            ed25519DeriveOpts(network),
+        )
         await throwIfDuplicate(address, seedKey.id)
         return await createAlgo25WalletAccount({
             seed: { seedKeyId: seedKey.id, address },

@@ -35,6 +35,7 @@ import {
 } from '../../errors'
 import {
     fakeAccountsChain,
+    fakeEncode,
     registerFakeAccountsChain,
 } from '../../__tests__/fakeAccountsChain'
 
@@ -51,6 +52,8 @@ const LEGACY_ADDRESS =
 const TEST_MNEMONIC_INDICES = mnemonicWordsToIndices(TEST_MNEMONIC.split(' '))!
 // The algo25/HD KMS hooks are mocked, so any 25-entry buffer will do there.
 const DUMMY_INDICES = new Uint16Array(25)
+const ALGO25_PUBLIC_KEY = new Uint8Array([2, 5, 2, 5])
+const CORRECT_PUBLIC_KEY = new Uint8Array([1, 2, 3, 4])
 
 // The real Algorand quantum derivation, so the candidates are the pinned
 // addresses above; the on-chain probe is the adapter's `accountExists`.
@@ -126,7 +129,6 @@ const kmsMock = vi.hoisted(() => ({
     createQuantumKey: vi.fn(),
     removeKeyAndChildren: vi.fn(),
     persistHDMasterKey: vi.fn(),
-    generateDerivedKey: vi.fn(),
     withExportedKey: vi.fn(),
     // Test double for the real childId->seedId resolver: mirrors the
     // deterministic suffixes this file's mocks/fixtures already use
@@ -181,7 +183,6 @@ describe('useImportAccount', () => {
         kmsMock.createAlgo25Key.mockReset()
         kmsMock.createQuantumKey.mockReset()
         kmsMock.removeKeyAndChildren.mockReset()
-        kmsMock.generateDerivedKey.mockReset()
         kmsMock.withExportedKey.mockReset()
         mockKeyStoreExport.mockReset()
 
@@ -204,7 +205,7 @@ describe('useImportAccount', () => {
                 extractable: true,
                 metadata: { scheme: SeedScheme.Algo25 },
             },
-            address: 'ALGO25_PUBLIC_KEY',
+            publicKey: ALGO25_PUBLIC_KEY,
         })
         // Address/signKeyId vary by `derivation` (and the seed id by
         // `reuseSeedId`) so the dual-probe branch can mint canonical and
@@ -234,7 +235,6 @@ describe('useImportAccount', () => {
             },
         )
         kmsMock.removeKeyAndChildren.mockResolvedValue(undefined)
-        kmsMock.generateDerivedKey.mockResolvedValue('ks-derived-1')
         mockKeyStoreExport.mockResolvedValue({
             publicKey: new Uint8Array(32).fill(2),
         })
@@ -305,7 +305,7 @@ describe('useImportAccount', () => {
                 extractable: true,
                 metadata: { scheme: SeedScheme.Algo25 },
             },
-            address: 'ALGO25_PUBLIC_KEY',
+            publicKey: ALGO25_PUBLIC_KEY,
         })
 
         uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
@@ -323,7 +323,7 @@ describe('useImportAccount', () => {
         expect(kmsMock.createAlgo25Key).toHaveBeenCalledWith({
             mnemonicIndices: DUMMY_INDICES,
         })
-        expect(imported.address).toBe('ALGO25_PUBLIC_KEY')
+        expect(imported.address).toBe(fakeEncode(ALGO25_PUBLIC_KEY))
         expect(imported.type).toBe('algo25')
         // keyPairId is the deterministic ed25519 child of the seed.
         expect(imported.keyPairId).toBe('WALLET1-ed25519')
@@ -343,7 +343,7 @@ describe('useImportAccount', () => {
                 extractable: true,
                 metadata: { scheme: SeedScheme.Algo25 },
             },
-            address: 'CORRECT_ADDRESS',
+            publicKey: CORRECT_PUBLIC_KEY,
         })
         kmsMock.getKey.mockReturnValue(null)
 
@@ -364,7 +364,7 @@ describe('useImportAccount', () => {
             mnemonicIndices: DUMMY_INDICES,
         })
         expect(kmsMock.getKey).not.toHaveBeenCalled()
-        expect(imported.address).toBe('CORRECT_ADDRESS')
+        expect(imported.address).toBe(fakeEncode(CORRECT_PUBLIC_KEY))
         expect(imported.keyPairId).toBe('WALLET1-ed25519')
     })
 
@@ -396,7 +396,7 @@ describe('useImportAccount', () => {
                 extractable: true,
                 metadata: { scheme: SeedScheme.Algo25 },
             },
-            address: 'SAME_ADDRESS',
+            publicKey: ALGO25_PUBLIC_KEY,
         })
         uuidSpies.v7.mockImplementation(() => 'ACC1')
 
@@ -710,11 +710,9 @@ describe('useImportAccount', () => {
                     extractable: true,
                     metadata: { scheme: SeedScheme.Algo25 },
                 },
-                address: algosdk
-                    .mnemonicToSecretKey(
-                        Array.from(idx, mnemonicIndexToWord).join(' '),
-                    )
-                    .addr.toString(),
+                publicKey: algosdk.mnemonicToSecretKey(
+                    Array.from(idx, mnemonicIndexToWord).join(' '),
+                ).addr.publicKey,
             }),
         )
         kmsMock.createQuantumKey.mockImplementation(

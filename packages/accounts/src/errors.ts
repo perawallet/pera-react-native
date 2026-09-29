@@ -154,3 +154,9 @@ export class QuantumAccountsUnsupportedError extends ChainFeatureUnsupportedErro
         super('Post-quantum accounts', chainId)
     }
 }
+
+export class HdDerivationTypeUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(derivationType: number, chainId: ChainId) {
+        super(`HD derivation type ${derivationType}`, chainId)
+    }
+}

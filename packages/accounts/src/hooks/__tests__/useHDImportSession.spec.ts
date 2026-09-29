@@ -17,10 +17,11 @@ import { useHDImportSessionStore } from '../../import-session'
 import { useAccountsStore } from '../../store'
 import { HDImportSessionNotFoundError } from '../../errors'
 import { DerivationTypes } from '../../models'
+import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
 const kmsMock = vi.hoisted(() => ({
     persistHDMasterKey: vi.fn(),
-    generateDerivedKey: vi.fn().mockResolvedValue('derived-id'),
+    removeKeyAndChildren: vi.fn().mockResolvedValue(undefined),
 }))
 const prepareMock = vi.hoisted(() => vi.fn())
 
@@ -121,10 +122,54 @@ describe('useHDImportSession', () => {
         expect(kmsMock.persistHDMasterKey).toHaveBeenCalledWith(
             expect.objectContaining({ keyId: 'w-1' }),
         )
+        expect(
+            fakeAccountsChain().derivation.deriveAccount,
+        ).toHaveBeenCalledWith(
+            expect.anything(),
+            'w-1',
+            1,
+            0,
+            expect.objectContaining({ scheme: 'ed25519' }),
+        )
         expect(saved).toHaveLength(1)
         expect(saved[0].address).toBe('ADDR-A')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
         expect(useHDImportSessionStore.getState().pending).toBeNull()
+    })
+
+    test('commitImport removes the persisted seed and keeps the session when a child derive rejects', async () => {
+        vi.mocked(
+            fakeAccountsChain().derivation.deriveAccount,
+        ).mockRejectedValueOnce(new Error('derive failed'))
+        const { result } = renderHook(() => useHDImportSession())
+        await act(async () => {
+            await result.current.prepareImport({ mnemonic: 'm' })
+        })
+
+        await act(async () => {
+            await expect(
+                result.current.commitImport({
+                    walletKeyId: 'w-1',
+                    selectedAccounts: [
+                        {
+                            id: 'discovered-1',
+                            address: 'ADDR-A',
+                            type: 'hdWallet' as const,
+                            keyPairId: 'w-1',
+                            hdWalletDetails: {
+                                account: 1,
+                                change: 0,
+                                keyIndex: 0,
+                                derivationType: DerivationTypes.Peikert,
+                            },
+                        },
+                    ],
+                }),
+            ).rejects.toThrow('derive failed')
+        })
+
+        expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('w-1')
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
     })
 
     test('commitImport throws and keeps session pending if walletKeyId mismatches', async () => {

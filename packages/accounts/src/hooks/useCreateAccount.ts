@@ -12,11 +12,9 @@
 
 import { useAccountsStore } from '../store'
 import { AccountTypes, type WalletAccount } from '../models'
-import { keyDerivations } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     algo25SignKeyId,
-    kmsCore,
     KeyNotFoundError,
     PQ_DERIVATION_CANONICAL,
     quantumSignKeyId,
@@ -27,6 +25,7 @@ import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
     accountsAdapterFor,
     addressCodecFor,
+    deriveHdAccount,
     ed25519DeriveOpts,
     quantumDerivationFor,
 } from '../chain-adapter'
@@ -82,15 +81,10 @@ export const useCreateAccount = () => {
         account: number
         keyIndex: number
     }): Promise<WalletAccount> => {
-        const derived = await keyDerivations
-            .get(accountsAdapterFor(network).chainId)
-            .deriveAccount(
-                kmsCore,
-                seedKeyId,
-                account,
-                keyIndex,
-                ed25519DeriveOpts(network),
-            )
+        const derived = await deriveHdAccount(network, seedKeyId, {
+            account,
+            keyIndex,
+        })
         if (!derived.publicKey) throw new NoHDWalletError(seedKeyId)
 
         return {
@@ -177,7 +171,10 @@ export const useCreateAccount = () => {
                     const result = await createAlgo25Key({ id: keyId })
                     resolved = {
                         seedKeyId: result.seedKey.id,
-                        address: result.address,
+                        address: addressCodecFor(network).fromPublicKey(
+                            result.publicKey,
+                            ed25519DeriveOpts(network),
+                        ),
                     }
                     createdNewKey = true
                     createdKeyId = result.seedKey.id

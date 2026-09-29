@@ -18,6 +18,7 @@ import { SeedScheme } from '@perawallet/wallet-core-kms'
 import { QuantumAccountsUnsupportedError } from '../../errors'
 import {
     fakeAccountsChain,
+    fakeEncode,
     registerFakeAccountsChain,
 } from '../../__tests__/fakeAccountsChain'
 
@@ -26,6 +27,8 @@ const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
+
+const ALGO25_PUBLIC_KEY = new Uint8Array([2, 5, 2, 5])
 
 const deriveAccount = () =>
     vi.mocked(fakeAccountsChain().derivation.deriveAccount)
@@ -119,7 +122,7 @@ describe('useCreateAccount', () => {
                 extractable: true,
                 metadata: { scheme: SeedScheme.Algo25 },
             },
-            address: 'ALGO25_PUBLIC_KEY',
+            publicKey: ALGO25_PUBLIC_KEY,
         })
         kmsMock.createQuantumKey.mockResolvedValue({
             seedKey: {
@@ -308,7 +311,7 @@ describe('useCreateAccount', () => {
         })
 
         expect(created.type).toBe('algo25')
-        expect(created.address).toBe('ALGO25_PUBLIC_KEY')
+        expect(created.address).toBe(fakeEncode(ALGO25_PUBLIC_KEY))
         // keyPairId is the deterministic ed25519 child id committed
         // alongside the seed at `${seedKeyId}-ed25519`.
         expect(created.keyPairId).toBe('WALLET1-ed25519')

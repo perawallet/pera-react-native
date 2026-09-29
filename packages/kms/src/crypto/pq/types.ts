@@ -28,7 +28,7 @@ export type PQSchemeId = 'falcon1024'
  * fixtures cross-check the keystore's own derivation instead of confirming it
  * against itself.
  *
- * Implementations MUST be pure crypto: no algosdk imports, no address
+ * Implementations MUST be pure crypto: no Algorand SDK imports, no address
  * derivation. Digest contracts belong to the signer / Seam B, out of scope
  * here.
  */

@@ -52,6 +52,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -237,10 +238,11 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const authSigner = await seedAlgo25Signer()
         const { result: kms } = renderHook(() => useKMS())
         const ownKey = await kms.current.createAlgo25Key()
+        const ownAddress = encodeAlgorandAddress(ownKey.publicKey)
         const rekeyedSigner: WalletAccount = {
             id: 'rekeyed-with-own-key',
             type: AccountTypes.algo25,
-            address: ownKey.address,
+            address: ownAddress,
             keyPairId: ownKey.seedKey.id ?? '',
             rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed SIWA signer with key',
@@ -249,7 +251,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
 
         const { request, approve, error } = buildArc60SignRequest({
             domain: 'arc60.io',
-            signer: ownKey.address,
+            signer: ownAddress,
         })
 
         const signSpy = vi.spyOn(getProvider().key.store, 'sign')

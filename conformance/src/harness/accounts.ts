@@ -17,6 +17,7 @@ import {
     KeyContext,
 } from '@algorandfoundation/xhd-wallet-api'
 import algosdk from 'algosdk'
+import nacl from 'tweetnacl'
 
 // Deep imports rather than the package barrel on purpose: the barrel pulls
 // in every accounts hook (multisig, staking, currencies), none of which is
@@ -32,6 +33,7 @@ import {
     type QuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts/models/accounts'
+import { algorandAddressCodec } from '@perawallet/wallet-core-chain-algorand/accounts/address-codec'
 import { assertAlgorandBip44PathMatches } from '@perawallet/wallet-core-chain-algorand/accounts/bip44'
 import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain/pq/derivation'
 import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain/pq/quantumAdapter'
@@ -40,7 +42,6 @@ import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/
 import { entropyToMnemonic } from '@perawallet/wallet-core-kms/crypto/hdwallet-utils'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms/crypto/mnemonic-indices'
 import { prepareHDMasterKey } from '@perawallet/wallet-core-kms/crypto/prepare-hd-master-key'
-import { algo25SeedToAddress } from '@perawallet/wallet-core-kms/utils'
 
 export type ConformanceAccountKind = 'algo25' | 'hd' | 'quantum'
 
@@ -72,7 +73,7 @@ export type ConformanceMultisigAccount = {
 const HD_ACCOUNT = 0
 
 // BIP44 Algorand address path (coin type 283), byte-for-byte the app's
-// `buildAddressPath` in packages/kms/src/hooks/useHDWallet.ts. That one is
+// `buildAddressPath` in packages/chain-algorand/src/accounts/hd-derivation.ts. That one is
 // module-private, so the path is rebuilt here and then checked against the
 // app's own parser below rather than trusted.
 export const buildHdAddressPath = (account: number, keyIndex: number): string =>
@@ -115,9 +116,14 @@ export const createAlgo25Account = async (
     const seed = algosdk.seedFromMnemonic(mnemonic)
     await importSeed(keyStore, `${id}-seed`, seed, 'algo25')
 
-    // The app's own seed→address derivation, so a change to it fails here
-    // rather than agreeing with a harness copy of the old behaviour.
-    const address = algo25SeedToAddress(seed)
+    // The app's own address encoding, so a change to it fails here rather
+    // than agreeing with a harness copy of the old behaviour.
+    const signPair = nacl.sign.keyPair.fromSeed(seed)
+    const publicKey = new Uint8Array(signPair.publicKey)
+    signPair.secretKey.fill(0)
+    const address = algorandAddressCodec.fromPublicKey(publicKey, {
+        scheme: 'ed25519',
+    })
     const keyId = await keyStore.import(
         {
             id: `${id}-sign`,
@@ -127,7 +133,7 @@ export const createAlgo25Account = async (
             keyUsages: ['sign', 'verify'],
             // The 32-byte Ed25519 seed, not the 64-byte expanded secret key.
             privateKey: Uint8Array.from(seed),
-            publicKey: algosdk.Address.fromString(address).publicKey,
+            publicKey,
             metadata: { parentKeyId: `${id}-seed` },
         },
         'raw',

@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import type { Key, KeyData, KeyId } from '@algorandfoundation/keystore-core'
-import type { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import type { Key, KeyData } from '@algorandfoundation/keystore-core'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { buildSeedMetadata, entropyChildMetadata } from '../utils'
 import { useKMSService } from './useKMSServices'
@@ -20,9 +18,7 @@ import { usePasskeyMainKey } from './usePasskeyMainKey'
 import { prepareHDMasterKey } from '../crypto/prepare-hd-master-key'
 import { commitSecret } from '../storage/secrets'
 import { handOffSecret, zeroBytes } from '../crypto/secure-memory'
-import { SeedScheme, SIGNING_ACCESS_DOMAIN } from '../constants'
-import { createKmsCore } from '../core/createKmsCore'
-import { algorandHdDerivationRequest } from '../core/hdDerivation'
+import { SeedScheme } from '../constants'
 
 export type HDWalletKeyResult = {
     seedKey: Key
@@ -31,10 +27,6 @@ export type HDWalletKeyResult = {
 export const useHDWallet = () => {
     const { keyStore } = useKMSService()
     const { ensurePasskeyMainKey } = usePasskeyMainKey()
-    const core = createKmsCore({
-        keyStore: () => keyStore,
-        keys: () => getKeystoreStore().state.keys,
-    })
 
     const createHDWalletKey = async (params?: {
         id?: string
@@ -121,68 +113,8 @@ export const useHDWallet = () => {
         }
     }
 
-    /**
-     * Derives an `hd-derived-ed25519` child of the seed at the given XHD
-     * coordinates and persists it to the keystore under a deterministic id
-     * (see {@link hdDerivedKeyId}). Repeated calls with the same coords
-     * re-use the same entry — the underlying MMKV commit overwrites under
-     * the same key. The returned id is what callers persist on
-     * `account.keyPairId`.
-     */
-    const generateDerivedKey = async (
-        seedKeyId: KeyId,
-        account: number,
-        keyIndex: number,
-        derivationType: BIP32DerivationType,
-    ): Promise<KeyId> =>
-        core.deriveChild(
-            seedKeyId,
-            algorandHdDerivationRequest(
-                seedKeyId,
-                account,
-                keyIndex,
-                derivationType,
-            ),
-            SIGNING_ACCESS_DOMAIN,
-        )
-
-    /**
-     * Derives an `hd-derived-ed25519` child at the given coords and returns
-     * its public-key bytes — used by the HD account-discovery flow to scan
-     * candidate addresses without having to commit each one to the account
-     * list. The child is persisted as a side effect (under the same
-     * deterministic id `generateDerivedKey` would use), which is fine: if
-     * the user later commits an account at those coords the id is reused.
-     *
-     * Reads the publicKey from the live reactive store rather than calling
-     * `keyStore.export`: the rn-keystore stamps `extractable: false` on
-     * derived keys, so `export` would throw. The reactive snapshot keeps
-     * `publicKey` (only `privateKey` gets stripped at commit time), which
-     * is all we need here.
-     */
-    const getDerivedPublicKey = async (
-        seedKeyId: KeyId,
-        account: number,
-        keyIndex: number,
-        derivationType: BIP32DerivationType,
-    ): Promise<Uint8Array> => {
-        const { publicKey } = await core.deriveFromSeed(
-            seedKeyId,
-            algorandHdDerivationRequest(
-                seedKeyId,
-                account,
-                keyIndex,
-                derivationType,
-            ),
-            SIGNING_ACCESS_DOMAIN,
-        )
-        return publicKey
-    }
-
     return {
         createHDWalletKey,
         persistHDMasterKey,
-        generateDerivedKey,
-        getDerivedPublicKey,
     }
 }

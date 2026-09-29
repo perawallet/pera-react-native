@@ -23,10 +23,9 @@ import type {
     ChainKeyStore,
     KeyDerivationRequest,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    algorandHdDerivationRequest,
-    SIGNING_ACCESS_DOMAIN,
-} from '@perawallet/wallet-core-kms'
+import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
+import { algorandAccountsAdapter } from '../adapter'
+import { algorandHdDerivationRequest } from '../hd-derivation'
 import { algorandKeyDerivation } from '../key-derivation'
 
 const TEST_MNEMONIC =
@@ -71,28 +70,32 @@ const CASES = [
         account: 0,
         keyIndex: 0,
         keyPairId: 'seed-1-acc0-idx0-dt9',
-        publicKey: '8bf7da4540255fe78376424c330365ca9b5ff89fc6a197913c98d75fea7bd783',
+        publicKey:
+            '8bf7da4540255fe78376424c330365ca9b5ff89fc6a197913c98d75fea7bd783',
         address: 'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A',
     },
     {
         account: 0,
         keyIndex: 1,
         keyPairId: 'seed-1-acc0-idx1-dt9',
-        publicKey: '08c3c5ad9b3510f58595742feb58681e66897bf482c9a586a4a5a68ea833efd2',
+        publicKey:
+            '08c3c5ad9b3510f58595742feb58681e66897bf482c9a586a4a5a68ea833efd2',
         address: 'BDB4LLM3GUIPLBMVOQX6WWDIDZTIS67UQLE2LBVEUWTI5KBT57JNVI5QKU',
     },
     {
         account: 1,
         keyIndex: 0,
         keyPairId: 'seed-1-acc1-idx0-dt9',
-        publicKey: 'fadd6fca0c8ef4742039a8d4890ec1e329381ee25f16e28089c8da187dffecaa',
+        publicKey:
+            'fadd6fca0c8ef4742039a8d4890ec1e329381ee25f16e28089c8da187dffecaa',
         address: '7LOW7SQMR32HIIBZVDKISDWB4MUTQHXCL4LOFAEJZDNBQ7P75SVJXI5YEI',
     },
     {
         account: 2,
         keyIndex: 5,
         keyPairId: 'seed-1-acc2-idx5-dt9',
-        publicKey: '918abfada0c9013baa2f7cb69bf386e761d90dce3dffbdf8f1acdc2a708a2d50',
+        publicKey:
+            '918abfada0c9013baa2f7cb69bf386e761d90dce3dffbdf8f1acdc2a708a2d50',
         address: 'SGFL7LNAZEATXKRPPS3JX44G45Q5SDOOHX7336HRVTOCU4EKFVICEKDZOA',
     },
 ]
@@ -125,6 +128,13 @@ describe('algorandKeyDerivation equivalence with the hook-based derivation', () 
             expect(derived.keyPairId).toBe(keyPairId)
             expect(bytesToHex(derived.publicKey)).toBe(publicKey)
             expect(derived.address).toBe(address)
+            expect(
+                algorandAccountsAdapter.hdKeyPairId(SEED_ID, {
+                    account,
+                    keyIndex,
+                    derivationType: BIP32DerivationType.Peikert,
+                }),
+            ).toBe(derived.keyPairId)
         },
     )
 })

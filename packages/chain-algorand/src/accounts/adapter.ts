@@ -15,6 +15,7 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { fetchAlgorandAccountState } from './account-state'
 import { assertAlgorandBip44PathMatches } from './bip44'
 import { ALGORAND_HD_DERIVATION_TYPE } from './constants'
+import { hdDerivedKeyId } from './hd-derivation'
 import {
     algorandAccountExists,
     checkAlgorandActivity,
@@ -39,6 +40,8 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     checkActivity: (addresses, scope) =>
         checkAlgorandActivity(addresses, algorandNetworkOf(scope)),
     createPublicKeyGetter: createXHDGetPublicKey,
+    hdKeyPairId: (seedKeyId, { account, keyIndex, derivationType }) =>
+        hdDerivedKeyId(seedKeyId, account, keyIndex, derivationType),
     assertHdPathMatches: assertAlgorandBip44PathMatches,
     quantum: algorandQuantumDerivation,
     fetchRekeyedAddresses: (authAddress, scope) =>

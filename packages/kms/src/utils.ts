@@ -11,8 +11,6 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
-import { encodeAddress } from 'algosdk'
-import nacl from 'tweetnacl'
 import { AccessControlPermission, type AccessControl } from './models'
 import {
     SeedScheme,
@@ -20,7 +18,6 @@ import {
     BACKUP_ACCESS_DOMAIN,
 } from './constants'
 import { KeyManagementError } from './errors'
-import { zeroBytes } from './crypto/secure-memory'
 
 /**
  * Nested under `metadata.pera` because the keystore reserves top-level metadata
@@ -134,18 +131,6 @@ export const seedSchemeOf = (key: Key): SeedScheme | null => {
 
 export const isSeedKey = (key: Key): boolean => seedSchemeOf(key) !== null
 
-/**
- * '' when the snapshot carries no `publicKey`, and for bip39 seeds, which have
- * no single address.
- */
-export const algo25AddressOf = (key: Key): string => {
-    if (seedSchemeOf(key) !== SeedScheme.Algo25) return ''
-    if (key.publicKey instanceof Uint8Array) {
-        return encodeAddress(new Uint8Array(key.publicKey))
-    }
-    return ''
-}
-
 // The wallet's own access origins, shared with the consumers that pass them to
 // `checkAccess` (signing's SIGNING_KEY_DOMAIN, the backup flow's DOMAIN) so the
 // fail-closed default and the call sites can't drift.
@@ -188,21 +173,4 @@ export const hexToBytes = (hex: string): Uint8Array => {
         out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16)
     }
     return out
-}
-
-/**
- * Computes the Algorand address (encoded) for a freshly-minted Algo25 seed
- * without persisting an intermediate ed25519 key. Used by `useAlgo25` so
- * the caller has the address available before the derived signing key is
- * committed to the keystore.
- */
-export const algo25SeedToAddress = (seed: Uint8Array): string => {
-    const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
-    try {
-        return encodeAddress(naclKeyPair.publicKey)
-    } finally {
-        // fromSeed copies the seed into secretKey[0..32); wipe it here or the
-        // caller's own zeroBytes(seed) leaves this second copy on the heap.
-        zeroBytes(naclKeyPair.secretKey)
-    }
 }

@@ -12,35 +12,9 @@
 
 // @vitest-environment node
 import { describe, test, expect } from 'vitest'
-import { mnemonicFromSeed, seedFromMnemonic } from 'algosdk'
 import { algo25SeedToIndices, indicesToAlgo25Seed } from '../algo25-utils'
-import {
-    mnemonicIndexToWord,
-    mnemonicWordsToIndices,
-} from '../mnemonic-indices'
 
 describe('algo25SeedToIndices', () => {
-    const seeds: Record<string, Uint8Array> = {
-        incrementing: Uint8Array.from(
-            { length: 32 },
-            (_, i) => (i * 13 + 5) & 0xff,
-        ),
-        'all-zero': new Uint8Array(32),
-        'all-ff': new Uint8Array(32).fill(0xff),
-    }
-
-    test.each(Object.entries(seeds))(
-        'matches the mnemonicFromSeed word path for %s seed',
-        (_label, seed) => {
-            const viaWords = mnemonicWordsToIndices(
-                mnemonicFromSeed(seed).split(' '),
-            )
-            expect(Array.from(algo25SeedToIndices(seed))).toEqual(
-                Array.from(viaWords!),
-            )
-        },
-    )
-
     test('produces 25 indices (24 seed words + checksum)', () => {
         expect(algo25SeedToIndices(new Uint8Array(32)).length).toBe(25)
     })
@@ -68,19 +42,6 @@ describe('indicesToAlgo25Seed', () => {
             expect(
                 Array.from(indicesToAlgo25Seed(algo25SeedToIndices(seed))),
             ).toEqual(Array.from(seed))
-        },
-    )
-
-    test.each(Object.entries(seeds))(
-        'matches the seedFromMnemonic word path for %s seed',
-        (_label, seed) => {
-            const indices = algo25SeedToIndices(seed)
-            const viaWords = seedFromMnemonic(
-                Array.from(indices, mnemonicIndexToWord).join(' '),
-            )
-            expect(Array.from(indicesToAlgo25Seed(indices))).toEqual(
-                Array.from(viaWords),
-            )
         },
     )
 

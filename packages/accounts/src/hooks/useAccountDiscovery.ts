@@ -11,30 +11,26 @@
  */
 
 import { useCallback } from 'react'
-import { useKMS } from '@perawallet/wallet-core-kms'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     discoverAccounts as baseDiscoverAccounts,
     discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
 } from '../account-discovery'
-import type { GetPublicKey } from '../chain-adapter'
+import { deriveHdAccount, type GetPublicKey } from '../chain-adapter'
 import type { DerivationType } from '../models'
 
 export const useAccountDiscovery = () => {
-    const { getDerivedPublicKey } = useKMS()
+    const { network } = useNetwork()
 
     const sessionGetPublicKey = useCallback(
         async (
             walletKeyId: string,
             params: Parameters<GetPublicKey>[0],
         ): Promise<Uint8Array> => {
-            return getDerivedPublicKey(
-                walletKeyId,
-                params.account,
-                params.keyIndex,
-                params.derivationType,
-            )
+            const derived = await deriveHdAccount(network, walletKeyId, params)
+            return derived.publicKey
         },
-        [getDerivedPublicKey],
+        [network],
     )
 
     const discoverAccounts = useCallback(

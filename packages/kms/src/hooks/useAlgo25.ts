@@ -20,13 +20,13 @@ import {
 import { algo25SignKeyId } from '../models'
 import { indicesToAlgo25Seed } from '../crypto/algo25-utils'
 import { useKMSService } from './useKMSServices'
-import { algo25SeedToAddress, buildSeedMetadata } from '../utils'
+import { buildSeedMetadata } from '../utils'
 import { zeroBytes } from '../crypto/secure-memory'
 import { SeedScheme } from '../constants'
 
 export type Algo25KeyResult = {
     seedKey: Key
-    address: string
+    publicKey: Uint8Array
     /** Keystore id of the persisted Ed25519 signing child — what
      * `account.keyPairId` should be set to. */
     signKeyId: string
@@ -45,7 +45,6 @@ export const useAlgo25 = () => {
 
         let seed: Optional<Uint8Array>
         let signKeyPair: Optional<nacl.SignKeyPair>
-        let address: string
         let committedSeed = false
         // Which step we're in, so a field report can tell a bad mnemonic from
         // an Android keystore failure — the catch below covers all three.
@@ -56,7 +55,9 @@ export const useAlgo25 = () => {
                 ? indicesToAlgo25Seed(params.mnemonicIndices)
                 : nacl.randomBytes(32)
 
-            address = algo25SeedToAddress(seed)
+            // Held in the outer scope so the finally wipes its secretKey,
+            // whose first 32 bytes are the seed itself.
+            signKeyPair = nacl.sign.keyPair.fromSeed(seed)
 
             const metadata = buildSeedMetadata({ scheme: SeedScheme.Algo25 })
 
@@ -86,9 +87,6 @@ export const useAlgo25 = () => {
             // verify the pair against the seed, so any drift throws here
             // rather than at submit time.
             const signKeyId = algo25SignKeyId(seedKeyId)
-            // Held in the outer scope so the finally wipes its secretKey,
-            // whose first 32 bytes are the seed itself.
-            signKeyPair = nacl.sign.keyPair.fromSeed(seed)
             const { publicKey } = signKeyPair
             stage = 'signChild'
             await keyStore.import(
@@ -113,7 +111,7 @@ export const useAlgo25 = () => {
                     extractable: true,
                     metadata,
                 },
-                address,
+                publicKey: new Uint8Array(publicKey),
                 signKeyId,
             }
         } catch (e) {
