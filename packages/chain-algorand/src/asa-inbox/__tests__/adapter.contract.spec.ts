@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { sendFlowContractTests } from '@perawallet/wallet-core-transactions/testing'
 
 // Builders stubbed to succeed, so a rejection can only come from the
@@ -28,7 +29,7 @@ import { algorandSendFlowAdapter } from '../adapter'
 
 sendFlowContractTests(() => algorandSendFlowAdapter, {
     inboxSend: {
-        network: 'testnet',
+        scope: scopeForLegacyNetwork('testnet'),
         sender: 'SENDER',
         receiver: 'RECEIVER',
         assetId: 31566704n,

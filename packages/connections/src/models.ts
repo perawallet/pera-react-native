@@ -11,6 +11,7 @@
  */
 
 import type { Arc0001WalletTransaction } from '@perawallet/wallet-core-blockchain'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Arc60SignableData,
@@ -180,7 +181,7 @@ export interface ConnectionProposal {
     requesterOrigin?: string
     requested: {
         /** Handler-resolved: v1's 4160 wildcard already expanded. */
-        networks: Network[]
+        networks: NetworkId[]
         methods: string[]
     }
     expiresAt: number

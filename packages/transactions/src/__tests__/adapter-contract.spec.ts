@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { SendFlowChainAdapter } from '../chain-adapter'
 import { sendFlowContractTests } from './adapter-contract'
 
@@ -30,7 +31,7 @@ const adapter: SendFlowChainAdapter = {
 
 sendFlowContractTests(() => adapter, {
     inboxSend: {
-        network: 'testnet',
+        scope: scopeForLegacyNetwork('testnet'),
         sender: 'SENDER',
         receiver: 'RECEIVER',
         assetId: 1n,

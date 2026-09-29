@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestChainAdapter } from '../dappRequest'
 import { dappRequestContractTests } from './dapp-request-contract'
 
@@ -28,12 +29,15 @@ const fixtureAdapter: DappRequestChainAdapter = {
         }
         return { ok: true, payload }
     },
-    resolveReportedNetwork: network =>
-        network === 'custom' ? undefined : network,
+    resolveReportedNetwork: scope =>
+        scope.networkId === 'custom' ? undefined : scope.networkId,
 }
 
 dappRequestContractTests(() => fixtureAdapter, {
     overCapTransactionParams: { txns: [1, 2, 3] },
-    disclosed: { network: 'testnet', reportedAs: 'testnet' },
-    undisclosed: { network: 'custom' },
+    disclosed: {
+        scope: scopeForLegacyNetwork('testnet'),
+        reportedAs: 'testnet',
+    },
+    undisclosed: { scope: scopeForLegacyNetwork('custom') },
 })

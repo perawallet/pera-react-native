@@ -21,7 +21,7 @@ dappRequestChainAdapters.register({
     chainId: 'algorand',
     relayableErrorNames: [],
     parseSigningParams: (_type, params) => ({ ok: true, payload: params.txns }),
-    resolveReportedNetwork: network => network,
+    resolveReportedNetwork: scope => scope.networkId,
 })
 
 // One transport per handler instance: the suite builds handlers repeatedly.

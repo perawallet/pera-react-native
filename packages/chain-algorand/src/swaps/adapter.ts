@@ -22,6 +22,7 @@ import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { submitRawSignedTransactionGroup } from '@perawallet/wallet-core-signing'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandNetworkOf } from '../legacy-network'
 import { executeAlgorandSwap } from './executeSwap'
 
 // Swap groups arrive fully built from the backend, so the client only reads
@@ -29,10 +30,11 @@ import { executeAlgorandSwap } from './executeSwap'
 export const algorandSwapAdapter: SwapChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     nativeAssetId: ALGO_ASSET_ID,
-    executeSwap: (params, { assetOptInMinBalance, ...context }) =>
+    executeSwap: (params, { assetOptInMinBalance, scope, ...context }) =>
         executeAlgorandSwap(params, {
             ...context,
-            algorandClient: getAlgorandClient(context.network),
+            network: algorandNetworkOf(scope),
+            algorandClient: getAlgorandClient(scope),
             assetMbr: assetOptInMinBalance,
             decodeTransaction: bytes =>
                 decodeTransaction(bytes) as PeraTransaction,
@@ -40,9 +42,9 @@ export const algorandSwapAdapter: SwapChainAdapter = {
                 decodeSignedTransaction(bytes) as PeraSignedTransaction,
             encodeSignedTransactions,
         }),
-    submitSignedGroup: (network, signedTransactions) =>
+    submitSignedGroup: (scope, signedTransactions) =>
         submitRawSignedTransactionGroup(
-            getAlgorandClient(network),
+            getAlgorandClient(scope),
             signedTransactions,
         ),
 }

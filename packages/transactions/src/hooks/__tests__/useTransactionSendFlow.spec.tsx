@@ -17,7 +17,10 @@ import {
     useTransactionSendFlow,
     InvalidSendParamsError,
 } from '../useTransactionSendFlow'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    ChainAdapterNotRegisteredError,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { AssetFrozenError } from '../../errors'
 import {
@@ -667,7 +670,7 @@ describe('useTransactionSendFlow', () => {
                 await result.current.execute({ params: arc59Params })
             })
             expect(mockBuildSendViaInbox).toHaveBeenCalledWith({
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 sender: 'A',
                 receiver: 'B',
                 assetId: 99n,

@@ -43,7 +43,8 @@ export type PendingApproval =
           proposalId: string
           connectionKind: ConnectionKind
           peer: ConnectionPeer
-          requested: { networks: Network[]; methods: string[] }
+          /** Chain-reported network ids (`ChainScope['networkId']`), not the legacy `Network`. */
+          requested: { networks: string[]; methods: string[] }
           expiresAt: number
           // Browser-verified origin of the requesting tab; absent for a
           // user-initiated pairing. Never conflate with `origin` above.
@@ -195,7 +196,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         proposalId: string
         connectionKind: ConnectionKind
         peer: ConnectionPeer
-        requested: { networks: Network[]; methods: string[] }
+        requested: { networks: string[]; methods: string[] }
         expiresAt: number
         requesterOrigin?: string
     }): Promise<{ approvedAddresses: string[] } | null> {

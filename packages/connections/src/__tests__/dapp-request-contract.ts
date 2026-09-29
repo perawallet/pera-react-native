@@ -11,21 +11,24 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type {
+    ChainScope,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestChainAdapter } from '../dappRequest'
 import { WALLET_OPERATION_TYPES } from '../models'
 
 export interface DappRequestContractFixtures {
     /** `sign-transactions` params past the chain's size caps. */
     overCapTransactionParams: Record<string, unknown>
-    /** A wallet network the chain reports to a page as `reportedAs`. */
+    /** A wallet scope the chain reports to a page as `reportedAs`. */
     disclosed: {
-        network: Network
+        scope: ChainScope
         customGenesisHash?: string
-        reportedAs: Network
+        reportedAs: NetworkId
     }
-    /** A wallet network the chain must not disclose. */
-    undisclosed: { network: Network; customGenesisHash?: string }
+    /** A wallet scope the chain must not disclose. */
+    undisclosed: { scope: ChainScope; customGenesisHash?: string }
 }
 
 /** Every chain package runs this against its own dApp request adapter. */
@@ -60,25 +63,18 @@ export const dappRequestContractTests = (
         })
 
         it('reports a disclosable network as the chain names it', () => {
-            const { network, customGenesisHash, reportedAs } =
-                fixtures.disclosed
+            const { scope, customGenesisHash, reportedAs } = fixtures.disclosed
 
             expect(
-                makeAdapter().resolveReportedNetwork(
-                    network,
-                    customGenesisHash,
-                ),
+                makeAdapter().resolveReportedNetwork(scope, customGenesisHash),
             ).toBe(reportedAs)
         })
 
         it('withholds a network it must not disclose', () => {
-            const { network, customGenesisHash } = fixtures.undisclosed
+            const { scope, customGenesisHash } = fixtures.undisclosed
 
             expect(
-                makeAdapter().resolveReportedNetwork(
-                    network,
-                    customGenesisHash,
-                ),
+                makeAdapter().resolveReportedNetwork(scope, customGenesisHash),
             ).toBeUndefined()
         })
     })

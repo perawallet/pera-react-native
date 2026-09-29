@@ -12,14 +12,10 @@
 
 import {
     createChainAdapterRegistry,
-    scopeForLegacyNetwork,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    AppError,
-    ErrorCategory,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import type {
     ExecuteSwapParams,
     ExecuteSwapResult,
@@ -48,7 +44,7 @@ export interface SwapChainAdapter {
      * co-signed swaps: a shared-account swap is refused, never sent unsigned.
      */
     submitSignedGroup?(
-        network: Network,
+        scope: ChainScope,
         signedTransactions: Uint8Array[],
     ): Promise<string[]>
 }
@@ -69,18 +65,17 @@ export class SwapCosignUnsupportedError extends AppError {
 export const swapChainAdapters =
     createChainAdapterRegistry<SwapChainAdapter>('swap')
 
-// Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
-export const swapAdapterFor = (network: Network): SwapChainAdapter =>
-    swapChainAdapters.get(scopeForLegacyNetwork(network).chainId)
+export const swapAdapterFor = (scope: ChainScope): SwapChainAdapter =>
+    swapChainAdapters.get(scope.chainId)
 
 /** Throws {@link SwapCosignUnsupportedError} when the chain can't finish a co-signed group. */
 export const submitCosignedSwapGroup = (
-    network: Network,
+    scope: ChainScope,
     signedTransactions: Uint8Array[],
 ): Promise<string[]> => {
-    const adapter = swapAdapterFor(network)
+    const adapter = swapAdapterFor(scope)
     if (!adapter.submitSignedGroup) {
         return Promise.reject(new SwapCosignUnsupportedError(adapter.chainId))
     }
-    return adapter.submitSignedGroup(network, signedTransactions)
+    return adapter.submitSignedGroup(scope, signedTransactions)
 }

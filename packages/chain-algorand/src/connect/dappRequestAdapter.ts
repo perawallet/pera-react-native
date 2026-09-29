@@ -11,6 +11,7 @@
  */
 
 import { ARC0001_MAX_TXN_B64_LENGTH } from '@perawallet/wallet-core-blockchain/arc0001/limits'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import {
     getNetworkConfig,
     Networks,
@@ -89,8 +90,8 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
     // forged one with a MainNet hash and an attacker's node URLs must not make
     // the wallet tell a dApp "this is MainNet" — the hash check is what a dApp
     // actually validates.
-    resolveReportedNetwork(network, customGenesisHash) {
-        if (network !== Networks.custom) return network
+    resolveReportedNetwork(scope, customGenesisHash): NetworkId | undefined {
+        if (scope.networkId !== Networks.custom) return scope.networkId
         if (!customGenesisHash) return undefined
         return BAKED_NETWORKS.find(
             baked => getNetworkConfig(baked).genesisHash === customGenesisHash,

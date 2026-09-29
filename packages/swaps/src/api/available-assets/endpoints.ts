@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import {
     availableAssetsResponseSchema,
@@ -35,7 +36,7 @@ export const fetchAvailableAssets = async (
     })
 
     const parsed = availableAssetsResponseSchema.parse(response.data)
-    const { nativeAssetId } = swapAdapterFor(network)
+    const { nativeAssetId } = swapAdapterFor(scopeForLegacyNetwork(network))
     return parsed.results.map(asset =>
         transformDexSwapAsset(asset, nativeAssetId),
     )

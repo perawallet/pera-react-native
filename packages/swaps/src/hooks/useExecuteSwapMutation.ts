@@ -11,6 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useMinimumFeeConfig,
     useNetwork,
@@ -44,7 +45,8 @@ export const useExecuteSwapMutation = () => {
 
     return useMutation<ExecuteSwapResult, Error, ExecuteSwapVariables>({
         mutationFn: async variables => {
-            const adapter = swapAdapterFor(network)
+            const scope = scopeForLegacyNetwork(network)
+            const adapter = swapAdapterFor(scope)
             if (
                 account &&
                 isMultisigAccount(account) &&
@@ -55,7 +57,7 @@ export const useExecuteSwapMutation = () => {
             return adapter.executeSwap(
                 { ...variables, account, signer },
                 {
-                    network,
+                    scope,
                     assetOptInMinBalance: assetMbr,
                     deviceId,
                     addSignRequest,

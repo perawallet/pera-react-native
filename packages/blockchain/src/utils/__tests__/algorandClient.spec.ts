@@ -186,6 +186,15 @@ describe('getAlgorandClient', () => {
         )
     })
 
+    it('passes a ChainScope straight through without a legacy-network round trip', () => {
+        getAlgorandClient({ chainId: 'algorand', networkId: 'testnet' })
+
+        expect(mocks.getChainConfig).toHaveBeenCalledWith({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
+    })
+
     it('registers an error transformer and returns the built client', () => {
         const client = getAlgorandClient()
 

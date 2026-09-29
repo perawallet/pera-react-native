@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import {
     providersResponseSchema,
@@ -42,6 +43,6 @@ export const fetchTopPairs = async (network: Network, limit?: number) => {
     })
 
     const parsed = topPairsResponseSchema.parse(response.data)
-    const { nativeAssetId } = swapAdapterFor(network)
+    const { nativeAssetId } = swapAdapterFor(scopeForLegacyNetwork(network))
     return parsed.results.map(pair => transformTopPairItem(pair, nativeAssetId))
 }

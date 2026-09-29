@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
@@ -248,7 +249,10 @@ export const useSwapCosignResolver = ({
                 record: handoff,
                 deps: {
                     submitGroup: bytes =>
-                        submitCosignedSwapGroup(handoff.network, bytes),
+                        submitCosignedSwapGroup(
+                            scopeForLegacyNetwork(handoff.network),
+                            bytes,
+                        ),
                     markSubmitted: txIds =>
                         markHandoffSubmitted(handoff.signRequestId, txIds),
                     decodeBase64: decodeFromBase64,

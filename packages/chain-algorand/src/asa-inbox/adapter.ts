@@ -13,6 +13,7 @@
 import { createWalletAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import type { SendFlowChainAdapter } from '@perawallet/wallet-core-transactions'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandNetworkOf } from '../legacy-network'
 import { arc59SendSummaryResponseSchema } from './api'
 import {
     buildArc59ClaimTxs,
@@ -25,8 +26,9 @@ import {
 export const algorandSendFlowAdapter: SendFlowChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     assetInbox: {
-        buildSendTxs: async ({ network, summary, ...params }) =>
-            buildArc59SendViaInboxTxs(
+        buildSendTxs: async ({ scope, summary, ...params }) => {
+            const network = algorandNetworkOf(scope)
+            return buildArc59SendViaInboxTxs(
                 { algokit: createWalletAlgorandClient(network), network },
                 {
                     ...params,
@@ -34,16 +36,21 @@ export const algorandSendFlowAdapter: SendFlowChainAdapter = {
                     // summary opaquely and it decides a headlessly signed payment.
                     summary: arc59SendSummaryResponseSchema.parse(summary),
                 },
-            ),
-        buildClaimTxs: ({ network, ...params }) =>
-            buildArc59ClaimTxs(
+            )
+        },
+        buildClaimTxs: ({ scope, ...params }) => {
+            const network = algorandNetworkOf(scope)
+            return buildArc59ClaimTxs(
                 { algokit: createWalletAlgorandClient(network), network },
                 params,
-            ),
-        buildRejectTxs: ({ network, ...params }) =>
-            buildArc59RejectTxs(
+            )
+        },
+        buildRejectTxs: ({ scope, ...params }) => {
+            const network = algorandNetworkOf(scope)
+            return buildArc59RejectTxs(
                 { algokit: createWalletAlgorandClient(network), network },
                 params,
-            ),
+            )
+        },
     },
 }

@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type {
     ExecuteSwapParams,
     SwapExecutionContext,
@@ -40,8 +41,10 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 const params = { quote: { quoteIdStr: 'q' } } as unknown as ExecuteSwapParams
 
+const scope = scopeForLegacyNetwork('testnet')
+
 const context: SwapExecutionContext = {
-    network: 'testnet',
+    scope,
     assetOptInMinBalance: 100_000n,
     deviceId: 'device-1',
     addSignRequest: vi.fn(),
@@ -53,8 +56,8 @@ const context: SwapExecutionContext = {
 describe('algorandSwapAdapter', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.getAlgorandClient.mockImplementation((network: string) => ({
-            network,
+        mocks.getAlgorandClient.mockImplementation((target: unknown) => ({
+            target,
         }))
     })
 
@@ -63,7 +66,7 @@ describe('algorandSwapAdapter', () => {
         expect(algorandSwapAdapter.nativeAssetId).toBe('0')
     })
 
-    it("executes with a client for the context's network and the opt-in balance as the asset MBR", async () => {
+    it("executes with a client built from the context's scope and the opt-in balance as the asset MBR", async () => {
         mocks.executeAlgorandSwap.mockResolvedValue({ kind: 'cancelled' })
 
         const result = await algorandSwapAdapter.executeSwap(params, context)
@@ -72,10 +75,11 @@ describe('algorandSwapAdapter', () => {
         const [passedParams, algorandContext] =
             mocks.executeAlgorandSwap.mock.calls[0]
         expect(passedParams).toBe(params)
+        expect(mocks.getAlgorandClient).toHaveBeenCalledWith(scope)
         expect(algorandContext).toEqual(
             expect.objectContaining({
                 network: 'testnet',
-                algorandClient: { network: 'testnet' },
+                algorandClient: { target: scope },
                 assetMbr: 100_000n,
                 deviceId: 'device-1',
                 addSignRequest: context.addSignRequest,
@@ -86,20 +90,23 @@ describe('algorandSwapAdapter', () => {
             }),
         )
         expect(algorandContext).not.toHaveProperty('assetOptInMinBalance')
+        expect(algorandContext).not.toHaveProperty('scope')
     })
 
-    it("submits a co-signed group through algod on the handoff's network", async () => {
+    it('submits a co-signed group through algod for the scope it was given', async () => {
         mocks.submitRawSignedTransactionGroup.mockResolvedValue(['TX1'])
         const bytes = [new Uint8Array([1, 2])]
+        const mainnetScope = scopeForLegacyNetwork('mainnet')
 
         const ids = await algorandSwapAdapter.submitSignedGroup?.(
-            'mainnet',
+            mainnetScope,
             bytes,
         )
 
         expect(ids).toEqual(['TX1'])
+        expect(mocks.getAlgorandClient).toHaveBeenCalledWith(mainnetScope)
         expect(mocks.submitRawSignedTransactionGroup).toHaveBeenCalledWith(
-            { network: 'mainnet' },
+            { target: mainnetScope },
             bytes,
         )
     })

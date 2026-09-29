@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { SwapChainAdapter } from '../../chain-adapter'
 import type { SwapHandoffRecord } from '../../models'
 import { registerFakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
@@ -273,7 +274,10 @@ describe('swaps/useSwapCosignResolver', () => {
 
         const bytes = [new Uint8Array([1])]
         await deps.submitGroup(bytes)
-        expect(submitSignedGroup).toHaveBeenCalledWith('mainnet', bytes)
+        expect(submitSignedGroup).toHaveBeenCalledWith(
+            scopeForLegacyNetwork('mainnet'),
+            bytes,
+        )
     })
 
     it('declines on the proposer address carried by the poll detail', async () => {

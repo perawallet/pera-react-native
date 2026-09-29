@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 
 import type { Decimal } from 'decimal.js'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -314,7 +315,9 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     if (!params.arc59Summary) {
                         throw new InvalidSendParamsError()
                     }
-                    const assetInbox = assetInboxFor(network)
+                    const assetInbox = assetInboxFor(
+                        scopeForLegacyNetwork(network),
+                    )
                     const suggestedMinFee = await fetchSuggestedMinFee()
                     const senderMinFee = resolveMinFeeForSender({
                         senderAddress: params.sender.address,
@@ -324,7 +327,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                         pqMultiplier,
                     })
                     const unsignedTxs = await assetInbox.buildSendTxs({
-                        network,
+                        scope: scopeForLegacyNetwork(network),
                         sender: params.sender.address,
                         receiver: params.receiver,
                         assetId,
@@ -370,7 +373,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 throw new InvalidSendParamsError()
             }
 
-            const assetInbox = assetInboxFor(network)
+            const assetInbox = assetInboxFor(scopeForLegacyNetwork(network))
             const suggestedMinFee = await fetchSuggestedMinFee()
             const senderMinFee = resolveMinFeeForSender({
                 senderAddress: params.sender.address,
@@ -382,7 +385,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
 
             if (params.sendMode === 'claimArc59') {
                 const unsignedTxs = await assetInbox.buildClaimTxs({
-                    network,
+                    scope: scopeForLegacyNetwork(network),
                     sender: params.sender.address,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
@@ -422,7 +425,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 return result.txIds[result.txIds.length - 1]
             } else {
                 const unsignedTxs = await assetInbox.buildRejectTxs({
-                    network,
+                    scope: scopeForLegacyNetwork(network),
                     sender: params.sender.address,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,

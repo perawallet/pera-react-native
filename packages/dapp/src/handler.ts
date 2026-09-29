@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     dappRequestChainAdapters,
     type ConnectionHandler,
@@ -247,7 +250,7 @@ export const createDappConnectionHandler = (
             )
         }
         const network = adapter.resolveReportedNetwork(
-            deps.getNetwork(),
+            scopeForLegacyNetwork(deps.getNetwork()),
             deps.getCustomNetworkGenesisHash(),
         )
         if (!network) {

@@ -31,6 +31,7 @@ import {
     ALGO_ASSET_ID,
     encodeToBase64,
     logger,
+    type Network,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -59,8 +60,9 @@ import {
 
 export type AlgorandSwapExecutionContext = Omit<
     SwapExecutionContext,
-    'assetOptInMinBalance'
+    'assetOptInMinBalance' | 'scope'
 > & {
+    network: Network
     algorandClient: ReturnType<typeof getAlgorandClient>
     /** Asset opt-in minimum balance, in microAlgos. */
     assetMbr: bigint

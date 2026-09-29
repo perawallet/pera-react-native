@@ -11,6 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import { nameServiceAdapterFor } from '../chain-adapter'
@@ -46,7 +47,9 @@ export const useNfdForAddressQuery = (
     const { network } = useNetwork()
     const enabled =
         (options?.enabled ?? true) &&
-        nameServiceAdapterFor(network).isValidAddress(address)
+        nameServiceAdapterFor(scopeForLegacyNetwork(network)).isValidAddress(
+            address,
+        )
 
     const query = useQuery({
         queryKey: nfdQueryKeys.forAddress(address, network),

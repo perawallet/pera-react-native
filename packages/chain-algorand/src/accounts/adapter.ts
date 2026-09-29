@@ -22,7 +22,7 @@ import {
     fetchAlgorandRekeyedAddresses,
 } from './discovery'
 import { fetchAccountInformation, fetchAssetOptInRounds } from './information'
-import { algorandNetworkOf } from './network'
+import { algorandNetworkOf } from '../legacy-network'
 import { algorandQuantumDerivation } from './quantum'
 
 export const algorandAccountsAdapter: AccountsChainAdapter = {
