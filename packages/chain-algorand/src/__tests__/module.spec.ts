@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, expectTypeOf, it } from 'vitest'
+import {
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    expectTypeOf,
+    it,
+} from 'vitest'
 import {
     CHAIN_CAPABILITIES,
     createChainRegistry,
@@ -19,6 +26,7 @@ import {
     type ChainModule,
     type ChainSetup,
 } from '@perawallet/wallet-core-chain-contract'
+import { capabilityAdapterContractTests } from '@perawallet/wallet-core-chain-contract/testing'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
@@ -113,5 +121,26 @@ describe('chainModule', () => {
         })
         expect(() => swapChainAdapters.get('algorand')).toThrow(notRegistered)
         expect(() => cardChainAdapters.get('algorand')).toThrow(notRegistered)
+    })
+})
+
+// A sibling suite, not nested under `chainModule`: its own chain registry and
+// its own one-time setup, untouched by that describe's per-test resetAdapters.
+describe('capability-to-adapter parity', () => {
+    const chains = createChainRegistry()
+
+    beforeAll(() => {
+        resetAdapters()
+        registerChainSetup(setup, chains, () => stubCtx)
+    })
+
+    capabilityAdapterContractTests(chains, {
+        'send flow': sendFlowChainAdapters,
+        swap: swapChainAdapters,
+        'name service': nameServiceChainAdapters,
+        card: cardChainAdapters,
+        ramp: rampChainAdapters,
+        'dapp-request': dappRequestChainAdapters,
+        'ledger app driver': ledgerAppDriverRegistry,
     })
 })

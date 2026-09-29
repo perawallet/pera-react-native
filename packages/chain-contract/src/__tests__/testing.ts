@@ -13,6 +13,10 @@
 // The suites chain packages run against their own implementations; aliased
 // as `@perawallet/wallet-core-chain-contract/testing` by consumers, never built.
 export { descriptorContractTests } from './descriptor-contract'
+export {
+    capabilityAdapterContractTests,
+    type CapabilityAdapterRegistries,
+} from './capability-adapter-contract'
 export { addressCodecContractTests } from './address-codec-contract'
 export {
     createFakeChainKeyStore,
