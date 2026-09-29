@@ -78,6 +78,7 @@ describe('capabilityAdapterContractViolations', () => {
             capabilityAdapterContractViolations(chains, registries(false)),
         ).toEqual([
             'chain "algorand" enables "send" but the "send flow" registry has no adapter for it',
+            'chain "algorand" enables "history" but the "transaction history" registry has no adapter for it',
             'chain "algorand" enables "dappConnect" but the "dapp-request" registry has no adapter for it',
             'chain "algorand" enables "ledger" but the "ledger app driver" registry has no adapter for it',
             'chain "algorand" enables "swap" but the "swap" registry has no adapter for it',
