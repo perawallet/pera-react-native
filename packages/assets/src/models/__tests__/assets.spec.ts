@@ -11,7 +11,6 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { Decimal } from 'decimal.js'
 import {
     scopeForLegacyNetwork,
     type ChainScope,
