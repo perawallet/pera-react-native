@@ -12,9 +12,9 @@ code: `signTransactionsWithLocalKey`, `resolvePQSigningInfo`,
 Transactions the app builds (transfers, express send, opt-in/out, rekey, key
 registration) come from its builders in `packages/chain-algorand/src/transactions/builders.ts`,
 and history from the indexer fetchers beside them. Both take a `ChainScope` and
-resolve their node from `getChainConfig`, so `harness/scope.ts` registers
-LocalNet as the `custom` scope, the way a user's saved custom node is
-registered. `harness/build.ts`'s raw composer calls are only for shapes no
+resolve their node from `getChainConfig`, so `harness/scope.ts` saves LocalNet
+as the `custom` network through the network store, the way a user saves a
+custom node. `harness/build.ts`'s raw composer calls are only for shapes no
 builder makes: asset creation, pinned fees and negative cases.
 
 `harness/__tests__/algokey.spec.ts` and `harness/__tests__/keystore.spec.ts`

@@ -10,14 +10,12 @@
  limitations under the License
  */
 
+import { setCustomNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    Networks,
-    registerCustomNetworkSource,
-} from '@perawallet/wallet-core-config'
+import { Networks } from '@perawallet/wallet-core-config'
 
 import {
     assertLocalNetReachable,
@@ -30,32 +28,27 @@ let registered: Promise<ChainScope> | undefined
 
 /**
  * The scope the app's own chain adapters resolve to LocalNet: the `custom`
- * network, pointed here through `registerCustomNetworkSource`, the same hook a
- * user's saved custom node goes through. Builders and fetchers take a scope and
- * resolve their node from `getChainConfig`, so this is what lets a suite call
- * them unmodified.
+ * network, saved through the network store the way a user saves a custom
+ * node. Builders and fetchers take a scope and resolve their node from it, so
+ * this is what lets a suite call them unmodified.
  *
- * Register before the first `queryClient` request: it builds its indexer
- * client from the config once, on first use.
+ * Saved through the store, not `registerCustomNetworkSource`: the store is
+ * that source, and its subscription in `blockchain` is what rebuilds
+ * `queryClient`'s indexer client, which importing `blockchain` has already
+ * built with the empty `custom` endpoints.
  */
 export const localNetScope = (): Promise<ChainScope> => {
     registered ??= assertLocalNetReachable().then(
         ({ genesisId, genesisHash }) => {
-            const scope = scopeForLegacyNetwork(Networks.custom)
-            registerCustomNetworkSource(candidate =>
-                candidate.chainId === scope.chainId &&
-                candidate.networkId === scope.networkId
-                    ? {
-                          algodUrl: LOCALNET_ALGOD_URL,
-                          algodToken: LOCALNET_TOKEN,
-                          indexerUrl: LOCALNET_INDEXER_URL,
-                          indexerToken: '',
-                          genesisId,
-                          genesisHash,
-                      }
-                    : undefined,
-            )
-            return scope
+            setCustomNetwork({
+                algodUrl: LOCALNET_ALGOD_URL,
+                algodToken: LOCALNET_TOKEN,
+                indexerUrl: LOCALNET_INDEXER_URL,
+                indexerToken: '',
+                genesisId,
+                genesisHash,
+            })
+            return scopeForLegacyNetwork(Networks.custom)
         },
     )
     return registered

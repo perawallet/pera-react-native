@@ -305,7 +305,8 @@ describe('quantum fee through the app builders', () => {
 
     it('carries the resolved PQ fee on a transfer the node accepts', async () => {
         const senderBalanceBefore = await balanceOf(sender.address)
-        const amount = 42_000n
+        // Above the base MBR: the receiver has never been funded.
+        const amount = 142_000n
 
         const txn = onlyTxn(
             await buildTransferTxs({

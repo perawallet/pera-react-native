@@ -32,9 +32,12 @@ on:
             # The send-flow builders, the history fetchers and transformers,
             # and the account, bip44 and multisig code the harness derives with.
             - 'packages/chain-algorand/**'
-            # getChainConfig and registerCustomNetworkSource: how every builder
-            # and fetcher in the suite reaches LocalNet (harness/scope.ts).
+            # getChainConfig: how every builder and fetcher in the suite
+            # resolves its node.
             - 'packages/config/**'
+            # The network store harness/scope.ts saves LocalNet into as the
+            # custom network.
+            - 'packages/chain-shared/**'
             # ChainScope, which every builder and fetcher takes.
             - 'packages/chain-contract/**'
 
