@@ -43,6 +43,7 @@ const CONTRACT_SUITES = {
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
@@ -95,5 +96,4 @@ export default defineConfig({
             ),
         },
     },
-    ...poolConfig,
 })

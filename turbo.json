@@ -37,6 +37,9 @@
     "CHAINS",
     "CHAIN_*"
   ],
+  "globalPassThroughEnv": [
+    "VITEST_MAX_WORKERS"
+  ],
   "tasks": {
     "generate:config": {
       "cache": false,

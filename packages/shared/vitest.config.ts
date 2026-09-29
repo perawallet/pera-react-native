@@ -39,10 +39,10 @@ export default defineConfig({
         },
     },
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         setupFiles: ['./vitest.setup.ts'],
         environment: 'node',
     },
-    ...poolConfig,
 })
