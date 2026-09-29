@@ -8,10 +8,10 @@ source ci/jobs/lib/toolchain.sh
 use_pinned_node
 install_pinned_pnpm
 
-./tools/validate-env.sh
+./tools/dev/validate-env.sh
 pnpm install --frozen-lockfile --prefer-offline
 
-# generate-config.sh bakes these into releaseTag/appBuildNumber, as Bitrise
+# tools/dev/generate-config.sh bakes these into releaseTag/appBuildNumber, as Bitrise
 # sets them natively. An rc ships as its stable version, as on Bitrise.
 export BITRISE_GIT_TAG="${CI_TAG%%-rc.*}"
 # See android.sh for why the offset exists; the Chrome Web Store likewise

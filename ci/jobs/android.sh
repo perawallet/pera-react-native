@@ -10,7 +10,7 @@ use_pinned_node
 JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home -v 17)}"
 export JAVA_HOME
 
-# tools/resolve-distribution.sh reads this to choose Play vs Firebase. Without
+# tools/release/resolve-distribution.sh reads this to choose Play vs Firebase. Without
 # it every build silently resolves to the fallback channel.
 export BITRISE_GIT_TAG="$CI_TAG"
 
@@ -46,7 +46,7 @@ collect_artifacts() {
     done
 }
 
-./tools/validate-env.sh
+./tools/dev/validate-env.sh
 pnpm install --frozen-lockfile --prefer-offline
 APP_ENV="$ENVIRONMENT" pnpm run generate:config
 
@@ -54,7 +54,7 @@ APP_ENV="$ENVIRONMENT" pnpm run generate:config
 # react-native/source field) and metro.config.js doesn't alias @perawallet/*,
 # so Metro can't resolve them during assembleRelease without this build.
 # Matches bitrise.yml's "Build packages" step, including re-deriving APP_ENV
-# (build:packages re-runs generate-config.sh internally).
+# (build:packages re-runs tools/dev/generate-config.sh internally).
 APP_ENV="$ENVIRONMENT" pnpm run build:packages
 
 # app.config.builder.js reads both to bake the version into the generated
@@ -106,7 +106,7 @@ echo "pera-ci: decoding FIREBASE_SERVICE_ACCOUNT_BASE64"
 echo "$FIREBASE_SERVICE_ACCOUNT_BASE64" | base64 --decode > apps/mobile/config/firebase-service-account.json
 set -x
 
-# Only required for a Play upload (tools/resolve-distribution.sh resolving to
+# Only required for a Play upload (tools/release/resolve-distribution.sh resolving to
 # "play"); a Firebase-only build legitimately doesn't have this secret, so
 # check presence rather than requiring it unconditionally.
 # Written verbatim, matching bitrise.yml's "Setup distribution credentials"
@@ -120,7 +120,7 @@ if [ -n "${ANDROID_JSON_KEY_FILE:-}" ]; then
   set -x
 fi
 
-DISTRIBUTION=$(./tools/resolve-distribution.sh)
+DISTRIBUTION=$(./tools/release/resolve-distribution.sh)
 export DISTRIBUTION
 
 # The Fastfile reads ENV["RELEASE_NOTES"] for both the Firebase and Play

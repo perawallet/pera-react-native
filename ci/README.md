@@ -50,8 +50,8 @@ A job whose `env` sets `ENVIRONMENT` has each declared secret `X` resolved as
 `X`, which the daemon logs by name. A value found under the prefix reaches the
 job under both names; a bare fallback reaches it as `X` only.
 
-That is the shape `tools/setup-env-secrets.sh` leaves a Bitrise job in, so
-`tools/validate-env.sh` runs unchanged on both: it requires the prefixed name
+That is the shape `tools/dev/setup-env-secrets.sh` leaves a Bitrise job in, so
+`tools/dev/validate-env.sh` runs unchanged on both: it requires the prefixed name
 for every per-environment secret and fails a job that has no
 environment-specific value for one. A staging nightly cannot silently pick up
 the production Firebase project from a bare `ANDROID_GOOGLE_SERVICES_BASE64`.

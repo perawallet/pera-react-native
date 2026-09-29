@@ -1,14 +1,14 @@
 # The android jobs' `secrets` are the union of what ci/jobs/android.sh decodes,
-# what tools/generate-config.sh bakes into the build, and what
-# tools/validate-env.sh requires. The daemon fails a job before it runs if any
+# what tools/dev/generate-config.sh bakes into the build, and what
+# tools/dev/validate-env.sh requires. The daemon fails a job before it runs if any
 # declared name is absent from secrets.env, so this list is also the operator's
-# checklist. validate-env.sh checks five of them under a PRODUCTION_/STAGING_
+# checklist. tools/dev/validate-env.sh checks five of them under a PRODUCTION_/STAGING_
 # prefix for staging, six for production (REOWN_PROJECT_ID is added
-# conditionally — see tools/validate-env.sh): the daemon resolves each by
+# conditionally — see tools/dev/validate-env.sh): the daemon resolves each by
 # that prefix and injects it under both the prefixed and the bare name, so
 # those must be stored prefixed in secrets.env — see docs/RUNNING.md in pera-ci.
 #
-# Names generate-config.sh can also bake, left out on purpose: algod/indexer/
+# Names tools/dev/generate-config.sh can also bake, left out on purpose: algod/indexer/
 # genesis/explorer/support/legal URLs, ALGOD_API_KEY, INDEXER_API_KEY, the
 # Bidali/Baanx base URLs and the card USDC asset ids all carry safe non-empty
 # defaults in packages/config/src/main.ts; APP_STORE_APPLE_ID and the
@@ -48,18 +48,18 @@ _android_secrets: &android_secrets
   - TESTNET_CARD_KILLSWITCH_APP_ID
   - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
   - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
-  # Required by main's tools/validate-env.sh: an empty pin fails closed on the
+  # Required by main's tools/dev/validate-env.sh: an empty pin fails closed on the
   # device, so auto funding would silently never work in the release.
   - CARD_AUTODRAW_TEMPLATE_HASH
-  # Per environment, as setup-env-secrets.sh aliases it; unset, the Drive
+  # Per environment, as tools/dev/setup-env-secrets.sh aliases it; unset, the Drive
   # backup row reports itself unconfigured.
   - GOOGLE_WEB_CLIENT_ID
   # Card: testnet Baanx x-client-key (public identifier, not the server-only
-  # x-secret-key). setup-env-secrets.sh only aliases the testnet key —
+  # x-secret-key). tools/dev/setup-env-secrets.sh only aliases the testnet key —
   # mainnet card isn't live yet (see main.ts's mainnetBaanxTenantId TODO).
   - TESTNET_BAANX_CLIENT_KEY
 
-# The backend, Bidali and card config generate-config.sh bakes into every
+# The backend, Bidali and card config tools/dev/generate-config.sh bakes into every
 # client, repeated per platform below because YAML can't merge sequences. See
 # the android list for why each is here and what is left out.
 #
@@ -104,7 +104,7 @@ _ios_secrets: &ios_secrets
   - IOS_ICLOUD_CONTAINER_ID
   - TESTNET_BAANX_CLIENT_KEY
 
-# validate-env.sh's web profile treats the Firebase Web SDK, GA4 and Sentry
+# tools/dev/validate-env.sh's web profile treats the Firebase Web SDK, GA4 and Sentry
 # names as optional because the extension degrades without them. They are
 # declared here anyway, which makes them required: the degradation is silent
 # (no Remote Config, analytics, crash reporting or push), and the daemon has
