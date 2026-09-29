@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     getChainConfig,
     Networks,
@@ -21,19 +24,21 @@ import { useNetworkStore } from '../store'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
 
 /**
- * Returns an instance of AlgorandClient for a specific network.
- * If no network is provided, defaults to the current active network from the store.
+ * Returns an instance of AlgorandClient for a specific network or scope.
+ * If no target is provided, defaults to the current active network from the store.
  *
  * The algod and indexer clients are built on {@link createTimeoutBoundedAlgorandClient},
  * so every request is bounded by a per-method AbortSignal timeout (read ceiling for
  * GET/DELETE, submit ceiling for POST) and no call site can hang indefinitely.
  * @returns {AlgorandClient}
  */
-export const getAlgorandClient = (networkOverride?: Network) => {
-    const network = networkOverride ?? useNetworkStore.getState().network
-    return createTimeoutBoundedAlgorandClient(
-        getChainConfig(scopeForLegacyNetwork(network)),
-    )
+export const getAlgorandClient = (target?: ChainScope | Network) => {
+    const scope =
+        typeof target === 'string'
+            ? scopeForLegacyNetwork(target)
+            : (target ??
+              scopeForLegacyNetwork(useNetworkStore.getState().network))
+    return createTimeoutBoundedAlgorandClient(getChainConfig(scope))
 }
 
 const pushResolvedEndpointsForAllNetworks = (): void => {
