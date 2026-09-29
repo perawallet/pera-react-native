@@ -13,8 +13,9 @@
 import {
     createChainAdapterRegistry,
     type ChainId,
+    type ChainScope,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
 import type { WalletOperationType } from './models'
 
 export type DappSigningParamsResult =
@@ -39,13 +40,13 @@ export interface DappRequestChainAdapter {
         params: Record<string, unknown>,
     ): DappSigningParamsResult
     /**
-     * The network name to report to a page, or undefined when this wallet
+     * The network id to report to a page, or undefined when this wallet
      * network must not be disclosed.
      */
     resolveReportedNetwork(
-        network: Network,
+        scope: ChainScope,
         customGenesisHash: string | undefined,
-    ): Network | undefined
+    ): NetworkId | undefined
 }
 
 export const dappRequestChainAdapters =

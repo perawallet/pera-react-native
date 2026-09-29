@@ -22,7 +22,7 @@ const fakeAdapter: DappRequestChainAdapter = {
     chainId: 'algorand',
     relayableErrorNames: [],
     parseSigningParams: () => ({ ok: true, payload: [] }),
-    resolveReportedNetwork: network => network,
+    resolveReportedNetwork: scope => scope.networkId,
 }
 
 describe('dappRequestChainAdapters', () => {
