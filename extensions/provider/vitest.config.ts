@@ -16,13 +16,7 @@ import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 
 export default defineConfig({
     test: {
-        coverage: {
-            ...coverageConfig,
-            // test-platform.ts is a test-harness helper re-exported for
-            // downstream packages to build isolated providers in their own
-            // test suites. It has no production callers in this package.
-            exclude: [...coverageConfig.exclude, 'src/test-platform.ts'],
-        },
+        coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],

@@ -11,8 +11,14 @@
  */
 
 import { Controller } from 'react-hook-form'
-import { formatDobInput } from '@perawallet/wallet-core-card'
-import { PWButton, PWInput, PWScreen, PWView } from '@components/core'
+import { formatDobInput, formatSsnInput } from '@perawallet/wallet-core-card'
+import {
+    PWButton,
+    PWInput,
+    PWScreen,
+    PWSkeleton,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardKycRequiredView } from '../../components/CardKycRequiredView'
 import { CountrySelectorField } from '../../components/CountrySelectorField'
@@ -33,6 +39,8 @@ export const CardOnboardingPersonalDetailsScreen = () => {
         isDateOfBirthLocked,
         isNationalityLocked,
         isKycRequired,
+        isRecordLoading,
+        isUsResident,
         handleVerifyIdentity,
         handleSelectNationality,
         selectedBirthCountry,
@@ -45,6 +53,21 @@ export const CardOnboardingPersonalDetailsScreen = () => {
     // the form is replaced rather than shown unsubmittable.
     if (isKycRequired) {
         return <CardKycRequiredView onVerify={handleVerifyIdentity} />
+    }
+
+    if (isRecordLoading) {
+        return (
+            <PWScreen testID='card-onboarding-personal-details-loading'>
+                <PWView style={styles.content}>
+                    <PWView style={styles.fields}>
+                        <PWSkeleton style={styles.fieldSkeleton} />
+                        <PWSkeleton style={styles.fieldSkeleton} />
+                        <PWSkeleton style={styles.fieldSkeleton} />
+                        <PWSkeleton style={styles.fieldSkeleton} />
+                    </PWView>
+                </PWView>
+            </PWScreen>
+        )
     }
 
     return (
@@ -152,6 +175,43 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                             />
                         )}
                     />
+
+                    {isUsResident && (
+                        <Controller
+                            control={control}
+                            name='ssn'
+                            render={({
+                                field: { onChange, onBlur, value },
+                                fieldState: { error },
+                            }) => (
+                                <PWInput
+                                    label={t(
+                                        'peraCard.personal_details.ssn_label',
+                                    )}
+                                    labelStyle={styles.label}
+                                    value={value}
+                                    onChangeText={text =>
+                                        onChange(formatSsnInput(text))
+                                    }
+                                    onBlur={onBlur}
+                                    keyboardType='number-pad'
+                                    returnKeyType='done'
+                                    autoCorrect={false}
+                                    showErrorOnBlur
+                                    renderErrorMessage
+                                    errorStyle={styles.errorMessage}
+                                    errorMessage={
+                                        error && value
+                                            ? t(
+                                                  'peraCard.personal_details.ssn_invalid',
+                                              )
+                                            : undefined
+                                    }
+                                    testID='card-onboarding-ssn-input'
+                                />
+                            )}
+                        />
+                    )}
 
                     <CountrySelectorField
                         label={t('peraCard.personal_details.nationality_label')}

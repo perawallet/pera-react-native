@@ -13,8 +13,7 @@
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import { useLedgerErrorAction } from '@modules/ledger/hooks'
-import type { LedgerErrorPreset } from '@modules/ledger/utils/ledgerErrorPresets'
+import { useLedgerErrorAction, type LedgerErrorPreset } from '@modules/ledger'
 import { useStyles } from './styles'
 
 export type LedgerErrorContentProps = {

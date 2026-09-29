@@ -29,39 +29,14 @@ export const useStyles = makeStyles(theme => ({
     steps: {
         gap: theme.spacing.xl,
     },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.lg,
+    disclosure: {
+        gap: theme.spacing.xs,
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.md,
+        backgroundColor: theme.colors.layerGrayLighter,
     },
-    bullet: {
-        width: theme.spacing.xxl,
-        height: theme.spacing.xxl,
-        borderRadius: theme.spacing.xxl / 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    bulletPending: {
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.textGray,
-    },
-    bulletFilled: {
-        backgroundColor: theme.colors.positiveLighter,
-    },
-    bulletNumberPending: {
+    disclosureBody: {
         color: theme.colors.textGray,
-    },
-    bulletNumberActive: {
-        color: theme.colors.positive,
-    },
-    rowLabel: {
-        flex: 1,
-    },
-    labelPending: {
-        color: theme.colors.textGray,
-    },
-    labelActive: {
-        color: theme.colors.textMain,
     },
     proceedButton: {
         marginTop: theme.spacing.md,

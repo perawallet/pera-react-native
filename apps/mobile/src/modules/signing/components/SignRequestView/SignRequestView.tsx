@@ -22,7 +22,7 @@ import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
-import { SigningRoutes } from '@modules/signing/routes'
+import { SigningRoutes } from '../../routes/SigningRoutes'
 import {
     NavigationContainer,
     NavigationIndependentTree,

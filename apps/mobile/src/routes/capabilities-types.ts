@@ -11,8 +11,8 @@
  */
 
 /**
- * Gate UI on these flags, never on Platform.OS. Native resolves capabilities.ts
- * (everything on); web resolves capabilities.web.ts.
+ * Gate UI on these flags, never on Platform.OS (pera/no-platform-os-web fails
+ * `=== 'web'`). Native resolves capabilities.ts; web resolves capabilities.web.ts.
  */
 export type RouteCapabilities = {
     discoverTab: boolean
@@ -23,7 +23,12 @@ export type RouteCapabilities = {
     giftCards: boolean
     /** In-app webview screens (help center, terms links). Off ⇒ Linking.openURL. */
     inAppWebView: boolean
+    /** Collectible media in a full-screen bottom sheet. Off ⇒ the raw media
+     * opens in a browser tab, since a sheet can't fill the screen in a popup. */
+    fullScreenMediaViewer: boolean
     qrScanner: boolean
+    /** Ledger pairing over USB: Android OTG and WebHID. iOS has no USB HID route. */
+    ledgerUsb: boolean
     /** Paste-a-deeplink entry point (web only), replacing qrScanner there: a camera
      * is near-useless in a 360x600 popup. The two flags are mutually exclusive per platform. */
     deepLinkPaste: boolean
@@ -41,10 +46,16 @@ export type RouteCapabilities = {
      * always uses tap-to-confirm and the setting would be a no-op. */
     confirmationModeSetting: boolean
     developerSettings: boolean
+    /** Developer screen gallery. Off in production bundles, where Metro drops
+     * its code entirely (see metro-build-gates.js), not just its entry points. */
+    developerGallery: boolean
     /** Web vault security screen (auto-lock, lock now, passkey unlock). */
     vaultSecuritySettings: boolean
-    /** Quantum (Falcon-1024) accounts. Off on web: the WASM signer's Emscripten
-     * build doesn't bundle for the extension (see useIsQuantumAccountsEnabled). */
+    /** App-lock PIN and what hangs off it: the set-PIN prompt, PIN and
+     * biometrics settings, shake to lock, duress PIN. Off on web, where the
+     * vault password is the lock. */
+    pin: boolean
+    /** Quantum (Falcon-1024) accounts. */
     quantum: boolean
     /** Rekey feature area (wallet-wide scan-for-rekeyed sweep, rekey-to-
      * standard/shared/ledger flows) — native-only; these stacks aren't

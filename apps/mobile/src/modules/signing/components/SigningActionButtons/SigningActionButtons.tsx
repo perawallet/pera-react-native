@@ -13,7 +13,7 @@
 import { PWButton, PWText, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { useLanguage } from '@hooks/useLanguage'
-import { MultisigDeclineButton } from '@modules/multisig/components/MultisigDeclineButton'
+import { MultisigDeclineButton } from '@modules/multisig'
 import { useStyles } from './styles'
 import { useSigningActionButtons } from './useSigningActionButtons'
 

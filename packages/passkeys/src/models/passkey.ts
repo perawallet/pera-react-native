@@ -221,7 +221,9 @@ export const credentialToPasskey = (
 }
 
 /** Some native implementations emit `createdAt` in seconds, others in ms. */
-const normalizeTimestamp = (value: number | undefined): number | undefined => {
+export const normalizeTimestamp = (
+    value: number | undefined,
+): number | undefined => {
     if (typeof value !== 'number') return undefined
     return value < 10_000_000_000 ? value * 1000 : value
 }

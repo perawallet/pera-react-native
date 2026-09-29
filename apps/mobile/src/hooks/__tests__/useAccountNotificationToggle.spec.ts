@@ -69,9 +69,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // The real useErrorToast runs here (see above), and it appends a `Debug: …`
 // suffix to the body when config.debugEnabled is true. That flag comes from
@@ -80,6 +78,7 @@ vi.mock('@hooks/useLanguage', () => ({
 // deterministic regardless of local env.
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { debugEnabled: false },
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 import {

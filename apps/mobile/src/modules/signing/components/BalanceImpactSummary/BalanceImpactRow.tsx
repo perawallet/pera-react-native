@@ -13,7 +13,7 @@
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import type { BalanceImpactItem } from './useBalanceImpactSummary'
 import { useStyles } from './styles'

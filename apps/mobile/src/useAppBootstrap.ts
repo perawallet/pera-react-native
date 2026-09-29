@@ -18,16 +18,15 @@ import {
     derivePQKeygenSeed,
 } from '@perawallet/wallet-core-blockchain'
 import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
-import { initializeSyncService } from '@perawallet/wallet-core-background'
+import {
+    createSyncStorePorts,
+    initializeSyncService,
+} from '@perawallet/wallet-core-background'
 import {
     initializeDatabase,
     getDatabase,
 } from '@perawallet/wallet-core-database'
-import {
-    logger,
-    updateBackendHeaders,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     readRemoteConfigWithOverrides,
     RemoteConfigKeys,
@@ -46,10 +45,11 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import type { Persister } from '@tanstack/react-query-persist-client'
 import { queryClient } from './providers/QueryProvider'
 import { runPasskeyAutofillBootstrap } from './bootstrap/passkey-autofill'
+import { updateQueryHeaders } from './bootstrap/query-headers'
 import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
 import { getEffectiveSupportedLocales } from './i18n/effectiveLocales'
 import { resolveLocale } from './i18n/locales'
-import i18n from './i18n'
+import { i18n } from './i18n'
 
 /**
  * 'keystore' means hydration refused undecodable wallet records — retrying
@@ -73,20 +73,6 @@ const SPLASH_HIDE_BACKSTOP_MS = 1000
 // Ceiling on the wait for store rehydration; see waitForStoreHydration for why
 // an unguarded wait can hang forever.
 const STORE_HYDRATION_TIMEOUT_MS = 2000
-
-const updateQueryHeaders = () => {
-    const deviceInfo = getProvider().deviceInfo
-    const headers = new Map<string, string>()
-    headers.set('App-Name', deviceInfo.getAppName())
-    headers.set('App-Package-Name', deviceInfo.getAppPackage())
-    headers.set('App-Version', deviceInfo.getAppVersion())
-    headers.set('Client-Type', deviceInfo.getDevicePlatform())
-    headers.set('Device-Version', deviceInfo.getDeviceLocale())
-    headers.set('Device-OS-Version', deviceInfo.getDeviceOSVersion())
-    headers.set('Device-Model', deviceInfo.getDeviceModelId())
-    headers.set('User-Agent', deviceInfo.getUserAgent())
-    updateBackendHeaders(headers)
-}
 
 const resolveEffectiveLocale = (): string => {
     // Reads the same dev-override layer `useRemoteConfig()` applies, via the
@@ -184,7 +170,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 const keystoreBranch = runKeystoreMaintenance({
                     deriveKeygenSeed: derivePQKeygenSeed,
                 })
-                    .then(({ repair, failedDecodeIds }) => {
+                    .then(({ repair, passkeySplit, failedDecodeIds }) => {
                         if (failedDecodeIds.length > 0) {
                             // Non-fatal this session, but these exact records
                             // will fail the strict hydration at the next cold
@@ -195,6 +181,13 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                         }
                         if (repair.repaired > 0 || repair.failed > 0) {
                             logger.info('Quantum key material repaired', repair)
+                        }
+                        if (passkeySplit.failed.length > 0) {
+                            // Hidden from the Android chooser until a later
+                            // launch splits them; the pass retries every launch.
+                            logger.warn(
+                                `Passkey credentials left flat: ${passkeySplit.failed.join(', ')}`,
+                            )
                         }
                     })
                     .catch(err => {
@@ -237,6 +230,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
                 initializeSyncService({
                     queryClient,
+                    stores: createSyncStorePorts(),
                     registerCompletionHandler: setOnConfirmedHandler,
                 })
 

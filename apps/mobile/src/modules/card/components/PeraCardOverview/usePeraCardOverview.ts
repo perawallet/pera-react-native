@@ -13,11 +13,8 @@
 import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
-    AUTO_FUNDING_PER_TX_LIMIT_USD,
     DEFAULT_CARD_CURRENCY,
     CardWalletKind,
-    useCardExternalWalletsQuery,
-    useCardStore,
     useCardWalletBalanceQuery,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
@@ -27,20 +24,17 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID, type Nullable } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { USDC_RAMP_TOKEN_ID } from '@modules/onramp/constants'
+import { USDC_RAMP_TOKEN_ID } from '@modules/onramp'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
 import {
     useCardEscrowBalance,
     useCardFundingAccount,
     useIsCardAutoFundingActive,
+    useCardWithdraw,
 } from '../../hooks'
-import {
-    usePeraCardPendingWithdrawal,
-    type PendingWithdrawalView,
-} from './usePeraCardPendingWithdrawal'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -53,25 +47,21 @@ export type PeraCardCredits = {
 
 const ZERO_BALANCE = new Decimal(0)
 
+export type CardWithdrawState = 'idle' | 'waiting' | 'ready'
+
 type UsePeraCardOverviewResult = {
     isAutoFunding: boolean
     currency: string
     /** On-card balance, plus the linked account's balance when auto-funding. */
     balance: Decimal
-    /** Max a single purchase can draw: card balance + credits, plus (with
-     * auto-funding) min(per-tx limit, linked account balance). */
-    spendablePerTx: Decimal
-    /** True only when a single purchase can draw less than the balance shown. */
-    isSpendableCapped: boolean
     isBalanceLoading: boolean
     credits: PeraCardCredits
     transactionSections: CardTransactionSection[]
     isLoadingTransactions: boolean
     /** Open timelocked withdrawal, if any; the overview hosts its Complete and Cancel steps. */
-    pendingWithdrawal: Nullable<PendingWithdrawalView>
+    /** Idle opens the form; the other two lead to the open request. */
+    withdrawState: CardWithdrawState
     onWithdraw: () => void
-    onCompleteWithdrawal: () => void
-    onCancelWithdrawal: () => void
     onAddFunds: () => void
     /** Auto funding: top up the linked account itself, via the Fund tab. */
     onFundLinkedAccount: () => void
@@ -85,9 +75,6 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // so it needs the app-wide navigation type rather than one param list.
     const navigation = useAppNavigation()
     const { network } = useNetwork()
-    const connectedAddress = useCardStore(
-        state => state.connectedFundingSourceAddress,
-    )
     const isAutoFunding = useIsCardAutoFundingActive()
     const { transactions, isLoading } = useCardTransactionsQuery()
 
@@ -98,14 +85,6 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     const { balance: cardBalance, isLoading: isCardBalanceLoading } =
         useCardEscrowBalance()
-    // Only the allowance is taken from Baanx; both balances are read from the
-    // chain, which is the only source Pera's platform is served. Manual funding
-    // has no delegation at all, so asking for one is a guaranteed failure.
-    const { delegatedWallet } = useCardExternalWalletsQuery({
-        address: connectedAddress,
-        enabled: isAutoFunding,
-    })
-
     // Auto funding never moves USDC onto the card: it is drawn from the linked
     // account at spend time, so that account's own holding is the spendable
     // figure. Reading it from the chain also keeps it right on platforms Baanx
@@ -150,29 +129,17 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         ? (linkedUsdc?.amount ?? ZERO_BALANCE)
         : ZERO_BALANCE
 
-    // Baanx enforces the delegation allowance per transaction; fall back to
-    // the app constant until the server reports one.
-    const perTxLimit = delegatedWallet?.allowance.gt(0)
-        ? delegatedWallet.allowance
-        : AUTO_FUNDING_PER_TX_LIMIT_USD
-
-    // Baanx draws the refund (credit) balance first on a card purchase, so it
-    // counts. Rewards do not: that wallet has to be claimed before it can be
-    // spent, so counting it would promise more than the card can draw.
-    const spendablePerTx = (
-        isAutoFunding ? Decimal.min(perTxLimit, linkedBalance) : ZERO_BALANCE
-    )
-        .plus(cardBalance)
-        .plus(credits.refunds)
-
     const balance = cardBalance.plus(linkedBalance)
-    // The per-transaction line only earns its place when the cap bites;
-    // otherwise it repeats the balance.
-    const isSpendableCapped = !spendablePerTx.eq(balance)
 
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
-    const { pendingWithdrawal, onCompleteWithdrawal, onCancelWithdrawal } =
-        usePeraCardPendingWithdrawal()
+    const { pending: pendingWithdrawal, isReady: isWithdrawReady } =
+        useCardWithdraw()
+    const withdrawState: CardWithdrawState =
+        pendingWithdrawal === null
+            ? 'idle'
+            : isWithdrawReady
+              ? 'ready'
+              : 'waiting'
 
     const onAddFunds = useCallback(() => {
         trackEvent(CardEvent.HomeAddFunds)
@@ -181,8 +148,11 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     const onWithdraw = useCallback(() => {
         trackEvent(CardEvent.HomeWithdraw)
-        navigation.navigate('CardWithdraw')
-    }, [navigation])
+        // One request at a time: while one is open the button leads to it.
+        navigation.navigate(
+            pendingWithdrawal === null ? 'CardWithdraw' : 'CardWithdrawStatus',
+        )
+    }, [navigation, pendingWithdrawal])
 
     const onFundLinkedAccount = useCallback(() => {
         if (fundingAccount === null) return
@@ -236,18 +206,14 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         isAutoFunding,
         currency: DEFAULT_CARD_CURRENCY,
         balance,
-        spendablePerTx,
-        isSpendableCapped,
         isBalanceLoading:
             isCardBalanceLoading ||
             (canReadLinkedBalance && isLinkedBalancePending),
         credits,
         transactionSections,
         isLoadingTransactions: isLoading,
-        pendingWithdrawal,
+        withdrawState,
         onWithdraw,
-        onCompleteWithdrawal,
-        onCancelWithdrawal,
         onAddFunds,
         onFundLinkedAccount,
         onShowAllTransactions,

@@ -14,22 +14,20 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, CloudBackupEvent } from '@analytics'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import {
-    RestoreBackupSheet,
-    type RestoreBackupSheetResult,
-} from '../../components/RestoreBackupSheet'
+import { useRestoreBackupOptions } from '../../hooks/useRestoreBackupOptions'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
 type UseCloudBackupScreenResult = {
     handleSetUpBackup: () => void
     handleRestoreBackup: () => Promise<void>
+    isReadingCredentials: boolean
 }
 
 export const useCloudBackupScreen = (): UseCloudBackupScreenResult => {
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
-    const { request: requestBottomSheet } = useBottomSheet()
+    const { chooseRestoreRoute, isReadingCredentials } =
+        useRestoreBackupOptions()
 
     const handleSetUpBackup = useCallback(() => {
         trackEvent(CloudBackupEvent.SetUpNew)
@@ -38,17 +36,9 @@ export const useCloudBackupScreen = (): UseCloudBackupScreenResult => {
 
     const handleRestoreBackup = useCallback(async () => {
         trackEvent(CloudBackupEvent.Restore)
-        const result = await requestBottomSheet<RestoreBackupSheetResult>({
-            contents: <RestoreBackupSheet />,
-            options: { size: 'auto', enablePanDownToClose: true },
-        })
-        if (!result) return
-        navigation.navigate(
-            result === 'scan'
-                ? 'CloudBackupRestoreScan'
-                : 'CloudBackupRestorePassphrase',
-        )
-    }, [requestBottomSheet, navigation])
+        const route = await chooseRestoreRoute()
+        if (route) navigation.navigate(...route)
+    }, [chooseRestoreRoute, navigation])
 
-    return { handleSetUpBackup, handleRestoreBackup }
+    return { handleSetUpBackup, handleRestoreBackup, isReadingCredentials }
 }

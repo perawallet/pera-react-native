@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -22,8 +22,6 @@ export const PRF_BLOB_KEY = 'vault:wrapped-master-key-prf'
 export const PRF_CRED_ID_KEY = 'vault:prf-credential-id'
 /** chrome.storage.session — raw unlocked master key (memory-only). */
 export const SESSION_MASTER_KEY = 'vault:master-key'
-/** chrome.storage.local prefix — encrypted key entries (MMKV namespace parity). */
-export const KEYSTORE_PREFIX = 'keystore:'
 /** chrome.storage.local — persisted auto-lock preference (minutes). */
 export const AUTO_LOCK_MINUTES_KEY = 'vault:auto-lock-minutes'
 /** chrome.storage.local — unlock lockout bookkeeping (failed attempts, lockout end time). */

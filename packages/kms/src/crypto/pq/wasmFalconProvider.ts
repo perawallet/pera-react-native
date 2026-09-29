@@ -15,7 +15,7 @@
 import type { PQSignatureProvider } from './types'
 
 /**
- * WASM Falcon-1024 signature provider for node/test environments.
+ * WASM Falcon-1024 signature provider for node, tests and the web extension.
  *
  * Provider selection is a build-time choice, not a runtime branch: Metro
  * resolves `getPQProvider.native.ts` (Nitro/on-device) in place of the base
@@ -29,10 +29,10 @@ import type { PQSignatureProvider } from './types'
  * `getPQProvider` variant the bundler picked. So merely importing the barrel
  * pulls this file in on every platform, including on-device. Loaded lazily
  * via `require` (not a top-level `import`), mirroring
- * `createRNFalconProvider`: falcon-1024's CJS entry is Emscripten glue that
- * reads `__filename` at module scope, which Hermes/Metro never define, so
- * eager evaluation crashes the app at startup. The `require` only executes
- * when `createWasmFalconProvider` is actually called, not on import.
+ * `createRNFalconProvider`: falcon-1024's CJS entry compiles and instantiates
+ * its WASM at module scope, work a device never needs since it signs through
+ * the native provider. The `require` only executes when
+ * `createWasmFalconProvider` is actually called, not on import.
  * (`import type` above is erased at compile time and is safe.)
  */
 export const createWasmFalconProvider = (): PQSignatureProvider => {

@@ -96,7 +96,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-multisig', () => ({
+vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-multisig')
+    >()),
     useCreateMultisigAccountMutation: () => ({
         mutateAsync: mockMutateAsync,
     }),
@@ -115,6 +118,8 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-device', () => ({
+    logEvent: vi.fn(),
+    createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'device-id',
     DeviceAccountTypes: {
         algo25: 'algo25',

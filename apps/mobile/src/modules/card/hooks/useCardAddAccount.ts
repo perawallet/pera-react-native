@@ -21,7 +21,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { navigationRef } from '@routes/navigationRef'
 import { useLanguage } from '@hooks/useLanguage'
 import { useErrorToast } from '@hooks/useErrorToast'
-import type { PostCreateReturnTarget } from '@modules/onboarding/routes/types'
+import type { PostCreateReturnTarget } from '@modules/onboarding'
 
 // Push (not navigate) a fresh AddAccount stack, one frame out so the sheet
 // teardown commits first. navigate('AddAccount') would jump back to an

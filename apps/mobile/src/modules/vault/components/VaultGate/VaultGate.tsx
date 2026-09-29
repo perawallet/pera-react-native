@@ -24,13 +24,13 @@ type VaultGateProps = { children: React.ReactNode }
  * them to CreatePasswordScreen.
  */
 export const VaultGate = ({ children }: VaultGateProps): React.JSX.Element => {
-    const { isInitialized, isUnlocked } = useVaultLockState()
+    const { isInitialized, isUnlocked, refresh } = useVaultLockState()
 
     if (isInitialized === null || isUnlocked === null) {
         return <PWLoadingOverlay isVisible={true} />
     }
     if (isInitialized && !isUnlocked) {
-        return <UnlockScreen />
+        return <UnlockScreen onVaultReset={refresh} />
     }
     return <>{children}</>
 }

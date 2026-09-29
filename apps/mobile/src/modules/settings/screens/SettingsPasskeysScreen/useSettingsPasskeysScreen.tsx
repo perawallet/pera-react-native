@@ -23,6 +23,7 @@ import {
     type UsePasskeyMigrationBannerResult,
 } from '../../components/PasskeyMigrationBanner'
 import { openCredentialProviderSettings } from './openCredentialProviderSettings'
+import { useRemoveFromBackupChoice } from './useRemoveFromBackupChoice'
 import {
     usePasskeyAutofillStatus,
     usePasskeysQuery,
@@ -101,6 +102,7 @@ export const useSettingsPasskeysScreen =
         const { showError } = useErrorToast()
         const { t } = useLanguage()
         const scanner = useModalState()
+        const resolveBackupChoice = useRemoveFromBackupChoice()
 
         // Re-check provider + biometric status when the app returns to the
         // foreground — covers the user enabling Pera as the credential provider
@@ -137,6 +139,7 @@ export const useSettingsPasskeysScreen =
                     options: { size: 'auto', enablePanDownToClose: true },
                 })
                 if (!confirmed) return
+                if (!(await resolveBackupChoice(passkey))) return
                 try {
                     await removePasskey(passkey)
                     trackEvent(PasskeysEvent.Deleted)
@@ -146,7 +149,7 @@ export const useSettingsPasskeysScreen =
                     showError(error, t('settings.passkeys.error_title'))
                 }
             },
-            [request, removePasskey, showError, t],
+            [request, resolveBackupChoice, removePasskey, showError, t],
         )
 
         const onOpenProviderSettings = useCallback(async () => {

@@ -11,7 +11,7 @@
  */
 
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
-import { AlgorandChainId } from '../models'
+import { AlgorandWalletConnectChainId } from '../models'
 
 /**
  * A `Record`, not a fallback ladder, so a new `Network` fails TypeScript here
@@ -19,13 +19,17 @@ import { AlgorandChainId } from '../models'
  * needs some CAIP id to open a session at all; `assertTransactionsMatchNetwork`
  * still rejects a genesis mismatch at submit time, so this never decides what gets signed.
  */
-export const EXPECTED_CHAIN_ID_BY_NETWORK: Record<Network, AlgorandChainId> = {
-    [Networks.mainnet]: AlgorandChainId.mainnet,
-    [Networks.testnet]: AlgorandChainId.testnet,
-    [Networks.betanet]: AlgorandChainId.betanet,
-    [Networks.custom]: AlgorandChainId.testnet,
+export const EXPECTED_CHAIN_ID_BY_NETWORK: Record<
+    Network,
+    AlgorandWalletConnectChainId
+> = {
+    [Networks.mainnet]: AlgorandWalletConnectChainId.mainnet,
+    [Networks.testnet]: AlgorandWalletConnectChainId.testnet,
+    [Networks.betanet]: AlgorandWalletConnectChainId.betanet,
+    [Networks.custom]: AlgorandWalletConnectChainId.testnet,
 }
 
 /** The chain id a WalletConnect session/request must present for `network`. */
-export const getExpectedChainId = (network: Network): AlgorandChainId =>
-    EXPECTED_CHAIN_ID_BY_NETWORK[network]
+export const getExpectedChainId = (
+    network: Network,
+): AlgorandWalletConnectChainId => EXPECTED_CHAIN_ID_BY_NETWORK[network]

@@ -317,6 +317,17 @@ describe('useUnlockScreen', () => {
 
                 expect(mocks.unlockWithPasskey).not.toHaveBeenCalled()
             })
+
+            it('keeps counting down when the system clock jumps forward', async () => {
+                mocks.getLockoutRemainingSeconds.mockResolvedValue(30)
+                const { result } = renderHook(() => useUnlockScreen())
+                await settle()
+
+                vi.setSystemTime(Date.now() + 60 * 60 * 1000)
+                act(() => vi.advanceTimersByTime(1000))
+
+                expect(result.current.lockoutSeconds).toBe(29)
+            })
         })
 
         it('surfaces hasPasskeyError, without rejecting, when the auto-launch itself throws an unexpected error', async () => {

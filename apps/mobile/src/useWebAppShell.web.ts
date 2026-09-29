@@ -11,14 +11,9 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import {
-    getCurrentApproval,
-    getSurface,
-} from '@perawallet/wallet-extension-platform-chrome'
-import {
-    armAutoLock,
-    requireSessionMasterKey,
-} from '@perawallet/wallet-extension-keystore-chrome'
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+import { getCurrentApproval } from '@perawallet/wallet-core-browser-runtime'
+import { requireSessionMasterKey } from '@perawallet/wallet-extension-keystore-chrome'
 import { useVaultLockState } from '@modules/vault'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import {
@@ -33,6 +28,7 @@ import {
 } from '@perawallet/wallet-core-database'
 import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
 import {
+    createSyncStorePorts,
     getSyncService,
     initializeSyncService,
 } from '@perawallet/wallet-core-background'
@@ -144,6 +140,7 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             await seedAlgoAsset(getDatabase())
             initializeSyncService({
                 queryClient,
+                stores: createSyncStorePorts(),
                 registerCompletionHandler: setOnConfirmedHandler,
             })
             setIsBootstrapped(true)
@@ -152,11 +149,6 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             logger.error('Web shell bootstrap failed', { error })
             setHasBootstrapError(true)
         })
-    }, [isUnlocked])
-
-    useEffect(() => {
-        if (!isUnlocked) return
-        void armAutoLock() // sliding window: surface open re-arms
     }, [isUnlocked])
 
     // Sync runs while a UI context is open AND the wallet is usable

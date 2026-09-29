@@ -1,16 +1,20 @@
 # Pera Card
 
-A Visa card issued by Baanx and funded from a Pera account. Most of the state
+A payment card issued by Baanx and funded from a Pera account. Most of the state
 that matters is owned by Baanx rather than by us, so this file records the
 contract to stop behaviour being re-derived from the screens.
 
 ## Where the code lives
 
-| Path                            | Holds                                   |
-| ------------------------------- | --------------------------------------- |
-| `packages/card/`                | API clients, session, stores, models    |
-| `apps/mobile/src/modules/card/` | Screens, onboarding routes, dashboard   |
-| `modules/gift-card/`            | Gift cards: separate flow, same backend |
+| Path                                | Holds                                                    |
+| ----------------------------------- | -------------------------------------------------------- |
+| `packages/card/`                    | API clients, session, stores, models, `CardChainAdapter` |
+| `packages/chain-algorand/src/card/` | Escrow contracts, AutoDraw LogicSig, delegation bodies   |
+| `apps/mobile/src/modules/card/`     | Screens, onboarding routes, dashboard                    |
+| `modules/gift-card/`                | Gift cards: separate flow, same backend                  |
+
+The card package reaches every chain-specific step through the adapter the
+chain package registers, so it never imports `chain-algorand`.
 
 ## Ownership
 
@@ -52,13 +56,21 @@ when a user is mid-signup. The two vocabularies are not 1:1; the server phase
 decides where a returning user resumes.
 
 Eligible countries and US states come from `GET /v1/auth/settings`, so
-eligibility changes without a release.
+eligibility changes without a release. US residents also enter their SSN on
+the personal-details step; Baanx requires it for them and takes the nine
+digits without separators. A US resident shipping the card elsewhere unticks
+the same-mailing box on the address step: Baanx then withholds the session
+token from that call and issues it on `POST /v1/auth/register/mailing-address`
+instead, so that step is the one that completes registration.
 
 ## Funding
 
 Chosen on the setup checklist, and switchable afterwards:
 
-- `MANUAL`: the user tops the card up themselves.
+- `MANUAL`: the user tops the card up themselves. Add Funds with a non-USDC
+  asset swaps it in the linked account first; the DEX pays the swapper and its
+  groups are pre-signed, so the deposit cannot join them. The screen waits for
+  the USDC to land and deposits exactly the credited amount.
 - `AUTO` (AutoDraw): a delegated LogicSig lets Baanx draw from the connected
   account, capped at $400 per transaction.
 
@@ -76,11 +88,26 @@ Registered wallets come from `GET /v1/wallet/external`. An allowance of 0 means
 the delegation is inactive, which is how a revoked AutoDraw presents.
 A killswitch app (ARC-56) can disable AutoDraw independently of the delegation.
 
-> [!WARNING]
-> The AutoDraw TEAL template is pinned by an ed25519 signature, but the pinned
-> public key and signature are still empty pre-launch placeholders. Until they
-> are populated, verification is dormant and only logs. It does not guard the
-> compile path. This must be filled in before AutoDraw ships.
+### AutoDraw integrity
+
+The delegated program is pinned twice. Both checks fail closed in every
+environment, because staging builds sign real keys too:
+
+- The vendored template
+  (`packages/chain-algorand/src/card/escrow/autodraw-teal.ts`) must hash to
+  `CARD_AUTODRAW_TEMPLATE_HASH`, one SHA-256 for every network. It is
+  checked by `pnpm check:autodraw-hash` inside `pnpm build`, and again by
+  `verifyAutoDrawTealTemplate` before the user signs.
+- The algod-compiled program must hash to the network's
+  `*_CARD_AUTODRAW_PROGRAM_HASH` (`verifyAutoDrawProgram`). This one depends on
+  the app ids and genesis hash, and is the only check that covers a node
+  returning different bytes than the source it was given.
+
+Both pins are Bitrise secrets baked in by `tools/generate-config.sh`, never
+remote config, so a change to the repo cannot supply its own expected value.
+Changing the template or redeploying a card app means running
+`pnpm check:autodraw-hash --print` and updating the matching secrets in the same
+change; otherwise the build refuses.
 
 ## Credits
 

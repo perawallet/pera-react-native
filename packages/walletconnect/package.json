@@ -37,7 +37,6 @@
     "@walletconnect/core": "catalog:",
     "@walletconnect/utils": "catalog:",
     "react": "catalog:",
-    "react-native": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:"
   },

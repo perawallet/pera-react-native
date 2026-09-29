@@ -20,7 +20,7 @@ import {
     type HardwareWalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { AccountDisplayState } from '@modules/accounts/components/AccountIcon'
+import type { AccountDisplayState } from '@components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type LedgerInfoListItem =

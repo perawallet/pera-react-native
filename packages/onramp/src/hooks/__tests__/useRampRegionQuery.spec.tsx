@@ -49,11 +49,11 @@ describe('onramp/useRampRegionQuery', () => {
             wrapper: createWrapper(),
         })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-        expect(result.current.data).toEqual({
-            countryCode: 'US',
-            countryName: 'United States',
-        })
+        await waitFor(() =>
+            expect(result.current.data).toEqual({
+                countryCode: 'US',
+                countryName: 'United States',
+            }),
+        )
     })
 })

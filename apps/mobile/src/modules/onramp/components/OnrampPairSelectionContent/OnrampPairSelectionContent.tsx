@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { PWText, PWView } from '@components/core'
-import { AssetSelectionList } from '@modules/assets/components'
+import { AssetSelectionList } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { OnrampAssetItemView } from './OnrampAssetItemView'

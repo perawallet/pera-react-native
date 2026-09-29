@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { PWScreen, PWView } from '@components/core'
+import { PWLoadingOverlay, PWScreen, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { QRScannerView } from '@components/QRScannerView'
@@ -27,6 +27,7 @@ export const ImportAccountOptionsScreen = () => {
         isQRScannerVisible,
         handleCloseQRScanner,
         handleQRScannerSuccess,
+        isReadingCredentials,
     } = useImportAccountOptionsScreen()
 
     return (
@@ -57,6 +58,11 @@ export const ImportAccountOptionsScreen = () => {
                 onSuccess={handleQRScannerSuccess}
                 animationType='slide'
                 skipDeepLinkHandler
+            />
+
+            <PWLoadingOverlay
+                isVisible={isReadingCredentials}
+                title={t('cloud_backup.restore.import_reading')}
             />
         </>
     )

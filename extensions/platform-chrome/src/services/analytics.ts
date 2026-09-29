@@ -57,7 +57,7 @@ export class ChromeAnalyticsService implements AnalyticsService {
             })
         } catch {
             // Best-effort — analytics must never surface an error to the
-            // caller (packages/analytics/src/log.ts already wraps every
+            // caller (packages/device/src/analytics/log.ts already wraps every
             // call in its own try/catch, but this belt-and-braces guard
             // keeps the promise from producing an unhandled rejection).
         }

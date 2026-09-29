@@ -10,33 +10,18 @@
  limitations under the License
  */
 
-import { Pressable } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
-import { PWIcon, PWToolbar, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { PinEntry } from '@modules/security'
-import { getTestProps } from '@utils/test-id-helper'
 
+import { BackupCodeEntry } from '../BackupCodeEntry'
 import { useBackupCodeSheet } from './useBackupCodeSheet'
-import { useStyles } from './styles'
 
 export type BackupCodeSheetProps = {
     /** The scanned envelope, already validated by `parseBackupSyncQrEnvelope`. */
     raw: string
 }
 
-/**
- * Open with `size: 'full'` and `autoCreateContainer: false` — gorhom's
- * `BottomSheetView` is content-sized, so the numpad cannot flex-fill without
- * the plain container.
- */
 export const BackupCodeSheet = ({ raw }: BackupCodeSheetProps) => {
     const { t } = useLanguage()
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ insets })
-    const { dismiss } = useBottomSheetResult()
 
     const {
         hasError,
@@ -46,31 +31,14 @@ export const BackupCodeSheet = ({ raw }: BackupCodeSheetProps) => {
     } = useBackupCodeSheet({ raw })
 
     return (
-        <PWView
-            style={styles.container}
+        <BackupCodeEntry
             testID='backup_code_sheet'
-        >
-            <PWToolbar
-                left={
-                    <Pressable
-                        {...getTestProps('backup_code_close_button')}
-                        onPress={dismiss}
-                    >
-                        <PWIcon name='cross' />
-                    </Pressable>
-                }
-                paddingStyle='normal'
-                style={styles.toolbar}
-            />
-            <PWView style={styles.pinContainer}>
-                <PinEntry
-                    title={t('cloud_backup.restore_scan.code_title')}
-                    onPinComplete={code => void handleCodeComplete(code)}
-                    isDisabled={isDeriving}
-                    hasError={hasError}
-                    onErrorAnimationComplete={handleErrorAnimationComplete}
-                />
-            </PWView>
-        </PWView>
+            title={t('cloud_backup.restore_scan.code_title')}
+            description={t('cloud_backup.restore_scan.code_description')}
+            onCodeComplete={code => void handleCodeComplete(code)}
+            isDisabled={isDeriving}
+            hasError={hasError}
+            onErrorAnimationComplete={handleErrorAnimationComplete}
+        />
     )
 }

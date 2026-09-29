@@ -48,6 +48,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         quantumAccountSupportUrl:
             'https://support.perawallet.app/en/article/create-or-upgrade-to-a-quantum-account-on-pera-wallet-19d53rn/',
     },
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 const mockUseCanSignWith = vi.fn<() => boolean>()

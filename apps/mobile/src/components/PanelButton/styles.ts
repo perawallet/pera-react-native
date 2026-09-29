@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getIconPixelSize } from '@components/core'
 import type { PanelButtonProps } from './PanelButton'
 
 export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
@@ -26,6 +27,8 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
         padding = theme.spacing.md
     }
 
+    const iconSize = getIconPixelSize(theme, 'md')
+
     return {
         buttonStyle: {
             backgroundColor,
@@ -34,6 +37,10 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
             alignItems: props.description ? 'flex-start' : 'center',
             padding,
             gap: theme.spacing.md,
+        },
+        leftImageStyle: {
+            width: iconSize,
+            height: iconSize,
         },
         textStyle: {
             flexShrink: 1,

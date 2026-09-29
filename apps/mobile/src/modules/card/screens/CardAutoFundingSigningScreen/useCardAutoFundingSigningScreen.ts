@@ -13,6 +13,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
     FundingType,
     useCardStore,
 } from '@perawallet/wallet-core-card'
@@ -46,12 +47,12 @@ export type UseCardAutoFundingSigningScreenResult = {
 /**
  * Step 3 (Auto funding only): a card-module-scoped sign-approval screen for
  * the LSig delegation signature. Deliberately NOT routed through the shared
- * signing pipeline (packages/signing) — this is the only place in the app
+ * signing pipeline (packages/signing): this is the only place in the app
  * that needs an LSig review screen, so it calls the program signer directly
  * and just reuses the visual layout of the pipeline's own sign-request
  * screens (slide-to-confirm + cancel).
  *
- * Approving does both legs of activation in one action — `useAutoDrawSwitch`
+ * Approving does both legs of activation in one action: `useAutoDrawSwitch`
  * (shared with the post-onboarding funding-type switch) registers the signed
  * LSig with AB AND submits the on-chain Killswitch `enable` call, so a card
  * created with Auto funding is actually enabled, not just registered.
@@ -99,13 +100,16 @@ export const useCardAutoFundingSigningScreen =
                     await enableAutoDraw(connectedAccount, escrowCardAddress)
                     finish(FundingType.Auto, false)
                 } catch (err) {
-                    // An unverified AutoDraw program can never succeed on
-                    // retry, so "please try again" would strand the user on
-                    // this screen. Degrade to Manual with the same honest copy
-                    // the decline path uses.
-                    if (err instanceof AutoDrawProgramUnverifiedError) {
+                    // An unverified AutoDraw program or template can never
+                    // succeed on retry, so "please try again" would strand the
+                    // user on this screen. Degrade to Manual with the same
+                    // honest copy the decline path uses.
+                    if (
+                        err instanceof AutoDrawProgramUnverifiedError ||
+                        err instanceof AutoDrawTealUnverifiedError
+                    ) {
                         logger.error(
-                            'AutoDraw program failed verification — degrading to Manual funding',
+                            'AutoDraw program failed verification, degrading to Manual funding',
                             { error: err },
                         )
                         finish(FundingType.Manual, true)
@@ -140,7 +144,7 @@ export const useCardAutoFundingSigningScreen =
 
         const handleReject = useCallback(() => {
             trackEvent(CardEvent.CreateFinalizeTxCancel)
-            // The card was already created in Step 2 — declining here
+            // The card was already created in Step 2, so declining here
             // degrades to Manual funding rather than discarding it.
             finish(FundingType.Manual, true)
         }, [finish])

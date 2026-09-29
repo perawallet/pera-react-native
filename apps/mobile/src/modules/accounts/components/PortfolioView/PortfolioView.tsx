@@ -240,7 +240,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                             {formatDatetime(
                                 selectedPoint.datetime,
                                 undefined,
-                                'long',
+                                'medium',
                                 'date',
                             )}
                         </PWText>
@@ -251,7 +251,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                             {formatDatetime(
                                 selectedPoint.datetime,
                                 undefined,
-                                'long',
+                                'medium',
                                 'time',
                             )}
                         </PWText>

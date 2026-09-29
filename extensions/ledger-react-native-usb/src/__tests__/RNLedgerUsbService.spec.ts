@@ -17,10 +17,6 @@ const transportOpenMock = vi.hoisted(() => vi.fn())
 const transportListMock = vi.hoisted(() => vi.fn())
 const transportIsSupportedMock = vi.hoisted(() => vi.fn())
 const transportCloseMock = vi.hoisted(() => vi.fn())
-const algorandGetAddressMock = vi.hoisted(() => vi.fn())
-const algorandSignMock = vi.hoisted(() => vi.fn())
-const algorandGetVersionMock = vi.hoisted(() => vi.fn())
-const algorandSignDataMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ledgerhq/react-native-hid', () => ({
     default: {
@@ -31,23 +27,29 @@ vi.mock('@ledgerhq/react-native-hid', () => ({
     },
 }))
 
-vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
-    AlgorandApp: class {
-        getAddressAndPubKey = algorandGetAddressMock
-        sign = algorandSignMock
-        getVersion = algorandGetVersionMock
-        signData = algorandSignDataMock
-    },
-    ScopeType: { UNKNOWN: -1, AUTH: 1 },
-}))
-
+import {
+    LedgerAppDriverNotRegisteredError,
+    ledgerAppDriverRegistry,
+    type HardwareWalletTransport,
+    type LedgerAppDriver,
+} from '@perawallet/wallet-extension-hardware-wallet'
 import { RNLedgerUsbService } from '../RNLedgerUsbService'
 import {
-    LedgerSigningError,
+    LEDGER_STATUS_CODES,
     LedgerUsbMultipleDevicesError,
     LedgerUsbNoDeviceError,
     LedgerUserRejectedError,
 } from '@perawallet/wallet-extension-ledger-shared'
+
+const openedTransport: HardwareWalletTransport = {
+    getAddress: vi.fn(),
+    signTransaction: vi.fn(),
+    signData: vi.fn(),
+    getAppVersion: vi.fn(),
+    disconnect: vi.fn(),
+}
+const driverOpenMock = vi.fn<LedgerAppDriver['open']>(() => openedTransport)
+const fakeDriver: LedgerAppDriver = { chainId: 'test', open: driverOpenMock }
 
 // The real @ledgerhq/react-native-hid DeviceObj exposes only vendorId,
 // productId and deviceName — there is no stable per-device id — so
@@ -75,16 +77,15 @@ const connectToFirstDevice = async (
 
 describe('RNLedgerUsbService', () => {
     beforeEach(() => {
+        driverOpenMock.mockClear()
+        ledgerAppDriverRegistry.reset()
+        ledgerAppDriverRegistry.register(fakeDriver)
         transportListenMock.mockReset()
         transportOpenMock.mockReset()
         transportListMock.mockReset()
         transportListMock.mockResolvedValue([])
         transportIsSupportedMock.mockReset()
         transportCloseMock.mockReset()
-        algorandGetAddressMock.mockReset()
-        algorandSignMock.mockReset()
-        algorandGetVersionMock.mockReset()
-        algorandSignDataMock.mockReset()
         transportOpenMock.mockResolvedValue({ close: transportCloseMock })
     })
 
@@ -135,6 +136,66 @@ describe('RNLedgerUsbService', () => {
         expect(onDevice).not.toHaveBeenCalled()
     })
 
+    test('scan skips a descriptor with neither deviceId nor productId, and names the rest by model when the OS gives no name', () => {
+        let observer: { next: (event: unknown) => void } = { next: () => {} }
+        transportListenMock.mockImplementation(subscription => {
+            observer = subscription
+            return { unsubscribe: vi.fn() }
+        })
+
+        const onDevice = vi.fn()
+        new RNLedgerUsbService().createTransportProvider().scan(onDevice)
+
+        observer.next({ type: 'add', descriptor: { vendorId: 0x2c97 } })
+        observer.next({
+            type: 'add',
+            descriptor: { ...NANO_X_DESCRIPTOR, deviceName: null },
+        })
+
+        expect(onDevice).toHaveBeenCalledTimes(1)
+        expect(onDevice).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: String(NANO_X_DESCRIPTOR.productId),
+                name: expect.stringMatching(/^Ledger /),
+            }),
+        )
+    })
+
+    test('scan classifies listener errors, and drops them when no onError is given', () => {
+        let observer: { error: (err: unknown) => void } = { error: () => {} }
+        transportListenMock.mockImplementation(subscription => {
+            observer = subscription
+            return { unsubscribe: vi.fn() }
+        })
+        const rejected = Object.assign(new Error('denied'), {
+            statusCode: LEDGER_STATUS_CODES.USER_REJECTED,
+        })
+        const provider = new RNLedgerUsbService().createTransportProvider()
+
+        provider.scan(vi.fn())
+        expect(() => observer.error(rejected)).not.toThrow()
+
+        const onError = vi.fn()
+        provider.scan(vi.fn(), onError)
+        observer.error(rejected)
+
+        expect(onError).toHaveBeenCalledWith(
+            expect.any(LedgerUserRejectedError),
+        )
+    })
+
+    test('connect classifies a failure to open the device', async () => {
+        transportOpenMock.mockRejectedValue(
+            Object.assign(new Error('denied'), {
+                statusCode: LEDGER_STATUS_CODES.USER_REJECTED,
+            }),
+        )
+
+        await expect(connectToFirstDevice()).rejects.toBeInstanceOf(
+            LedgerUserRejectedError,
+        )
+    })
+
     test('connect opens the first connected Ledger from the live device list', async () => {
         const transport = await connectToFirstDevice()
 
@@ -178,203 +239,24 @@ describe('RNLedgerUsbService', () => {
         expect(transportOpenMock).toHaveBeenCalledWith(NANO_S_PLUS_DESCRIPTOR)
     })
 
-    test('wrapped transport.getAddress delegates to AlgorandApp and returns public-key bytes', async () => {
-        algorandGetAddressMock.mockResolvedValue({
-            address: Buffer.from('ALGO_ADDR'),
-            publicKey: Buffer.from(
-                'aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899',
-                'hex',
-            ),
-        })
+    test('opens the app through the registered driver', async () => {
+        const rawTransport = { close: transportCloseMock }
+        transportOpenMock.mockResolvedValue(rawTransport)
 
         const transport = await connectToFirstDevice()
-        const account = await transport.getAddress(0)
 
-        expect(algorandGetAddressMock).toHaveBeenCalledWith(0, false)
-        expect(account.address).toBe('ALGO_ADDR')
-        expect(account.publicKey).toBeInstanceOf(Uint8Array)
-        expect(account.publicKey).toHaveLength(32)
-        expect(account.accountIndex).toBe(0)
+        expect(driverOpenMock).toHaveBeenCalledWith(rawTransport)
+        expect(transport).toBe(openedTransport)
     })
 
-    test('wrapped transport.signTransaction returns clean signature bytes (no trailing APDU status word)', async () => {
-        // @algorandfoundation/ledger-algorand-js strips the trailing status
-        // word internally — the returned signature is already clean.
-        algorandSignMock.mockResolvedValue({
-            signature: Buffer.from([1, 2, 3]),
-        })
+    test('throws before touching the device when no app driver is registered', async () => {
+        ledgerAppDriverRegistry.reset()
 
-        const transport = await connectToFirstDevice()
-        const sig = await transport.signTransaction(0, new Uint8Array([10]))
-
-        expect(algorandSignMock).toHaveBeenCalledWith(0, Buffer.from([10]))
-        expect(Array.from(sig)).toEqual([1, 2, 3])
-    })
-
-    test('signTransaction primes the device via getAddressAndPubKey before every sign call', async () => {
-        algorandGetAddressMock.mockResolvedValue({
-            address: Buffer.from('ALGO_ADDR'),
-            publicKey: Buffer.alloc(32),
-        })
-        algorandSignMock.mockResolvedValue({
-            signature: Buffer.from([1, 2, 3]),
-        })
-        const transport = await connectToFirstDevice()
-
-        await transport.signTransaction(0, new Uint8Array([10, 20]))
-
-        expect(algorandGetAddressMock).toHaveBeenCalledWith(0, false)
-        expect(algorandGetAddressMock.mock.invocationCallOrder[0]).toBeLessThan(
-            algorandSignMock.mock.invocationCallOrder[0],
+        await expect(connectToFirstDevice()).rejects.toBeInstanceOf(
+            LedgerAppDriverNotRegisteredError,
         )
-    })
-
-    test('signTransaction re-primes on every call for the same account index — no caching', async () => {
-        algorandGetAddressMock.mockResolvedValue({
-            address: Buffer.from('ALGO_ADDR'),
-            publicKey: Buffer.alloc(32),
-        })
-        algorandSignMock.mockResolvedValue({
-            signature: Buffer.from([1, 2, 3]),
-        })
-        const transport = await connectToFirstDevice()
-
-        await transport.signTransaction(0, new Uint8Array([10]))
-        await transport.signTransaction(0, new Uint8Array([20]))
-        await transport.signTransaction(0, new Uint8Array([30]))
-
-        expect(algorandGetAddressMock).toHaveBeenCalledTimes(3)
-        expect(algorandSignMock).toHaveBeenCalledTimes(3)
-    })
-
-    test('signTransaction primes the requested account index, not a hardcoded one', async () => {
-        algorandGetAddressMock.mockResolvedValue({
-            address: Buffer.from('ALGO_ADDR'),
-            publicKey: Buffer.alloc(32),
-        })
-        algorandSignMock.mockResolvedValue({
-            signature: Buffer.from([1, 2, 3]),
-        })
-        const transport = await connectToFirstDevice()
-
-        await transport.signTransaction(7, new Uint8Array([10]))
-
-        expect(algorandGetAddressMock).toHaveBeenCalledWith(7, false)
-        expect(algorandSignMock).toHaveBeenCalledWith(7, Buffer.from([10]))
-    })
-
-    test('signTransaction throws LedgerSigningError on empty signature', async () => {
-        algorandSignMock.mockResolvedValue({ signature: Buffer.alloc(0) })
-
-        const transport = await connectToFirstDevice()
-
-        await expect(
-            transport.signTransaction(0, new Uint8Array([1])),
-        ).rejects.toBeInstanceOf(LedgerSigningError)
-    })
-
-    test('signTransaction translates app errors through classifyLedgerError', async () => {
-        algorandSignMock.mockRejectedValue({ returnCode: 0x6986 })
-        const transport = await connectToFirstDevice()
-
-        await expect(
-            transport.signTransaction(0, new Uint8Array([1])),
-        ).rejects.toBeInstanceOf(LedgerUserRejectedError)
-    })
-
-    test('wrapped transport.disconnect closes the underlying HID transport', async () => {
-        transportCloseMock.mockResolvedValue(undefined)
-
-        const transport = await connectToFirstDevice()
-        await transport.disconnect()
-
-        expect(transportCloseMock).toHaveBeenCalled()
-    })
-
-    test('getAppVersion delegates to the app and returns the version triple', async () => {
-        algorandGetVersionMock.mockResolvedValue({
-            major: 2,
-            minor: 1,
-            patch: 3,
-        })
-        const transport = await connectToFirstDevice()
-
-        const version = await transport.getAppVersion()
-
-        expect(version).toEqual({ major: 2, minor: 1, patch: 3 })
-    })
-
-    test('signData maps the request onto the app and returns signature bytes', async () => {
-        algorandSignDataMock.mockResolvedValue({
-            signature: Uint8Array.from([9, 8, 7]),
-        })
-        const transport = await connectToFirstDevice()
-
-        const sig = await transport.signData({
-            accountIndex: 0,
-            data: 'e30=',
-            signerPublicKey: new Uint8Array(32),
-            domain: 'example.com',
-            authenticatorData: new Uint8Array(37),
-            requestId: undefined,
-            scope: 1,
-            encoding: 'base64',
-        })
-
-        expect(algorandSignDataMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                data: 'e30=',
-                domain: 'example.com',
-                hdPath: "m/44'/283'/0'/0/0",
-                authenticationData: expect.any(Uint8Array),
-                signer: expect.any(Uint8Array),
-            }),
-            { scope: 1, encoding: 'base64' },
-        )
-        expect(Array.from(sig)).toEqual([9, 8, 7])
-    })
-
-    test('signData translates app errors through classifyLedgerError', async () => {
-        algorandSignDataMock.mockRejectedValue({ returnCode: 0x6986 })
-        const transport = await connectToFirstDevice()
-
-        await expect(
-            transport.signData({
-                accountIndex: 0,
-                data: 'e30=',
-                signerPublicKey: new Uint8Array(32),
-                domain: 'example.com',
-                authenticatorData: new Uint8Array(37),
-                scope: 1,
-                encoding: 'base64',
-            }),
-        ).rejects.toBeInstanceOf(LedgerUserRejectedError)
-    })
-
-    test('signData throws LedgerSigningError on empty signature', async () => {
-        algorandSignDataMock.mockResolvedValue({ signature: new Uint8Array(0) })
-        const transport = await connectToFirstDevice()
-
-        await expect(
-            transport.signData({
-                accountIndex: 0,
-                data: 'e30=',
-                signerPublicKey: new Uint8Array(32),
-                domain: 'example.com',
-                authenticatorData: new Uint8Array(37),
-                scope: 1,
-                encoding: 'base64',
-            }),
-        ).rejects.toBeInstanceOf(LedgerSigningError)
-    })
-
-    test('getAppVersion translates app errors through classifyLedgerError', async () => {
-        algorandGetVersionMock.mockRejectedValue({ returnCode: 0x6986 })
-        const transport = await connectToFirstDevice()
-
-        await expect(transport.getAppVersion()).rejects.toBeInstanceOf(
-            LedgerUserRejectedError,
-        )
+        expect(transportListMock).not.toHaveBeenCalled()
+        expect(transportOpenMock).not.toHaveBeenCalled()
     })
 
     test('isSupported delegates to TransportHID.isSupported', async () => {

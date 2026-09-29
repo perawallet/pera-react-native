@@ -13,7 +13,7 @@
 import { PWButton, PWText, PWView } from '@components/core'
 import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 

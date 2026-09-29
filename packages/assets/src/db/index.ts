@@ -25,15 +25,19 @@ export {
     getAssetById,
     getAssetPeraMetadata,
     updateAssetPeraMetadata,
+    deleteAssets,
+} from './metadataRepository'
+export {
     upsertAssetPrices,
     getAssetPricesByIds,
-    getStaleOrMissingAssetIds,
-    getStaleOrMissingPriceAssetIds,
-    getCollectibleIdsMissingUrl,
-    deleteAssets,
     deleteAssetPrices,
     recordPriceMisses,
     clearPriceMisses,
     type AssetPriceRow,
-} from './repository'
+} from './pricesRepository'
+export {
+    getStaleOrMissingAssetIds,
+    getStaleOrMissingPriceAssetIds,
+    getCollectibleIdsMissingUrl,
+} from './syncQueries'
 export { seedAlgoAsset } from './seed'

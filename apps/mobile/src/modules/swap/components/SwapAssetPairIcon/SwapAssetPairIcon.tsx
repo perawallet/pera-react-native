@@ -11,7 +11,7 @@
  */
 
 import { PWView } from '@components/core'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import { dexSwapAssetToDisplayable } from '@modules/swap/utils/dexSwapAssetToDisplayable'
 import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import { useStyles } from './styles'

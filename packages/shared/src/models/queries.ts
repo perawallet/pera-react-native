@@ -10,11 +10,24 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { PeraService } from '@perawallet/wallet-core-config'
 import type { Network } from './base-types'
 
-export type RequestConfiguration<TData = unknown> = {
+/** A request targets a legacy Algorand network or a chain scope, never both. */
+type RequestTarget =
+    | { network: Network; scope?: undefined }
+    | { scope: ChainScope; network?: undefined }
+
+export type RequestConfiguration<TData = unknown> = RequestTarget & {
     backend: 'algod' | 'indexer' | 'pera' | 'backup'
-    network: Network
+    /**
+     * The Pera service this request needs. Read only for `backend: 'pera'`:
+     * a service the scope's configuration does not list is refused before a
+     * socket opens. Without it, the request only needs the scope to have a
+     * Pera deployment.
+     */
+    service?: PeraService
     url?: string
     method: 'GET' | 'PUT' | 'PATCH' | 'POST' | 'DELETE'
     params?: object

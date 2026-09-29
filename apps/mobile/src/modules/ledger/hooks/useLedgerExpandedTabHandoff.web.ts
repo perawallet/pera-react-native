@@ -10,12 +10,14 @@
  limitations under the License
  */
 
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import {
-    getSurface,
+    closeCurrentTab,
     openExpandedTab,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { UseLedgerExpandedTabHandoffResult } from './useLedgerExpandedTabHandoff'
+import { isLedgerHandoffTab } from './useLedgerHandoffTabExit.web'
 
 /**
  * WebHID's and Web Bluetooth's `requestDevice()` device-picker dialog isn't
@@ -32,4 +34,6 @@ export const useLedgerExpandedTabHandoff =
             openExpandedTab(
                 transportType === 'usb' ? 'ledger-usb' : 'ledger-ble',
             ),
+        isHandoffTab: isLedgerHandoffTab(),
+        closeHandoffTab: closeCurrentTab,
     })

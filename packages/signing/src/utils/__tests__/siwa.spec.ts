@@ -14,7 +14,7 @@ import { describe, expect, test } from 'vitest'
 import { canonify } from 'canonify'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { Arc60BadJsonError } from '../arc60'
+import { Arc60BadJsonError } from '../arc60-errors'
 import {
     parseSiwa,
     buildSiwaAuthRequest,

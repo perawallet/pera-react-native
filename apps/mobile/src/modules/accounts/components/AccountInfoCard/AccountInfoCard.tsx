@@ -23,7 +23,7 @@ import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountInfoCard } from './useAccountInfoCard'
-import { AccountIcon } from '../AccountIcon'
+import { AccountIcon } from '@components/AccountIcon'
 import { AssetAmount } from '@components/AssetAmount'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { AccountStructureTree } from './AccountStructureTree'
@@ -84,6 +84,7 @@ export const AccountInfoCard = ({
                 <PWText
                     variant='h4'
                     style={styles.accountTypeText}
+                    testID='account_type_label'
                     truncate
                 >
                     {typeMain}

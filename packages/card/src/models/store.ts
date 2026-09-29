@@ -120,6 +120,16 @@ export type CardUxState = BaseStoreState & {
             txId: string
         }>,
     ) => void
+    /**
+     * Adopts a card the backend already holds for this user (created on
+     * another device or install), and its owner as the funding source. No
+     * txId is known, and approval is assumed, so creation never re-runs.
+     */
+    restoreEscrowCard: (card: {
+        cardAddress: string
+        ownerAddress: string
+        network: Network
+    }) => void
     /** Marks the current escrow card as approved by AB. */
     markEscrowCardApproved: () => void
     setCardSnapshot: (snapshot: {

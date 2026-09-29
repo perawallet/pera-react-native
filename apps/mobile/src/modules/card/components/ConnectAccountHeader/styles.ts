@@ -23,4 +23,22 @@ export const useStyles = makeStyles(theme => ({
     pickerHeaderSubtitle: {
         color: theme.colors.textGray,
     },
+    titleBar: {
+        gap: theme.spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        minWidth: 0,
+        marginTop: theme.spacing.xl,
+        // No separator sits above the first account row.
+        marginBottom: theme.spacing.sm,
+    },
+    titleBarTitleContainer: {
+        flex: 1,
+        minWidth: 0,
+    },
+    accountsTitle: {
+        color: theme.colors.textMain,
+    },
 }))

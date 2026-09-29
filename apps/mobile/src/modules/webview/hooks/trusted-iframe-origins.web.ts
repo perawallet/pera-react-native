@@ -19,12 +19,10 @@
 // bridge host at all" rather than one nothing can authenticate against.
 import {
     config,
+    getIframeOrigins,
     getNetworkConfig,
     Networks,
 } from '@perawallet/wallet-core-config'
-
-const COMMERCE_HOST_PREFIX = 'commerce.'
-const GIFTCARDS_HOST_PREFIX = 'giftcards.'
 
 const safeOrigin = (url: string): string | null => {
     try {
@@ -32,24 +30,6 @@ const safeOrigin = (url: string): string | null => {
     } catch {
         return null
     }
-}
-
-// Swaps the `commerce.` host prefix for `giftcards.` per the verified 302.
-// Returns null when the configured base isn't commerce-hosted (e.g. an env
-// override already pointing at the giftcards host directly) so the caller
-// falls back to trusting only the configured origin itself.
-const redirectTwinOrigin = (base: string): string | null => {
-    let parsed: URL
-    try {
-        parsed = new URL(base)
-    } catch {
-        return null
-    }
-    if (!parsed.hostname.startsWith(COMMERCE_HOST_PREFIX)) return null
-    parsed.hostname =
-        GIFTCARDS_HOST_PREFIX +
-        parsed.hostname.slice(COMMERCE_HOST_PREFIX.length)
-    return parsed.origin
 }
 
 // Single source of truth for "what are the known mountable surfaces" —
@@ -79,11 +59,7 @@ export const getTrustedIframeOrigins = (url: string): string[] => {
     if (!targetOrigin) return []
 
     for (const base of knownSurfaceBases()) {
-        const baseOrigin = safeOrigin(base)
-        if (baseOrigin && targetOrigin === baseOrigin) {
-            const twin = redirectTwinOrigin(base)
-            return twin ? [baseOrigin, twin] : [baseOrigin]
-        }
+        if (targetOrigin === safeOrigin(base)) return getIframeOrigins(base)
     }
 
     return []

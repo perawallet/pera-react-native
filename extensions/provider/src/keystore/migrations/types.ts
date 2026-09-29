@@ -48,4 +48,10 @@ export type PeraMigrationContext = {
      * minting its master key.
      */
     declined: DeclinedRegister
+    /**
+     * The device platform, when the provider knows it. Optional because the
+     * preflight module and off-device fixtures build contexts without one; a
+     * revision must treat `undefined` as "not Android".
+     */
+    platform?: 'ios' | 'android' | 'web'
 }

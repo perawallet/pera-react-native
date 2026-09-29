@@ -19,7 +19,7 @@ import { useStyles } from './styles'
 export const CloudBackupVerifyScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { items, onSelect, onSubmit, isFilled, isEnabling } =
+    const { items, onSelect, onSubmit, isFilled, isRegistering } =
         useCloudBackupVerifyScreen()
 
     return (
@@ -29,8 +29,8 @@ export const CloudBackupVerifyScreen = () => {
                 <PWButton
                     variant='primary'
                     title={t('cloud_backup.verify.proceed')}
-                    isDisabled={!isFilled || isEnabling}
-                    isLoading={isEnabling}
+                    isDisabled={!isFilled || isRegistering}
+                    isLoading={isRegistering}
                     onPress={onSubmit}
                     testID='cloud_backup_verify_proceed_button'
                 />

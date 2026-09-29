@@ -20,7 +20,6 @@ import {
 } from 'react'
 import {
     type LayoutChangeEvent,
-    Platform,
     type TextInput,
     type TextInputProps,
 } from 'react-native'
@@ -30,8 +29,10 @@ import {
     useTheme,
 } from '@rneui/themed'
 import { getTypography, type TypographyVariant } from '@theme/typography'
+import { isAndroid } from '@utils/platform'
 import { PWTouchableIcon } from '../PWTouchableIcon'
 import { computeFitFontSize } from './computeFitFontSize'
+import { isVisibilityToggleAlwaysMounted } from './inputPlatform'
 import { useStyles } from './styles'
 import { getTestProps } from '@utils/test-id-helper'
 import {
@@ -61,6 +62,12 @@ export type PWInputProps = {
     autoComplete?: RNEInputProps['autoComplete']
     autoCorrect?: boolean
     spellCheck?: boolean
+    /**
+     * Secret words and keys: the keyboard must not learn, suggest or autofill
+     * them. Sets the props {@link getSensitiveInputProps} returns; explicit
+     * props passed alongside still win.
+     */
+    isSensitive?: boolean
     autoFocus?: boolean
     selectTextOnFocus?: boolean
     onFocus?: RNEInputProps['onFocus']
@@ -95,6 +102,24 @@ export type PWInputProps = {
     isDisabled?: boolean
 }
 
+// autoCorrect off is what stops iOS caching the text for suggestions; Android
+// keyboards ignore these hints but honour `visible-password`. `ascii-capable`
+// keeps iOS IMEs (Japanese, Pinyin) from composing, which can't match ASCII.
+export const getSensitiveInputProps = (): Pick<
+    PWInputProps,
+    | 'autoCapitalize'
+    | 'autoCorrect'
+    | 'spellCheck'
+    | 'autoComplete'
+    | 'keyboardType'
+> => ({
+    autoCapitalize: 'none',
+    autoCorrect: false,
+    spellCheck: false,
+    autoComplete: 'off',
+    keyboardType: isAndroid() ? 'visible-password' : 'ascii-capable',
+})
+
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(
     (
         {
@@ -116,6 +141,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             showErrorOnBlur = false,
             editable,
             isDisabled = false,
+            isSensitive = false,
             ...props
         },
         ref,
@@ -178,13 +204,10 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             onBlur?.(event)
         }
 
-        // Overrides any consumer-supplied rightIcon. Native keeps the toggle
-        // focus-gated (matching the rest of the app's password fields); web
-        // keeps it always mounted, since mousedown on the icon blurs the
-        // input first, which would unmount a focus-conditional toggle before
-        // its press lands.
+        // Overrides any consumer-supplied rightIcon.
         const showToggle =
-            showVisibilityToggle && (Platform.OS === 'web' || isFocused)
+            showVisibilityToggle &&
+            (isVisibilityToggleAlwaysMounted || isFocused)
         const resolvedRightIcon = showToggle ? (
             <PWTouchableIcon
                 name='eye'
@@ -207,6 +230,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ref={inputRef as any}
                 {...getTestProps(testID)}
+                {...(isSensitive ? getSensitiveInputProps() : undefined)}
                 {...props}
                 secureTextEntry={
                     showVisibilityToggle
@@ -217,6 +241,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 onBlur={handleBlur}
                 rightIcon={resolvedRightIcon}
                 errorMessage={resolvedErrorMessage}
+                errorProps={testID ? { testID: `${testID}-error` } : undefined}
                 numberOfLines={numberOfLines}
                 onLayout={adjustsFontSizeToFit ? handleLayout : undefined}
                 {...{

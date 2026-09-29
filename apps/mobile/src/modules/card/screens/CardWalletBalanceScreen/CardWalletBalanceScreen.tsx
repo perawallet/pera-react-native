@@ -23,7 +23,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
+import { TransactionDateHeader } from '@modules/transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardWalletHistoryItem } from '../../components/CardWalletHistoryItem'
 import type { CardTransactionSection } from '../../utils/cardTransactions'

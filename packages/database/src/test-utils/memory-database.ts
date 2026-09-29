@@ -12,6 +12,7 @@
 
 import BetterSqlite3 from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/sqlite-proxy'
+import { createDrizzleProxyCallback } from '@perawallet/wallet-extension-platform'
 import type { Database } from '../database'
 
 type TestDatabase = {
@@ -22,19 +23,21 @@ type TestDatabase = {
 export const createTestDatabase = (): TestDatabase => {
     const sqlite = new BetterSqlite3(':memory:')
 
-    const db: Database = drizzle(async (sql, params, method) => {
-        if (method === 'run') {
-            sqlite.prepare(sql).run(...params)
-            return { rows: [] }
-        }
+    const db: Database = drizzle(
+        createDrizzleProxyCallback(async (sql, params, method) => {
+            if (method === 'run') {
+                sqlite.prepare(sql).run(...params)
+                return []
+            }
 
-        const rows = sqlite.prepare(sql).all(...params) as Record<
-            string,
-            unknown
-        >[]
+            const rows = sqlite.prepare(sql).all(...params) as Record<
+                string,
+                unknown
+            >[]
 
-        return { rows: rows.map(row => Object.values(row)) }
-    })
+            return rows.map(row => Object.values(row))
+        }),
+    )
 
     return {
         db,

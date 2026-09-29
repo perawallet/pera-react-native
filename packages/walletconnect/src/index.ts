@@ -13,9 +13,8 @@
 export const name = '@perawallet/wallet-core-walletconnect'
 
 export * from './models'
-export * from './connection'
 export * from './validation/inboundRequestGate'
-export * from './v1/deliver'
+export type { WalletConnectV1Delivery } from './v1/deliver'
 export * from './shared/errors'
 export * from './shared/chain'
 export * from './shared/constants'
@@ -25,7 +24,6 @@ export { toPeer } from './shared/peer'
 export * from './v1/connection'
 export * from './v1/handler'
 export {
-    commitSessionKey,
     createKeystoreSessionKeyStore,
     createStorageSessionKeyStore,
     type WalletConnectV1SessionKeyStore,
@@ -41,7 +39,3 @@ export {
     clearWalletConnectV2Storage,
     WALLET_CONNECT_V2_STORAGE_PREFIX,
 } from './v2/storage'
-export {
-    useConnectorRegistryStore,
-    type ConnectorRegistryStore,
-} from './store/connectorRegistryStore'

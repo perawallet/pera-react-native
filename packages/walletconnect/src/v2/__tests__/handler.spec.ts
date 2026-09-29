@@ -11,7 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
-import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform'
+import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/test-utils'
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
 import {
     createConnectionRegistry,

@@ -23,7 +23,7 @@ import { routeCapabilities } from '@routes/capabilities'
  * the pqsig fee surcharge into prepared swap groups — the flag is the kill
  * switch if that pricing regresses. Same rollout shape as the accounts flag:
  * defaults on in dev & staging for testing, off in production until Firebase
- * enables it, and gated by routeCapabilities.quantum (no web signer path).
+ * enables it, and gated by routeCapabilities.quantum.
  */
 export const useIsQuantumSwapEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()

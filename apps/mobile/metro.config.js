@@ -17,6 +17,14 @@ const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('fs');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const buildGates = require('./metro-build-gates');
+const {
+    DEVELOPER_GALLERY_MODULES,
+    isDeveloperGalleryIncluded,
+    readBakedAppEnvironment,
+    toStubMap,
+} = buildGates;
 
 // Find the monorepo root (2 levels up from apps/mobile)
 const projectRoot = __dirname;
@@ -79,8 +87,8 @@ const polyfillMap = {
 
 // Native modules that leak into the web bundle through shared screens get
 // same-shaped no-op stubs. (Ledger's native transports are handled instead
-// by pera-provider.web.ts importing the real Web Bluetooth/WebHID packages
-// directly — see extensions/provider/src/pera-provider.web.ts.)
+// by src/bootstrap/hardware-wallet-transports.web.ts importing the real Web
+// Bluetooth/WebHID packages directly.)
 const webStubs = {
     // Native credential provider: requireNativeModule('ReactNativePasskeyAutofill') throws on web.
     '@algorandfoundation/react-native-passkey-autofill': 'react-native-passkey-autofill.js',
@@ -136,13 +144,6 @@ const webStubs = {
     // so the shim only needs to survive eval; it throws clearly if ever
     // rendered.
     'react-native-webview': 'react-native-webview.js',
-    // Quantum (PQ) signing: falcon-1024's Emscripten-generated dist/index.js
-    // fails to parse under Metro's web bundler at all (not just at eval
-    // time). Only reachable via wasmFalconProvider.ts (off-device provider),
-    // and quantum accounts are capability-gated off on web (routeCapabilities
-    // .quantum) since there is no working signer path here yet — the shim
-    // only needs to survive bundling; it throws clearly if ever invoked.
-    'falcon-1024': 'falcon-1024.js',
 };
 
 // Locale tour (i18n screenshot QA) is swapped for no-op stubs in any build
@@ -161,38 +162,55 @@ const localeTourEnabled = process.env.NODE_ENV === 'development';
 // and a bare directory import that lands on index.ts. Matching after
 // resolution covers all three; matching specifiers would need one rule each
 // and silently miss the next one someone writes.
-const localeTourStubs = Object.fromEntries(
-    [
-        // The load-bearing one. register.ts is the tour driver's only importer
-        // (App.tsx pulls it in for effect), so stubbing it is what detaches
-        // runTour/runTourStep/steps from the graph. The deeplink handler
-        // reaches the driver through locale-tour/registry.ts instead, which
-        // imports nothing — see that file for the cycle this avoids.
-        'src/modules/locale-tour/register',
-        // Backstop for anything that reaches the barrel directly. The gallery
-        // catalog steps.ts reads is NOT detached by any of this: it already
-        // ships in release via the developer settings screens.
-        'src/modules/locale-tour/index',
-        // Overflow instrumentation, called from PWText on every render.
-        'src/modules/locale-tour/hooks/useOverflowProbe',
-        // Deeplink parse boundary: the stub returns null, so the tour URL
-        // falls through to a harmless HOME like any unrecognized path.
-        'src/hooks/deeplink/dev-locale-tour-parser',
-        // Deeplink dispatch. Belt-and-braces since the registry inversion: it
-        // no longer imports the driver, and with register.ts stubbed it would
-        // find no runner and no-op anyway.
-        'src/hooks/deeplink/handlers/useLocaleTourDeeplink',
-        // Pseudolocale bundle (~180 KB generated from `en`).
-        'src/i18n/pseudoResources',
-    ].map(modulePath => [
-        path.resolve(projectRoot, `${modulePath}.ts`),
-        path.resolve(projectRoot, `${modulePath}.stub.ts`),
-    ]),
-);
+const localeTourStubs = toStubMap(projectRoot, [
+    // The load-bearing one. register.ts is the tour driver's only importer
+    // (src/bootstrap/preReact.ts calls it), so stubbing it is what detaches
+    // runTour/runTourStep/steps from the graph. The deeplink handler
+    // reaches the driver through locale-tour/registry.ts instead, which
+    // imports nothing — see that file for the cycle this avoids.
+    'src/modules/locale-tour/register',
+    // Backstop for anything that reaches the barrel directly. The gallery
+    // catalog steps.ts reads is not detached by any of this; the developer
+    // gallery gate below decides whether it ships.
+    'src/modules/locale-tour/index',
+    // Overflow instrumentation, called from PWText on every render.
+    'src/components/core/PWText/useOverflowProbe',
+    // Deeplink parse boundary: the stub returns null, so the tour URL
+    // falls through to a harmless HOME like any unrecognized path.
+    'src/modules/deeplink/dev-locale-tour-parser',
+    // Deeplink dispatch. Belt-and-braces since the registry inversion: it
+    // no longer imports the driver, and with register.ts stubbed it would
+    // find no runner and no-op anyway.
+    'src/modules/deeplink/handlers/useLocaleTourDeeplink',
+    // Pseudolocale bundle (~180 KB generated from `en`).
+    'src/i18n/pseudoResources',
+]);
 
 console.log(
     `[metro] locale tour: ${localeTourEnabled ? 'enabled' : 'stubbed'} (NODE_ENV=${process.env.NODE_ENV ?? 'unset'})`,
 );
+
+// The developer screen gallery ships in every build except production, keyed
+// on the channel baked into generated-env.ts rather than NODE_ENV: staging
+// release builds are NODE_ENV=production too, and QA uses the gallery there.
+const bakedAppEnvironment = readBakedAppEnvironment(
+    path.resolve(monorepoRoot, 'packages/config/src/generated-env.ts'),
+);
+const developerGalleryIncluded = isDeveloperGalleryIncluded({
+    bakedAppEnvironment,
+    appEnv: process.env.APP_ENV,
+});
+
+console.log(
+    `[metro] developer gallery: ${developerGalleryIncluded ? 'included' : 'stubbed'} (appEnvironment=${bakedAppEnvironment ?? 'unset'}, APP_ENV=${process.env.APP_ENV ?? 'unset'})`,
+);
+
+const buildStubs = {
+    ...(localeTourEnabled ? {} : localeTourStubs),
+    ...(developerGalleryIncluded
+        ? {}
+        : toStubMap(projectRoot, DEVELOPER_GALLERY_MODULES)),
+};
 
 // AsyncStorage is not a Pera dependency and must never become one: it would
 // be a second, unencrypted persistence layer beside MMKV. The specifier
@@ -319,18 +337,16 @@ const customResolveRequest = (context, moduleName, platform) => {
             }
         }
     }
-    // Web builds swap the RN keystore for the chrome implementation
-    // (extensions/keystore-chrome). Native keeps the real
-    // react-native-keystore (Keychain + MMKV).
-    //
-    // This alias no longer covers key storage. The two surfaces stopped being
-    // equivalent when the app moved to canary.14 — the port implements
-    // canary.12 and has no engine factory — so the web build gets its engine
-    // from @algorandfoundation/keystore-web instead, via the `.web.ts` files
-    // beside extensions/provider's createKeystore and keystore/maintenance.
-    // What still resolves here is everything the extension owns and the RN
-    // package happens to share a name with: the password vault, auto-lock,
-    // passkey unlock and the WebAuthn signer.
+    // Web builds must never load the real react-native-keystore (Keychain +
+    // MMKV + quick-crypto), yet shared barrels still import it statically:
+    // the passkeys native readers, the legacy passkey migration writer and
+    // the provider's native keystore migrations. None of those run on web
+    // (their callers are native-only, or gated by the web migration service
+    // reporting no legacy data), so the import only has to resolve. The
+    // extension's vault package stands in; it exports none of the engine's
+    // names, which therefore read as undefined on web. The web engine itself
+    // is @algorandfoundation/keystore-web, via extensions/provider's `.web.ts`
+    // files.
     if (
         platform === 'web' &&
         moduleName === '@algorandfoundation/react-native-keystore'
@@ -344,32 +360,12 @@ const customResolveRequest = (context, moduleName, platform) => {
         );
         return context.resolveRequest(context, sourcePath, platform);
     }
-    // Subpath: App.web.tsx statically imports only the storage bootstrap to avoid
-    // pulling @algorandfoundation/keystore (and its native-bridge-touching deps)
-    // into the main synchronous bundle. The /bootstrap subpath is safe: it only
-    // re-exports hydrateKeystoreStorage which uses chrome.storage.local.
-    // Native keeps the real react-native-keystore, so this subpath must only
-    // resolve on web (same guard as every sibling branch above).
-    if (
-        platform === 'web' &&
-        moduleName === '@perawallet/wallet-extension-keystore-chrome/bootstrap'
-    ) {
-        const sourcePath = path.resolve(
-            monorepoRoot,
-            'extensions',
-            'keystore-chrome',
-            'src',
-            'bootstrap.ts',
-        );
-        return context.resolveRequest(context, sourcePath, platform);
-    }
     // Subpath: App.web.tsx statically imports only the platform-chrome
     // bootstrap (getSurface/hydratePlatform/installOffscreenStorageShim) to
-    // avoid pulling ChromeDatabaseService (drizzle-orm) and the
-    // hardware-wallet registry into the pre-hydration web bundle. Native
+    // avoid pulling ChromeDatabaseService (drizzle-orm) into the
+    // pre-hydration web bundle. Native
     // keeps the real react-native platform driver, so this subpath must only
-    // resolve on web (same guard as the keystore-chrome/bootstrap branch
-    // above).
+    // resolve on web.
     if (
         platform === 'web' &&
         moduleName === '@perawallet/wallet-extension-platform-chrome/bootstrap'
@@ -380,23 +376,6 @@ const customResolveRequest = (context, moduleName, platform) => {
             'platform-chrome',
             'src',
             'bootstrap.ts',
-        );
-        return context.resolveRequest(context, sourcePath, platform);
-    }
-    // Subpath: the remote registry is the one platform-chrome module with a
-    // runtime dependency on the connections package; kept off the main barrel
-    // so the service worker never loads that graph.
-    if (
-        platform === 'web' &&
-        moduleName ===
-            '@perawallet/wallet-extension-platform-chrome/remote-registry'
-    ) {
-        const sourcePath = path.resolve(
-            monorepoRoot,
-            'extensions',
-            'platform-chrome',
-            'src',
-            'remote-registry.ts',
         );
         return context.resolveRequest(context, sourcePath, platform);
     }
@@ -484,11 +463,13 @@ const customResolveRequest = (context, moduleName, platform) => {
     // falcon-1024 ships a dual build whose ESM entry (dist/index.js)
     // instantiates its WASM with a module-level `await`. hermesc rejects
     // top-level await in release bundles, so the release build dies at
-    // createBundleReleaseJsAndAssets. Because this package lists the `import`
-    // condition before `require` and we enable both (see
+    // createBundleReleaseJsAndAssets; on web, Metro's module wrapper is not
+    // async, so the minifier fails to parse it at all. Because this package
+    // lists the `import` condition before `require` and we enable both (see
     // unstable_conditionNames above), Metro picks the ESM entry. Redirect to
-    // the sibling CJS build — identical API, no top-level await — by resolving
-    // normally and swapping the resolved entry file.
+    // the sibling CJS build (identical API, synchronous WASM instantiation) by
+    // resolving normally and swapping the resolved entry file. Its bare
+    // `__filename` read is guarded by patches/falcon-1024@0.2.0.patch.
     if (moduleName === 'falcon-1024') {
         const resolved = context.resolveRequest(context, moduleName, platform);
         if (
@@ -526,8 +507,8 @@ const customResolveRequest = (context, moduleName, platform) => {
 // branch in particular) re-enter Metro's own resolver, not this one.
 const resolveRequest = (context, moduleName, platform) => {
     const resolved = customResolveRequest(context, moduleName, platform);
-    if (localeTourEnabled || resolved?.type !== 'sourceFile') return resolved;
-    const stub = localeTourStubs[resolved.filePath];
+    if (resolved?.type !== 'sourceFile') return resolved;
+    const stub = buildStubs[resolved.filePath];
     return stub ? { type: 'sourceFile', filePath: stub } : resolved;
 };
 

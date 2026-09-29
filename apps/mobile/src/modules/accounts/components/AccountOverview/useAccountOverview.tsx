@@ -18,12 +18,12 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
+import { useReceiveFunds } from '@modules/transactions'
 import {
+    ReceiveFundsContent,
     SendFundsContent,
     SEND_FUNDS_SHEET_ID,
-} from '@modules/transactions/components/send-funds/SendFundsContent'
-import { useReceiveFunds } from '@modules/transactions/hooks'
+} from '@modules/transactions/routes'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { trackEvent, HomeEvent, AccountDetailsEvent } from '@analytics'
 import { AccountOptionsContent } from '../AccountOptionsContent'

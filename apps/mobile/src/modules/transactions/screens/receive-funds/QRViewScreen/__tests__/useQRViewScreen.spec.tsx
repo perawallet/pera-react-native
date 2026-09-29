@@ -17,7 +17,7 @@ import { shareText } from '@utils/shareText'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useClipboard } from '@hooks/useClipboard'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
 
 vi.mock('@modules/transactions/hooks', () => ({
     useReceiveFunds: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: vi.fn(),
 }))
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(),
 }))
 

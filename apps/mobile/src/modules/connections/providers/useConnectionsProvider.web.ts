@@ -12,9 +12,10 @@
 
 import { useEffect, useRef } from 'react'
 import {
-    useCustomNetworkStore,
+    getCustomNetworkConfig,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     hydrateConnectionsStore,
     setActiveConnectionRegistry,
@@ -28,8 +29,8 @@ import {
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the web composition root names the handler so the remote registry can answer URI claims locally
 import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconnect'
 import { CONNECTIONS_STORAGE_KEY } from '@perawallet/wallet-extension-connections'
-import { onLocalStorageKeyChanged } from '@perawallet/wallet-extension-platform-chrome'
-import { createRemoteConnectionRegistry } from '@perawallet/wallet-extension-platform-chrome/remote-registry'
+import { onLocalStorageKeyChanged } from '@perawallet/wallet-core-browser-runtime'
+import { createRemoteConnectionRegistry } from '@perawallet/wallet-core-browser-runtime/remote-registry'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import type { ProposalQueueHandle } from './useProposalQueue'
@@ -56,10 +57,13 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
                 }),
                 createDappConnectionHandler({
                     transport: createNoopDappTransport(),
+                    // Every legacy network is the same chain, so reading it once is safe.
+                    chainId: scopeForLegacyNetwork(
+                        useNetworkStore.getState().network,
+                    ).chainId,
                     getNetwork: () => useNetworkStore.getState().network,
                     getCustomNetworkGenesisHash: () =>
-                        useCustomNetworkStore.getState().customNetwork
-                            ?.genesisHash,
+                        getCustomNetworkConfig()?.genesisHash,
                     // Descriptor-only in UI realms; the offscreen host owns the live handler.
                     getAccounts: () => [],
                 }),

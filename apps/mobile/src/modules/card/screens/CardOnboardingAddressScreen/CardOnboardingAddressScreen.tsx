@@ -37,8 +37,11 @@ export const CardOnboardingAddressScreen = () => {
         isValid,
         isSubmitting,
         selectedCountry,
+        isCountryLocked,
         isUsResident,
         selectedUsState,
+        isSameMailingAddress,
+        handleToggleSameMailingAddress,
         cardTermsAccepted,
         platformTermsAccepted,
         showsConsentOptIns,
@@ -72,6 +75,7 @@ export const CardOnboardingAddressScreen = () => {
                         placeholder={t('peraCard.address.country_label')}
                         country={selectedCountry}
                         onPress={handleSelectCountry}
+                        disabled={isCountryLocked}
                         errorMessage={
                             errors.countryIso
                                 ? t('peraCard.address.country_required')
@@ -234,6 +238,16 @@ export const CardOnboardingAddressScreen = () => {
                 </PWView>
 
                 <PWView style={styles.checkboxes}>
+                    {isUsResident ? (
+                        <CardConsentCheckboxRow
+                            checked={isSameMailingAddress}
+                            onPress={handleToggleSameMailingAddress}
+                            testID='card-onboarding-address-same-mailing-checkbox'
+                        >
+                            {t('peraCard.address.same_mailing_address')}
+                        </CardConsentCheckboxRow>
+                    ) : null}
+
                     {/* A resumed sign-in skipped the Set-Password screen, so the
                         marketing/SMS consents were never asked this session —
                         re-collect them here (same copy; SMS gates Continue). */}

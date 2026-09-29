@@ -45,14 +45,32 @@ export const cardQueryKeys = {
             'pending-withdrawal',
             { network, ownerAddress },
         ] as const,
-    walletBalance: (network: Network, kind: CardWalletKind) =>
-        [MODULE_PREFIX, 'wallet-balance', { network, kind }] as const,
-    walletWithdrawEstimation: (network: Network, kind: CardWalletKind) =>
+    usdcBalance: (network: Network, address: string) =>
+        [MODULE_PREFIX, 'usdc-balance', { network, address }] as const,
+    // bigints are stringified: React Query hashes keys with JSON.stringify.
+    // The deadline makes every wait its own query.
+    usdcCredit: (
+        network: Network,
+        watch: {
+            address: string
+            before: bigint
+            minimum: bigint
+            deadline: number
+        },
+    ) =>
         [
             MODULE_PREFIX,
-            'wallet-withdraw-estimation',
-            { network, kind },
+            'usdc-credit',
+            {
+                network,
+                address: watch.address,
+                before: watch.before.toString(),
+                minimum: watch.minimum.toString(),
+                deadline: watch.deadline,
+            },
         ] as const,
+    walletBalance: (network: Network, kind: CardWalletKind) =>
+        [MODULE_PREFIX, 'wallet-balance', { network, kind }] as const,
     walletHistory: (network: Network, kind: CardWalletKind, walletId: string) =>
         [MODULE_PREFIX, 'wallet-history', { network, kind, walletId }] as const,
     // Prefix of `walletHistory` for invalidating every page of one wallet kind.

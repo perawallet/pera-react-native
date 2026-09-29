@@ -10,7 +10,9 @@
  limitations under the License
  */
 
+import { isAndroid } from '@utils/platform'
 import type { RouteCapabilities } from './capabilities-types'
+import { isDeveloperGalleryIncluded } from './developer-gallery'
 
 export type { RouteCapabilities } from './capabilities-types'
 
@@ -22,7 +24,9 @@ export const routeCapabilities: RouteCapabilities = {
     peraCard: true,
     giftCards: true,
     inAppWebView: true,
+    fullScreenMediaViewer: true,
     qrScanner: true,
+    ledgerUsb: isAndroid(),
     // Native keeps the camera; paste has no reason to exist there.
     deepLinkPaste: false,
     pushNotificationSettings: true,
@@ -32,7 +36,9 @@ export const routeCapabilities: RouteCapabilities = {
     storeRating: true,
     confirmationModeSetting: true,
     developerSettings: true,
+    developerGallery: isDeveloperGalleryIncluded,
     vaultSecuritySettings: false,
+    pin: true,
     quantum: true,
     rekeyFlows: true,
     sharedAccounts: true,

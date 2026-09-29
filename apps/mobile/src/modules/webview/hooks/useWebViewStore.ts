@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { useCallback } from 'react'
 import { create } from 'zustand'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { routeCapabilities } from '@routes/capabilities'
+import { openValidatedBrowserUrl } from './handlers-shared'
 
 /**
  * Favorite capability for a controlled WebView. Present only when the host
@@ -77,8 +80,22 @@ type UseWebViewResult = {
 }
 
 export const useWebView = (): UseWebViewResult => {
-    const pushWebView = useWebViewStore(state => state.pushWebView)
+    const push = useWebViewStore(state => state.pushWebView)
     const removeWebView = useWebViewStore(state => state.removeWebView)
+
+    const pushWebView = useCallback<UseWebViewResult['pushWebView']>(
+        view => {
+            if (routeCapabilities.inAppWebView) {
+                push(view)
+                return
+            }
+            // Nothing mounts the webview stack when in-app webviews are off,
+            // so a push would silently do nothing; open a browser tab instead.
+            openValidatedBrowserUrl(view.url)
+        },
+        [push],
+    )
+
     return { pushWebView, removeWebView }
 }
 

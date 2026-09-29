@@ -12,8 +12,8 @@
 
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { NumberPad } from '@components/NumberPad'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AccountDisplay } from '@components/AccountDisplay'
+import { AssetIcon } from '@components/AssetIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardAmountInput } from '../../components/CardAmountInput'
 import { useCardAddFundsScreen } from './useCardAddFundsScreen'
@@ -25,6 +25,7 @@ export const CardAddFundsScreen = () => {
     const {
         fundingAccount,
         sourceAsset,
+        isUsdc,
         balanceDisplay,
         amount,
         secondaryDisplay,
@@ -123,7 +124,11 @@ export const CardAddFundsScreen = () => {
                 <PWView style={styles.bottomGroup}>
                     <PWButton
                         variant='primary'
-                        title={t('peraCard.add_funds.deposit')}
+                        title={t(
+                            isUsdc
+                                ? 'peraCard.add_funds.deposit'
+                                : 'peraCard.add_funds.continue',
+                        )}
                         onPress={handleDeposit}
                         isDisabled={isDepositDisabled}
                         isLoading={isDepositing}

@@ -30,8 +30,8 @@ import { generatedEnv } from './generated-env'
 const isFirstPartyUrl = (url: string): boolean => url.includes('perawallet.app')
 
 /**
- * Excludes `discoverBaseUrl`: getConfig derives it from appEnvironment
- * structurally, so there is nothing to override.
+ * Excludes `discoverBaseUrl` and `integrityCheckOrigin`: getConfig derives
+ * both from appEnvironment structurally, so there is nothing to override.
  */
 const hasEnvOverride = (field: string): boolean =>
     field in overrideEnvironmentMap
@@ -64,6 +64,11 @@ export const configSchema = z
 
         appStoreAppID: z.string(),
         playIntegrityCloudProjectNumber: z.string(),
+
+        // Google OAuth client ids for the Drive credential store. Public
+        // identifiers; empty means the Drive button reports it isn't set up.
+        googleIosClientId: z.string(),
+        googleWebClientId: z.string(),
 
         // Firebase Web SDK config (browser extension Remote Config). Not secret —
         // a Firebase web apiKey only identifies the project; access is governed
@@ -117,6 +122,7 @@ export const configSchema = z
         reactQueryPersistenceAge: z.number().int(),
 
         discoverBaseUrl: z.url(),
+        integrityCheckOrigin: z.url(),
         /** XO Swap support inbox for onramp order help (bare address, no `mailto:`). */
         onrampSupportEmail: z.email(),
         /** Baanx support inbox for card transaction reports (bare address, no `mailto:`). */
@@ -146,6 +152,9 @@ export const configSchema = z
         peraCardLearnMoreUrl: z.url(),
 
         debugEnabled: z.boolean(),
+        webIntegrityMintEnabled: z.boolean(),
+        webIntegrityBearerEnabled: z.boolean(),
+        webIntegrityEnrolEnabled: z.boolean(),
         profilingEnabled: z.boolean(),
         pollingEnabled: z.boolean(),
 
@@ -182,6 +191,10 @@ export const configSchema = z
         // never remote config.
         mainnetCardAutoDrawProgramHash: z.string(),
         testnetCardAutoDrawProgramHash: z.string(),
+        // Lowercase hex SHA-256 of the AutoDraw TEAL template's UTF-8 bytes. One
+        // value for every network: the template is hashed before app ids are
+        // rendered in. Build-time only, never remote config.
+        cardAutoDrawTemplateHash: z.string(),
         mainnetCardUsdcAssetId: z.string(),
         testnetCardUsdcAssetId: z.string(),
 
@@ -243,7 +256,9 @@ export const configSchema = z
 
 export type Config = z.infer<typeof configSchema>
 
-type ConfigOverrides = Partial<Omit<Config, 'discoverBaseUrl'>>
+type ConfigOverrides = Partial<
+    Omit<Config, 'discoverBaseUrl' | 'integrityCheckOrigin'>
+>
 
 const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {
     development: 'https://discover-mobile-staging.perawallet.app/',
@@ -251,10 +266,23 @@ const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {
     production: 'https://discover-mobile.perawallet.app/',
 }
 
+// The backend of each environment only accepts solves from its own check page.
+const integrityCheckOriginByEnvironment: Record<
+    Config['appEnvironment'],
+    string
+> = {
+    development: 'https://integrity-staging.perawallet.app',
+    staging: 'https://integrity-staging.perawallet.app',
+    production: 'https://integrity.perawallet.app',
+}
+
 /**
  * Production configuration with safe defaults for open source builds.
  */
-const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
+const productionConfig: Omit<
+    Config,
+    'discoverBaseUrl' | 'integrityCheckOrigin'
+> = {
     mainnetAlgodUrl: 'https://mainnet-api.algonode.cloud',
     testnetAlgodUrl: 'https://testnet-api.algonode.cloud',
     mainnetIndexerUrl: 'https://mainnet-idx.algonode.cloud',
@@ -272,6 +300,9 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
 
     appStoreAppID: '',
     playIntegrityCloudProjectNumber: '',
+
+    googleIosClientId: '',
+    googleWebClientId: '',
 
     // Defaults to a distinct non-sensitive Firebase project, safe to ship in
     // source; the real one is injected at build time via FIREBASE_* env. A web
@@ -364,6 +395,12 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     reactQueryPersistenceAge: 60 * ONE_DAY,
 
     debugEnabled: false,
+    // Web app-integrity rollout: every flag defaults off so a build is
+    // unaffected until an env var opts in. See docs/BROWSER_ARCHITECTURE.md,
+    // section 3.4.
+    webIntegrityMintEnabled: false,
+    webIntegrityBearerEnabled: false,
+    webIntegrityEnrolEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
     disableScreenCapturePrevention: false,
@@ -394,6 +431,7 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     // Empty until the program is pinned per network; an empty pin fails closed.
     mainnetCardAutoDrawProgramHash: '',
     testnetCardAutoDrawProgramHash: '',
+    cardAutoDrawTemplateHash: '',
     mainnetCardUsdcAssetId: '31566704',
     testnetCardUsdcAssetId: '10458941',
 
@@ -437,6 +475,9 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
 
     appStoreAppID: 'APP_STORE_APPLE_ID',
     playIntegrityCloudProjectNumber: 'PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER',
+
+    googleIosClientId: 'GOOGLE_IOS_CLIENT_ID',
+    googleWebClientId: 'GOOGLE_WEB_CLIENT_ID',
 
     firebaseApiKey: 'FIREBASE_API_KEY',
     firebaseAuthDomain: 'FIREBASE_AUTH_DOMAIN',
@@ -485,6 +526,9 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     dispenserUrl: 'DISPENSER_URL',
 
     debugEnabled: 'DEBUG_ENABLED',
+    webIntegrityMintEnabled: 'WEB_INTEGRITY_MINT_ENABLED',
+    webIntegrityBearerEnabled: 'WEB_INTEGRITY_BEARER_ENABLED',
+    webIntegrityEnrolEnabled: 'WEB_INTEGRITY_ENROL_ENABLED',
     profilingEnabled: 'PROFILING_ENABLED',
     pollingEnabled: 'POLLING_ENABLED',
     disableScreenCapturePrevention: 'DISABLE_SCREEN_CAPTURE_PREVENTION',
@@ -507,6 +551,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     testnetCardKillswitchAppId: 'TESTNET_CARD_KILLSWITCH_APP_ID',
     mainnetCardAutoDrawProgramHash: 'MAINNET_CARD_AUTODRAW_PROGRAM_HASH',
     testnetCardAutoDrawProgramHash: 'TESTNET_CARD_AUTODRAW_PROGRAM_HASH',
+    cardAutoDrawTemplateHash: 'CARD_AUTODRAW_TEMPLATE_HASH',
     mainnetCardUsdcAssetId: 'MAINNET_CARD_USDC_ASSET_ID',
     testnetCardUsdcAssetId: 'TESTNET_CARD_USDC_ASSET_ID',
 
@@ -524,6 +569,8 @@ export function getConfig(overrides: ConfigOverrides = generatedEnv): Config {
         ...mergedConfig,
         discoverBaseUrl:
             discoverBaseUrlByEnvironment[mergedConfig.appEnvironment],
+        integrityCheckOrigin:
+            integrityCheckOriginByEnvironment[mergedConfig.appEnvironment],
     })
 }
 

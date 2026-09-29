@@ -12,7 +12,7 @@
 
 import React, { useCallback, useState } from 'react'
 import { useNavigation, type NavigationProp } from '@react-navigation/native'
-import { closeCurrentTab } from '@perawallet/wallet-extension-platform-chrome'
+import { closeCurrentTab } from '@perawallet/wallet-core-browser-runtime'
 import { PWScreen, PWView } from '@components/core'
 // Explicit `.web` suffix: tsc has no platform-suffix resolution (same
 // reasoning as QRScannerView.web's `./styles.web` import). This screen is

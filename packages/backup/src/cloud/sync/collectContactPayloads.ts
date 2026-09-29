@@ -69,6 +69,7 @@ export const collectContactPayloads = ({
                 baseVer: item.ver,
                 lastRemoteHash: item.hash,
                 label: payload.name,
+                address: payload.address,
             }
             continue
         }
@@ -77,6 +78,7 @@ export const collectContactPayloads = ({
         items[item.key] = {
             ...adoptRemote(items[item.key] as SyncItemState, item, plaintext),
             label: payload.name,
+            address: payload.address,
         }
     }
 

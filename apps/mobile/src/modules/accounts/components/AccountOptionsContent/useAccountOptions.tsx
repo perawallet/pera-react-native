@@ -39,7 +39,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { useIsAccountBackedUp } from '@modules/cloud-backup'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
-import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
+import { ExportShareAccountContent } from '@modules/multisig'
 import {
     SharedAccountDetailsContent,
     type SharedAccountDetails,

@@ -15,12 +15,11 @@ import type {
     MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    getAuthAccount,
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
     isQuantumAccount,
-    RekeyTargetNotFoundError,
-    resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 import { SignedTransaction } from 'algosdk'
 import type { AnalyzedSignableGroup, SigningResult } from '../types'
@@ -98,14 +97,8 @@ export const shouldDeferPropose = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
 ): boolean => {
-    let target: WalletAccount
-    try {
-        target = resolveAuthAccount(account, allAccounts)
-    } catch (e) {
-        if (e instanceof RekeyTargetNotFoundError) return false
-        throw e
-    }
-    if (!isMultisigAccount(target)) return false
+    const target = getAuthAccount(account, allAccounts)
+    if (!target || !isMultisigAccount(target)) return false
 
     const localParticipants = getLocalParticipants(target, allAccounts)
     if (localParticipants.length === 0) return false
@@ -145,30 +138,9 @@ export const canMeetThresholdLocally = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
 ): boolean => {
-    let target: WalletAccount
-    try {
-        target = resolveAuthAccount(account, allAccounts)
-    } catch (e) {
-        if (e instanceof RekeyTargetNotFoundError) return false
-        throw e
-    }
-    if (!isMultisigAccount(target)) return false
+    const target = getAuthAccount(account, allAccounts)
+    if (!target || !isMultisigAccount(target)) return false
 
     const localParticipants = getLocalParticipants(target, allAccounts)
     return localParticipants.length >= target.multisigDetails.threshold
-}
-
-/** 0 once threshold is met. */
-export const getSignaturesNeeded = (
-    account: WalletAccount,
-    existingSignatures: number,
-): number => {
-    if (!isMultisigAccount(account)) {
-        return 0
-    }
-
-    const multisigAccount = account as MultiSigAccount
-    const threshold = multisigAccount.multisigDetails.threshold
-
-    return Math.max(0, threshold - existingSignatures)
 }

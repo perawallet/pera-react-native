@@ -98,6 +98,7 @@ export const useCardOnboardingVerificationScreen =
                         )
                         return
                     }
+                    // oxlint-disable-next-line pera/no-unvalidated-open-url -- httpsUrlSchema + https check above
                     await Linking.openURL(sessionUrl)
                     // A retry after a give-up starts a fresh session, so the
                     // poll budget starts over too.

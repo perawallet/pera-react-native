@@ -15,7 +15,7 @@ import { PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
-import { getKeyRegType } from '@modules/transactions/components/transaction-details/KeyRegistrationDisplay/utils'
+import { getKeyRegType } from '@modules/transactions'
 import { useStyles } from './styles'
 
 export type KeyRegistrationSummaryProps = {

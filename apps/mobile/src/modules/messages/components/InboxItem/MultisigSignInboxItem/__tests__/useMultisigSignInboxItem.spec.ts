@@ -38,7 +38,7 @@ vi.mock('@perawallet/wallet-core-multisig', async importOriginal => {
             useSignRequestDetailQueryMock(...(args as [])),
     }
 })
-vi.mock('@modules/multisig/utils', () => ({ getSignedResponseCount: () => 1 }))
+vi.mock('@modules/multisig', () => ({ getSignedResponseCount: () => 1 }))
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()

@@ -21,9 +21,9 @@ export type PickedBackupFile = {
 export type UsePickBackupFileResult = {
     /**
      * Opens the platform file picker for a single ASB backup file and
-     * resolves its name and text contents. Resolves `null` when the user
-     * dismisses the picker without choosing a file; rejects with the
-     * original error for any other failure so the caller can surface it.
+     * resolves its name and text contents. Resolves `null` when no file comes
+     * back; rejects with the original error when reading the picked file
+     * fails, so the caller can surface it.
      *
      * When `isPopupHandoff` is true this never picks anything: it opens the
      * expanded tab and resolves `null`.
@@ -37,11 +37,6 @@ export type UsePickBackupFileResult = {
     isPopupHandoff: boolean
 }
 
-const isCancelError = (e: unknown): boolean => {
-    const message = String((e as { message?: unknown })?.message ?? '')
-    return /cancel/i.test(message)
-}
-
 /**
  * Native: opens the system document picker via `expo-file-system`. See the
  * `.web.ts` twin — `expo-file-system` has no real browser implementation
@@ -50,21 +45,12 @@ const isCancelError = (e: unknown): boolean => {
  */
 export const usePickBackupFile = (): UsePickBackupFileResult => {
     const pickFile = useCallback(async (): Promise<PickedBackupFile | null> => {
-        try {
-            // `File.pickFileAsync` returns a single `File` when invoked
-            // without the multi-select option; the typed return is a union
-            // to accommodate the (unused here) multi-pick path.
-            const result = await File.pickFileAsync(undefined, 'text/plain')
-            const file = Array.isArray(result) ? result[0] : result
-            if (!file) return null
-            const contents = await file.text()
-            return { name: file.name, contents }
-        } catch (e) {
-            // The native picker rejects with `FilePickingCancelledException`
-            // when the user dismisses the sheet. Don't surface that as an
-            // error — resolve null so the caller can silently bail.
-            if (isCancelError(e)) return null
-            throw e
+        // With an options object the picker reports any failure as canceled too.
+        const picked = await File.pickFileAsync({ mimeTypes: 'text/plain' })
+        if (picked.canceled) return null
+        return {
+            name: picked.result.name,
+            contents: await picked.result.text(),
         }
     }, [])
 

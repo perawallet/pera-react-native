@@ -20,12 +20,20 @@ import { getSyncService } from '@perawallet/wallet-core-background'
 import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { routeCapabilities } from '@routes/capabilities'
+import { lockWallet } from './lockWallet'
+
+export type UseAccountHeaderMenuOptions = {
+    showChartToggle?: boolean
+}
 
 export type UseAccountHeaderMenuResult = {
     items: PWDropdownItem[]
 }
 
-export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
+export const useAccountHeaderMenu = ({
+    showChartToggle = true,
+}: UseAccountHeaderMenuOptions = {}): UseAccountHeaderMenuResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
     const { getPreference, setPreference } = usePreferences()
@@ -55,14 +63,6 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
     const items = useMemo<PWDropdownItem[]>(() => {
         const baseItems: PWDropdownItem[] = [
             {
-                label: chartVisible
-                    ? t('portfolio.hide_chart')
-                    : t('portfolio.show_chart'),
-                icon: chartVisible ? 'text-document' : 'chart',
-                onPress: () =>
-                    setPreference(UserPreferences.chartVisible, !chartVisible),
-            },
-            {
                 label: privacyMode
                     ? t('common.exit_stealth_mode')
                     : t('common.enter_stealth_mode'),
@@ -77,6 +77,26 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
             },
         ]
 
+        if (showChartToggle) {
+            baseItems.unshift({
+                label: chartVisible
+                    ? t('portfolio.hide_chart')
+                    : t('portfolio.show_chart'),
+                icon: chartVisible ? 'text-document' : 'chart',
+                onPress: () =>
+                    setPreference(UserPreferences.chartVisible, !chartVisible),
+            })
+        }
+
+        if (lockWallet) {
+            baseItems.push({
+                label: t('vault.security.lock_now'),
+                icon: 'locked',
+                // VaultGate observes the lock and takes over the screen.
+                onPress: () => void lockWallet?.(),
+            })
+        }
+
         if (isDeveloperMenuEnabled) {
             baseItems.push({
                 label: isMainnet
@@ -85,7 +105,9 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
                 icon: 'globe',
                 onPress: () => void handleNetworkSwitch(),
             })
+        }
 
+        if (isDeveloperMenuEnabled && routeCapabilities.developerGallery) {
             baseItems.push({
                 label: 'Screen Gallery',
                 icon: 'grid-view',
@@ -99,6 +121,7 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
 
         return baseItems
     }, [
+        showChartToggle,
         chartVisible,
         privacyMode,
         t,

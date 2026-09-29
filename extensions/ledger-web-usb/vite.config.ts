@@ -12,29 +12,13 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
         },
-        rollupOptions: {
-            external: [
-                '@ledgerhq/devices',
-                '@ledgerhq/errors',
-                '@ledgerhq/hw-transport',
-                '@ledgerhq/hw-transport-webhid',
-                '@algorandfoundation/ledger-algorand-js',
-                '@perawallet/wallet-core-hardware-wallet',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-extension-ledger-react-native',
-                '@perawallet/wallet-extension-ledger-shared',
-            ],
-        },
-    },
-})
+    }),
+)

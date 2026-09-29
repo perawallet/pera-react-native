@@ -38,6 +38,11 @@ const { mockCanSignWith, mockUseAllAccounts, mockGetArc59Config } = vi.hoisted(
     }),
 )
 
+const mockVerifyNameAddress = vi.hoisted(() => vi.fn())
+vi.mock('@perawallet/wallet-core-nfd', () => ({
+    verifyNameAddress: mockVerifyNameAddress,
+}))
+
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
         navigate: mockNavigate,
@@ -60,9 +65,7 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
@@ -473,6 +476,85 @@ describe('useSelectDestinationScreen', () => {
             const { result } = renderHook(() => useSelectDestinationScreen())
 
             expect(result.current.canClose).toBe(true)
+        })
+    })
+
+    describe('NFD destinations', () => {
+        const NFD_NAME = 'alice.algo'
+        const algoSend = () =>
+            (useSendFunds as Mock).mockReturnValue({
+                selectedAssetId: '0',
+                setDestination: mockSetDestination,
+                setSendMode: mockSetSendMode,
+            })
+
+        it('routes a plain address without consulting the contract', () => {
+            algoSend()
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            act(() => {
+                result.current.handleSelected(EXTERNAL_ADDR)
+            })
+
+            expect(mockVerifyNameAddress).not.toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
+        })
+
+        it('routes a name only after the contract vouches for its address', async () => {
+            algoSend()
+            mockVerifyNameAddress.mockResolvedValue('verified')
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            await act(async () => {
+                result.current.handleSelected(EXTERNAL_ADDR, NFD_NAME)
+            })
+
+            expect(mockVerifyNameAddress).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    name: NFD_NAME,
+                    address: EXTERNAL_ADDR,
+                    network: 'testnet',
+                }),
+            )
+            expect(mockSetDestination).toHaveBeenCalledWith(EXTERNAL_ADDR)
+            expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
+        })
+
+        it('blocks a name whose address the contract does not list', async () => {
+            algoSend()
+            mockVerifyNameAddress.mockResolvedValue('mismatch')
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            await act(async () => {
+                result.current.handleSelected(EXTERNAL_ADDR, NFD_NAME)
+            })
+
+            expect(mockSetDestination).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'send_funds.destination.nfd_mismatch_title',
+                    type: 'error',
+                }),
+            )
+            expect(result.current.isCheckingExternalOptIn).toBe(false)
+        })
+
+        it('blocks, rather than trusts, when the contract cannot be read', async () => {
+            algoSend()
+            mockVerifyNameAddress.mockResolvedValue('unavailable')
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            await act(async () => {
+                result.current.handleSelected(EXTERNAL_ADDR, NFD_NAME)
+            })
+
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'send_funds.destination.nfd_unavailable_title',
+                }),
+            )
         })
     })
 })

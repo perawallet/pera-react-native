@@ -16,7 +16,7 @@ vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 // Real `@algorandfoundation/react-native-keystore` executes native
 // Keychain/Nitro bindings at import time, which jsdom can't run (see
-// singleton.test.ts / createKeystore.spec.ts for the same mock).
+// singleton.spec.ts / createKeystore.spec.ts for the same mock).
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     WithKeyStore: () => ({ key: { store: {} } }),
     createReactNativeKeyStore: (opts: { before?: Promise<unknown> }) => ({
@@ -27,20 +27,14 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     storage: {},
 }))
 
-vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
-    WithLedgerExtension: () => ({}),
-}))
-
-vi.mock('@perawallet/wallet-extension-ledger-react-native-usb', () => ({
-    WithLedgerUsbExtension: () => ({}),
-}))
-
 import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
 import { memoryLedger } from '@algorandfoundation/provider-migrations'
 import type { KeyStoreState } from '@algorandfoundation/keystore-core'
 import { createPeraKeystore } from '../keystore/createKeystore'
+import { WithHardwareWalletExtension } from '@perawallet/wallet-extension-hardware-wallet'
 import { PeraProvider } from '../pera-provider'
+import { WithChainRegistry } from '../withChainRegistry'
 
 describe('provider migrations wiring', () => {
     it('places WithMigrations first so later extensions can register', () => {
@@ -73,6 +67,18 @@ describe('provider migrations wiring', () => {
 
         expect(names.indexOf('WithPeraKeystoreRepairs')).toBe(
             names.indexOf('WithKeyStore') + 1,
+        )
+    })
+
+    // The app registers its transports into this registry once the provider
+    // exists, so the provider must always build one.
+    it('composes WithHardwareWalletExtension right after the platform extension', () => {
+        // By identity: the built extension's function name is not preserved.
+        const extensions: readonly unknown[] = PeraProvider.EXTENSIONS
+        const names = PeraProvider.EXTENSIONS.map(extension => extension.name)
+
+        expect(extensions.indexOf(WithHardwareWalletExtension)).toBe(
+            names.indexOf('WithPlatformExtension') + 1,
         )
     })
 
@@ -118,5 +124,14 @@ describe('provider migrations wiring', () => {
         })
 
         await expect(keystore.ready).rejects.toThrow('migration failed')
+    })
+
+    // Built empty on every platform; the composition roots register chains into it.
+    it('composes WithChainRegistry right after WithHardwareWalletExtension', () => {
+        const extensions: readonly unknown[] = PeraProvider.EXTENSIONS
+
+        expect(extensions.indexOf(WithChainRegistry)).toBe(
+            extensions.indexOf(WithHardwareWalletExtension) + 1,
+        )
     })
 })

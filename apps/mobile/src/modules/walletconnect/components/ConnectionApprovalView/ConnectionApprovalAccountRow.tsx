@@ -13,8 +13,8 @@
 import { useCallback } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWCheckbox, PWTouchableOpacity } from '@components/core'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
+import { AccountDisplay } from '@components/AccountDisplay'
+import { useStyles } from '@components/ConnectionApproval/styles'
 
 export type ConnectionApprovalAccountRowProps = {
     account: WalletAccount

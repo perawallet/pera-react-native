@@ -14,7 +14,6 @@ import { PWScrollView } from '@components/core'
 import { CardFrozenBanner } from '../CardFrozenBanner'
 import { PeraCardBalanceSection } from './PeraCardBalanceSection'
 import { PeraCardActionButtons } from './PeraCardActionButtons'
-import { PeraCardPendingWithdrawal } from './PeraCardPendingWithdrawal'
 import { PeraCardCreditsSection } from './PeraCardCreditsSection'
 import { PeraCardTransactionsSection } from './PeraCardTransactionsSection'
 import { usePeraCardOverview } from './usePeraCardOverview'
@@ -26,16 +25,12 @@ export const PeraCardOverview = () => {
         isAutoFunding,
         currency,
         balance,
-        spendablePerTx,
-        isSpendableCapped,
         isBalanceLoading,
         credits,
         transactionSections,
         isLoadingTransactions,
-        pendingWithdrawal,
+        withdrawState,
         onWithdraw,
-        onCompleteWithdrawal,
-        onCancelWithdrawal,
         onAddFunds,
         onFundLinkedAccount,
         onShowAllTransactions,
@@ -51,26 +46,11 @@ export const PeraCardOverview = () => {
                 balance={balance}
                 isLoading={isBalanceLoading}
                 currency={currency}
-                spendablePerTx={spendablePerTx}
-                isCapped={isSpendableCapped}
             />
-
-            {pendingWithdrawal && (
-                <PeraCardPendingWithdrawal
-                    amount={pendingWithdrawal.amount}
-                    currency={currency}
-                    secondsUntilReady={pendingWithdrawal.secondsUntilReady}
-                    isReady={pendingWithdrawal.isReady}
-                    isCompleting={pendingWithdrawal.isCompleting}
-                    isCancelling={pendingWithdrawal.isCancelling}
-                    onComplete={onCompleteWithdrawal}
-                    onCancel={onCancelWithdrawal}
-                />
-            )}
 
             <PeraCardActionButtons
                 isAutoFunding={isAutoFunding}
-                isWithdrawDisabled={pendingWithdrawal !== null}
+                withdrawState={withdrawState}
                 onWithdraw={onWithdraw}
                 onAddFunds={onAddFunds}
                 onFundLinkedAccount={onFundLinkedAccount}

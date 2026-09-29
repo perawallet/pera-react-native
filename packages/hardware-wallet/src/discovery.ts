@@ -14,7 +14,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletDerivedAccount,
     HardwareWalletTransport,
-} from './types'
+} from '@perawallet/wallet-extension-hardware-wallet'
 import {
     DEFAULT_MAX_ACCOUNT_SCAN_GAP,
     DEFAULT_MAX_ACCOUNT_SCAN_INDEX,
@@ -57,7 +57,7 @@ export type DiscoverAccountsOptions = {
 }
 
 /**
- * Sequentially discovers Algorand accounts on a connected hardware wallet device.
+ * Sequentially discovers accounts on a connected hardware wallet device.
  *
  * When `isAccountOnChain` is provided, fetches accounts at indices 0, 1, 2...
  * and stops after `maxGap` consecutive indices with no on-chain presence,

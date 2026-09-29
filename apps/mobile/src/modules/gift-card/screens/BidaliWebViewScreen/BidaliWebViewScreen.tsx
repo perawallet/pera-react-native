@@ -12,7 +12,7 @@
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView } from '@components/core'
-import { PWWebView } from '@modules/webview/components/PWWebView'
+import { PWWebView } from '@modules/webview/browser'
 import { useBidaliWebViewScreen } from './useBidaliWebViewScreen'
 import { useStyles } from './styles'
 

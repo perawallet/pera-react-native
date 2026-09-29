@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import { useAccountsStore } from '../store'
-import { canSignWith } from '../utils'
+import { canSignWith } from '../signer-resolution'
 
 export const useSigningAccounts = () => {
     const accounts = useAccountsStore(state => state.accounts)

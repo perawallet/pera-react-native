@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-import type { Connection } from '@perawallet/wallet-extension-connections'
+import type {
+    Connection,
+    ConnectionOrigin,
+    ConnectionPeer,
+} from '@perawallet/wallet-extension-connections'
 import type { ConnectionHandler } from '@perawallet/wallet-core-connections'
 import { isStringArray, readString } from '../shared/read'
 import { walletConnectUriVersion } from '../shared/uri'
+import type { WalletConnectV1Delivery } from './deliver'
 
 export const WALLET_CONNECT_V1_KIND = 'walletconnect-v1'
 
@@ -41,9 +46,131 @@ export type WalletConnectV1Connection = Connection & {
     metadata: WalletConnectV1Metadata
 }
 
+export type BuildWalletConnectV1ConnectionInput = {
+    clientId: string
+    peer: ConnectionPeer
+    accounts: string[]
+    /** From `WalletConnectV1SessionKeyStore.commit`: commit the key before building the record. */
+    secretRef: string
+    /** Epoch milliseconds. */
+    createdAt: number
+    /** Epoch milliseconds. */
+    lastActiveAt: number
+    origin?: ConnectionOrigin
+    metadata: WalletConnectV1Metadata
+}
+
+/**
+ * The one shape every writer persists. Absent optionals are left off the
+ * record rather than written as `undefined`: readers test `!== undefined`
+ * (the handshake replay guard) or treat a missing key as "unknown".
+ */
+export const buildWalletConnectV1Connection = (
+    input: BuildWalletConnectV1ConnectionInput,
+): WalletConnectV1Connection => {
+    const { handshakeId, permissions, ...metadata } = input.metadata
+    return {
+        id: input.clientId,
+        kind: WALLET_CONNECT_V1_KIND,
+        name: input.peer.name,
+        peer: input.peer,
+        accounts: input.accounts,
+        secretRef: input.secretRef,
+        status: 'active',
+        createdAt: input.createdAt,
+        lastActiveAt: input.lastActiveAt,
+        ...(input.origin ? { origin: input.origin } : {}),
+        metadata: {
+            bridge: metadata.bridge,
+            handshakeTopic: metadata.handshakeTopic,
+            peerId: metadata.peerId,
+            chainId: metadata.chainId,
+            ...(handshakeId !== undefined ? { handshakeId } : {}),
+            ...(permissions !== undefined ? { permissions } : {}),
+        },
+    }
+}
+
+// Plaintext is allowed only on loopback (local dev bridges, the e2e fixture's
+// fake bridge), mirroring what browsers treat as a trustworthy origin. Exact
+// hosts, so `localhost.evil.example` never qualifies.
+const isLoopbackBridge = (decoded: string): boolean => {
+    const host = /^(?:http|ws):\/\/(\[[^\]]*\]|[^/:?#]+)/i.exec(decoded)?.[1]
+    if (host === undefined) return false
+    return (
+        /^(?:localhost|127\.0\.0\.1|\[::1\])$/i.test(host) ||
+        /\.localhost$/i.test(host)
+    )
+}
+
+// The bridge host is dApp-chosen by protocol design, but the scheme must be
+// one the client can only turn into a WebSocket, and remote hosts must be
+// secure: the client maps http(s) to ws(s) and passes anything else through to
+// `new WebSocket(...)` unchanged, and the URI can arrive from any web page
+// (extension) or deeplink (mobile). No `new URL` here — Hermes'
+// implementation is not trusted with hostile input.
+const hasSecureBridge = (uri: string): boolean => {
+    const bridge = /[?&]bridge=([^&#]+)/.exec(uri)?.[1]
+    if (!bridge) return false
+    try {
+        const decoded = decodeURIComponent(bridge)
+        return /^(?:https|wss):\/\//i.test(decoded) || isLoopbackBridge(decoded)
+    } catch {
+        // Malformed percent-encoding.
+        return false
+    }
+}
+
 // dApps also emit bridge-less `wc://?…` focus signals; routing one into the v1 client throws.
 export const isV1PairingUri = (uri: string): boolean =>
-    walletConnectUriVersion(uri) === 1 && /[?&]bridge=[^&]+/.test(uri)
+    walletConnectUriVersion(uri) === 1 && hasSecureBridge(uri)
+
+/**
+ * The `bridge=` value the SDK will actually dial, or null when unreadable.
+ * Read exactly the way the SDK reads it — `URLSearchParams` over the query,
+ * then a second `decodeURIComponent` — because anything this validates but
+ * the SDK resolves differently is a bypass. A duplicate `bridge=` is refused
+ * outright: the SDK's parser keeps the last one, so a URI carrying both an
+ * https and an http bridge would be checked on one host and dialed on the
+ * other.
+ */
+export const bridgeUrlFromV1Uri = (uri: string): string | null => {
+    const queryStart = uri.indexOf('?')
+    if (queryStart === -1) return null
+    const values = new URLSearchParams(uri.slice(queryStart + 1)).getAll(
+        'bridge',
+    )
+    if (values.length !== 1 || !values[0]) return null
+    try {
+        return decodeURIComponent(values[0])
+    } catch {
+        return null
+    }
+}
+
+const LOOPBACK_HOSTNAME =
+    /^(?:localhost|\[::1\]|127(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})$/
+
+/**
+ * The connector dials the bridge from its constructor, before any approval.
+ * The URI key never crosses the bridge, but cleartext exposes topic ids,
+ * client metadata and message timing and size, and lets an on-path attacker
+ * drop or replay frames. Loopback never leaves the device.
+ */
+export const isSecureBridgeUrl = (bridge: string): boolean => {
+    let url: URL
+    try {
+        url = new URL(bridge)
+    } catch {
+        return false
+    }
+    if (url.protocol === 'https:' || url.protocol === 'wss:') return true
+    if (url.protocol !== 'http:' && url.protocol !== 'ws:') return false
+    // The raw authority must equal the WHATWG host: RN's iOS WebSocket (NSURL)
+    // reads `ws://127.0.0.1\@evil.com` as host evil.com.
+    const authority = /^[a-z][a-z\d+.-]*:\/\/([^/?#]*)/i.exec(bridge)?.[1]
+    return authority === url.host && LOOPBACK_HOSTNAME.test(url.hostname)
+}
 
 // Applied on every read: the registry hands over erased records, and persisted
 // ones can be stale or half-migrated.
@@ -66,12 +193,17 @@ export const isWalletConnectV1Connection = (
     )
 }
 
-/** The concrete handler, with the URI-pairing capabilities it declares made required. */
+/** The concrete handler, with the optional capabilities it declares made required. */
 export type WalletConnectV1Handler =
     ConnectionHandler<WalletConnectV1Connection> &
         Required<
             Pick<
                 ConnectionHandler<WalletConnectV1Connection>,
-                'canHandleUri' | 'pair' | 'abandonPairing' | 'describeUri'
+                | 'canHandleUri'
+                | 'pair'
+                | 'abandonPairing'
+                | 'describeUri'
+                | 'reconnect'
             >
-        >
+        > &
+        WalletConnectV1Delivery

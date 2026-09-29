@@ -11,7 +11,7 @@
  */
 
 import { PWView } from '@components/core'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
+import { TransactionIcon } from '@components/TransactionIcon'
 import {
     getTransactionType,
     type PeraDisplayableTransaction,

@@ -18,8 +18,10 @@ import { PWButton, PWScreen } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import { TransactionDisplay } from '@modules/transactions/components/TransactionDisplay'
-import { GroupTransactionsPanel } from '@modules/transactions/components/transaction-details'
+import {
+    TransactionDisplay,
+    GroupTransactionsPanel,
+} from '@modules/transactions'
 import { ExternalTransactionCallout } from '@modules/signing/components/ExternalTransactionCallout'
 import { useTransactionDetailsScreen } from './useTransactionDetailsScreen'
 

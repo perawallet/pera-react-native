@@ -17,7 +17,7 @@ import {
     getArc59SignedFundingAmount,
     useArc59SendSummaryQuery,
     type Arc59SendSummaryResponse,
-} from '@perawallet/wallet-core-asa-inbox'
+} from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import {
     useAccountInformationQuery,
     useSelectedAccount,
@@ -36,7 +36,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useWebView } from '@modules/webview/hooks'
+import { useWebView } from '@modules/webview'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'

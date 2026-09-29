@@ -287,11 +287,13 @@ describe('useSwapAmountSection', () => {
     })
 
     it('does not call onAmountChange in receive variant', () => {
+        const onAmountChange = vi.fn()
         const { result } = renderHook(() =>
             useSwapAmountSection({
                 variant: 'receive',
                 assetId: '0',
                 amount: null,
+                onAmountChange,
             }),
         )
 
@@ -299,7 +301,7 @@ describe('useSwapAmountSection', () => {
             result.current.handleTextChange('5')
         })
 
-        // No onAmountChange provided for receive, so nothing happens
+        expect(onAmountChange).not.toHaveBeenCalled()
     })
 
     it('returns empty displayValue for receive variant with null amount', () => {

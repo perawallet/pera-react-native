@@ -27,9 +27,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const mockNetwork = (network: Network) => {
     mockNetworkState.network = network

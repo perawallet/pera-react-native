@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
 
 // The screen revokes through the settings list hook's awaited `revoke`, not
 // a connector of its own — no UI surface may own a WC connector
-// (webConnectorOwnership.test.ts).
+// (the oxlint rule pera/wc-connector-ownership).
 vi.mock('@modules/settings/hooks/useConnectionSettingsList', () => ({
     useConnectionSettingsList: () => ({ revoke: mocks.revoke }),
 }))
@@ -33,11 +33,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
 }))
 
-vi.mock('@react-navigation/native', () => ({
+vi.mock('@react-navigation/native', async importOriginal => ({
+    ...(await importOriginal<typeof import('@react-navigation/native')>()),
     useNavigation: () => ({ goBack: mocks.goBack }),
 }))
 
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
     useWebView: () => ({ pushWebView: mocks.pushWebView }),
 }))
 
@@ -45,9 +46,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mocks.showError }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@analytics', () => ({
     trackEvent: vi.fn(),

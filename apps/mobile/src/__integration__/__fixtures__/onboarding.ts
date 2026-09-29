@@ -14,7 +14,7 @@ import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
 
 // Known-good test vectors for the onboarding flows. Both mnemonics and the
 // addresses they derive to are pinned by the integration tests in
-// packages/kms/src/crypto/__tests__/{algo25,hdwallet}-integration.test.ts —
+// packages/kms/src/crypto/__tests__/{algo25,hdwallet}-integration.spec.ts —
 // keep these in sync with that source of truth.
 
 // 24-word HD wallet seed → m/44'/283'/0'/0/0 with Peikert derivation.
@@ -25,6 +25,16 @@ export const HD_TEST_MNEMONIC_24_WORDS = HD_TEST_MNEMONIC_24.split(' ')
 
 export const HD_TEST_MNEMONIC_24_INDICES = mnemonicWordsToIndices(
     HD_TEST_MNEMONIC_24_WORDS,
+)!
+
+// A second, unrelated 24-word seed for tests that must tell two wallets apart.
+// The standard BIP39 all-ones vector; `mnemonicWordsToIndices` does not verify
+// the checksum, but a real vector keeps the derivation honest.
+export const HD_TEST_MNEMONIC_24_ALT =
+    'zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote'
+
+export const HD_TEST_MNEMONIC_24_ALT_INDICES = mnemonicWordsToIndices(
+    HD_TEST_MNEMONIC_24_ALT.split(' '),
 )!
 
 export const HD_TEST_ADDRESS =

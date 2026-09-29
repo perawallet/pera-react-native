@@ -13,7 +13,7 @@
 import type { Database } from '@perawallet/wallet-core-database'
 import { Networks } from '@perawallet/wallet-core-config'
 import { ALGO_ASSET, DEFAULT_ASSET_METADATA } from '../models'
-import { upsertAssets } from './repository'
+import { upsertAssets } from './metadataRepository'
 
 /**
  * Seeds the ALGO asset row for EVERY network.

@@ -12,15 +12,13 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
-import { isDev, isStaging } from '@perawallet/wallet-core-config'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { canCallIntegrityGuardedRoute } from '@perawallet/wallet-core-app-integrity'
 import {
     CardIntegrityAttestationRequiredError,
     CardUserUnavailableError,
     createCard,
 } from '../api/card-creation'
-import { postAlgorandDelegationApproval } from '../api/delegation'
+import { postDelegationApproval } from '../api/delegation'
 import { fetchUser } from '../api/user'
 import { DEFAULT_CARD_CURRENCY } from '../models'
 import { useCardStore } from '../store'
@@ -43,18 +41,6 @@ export type UseCreateAndApproveCardMutationResult = CardMutationResult<
     CreateAndApproveCardVariables,
     CreateAndApproveCardResult
 >
-
-/** The current non-expired device attestation token, or null. */
-const getValidIntegrityToken = (): Nullable<string> => {
-    const { integrityToken, expiresAt } = useAppIntegrityStore.getState()
-    if (!integrityToken || !expiresAt) {
-        return null
-    }
-    const expiry = Date.parse(expiresAt)
-    return Number.isFinite(expiry) && expiry > Date.now()
-        ? integrityToken
-        : null
-}
 
 /**
  * Step 2 of card creation: POSTs the Step-1 proof to the Pera backend (which
@@ -98,8 +84,7 @@ export const useCreateAndApproveCardMutation =
                     : false
 
                 if (!cardAddress || !txId) {
-                    const integrityToken = getValidIntegrityToken()
-                    if (!integrityToken && !(isDev || isStaging)) {
+                    if (!canCallIntegrityGuardedRoute()) {
                         throw new CardIntegrityAttestationRequiredError()
                     }
 
@@ -118,7 +103,6 @@ export const useCreateAndApproveCardMutation =
                         currency,
                         signData: proof.signData,
                         signature: proof.signature,
-                        integrityToken: integrityToken ?? '',
                     })
                     cardAddress = created.cardAddress
                     txId = created.txId
@@ -135,7 +119,7 @@ export const useCreateAndApproveCardMutation =
                 }
 
                 if (!approved) {
-                    await postAlgorandDelegationApproval({
+                    await postDelegationApproval({
                         network,
                         address,
                         currency,

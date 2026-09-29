@@ -51,7 +51,7 @@ import { UserPreferences } from '@constants/user-preferences'
 import { LoadingView } from '@components/LoadingView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { routeCapabilities } from '@routes/capabilities'
-import { toDiscoverTokenDetailPath } from '@modules/discover/utils/tokenDetailPath'
+import { toDiscoverTokenDetailPath } from '@modules/discover'
 
 export type AssetMarketsProps = {
     asset: PeraAsset

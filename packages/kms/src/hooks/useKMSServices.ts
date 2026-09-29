@@ -11,16 +11,13 @@
  */
 
 import type {
-    Key,
     KeyStoreAPI,
     KeyData,
     KeyId,
 } from '@algorandfoundation/keystore-core'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { zeroBytes } from '../crypto/secure-memory'
-import { AccessControlPermission } from '../models'
-import { aclOf } from '../utils'
-import { KeyAccessError } from '../errors'
+import { checkAccess } from '../core/access'
 import { useCallback } from 'react'
 import {
     commitSecret,
@@ -31,22 +28,7 @@ import {
 } from '../storage/secrets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-export const checkAccess = (key: Key, domain: string): void => {
-    // `aclOf` always returns a non-empty ACL (the wallet's own-origin default
-    // for seeds without an explicit one), so this is fail-closed: a domain not
-    // granted ReadPrivate is rejected rather than slipping through the old
-    // empty-ACL bypass.
-    const acl = aclOf(key)
-    const hasAccess = acl.some(
-        entry =>
-            entry.domains.includes(domain) &&
-            entry.permissions.includes(AccessControlPermission.ReadPrivate),
-    )
-
-    if (!hasAccess) {
-        throw new KeyAccessError()
-    }
-}
+export { checkAccess }
 
 type WithExportedKey = <T>(
     keyId: KeyId,

@@ -38,6 +38,7 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
     const openExternalLink = useCallback(
         (url: string) => {
             if (!routeCapabilities.inAppWebView) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers build on config.explorerUrl
                 void Linking.openURL(url)
                 return
             }

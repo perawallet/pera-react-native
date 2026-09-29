@@ -25,13 +25,13 @@ import {
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import type { MessagesStackParamList } from '@modules/messages/routes/types'
+import type { MessagesStackParamList } from '@modules/messages'
 import {
     useAccountBalancesInvalidator,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useArc59Invalidator } from '@perawallet/wallet-core-asa-inbox'
+import { useArc59Invalidator } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 import { useErrorToast } from '@hooks/useErrorToast'
 

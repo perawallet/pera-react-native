@@ -286,9 +286,30 @@ describe('runExtrasMigration > walletConnect step', () => {
         const data = buildData({ walletConnectV1: sessions })
         const result = await runExtrasMigration(data)
 
-        expect(vi.mocked(migrateWalletConnect)).toHaveBeenCalledWith(sessions)
+        expect(vi.mocked(migrateWalletConnect)).toHaveBeenCalledWith(sessions, {
+            sessionKeys: undefined,
+        })
         expect(result.walletConnect).toEqual({ imported: 2, skipped: 1 })
         expect(result.failed).toEqual([])
+    })
+
+    it('forwards the injected session-key store to the walletConnect step', async () => {
+        const walletConnectSessionKeys = {
+            commit: vi.fn(),
+            has: vi.fn(),
+            read: vi.fn(),
+            remove: vi.fn(),
+        }
+        const data = buildData()
+
+        await runExtrasMigration(data, ['walletConnect'], {
+            walletConnectSessionKeys,
+        })
+
+        expect(vi.mocked(migrateWalletConnect)).toHaveBeenCalledWith(
+            data.walletConnectV1,
+            { sessionKeys: walletConnectSessionKeys },
+        )
     })
 
     it('records a walletConnect failure without breaking other steps', async () => {

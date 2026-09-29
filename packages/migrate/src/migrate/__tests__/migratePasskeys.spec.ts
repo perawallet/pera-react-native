@@ -36,10 +36,11 @@ const {
     platformMock: { OS: 'android' as 'android' | 'ios' },
 }))
 
-vi.mock('react-native', () => ({ Platform: platformMock }))
-
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({ state: keystoreState }),
+    getProvider: () => ({
+        deviceInfo: { getDevicePlatform: () => platformMock.OS },
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -99,7 +100,7 @@ vi.mock('../passkeys/deriveLegacyPasskeyCredential', async importActual => ({
 // Fully mocked — the real module imports react-native-keystore (native MMKV).
 // createNativePasskeyWriter returns the per-write spy (with a dispose spy
 // attached) so the batch shares one writer.
-vi.mock('../passkeys/writeNativePasskeyEntry', () => ({
+vi.mock('@perawallet/wallet-core-passkeys', () => ({
     nativePasskeyEntryExists: entryExistsMock,
     createNativePasskeyWriter: () =>
         Object.assign(writeEntryMock, { dispose: disposeMock }),

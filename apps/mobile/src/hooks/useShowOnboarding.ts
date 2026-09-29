@@ -14,7 +14,7 @@ import {
     useHasNoAccounts,
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
-import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { useIsOnboarding } from '@modules/onboarding'
 
 export const useShowOnboarding = () => {
     const noAccounts = useHasNoAccounts()

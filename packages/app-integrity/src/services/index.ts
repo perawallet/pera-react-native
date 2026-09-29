@@ -14,3 +14,9 @@
 // hooks (useAppIntegrityRegistration, useAppIntegrityBootstrap).
 export type { RegisterAppIntegrityResult } from './registerAppIntegrity'
 export { getValidIntegrityToken } from './getValidIntegrityToken'
+export {
+    buildIntegrityHeaders,
+    canCallIntegrityGuardedRoute,
+    INTEGRITY_BYPASS_HEADER,
+    INTEGRITY_TOKEN_HEADER,
+} from './integrityHeaders'

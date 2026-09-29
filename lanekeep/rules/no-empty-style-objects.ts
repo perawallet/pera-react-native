@@ -8,6 +8,7 @@ import {
     isRneuiMakeStyles,
     styleEntries,
 } from '../shared/make-styles.js'
+import { productionSource } from '../shared/scope.js'
 
 export default defineRule({
     id: 'pera/no-empty-style-objects',
@@ -18,7 +19,7 @@ export default defineRule({
             'Remove the empty style key, or fill in real properties. An empty entry produces no styles and only adds noise.',
         examples: { bad: 'empty: {}', good: 'row: { flexDirection: "row" }' },
     },
-    gates: { fileContains: ['makeStyles'] },
+    gates: productionSource({ fileContains: ['makeStyles'] }),
     query: MAKE_STYLES_QUERY,
     check(ctx, m) {
         const call = m.call

@@ -34,16 +34,22 @@ type GetKey = ReturnType<typeof useKMS>['getKey']
  * mean an unstamped legacy child, so it must fail closed into "legacy",
  * matching the fail-closed pattern `repairQuantumMaterial.ts` already uses
  * for this exact ambiguity.
+ *
+ * A missing key record is the opposite case and must NOT fail closed:
+ * delete-all removes keystore keys several steps before the accounts store
+ * clears, and flagging every quantum account as legacy in that window made
+ * the notice prompt flash over the wipe. An account with no key can't sign
+ * anything, so a derivation warning for it is meaningless anyway.
  */
 export const isLegacyQuantumChild = (
     getKey: GetKey,
     account: WalletAccount,
 ): boolean => {
     if (!isQuantumAccount(account)) return false
+    const key = getKey(account.keyPairId)
+    if (!key) return false
     const pqDerivation = (
-        getKey(account.keyPairId)?.metadata as
-            | { pqDerivation?: PQDerivation }
-            | undefined
+        key.metadata as { pqDerivation?: PQDerivation } | undefined
     )?.pqDerivation
     return pqDerivation !== PQ_DERIVATION_CANONICAL
 }

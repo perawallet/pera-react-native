@@ -24,6 +24,8 @@ const trackNewItem = (item: LocalItem, now: number): SyncItemState => ({
     lastRemoteHash: null,
     localContentHash: item.contentHash,
     localUpdatedAt: now,
+    address: item.address,
+    accountType: item.accountType,
 })
 
 const markChanged = (
@@ -36,6 +38,8 @@ const markChanged = (
     pendingImport: false,
     localContentHash: item.contentHash,
     localUpdatedAt: now,
+    address: item.address,
+    accountType: item.accountType,
 })
 
 const hasChanged = (tracked: SyncItemState, item: LocalItem): boolean =>

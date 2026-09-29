@@ -52,6 +52,7 @@ export const OnrampContactProviderCard = ({
                     name: providerName,
                 })}
                 onPress={() => {
+                    // oxlint-disable-next-line pera/no-unvalidated-open-url -- app-built mailto:
                     void Linking.openURL(buildSupportMailto(orderId))
                 }}
                 testID='onramp-contact-provider'

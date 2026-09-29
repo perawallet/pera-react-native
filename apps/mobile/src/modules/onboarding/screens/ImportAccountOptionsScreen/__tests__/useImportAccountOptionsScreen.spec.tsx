@@ -11,15 +11,14 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { Platform } from 'react-native'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     resolveImportAccountType,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
-import { DeeplinkType } from '@hooks/deeplink/types'
+import { DeeplinkType } from '@modules/deeplink/types'
 import {
     useImportAccountOptionsScreen,
     type UseImportAccountOptionsScreenResult,
@@ -27,6 +26,17 @@ import {
 
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
+
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: {} as Record<string, boolean>,
+}))
+vi.mock('@routes/capabilities', async () => {
+    const actual = await vi.importActual<typeof import('@routes/capabilities')>(
+        '@routes/capabilities',
+    )
+    Object.assign(mockCapabilities, actual.routeCapabilities)
+    return { ...actual, routeCapabilities: mockCapabilities }
+})
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -57,7 +67,7 @@ vi.mock('react-i18next', async () => {
 })
 
 const mockParseDeeplink = vi.fn()
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({
         parseDeeplink: mockParseDeeplink,
         handleDeepLink: vi.fn(),
@@ -77,8 +87,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-const { mockRequestBottomSheet } = vi.hoisted(() => ({
+const { mockRequestBottomSheet, mockChooseRestoreRoute } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
+    mockChooseRestoreRoute: vi.fn(),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -107,8 +118,22 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
     ) => selector({ isConfigured: () => mockCloudBackupState.isConfigured }),
 }))
 
+const { mockLedgerSupport } = vi.hoisted(() => ({
+    mockLedgerSupport: {
+        isReady: false,
+        supportedTransportTypes: [] as string[],
+    },
+}))
+
+vi.mock('@modules/ledger', () => ({
+    useSupportedLedgerTransports: () => mockLedgerSupport,
+}))
+
 vi.mock('@modules/cloud-backup', () => ({
-    RestoreBackupSheet: () => null,
+    useRestoreBackupOptions: () => ({
+        chooseRestoreRoute: mockChooseRestoreRoute,
+        isReadingCredentials: false,
+    }),
 }))
 
 const pressCloudBackupOption = async (result: {
@@ -124,32 +149,28 @@ const pressCloudBackupOption = async (result: {
 }
 
 describe('useImportAccountOptionsScreen', () => {
-    const originalOS = Platform.OS
-
     beforeEach(() => {
         vi.clearAllMocks()
-        Platform.OS = 'ios'
+        mockCapabilities.ledgerUsb = false
         mockRequestBottomSheet.mockResolvedValue(undefined)
         mockQuantumFlag.enabled = false
         mockCloudBackupFlag.enabled = false
         mockCloudBackupState.isConfigured = false
+        mockLedgerSupport.isReady = false
+        mockLedgerSupport.supportedTransportTypes = []
         vi.mocked(useNetwork).mockReturnValue({
             network: Networks.mainnet,
         } as ReturnType<typeof useNetwork>)
     })
 
-    afterEach(() => {
-        Platform.OS = originalOS
-    })
-
-    it('returns 5 options on iOS', () => {
+    it('returns 5 options without Ledger USB', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         expect(result.current.options).toHaveLength(5)
     })
 
-    it('returns 6 options on Android (includes USB)', () => {
-        Platform.OS = 'android'
+    it('returns 6 options with Ledger USB', () => {
+        mockCapabilities.ledgerUsb = true
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -170,7 +191,7 @@ describe('useImportAccountOptionsScreen', () => {
         expect(testIDs).toContain('import_account_options_asb_button')
     })
 
-    it('USB option is hidden on iOS', () => {
+    it('hides the USB option without Ledger USB', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const testIDs = result.current.options.map(o => o.testID)
@@ -180,28 +201,8 @@ describe('useImportAccountOptionsScreen', () => {
         )
     })
 
-    it('USB option is shown on Android', () => {
-        Platform.OS = 'android'
-
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        const testIDs = result.current.options.map(o => o.testID)
-
-        expect(testIDs).toContain(
-            'import_account_options_pair_ledger_usb_button',
-        )
-    })
-
-    it('returns 6 options on web (includes USB)', () => {
-        Platform.OS = 'web'
-
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        expect(result.current.options).toHaveLength(6)
-    })
-
-    it('USB option is shown on web', () => {
-        Platform.OS = 'web'
+    it('shows the USB option with Ledger USB', () => {
+        mockCapabilities.ledgerUsb = true
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -273,26 +274,8 @@ describe('useImportAccountOptionsScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('LedgerPair')
     })
 
-    it('Ledger USB option navigates to LedgerInstructions with usb transportType on Android', () => {
-        Platform.OS = 'android'
-
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        const usbOption = result.current.options.find(
-            o => o.testID === 'import_account_options_pair_ledger_usb_button',
-        )!
-
-        act(() => {
-            usbOption.onPress()
-        })
-
-        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
-            transportType: 'usb',
-        })
-    })
-
-    it('Ledger USB option navigates to LedgerInstructions with usb transportType on web', () => {
-        Platform.OS = 'web'
+    it('Ledger USB option navigates to LedgerInstructions with usb transportType', () => {
+        mockCapabilities.ledgerUsb = true
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -550,33 +533,29 @@ describe('useImportAccountOptionsScreen', () => {
             )
         })
 
-        it('pushes the scanner when the restore sheet returns scan', async () => {
+        it.each([
+            [['CloudBackupRestoreScan']],
+            [['CloudBackupRestorePassphrase']],
+            [
+                [
+                    'CloudBackupRestorePassphrase',
+                    { importedKey: { salt: 'c2FsdA==' } },
+                ],
+            ],
+        ])('pushes %j when the restore options pick it', async route => {
             mockCloudBackupFlag.enabled = true
-            mockRequestBottomSheet.mockResolvedValue('scan')
+            mockChooseRestoreRoute.mockResolvedValueOnce(route)
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
             await pressCloudBackupOption(result)
 
-            expect(mockPush).toHaveBeenCalledWith('CloudBackupRestoreScan')
+            expect(mockPush).toHaveBeenCalledWith(route[0], route[1])
         })
 
-        it('pushes manual entry when the restore sheet returns manual', async () => {
+        it('pushes nothing when no route is picked', async () => {
             mockCloudBackupFlag.enabled = true
-            mockRequestBottomSheet.mockResolvedValue('manual')
-
-            const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-            await pressCloudBackupOption(result)
-
-            expect(mockPush).toHaveBeenCalledWith(
-                'CloudBackupRestorePassphrase',
-            )
-        })
-
-        it('pushes nothing when the restore sheet is dismissed', async () => {
-            mockCloudBackupFlag.enabled = true
-            mockRequestBottomSheet.mockResolvedValue(undefined)
+            mockChooseRestoreRoute.mockResolvedValueOnce(null)
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -597,7 +576,7 @@ describe('useImportAccountOptionsScreen', () => {
                 'onboarding.import_account_options.cloud_backup_already_enabled_title',
                 'onboarding.import_account_options.cloud_backup_already_enabled_body',
             )
-            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+            expect(mockChooseRestoreRoute).not.toHaveBeenCalled()
             expect(mockPush).not.toHaveBeenCalled()
         })
     })
@@ -636,9 +615,7 @@ describe('useImportAccountOptionsScreen', () => {
                 o => o.testID !== 'import_account_options_pera_web_button',
             )
 
-            expect(otherOptions.every(o => o.isDisabled === undefined)).toBe(
-                true,
-            )
+            expect(otherOptions.every(o => !o.isDisabled)).toBe(true)
         })
 
         it('enables the Pera Web option with its original description on mainnet', () => {
@@ -655,6 +632,70 @@ describe('useImportAccountOptionsScreen', () => {
             expect(peraWebOption.isDisabled).toBe(false)
             expect(peraWebOption.descriptionKey).toBe(
                 'onboarding.import_account_options.pera_web_description',
+            )
+        })
+    })
+
+    describe('Ledger transport support', () => {
+        const findOption = (
+            result: { current: UseImportAccountOptionsScreenResult },
+            testID: string,
+        ) => result.current.options.find(o => o.testID === testID)!
+
+        beforeEach(() => {
+            mockCapabilities.ledgerUsb = true
+        })
+
+        it('keeps both Ledger rows enabled until the browser check resolves', () => {
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            expect(
+                findOption(result, 'import_account_options_pair_ledger_button')
+                    .isDisabled,
+            ).toBe(false)
+            expect(
+                findOption(
+                    result,
+                    'import_account_options_pair_ledger_usb_button',
+                ).isDisabled,
+            ).toBe(false)
+        })
+
+        it('disables Bluetooth pairing, and says why, in a browser without Web Bluetooth', () => {
+            mockLedgerSupport.isReady = true
+            mockLedgerSupport.supportedTransportTypes = ['usb']
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+            const ble = findOption(
+                result,
+                'import_account_options_pair_ledger_button',
+            )
+
+            expect(ble.isDisabled).toBe(true)
+            expect(ble.descriptionKey).toBe(
+                'onboarding.import_account_options.pair_ledger_unsupported_description',
+            )
+            expect(
+                findOption(
+                    result,
+                    'import_account_options_pair_ledger_usb_button',
+                ).isDisabled,
+            ).toBe(false)
+        })
+
+        it('disables USB pairing in a browser without WebHID', () => {
+            mockLedgerSupport.isReady = true
+            mockLedgerSupport.supportedTransportTypes = ['ble']
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+            const usb = findOption(
+                result,
+                'import_account_options_pair_ledger_usb_button',
+            )
+
+            expect(usb.isDisabled).toBe(true)
+            expect(usb.descriptionKey).toBe(
+                'onboarding.import_account_options.pair_ledger_unsupported_description',
             )
         })
     })

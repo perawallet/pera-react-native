@@ -38,14 +38,6 @@ export type CardWalletBalance = {
     isWithdrawable: boolean
 }
 
-/** Network fee quote for a withdrawal: GET /v1/wallet/{kind}/withdraw-estimation. */
-export type WalletWithdrawEstimation = {
-    /** Fee in the payout network's NATIVE currency, display units. */
-    fee: Decimal
-    /** Fee in the network's smallest unit, as sent (opaque precision). */
-    gas: string
-}
-
 /** Receipt for a withdrawal: POST /v1/wallet/{kind}/withdraw. */
 export type WalletWithdrawResult = {
     /** Opaque payout-chain transaction hash (payout rail TBC with Baanx). */

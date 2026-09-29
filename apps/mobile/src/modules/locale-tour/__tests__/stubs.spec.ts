@@ -12,11 +12,11 @@
 
 import { describe, expect, it } from 'vitest'
 
-import * as deeplinkHandlerStub from '@hooks/deeplink/handlers/useLocaleTourDeeplink.stub'
-import * as parserStub from '@hooks/deeplink/dev-locale-tour-parser.stub'
+import * as deeplinkHandlerStub from '@modules/deeplink/handlers/useLocaleTourDeeplink.stub'
+import * as parserStub from '@modules/deeplink/dev-locale-tour-parser.stub'
 
 import * as pseudoResourcesStub from '../../../i18n/pseudoResources.stub'
-import * as overflowProbeStub from '../hooks/useOverflowProbe.stub'
+import * as overflowProbeStub from '@components/core/PWText/useOverflowProbe.stub'
 import * as tourStub from '../index.stub'
 import * as registerStub from '../register.stub'
 import { getLocaleTourRunner } from '../registry'
@@ -35,22 +35,22 @@ import { getLocaleTourRunner } from '../registry'
 // tests then call the stubs *through* those real signatures.
 
 const tour: typeof import('../index') = tourStub
-const overflowProbe: typeof import('../hooks/useOverflowProbe') =
+const overflowProbe: typeof import('@components/core/PWText/useOverflowProbe') =
     overflowProbeStub
 const pseudoResources: typeof import('../../../i18n/pseudoResources') =
     pseudoResourcesStub
-const parser: typeof import('@hooks/deeplink/dev-locale-tour-parser') =
+const parser: typeof import('@modules/deeplink/dev-locale-tour-parser') =
     parserStub
-const deeplinkHandler: typeof import('@hooks/deeplink/handlers/useLocaleTourDeeplink') =
+const deeplinkHandler: typeof import('@modules/deeplink/handlers/useLocaleTourDeeplink') =
     deeplinkHandlerStub
 const register: typeof import('../register') = registerStub
 
 describe('locale tour stubs', () => {
-    // register.stub.ts having been imported above is the whole test: it is the
-    // only module that ever registers a runner, so a non-dev bundle leaves the
-    // registry empty and the deeplink handler with nothing to call.
+    // register.ts is the only module that ever registers a runner, so its stub
+    // leaves a non-dev bundle's registry empty and the deeplink handler with
+    // nothing to call.
     it('leave the registry empty, so the tour deeplink has no runner', () => {
-        expect(register).toBeDefined()
+        register.registerLocaleTour()
         expect(getLocaleTourRunner()).toBeUndefined()
     })
 

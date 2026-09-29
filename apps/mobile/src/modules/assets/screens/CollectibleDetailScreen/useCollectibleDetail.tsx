@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { Linking, Platform } from 'react-native'
 import { shareText } from '@utils/shareText'
 import { getImageBase64 } from '@utils/getImageBase64'
 import { saveImageToDevice } from '@utils/saveImageToDevice'
@@ -43,11 +42,12 @@ import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { routeCapabilities } from '@routes/capabilities'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
+import { openValidatedBrowserUrl } from '@modules/webview'
+import { OptOutConfirmationContent } from '@modules/accounts'
 import {
     SendFundsContent,
     SEND_FUNDS_SHEET_ID,
-} from '@modules/transactions/components/send-funds/SendFundsContent'
+} from '@modules/transactions/routes'
 import {
     FullScreenMediaViewer,
     type FullScreenMediaItem,
@@ -375,7 +375,7 @@ export const useCollectibleDetail = (
             // Opening the raw .glb in a new tab is a strictly-better
             // fallback than a silent no-op: the browser will offer to
             // download/preview it rather than doing nothing at all.
-            void Linking.openURL(modelUrl)
+            openValidatedBrowserUrl(modelUrl)
             return
         }
         setModelViewerUrl(modelUrl)
@@ -390,13 +390,9 @@ export const useCollectibleDetail = (
             const matchIndex = fullScreenMedia.findIndex(m => m.uri === uri)
             const targetIndex = matchIndex >= 0 ? matchIndex : 0
 
-            // A bottom sheet is a fine stand-in for a full-screen native
-            // modal, but it's not "full screen" in a 360x600 popup (or even
-            // the expanded tab) — open the raw media in a real browser tab
-            // instead, which is what actually fills the screen there.
-            if (Platform.OS === 'web') {
+            if (!routeCapabilities.fullScreenMediaViewer) {
                 const targetUri = fullScreenMedia[targetIndex]?.uri
-                if (targetUri) void Linking.openURL(targetUri)
+                if (targetUri) openValidatedBrowserUrl(targetUri)
                 return
             }
 

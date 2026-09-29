@@ -24,7 +24,7 @@ import {
     REACHABILITY_URL,
     OFFLINE_DEBOUNCE_MS,
 } from '../networkStatus'
-import { useNetworkStatusStore } from '../hooks/useNetworkStatusStore'
+import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
 
 vi.mock('@react-native-community/netinfo', () => ({
     default: {

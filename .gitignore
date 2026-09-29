@@ -46,6 +46,9 @@ opencode.json
 # fallow incremental analysis cache
 .fallow/
 
+# vitest typecheck mode writes this next to a package's tsconfig while it runs
+tsconfig.vitest-temp.json
+
 # Drizzle Kit snapshots
 **/migrations/meta/*_snapshot.json
 

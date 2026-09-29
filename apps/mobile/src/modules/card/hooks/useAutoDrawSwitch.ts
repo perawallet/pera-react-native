@@ -25,7 +25,7 @@ import {
     useProgramSigner,
     useSignAndSubmitGroup,
 } from '@perawallet/wallet-core-signing'
-import { useFeeDelegation } from '@perawallet/wallet-core-fee-delegation'
+import { useFeeDelegation } from '@perawallet/wallet-core-chain-algorand/fee-delegation'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { encodeToBase64, logger } from '@perawallet/wallet-core-shared'
 import { canAutoFund } from './useCardFundingSourcePicker'
@@ -89,7 +89,7 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 )
                 await postDelegatorLsig({
                     network,
-                    token: DEFAULT_CARD_CURRENCY.toLowerCase(),
+                    currency: DEFAULT_CARD_CURRENCY.toLowerCase(),
                     delegatorAddress: account.address,
                     lsigBytes: encodeToBase64(lsigBytes),
                     cardAddress,

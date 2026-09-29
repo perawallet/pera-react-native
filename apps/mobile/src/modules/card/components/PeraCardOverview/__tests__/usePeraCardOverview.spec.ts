@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { renderHook, waitFor } from '@test-utils/render'
+import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { CardTransaction } from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
     useAccountAssetBalanceQuery,
     useFindAccountByAddress,
@@ -30,11 +29,9 @@ const mockState = vi.hoisted(() => ({
     isLoading: false,
     cardBalance: '0',
     isWalletsLoading: false,
-    delegatedWallet: null as unknown,
     rewardBalance: null as string | null,
     creditBalance: null as string | null,
 }))
-const mockExternalWalletsParams: { enabled?: boolean }[] = []
 const mockInfoToast = vi.fn()
 const mockSuccessToast = vi.fn()
 const mockTrackEvent = vi.hoisted(() => vi.fn())
@@ -98,22 +95,12 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 refetch: vi.fn(),
             }
         },
-        useCardExternalWalletsQuery: (params: { enabled?: boolean }) => {
-            mockExternalWalletsParams.push(params)
-            return {
-                delegatedWallet: mockState.delegatedWallet,
-                hasActiveDelegation: false,
-                isLoading: false,
-                isError: false,
-                error: null,
-                refetch: vi.fn(),
-            }
-        },
     }
 })
 
 const mockWithdraw = vi.hoisted(() => ({
     pending: null as unknown,
+    isReady: false,
     complete: vi.fn(),
     cancel: vi.fn(),
     isCompleting: false,
@@ -131,7 +118,7 @@ vi.mock('../../../hooks', async () => ({
         pending: mockWithdraw.pending,
         pendingAmount: new Decimal('0.25'),
         secondsUntilReady: 12,
-        isReady: false,
+        isReady: mockWithdraw.isReady,
         isPendingLoading: false,
         request: vi.fn(),
         complete: mockWithdraw.complete,
@@ -225,6 +212,7 @@ describe('usePeraCardOverview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockWithdraw.pending = null
+        mockWithdraw.isReady = false
         mockWithdraw.complete.mockResolvedValue(undefined)
         mockWithdraw.cancel.mockResolvedValue(undefined)
         mockState.selectedFundingType = null
@@ -233,10 +221,8 @@ describe('usePeraCardOverview', () => {
         mockState.isLoading = false
         mockState.cardBalance = '0'
         mockState.isWalletsLoading = false
-        mockState.delegatedWallet = null
         mockState.rewardBalance = null
         mockState.creditBalance = null
-        mockExternalWalletsParams.length = 0
         setLinkedUsdc(null)
         setLinkedAlgo(null)
         vi.mocked(useFindAccountByAddress).mockImplementation(
@@ -274,17 +260,6 @@ describe('usePeraCardOverview', () => {
         expect(result.current.balance.toFixed(2)).toBe('150.25')
     })
 
-    // Baanx only knows about a delegation under auto funding, so asking for one
-    // on manual is a guaranteed 400.
-    it('asks Baanx for the delegation only when auto funding is on', () => {
-        renderHook(() => usePeraCardOverview())
-        expect(mockExternalWalletsParams.at(-1)?.enabled).toBe(false)
-
-        mockState.selectedFundingType = 'AUTO'
-        renderHook(() => usePeraCardOverview())
-        expect(mockExternalWalletsParams.at(-1)?.enabled).toBe(true)
-    })
-
     it('reports auto funding when the selected type is AUTO', () => {
         mockState.selectedFundingType = 'AUTO'
 
@@ -294,12 +269,10 @@ describe('usePeraCardOverview', () => {
     })
 
     // A Ledger can never sign the AutoDraw LSig, so a stored AUTO left over
-    // from a previous account must not be treated as live: it would add the
-    // linked balance and the per-tx limit to a spendable amount the card can
-    // never actually draw.
+    // from a previous account must not be treated as live: it would add a
+    // linked balance the card can never actually draw.
     it('ignores a stored AUTO when the connected account is a Ledger', () => {
         mockState.selectedFundingType = 'AUTO'
-        mockState.delegatedWallet = { allowance: new Decimal('200') }
         setLinkedUsdc('500')
         vi.mocked(useFindAccountByAddress).mockImplementation(
             address =>
@@ -309,7 +282,7 @@ describe('usePeraCardOverview', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
         expect(result.current.isAutoFunding).toBe(false)
-        expect(result.current.spendablePerTx.toString()).toBe('0')
+        expect(result.current.balance.toString()).toBe('0')
     })
 
     it('shows each Baanx wallet balance as its credits row', () => {
@@ -320,19 +293,6 @@ describe('usePeraCardOverview', () => {
 
         expect(result.current.credits.rewards.toFixed(2)).toBe('12.34')
         expect(result.current.credits.refunds.toFixed(2)).toBe('5.50')
-    })
-
-    // Baanx draws the refund balance first on a card purchase; rewards sit in a
-    // wallet that has to be claimed first, so they would overstate the figure.
-    it('counts refunds but not rewards toward spendable per transaction', () => {
-        mockState.cardBalance = '240'
-        mockState.rewardBalance = '50'
-        mockState.creditBalance = '10'
-
-        const { result } = renderHook(() => usePeraCardOverview())
-
-        expect(result.current.balance.toFixed()).toBe('240')
-        expect(result.current.spendablePerTx.toFixed()).toBe('250')
     })
 
     it('groups transactions by month, newest first', () => {
@@ -443,95 +403,24 @@ describe('usePeraCardOverview', () => {
     })
 
     describe('balance display with auto funding', () => {
-        const allowanceOf = (allowance: string) => ({
-            address: 'LINKED_ADDR',
-            currency: 'usdc',
-            balance: new Decimal('0'),
-            allowance: new Decimal(allowance),
-            network: 'algorand',
-        })
-
         it('ignores the linked balance on manual funding', () => {
             mockState.selectedFundingType = 'MANUAL'
             mockState.cardBalance = '240'
-            mockState.delegatedWallet = allowanceOf('400')
             setLinkedUsdc('1000')
 
             const { result } = renderHook(() => usePeraCardOverview())
 
             expect(result.current.balance.toFixed()).toBe('240')
-            // Spendable = card balance + credits (0), no auto-funding leg.
-            expect(result.current.spendablePerTx.toFixed()).toBe('240')
         })
 
-        it('adds the linked balance and caps the per-tx leg at the allowance', () => {
+        it('adds the linked balance on auto funding', () => {
             mockState.selectedFundingType = 'AUTO'
             mockState.cardBalance = '240'
-            mockState.delegatedWallet = allowanceOf('400')
             setLinkedUsdc('1000')
 
             const { result } = renderHook(() => usePeraCardOverview())
 
             expect(result.current.balance.toFixed()).toBe('1240')
-            // min(400 allowance, 1000 linked) + 240 card + 0 credits.
-            expect(result.current.spendablePerTx.toFixed()).toBe('640')
-        })
-
-        // Baanx serves the external-wallet route to custodial platforms only,
-        // so the linked balance has to survive that query returning nothing.
-        it('shows the linked balance even when Baanx reports no wallet', () => {
-            mockState.selectedFundingType = 'AUTO'
-            mockState.delegatedWallet = null
-            setLinkedUsdc('1')
-
-            const { result } = renderHook(() => usePeraCardOverview())
-
-            expect(result.current.balance.toFixed()).toBe('1')
-            // Falls back to the app per-tx limit, so the whole 1 is spendable.
-            expect(result.current.spendablePerTx.toFixed()).toBe('1')
-        })
-
-        // The "available per transaction" line is only worth showing when a
-        // single purchase really can draw less than the balance on screen.
-        it('flags the per-transaction cap only when it bites', () => {
-            mockState.selectedFundingType = 'AUTO'
-            mockState.delegatedWallet = allowanceOf('400')
-
-            setLinkedUsdc('0.5')
-            const under = renderHook(() => usePeraCardOverview())
-            expect(under.result.current.balance.toFixed(1)).toBe('0.5')
-            expect(under.result.current.spendablePerTx.toFixed(1)).toBe('0.5')
-            expect(under.result.current.isSpendableCapped).toBe(false)
-
-            setLinkedUsdc('1000')
-            const over = renderHook(() => usePeraCardOverview())
-            expect(over.result.current.balance.toFixed()).toBe('1000')
-            expect(over.result.current.spendablePerTx.toFixed()).toBe('400')
-            expect(over.result.current.isSpendableCapped).toBe(true)
-        })
-
-        it('caps the per-tx leg at the linked balance when it is lower', () => {
-            mockState.selectedFundingType = 'AUTO'
-            mockState.cardBalance = '240'
-            mockState.delegatedWallet = allowanceOf('400')
-            setLinkedUsdc('150')
-
-            const { result } = renderHook(() => usePeraCardOverview())
-
-            // min(400, 150 linked) + 240 card.
-            expect(result.current.spendablePerTx.toFixed()).toBe('390')
-        })
-
-        it('falls back to the app per-tx limit when no allowance is reported', () => {
-            mockState.selectedFundingType = 'AUTO'
-            mockState.cardBalance = '240'
-            mockState.delegatedWallet = allowanceOf('0')
-            setLinkedUsdc('1000')
-
-            const { result } = renderHook(() => usePeraCardOverview())
-
-            // min(constant 400, 1000 linked) + 240 card.
-            expect(result.current.spendablePerTx.toFixed()).toBe('640')
         })
 
         it('waits for the linked balance only when auto funding is on', () => {
@@ -546,70 +435,32 @@ describe('usePeraCardOverview', () => {
             expect(auto.result.current.isBalanceLoading).toBe(true)
         })
     })
-    describe('pending withdrawal', () => {
-        it('surfaces nothing while no request is open', () => {
+    describe('withdraw button state', () => {
+        it('opens the withdraw form while no request is open', () => {
             const { result } = renderHook(() => usePeraCardOverview())
 
-            expect(result.current.pendingWithdrawal).toBeNull()
+            expect(result.current.withdrawState).toBe('idle')
+            result.current.onWithdraw()
+            expect(mockNavigate).toHaveBeenCalledWith('CardWithdraw')
         })
 
-        it('surfaces the open request with its amount and countdown', () => {
+        it('leads to the open request while it is still maturing', () => {
             mockWithdraw.pending = { amount: 250_000n }
 
             const { result } = renderHook(() => usePeraCardOverview())
 
-            expect(result.current.pendingWithdrawal).toEqual(
-                expect.objectContaining({
-                    secondsUntilReady: 12,
-                    isReady: false,
-                }),
-            )
-            expect(result.current.pendingWithdrawal?.amount.toFixed(2)).toBe(
-                '0.25',
-            )
+            expect(result.current.withdrawState).toBe('waiting')
+            result.current.onWithdraw()
+            expect(mockNavigate).toHaveBeenCalledWith('CardWithdrawStatus')
         })
 
-        it('completes the request and toasts the released amount', async () => {
+        it('offers to complete once the request has matured', () => {
             mockWithdraw.pending = { amount: 250_000n }
+            mockWithdraw.isReady = true
+
             const { result } = renderHook(() => usePeraCardOverview())
 
-            result.current.onCompleteWithdrawal()
-
-            await waitFor(() =>
-                expect(mockWithdraw.complete).toHaveBeenCalled(),
-            )
-            await waitFor(() => expect(mockSuccessToast).toHaveBeenCalled())
-            expect(mockWithdrawErrorToast).not.toHaveBeenCalled()
-        })
-
-        it('cancels the request and toasts', async () => {
-            mockWithdraw.pending = { amount: 250_000n }
-            const { result } = renderHook(() => usePeraCardOverview())
-
-            result.current.onCancelWithdrawal()
-
-            await waitFor(() => expect(mockWithdraw.cancel).toHaveBeenCalled())
-            await waitFor(() => expect(mockSuccessToast).toHaveBeenCalled())
-        })
-
-        it('surfaces a failed step and stays silent on a rejected signing review', async () => {
-            mockWithdraw.complete.mockRejectedValueOnce(
-                new Error('algod said no'),
-            )
-            const { result } = renderHook(() => usePeraCardOverview())
-
-            result.current.onCompleteWithdrawal()
-            await waitFor(() =>
-                expect(mockWithdrawErrorToast).toHaveBeenCalledTimes(1),
-            )
-
-            mockWithdraw.cancel.mockRejectedValueOnce(
-                new UserRejectedSigningError(),
-            )
-            result.current.onCancelWithdrawal()
-            await waitFor(() => expect(mockWithdraw.cancel).toHaveBeenCalled())
-            expect(mockWithdrawErrorToast).toHaveBeenCalledTimes(1)
-            expect(mockSuccessToast).not.toHaveBeenCalled()
+            expect(result.current.withdrawState).toBe('ready')
         })
     })
 })

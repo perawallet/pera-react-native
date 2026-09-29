@@ -18,7 +18,7 @@ import DraggableFlatList, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
-import { AccountDisplay } from '../AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './styles'
 
 type DraggableAccountListProps = {

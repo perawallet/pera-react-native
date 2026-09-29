@@ -38,6 +38,30 @@ export const isKycSubmitted = (state: Nullable<VerificationState>): boolean =>
 export const isKycVerified = (state: Nullable<VerificationState>): boolean =>
     state === VerificationState.Verified
 
+/**
+ * Baanx's compliance verdict on issuing a card, reported alongside
+ * `verificationState` and independent of it: a user whose documents passed can
+ * still be `ineligible`. Sent lowercase, unlike the verification states.
+ */
+export const CardEligibilityStatus = {
+    Eligible: 'eligible',
+    Ineligible: 'ineligible',
+} as const
+export type CardEligibilityStatus =
+    (typeof CardEligibilityStatus)[keyof typeof CardEligibilityStatus]
+
+/**
+ * Why Baanx won't issue a card yet. Only reasons we have copy for are
+ * modelled; anything else resolves to null and the UI keeps its generic
+ * "in review" wording rather than showing a raw enum to the user.
+ */
+export const CardEligibilityReason = {
+    /** Enhanced Due Diligence: extra compliance checks beyond standard KYC. */
+    EddRequired: 'edd_required',
+} as const
+export type CardEligibilityReason =
+    (typeof CardEligibilityReason)[keyof typeof CardEligibilityReason]
+
 /** User profile from GET /v1/user. KYC gate keys off `verificationState`. */
 export type CardUser = {
     id: string
@@ -47,4 +71,8 @@ export type CardUser = {
     phoneNumber?: string
     countryOfResidence?: string
     verificationState: VerificationState
+    /** Null when Baanx omits it or sends a status we don't model. */
+    eligibilityStatus: Nullable<CardEligibilityStatus>
+    /** Null unless Baanx sends a reason we have user-facing copy for. */
+    eligibilityReason: Nullable<CardEligibilityReason>
 }

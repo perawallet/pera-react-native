@@ -13,7 +13,7 @@
 import type { ViewProps } from 'react-native'
 import { PWView } from '@components/core'
 import { useStyles } from './styles'
-import { useDeeplinkListener } from '@hooks/useDeeplinkListener'
+import { useDeeplinkListener } from '@modules/deeplink'
 
 export type FullScreenLayoutProps = ViewProps
 
