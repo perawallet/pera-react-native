@@ -10,6 +10,20 @@ install_pinned_pnpm
 
 ./tools/validate-env.sh
 pnpm install --frozen-lockfile --prefer-offline
+
+# generate-config.sh bakes these into releaseTag/appBuildNumber, as Bitrise
+# sets them natively. An rc ships as its stable version, as on Bitrise.
+export BITRISE_GIT_TAG="${CI_TAG%%-rc.*}"
+# See android.sh for why the offset exists; the Chrome Web Store likewise
+# rejects an upload whose version isn't higher than the last.
+BUILD_NUMBER=$((CI_RUN_ID + ${BUILD_NUMBER_OFFSET:-0}))
+export BUILD_NUMBER
+export BITRISE_BUILD_NUMBER="$BUILD_NUMBER"
+# apps/browser/scripts/build.mjs stamps the manifest from these. Unlike
+# resolve_app_version, -alpha.N is kept: it lands in the display-only
+# version_name.
+export APP_VERSION="${BITRISE_GIT_TAG#v}"
+
 APP_ENV="$ENVIRONMENT" pnpm run generate:config
 
 # Unlike the mobile build, the extension also depends on workspace packages

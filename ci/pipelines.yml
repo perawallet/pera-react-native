@@ -188,6 +188,9 @@ pipelines:
           VALIDATE_PROFILE: web
           ENVIRONMENT: production
           APP_ENV: production
+          # As android's: raise past Bitrise's last BITRISE_BUILD_NUMBER
+          # before uploads are enabled, or the manifest version goes backwards.
+          BUILD_NUMBER_OFFSET: '0'
         secrets: *web_secrets
         timeout_minutes: 30
       notify:
@@ -237,6 +240,8 @@ pipelines:
           ENVIRONMENT: staging
           APP_ENV: staging
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+          # See web-production.
+          BUILD_NUMBER_OFFSET: '0'
         secrets: *web_secrets
         timeout_minutes: 30
       notify:
