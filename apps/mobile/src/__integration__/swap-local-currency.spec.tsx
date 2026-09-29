@@ -51,7 +51,11 @@ vi.mock('@perawallet/wallet-core-currencies', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-assets', () => ({
+// The chain module registers its assets adapter against the real registry.
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
     useAssetPricesQuery: () => ({
         data: new Map([
             [ALGO_ID, { assetId: ALGO_ID, usdPrice: new Decimal('0.2') }],
