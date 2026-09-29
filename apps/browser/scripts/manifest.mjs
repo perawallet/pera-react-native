@@ -37,19 +37,44 @@ export const toChromeVersion = packageVersion => {
         )
     if (!isValid) {
         throw new Error(
-            `apps/browser/package.json version "${packageVersion}" is not ` +
-                'MAJOR.MINOR.PATCH with an optional -prerelease tag',
+            `version "${packageVersion}" (APP_VERSION or ` +
+                'apps/browser/package.json) is not MAJOR.MINOR.PATCH with an ' +
+                'optional -prerelease tag',
         )
     }
     return parts.join('.')
 }
 
-export const stampManifest = (manifest, { packageVersion, appEnvironment }) => {
-    const version = toChromeVersion(packageVersion)
+const toBuildPart = buildNumber => {
+    if (!/^\d+$/.test(buildNumber) || Number(buildNumber) > MAX_VERSION_PART) {
+        throw new Error(
+            `BUILD_NUMBER "${buildNumber}" is not an integer from 0 to ${MAX_VERSION_PART}`,
+        )
+    }
+    return String(Number(buildNumber))
+}
+
+/**
+ * Mirrors mobile's app.config.builder.js: CI passes APP_VERSION (from the tag)
+ * and BUILD_NUMBER, falling back to package.json locally. The build number is
+ * the fourth part because Chrome has no separate build field, and it's what
+ * keeps two uploads of one tag (rc.1, rc.2) strictly increasing.
+ */
+export const stampManifest = (
+    manifest,
+    { packageVersion, appVersion, buildNumber, appEnvironment },
+) => {
+    const marketingVersion = appVersion || packageVersion
+    const version = [
+        toChromeVersion(marketingVersion),
+        ...(buildNumber ? [toBuildPart(buildNumber)] : []),
+    ].join('.')
     return {
         ...manifest,
         version,
-        ...(version === packageVersion ? {} : { version_name: packageVersion }),
+        ...(version === marketingVersion
+            ? {}
+            : { version_name: marketingVersion }),
         description:
             manifest.description + (DESCRIPTION_SUFFIXES[appEnvironment] ?? ''),
     }

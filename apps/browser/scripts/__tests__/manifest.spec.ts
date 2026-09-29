@@ -33,7 +33,7 @@ describe('toChromeVersion', () => {
     it.each(['1.4', '1.4.2.7', '01.4.2', '1.70000.0', 'v1.4.2', ''])(
         'rejects %j',
         version => {
-            expect(() => toChromeVersion(version)).toThrow(/package.json/)
+            expect(() => toChromeVersion(version)).toThrow(/MAJOR.MINOR.PATCH/)
         },
     )
 })
@@ -56,6 +56,28 @@ describe('stampManifest', () => {
 
         expect(manifest.version).toBe('0.1.0')
         expect(manifest.version_name).toBe('0.1.0-alpha.1')
+    })
+
+    it('prefers the CI version over package.json and appends the build number', () => {
+        const manifest = stampManifest(source, {
+            packageVersion: '0.1.0-alpha.1',
+            appVersion: '7.2.0',
+            buildNumber: '1234',
+            appEnvironment: 'production',
+        })
+
+        expect(manifest.version).toBe('7.2.0.1234')
+        expect(manifest.version_name).toBe('7.2.0')
+    })
+
+    it.each(['12a', '-1', '65536'])('rejects build number %j', buildNumber => {
+        expect(() =>
+            stampManifest(source, {
+                packageVersion: '1.4.2',
+                buildNumber,
+                appEnvironment: 'production',
+            }),
+        ).toThrow(/BUILD_NUMBER/)
     })
 
     it.each([
