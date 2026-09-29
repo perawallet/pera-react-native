@@ -18,7 +18,7 @@ import {
     CardUserUnavailableError,
     createCard,
 } from '../api/card-creation'
-import { postAlgorandDelegationApproval } from '../api/delegation'
+import { postDelegationApproval } from '../api/delegation'
 import { fetchUser } from '../api/user'
 import { DEFAULT_CARD_CURRENCY } from '../models'
 import { useCardStore } from '../store'
@@ -119,7 +119,7 @@ export const useCreateAndApproveCardMutation =
                 }
 
                 if (!approved) {
-                    await postAlgorandDelegationApproval({
+                    await postDelegationApproval({
                         network,
                         address,
                         currency,

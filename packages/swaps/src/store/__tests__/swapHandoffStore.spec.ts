@@ -24,6 +24,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useSwapHandoffStore } from '../swapHandoffStore'
 import type { SwapHandoffRecord } from '../../models'
 
@@ -146,5 +147,52 @@ describe('swaps/swapHandoffStore', () => {
         })
 
         expect(result.current.handoffs).toEqual({})
+    })
+
+    test('rehydrates a handoff persisted before swap execution moved into the chain package', async () => {
+        // Verbatim shape written by the pre-adapter store: same key, version 1.
+        const persisted = JSON.stringify({
+            state: {
+                handoffs: {
+                    'req-9': {
+                        swapIdStr: '90071992547409931',
+                        signRequestId: 'req-9',
+                        network: 'testnet',
+                        multisigAddress: 'JOINT_ADDR',
+                        deviceId: 'device-9',
+                        msigMetadata: {
+                            version: 1,
+                            threshold: 2,
+                            addresses: ['A', 'B'],
+                        },
+                        plan: [
+                            {
+                                slots: [
+                                    {
+                                        kind: 'preSigned',
+                                        signedTxnBase64: 'cHJlc2lnbmVk',
+                                    },
+                                    { kind: 'toSign', flatIndex: 0 },
+                                ],
+                            },
+                        ],
+                        expectedRawTransactionsBase64: ['cmF3'],
+                        registeredAt: 1700000000000,
+                        submission: {
+                            txIds: ['TX1'],
+                            submittedAt: 1700000001000,
+                        },
+                    },
+                },
+            },
+            version: 1,
+        })
+        getProvider().keyValueStorage.setItem('swap-handoff-store', persisted)
+
+        await useSwapHandoffStore.persist.rehydrate()
+
+        expect(useSwapHandoffStore.getState().handoffs).toEqual(
+            JSON.parse(persisted).state.handoffs,
+        )
     })
 })

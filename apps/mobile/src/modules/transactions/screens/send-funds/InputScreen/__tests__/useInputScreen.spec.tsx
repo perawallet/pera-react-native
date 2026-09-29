@@ -211,7 +211,7 @@ describe('useInputScreen', () => {
                 assets: [],
             },
         })
-        mockRequestBottomSheet.mockResolvedValue(true)
+        mockRequestBottomSheet.mockResolvedValue('close')
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
@@ -441,6 +441,55 @@ describe('useInputScreen', () => {
         expect(mockSetAmount).not.toHaveBeenCalled()
     })
 
+    describe('handlePaste', () => {
+        it.each([
+            ['12.5', '12.5'],
+            ['12,5', '12.5'],
+            [' 0.000001 ', '0.000001'],
+            ['.5', '0.5'],
+            ['007', '7'],
+        ])('accepts %j as %j', (pasted, expected) => {
+            const { result } = renderHook(() => useInputScreen())
+
+            act(() => {
+                result.current.handlePaste(pasted)
+            })
+
+            expect(result.current.cryptoValue).toBe(expected)
+        })
+
+        it.each(['abc', '1.2.3', '1,234.56', '1.0000001', '-1', '1e3', '.'])(
+            'ignores %j and keeps the current amount',
+            pasted => {
+                const { result } = renderHook(() => useInputScreen())
+                act(() => {
+                    result.current.handleKey('4')
+                })
+
+                act(() => {
+                    result.current.handlePaste(pasted)
+                })
+
+                expect(result.current.cryptoValue).toBe('4')
+            },
+        )
+
+        it('rejects a decimal for an asset without decimals', () => {
+            mockSendFundsState.selectedAssetId = '1'
+            const { result } = renderHook(() => useInputScreen())
+
+            act(() => {
+                result.current.handlePaste('2.5')
+            })
+            expect(result.current.cryptoValue).toBeUndefined()
+
+            act(() => {
+                result.current.handlePaste('3')
+            })
+            expect(result.current.cryptoValue).toBe('3')
+        })
+    })
+
     it('treats leading decimal point as 0.', () => {
         const { result } = renderHook(() => useInputScreen())
         act(() => {
@@ -517,7 +566,7 @@ describe('useInputScreen', () => {
                 assets: [],
             },
         })
-        mockRequestBottomSheet.mockResolvedValue(true)
+        mockRequestBottomSheet.mockResolvedValue('close')
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
@@ -571,7 +620,7 @@ describe('useInputScreen', () => {
         expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
     })
 
-    it('confirms close account when confirm resolves true', async () => {
+    it('sends max without closing when the user keeps the account open', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
                 amount: 100_000_000n,
@@ -579,7 +628,32 @@ describe('useInputScreen', () => {
                 assets: [],
             },
         })
-        mockRequestBottomSheet.mockResolvedValue(true)
+        mockRequestBottomSheet.mockResolvedValue('keepOpen')
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('100')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+        // maxAmount = 100 - 0.1 - 0.001 = 99.899
+        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
+        expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
+        expect(result.current.cryptoValue).toBe('99.899')
+        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
+    })
+
+    it('confirms close account when the user chooses to close', async () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 100_000n,
+                assets: [],
+            },
+        })
+        mockRequestBottomSheet.mockResolvedValue('close')
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {

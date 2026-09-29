@@ -24,6 +24,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useSwapsStore } from '../store'
 
 describe('swaps/store', () => {
@@ -35,7 +36,7 @@ describe('swaps/store', () => {
     test('store initializes with defaults', () => {
         const { result } = renderHook(() => useSwapsStore())
 
-        expect(result.current.fromAsset).toBe('0')
+        expect(result.current.fromAsset).toBeNull()
         expect(result.current.toAsset).toBe('31566704')
     })
 
@@ -136,7 +137,7 @@ describe('swaps/store', () => {
             result.current.resetState()
         })
 
-        expect(result.current.fromAsset).toBe('0')
+        expect(result.current.fromAsset).toBeNull()
         expect(result.current.toAsset).toBe('31566704')
         expect(result.current.slippage).toBe('2.5')
     })
@@ -151,7 +152,25 @@ describe('swaps/store', () => {
             useSwapsStore.getState().setFromAsset('999')
         })
         act(() => registration!.resetState())
-        expect(useSwapsStore.getState().fromAsset).toBe('0')
+        expect(useSwapsStore.getState().fromAsset).toBeNull()
         expect(() => registration!.clearStorage()).not.toThrow()
+    })
+
+    test('rehydrates the settings persisted before the native-asset default moved to the chain adapter', async () => {
+        getProvider().keyValueStorage.setItem(
+            'swaps-store',
+            JSON.stringify({
+                state: { slippage: '1.5', isLocalCurrencyInput: true },
+                version: 0,
+            }),
+        )
+
+        await useSwapsStore.persist.rehydrate()
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            slippage: '1.5',
+            isLocalCurrencyInput: true,
+            fromAsset: null,
+        })
     })
 })

@@ -19,6 +19,13 @@
 // The fix is to never import `@gorhom/bottom-sheet` on web at all — the
 // PWInBottomSheetContext gate only picks which scroll component to use, it
 // doesn't avoid gorhom.
+import {
+    useImperativeHandle,
+    useRef,
+    type ComponentRef,
+    type ReactNode,
+    type Ref,
+} from 'react'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useKeyboardState } from 'react-native-keyboard-controller'
@@ -26,9 +33,9 @@ import { getTestProps } from '@utils/test-id-helper'
 import { PWView } from '../PWView'
 import { useStyles } from './styles'
 
-import type { ReactNode } from 'react'
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import type { HorizontalPaddingMode } from '../PWScreen'
+import type { PWSheetLayoutScrollHandle } from './types'
 
 export type PWSheetLayoutProps = {
     header?: ReactNode
@@ -36,6 +43,7 @@ export type PWSheetLayoutProps = {
     footer?: ReactNode
     horizontalPadding?: HorizontalPaddingMode
     onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+    scrollRef?: Ref<PWSheetLayoutScrollHandle>
     testID?: string
 }
 
@@ -45,8 +53,17 @@ export const PWSheetLayout = ({
     footer,
     horizontalPadding = 'xl',
     onScroll,
+    scrollRef,
     testID,
 }: PWSheetLayoutProps) => {
+    const scrollViewRef = useRef<ComponentRef<typeof ScrollView>>(null)
+    useImperativeHandle(
+        scrollRef,
+        () => ({
+            scrollToEnd: options => scrollViewRef.current?.scrollToEnd(options),
+        }),
+        [],
+    )
     const insets = useSafeAreaInsets()
     const isKeyboardVisible = useKeyboardState(state => state.isVisible)
     const styles = useStyles({
@@ -58,6 +75,7 @@ export const PWSheetLayout = ({
 
     const scrollable = (
         <ScrollView
+            ref={scrollViewRef}
             style={styles.scrollView}
             stickyHeaderIndices={header != null ? [0] : undefined}
             showsVerticalScrollIndicator={false}

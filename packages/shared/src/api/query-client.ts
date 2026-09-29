@@ -20,13 +20,24 @@ import ky, {
     isHTTPError,
     isTimeoutError,
 } from 'ky'
-import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    config,
+    configuredScopes,
+    getChainConfig,
+    getPeraServicesConfig,
+    hasPeraService,
+    type PeraService,
+} from '@perawallet/wallet-core-config'
 import type {
     RequestConfiguration,
     RequestRetryOverrides,
     ResponseConfiguration,
 } from '../models/queries'
-import { type Network, Networks } from '../models/base-types'
+import type { Network } from '../models/base-types'
 import { logger, parsePrecisionSafeJson } from '../utils'
 import {
     PeraNetworkError,
@@ -191,13 +202,29 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             throw new Error('URL is required')
         }
 
+        const scope = requestScope(requestConfig)
+
         ensureClientsBuilt()
 
-        const backends = clients.get(requestConfig.network)
+        // Refuse before ky is invoked, not in a `beforeRequest` hook: ky
+        // builds the `Request` in its constructor, so a prefix-less client hits
+        // `new Request('v1/assets/')` first and a spec-compliant fetch throws a
+        // bare `TypeError: Failed to parse URL`. That would normalize into a
+        // generic PeraNetworkError('unknown') — the exact outcome this typed
+        // error exists to avoid. Checked before the client lookup, so a scope
+        // with no clients at all gets the typed error too.
+        if (
+            requestConfig.backend === 'pera' &&
+            !isPeraRequestServed(scope, requestConfig.service)
+        ) {
+            throw new PeraServiceUnavailableError(scope, requestConfig.service)
+        }
+
+        const backends = clients.get(scopeClientKey(scope))
 
         if (!backends) {
             throw new Error(
-                'Could not get backends for ' + requestConfig.network,
+                'Could not get backends for ' + scopeClientKey(scope),
             )
         }
 
@@ -207,19 +234,6 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             throw new Error(
                 'Could not get KY client for ' + requestConfig.backend,
             )
-        }
-
-        // Refuse before ky is invoked, not in a `beforeRequest` hook: ky
-        // builds the `Request` in its constructor, so a prefix-less client hits
-        // `new Request('v1/assets/')` first and a spec-compliant fetch throws a
-        // bare `TypeError: Failed to parse URL`. That would normalize into a
-        // generic PeraNetworkError('unknown') — the exact outcome this typed
-        // error exists to avoid.
-        if (
-            requestConfig.backend === 'pera' &&
-            networksWithoutPeraBackend.has(requestConfig.network)
-        ) {
-            throw new PeraServiceUnavailableError(requestConfig.network)
         }
 
         try {
@@ -302,7 +316,8 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
     }
 }
 
-const clients = new Map<Network, BackendInstances>()
+// Keyed by scopeClientKey.
+const clients = new Map<string, BackendInstances>()
 
 const setStandardHeaders = ({ request }: BeforeRequestState) => {
     request.headers.set('Content-Type', 'application/json')
@@ -378,13 +393,13 @@ export const SINGLE_USE_POST_RETRY: RequestRetryOverrides = {
     shouldRetry: ({ error }) => isNetworkTransportError(error),
 }
 
-const createPeraClient = (network: Network): KyInstance =>
+const createPeraClient = (backendUrl: string): KyInstance =>
     ky.create({
         hooks: {
             ...standardHooks,
             beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
         },
-        prefix: getNetworkConfig(network).backendUrl,
+        prefix: backendUrl,
         retry: peraRetryConfig,
     })
 
@@ -423,10 +438,10 @@ const createTokenHeaderClient = (
     })
 
 const createChainClients = (
-    network: Network,
+    scope: ChainScope,
 ): Pick<BackendInstances, 'algod' | 'indexer'> => {
     const { algodUrl, indexerUrl, algodToken, indexerToken } =
-        getNetworkConfig(network)
+        getChainConfig(scope)
 
     return {
         algod: createTokenHeaderClient(
@@ -442,59 +457,81 @@ const createChainClients = (
     }
 }
 
-/**
- * Networks whose Pera `backendUrl` is empty — i.e. no Pera deployment exists
- * for them (betanet, custom). Recorded by the same pass that builds the
- * clients, from the same `getNetworkConfig` read `createPeraClient` makes, so
- * the request-path guard in `createFetchClient` can never disagree with what
- * the client was actually built against. Populated before any request can be
- * served, because both go through `ensureClientsBuilt`.
- */
-const networksWithoutPeraBackend = new Set<Network>()
+// An in-memory key, deliberately not toScopeKey: that validates the chain id
+// against the compiled-in union and throws for a test's fixture chain, and
+// nothing keyed by it is persisted.
+const scopeClientKey = (scope: ChainScope): string =>
+    `${scope.chainId}/${scope.networkId}`
 
-const buildClientsFor = (network: Network): BackendInstances => {
-    if (getNetworkConfig(network).backendUrl === '') {
-        networksWithoutPeraBackend.add(network)
+const requestScope = (
+    requestConfig: RequestConfiguration<unknown>,
+): ChainScope =>
+    requestConfig.scope !== undefined
+        ? requestConfig.scope
+        : scopeForLegacyNetwork(requestConfig.network)
+
+/**
+ * Scopes with a non-empty Pera `backendUrl` — i.e. a Pera deployment exists
+ * for them. Recorded by the same pass that builds the clients, from the same
+ * `getPeraServicesConfig` read `createPeraClient` is given, so the request-path
+ * guard in `createFetchClient` can never disagree with what the client was
+ * actually built against. An allow-list, so a scope that was never built
+ * counts as having no deployment.
+ */
+const scopesWithPeraBackend = new Set<string>()
+
+// A request that names no service only needs a deployment; one that names a
+// service also needs the scope's configuration to list it.
+const isPeraRequestServed = (
+    scope: ChainScope,
+    service: PeraService | undefined,
+): boolean =>
+    scopesWithPeraBackend.has(scopeClientKey(scope)) &&
+    (service === undefined || hasPeraService(scope, service))
+
+const buildClientsFor = (scope: ChainScope): BackendInstances => {
+    const { backendUrl } = getPeraServicesConfig(scope)
+    if (backendUrl !== '') {
+        scopesWithPeraBackend.add(scopeClientKey(scope))
     }
 
     return {
-        ...createChainClients(network),
-        pera: createPeraClient(network),
+        ...createChainClients(scope),
+        pera: createPeraClient(backendUrl),
         backup: createBackupClient(),
     }
 }
 
 let clientsInitialized = false
 
-// On first use, NEVER at import time: importing this module must not require
-// getNetworkConfig() to resolve, since consuming packages' tests mock it as a
-// bare `vi.fn()` and an eager build crashes their collection.
+// On first use, NEVER at import time: importing this module must not call
+// config's getters, since consuming packages' tests mock them as bare
+// `vi.fn()`s and an eager build crashes their collection.
 //
-// Builds EVERY member of the Networks union, not just the one needed. Do not
-// replace with a per-network build-on-miss: updateBackendHeaders /
-// updateNodeEndpoints can run before any request has, and would then silently
-// skip the networks nothing had requested yet.
+// Builds EVERY configured scope, not just the one needed. Do not replace with
+// a per-scope build-on-miss: updateBackendHeaders / updateNodeEndpoints can run
+// before any request has, and would then silently skip the scopes nothing had
+// requested yet.
 const ensureClientsBuilt = (): void => {
     if (clientsInitialized) return
     clientsInitialized = true
 
-    for (const network of Object.values(Networks)) {
-        clients.set(network, buildClientsFor(network))
+    for (const scope of configuredScopes()) {
+        clients.set(scopeClientKey(scope), buildClientsFor(scope))
     }
 }
 
 /**
  * Rebuilds a single network's algod/indexer ky instances against new endpoints.
  * Called from a `blockchain` subscription to the custom-network config store,
- * because `shared` cannot import `blockchain`. The `pera` instance is left
- * untouched — the custom-network config only carries chain endpoints.
+ * because `shared` cannot import `blockchain` and builds its clients only once.
+ * The `pera` instance is left untouched — the custom-network config only
+ * carries chain endpoints.
  *
- * Tokens are part of the endpoint, so they arrive with it and are NEVER
- * re-derived from `getNetworkConfig` here: `custom` has no baked chain config
- * (its tokens are `''` by design), so re-deriving would silently drop the ones
- * the developer entered — a token-protected node then 401s every ky-transport
- * read (indexer history, indexer asset lookups) while the AlgorandClient
- * transport, which does read the store, keeps working.
+ * Tokens arrive with the endpoints and are never re-read here, so the ky
+ * clients use exactly what the caller resolved — a custom node's
+ * developer-entered tokens included, which a token-protected node needs on
+ * every ky-transport read (indexer history, indexer asset lookups).
  */
 export const updateNodeEndpoints = (
     network: Network,
@@ -505,14 +542,15 @@ export const updateNodeEndpoints = (
         indexerToken: string
     },
 ): void => {
-    // Must go through the gate, not `clients.get(network)` with an early
+    // Must go through the gate, not `clients.get(…)` with an early
     // return: the map is lazily populated, so a bail-on-miss would
     // silently discard an override written before that network's first request.
     ensureClientsBuilt()
-    const existing = clients.get(network)
+    const key = scopeClientKey(scopeForLegacyNetwork(network))
+    const existing = clients.get(key)
     if (!existing) return
 
-    clients.set(network, {
+    clients.set(key, {
         ...existing,
         algod: createTokenHeaderClient(
             endpoints.algodUrl,
@@ -549,8 +587,8 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
             },
         })
 
-    clients.forEach((client, network) => {
-        clients.set(network, {
+    clients.forEach((client, key) => {
+        clients.set(key, {
             // algod/indexer deliberately excluded: they carry their own
             // X-Algo-API-Token / X-Indexer-API-Token and never ran
             // setStandardHeaders on the normal path. Re-applying it here would

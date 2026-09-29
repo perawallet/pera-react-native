@@ -15,6 +15,7 @@ import { Decimal } from 'decimal.js'
 import { useCardStore } from '@perawallet/wallet-core-card'
 import { useOnChainAccountInformationQuery } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     baseUnitsToDisplayUnits,
     useNetwork,
@@ -39,7 +40,7 @@ export const useCardEscrowBalance = (): UseCardEscrowBalanceResult => {
     const { network } = useNetwork()
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
     const usdcAssetId = useMemo(
-        () => getKnownAssetId('USDC', network),
+        () => getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
         [network],
     )
 

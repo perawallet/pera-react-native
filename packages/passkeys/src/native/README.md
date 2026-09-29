@@ -3,7 +3,7 @@
 The passkey credential provider (`react-native-passkey-autofill`) runs in its own process and shares
 this app's keystore MMKV instance (`PASSKEYS_MMKV_ID = "keystore"`) and master key.
 
-## The record layout is split, and only half of it moved
+## Where credential records live
 
 Keep these two apart, because they are stored differently.
 
@@ -12,39 +12,37 @@ Keep these two apart, because they are stored differently.
 `metadataPrefix` and `materialPrefix`. Both scan `k/` for parent candidates, which is why neither
 provider needs a bare-id shadow record any more.
 
-**Credential records are still bare-id only, on both platforms.** iOS's only path that builds a
-credential from the keystore, `allKeystoreCredentials()`, guards on `dataArray(keyData["publicKey"])`
-_and_ `dataArray(keyData["privateKey"])`. `dataArray` accepts only a JSON number array, so a split
-`k/` record fails the guard silently: its `publicKey` is `{"$u8": …}` and it carries no `privateKey`
-at all. iOS has no credential-from-metadata path.
+**Android credentials live in `k/`+`m/`.** `k/<id>` is the plaintext metadata the chooser lists
+without decrypting anything. `m/<id>` is the sealed private key; for a biometric-gated credential it
+is the biometric-cipher ciphertext instead, with the IV kept in `k/` as `privateKeyEnc.iv`. The
+provider opens `m/` only in `getKeyPair`, after the user has picked the credential. Pera's patch of
+the package supplies that reader and writer.
 
-Android's `credentialFromMetadataRecord` (`CredentialRepository.kt`) sets `privateKey = ""` and
-re-derives on demand, which cannot reproduce a legacy-imported credential. `userName` is matched
-case-sensitively by `deriveLegacyPasskeyCredential.ts` while the provider lowercases it, and the
-import writes no `parentKeyId` or `scheme`, so `schemeOf` pins the credential to `bip32-ed25519` even
-though it was derived from a pbkdf2 main key.
+`splitFlatPasskeyCredentials` (`extensions/provider/src/keystore/passkeyCredentials/`) moves every
+flat Android credential into `k/`+`m/` on each launch until none remain, and the legacy import writes
+split records directly. A credential that is still flat is not offered in the chooser until then,
+because the chooser never decrypts to list.
 
-So `nativeProviderRecord.ts` is the single expression of the credential contract. Read its module doc
-before changing anything here, in particular why the keystore's own `sealData` and `encode` cannot be
-used (both fail _silently_ against the provider), and why credentials are written as a flat bare-id
-record with `privateKey` as a JSON number array.
+**iOS credentials are still bare-id only.** iOS's only path that builds a credential from the
+keystore, `allKeystoreCredentials()`, guards on `dataArray(keyData["publicKey"])` and a non-nil
+`keyData["privateKey"]` — only the former requires a JSON number array. A split `k/` record fails
+the guard silently: its `publicKey` is `{"$u8": …}` and it carries no `privateKey` key at all. iOS
+has no credential-from-metadata path.
 
-## Upstream's adoption revision eats the flat record
+So on iOS, `nativeProviderRecord.ts` is the single expression of the credential contract. Read its
+module doc before changing anything here, in particular why the keystore's own `sealData` and
+`encode` cannot be used (each fails silently, but against a different reader), and why credentials
+are written as a flat bare-id record with `privateKey` as a JSON number array.
 
-Because credentials are flat, upstream's `adopt-flat-records` revision decrypts a migrated
-credential's flat record perfectly well: its envelope and plaintext shapes are exactly what
-`adoptLegacyRecords` and `decode` accept. It then sees a top-level `privateKey` `Uint8Array`, adopts
-it into `k/`+`m/`, and deletes the flat original that neither provider can read.
+## Upstream's adoption revision and `0002`
 
+Upstream's `adopt-flat-records` revision decrypts a flat credential record, sees its top-level
+`privateKey`, splits it into `k/`+`m/`, and deletes the flat original. On Android that is exactly the
+shape the provider reads. On iOS it makes the credential invisible, so
 `extensions/provider/src/keystore/migrations/repairs/0002-rematerialize-passkey-credentials.ts`
-is the backstop. It runs
-after upstream's adoption, in the same launch, and un-adopts every migrated credential:
-rematerialising the flat copy from the `k/`+`m/` pair, verifying the write reads back through the
-same envelope and decode a provider would use, and only then removing `k/<id>` and `m/<id>`.
-
-**This is deliberately not a dual-write.** Android's `CredentialRepository.getCredential` tries the
-split layout _first_ and returns on a hit before ever reading the bare id, so a `k/` record left
-beside a freshly rematerialized flat one still wins on Android and re-derives the wrong key.
+un-adopts it again in the same launch. It rematerialises the flat copy, verifies that the write reads
+back through the provider's envelope and decode, and only then removes `k/<id>` and `m/<id>`. It
+returns immediately on Android.
 
 The repair restates `nativeProviderRecord.ts`'s seal function rather than importing it, because
 `packages/passkeys` already depends on `@perawallet/wallet-extension-provider` and the reverse import
@@ -63,11 +61,12 @@ That spec runs three checks, and the third is the one that matters:
 - The golden envelope catches exactly that, because it is asserted as a frozen literal rather than
   re-derived, so it has no writer to agree with.
 
-## Moving credentials into `k/`+`m/`
+## Moving iOS credentials into `k/`+`m/`
 
-The provider has never been asked to read a credential from the split layout, so this has not
-started. When it does, the migration has to handle everything the fixture corpus in
-`__tests__/nativeProviderRecord.spec.ts` pins:
+The iOS provider has never been asked to read a credential from the split layout, so this has not
+started there. Android's `splitFlatPasskeyCredentials` already handles everything the fixture corpus
+in `__tests__/nativeProviderRecord.spec.ts` pins, and an iOS migration would have to handle the same
+things:
 
 - Both envelope shapes: sealed `{iv, tag, content}` _and_ the unsealed base64url payload, which the
   provider's read path still accepts although it only writes sealed records.
@@ -76,7 +75,8 @@ started. When it does, the migration has to handle everything the fixture corpus
 - Byte fields as JSON number arrays, not `{$u8}`.
 - `privateKeyEnc` as an object rather than a `Uint8Array`, carried across verbatim. A generic
   secret-lifter that only understands byte arrays drops it, which destroys a biometric-gated
-  credential while appearing to succeed.
+  credential while appearing to succeed. On Android the IV stays in `k/` and the ciphertext is sealed
+  into `m/`.
 
 ## On-device checklist
 
@@ -84,9 +84,8 @@ None of this runs in CI; each item needs a real device and, in places, two build
 
 1. Create, assert and delete a credential on an iOS simulator and a physical Android device.
    Confirm the `needs-migration` banner appears for a pre-existing credential and clears once it is
-   removed and recreated, and that the credential-provider prompt says "Pera". On Android,
-   `getStoredCredentials` is iOS-only by design (`extensions/passkey-autofill/src/service.ts`), so
-   an empty Android passkey list for un-adopted credentials is correct.
+   removed and recreated, and that the credential-provider prompt says "Pera". On Android, Settings →
+   Passkeys lists credentials from their `k/` records.
 2. Relying-party scoping: a get-credential request for one origin must not surface credentials
    belonging to another. The package enforces this in its `credentials/RelyingParty.kt`: the
    provider service offers only credentials stored for the requested rpId (or, when none is sent,
@@ -98,6 +97,9 @@ None of this runs in CI; each item needs a real device and, in places, two build
    icon must be withheld too. Re-registration is impossible in that state, so offering
    delete-and-recreate would walk the user into a lockout. Non-flagged passkeys must stay deletable,
    since they are derivable from the recovery passphrase, which is the point of the flag.
+4. Android upgrade: with a credential created on a build before the split layout, the chooser offers
+   no Pera passkey until Pera has been opened once. After that, `k/<id>` and `m/<id>` exist, the bare
+   id is gone, and sign-in works, with a biometric prompt for a biometric-gated credential.
 
 The flagged half of step 3 is not reachable on device without a legacy-import dataset, because the
 `metadata.migration: "needs-migration"` marker is only written by the legacy import path.
@@ -118,9 +120,9 @@ The 96-byte extended root and the 16-32-byte BIP39 entropy are different bytes, 
 yields two different main keys depending on which you parent on, and every passkey under the wrong
 one is unrecoverable from the mnemonic alone. Keep the two platforms in step.
 
-The provider persists each credential's private key (`privateKey`, or `privateKeyEnc` when
-biometric-gated) and `getCredential` loads it back. The HD root is consulted only when minting a new
-credential. Two consequences follow:
+The provider persists each credential's private key (in `m/<id>` on Android, inside the flat record
+on iOS; biometric-wrapped when gated) and `getCredential` loads it back. The HD root is consulted
+only when minting a new credential. Two consequences follow:
 
 - Changing which root new credentials derive from does not break existing credentials, because
   sign-in never touches the root.

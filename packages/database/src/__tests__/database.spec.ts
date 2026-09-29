@@ -24,7 +24,7 @@ vi.mock('../migrator', () => ({
 }))
 
 vi.mock('../migrations', () => ({
-    default: [],
+    migrations: [],
 }))
 
 describe('deleteDatabase', () => {

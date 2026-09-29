@@ -13,7 +13,7 @@
 import type { SignedTransaction, Transaction, indexerModels } from 'algosdk'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { Address } from 'algosdk'
-import type { PQSchemeId } from '../pq/schemes'
+import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 
 type IndexerTransaction = indexerModels.Transaction
 

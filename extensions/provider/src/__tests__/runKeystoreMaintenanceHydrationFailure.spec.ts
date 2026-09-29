@@ -40,6 +40,11 @@ vi.mock('@algorandfoundation/react-native-keystore', () => {
 vi.mock('../keystore/maintenance', () => ({
     runMaterialRepair: mocks.runMaterialRepair,
     readPersistedKeys: mocks.readPersistedKeys,
+    runPasskeyCredentialSplit: vi.fn(async () => ({
+        split: [],
+        normalized: [],
+        failed: [],
+    })),
 }))
 
 vi.mock('@tanstack/store', () => ({

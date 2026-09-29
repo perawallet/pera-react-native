@@ -20,7 +20,7 @@ pipeline, so a new protocol needs a handler and nothing else. The bridge runs bo
 whose peer stops waiting for an answer reports `onRequestExpired`, and the adapter withdraws the
 sign request it is holding for the user, since answering late would only fail on the wire.
 
-`src/testing/handler-contract.ts` is the contract suite every handler runs against. An assertion a
+`src/__tests__/handler-contract.ts` is the contract suite every handler runs against. An assertion a
 legitimate handler cannot satisfy is an interface finding, not a reason to bend the handler.
 
 `src/handlerKit.ts` (`createHandlerKit`) is the scaffolding a handler closure would otherwise

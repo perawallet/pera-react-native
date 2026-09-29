@@ -356,6 +356,7 @@ describe('env-loader', () => {
             profilingEnabled: false,
             pollingEnabled: true,
             disableScreenCapturePrevention: false,
+            chains: { enabled: ['algorand'], capabilities: {} },
             arc59: {
                 testnet: {
                     appId: 643020148n,

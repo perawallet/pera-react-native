@@ -47,17 +47,6 @@ describe('useExpandedFlowNavigation', () => {
         expect(navigate).toHaveBeenCalledTimes(1)
     })
 
-    it('navigates to BackupWallet when the flow is backup-wallet', () => {
-        consumeInitialExpandedFlowMock.mockReturnValue('backup-wallet')
-        const navigate = vi.fn()
-        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
-
-        result.current()
-
-        expect(navigate).toHaveBeenCalledWith('BackupWallet')
-        expect(navigate).toHaveBeenCalledTimes(1)
-    })
-
     it('navigates to ScanQR when the flow is scan', () => {
         consumeInitialExpandedFlowMock.mockReturnValue('scan')
         const navigate = vi.fn()
@@ -182,7 +171,7 @@ describe('useOnboardingExpandedFlowNavigation', () => {
         expect(setIsOnboardingMock).toHaveBeenCalledWith(true)
     })
 
-    it.each(['add-account', 'backup-wallet', 'scan', null, 'evil'])(
+    it.each(['add-account', 'scan', null, 'evil'])(
         'ignores %s, which has no onboarding-stack destination',
         flow => {
             consumeInitialExpandedFlowMock.mockReturnValue(flow)

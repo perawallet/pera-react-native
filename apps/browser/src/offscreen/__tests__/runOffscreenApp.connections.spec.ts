@@ -36,12 +36,15 @@ const {
     createStorageSessionKeyStore,
     importLegacyConnections,
     canSignWith,
-    customNetworkGetState,
+    getCustomNetworkConfig,
     dappTransport,
     createChromeDappTransport,
     dappHandler,
     createDappConnectionHandler,
     importLegacyDappPermissions,
+    registerAlgorandChain,
+    setCapabilityOverrides,
+    readCapabilityOverrides,
 } = vi.hoisted(() => {
     const handleControlMessage = vi.fn()
     const registry = { register: vi.fn() }
@@ -74,12 +77,15 @@ const {
             skipped: 0,
         })),
         canSignWith: vi.fn((_account: { address: string }) => true),
-        customNetworkGetState: vi.fn(),
+        getCustomNetworkConfig: vi.fn(),
         dappTransport,
         createChromeDappTransport: vi.fn(() => dappTransport),
         dappHandler,
         createDappConnectionHandler: vi.fn((_options: unknown) => dappHandler),
         importLegacyDappPermissions: vi.fn(async () => ({ imported: 0 })),
+        registerAlgorandChain: vi.fn(),
+        setCapabilityOverrides: vi.fn(),
+        readCapabilityOverrides: vi.fn(),
     }
 })
 
@@ -104,6 +110,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         connections: { store: connectionStore },
+        chains: { setCapabilityOverrides },
         keyValueStorage,
     }),
     // Never settles: this context registers no engine key source, so a boot
@@ -141,14 +148,18 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         getState: networkGetState,
         persist: { rehydrate: vi.fn() },
     },
-    useCustomNetworkStore: {
-        getState: customNetworkGetState,
-        persist: { rehydrate: vi.fn() },
-    },
+    getCustomNetworkConfig,
 }))
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
     importLegacyDappPermissions,
+}))
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    readCapabilityOverrides,
+}))
+vi.mock('@perawallet/wallet-core-chain-algorand', () => ({
+    ALGORAND_CHAIN_ID: 'algorand',
+    registerChain: registerAlgorandChain,
 }))
 vi.mock('@perawallet/wallet-core-connections', () => ({
     createConnectionRegistry,
@@ -172,8 +183,8 @@ describe('runOffscreenApp connections wiring', () => {
             accounts: [{ address: 'ADDR1' }, { address: 'ADDR2' }],
         })
         networkGetState.mockReturnValue({ network: 'mainnet' })
-        customNetworkGetState.mockReturnValue({
-            customNetwork: { genesisHash: 'custom-genesis' },
+        getCustomNetworkConfig.mockReturnValue({
+            genesisHash: 'custom-genesis',
         })
         canSignWith.mockReturnValue(true)
     })
@@ -205,12 +216,31 @@ describe('runOffscreenApp connections wiring', () => {
         expect(registry.register).toHaveBeenCalledWith(dappHandler)
         const options = createDappConnectionHandler.mock.calls[0]?.[0] as {
             transport: unknown
+            chainId: string
             getNetwork: () => string
             getCustomNetworkGenesisHash: () => string | undefined
         }
         expect(options.transport).toBe(dappTransport)
+        expect(options.chainId).toBe('algorand')
         expect(options.getNetwork()).toBe('mainnet')
         expect(options.getCustomNetworkGenesisHash()).toBe('custom-genesis')
+    })
+
+    it('registers the Algorand chain adapters before building the dapp handler', async () => {
+        await boot()
+
+        expect(registerAlgorandChain).toHaveBeenCalledOnce()
+        expect(registerAlgorandChain.mock.invocationCallOrder[0]).toBeLessThan(
+            createDappConnectionHandler.mock.invocationCallOrder[0],
+        )
+    })
+
+    it('installs the remote and developer capability layers on the chain registry', async () => {
+        await boot()
+
+        expect(setCapabilityOverrides).toHaveBeenCalledWith(
+            readCapabilityOverrides,
+        )
     })
 
     it('offers the dapp handler only the accounts the wallet can sign with', async () => {

@@ -28,6 +28,7 @@ import { useIntegrityTokenSync } from '../useIntegrityTokenSync.web'
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { webIntegrityBearerEnabled: false },
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 const TOKEN = {

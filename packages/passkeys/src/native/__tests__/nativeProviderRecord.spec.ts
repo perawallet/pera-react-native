@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished, vi } from 'vitest'
 import {
     fromNativeByteArray,
     openNativeProviderRecord,
@@ -137,5 +137,20 @@ describe('native credential-provider record contract', () => {
         await expect(
             openNativeProviderRecord(subtle, MASTER_KEY, canary14Envelope),
         ).rejects.toThrow(/expected iv, tag and content/)
+    })
+
+    it('zeroes the decrypted plaintext once the record is parsed', async () => {
+        const sealed = await sealNativeProviderRecord(
+            subtle,
+            MASTER_KEY,
+            CREDENTIAL_WITH_PLAIN_KEY,
+        )
+        const decrypt = vi.spyOn(subtle, 'decrypt')
+        onTestFinished(() => decrypt.mockRestore())
+
+        await openNativeProviderRecord(subtle, MASTER_KEY, sealed)
+
+        const plaintext: ArrayBuffer = await decrypt.mock.results[0]!.value
+        expect(new Uint8Array(plaintext).every(byte => byte === 0)).toBe(true)
     })
 })

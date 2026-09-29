@@ -11,9 +11,28 @@
  */
 
 // @vitest-environment node
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
+import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
+import { generateHDMasterKey } from '../hdwallet-utils'
 import { prepareHDMasterKey } from '../prepare-hd-master-key'
 import { mnemonicWordsToIndices } from '../mnemonic-indices'
+
+vi.mock('@algorandfoundation/xhd-wallet-api', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@algorandfoundation/xhd-wallet-api')
+        >()
+    return { ...actual, fromSeed: vi.fn(actual.fromSeed) }
+})
+
+// Spied, not replaced, so a test can inspect the real master key it produced.
+vi.mock('../hdwallet-utils', async importOriginal => {
+    const actual = await importOriginal<typeof import('../hdwallet-utils')>()
+    return {
+        ...actual,
+        generateHDMasterKey: vi.fn(actual.generateHDMasterKey),
+    }
+})
 
 const USER_MNEMONIC =
     'achieve plunge scare have music possible will garden expect kangaroo impulse deny obvious inhale expand process betray voice crash insane electric mean test rude'
@@ -50,5 +69,21 @@ describe('prepareHDMasterKey', () => {
             .map(byte => byte.toString(16).padStart(2, '0'))
             .join('')
         expect(aHex).not.toBe(bHex)
+    })
+
+    test('zeroes the seed and entropy when root-key derivation throws', async () => {
+        vi.mocked(fromSeed).mockImplementationOnce(() => {
+            throw new Error('bad seed')
+        })
+
+        await expect(
+            prepareHDMasterKey({ mnemonicIndices: USER_MNEMONIC_INDICES }),
+        ).rejects.toThrow('bad seed')
+
+        const masterKey = await vi
+            .mocked(generateHDMasterKey)
+            .mock.results.at(-1)!.value
+        expect(masterKey.seed.every((byte: number) => byte === 0)).toBe(true)
+        expect(masterKey.entropy.every((byte: number) => byte === 0)).toBe(true)
     })
 })

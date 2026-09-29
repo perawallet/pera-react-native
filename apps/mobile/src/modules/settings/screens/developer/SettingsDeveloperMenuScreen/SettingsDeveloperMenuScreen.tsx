@@ -16,16 +16,22 @@ import { useSettingsDeveloperMenuScreen } from './useSettingsDeveloperMenuScreen
 
 export const SettingsDeveloperMenuScreen = () => {
     const { t } = useLanguage()
-    const { isGalleryAvailable, handleNavigate, handleOpenTestingDapp } =
-        useSettingsDeveloperMenuScreen()
+    const {
+        isGalleryAvailable,
+        isFeatureFlagsAvailable,
+        handleNavigate,
+        handleOpenTestingDapp,
+    } = useSettingsDeveloperMenuScreen()
 
     return (
         <PWScreen>
-            <PWListItem
-                onPress={() => handleNavigate('FeatureFlags')}
-                icon='sliders'
-                title={t('screens.feature_flags')}
-            />
+            {isFeatureFlagsAvailable && (
+                <PWListItem
+                    onPress={() => handleNavigate('FeatureFlags')}
+                    icon='sliders'
+                    title={t('screens.feature_flags')}
+                />
+            )}
             <PWListItem
                 onPress={() => handleNavigate('MigrationViewer')}
                 icon='code'

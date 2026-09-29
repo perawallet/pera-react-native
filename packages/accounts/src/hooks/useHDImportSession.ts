@@ -11,18 +11,23 @@
  */
 
 import { useCallback } from 'react'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import { prepareHDMasterKey, useKMS } from '@perawallet/wallet-core-kms'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    handOffSecret,
+    prepareHDMasterKey,
+    useKMS,
+} from '@perawallet/wallet-core-kms'
 import { useHDImportSessionStore } from '../import-session'
-import { discoverAccounts, createXHDGetPublicKey } from '../account-discovery'
-import type { HDWalletAccount } from '../models/accounts'
+import { discoverAccounts } from '../account-discovery'
+import { accountsAdapterFor } from '../chain-adapter'
+import type { DerivationType, HDWalletAccount } from '../models/accounts'
 import { useAccountsStore } from '../store'
 import { HDImportSessionNotFoundError } from '../errors'
 
 export type UseHDImportSessionResult = {
     prepareImport: (params: { mnemonicIndices?: Uint16Array }) => Promise<{
         walletKeyId: string
-        derivationType: BIP32DerivationType
+        derivationType: DerivationType
     }>
     discoverImportAccounts: (params: {
         walletKeyId: string
@@ -38,20 +43,21 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
     const { persistHDMasterKey, generateDerivedKey, removeKeyAndChildren } =
         useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
+    const { network } = useNetwork()
 
     const prepareImport = useCallback(
         async ({ mnemonicIndices }: { mnemonicIndices?: Uint16Array }) => {
             const prepared = await prepareHDMasterKey({ mnemonicIndices })
-            const derivationType = BIP32DerivationType.Peikert
+            const derivationType = accountsAdapterFor(network).hdDerivationType
             useHDImportSessionStore.getState().start({
                 walletKeyId: prepared.keyId,
-                rootKey: prepared.rootKey,
-                entropy: prepared.entropy,
+                rootKey: handOffSecret(prepared.rootKey),
+                entropy: handOffSecret(prepared.entropy),
                 derivationType,
             })
             return { walletKeyId: prepared.keyId, derivationType }
         },
-        [],
+        [network],
     )
 
     const discoverImportAccounts = useCallback(
@@ -60,14 +66,16 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
             if (!pending || pending.walletKeyId !== walletKeyId) {
                 throw new HDImportSessionNotFoundError(walletKeyId)
             }
-            const getPublicKey = createXHDGetPublicKey(pending.rootKey)
+            const getPublicKey = accountsAdapterFor(
+                network,
+            ).createPublicKeyGetter(pending.rootKey)
             return discoverAccounts({
                 getPublicKey,
                 derivationType: pending.derivationType,
                 walletKeyId: pending.walletKeyId,
             })
         },
-        [],
+        [network],
     )
 
     // NOTE: `persistHDMasterKey`'s identity is unstable across renders, so

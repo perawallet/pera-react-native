@@ -15,7 +15,7 @@ import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     useArc59AssetRequestsQuery,
     type Arc59AssetRequest,
-} from '@perawallet/wallet-core-asa-inbox'
+} from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { MessagesStackParamList } from '@modules/messages'

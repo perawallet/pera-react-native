@@ -15,19 +15,24 @@ import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useRescanRekeyedAccounts } from '../useRescanRekeyedAccounts'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
+import { RekeyUnsupportedError } from '../../errors'
+import {
+    fakeAccountsChain,
+    registerFakeAccountsChain,
+    MAINNET_SCOPE,
+} from '../../__tests__/fakeAccountsChain'
 
-const mocks = vi.hoisted(() => ({
-    fetchRekeyedAddresses: vi.fn(),
-    isValidAlgorandAddress: vi.fn(),
-}))
-
-vi.mock('../../account-discovery', () => ({
-    fetchRekeyedAddresses: mocks.fetchRekeyedAddresses,
-}))
+const mocks = {
+    get fetchRekeyedAddresses() {
+        return vi.mocked(fakeAccountsChain().adapter.fetchRekeyedAddresses!)
+    },
+    get isValidAddress() {
+        return vi.mocked(fakeAccountsChain().codec.isValid)
+    },
+}
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
-    isValidAlgorandAddress: mocks.isValidAlgorandAddress,
 }))
 
 const setAccounts = (accounts: WalletAccount[]) =>
@@ -54,12 +59,22 @@ describe('useRescanRekeyedAccounts — scan', () => {
 
         expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledWith(
             'SOURCE',
-            'mainnet',
+            MAINNET_SCOPE,
         )
         expect(scanResult).toEqual({
             importedAddresses: ['IN_WALLET'],
             notImportedAddresses: ['NEW_ONE'],
         })
+    })
+
+    it('fails closed on a chain without rekey', async () => {
+        registerFakeAccountsChain({ fetchRekeyedAddresses: undefined })
+
+        const { result } = renderHook(() => useRescanRekeyedAccounts())
+
+        await expect(result.current.scan('SOURCE')).rejects.toBeInstanceOf(
+            RekeyUnsupportedError,
+        )
     })
 
     it('returns empty classification when the indexer reports nothing', async () => {
@@ -191,7 +206,7 @@ describe('useRescanRekeyedAccounts — importFromSweep', () => {
     })
 
     it('groups candidates by their source key and persists each group', async () => {
-        mocks.isValidAlgorandAddress.mockReturnValue(true)
+        mocks.isValidAddress.mockReturnValue(true)
         const { result } = renderHook(() => useRescanRekeyedAccounts())
 
         let count = -1
@@ -232,7 +247,7 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
     })
 
     it('returns 0 when every selected address fails format validation', async () => {
-        mocks.isValidAlgorandAddress.mockReturnValue(false)
+        mocks.isValidAddress.mockReturnValue(false)
         const { result } = renderHook(() => useRescanRekeyedAccounts())
 
         let count = -1
@@ -248,7 +263,7 @@ describe('useRescanRekeyedAccounts — importSelected', () => {
     })
 
     it('persists only the valid addresses as rekeyed watch accounts', async () => {
-        mocks.isValidAlgorandAddress.mockImplementation(
+        mocks.isValidAddress.mockImplementation(
             (addr: string) => addr !== 'INVALID',
         )
         const { result } = renderHook(() => useRescanRekeyedAccounts())

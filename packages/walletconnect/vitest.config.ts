@@ -92,6 +92,12 @@ export default defineConfig({
                 __dirname,
                 '../blockchain/src/index.ts',
             ),
+            // Blockchain source re-exports chain-shared; its dist would reach a
+            // second getProvider() instance the mocks here never see.
+            '@perawallet/wallet-core-chain-shared': path.resolve(
+                __dirname,
+                '../chain-shared/src/index.ts',
+            ),
             '@perawallet/wallet-core-device': path.resolve(
                 __dirname,
                 '../device/src/index.ts',
@@ -101,7 +107,7 @@ export default defineConfig({
             // the shared handler contract suite from there.
             '@perawallet/wallet-core-connections/testing': path.resolve(
                 __dirname,
-                '../connections/src/testing/handler-contract.ts',
+                '../connections/src/__tests__/handler-contract.ts',
             ),
             '@perawallet/wallet-core-connections/handlerKit': path.resolve(
                 __dirname,

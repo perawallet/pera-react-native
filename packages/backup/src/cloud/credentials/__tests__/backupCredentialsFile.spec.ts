@@ -17,6 +17,7 @@ import {
     backupCredentialsFileAddressPrefix,
     backupCredentialsFileName,
     buildBackupCredentialsFile,
+    isBackupCredentialsFileContents,
     isBackupCredentialsFileName,
     parseBackupCredentialsFile,
 } from '../backupCredentialsFile'
@@ -167,5 +168,18 @@ describe('parseBackupCredentialsFile', () => {
         expect(() =>
             parseBackupCredentialsFile(fileWith({ v: 2, salt: undefined })),
         ).toThrow(UnsupportedCredentialsFileError)
+    })
+})
+
+describe('isBackupCredentialsFileContents', () => {
+    test('accepts a file the parser accepts', () => {
+        expect(
+            isBackupCredentialsFileContents(buildBackupCredentialsFile(SALT)),
+        ).toBe(true)
+    })
+
+    test('rejects anything else without throwing', () => {
+        expect(isBackupCredentialsFileContents('{"t":"other"}')).toBe(false)
+        expect(isBackupCredentialsFileContents('not json')).toBe(false)
     })
 })

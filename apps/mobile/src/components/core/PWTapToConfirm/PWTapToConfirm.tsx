@@ -28,6 +28,8 @@ export type PWTapToConfirmProps = {
     isLoading?: boolean
     isConfirmed?: boolean
     isDisabled?: boolean
+    /** A confirming press sooner than this after the arming one disarms instead. */
+    minConfirmDelayMs?: number
     style?: StyleProp<ViewStyle>
     testID?: string
 }
@@ -39,6 +41,7 @@ export const PWTapToConfirm = ({
     isLoading = false,
     isConfirmed = false,
     isDisabled = false,
+    minConfirmDelayMs = 0,
     style,
     testID,
 }: PWTapToConfirmProps) => {
@@ -52,7 +55,13 @@ export const PWTapToConfirm = ({
         idleContentStyle,
         loadingContentStyle,
         confirmedContentStyle,
-    } = usePWTapToConfirm({ onConfirm, isLoading, isDisabled, isConfirmed })
+    } = usePWTapToConfirm({
+        onConfirm,
+        isLoading,
+        isDisabled,
+        isConfirmed,
+        minConfirmDelayMs,
+    })
 
     return (
         <PWTouchableOpacity

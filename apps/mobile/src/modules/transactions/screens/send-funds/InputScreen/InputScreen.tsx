@@ -26,11 +26,13 @@ import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { LoadingView } from '@components/LoadingView'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useInputScreen } from './useInputScreen'
+import { useAmountKeyboardInput } from './useAmountKeyboardInput'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNavigation } from '@react-navigation/native'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
+import type { View } from 'react-native'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
@@ -47,6 +49,7 @@ export const InputScreen = () => {
         cryptoValue,
         setMax,
         handleKey,
+        handlePaste,
         handleNext,
         isResolvingDestination,
         isCollectible,
@@ -146,6 +149,23 @@ export const InputScreen = () => {
         title: headerTitle,
     })
 
+    const amountRef = useRef<View>(null)
+    const isFocused = useIsFocused()
+    useAmountKeyboardInput({
+        onKey: handleKey,
+        onPaste: handlePaste,
+        onSubmit: () => {
+            if (cryptoValue) void handleNext()
+        },
+        amountRef,
+        isActive:
+            isFocused &&
+            !!asset &&
+            !!accountAssetBalance &&
+            !!accountInformation &&
+            !isResolvingDestination,
+    })
+
     // The min fee is deliberately NOT gated here: it derives from suggested
     // params, a network-only fetch that pauses offline, and it's only needed
     // to build the transaction (fetched fresh at build time in
@@ -180,24 +200,31 @@ export const InputScreen = () => {
         >
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.mainContentContainer}>
-                    <AssetAmount
-                        asset={asset}
-                        value={
-                            cryptoValue
-                                ? new Decimal(cryptoValue)
-                                : new Decimal(0)
-                        }
-                        rawValue={cryptoValue ?? undefined}
-                        ignorePrivacyMode
-                        variant='h1'
-                        style={[
-                            cryptoValue
-                                ? styles.amount
-                                : styles.amountPlaceholder,
-                            styles.h1,
-                        ]}
-                        showSymbol={false}
-                    />
+                    <PWView
+                        ref={amountRef}
+                        focusable
+                        accessibilityLabel={t('send_funds.input.amount_label')}
+                        testID='send_input_amount'
+                    >
+                        <AssetAmount
+                            asset={asset}
+                            value={
+                                cryptoValue
+                                    ? new Decimal(cryptoValue)
+                                    : new Decimal(0)
+                            }
+                            rawValue={cryptoValue ?? undefined}
+                            ignorePrivacyMode
+                            variant='h1'
+                            style={[
+                                cryptoValue
+                                    ? styles.amount
+                                    : styles.amountPlaceholder,
+                                styles.h1,
+                            ]}
+                            showSymbol={false}
+                        />
+                    </PWView>
                     {!isCollectible && (
                         <PreferredAmount
                             sourceAmount={

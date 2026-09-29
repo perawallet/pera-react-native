@@ -66,8 +66,8 @@ vi.mock('../endpoints', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mocks.useNetwork,
-    microAlgosToAlgos: (v: unknown) =>
-        new Decimal(v?.toString() ?? '0').div(1_000_000),
+    baseUnitsToDisplayUnits: (v: Decimal, decimals: number) =>
+        v.div(new Decimal(10).pow(decimals)),
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -193,7 +193,7 @@ describe('useStakingProjectsQuery', () => {
         })
     })
 
-    it('merges projects and sorts by tvl in algo descending', async () => {
+    it('merges projects and sorts by native tvl descending', async () => {
         mocks.fetchStakingProjectsInfo.mockResolvedValue({
             folks: {
                 tvl_in_algo: '1000',
@@ -218,7 +218,8 @@ describe('useStakingProjectsQuery', () => {
         expect(result.current.data[0].id).toBe('pact')
         expect(result.current.data[1].id).toBe('folks')
         expect(result.current.data[2].id).toBe('valar')
-        expect(result.current.data[0].tvlInAlgo.toString()).toBe('0.002')
+        // Algorand's native asset has six decimals, so 2000 base units is 0.002.
+        expect(result.current.data[0].tvlInNative.toString()).toBe('0.002')
         expect(result.current.data[0].tvlInUsd.toString()).toBe('2500')
         expect(result.current.data.length).toBe(3)
     })
@@ -305,6 +306,25 @@ describe('useStakingProjectsQuery', () => {
             expect(mocks.fetchStakingProjectsInfo).toHaveBeenCalledWith(
                 'testnet',
             ),
+        )
+    })
+
+    it('keys the query by the chain scope of the active network', async () => {
+        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+        mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+
+        renderHook(() => useStakingProjectsQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() =>
+            expect(
+                queryClient.getQueryData([
+                    'staking',
+                    'projects',
+                    { scope: 'algorand/testnet' },
+                ]),
+            ).toEqual({}),
         )
     })
 

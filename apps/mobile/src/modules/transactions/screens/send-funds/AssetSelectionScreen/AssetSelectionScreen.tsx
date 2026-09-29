@@ -22,7 +22,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { AccountAssetSelectionList } from '@modules/assets'
 
 const hasBalanceFilter = (item: AssetWithAccountBalance) => {
-    return item.amount.gt(Decimal(0))
+    return item.amount.gt(new Decimal(0))
 }
 
 export const AssetSelectionScreen = () => {

@@ -38,6 +38,10 @@ import type {
 } from '@perawallet/wallet-extension-hardware-wallet'
 import type { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 import type { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
+import type {
+    WithChainRegistry,
+    ChainRegistryExtension,
+} from './withChainRegistry'
 
 // Re-exported so pera-provider.ts / pera-provider.web.ts can build their
 // `new (...)` signature without importing `ProviderOptions` separately.
@@ -50,6 +54,7 @@ export type PeraExtensions = readonly [
     typeof WithMigrations,
     typeof WithPlatformExtension,
     typeof WithHardwareWalletExtension,
+    typeof WithChainRegistry,
     typeof WithPeraKeystorePreflight,
     typeof WithKeyStore,
     typeof WithPeraKeystoreRepairs,
@@ -65,6 +70,7 @@ export type PeraProvider = Provider<PeraExtensions> &
     MigrationsExtension &
     PlatformExtension &
     HardwareWalletExtension &
+    ChainRegistryExtension &
     KeyStoreExtension &
     PasskeyAutofillExtension &
     ConnectionsExtension

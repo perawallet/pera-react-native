@@ -66,7 +66,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET: { decimals: 6 },
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane, so
     // getCurrencyInfo's `assetId === null` branch is reachable here.
-    getKnownAssetId: (key: string, network: string) => {
+    getKnownAssetId: (
+        key: string,
+        { networkId: network }: { networkId: string },
+    ) => {
         if (key !== 'USDC') return null
         return { mainnet: '31566704', testnet: '10458941' }[network] ?? null
     },

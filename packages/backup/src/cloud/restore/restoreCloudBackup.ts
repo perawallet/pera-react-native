@@ -28,6 +28,7 @@ import type {
     BackupItemKey,
     ContactBackupPayload,
     DeviceId,
+    PasskeyBackupPayload,
     SyncItemState,
     SyncState,
 } from '../models'
@@ -35,6 +36,7 @@ import type {
     ContactImportFn,
     ContactImportSummary,
     ImportSummary,
+    PasskeyImportFn,
     SyncImportFn,
 } from '../sync/types'
 import type { BackupKeys } from '../crypto/deriveBackupKeys'
@@ -72,6 +74,9 @@ type RestoreCloudBackupParams = {
     importAccounts: SyncImportFn
     /** Decrypted remote contacts → contacts store. */
     importContacts: ContactImportFn
+    /** Re-derives and writes each credential. Runs after `importAccounts`,
+     *  which is what puts the owning seed in the keystore. */
+    importPasskeys: PasskeyImportFn
 }
 
 export type RestoreCloudBackupResult = {
@@ -190,6 +195,28 @@ const trackedItemsFromPull = (
     return items
 }
 
+/** A credential that cannot be written must never fail the restore: accounts
+ *  and contacts are already in place by the time this runs. */
+const importPasskeysSafely = async (
+    importPasskeys: PasskeyImportFn,
+    passkeys: PasskeyBackupPayload[],
+): Promise<void> => {
+    if (passkeys.length === 0) return
+    try {
+        const summary = await importPasskeys(passkeys)
+        if (summary.skipped.length > 0 || summary.failed.length > 0) {
+            logger.warn('restoreCloudBackup: some passkeys were not written', {
+                skipped: summary.skipped.length,
+                failed: summary.failed.length,
+            })
+        }
+    } catch (error) {
+        logger.warn('restoreCloudBackup: passkey import failed', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+    }
+}
+
 const syncStateFromPull = (
     backupId: BackupId,
     pull: PullBackupItemsResult,
@@ -233,6 +260,7 @@ export const restoreCloudBackup = async ({
     network,
     importAccounts,
     importContacts,
+    importPasskeys,
 }: RestoreCloudBackupParams): Promise<RestoreCloudBackupResult> => {
     const { backupId, encryptionKey, authSecretKey, itemKey } =
         await deriveKeys(mnemonic, salt, argon2id)
@@ -271,6 +299,7 @@ export const restoreCloudBackup = async ({
             importContacts,
             pull.contacts,
         )
+        await importPasskeysSafely(importPasskeys, pull.passkeys)
 
         return {
             backupId,

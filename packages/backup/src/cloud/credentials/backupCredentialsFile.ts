@@ -43,8 +43,8 @@ const FILE_NAME_PATTERN = new RegExp(
 
 const BACKUP_CREDENTIALS_FILE_TYPE = 'backup-credentials'
 const BACKUP_CREDENTIALS_FILE_VERSION = 1
-// A real credentials file is a few hundred bytes, and of the three read paths
-// that land here only the device picker bounds what it hands over.
+// A real credentials file is a few hundred bytes. Nothing bounds a cloud file
+// the name filter matched before it reaches here.
 const MAX_FILE_LENGTH = 16 * 1024
 
 /**
@@ -118,4 +118,14 @@ export const parseBackupCredentialsFile = (
         throw new InvalidCredentialsFileError()
     }
     return { salt: parsed.salt, argon2id }
+}
+
+/** The predicate form, for callers that must not treat a bad file as an error. */
+export const isBackupCredentialsFileContents = (contents: string): boolean => {
+    try {
+        parseBackupCredentialsFile(contents)
+        return true
+    } catch {
+        return false
+    }
 }

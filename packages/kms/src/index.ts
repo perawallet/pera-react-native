@@ -14,6 +14,7 @@ export const name = '@perawallet/wallet-core-kms'
 
 export * from './hooks/useKMS'
 export { useKMSService } from './hooks/useKMSServices'
+export * from './core'
 export * from './models'
 export * from './errors'
 export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
@@ -22,7 +23,7 @@ export {
     mnemonicWordsToIndices,
 } from './crypto/mnemonic-indices'
 export { uniformIntBelow, pickDistinctIndexes } from './crypto/random'
-export { zeroBytes } from './crypto/secure-memory'
+export { handOffSecret, zeroBytes } from './crypto/secure-memory'
 export { AesGcmOpenError, openAesGcm, sealAesGcm } from './crypto/aesGcm'
 export { argon2idDerive, type Argon2idParams } from './crypto/argon2id'
 export {
@@ -43,7 +44,11 @@ export {
 // Re-exported so consumers that need to derive a real Falcon keypair outside
 // the hook (e.g. quantum test fixtures) use the same PQ provider `useQuantum`
 // and `useKMS` do, rather than hand-rolling their own derivation.
-export { getPQProvider, type PQSignatureProvider } from './crypto/pq'
+export {
+    getPQProvider,
+    type PQSchemeId,
+    type PQSignatureProvider,
+} from './crypto/pq'
 export {
     resolvePQSigningInfo,
     resolveSeedKeyFrom,
@@ -72,7 +77,6 @@ export {
     isSeedKey,
     seedSchemeOf,
 } from './utils'
-export { hdDerivedKeyId } from './hooks/useHDWallet'
 export {
     findPasskeyMainKey,
     passkeyMainKeyId,

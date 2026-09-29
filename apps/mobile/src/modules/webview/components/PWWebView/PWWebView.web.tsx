@@ -325,6 +325,7 @@ export const PWWebView = ({
                 key={`${bridgeToken}:${reloadNonce}`}
                 src={src}
                 sandbox='allow-same-origin allow-scripts allow-forms allow-popups'
+                // oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the frame's name for assistive tech, not visible copy
                 title='pera-webview'
                 onLoad={handleLoad}
                 onError={handleError}

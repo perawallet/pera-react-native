@@ -30,6 +30,7 @@ import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
 import {
     openApprovalSurface,
     selectAccountAndArmConnect,
+    tapToConfirm,
     trackPageErrors,
 } from './approval-surface'
 import { dismissPinPromptIfPresent } from './pin-prompt'
@@ -244,9 +245,7 @@ test('a dApp signing request from the quantum account returns a valid Falcon pqs
         'signing-confirm-slide',
     )
     await expect(confirmControl).toBeVisible({ timeout: 20_000 })
-    // Tap-to-confirm on web: the first tap arms, the second confirms.
-    await confirmControl.click()
-    await confirmControl.click()
+    await tapToConfirm(signing.approvalPage, confirmControl)
     const dappWarning = signing.approvalPage.getByTestId(
         'quantum-dapp-warning-sheet',
     )

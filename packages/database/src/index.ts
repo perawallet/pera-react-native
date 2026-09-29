@@ -19,6 +19,6 @@ export {
     type Database,
 } from './database'
 export { runMigrations, type MigrationConfig } from './migrator'
-export { default as migrations } from './migrations'
+export { migrations } from './migrations'
 export { decimalColumn, decimalSum, decimalMax, decimalMin } from './columns'
 export { DB_WRITE_CHUNK_SIZE, forEachWriteChunk } from './chunkedWrite'

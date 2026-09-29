@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,7 +15,9 @@ import {
     ChromeAgeGateService,
     ChromeAppIntegrityService,
     ChromeBiometricsService,
+    ChromeCloudFileStorageService,
     ChromeMigrationService,
+    ChromeWalletProvisioningService,
 } from '../stubs'
 
 describe('capability stubs', () => {
@@ -51,5 +53,36 @@ describe('capability stubs', () => {
                 reason: 'unavailable',
             },
         )
+    })
+
+    it('reports migration as already done, so the migrator never runs on web', async () => {
+        const service = new ChromeMigrationService()
+
+        await expect(service.isMigrationComplete()).resolves.toBe(true)
+        await expect(service.getMigrationPlans()).resolves.toEqual([])
+        await expect(service.getLegacyData()).rejects.toThrow()
+    })
+
+    it('rejects attestation rather than returning a token nobody can verify', async () => {
+        await expect(
+            new ChromeAppIntegrityService().attest('challenge'),
+        ).rejects.toThrow()
+    })
+
+    it('reports no OS wallet and rejects both add-card flows', async () => {
+        const service = new ChromeWalletProvisioningService()
+
+        await expect(service.checkWalletAvailability()).resolves.toBe(false)
+        await expect(service.getCardStatusBySuffix()).resolves.toBe('not found')
+        await expect(service.addCardToAppleWallet()).rejects.toThrow()
+        await expect(service.addCardToGoogleWallet()).rejects.toThrow()
+    })
+
+    it('offers no cloud store and rejects transfers', async () => {
+        const service = new ChromeCloudFileStorageService()
+
+        expect(service.getAvailableStores()).toEqual([])
+        await expect(service.save()).rejects.toThrow()
+        await expect(service.read()).rejects.toThrow()
     })
 })

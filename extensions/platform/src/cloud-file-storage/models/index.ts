@@ -35,6 +35,11 @@ export type ReadCloudFileOptions = {
      * free of any one caller's naming rules.
      */
     isCandidate: (fileName: string) => boolean
+    /**
+     * Identifies one of ours by content, for a file the user renamed past
+     * `isCandidate`. Consulted only when no name matched.
+     */
+    isCandidateContents?: (contents: string) => boolean
     chooseFile: ChooseCloudFile
     /**
      * Fires once nothing but the read itself is left, so a progress overlay
@@ -51,9 +56,10 @@ export type ReadCloudFileOptions = {
 }
 
 /**
- * An app-private folder in the user's own cloud drive (Drive's appDataFolder,
- * iCloud's ubiquity container), used to keep a file the user can restore from
- * after losing the device.
+ * A folder in the user's own cloud drive that they can see and keep a file in:
+ * a named folder in Drive, the app's Documents folder in iCloud. Holds a file
+ * the user can restore from after losing the device — and, because the folder
+ * is theirs, one they can rename or delete, which `isCandidateContents` is for.
  */
 export interface CloudFileStorageService {
     /** Stores this build and OS can actually reach, in display order. */

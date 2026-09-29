@@ -10,11 +10,14 @@
  limitations under the License
  */
 
+import type { Ref } from 'react'
 import { View, type ViewProps } from 'react-native'
 import { getContainerTestProps } from '@utils/test-id-helper'
 
 export type PWViewProps = ViewProps & {
     testID?: string
+    /** Forwarded to the underlying View (React 19 passes `ref` as a prop). */
+    ref?: Ref<View>
 }
 
 export const PWView = ({ children, style, testID, ...props }: PWViewProps) => {

@@ -73,6 +73,8 @@ const deps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
+    listPasskeys: async () => [],
+    importPasskeys: async () => ({ imported: 0, skipped: [], failed: [] }),
 })
 
 describe('syncBackup', () => {
@@ -362,5 +364,52 @@ describe('syncBackup', () => {
             isDirty: false,
             knownVer: 1,
         })
+    })
+
+    it('still pushes accounts and contacts when listPasskeys rejects', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g3',
+            lastSeq: 0,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        batchUpsertItems.mockResolvedValue({
+            results: [
+                {
+                    key: accountKey('W'),
+                    result: UpsertResult.OK,
+                    new_ver: 1,
+                    seq: 1,
+                },
+                {
+                    key: contactKey('C1'),
+                    result: UpsertResult.OK,
+                    new_ver: 1,
+                    seq: 2,
+                },
+            ],
+        })
+        const warn = vi.spyOn(logger, 'warn')
+
+        const next = await syncBackup(
+            {
+                ...deps(),
+                listContacts: () => [{ address: 'C1', name: 'Alice' }],
+                listPasskeys: async () => {
+                    throw new Error('KMS session denied')
+                },
+            },
+            createEmptySyncState('b'),
+        )
+
+        const [, , , request] = batchUpsertItems.mock.calls[0]
+        expect(
+            request.items.map((entry: { key: string }) => entry.key).sort(),
+        ).toEqual([accountKey('W'), contactKey('C1')].sort())
+        expect(next.lastSyncResult).toBe('SUCCESS')
+        expect(warn).toHaveBeenCalledWith(
+            'syncBackup: listPasskeys failed, skipping passkeys',
+            { error: 'KMS session denied' },
+        )
     })
 })

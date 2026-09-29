@@ -24,6 +24,11 @@ vi.mock('../useRemoteConfigOverrides', () => ({
     })),
 }))
 
+const devDeviceInfo = {
+    getDevicePlatform: () => 'web',
+    isStoreBuild: () => false,
+}
+
 describe('services/remote-config/platform-service', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -39,7 +44,8 @@ describe('services/remote-config/platform-service', () => {
 
         vi.mocked(getProvider).mockReturnValue({
             remoteConfig: dummy,
-        } as ReturnType<typeof getProvider>)
+            deviceInfo: devDeviceInfo,
+        } as unknown as ReturnType<typeof getProvider>)
 
         const svc = useRemoteConfig()
 
@@ -64,7 +70,8 @@ describe('services/remote-config/platform-service', () => {
 
         vi.mocked(getProvider).mockReturnValue({
             remoteConfig: dummy,
-        } as ReturnType<typeof getProvider>)
+            deviceInfo: devDeviceInfo,
+        } as unknown as ReturnType<typeof getProvider>)
 
         const mockOverrides = {
             string_key: 'overridden',

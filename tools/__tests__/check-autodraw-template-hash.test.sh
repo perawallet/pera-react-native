@@ -9,7 +9,7 @@ set -uo pipefail
 SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/check-autodraw-template-hash.mjs"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
-mkdir -p "$WORK/tools" "$WORK/packages/card/src/api/escrow" "$WORK/packages/config/src"
+mkdir -p "$WORK/tools" "$WORK/packages/chain-algorand/src/card/escrow" "$WORK/packages/config/src"
 cp "$SCRIPT" "$WORK/tools/check-autodraw-template-hash.mjs"
 
 NODE=(node --experimental-strip-types --disable-warning=ExperimentalWarning)
@@ -25,7 +25,7 @@ check() { # $1 label  $2 expected  $3 actual
 }
 
 TEMPLATE=$'#pragma version 13\nintcblock 1 6 TMPL_KILLSWITCH_APP TMPL_MAIN_APP\nbytecblock TMPL_GENESIS_HASH\nintc_0\nreturn\n'
-cat >"$WORK/packages/card/src/api/escrow/autodraw-teal.ts" <<TS
+cat >"$WORK/packages/chain-algorand/src/card/escrow/autodraw-teal.ts" <<TS
 export const TMPL_KILLSWITCH_APP = 'TMPL_KILLSWITCH_APP'
 export const TMPL_MAIN_APP = 'TMPL_MAIN_APP'
 export const TMPL_GENESIS_HASH = 'TMPL_GENESIS_HASH'

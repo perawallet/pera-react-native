@@ -65,6 +65,7 @@ const mocks = vi.hoisted(() => {
         createAsyncStoragePersister: vi.fn(() => ({ persistClient: vi.fn() })),
         runPasskeyAutofillBootstrap: vi.fn(),
         loggerError: vi.fn(),
+        loggerWarn: vi.fn(),
         configOverrides: {} as Record<string, string | boolean | number>,
         settingsState: { language: 'system' as string },
         settingsHasHydrated: vi.fn(() => true),
@@ -160,7 +161,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('./i18n', () => ({
-    default: {
+    i18n: {
         get language() {
             return mocks.i18nLanguage
         },
@@ -168,7 +169,7 @@ vi.mock('./i18n', () => ({
     },
 }))
 vi.mock('../i18n', () => ({
-    default: {
+    i18n: {
         get language() {
             return mocks.i18nLanguage
         },
@@ -199,7 +200,7 @@ vi.mock('@perawallet/wallet-core-remote-config', async () => {
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: {
         error: mocks.loggerError,
-        warn: vi.fn(),
+        warn: mocks.loggerWarn,
         debug: vi.fn(),
         info: vi.fn(),
     },
@@ -216,6 +217,7 @@ describe('useAppBootstrap', () => {
         mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.runKeystoreMaintenance.mockResolvedValue({
             repair: { repaired: 0, failed: 0 },
+            passkeySplit: { split: [], normalized: [], failed: [] },
             failedDecodeIds: [],
         })
         mocks.initializeDatabase.mockResolvedValue(undefined)
@@ -355,6 +357,7 @@ describe('useAppBootstrap', () => {
     it('logs undecodable reconcile records as a non-fatal and still bootstraps', async () => {
         mocks.runKeystoreMaintenance.mockResolvedValue({
             repair: { repaired: 0, failed: 0 },
+            passkeySplit: { split: [], normalized: [], failed: [] },
             failedDecodeIds: ['k/bad', 'k/worse'],
         })
         vi.useFakeTimers()
@@ -597,5 +600,23 @@ describe('useAppBootstrap', () => {
 
         expect(result.current.bootstrapped).toBe(true)
         expect(result.current.initError).toBeNull()
+    })
+
+    it('logs passkey credentials the split left flat', async () => {
+        mocks.runKeystoreMaintenance.mockResolvedValue({
+            repair: { repaired: 0, failed: 0 },
+            passkeySplit: { split: [], normalized: [], failed: ['cred-1'] },
+            failedDecodeIds: [],
+        })
+        vi.useFakeTimers()
+        renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.loggerWarn).toHaveBeenCalledWith(
+            'Passkey credentials left flat: cred-1',
+        )
     })
 })

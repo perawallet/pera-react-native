@@ -17,6 +17,7 @@ import { isLegacyItemKey, type Manifest, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { buildLocalContactItems } from './buildLocalContactItems'
 import { buildLocalItems } from './buildLocalItems'
+import { buildLocalPasskeyItems } from './buildLocalPasskeyItems'
 import { pushDirty } from './pushDirty'
 import { fetchDeltaOrRebuild } from './rebuildFromManifest'
 import { reconcile } from './reconcile'
@@ -61,6 +62,15 @@ export const syncBackup = async (
             skipped: accounts.skipped,
         })
     }
+    // A KMS/biometric failure here must not block accounts and contacts from
+    // pushing; reconcile treats a missing item as "not yet re-derived", never
+    // as a delete, so skipping passkeys for this cycle is safe.
+    const passkeys = await deps.listPasskeys().catch(error => {
+        logger.warn('syncBackup: listPasskeys failed, skipping passkeys', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return []
+    })
     const local: LocalSnapshot = {
         items: [
             ...accounts.items,
@@ -69,8 +79,10 @@ export const syncBackup = async (
                 now,
                 deps.hashAddress,
             ),
+            ...buildLocalPasskeyItems(passkeys, now, deps.hashAddress),
         ],
-        // Account-only: a contact cannot fail to serialize.
+        // Account-only: a contact cannot fail to serialize, and a credential
+        // that could not be re-derived never reaches this list.
         skipped: accounts.skipped,
     }
     let next = reconcile(state, local, now)
@@ -117,6 +129,7 @@ export const syncBackup = async (
             encryptionKey: deps.encryptionKey,
             importAccounts: deps.importAccounts,
             importContacts: deps.importContacts,
+            importPasskeys: deps.importPasskeys,
             readItems,
             decrypt: decryptItemPayload,
         },

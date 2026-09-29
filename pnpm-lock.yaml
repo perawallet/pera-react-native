@@ -187,8 +187,8 @@ catalogs:
       specifier: ^2.0.2
       version: 2.0.2
     lanekeep:
-      specifier: 0.11.0
-      version: 0.11.0
+      specifier: 0.12.0
+      version: 0.12.0
     msw:
       specifier: ^2.14.6
       version: 2.15.0
@@ -233,9 +233,9 @@ catalogs:
       version: 5.0.14
 
 overrides:
-  '@algorandfoundation/keystore-core': 1.0.0-canary.3
-  '@algorandfoundation/keystore-web': 1.0.0-canary.3
-  '@algorandfoundation/react-native-keystore': 1.0.0-canary.19
+  '@algorandfoundation/keystore-core': 1.0.0-canary.4
+  '@algorandfoundation/keystore-web': 1.0.0-canary.4
+  '@algorandfoundation/react-native-keystore': 1.0.0-canary.20
   '@algorandfoundation/wallet-provider': 1.0.0-canary.6
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
@@ -252,7 +252,7 @@ overrides:
   brace-expansion@5: 5.0.9
   esbuild@<0.25.0: '>=0.25.0'
   esbuild@>=0.27.3 <0.28.1: '>=0.28.1'
-  fast-uri@<4.1.3: '>=4.1.3'
+  fast-uri@<4.1.4: 4.1.4
   flatted@3: 3.4.2
   glob@>=10.2.0 <10.5.0: '>=10.5.0'
   happy-dom@<20.0.0: '>=20.0.0'
@@ -277,7 +277,8 @@ overrides:
   react-native-quick-base64: ^3.0.0
   react-native-quick-crypto: ^1.0.17
   shell-quote@<1.9.0: 1.9.0
-  svgo@>=3.0.0 <3.3.4: ^3.3.4
+  svgo@>=3.0.0 <3.3.5: ^3.3.5
+  undici@>=8.1.0 <8.10.2: 8.10.2
   uuid@<14: 14.0.0
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'
@@ -287,11 +288,11 @@ overrides:
 packageExtensionsChecksum: sha256-+jNlaQ2J/EWEnXBumiZ7VW7HDP3EgxkgdV6s+edL7yc=
 
 patchedDependencies:
-  '@algorandfoundation/keystore-web@1.0.0-canary.3':
+  '@algorandfoundation/keystore-web@1.0.0-canary.4':
     hash: d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f
-    path: patches/@algorandfoundation__keystore-web@1.0.0-canary.3.patch
+    path: patches/@algorandfoundation__keystore-web@1.0.0-canary.4.patch
   '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27':
-    hash: 132491d02394f9d45ad49729db488a97c67f2c1eb2a7501cbbc8c69217aec74f
+    hash: a5d6e333b2ca4b230e1861c5110b8dfe33487ace2d69269b41e373794a9c1b94
     path: patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.27.patch
   expo-modules-jsi@57.0.4:
     hash: 9487cc4ef8eab2ab6ee171b069286c1805635c375abc7a725c52043b5bd3a1b1
@@ -339,7 +340,7 @@ importers:
         version: 3.25.0
       lanekeep:
         specifier: 'catalog:'
-        version: 0.11.0
+        version: 0.12.0
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
@@ -391,6 +392,9 @@ importers:
       '@perawallet/wallet-core-browser-runtime':
         specifier: workspace:*
         version: link:../../packages/browser-runtime
+      '@perawallet/wallet-core-chain-algorand':
+        specifier: workspace:*
+        version: link:../../packages/chain-algorand
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -406,6 +410,9 @@ importers:
       '@perawallet/wallet-core-passkeys':
         specifier: workspace:*
         version: link:../../packages/passkeys
+      '@perawallet/wallet-core-remote-config':
+        specifier: workspace:*
+        version: link:../../packages/remote-config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -496,7 +503,7 @@ importers:
         version: 9.2.2(algosdk@3.7.0)
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.27(patch_hash=132491d02394f9d45ad49729db488a97c67f2c1eb2a7501cbbc8c69217aec74f)(685e4e97f63a794b035dd4d23667524b)
+        version: 1.0.0-canary.27(patch_hash=a5d6e333b2ca4b230e1861c5110b8dfe33487ace2d69269b41e373794a9c1b94)(685e4e97f63a794b035dd4d23667524b)
       '@craftzdog/react-native-buffer':
         specifier: ^6.1.1
         version: 6.1.2(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -530,9 +537,6 @@ importers:
       '@perawallet/wallet-core-app-integrity':
         specifier: workspace:*
         version: link:../../packages/app-integrity
-      '@perawallet/wallet-core-asa-inbox':
-        specifier: workspace:*
-        version: link:../../packages/asa-inbox
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../../packages/assets
@@ -554,6 +558,12 @@ importers:
       '@perawallet/wallet-core-card':
         specifier: workspace:*
         version: link:../../packages/card
+      '@perawallet/wallet-core-chain-algorand':
+        specifier: workspace:*
+        version: link:../../packages/chain-algorand
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../../packages/chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -578,9 +588,6 @@ importers:
       '@perawallet/wallet-core-device':
         specifier: workspace:*
         version: link:../../packages/device
-      '@perawallet/wallet-core-fee-delegation':
-        specifier: workspace:*
-        version: link:../../packages/fee-delegation
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../../packages/hardware-wallet
@@ -981,6 +988,9 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.3.0
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
       '@perawallet/wallet-extension-passkey-autofill':
         specifier: workspace:*
         version: link:../../extensions/passkey-autofill
@@ -1066,8 +1076,8 @@ importers:
         specifier: 'catalog:'
         version: 9.2.2(algosdk@3.7.0)
       '@algorandfoundation/keystore-core':
-        specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
+        specifier: 1.0.0-canary.4
+        version: 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -1077,6 +1087,12 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../packages/blockchain
+      '@perawallet/wallet-core-chain-algorand':
+        specifier: workspace:*
+        version: link:../packages/chain-algorand
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../packages/chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../packages/config
@@ -1213,9 +1229,6 @@ importers:
 
   extensions/ledger-react-native:
     dependencies:
-      '@algorandfoundation/ledger-algorand-js':
-        specifier: 'catalog:'
-        version: 1.4.3
       '@ledgerhq/react-native-hw-transport-ble':
         specifier: ^6.39.1
         version: 6.41.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -1253,9 +1266,6 @@ importers:
 
   extensions/ledger-react-native-usb:
     dependencies:
-      '@algorandfoundation/ledger-algorand-js':
-        specifier: 'catalog:'
-        version: 1.4.3
       '@ledgerhq/react-native-hid':
         specifier: 'catalog:'
         version: 6.39.5(react-native@0.86.2(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.3))
@@ -1287,9 +1297,6 @@ importers:
 
   extensions/ledger-shared:
     dependencies:
-      '@algorandfoundation/ledger-algorand-js':
-        specifier: 'catalog:'
-        version: 1.4.3
       '@ledgerhq/devices':
         specifier: ^8.13.0
         version: 8.17.0
@@ -1302,9 +1309,6 @@ importers:
       '@perawallet/wallet-extension-hardware-wallet':
         specifier: workspace:*
         version: link:../hardware-wallet
-      buffer:
-        specifier: 'catalog:'
-        version: 6.0.3
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -1327,9 +1331,6 @@ importers:
 
   extensions/ledger-web-ble:
     dependencies:
-      '@algorandfoundation/ledger-algorand-js':
-        specifier: 'catalog:'
-        version: 1.4.3
       '@ledgerhq/hw-transport-web-ble':
         specifier: 'catalog:'
         version: 6.35.0
@@ -1361,9 +1362,6 @@ importers:
 
   extensions/ledger-web-usb:
     dependencies:
-      '@algorandfoundation/ledger-algorand-js':
-        specifier: 'catalog:'
-        version: 1.4.3
       '@ledgerhq/hw-transport-webhid':
         specifier: 'catalog:'
         version: 6.36.0
@@ -1396,11 +1394,11 @@ importers:
   extensions/passkey-autofill:
     dependencies:
       '@algorandfoundation/keystore-core':
-        specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
+        specifier: 1.0.0-canary.4
+        version: 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.27(patch_hash=132491d02394f9d45ad49729db488a97c67f2c1eb2a7501cbbc8c69217aec74f)(685e4e97f63a794b035dd4d23667524b)
+        version: 1.0.0-canary.27(patch_hash=a5d6e333b2ca4b230e1861c5110b8dfe33487ace2d69269b41e373794a9c1b94)(685e4e97f63a794b035dd4d23667524b)
       '@algorandfoundation/wallet-provider':
         specifier: 1.0.0-canary.6
         version: 1.0.0-canary.6
@@ -1632,23 +1630,26 @@ importers:
   extensions/provider:
     dependencies:
       '@algorandfoundation/keystore-core':
-        specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
+        specifier: 1.0.0-canary.4
+        version: 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/keystore-web':
-        specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(patch_hash=d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)
+        specifier: 1.0.0-canary.4
+        version: 1.0.0-canary.4(patch_hash=d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)
       '@algorandfoundation/provider-migrations':
         specifier: 'catalog:'
         version: 1.0.0-canary.1(before-after-hook@4.0.0)
       '@algorandfoundation/react-native-keystore':
-        specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
+        specifier: 1.0.0-canary.20
+        version: 1.0.0-canary.20(685e4e97f63a794b035dd4d23667524b)
       '@algorandfoundation/wallet-provider':
         specifier: 1.0.0-canary.6
         version: 1.0.0-canary.6
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../../packages/chain-contract
       '@perawallet/wallet-extension-connections':
         specifier: workspace:*
         version: link:../connections
@@ -1713,12 +1714,6 @@ importers:
 
   packages/accounts:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
-      '@algorandfoundation/xhd-wallet-api':
-        specifier: 'catalog:'
-        version: 2.0.0-canary.1
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -1728,6 +1723,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -1758,9 +1756,6 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -1777,15 +1772,15 @@ importers:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
-      '@scure/bip39':
-        specifier: 'catalog:'
-        version: 2.2.0
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/react':
         specifier: ~19.2.14
         version: 19.2.17
+      algosdk:
+        specifier: 'catalog:'
+        version: 3.7.0
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
@@ -1856,61 +1851,16 @@ importers:
 
   packages/asa-inbox:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
-      '@babel/runtime':
-        specifier: 'catalog:'
-        version: 7.29.7
-      '@perawallet/wallet-core-assets':
+      '@perawallet/wallet-core-chain-algorand':
         specifier: workspace:*
-        version: link:../assets
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../config
-      '@perawallet/wallet-core-shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@tanstack/react-query':
-        specifier: 'catalog:'
-        version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
-      decimal.js:
-        specifier: 'catalog:'
-        version: 10.6.0
-      react:
-        specifier: 19.2.3
-        version: 19.2.3
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
+        version: link:../chain-algorand
     devDependencies:
-      '@algorandfoundation/algokit-client-generator':
-        specifier: 6.0.1
-        version: 6.0.1(@algorandfoundation/algokit-utils@9.2.2(algosdk@3.7.0))(algosdk@3.7.0)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
-      '@testing-library/react':
-        specifier: 'catalog:'
-        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
-      '@types/react':
-        specifier: ~19.2.14
-        version: 19.2.17
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@20.19.43)(typescript@7.0.2)
-      react-dom:
-        specifier: 19.2.3
-        version: 19.2.3(react@19.2.3)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1929,6 +1879,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2002,6 +1955,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2087,6 +2043,9 @@ importers:
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
+      '@perawallet/wallet-core-passkeys':
+        specifier: workspace:*
+        version: link:../passkeys
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -2112,6 +2071,9 @@ importers:
         specifier: 'catalog:'
         version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
+      '@algorandfoundation/react-native-keystore':
+        specifier: 1.0.0-canary.20
+        version: 1.0.0-canary.20(685e4e97f63a794b035dd4d23667524b)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -2215,12 +2177,21 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.3.0
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../database
+      '@perawallet/wallet-core-kms':
+        specifier: workspace:*
+        version: link:../kms
       '@perawallet/wallet-core-remote-config':
         specifier: workspace:*
         version: link:../remote-config
@@ -2331,9 +2302,6 @@ importers:
 
   packages/card:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2349,6 +2317,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2367,9 +2338,6 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -2411,7 +2379,132 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
 
+  packages/chain-algorand:
+    dependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 'catalog:'
+        version: 9.2.2(algosdk@3.7.0)
+      '@algorandfoundation/ledger-algorand-js':
+        specifier: 'catalog:'
+        version: 1.4.3
+      '@algorandfoundation/xhd-wallet-api':
+        specifier: 'catalog:'
+        version: 2.0.0-canary.1
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.29.7
+      '@noble/hashes':
+        specifier: 'catalog:'
+        version: 2.3.0
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
+      '@perawallet/wallet-core-app-integrity':
+        specifier: workspace:*
+        version: link:../app-integrity
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
+      '@perawallet/wallet-core-card':
+        specifier: workspace:*
+        version: link:../card
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
+      '@perawallet/wallet-core-connections':
+        specifier: workspace:*
+        version: link:../connections
+      '@perawallet/wallet-core-kms':
+        specifier: workspace:*
+        version: link:../kms
+      '@perawallet/wallet-core-nfd':
+        specifier: workspace:*
+        version: link:../nfd
+      '@perawallet/wallet-core-onramp':
+        specifier: workspace:*
+        version: link:../onramp
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-core-signing':
+        specifier: workspace:*
+        version: link:../signing
+      '@perawallet/wallet-core-swaps':
+        specifier: workspace:*
+        version: link:../swaps
+      '@perawallet/wallet-core-transactions':
+        specifier: workspace:*
+        version: link:../transactions
+      '@perawallet/wallet-extension-hardware-wallet':
+        specifier: workspace:*
+        version: link:../../extensions/hardware-wallet
+      '@perawallet/wallet-extension-ledger-shared':
+        specifier: workspace:*
+        version: link:../../extensions/ledger-shared
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.2.3)
+      algosdk:
+        specifier: 'catalog:'
+        version: 3.7.0
+      buffer:
+        specifier: 'catalog:'
+        version: 6.0.3
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      '@algorandfoundation/algokit-client-generator':
+        specifier: 6.0.1
+        version: 6.0.1(@algorandfoundation/algokit-utils@9.2.2(algosdk@3.7.0))(algosdk@3.7.0)
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../devtools
+      '@scure/bip39':
+        specifier: 'catalog:'
+        version: 2.2.0
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.43
+      '@types/react':
+        specifier: ~19.2.14
+        version: 19.2.17
+      msw:
+        specifier: 'catalog:'
+        version: 2.15.0(@types/node@20.19.43)(typescript@7.0.2)
+      react-dom:
+        specifier: 19.2.3
+        version: 19.2.3(react@19.2.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
+
   packages/chain-contract:
+    dependencies:
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -2429,11 +2522,60 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
 
+  packages/chain-shared:
+    dependencies:
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      zustand:
+        specifier: 'catalog:'
+        version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../devtools
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.43
+      '@types/react':
+        specifier: ~19.2.14
+        version: 19.2.17
+      react-dom:
+        specifier: 19.2.3
+        version: 19.2.3(react@19.2.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
+
   packages/config:
     dependencies:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       zod:
         specifier: 'catalog:'
         version: 4.4.3
@@ -2486,6 +2628,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -2639,21 +2784,15 @@ importers:
 
   packages/dapp:
     dependencies:
-      '@perawallet/wallet-core-blockchain':
+      '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
-        version: link:../blockchain
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../config
+        version: link:../chain-contract
       '@perawallet/wallet-core-connections':
         specifier: workspace:*
         version: link:../connections
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-core-signing':
-        specifier: workspace:*
-        version: link:../signing
       '@perawallet/wallet-extension-connections':
         specifier: workspace:*
         version: link:../../extensions/connections
@@ -2821,46 +2960,13 @@ importers:
 
   packages/fee-delegation:
     dependencies:
-      '@babel/runtime':
-        specifier: 'catalog:'
-        version: 7.29.7
-      '@perawallet/wallet-core-app-integrity':
+      '@perawallet/wallet-core-chain-algorand':
         specifier: workspace:*
-        version: link:../app-integrity
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
-      '@perawallet/wallet-core-shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@perawallet/wallet-core-signing':
-        specifier: workspace:*
-        version: link:../signing
-      react:
-        specifier: 19.2.3
-        version: 19.2.3
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
+        version: link:../chain-algorand
     devDependencies:
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../config
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
-      '@testing-library/react':
-        specifier: 'catalog:'
-        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@types/react':
-        specifier: ~19.2.14
-        version: 19.2.17
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
-      react-dom:
-        specifier: 19.2.3
-        version: 19.2.3(react@19.2.3)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2902,8 +3008,8 @@ importers:
         specifier: 'catalog:'
         version: 9.2.2(algosdk@3.7.0)
       '@algorandfoundation/keystore-core':
-        specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
+        specifier: 1.0.0-canary.4
+        version: 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -2916,9 +3022,6 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.3.0
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -2942,8 +3045,8 @@ importers:
         version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
       '@algorandfoundation/react-native-keystore':
-        specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
+        specifier: 1.0.0-canary.20
+        version: 1.0.0-canary.20(685e4e97f63a794b035dd4d23667524b)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -3090,9 +3193,6 @@ importers:
       '@algorandfoundation/dp256':
         specifier: 1.1.0
         version: 1.1.0
-      '@algorandfoundation/react-native-keystore':
-        specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -3248,6 +3348,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -3297,33 +3400,24 @@ importers:
 
   packages/onramp:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
-      '@perawallet/wallet-core-fee-delegation':
+      '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
-        version: link:../fee-delegation
+        version: link:../chain-contract
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-core-transactions':
-        specifier: workspace:*
-        version: link:../transactions
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -3368,17 +3462,20 @@ importers:
         specifier: 'catalog:'
         version: 1.1.0
       '@algorandfoundation/keystore-core':
-        specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
+        specifier: 1.0.0-canary.4
+        version: 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/react-native-keystore':
-        specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
+        specifier: 1.0.0-canary.20
+        version: 1.0.0-canary.20(685e4e97f63a794b035dd4d23667524b)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.3.0
+      '@perawallet/wallet-core-kms':
+        specifier: workspace:*
+        version: link:../kms
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -3477,6 +3574,12 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -3489,6 +3592,9 @@ importers:
       react:
         specifier: 19.2.3
         version: 19.2.3
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
       zustand:
         specifier: 'catalog:'
         version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
@@ -3661,6 +3767,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -3837,6 +3946,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-remote-config':
         specifier: workspace:*
         version: link:../remote-config
@@ -3895,6 +4007,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-device':
         specifier: workspace:*
         version: link:../device
@@ -3959,15 +4074,15 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../accounts
-      '@perawallet/wallet-core-asa-inbox':
-        specifier: workspace:*
-        version: link:../asa-inbox
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -4035,6 +4150,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -4084,6 +4202,9 @@ importers:
         specifier: 'catalog:'
         version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
+      '@perawallet/wallet-core-chain-algorand':
+        specifier: workspace:*
+        version: link:../chain-algorand
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -4125,8 +4246,8 @@ packages:
   '@algorandfoundation/dp256@1.1.0':
     resolution: {integrity: sha512-s+ZQG3WK6eWskfmjh0bbMImyO+SIR297s+7vQoercbM0hYvilzTBT/rEcvs4ZQxU6TxkTXLq4BRj1USjGFpsCA==}
 
-  '@algorandfoundation/keystore-core@1.0.0-canary.3':
-    resolution: {integrity: sha512-BYHhQSu5ENQSux9dQBBBbeWlR2SK9rGQ7w6WupLInKtb5tcb29noxPIlEIFbvN0jsSaC4qpCQMBxz4uQzVFNKw==}
+  '@algorandfoundation/keystore-core@1.0.0-canary.4':
+    resolution: {integrity: sha512-/tFLE/UGSK1pOqNIkzSNNh0kizzzi2z0rZF5GqE0xWdKUc8S49SA6HLpwWcFRLs4/qTh6w7K6IQFw4w/rhirCw==}
     peerDependencies:
       '@algorandfoundation/dp256': 1.1.0
       '@algorandfoundation/wallet-provider': 1.0.0-canary.6
@@ -4142,8 +4263,8 @@ packages:
       falcon-1024:
         optional: true
 
-  '@algorandfoundation/keystore-web@1.0.0-canary.3':
-    resolution: {integrity: sha512-8BwOJ+zVrdPOR/ywdiCyYIp0mhfQDMSXO4jJ31Q+4BejSLrGGHbW5Afv7u9w58a4hotiNNrhSvHIvkrJ70EpAQ==}
+  '@algorandfoundation/keystore-web@1.0.0-canary.4':
+    resolution: {integrity: sha512-nRKgXWG8Q01cM8cg7C3tXFOYdgbK0azm91PkFyrlXYnCZGVukkowIW000VvXYDOK+3OeIOrhP1uUcIvyQwYUYg==}
     peerDependencies:
       '@algorandfoundation/log-store': 1.0.0-canary.3
       '@tanstack/store': 0.9.3
@@ -4160,8 +4281,8 @@ packages:
     peerDependencies:
       before-after-hook: 4.0.0
 
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.19':
-    resolution: {integrity: sha512-VwnuDI4ShYmjuc0zlzYkV7REDgw3mdjIlFz4jO4Iu2CdMyTJi4qKk2aozHyf3H2Uv0wuIJqJgcGLPz188EgAxw==}
+  '@algorandfoundation/react-native-keystore@1.0.0-canary.20':
+    resolution: {integrity: sha512-G2zy/Zob3bxJ13CfXLatb9tFfe2Rhesywl35lJyZreTNJ3j6uPaJj8ZjoO8OO0uvP7K+hLO0DbEaKFHYqJgRHw==}
     peerDependencies:
       '@algorandfoundation/log-store': 1.0.0-canary.3
       '@algorandfoundation/provider-migrations': 1.0.0-canary.1
@@ -6264,23 +6385,23 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@lanekeep/darwin-arm64@0.11.0':
-    resolution: {integrity: sha512-Z2sJ/Uw04Gu65z2bPmagjeHxSgBKZum8zUVS/A0177k59a7bzKgZqDOlFbebUCX//RmUHQ8qzM2OdxGithioOw==}
+  '@lanekeep/darwin-arm64@0.12.0':
+    resolution: {integrity: sha512-4QEKjpVtNMQyvz+1NVkpx6OIlwuNQaczovGc53ogWkYcgj77AJm7GR81QI9GMyhc5C9KORDBmIc/9KM23OAjQw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@lanekeep/linux-arm64@0.11.0':
-    resolution: {integrity: sha512-Qp+ElIe0hzYKbV9CUwHN3EvHkBPKT135lF3T7we+uada7QQA+XHWrJhBkMms1VM5QrjnurGkSjt8OUxt8z8STg==}
+  '@lanekeep/linux-arm64@0.12.0':
+    resolution: {integrity: sha512-wF8j3E2QfOiRJ46KEfBwHOy2wicIpBEvWblo8JnI9yVrjhnFMSF/Zln+zOf39AXbh7mBTKzuVfNwOn8U2y/Ttw==}
     cpu: [arm64]
     os: [linux]
 
-  '@lanekeep/linux-x64@0.11.0':
-    resolution: {integrity: sha512-4neucSOc0mMRAjIGb/3npkG0S7qx1rcmBk+iQ+68DIbXQWYlxJCljOoZhBPcW1Rwx93m4nv+bqqV9Pn7dN2y1A==}
+  '@lanekeep/linux-x64@0.12.0':
+    resolution: {integrity: sha512-kPojCjhpwJ+Ur5HOC7O+419AXr8moYPnsvyvIt/0kU8x2rqkxlSQ41wU3Ryp7sTBRI5z+eTe0a3U3tqxB5Gl9w==}
     cpu: [x64]
     os: [linux]
 
-  '@lanekeep/win32-x64@0.11.0':
-    resolution: {integrity: sha512-kbIl9gP/QD5Wcq+EGRxtgfEDuMcXp3/nDegu+TTH0/E0xLvC77AcupDWr0KnYBe9K3vH14x2EdR5dD60Eh6H/g==}
+  '@lanekeep/win32-x64@0.12.0':
+    resolution: {integrity: sha512-FInQ0iQuJiKV2+hGVWVQZEqfE81diWVGzIhChVtfjbW3X6wOriJ3UOdFYvP7igLjlbg/nBqXxtIb4qvDdmpbAQ==}
     cpu: [x64]
     os: [win32]
 
@@ -8941,8 +9062,8 @@ packages:
   fast-text-encoding@1.0.6:
     resolution: {integrity: sha512-VhXlQgj9ioXCqGstD37E/HBeqEGV/qOD/kmbVG8h5xKBYvM1L3lR1Zn4555cQ8GkYbJa8aJSipLPndE1k6zK2w==}
 
-  fast-uri@4.1.3:
-    resolution: {integrity: sha512-7+72G6vLt7jjNas8SmSATx2qeyRIjxeqO3i4IkmDTxlqYZRKANhOe1bnovcp4WZmvsYrp60WyqPyHqgRiX0yXw==}
+  fast-uri@4.1.4:
+    resolution: {integrity: sha512-dODXrIxlS9JSdgAnhIUKOosKV1oMtU2VtVw87QRaHzyl5jxO290Ii5tEZfCfzfWNHi3jKWwBSdQj0qIyshdZdQ==}
 
   fast-wrap-ansi@0.2.2:
     resolution: {integrity: sha512-7F2Fl+TjRSenLqlU3UjSH0iyqopqoZIu7eZVpEirP2g1GtWa2G/ecEmBdgz31+Mxr+ELclgg6sokpSFIQiZ02Q==}
@@ -9469,8 +9590,8 @@ packages:
     resolution: {integrity: sha512-ONPnazC96VKDntab9j9JKwIWhZ4ZUceB4A9Epu4Ssg0hYFmtHZSeQ+n15nIwTFmcBUKtExOer8WTJ4GF9MO64A==}
     hasBin: true
 
-  lanekeep@0.11.0:
-    resolution: {integrity: sha512-LPUTJyicK3N2MVgJQAy8kbmFsbP0jSsIOqKPI8wMLIe68ubPI21gBbZ/yRtRam07Z0vxkVDhsDjsYTKnBPN/3Q==}
+  lanekeep@0.12.0:
+    resolution: {integrity: sha512-ueOx829bS0XqgPt3TKz932kYMbqtLZ9CpJM4hUOqzIoZZdbstvoaTEvSg+72Oy3wr7Lm3VEB7WKu672tOU+Cfw==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -10969,8 +11090,8 @@ packages:
   svg-parser@2.0.4:
     resolution: {integrity: sha512-e4hG1hRwoOdRb37cIMSgzNsxyzKfayW6VOflrwvR+/bzrkyxY/31WkbgnQpgtrNp1SdpJvpUAGTa/ZoiPNDuRQ==}
 
-  svgo@3.3.4:
-    resolution: {integrity: sha512-GsNRis4e8jxn2Y9ENz/8lbJ93CstG8svtMnuRaHbiF2LTJ5tK0/q3t/URPq9Zc7zVWBJnNnJMIp6bevK7bSmNg==}
+  svgo@3.3.5:
+    resolution: {integrity: sha512-8SQMzdrvWaD8deUmrnYB+ASyxBVgWUOilg+A75nE/76WdLpj6LopCwiAVvkzkcqy/9b7t2Mg7faFLjg0ZRcZ3w==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -11122,8 +11243,8 @@ packages:
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
-  undici@8.10.0:
-    resolution: {integrity: sha512-HvltHd7avK13QIw/oLe4qoOLyoVSoafqJ2jYOrtMRBkbYT31eiBQ8O0ehRKZiEZCMEyLFQNIADpgCWC5fALvYQ==}
+  undici@8.10.2:
+    resolution: {integrity: sha512-/y4/bH9YNU5hi9NIrpOuvGXFcxrj3CMrV+/AYpowAYTpHn8gX/XPFjNy766FPoYY0miQhdW977JFWKGNhBdwyQ==}
     engines: {node: '>=22.19.0'}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
@@ -11594,7 +11715,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip39': 1.6.0
 
-  '@algorandfoundation/keystore-core@1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))':
+  '@algorandfoundation/keystore-core@1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))':
     dependencies:
       '@algorandfoundation/wallet-provider': 1.0.0-canary.6
       '@noble/hashes': 2.0.1
@@ -11606,10 +11727,10 @@ snapshots:
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       falcon-1024: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
 
-  '@algorandfoundation/keystore-web@1.0.0-canary.3(patch_hash=d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)':
+  '@algorandfoundation/keystore-web@1.0.0-canary.4(patch_hash=d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
+      '@algorandfoundation/keystore-core': 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/wallet-provider': 1.0.0-canary.6
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       '@scure/bip39': 1.6.0
@@ -11627,10 +11748,10 @@ snapshots:
       '@algorandfoundation/wallet-provider': 1.0.0-canary.6
       before-after-hook: 4.0.0
 
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)':
+  '@algorandfoundation/react-native-keystore@1.0.0-canary.20(685e4e97f63a794b035dd4d23667524b)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
+      '@algorandfoundation/keystore-core': 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/wallet-provider': 1.0.0-canary.6
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       '@scure/base': 2.0.0
@@ -11652,9 +11773,9 @@ snapshots:
       - react-native-nitro-modules
       - react-native-quick-base64
 
-  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27(patch_hash=132491d02394f9d45ad49729db488a97c67f2c1eb2a7501cbbc8c69217aec74f)(685e4e97f63a794b035dd4d23667524b)':
+  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27(patch_hash=a5d6e333b2ca4b230e1861c5110b8dfe33487ace2d69269b41e373794a9c1b94)(685e4e97f63a794b035dd4d23667524b)':
     dependencies:
-      '@algorandfoundation/react-native-keystore': 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
+      '@algorandfoundation/react-native-keystore': 1.0.0-canary.20(685e4e97f63a794b035dd4d23667524b)
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@7.0.2)
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
@@ -14055,16 +14176,16 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@lanekeep/darwin-arm64@0.11.0':
+  '@lanekeep/darwin-arm64@0.12.0':
     optional: true
 
-  '@lanekeep/linux-arm64@0.11.0':
+  '@lanekeep/linux-arm64@0.12.0':
     optional: true
 
-  '@lanekeep/linux-x64@0.11.0':
+  '@lanekeep/linux-x64@0.12.0':
     optional: true
 
-  '@lanekeep/win32-x64@0.11.0':
+  '@lanekeep/win32-x64@0.12.0':
     optional: true
 
   '@ledgerhq/devices@8.16.0':
@@ -15042,7 +15163,7 @@ snapshots:
       '@svgr/core': 8.1.0(typescript@7.0.2)
       cosmiconfig: 8.3.6(typescript@7.0.2)
       deepmerge: 4.3.1
-      svgo: 3.3.4
+      svgo: 3.3.5
     transitivePeerDependencies:
       - typescript
 
@@ -15786,7 +15907,7 @@ snapshots:
   ajv@8.20.0:
     dependencies:
       fast-deep-equal: 3.1.3
-      fast-uri: 4.1.3
+      fast-uri: 4.1.4
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
@@ -16977,7 +17098,7 @@ snapshots:
 
   fast-text-encoding@1.0.6: {}
 
-  fast-uri@4.1.3: {}
+  fast-uri@4.1.4: {}
 
   fast-wrap-ansi@0.2.2:
     dependencies:
@@ -17526,7 +17647,7 @@ snapshots:
       saxes: 6.0.0
       symbol-tree: 3.2.4
       tough-cookie: 6.0.2
-      undici: 8.10.0
+      undici: 8.10.2
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -17567,12 +17688,12 @@ snapshots:
 
   lan-network@0.2.1: {}
 
-  lanekeep@0.11.0:
+  lanekeep@0.12.0:
     optionalDependencies:
-      '@lanekeep/darwin-arm64': 0.11.0
-      '@lanekeep/linux-arm64': 0.11.0
-      '@lanekeep/linux-x64': 0.11.0
-      '@lanekeep/win32-x64': 0.11.0
+      '@lanekeep/darwin-arm64': 0.12.0
+      '@lanekeep/linux-arm64': 0.12.0
+      '@lanekeep/linux-x64': 0.12.0
+      '@lanekeep/win32-x64': 0.12.0
 
   leven@3.1.0: {}
 
@@ -19359,7 +19480,7 @@ snapshots:
 
   svg-parser@2.0.4: {}
 
-  svgo@3.3.4:
+  svgo@3.3.5:
     dependencies:
       commander: 7.2.0
       css-select: 5.2.2
@@ -19508,7 +19629,7 @@ snapshots:
 
   undici-types@8.3.0: {}
 
-  undici@8.10.0: {}
+  undici@8.10.2: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 

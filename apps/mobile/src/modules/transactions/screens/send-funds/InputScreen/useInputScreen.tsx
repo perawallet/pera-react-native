@@ -40,6 +40,8 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { isAlgoAssetId, type Maybe } from '@perawallet/wallet-core-shared'
 
+type CloseAccountChoice = 'close' | 'keepOpen'
+
 export const useInputScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
@@ -228,21 +230,31 @@ export const useInputScreen = () => {
         )
     }, [selectedAssetId, accountInformation, baseAccountMbr])
 
-    const requestCloseAccountConfirm = useCallback(async () => {
-        return requestBottomSheet<boolean>({
+    // Keeping the account open is the primary choice: some exchanges reject
+    // incoming payments that carry a close-remainder-to.
+    const requestCloseAccountChoice = useCallback(async () => {
+        return requestBottomSheet<CloseAccountChoice>({
             contents: (
-                <ConfirmActionContent
+                <ConfirmActionContent<CloseAccountChoice>
                     icon='warning'
                     iconVariant='error'
                     title={t('send_funds.close_account.title')}
-                    message={t('send_funds.close_account.body')}
-                    confirmLabel={t('send_funds.close_account.confirm')}
+                    message={t('send_funds.close_account.body', {
+                        minBalance: minBalanceDisplay,
+                    })}
+                    confirmLabel={t('send_funds.close_account.keep_open')}
+                    confirmValue='keepOpen'
                     cancelLabel={t('common.cancel.label')}
+                    tertiaryLabel={t('send_funds.close_account.confirm')}
+                    tertiaryValue='close'
+                    tertiaryVariant='destructiveLight'
+                    confirmTestID='close_account_keep_open_button'
+                    tertiaryTestID='close_account_confirm_button'
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
         })
-    }, [requestBottomSheet, t])
+    }, [requestBottomSheet, t, minBalanceDisplay])
 
     const requestInsufficientBalanceConfirm = useCallback(async () => {
         return requestBottomSheet<boolean>({
@@ -312,11 +324,20 @@ export const useInputScreen = () => {
         setValueAndRef,
     ])
 
+    // Resets the close flag too: coming back from a confirmed close and
+    // picking the min-balance path would otherwise still send a close-out.
     const continuePastMbr = useCallback(() => {
+        setIsCloseAccount(false)
         setAmount(maxAmount)
         setValueAndRef(maxAmount.toString())
         proceedToDestination()
-    }, [maxAmount, proceedToDestination, setAmount, setValueAndRef])
+    }, [
+        maxAmount,
+        proceedToDestination,
+        setAmount,
+        setIsCloseAccount,
+        setValueAndRef,
+    ])
 
     const handleNext = useCallback(async () => {
         const amountValue = value ? new Decimal(value) : null
@@ -366,9 +387,11 @@ export const useInputScreen = () => {
                     continuePastMbr()
                 }
             } else if (canCloseAccount) {
-                const confirmed = await requestCloseAccountConfirm()
-                if (confirmed) {
+                const choice = await requestCloseAccountChoice()
+                if (choice === 'close') {
                     confirmCloseAccount()
+                } else if (choice === 'keepOpen') {
+                    continuePastMbr()
                 }
             } else {
                 const confirmed = await requestInsufficientBalanceConfirm()
@@ -394,7 +417,7 @@ export const useInputScreen = () => {
         isRekeyedSender,
         setIsCloseAccount,
         setAmount,
-        requestCloseAccountConfirm,
+        requestCloseAccountChoice,
         requestInsufficientBalanceConfirm,
         requestRekeyedMinBalanceConfirm,
         confirmCloseAccount,
@@ -448,6 +471,33 @@ export const useInputScreen = () => {
         [setValueAndRef],
     )
 
+    // A pasted amount replaces the current one, but only when it reads one way:
+    // digits with at most one '.' or ',' and no more decimals than the asset
+    // has. Anything else (letters, "1,234.56", "1.2.3") is dropped, never guessed.
+    const handlePaste = useCallback(
+        (text: string) => {
+            const match = /^(\d*)(?:[.,](\d*))?$/.exec(text.trim())
+            if (!match || !/\d/.test(text)) return
+            const [, whole, fraction] = match
+            const decimals = assetDecimalsRef.current
+            if (fraction !== undefined && decimals === 0) return
+            if (
+                fraction !== undefined &&
+                decimals != null &&
+                fraction.length > decimals
+            ) {
+                return
+            }
+            const integerPart = (whole || '0').replace(/^0+(?=\d)/, '')
+            setValueAndRef(
+                fraction === undefined
+                    ? integerPart
+                    : `${integerPart}.${fraction}`,
+            )
+        },
+        [setValueAndRef],
+    )
+
     return {
         asset,
         accountAssetBalance,
@@ -457,6 +507,7 @@ export const useInputScreen = () => {
         setMax,
         handleNext,
         handleKey,
+        handlePaste,
         // True while a deeplink-prefilled external receiver's opt-in status is
         // being resolved on-chain after the user confirms the amount — the
         // screen shows a spinner until the router navigates onward.

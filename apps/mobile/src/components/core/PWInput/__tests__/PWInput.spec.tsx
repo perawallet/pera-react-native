@@ -31,15 +31,6 @@ describe('PWInput', () => {
         expect(screen.getByPlaceholderText('Enter text')).toBeTruthy()
     })
 
-    it('calls onChangeText when text changes', () => {
-        render(
-            <PWInput
-                value='test'
-                onChangeText={() => {}}
-            />,
-        )
-    })
-
     // Retrying with simpler test case for input
     it('handles input events', () => {
         const onChangeText = vi.fn()

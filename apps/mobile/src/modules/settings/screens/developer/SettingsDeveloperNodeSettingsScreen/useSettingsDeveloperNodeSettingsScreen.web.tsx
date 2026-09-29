@@ -13,7 +13,9 @@
 import { useCallback, useMemo, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useNetwork, useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CustomNetworkSheet } from './CustomNetworkSheet'
 
@@ -21,29 +23,43 @@ import { CustomNetworkSheet } from './CustomNetworkSheet'
 // `./useSettingsDeveloperNodeSettingsScreen` import to THIS `.web` file
 // regardless of which module does the importing, so the native and web
 // hooks can't safely share this via a direct cross-import between the two
-// platform variants. `LABEL_KEYS` and `NetworkRow` still need duplicating.
+// platform variants. `NETWORK_ROWS` and `NetworkRow` still need duplicating.
 type NetworkRow = {
     network: Network
     labelKey: string
     isSelected: boolean
 }
 
-const LABEL_KEYS: Record<Network, string> = {
-    [Networks.mainnet]: 'settings.developer.node_settings.mainnet_label',
-    [Networks.testnet]: 'settings.developer.node_settings.testnet_label',
-    [Networks.betanet]: 'settings.developer.node_settings.betanet_label',
-    [Networks.custom]: 'settings.developer.node_settings.custom_label',
-}
-
 // Explicit display order: MainNet first. Object.values(Networks) follows the
 // declaration order in packages/config, which is testnet-first, and a screen's
 // row order should not be hostage to an unrelated object literal's ordering.
-const NETWORK_DISPLAY_ORDER: Network[] = [
-    Networks.mainnet,
-    Networks.testnet,
-    Networks.betanet,
-    Networks.custom,
+// Static keys: the i18n lint rules cannot verify an interpolated key.
+const NETWORK_ROWS: readonly { network: Network; labelKey: string }[] = [
+    {
+        network: Networks.mainnet,
+        labelKey: 'settings.developer.node_settings.mainnet_label',
+    },
+    {
+        network: Networks.testnet,
+        labelKey: 'settings.developer.node_settings.testnet_label',
+    },
+    {
+        network: Networks.betanet,
+        labelKey: 'settings.developer.node_settings.betanet_label',
+    },
+    {
+        network: Networks.custom,
+        labelKey: 'settings.developer.node_settings.custom_label',
+    },
 ]
+
+// A custom node serves balances and transaction previews, so a store-installed
+// production extension doesn't let a user be talked into pointing it anywhere.
+const isCustomNetworkOffered = (): boolean =>
+    !(
+        config.appEnvironment === 'production' &&
+        getProvider().deviceInfo.isStoreBuild()
+    )
 
 type UseSettingsDeveloperNodeSettingsScreenResult = {
     networks: NetworkRow[]
@@ -66,15 +82,15 @@ export const useSettingsDeveloperNodeSettingsScreen =
         const [isSwitching, setIsSwitching] = useState(false)
         const { request } = useBottomSheet()
 
-        const networks = useMemo(
-            () =>
-                NETWORK_DISPLAY_ORDER.map<NetworkRow>(network => ({
-                    network,
-                    labelKey: LABEL_KEYS[network],
-                    isSelected: network === activeNetwork,
-                })),
-            [activeNetwork],
-        )
+        const networks = useMemo(() => {
+            const offered = isCustomNetworkOffered()
+                ? NETWORK_ROWS
+                : NETWORK_ROWS.filter(row => row.network !== Networks.custom)
+            return offered.map<NetworkRow>(row => ({
+                ...row,
+                isSelected: row.network === activeNetwork,
+            }))
+        }, [activeNetwork])
 
         const selectNetwork = useCallback(
             async (network: Network): Promise<void> => {

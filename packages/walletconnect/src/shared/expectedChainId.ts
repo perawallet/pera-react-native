@@ -10,26 +10,30 @@
  limitations under the License
  */
 
-import { Networks, type Network } from '@perawallet/wallet-core-shared'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import { Networks, type Nullable } from '@perawallet/wallet-core-shared'
 import { AlgorandWalletConnectChainId } from '../models'
 
 /**
- * A `Record`, not a fallback ladder, so a new `Network` fails TypeScript here
- * instead of silently defaulting. `custom` borrows TestNet's id because a dApp
- * needs some CAIP id to open a session at all; `assertTransactionsMatchNetwork`
- * still rejects a genesis mismatch at submit time, so this never decides what gets signed.
+ * `custom` borrows TestNet's id because a dApp needs some CAIP id to open a
+ * session at all; `assertTransactionsMatchNetwork` still rejects a genesis
+ * mismatch at submit time, so this never decides what gets signed.
  */
-export const EXPECTED_CHAIN_ID_BY_NETWORK: Record<
-    Network,
+const EXPECTED_CHAIN_ID_BY_NETWORK: ReadonlyMap<
+    NetworkId,
     AlgorandWalletConnectChainId
-> = {
-    [Networks.mainnet]: AlgorandWalletConnectChainId.mainnet,
-    [Networks.testnet]: AlgorandWalletConnectChainId.testnet,
-    [Networks.betanet]: AlgorandWalletConnectChainId.betanet,
-    [Networks.custom]: AlgorandWalletConnectChainId.testnet,
-}
+> = new Map<NetworkId, AlgorandWalletConnectChainId>([
+    [Networks.mainnet, AlgorandWalletConnectChainId.mainnet],
+    [Networks.testnet, AlgorandWalletConnectChainId.testnet],
+    [Networks.betanet, AlgorandWalletConnectChainId.betanet],
+    [Networks.custom, AlgorandWalletConnectChainId.testnet],
+])
 
-/** The chain id a WalletConnect session/request must present for `network`. */
+/**
+ * The chain id a WalletConnect session/request must present on `networkId`,
+ * or `null` for a network with no id, which callers must reject.
+ */
 export const getExpectedChainId = (
-    network: Network,
-): AlgorandWalletConnectChainId => EXPECTED_CHAIN_ID_BY_NETWORK[network]
+    networkId: NetworkId,
+): Nullable<AlgorandWalletConnectChainId> =>
+    EXPECTED_CHAIN_ID_BY_NETWORK.get(networkId) ?? null

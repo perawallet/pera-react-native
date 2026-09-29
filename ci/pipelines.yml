@@ -1,0 +1,254 @@
+# The android jobs' `secrets` are the union of what ci/jobs/android.sh decodes,
+# what tools/dev/generate-config.sh bakes into the build, and what
+# tools/dev/validate-env.sh requires. The daemon fails a job before it runs if any
+# declared name is absent from secrets.env, so this list is also the operator's
+# checklist. tools/dev/validate-env.sh checks five of them under a PRODUCTION_/STAGING_
+# prefix for staging, six for production (REOWN_PROJECT_ID is added
+# conditionally — see tools/dev/validate-env.sh): the daemon resolves each by
+# that prefix and injects it under both the prefixed and the bare name, so
+# those must be stored prefixed in secrets.env — see docs/RUNNING.md in pera-ci.
+#
+# Names tools/dev/generate-config.sh can also bake, left out on purpose: algod/indexer/
+# genesis/explorer/support/legal URLs, ALGOD_API_KEY, INDEXER_API_KEY, the
+# Bidali/Baanx base URLs and the card USDC asset ids all carry safe non-empty
+# defaults in packages/config/src/main.ts; APP_STORE_APPLE_ID and the
+# Firebase Web SDK/GA4/Sentry vars are iOS- and browser-extension-only (see
+# device.ts / platform-chrome's services); MAINNET_BAANX_CLIENT_KEY has no
+# corresponding Bitrise secret at all (mainnet card isn't live — see main.ts's
+# mainnetBaanxTenantId TODO).
+_android_secrets: &android_secrets
+  - ANDROID_KEYSTORE_BASE64
+  - ANDROID_KEYSTORE_PASSWORD
+  - ANDROID_KEY_ALIAS
+  - ANDROID_KEY_PASSWORD
+  - ANDROID_GOOGLE_SERVICES_BASE64
+  - ANDROID_JSON_KEY_FILE
+  - FIREBASE_SERVICE_ACCOUNT_BASE64
+  - FIREBASE_APP_ID_ANDROID
+  - SLACK_WEBHOOK_URL
+  - MAINNET_BACKEND_URL
+  - TESTNET_BACKEND_URL
+  - BACKEND_API_KEY
+  - BACKUP_BASE_URL
+  - REOWN_PROJECT_ID
+  # Play Integrity attestation (extensions/platform-react-native's
+  # app-integrity.ts); empty default degrades attestation silently.
+  - PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER
+  # Bidali on-ramp API keys; empty defaults leave the feature dark with no
+  # build-time signal. The Bidali base URLs are left out — see note above.
+  - MAINNET_BIDALI_API_KEY
+  - TESTNET_BIDALI_API_KEY
+  # Card: on-chain ids + the pinned AutoDraw program hash the LogicSig
+  # template is rendered against. Empty defaults fail closed (see main.ts) —
+  # the USDC asset ids are left out because they default to the correct
+  # public network assets.
+  - MAINNET_CARD_W3CARD_APP_ID
+  - TESTNET_CARD_W3CARD_APP_ID
+  - MAINNET_CARD_KILLSWITCH_APP_ID
+  - TESTNET_CARD_KILLSWITCH_APP_ID
+  - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
+  # Required by main's tools/dev/validate-env.sh: an empty pin fails closed on the
+  # device, so auto funding would silently never work in the release.
+  - CARD_AUTODRAW_TEMPLATE_HASH
+  # Per environment, as tools/dev/setup-env-secrets.sh aliases it; unset, the Drive
+  # backup row reports itself unconfigured.
+  - GOOGLE_WEB_CLIENT_ID
+  # Card: testnet Baanx x-client-key (public identifier, not the server-only
+  # x-secret-key). tools/dev/setup-env-secrets.sh only aliases the testnet key —
+  # mainnet card isn't live yet (see main.ts's mainnetBaanxTenantId TODO).
+  - TESTNET_BAANX_CLIENT_KEY
+
+# The backend, Bidali and card config tools/dev/generate-config.sh bakes into every
+# client, repeated per platform below because YAML can't merge sequences. See
+# the android list for why each is here and what is left out.
+#
+# The iOS signing material is consumed by ci/jobs/lib/ios-keychain.sh.
+# APP_STORE_CONNECT_API_KEY_CONTENT is stored base64-encoded, unlike on
+# Bitrise, because the .p8 is multi-line and the daemon's values are not.
+_ios_secrets: &ios_secrets
+  - APP_STORE_CONNECT_API_KEY_CONTENT_BASE64
+  - APP_STORE_CONNECT_API_KEY_ISSUER_ID
+  - APP_STORE_CONNECT_API_KEY_KEY_ID
+  - IOS_TEAM_ID
+  - IOS_CERTIFICATE_P12_BASE64
+  - IOS_CERTIFICATE_PASSWORD
+  - IOS_PROVISIONING_PROFILE_BASE64
+  - IOS_AUTOFILL_PROVISIONING_PROFILE_BASE64
+  # Read by the Fastfile to pin each target's profile; must name the profiles
+  # decoded from the two blobs above.
+  - IOS_PROVISIONING_PROFILE_NAME
+  - IOS_AUTOFILL_PROVISIONING_PROFILE_NAME
+  - IOS_GOOGLE_SERVICE_INFO_BASE64
+  - APP_STORE_APPLE_ID
+  - SLACK_WEBHOOK_URL
+  - MAINNET_BACKEND_URL
+  - TESTNET_BACKEND_URL
+  - BACKEND_API_KEY
+  - BACKUP_BASE_URL
+  - REOWN_PROJECT_ID
+  - MAINNET_BIDALI_API_KEY
+  - TESTNET_BIDALI_API_KEY
+  - MAINNET_CARD_W3CARD_APP_ID
+  - TESTNET_CARD_W3CARD_APP_ID
+  - MAINNET_CARD_KILLSWITCH_APP_ID
+  - TESTNET_CARD_KILLSWITCH_APP_ID
+  - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
+  # See the android list.
+  - CARD_AUTODRAW_TEMPLATE_HASH
+  # Per environment. Unset, app.config.builder drops the iCloud and Google
+  # sign-in plugins, and entitlements are fixed at build time.
+  - GOOGLE_IOS_CLIENT_ID
+  - GOOGLE_WEB_CLIENT_ID
+  - IOS_ICLOUD_CONTAINER_ID
+  - TESTNET_BAANX_CLIENT_KEY
+
+# tools/dev/validate-env.sh's web profile treats the Firebase Web SDK, GA4 and Sentry
+# names as optional because the extension degrades without them. They are
+# declared here anyway, which makes them required: the degradation is silent
+# (no Remote Config, analytics, crash reporting or push), and the daemon has
+# no optional-secret form to warn instead.
+_web_secrets: &web_secrets
+  - SLACK_WEBHOOK_URL
+  - MAINNET_BACKEND_URL
+  - TESTNET_BACKEND_URL
+  - BACKEND_API_KEY
+  - BACKUP_BASE_URL
+  - REOWN_PROJECT_ID
+  - MAINNET_BIDALI_API_KEY
+  - TESTNET_BIDALI_API_KEY
+  - MAINNET_CARD_W3CARD_APP_ID
+  - TESTNET_CARD_W3CARD_APP_ID
+  - MAINNET_CARD_KILLSWITCH_APP_ID
+  - TESTNET_CARD_KILLSWITCH_APP_ID
+  - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_BAANX_CLIENT_KEY
+  - FIREBASE_API_KEY
+  - FIREBASE_AUTH_DOMAIN
+  - FIREBASE_DATABASE_URL
+  - FIREBASE_PROJECT_ID
+  - FIREBASE_STORAGE_BUCKET
+  - FIREBASE_MESSAGING_SENDER_ID
+  - FIREBASE_APP_ID
+  - FIREBASE_MEASUREMENT_ID
+  # Must belong to the same Firebase project as FIREBASE_PROJECT_ID, or
+  # Chrome's push service rejects the subscription and no token is minted.
+  - FIREBASE_VAPID_KEY
+  - GA_MEASUREMENT_API_SECRET
+  - SENTRY_DSN
+
+pipelines:
+  release:
+    on_tag: '^v\d+\.\d+\.\d+(-rc\.\d+)?$'
+    jobs:
+      # pnpm run test is the full unit + mobile-integration suite. 30 minutes
+      # matches this repo's other whole-suite CI jobs (ci-localnet-conformance,
+      # security-codeql in .github/workflows) and, unlike those, a hang here
+      # also holds the serial queue and the signing host — the android jobs'
+      # 45-minute budget would let a hung test job block a build for as long
+      # as the build itself.
+      test: { script: ci/jobs/test.sh, env: { VALIDATE_PROFILE: test }, timeout_minutes: 30 }
+      # allow_failure: release notes are not worth skipping a release build for.
+      # Bitrise treats the changelog the same way.
+      changelog: { script: ci/jobs/changelog.sh, allow_failure: true }
+      android-production:
+        script: ci/jobs/android.sh
+        needs: [test, changelog]
+        env:
+          VALIDATE_PROFILE: android
+          ENVIRONMENT: production
+          APP_ENV: production
+          # Raise past Bitrise's last BITRISE_BUILD_NUMBER before
+          # CI_UPLOADS_ENABLED is turned on for this pipeline — CI_RUN_ID
+          # starts at 1 here, and an unraised offset makes versionCode go
+          # backwards, which Play rejects as a non-increasing upload.
+          BUILD_NUMBER_OFFSET: '0'
+        secrets: *android_secrets
+        timeout_minutes: 45
+      # No changelog: TestFlight takes no release notes from this lane.
+      ios-production:
+        script: ci/jobs/ios.sh
+        needs: [test]
+        env:
+          VALIDATE_PROFILE: ios
+          ENVIRONMENT: production
+          APP_ENV: production
+          IOS_SCHEME: PeraAlgoWallet
+          # As android's: raise past Bitrise's last BITRISE_BUILD_NUMBER
+          # before uploads are enabled, or TestFlight rejects the build number.
+          BUILD_NUMBER_OFFSET: '0'
+        secrets: *ios_secrets
+        timeout_minutes: 60
+      web-production:
+        script: ci/jobs/web.sh
+        needs: [test]
+        env:
+          VALIDATE_PROFILE: web
+          ENVIRONMENT: production
+          APP_ENV: production
+          # As android's: raise past Bitrise's last BITRISE_BUILD_NUMBER
+          # before uploads are enabled, or the manifest version goes backwards.
+          BUILD_NUMBER_OFFSET: '0'
+        secrets: *web_secrets
+        timeout_minutes: 30
+      notify:
+        script: ci/jobs/notify.sh
+        needs: [test, changelog, android-production, ios-production, web-production]
+        always_run: true
+
+  nightly:
+    on_tag: '^v\d+\.\d+\.\d+-alpha\.\d+$'
+    jobs:
+      # See the release pipeline's test job for the timeout rationale.
+      test: { script: ci/jobs/test.sh, env: { VALIDATE_PROFILE: test }, timeout_minutes: 30 }
+      changelog: { script: ci/jobs/changelog.sh, allow_failure: true }
+      android-staging:
+        script: ci/jobs/android.sh
+        needs: [test, changelog]
+        env:
+          VALIDATE_PROFILE: android
+          ENVIRONMENT: staging
+          APP_ENV: staging
+          DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+          # Testers install on phones, so staging skips the x86 and x86_64
+          # emulator builds of every native module: about half the native
+          # compile. Production still builds every ABI for Play.
+          ORG_GRADLE_PROJECT_reactNativeArchitectures: arm64-v8a,armeabi-v7a
+          # Raise past Bitrise's last BITRISE_BUILD_NUMBER before
+          # CI_UPLOADS_ENABLED is turned on for this pipeline — CI_RUN_ID
+          # starts at 1 here, and an unraised offset makes versionCode go
+          # backwards, which Play rejects as a non-increasing upload.
+          BUILD_NUMBER_OFFSET: '0'
+        secrets: *android_secrets
+        timeout_minutes: 45
+      ios-staging:
+        script: ci/jobs/ios.sh
+        needs: [test]
+        env:
+          VALIDATE_PROFILE: ios
+          ENVIRONMENT: staging
+          APP_ENV: staging
+          DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+          IOS_SCHEME: Pera7Staging
+          # See ios-production.
+          BUILD_NUMBER_OFFSET: '0'
+        secrets: *ios_secrets
+        timeout_minutes: 60
+      web-staging:
+        script: ci/jobs/web.sh
+        needs: [test]
+        env:
+          VALIDATE_PROFILE: web
+          ENVIRONMENT: staging
+          APP_ENV: staging
+          DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+          # See web-production.
+          BUILD_NUMBER_OFFSET: '0'
+        secrets: *web_secrets
+        timeout_minutes: 30
+      notify:
+        script: ci/jobs/notify.sh
+        needs: [test, changelog, android-staging, ios-staging, web-staging]
+        always_run: true

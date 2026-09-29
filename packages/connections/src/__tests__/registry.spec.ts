@@ -24,7 +24,7 @@ import type {
     ConnectionOrigin,
     ConnectionStoreAPI,
 } from '@perawallet/wallet-extension-connections'
-import { memoryStore } from '../testing/handler-contract'
+import { memoryStore } from './handler-contract'
 
 /** A handler with no URI: the origin-identified `'dapp'` shape. */
 const makeOriginHandler = (

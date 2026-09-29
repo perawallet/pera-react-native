@@ -14,6 +14,12 @@ import { describe, expect, it, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { AppState } from 'react-native'
 
+type FakeKeystoreKey = {
+    id: string
+    type: string
+    metadata?: Record<string, unknown>
+}
+
 const {
     initializeMock,
     managerMock,
@@ -22,8 +28,14 @@ const {
     importContactsMock,
     resolveHdMock,
     resolveMnemonicMock,
+    listPasskeysMock,
+    importPasskeysMock,
+    resolveSeedEntropyMock,
     isEnabledMock,
     backupIdRef,
+    keysRef,
+    keystoreListeners,
+    passkeyChangeListeners,
 } = vi.hoisted(() => ({
     initializeMock: vi.fn(),
     managerMock: { start: vi.fn(), stop: vi.fn() },
@@ -32,8 +44,18 @@ const {
     importContactsMock: vi.fn(),
     resolveHdMock: vi.fn(),
     resolveMnemonicMock: vi.fn(),
+    listPasskeysMock: vi.fn(async () => []),
+    importPasskeysMock: vi.fn(async () => ({
+        imported: 0,
+        skipped: [],
+        failed: [],
+    })),
+    resolveSeedEntropyMock: vi.fn(),
     isEnabledMock: vi.fn(),
     backupIdRef: { current: null as string | null },
+    keysRef: { current: [] as FakeKeystoreKey[] },
+    keystoreListeners: new Set<() => void>(),
+    passkeyChangeListeners: new Set<() => void>(),
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
@@ -48,6 +70,40 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
         select({ backupId: backupIdRef.current }),
     useResolveHdSeedForBackup: () => resolveHdMock,
     useResolveMnemonicForBackup: () => resolveMnemonicMock,
+    useResolveSeedEntropyForBackup: () => resolveSeedEntropyMock,
+    useCloudBackupPasskeyImport: () => ({
+        importPasskeys: importPasskeysMock,
+    }),
+    // Deterministic stand-in for the real `canonicalJson` (sorted-key JSON):
+    // the hook only needs "same input -> same string", and the real
+    // implementation drags in the whole package's dependency graph, which
+    // this file otherwise keeps fully mocked out.
+    canonicalJson: (value: unknown) =>
+        JSON.stringify(value, Object.keys(value as object).sort()),
+}))
+
+vi.mock('../useListPasskeysForBackup', () => ({
+    useListPasskeysForBackup: () => listPasskeysMock,
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getKeystoreStore: () => ({
+        get state() {
+            return { keys: keysRef.current }
+        },
+        subscribe: (listener: () => void) => {
+            keystoreListeners.add(listener)
+            return { unsubscribe: () => keystoreListeners.delete(listener) }
+        },
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-passkeys', () => ({
+    isPasskeyKey: (key: FakeKeystoreKey) => key.type === 'hd-derived-p256',
+    subscribeToPasskeyChanges: (listener: () => void) => {
+        passkeyChangeListeners.add(listener)
+        return () => passkeyChangeListeners.delete(listener)
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -74,6 +130,18 @@ const setAppState = (state: string) => {
 const emitAppState = (state: string) => {
     const listener = (AppState.addEventListener as Mock).mock.calls.at(-1)?.[1]
     listener?.(state)
+}
+
+/** Fires every listener registered with the fake keystore store, simulating a
+ *  `setState` — matching how `@tanstack/store` notifies on every write. */
+const emitKeystoreChange = () => {
+    for (const listener of [...keystoreListeners]) listener()
+}
+
+/** Stands in for the passkeys package announcing a flat-record write or a
+ *  native delete, neither of which touches the keystore store. */
+const emitPasskeyChange = () => {
+    for (const listener of [...passkeyChangeListeners]) listener()
 }
 
 describe('useBackupSyncLifecycle', () => {
@@ -149,5 +217,124 @@ describe('useBackupSyncLifecycle', () => {
                 type: 'info',
             }),
         )
+    })
+
+    describe('subscribePasskeyChanges', () => {
+        beforeEach(() => {
+            keysRef.current = []
+            keystoreListeners.clear()
+            passkeyChangeListeners.clear()
+        })
+
+        it('does not report an unrelated keystore write', () => {
+            keysRef.current = [{ id: 'seed-1', type: 'hd-root-key' }]
+            renderHook(() => useBackupSyncLifecycle())
+            const deps = (initializeMock as Mock).mock.calls[0][0]
+            const onChange = vi.fn()
+            deps.subscribePasskeyChanges(onChange)
+
+            // An HD derivation adds a non-passkey key; the passkey fingerprint
+            // (ids + counters of hd-derived-p256 keys only) is unchanged.
+            keysRef.current = [
+                { id: 'seed-1', type: 'hd-root-key' },
+                { id: 'seed-2', type: 'hd-root-key' },
+            ]
+            emitKeystoreChange()
+
+            expect(onChange).not.toHaveBeenCalled()
+        })
+
+        it('reports a real passkey change', () => {
+            keysRef.current = [
+                {
+                    id: 'cred-1',
+                    type: 'hd-derived-p256',
+                    metadata: { counter: 0 },
+                },
+            ]
+            renderHook(() => useBackupSyncLifecycle())
+            const deps = (initializeMock as Mock).mock.calls[0][0]
+            const onChange = vi.fn()
+            deps.subscribePasskeyChanges(onChange)
+
+            keysRef.current = [
+                {
+                    id: 'cred-1',
+                    type: 'hd-derived-p256',
+                    metadata: { counter: 1 },
+                },
+            ]
+            emitKeystoreChange()
+
+            expect(onChange).toHaveBeenCalledTimes(1)
+        })
+
+        it('reports a new passkey being added', () => {
+            keysRef.current = []
+            renderHook(() => useBackupSyncLifecycle())
+            const deps = (initializeMock as Mock).mock.calls[0][0]
+            const onChange = vi.fn()
+            deps.subscribePasskeyChanges(onChange)
+
+            keysRef.current = [
+                {
+                    id: 'cred-1',
+                    type: 'hd-derived-p256',
+                    metadata: { counter: 0 },
+                },
+            ]
+            emitKeystoreChange()
+
+            expect(onChange).toHaveBeenCalledTimes(1)
+        })
+
+        it('stops reporting once unsubscribed', () => {
+            keysRef.current = [
+                {
+                    id: 'cred-1',
+                    type: 'hd-derived-p256',
+                    metadata: { counter: 0 },
+                },
+            ]
+            renderHook(() => useBackupSyncLifecycle())
+            const deps = (initializeMock as Mock).mock.calls[0][0]
+            const onChange = vi.fn()
+            const unsubscribe = deps.subscribePasskeyChanges(onChange)
+            unsubscribe()
+
+            keysRef.current = [
+                {
+                    id: 'cred-1',
+                    type: 'hd-derived-p256',
+                    metadata: { counter: 1 },
+                },
+            ]
+            emitKeystoreChange()
+
+            expect(onChange).not.toHaveBeenCalled()
+        })
+
+        it('reports a passkey change announced outside the keystore store', () => {
+            renderHook(() => useBackupSyncLifecycle())
+            const deps = (initializeMock as Mock).mock.calls[0][0]
+            const onChange = vi.fn()
+            deps.subscribePasskeyChanges(onChange)
+
+            emitPasskeyChange()
+
+            expect(onChange).toHaveBeenCalledTimes(1)
+        })
+
+        it('stops reporting announced changes once unsubscribed', () => {
+            renderHook(() => useBackupSyncLifecycle())
+            const deps = (initializeMock as Mock).mock.calls[0][0]
+            const onChange = vi.fn()
+            const unsubscribe = deps.subscribePasskeyChanges(onChange)
+            unsubscribe()
+
+            emitPasskeyChange()
+
+            expect(onChange).not.toHaveBeenCalled()
+        })
     })
 })

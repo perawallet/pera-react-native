@@ -36,9 +36,13 @@ import {
 } from '@perawallet/wallet-core-background'
 import { canSignWith, useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
-    useCustomNetworkStore,
+    getCustomNetworkConfig,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    ALGORAND_CHAIN_ID,
+    registerChain as registerAlgorandChain,
+} from '@perawallet/wallet-core-chain-algorand'
 import {
     bootConnections,
     createConnectionRegistry,
@@ -52,6 +56,7 @@ import {
     createWalletConnectV1Handler,
     importLegacyConnections,
 } from '@perawallet/wallet-core-walletconnect'
+import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
@@ -61,14 +66,11 @@ const OFFSCREEN_POLL_INTERVAL_MS = 30_000
 
 // zustand persist hydrates once at import and this context is long-lived, so
 // writes from other contexts must be re-read. Keys are `kv:` + STORE_NAME.
-// custom-network-store must stay paired with network-store: rehydration demotes
-// a persisted `custom` to config.defaultNetwork when the custom slot has no config.
 const REHYDRATE_BY_KEY: Record<
     string,
     { persist: { rehydrate: () => unknown } }
 > = {
     'kv:accounts-store': useAccountsStore,
-    'kv:custom-network-store': useCustomNetworkStore,
     'kv:network-store': useNetworkStore,
     'kv:polling-store': usePollingStore,
 }
@@ -106,6 +108,8 @@ export const runOffscreenApp = async (): Promise<void> => {
         key => void REHYDRATE_BY_KEY[key]?.persist.rehydrate(),
     )
 
+    // Before sync starts: its first tick reads the chain kill switch.
+    getProvider().chains.setCapabilityOverrides(readCapabilityOverrides)
     initializeSyncService({
         queryClient,
         stores: createSyncStorePorts(),
@@ -122,6 +126,9 @@ export const runOffscreenApp = async (): Promise<void> => {
     const storage = provider.keyValueStorage
     const sessionKeys = createStorageSessionKeyStore(storage)
     const registry = createConnectionRegistry({ store })
+    // Before the dApp handler starts: it answers any chain without an adapter
+    // with an error, so a request arriving first would be refused.
+    registerAlgorandChain()
     registry.register(
         createWalletConnectV1Handler({
             getNetwork: () => useNetworkStore.getState().network,
@@ -131,9 +138,10 @@ export const runOffscreenApp = async (): Promise<void> => {
     registry.register(
         createDappConnectionHandler({
             transport: createChromeDappTransport(),
+            chainId: ALGORAND_CHAIN_ID,
             getNetwork: () => useNetworkStore.getState().network,
             getCustomNetworkGenesisHash: () =>
-                useCustomNetworkStore.getState().customNetwork?.genesisHash,
+                getCustomNetworkConfig()?.genesisHash,
             getAccounts: () => {
                 const { accounts } = useAccountsStore.getState()
                 return accounts.flatMap(account =>

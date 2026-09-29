@@ -20,6 +20,7 @@ import type {
     XoQuote,
     RampOrder,
 } from '@perawallet/wallet-core-onramp'
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampForm } from '../useOnrampForm'
 import { OnrampTermsContent } from '../../OnrampTermsContent'
 
@@ -53,9 +54,11 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
     >('@perawallet/wallet-core-onramp')
     return {
         ...actual,
+        useEnsureRampDestination: () => ({
+            ensureCanReceive: mockEnsureOptIn,
+        }),
         useCreateRampQuoteMutation: () => ({ mutateAsync: mockCreateQuote }),
         useCreateRampOrderMutation: () => ({ mutateAsync: mockCreateOrder }),
-        useEnsureDestinationOptIn: () => ({ ensureOptIn: mockEnsureOptIn }),
         useOnramp: () => ({
             senderAddress: mockSenderAddress,
             setSenderAddress: mockSetSenderAddress,
@@ -92,8 +95,10 @@ vi.mock('@components/AddressDisplay', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane, so
     // this stub can never route a consumer past a `=== null` guard.
-    getKnownAssetId: (_key: string, network: string) =>
-        ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
+    getKnownAssetId: (
+        _key: string,
+        { networkId: network }: { networkId: string },
+    ) => ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
     // Imported at module scope by OptInConfirmationContent (rendered via the
     // confirm-opt-in sheet the form hook now requests).
     ALGO_ASSET: { assetId: '0', unitName: 'ALGO', decimals: 6 },
@@ -267,6 +272,7 @@ const belowMinQuoteError = buildBelowMinQuoteError(
 
 describe('useOnrampForm', () => {
     beforeEach(() => {
+        registerAlgorandRampAdapter()
         vi.clearAllMocks()
         vi.useFakeTimers()
         vi.spyOn(Linking, 'openURL').mockImplementation(mockOpenURL)

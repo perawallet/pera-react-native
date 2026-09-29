@@ -179,6 +179,28 @@ describe('useAssetOptInMutation', () => {
         expect(mockSubmit).not.toHaveBeenCalled()
     })
 
+    it('reports the ALGO shortfall so the toast can say how much is missing', async () => {
+        // 100000 minBalance + 100000 assetMbr + 1000 fee = 201000 needed;
+        // 100000 held leaves 101000 microAlgos short.
+        mockAccountInformation.mockResolvedValueOnce({
+            amount: 100000n,
+            minBalance: 100000n,
+            assets: [],
+        })
+
+        const { result } = renderHook(() => useAssetOptInMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await expect(
+                result.current.optIn({ sender: 'SENDER', assetId: 12345n }),
+            ).rejects.toMatchObject({
+                metadata: { params: { shortfall: '0.101' } },
+            })
+        })
+    })
+
     it('balance check follows the remote-config asset MBR', async () => {
         // Non-default asset MBR (200000). Balance 250000 clears the old
         // threshold (100000 + 100000 + 1000 = 201000) but not the new one

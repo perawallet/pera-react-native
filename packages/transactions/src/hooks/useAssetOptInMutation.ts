@@ -13,7 +13,11 @@
 import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
 import { insertAssetHolding } from '@perawallet/wallet-core-accounts'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
-import { assertOnline } from '@perawallet/wallet-core-shared'
+import {
+    assertOnline,
+    formatCurrency,
+    microAlgosToAlgos,
+} from '@perawallet/wallet-core-shared'
 import {
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
@@ -38,6 +42,18 @@ const SOURCE = {
     name: 'asset-opt-in',
     description: 'Opt in to an asset',
 }
+
+// minPrecision 0 trims trailing zeros, so 0.1 ALGO reads "0.1", not "0.100000".
+const formatAlgoShortfall = (microAlgos: bigint): string =>
+    formatCurrency(
+        microAlgosToAlgos(microAlgos),
+        6,
+        'ALGO',
+        undefined,
+        false,
+        false,
+        0,
+    )
 
 export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     const { assetMbr } = useMinimumFeeConfig()
@@ -75,7 +91,9 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 const balanceNeeded =
                     accountInfo.minBalance + assetMbr + feeTotal
                 if (accountInfo.amount < balanceNeeded) {
-                    throw new InsufficientBalanceForOptInError()
+                    throw new InsufficientBalanceForOptInError(
+                        formatAlgoShortfall(balanceNeeded - accountInfo.amount),
+                    )
                 }
 
                 const { txIds } = await submit(unsignedTxs)

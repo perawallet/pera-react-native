@@ -12,6 +12,7 @@
 
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
 
 const mocks = vi.hoisted(() => ({
@@ -24,6 +25,28 @@ const mocks = vi.hoisted(() => ({
         restart: mocks.restart,
     })),
     requestBottomSheet: vi.fn(),
+    appEnvironment: 'development',
+    isStoreBuild: false,
+}))
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    return {
+        ...actual,
+        config: {
+            ...actual.config,
+            get appEnvironment() {
+                return mocks.appEnvironment
+            },
+        },
+    }
+})
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        deviceInfo: { isStoreBuild: () => mocks.isStoreBuild },
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -62,6 +85,8 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.network = Networks.mainnet
+        mocks.appEnvironment = 'development'
+        mocks.isStoreBuild = false
         mocks.getSyncService.mockImplementation(() => ({
             invalidateQueries: mocks.invalidateQueries,
             restart: mocks.restart,
@@ -74,12 +99,26 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         )
 
         // Guards against a network being added to the union without a
-        // matching NETWORK_DISPLAY_ORDER entry — a plain Network[] type
+        // matching NETWORK_ROWS entry — a plain Network[] type
         // can't catch that at compile time.
         expect(result.current.networks.map(row => row.network).sort()).toEqual(
             Object.values(Networks).sort(),
         )
     })
+
+    it.each(algorandDescriptor.networks.map(network => network.id))(
+        'has a row with its own label key for declared network %s',
+        networkId => {
+            const { result } = renderHook(() =>
+                useSettingsDeveloperNodeSettingsScreen(),
+            )
+
+            expect(
+                result.current.networks.find(row => row.network === networkId)
+                    ?.labelKey,
+            ).toBe(`settings.developer.node_settings.${networkId}_label`)
+        },
+    )
 
     it('displays MainNet first, followed by TestNet, BetaNet, then Custom', () => {
         const { result } = renderHook(() =>
@@ -93,6 +132,33 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
             Networks.custom,
         ])
         expect(result.current.networks[0].network).toBe(Networks.mainnet)
+    })
+
+    it('drops Custom in a store-installed production build', () => {
+        mocks.appEnvironment = 'production'
+        mocks.isStoreBuild = true
+
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        expect(result.current.networks.map(row => row.network)).toEqual([
+            Networks.mainnet,
+            Networks.testnet,
+            Networks.betanet,
+        ])
+    })
+
+    it('keeps Custom in an unpacked production build', () => {
+        mocks.appEnvironment = 'production'
+
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        expect(result.current.networks.map(row => row.network)).toContain(
+            Networks.custom,
+        )
     })
 
     it('marks the active network as selected and the rest as not', () => {

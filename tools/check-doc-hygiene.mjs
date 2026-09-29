@@ -1,19 +1,21 @@
 #!/usr/bin/env node
-// Doc and comment hygiene. Catches the drift a reviewer stops noticing:
-// references to work items that mean nothing in six months, and paths that
-// have quietly stopped existing.
+// Doc hygiene for Markdown, shell and YAML. Catches the drift a reviewer
+// stops noticing: references to work items that mean nothing in six months,
+// and paths that have quietly stopped existing. Code comments are checked by
+// the lanekeep rule pera/no-work-item-refs instead.
 //
 // Usage: node tools/check-doc-hygiene.mjs [--warn-only] [--json]
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
+import { WORK_ITEM } from './lib/work-item-pattern.mjs'
 
-const ROOT = resolve(import.meta.dirname, '..')
+// Overridable so tools/__tests__ can point the script at a synthetic repo.
+const ROOT = process.env.DOC_HYGIENE_ROOT ?? resolve(import.meta.dirname, '..')
 const warnOnly = process.argv.includes('--warn-only')
 const asJson = process.argv.includes('--json')
 
-const WORK_ITEM = /\b(?:PERA-\d+|PQ-0\d\d|IAB-\d+|WB-\d+|F-\d{4}-\d+|Task \d+|M\d+ [Tt]ask)\b/
 const DOC_LINE_BUDGET = 400
 
 // Wrongness fails the check. Length is a smell that needs a human to judge, so
@@ -35,9 +37,22 @@ const UNRESOLVABLE = /[<>*{}\[\]…?]|\$\{/
 const REPO_ROOTS =
     /^(apps|packages|extensions|tools|docs|conformance|specs|patches|\.github|\.claude)\//
 
+// A gitignored path is generated (e.g. packages/config/src/generated-env.ts),
+// so whether it exists depends on the last build, not on the doc.
+// check-ignore exits 1 for "not ignored" and 128 on a real error; both read
+// as not ignored, which keeps the finding.
+const isIgnored = p => {
+    try {
+        execFileSync('git', ['check-ignore', '-q', p], { cwd: ROOT })
+        return true
+    } catch {
+        return false
+    }
+}
+
 const tracked = execFileSync(
     'git',
-    ['ls-files', '*.md', '*.ts', '*.tsx', '*.js', '*.mjs', '*.cjs', '*.sh', '*.yml'],
+    ['ls-files', '*.md', '*.sh', '*.yml', '*.yaml'],
     { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
 )
     .split('\n')
@@ -92,7 +107,6 @@ for (const file of tracked) {
     // This file names the patterns it forbids, and CLAUDE.md quotes them as
     // examples, so neither can be scanned for them.
     const selfReferential =
-        file === 'tools/check-doc-hygiene.mjs' ||
         file === 'CLAUDE.md' ||
         file === '.claude/skills/writing-docs/SKILL.md'
 
@@ -139,7 +153,7 @@ for (const file of tracked) {
             const p = m[1].trim().replace(/[.,;:)]+$/, '')
             if (!REPO_ROOTS.test(p) || UNRESOLVABLE.test(p)) continue
             if (p.includes(' ')) continue
-            if (!existsSync(join(ROOT, p))) {
+            if (!existsSync(join(ROOT, p)) && !isIgnored(p)) {
                 add(
                     'stale-path',
                     file,

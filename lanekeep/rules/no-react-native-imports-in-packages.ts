@@ -3,6 +3,7 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { withoutTests } from '../shared/scope.js'
 
 type AllowedImport = {
     file: string
@@ -34,7 +35,12 @@ const ALLOWED: readonly AllowedImport[] = [
         reason: "Reads the native autofill module's keystore envelope, which has no provider API.",
     },
     {
-        file: 'packages/migrate/src/migrate/passkeys/writeNativePasskeyEntry.ts',
+        file: 'packages/passkeys/src/native/readFlatKeystoreRecords.ts',
+        specifier: '@algorandfoundation/react-native-keystore',
+        reason: "Reads the native autofill module's keystore envelope, which has no provider API.",
+    },
+    {
+        file: 'packages/passkeys/src/native/writeNativePasskeyEntry.ts',
         specifier: '@algorandfoundation/react-native-keystore',
         reason: "Writes into the native autofill module's keystore envelope, which has no provider API.",
     },
@@ -78,9 +84,9 @@ export default defineRule({
             good: "import { getProvider } from '@perawallet/wallet-extension-provider'\nconst isIOS = getProvider().deviceInfo.getDevicePlatform() === 'ios'",
         },
     },
-    gates: {
+    gates: withoutTests({
         pathMatches: ['**/packages/*/src/**'],
-    },
+    }),
     // Every form that creates the dependency: static, `export … from`, a
     // deferred `import()` and a CommonJS `require`.
     query: `

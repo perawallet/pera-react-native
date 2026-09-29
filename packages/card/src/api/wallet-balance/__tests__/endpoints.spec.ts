@@ -19,7 +19,6 @@ vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
 import {
     fetchWalletBalance,
     fetchWalletHistory,
-    fetchWalletWithdrawEstimation,
     withdrawWalletBalance,
 } from '../endpoints'
 import { CardWalletKind } from '../../../models'
@@ -95,35 +94,6 @@ describe.each([
             await expect(
                 fetchWalletBalance({ kind, network: 'mainnet' }),
             ).rejects.toThrow()
-        })
-    })
-
-    describe('fetchWalletWithdrawEstimation', () => {
-        it('GETs the estimation authenticated and wraps the fee in Decimal', async () => {
-            request.mockResolvedValue({
-                data: {
-                    gas: '6219123007416',
-                    fee: '0.000006219123007416',
-                    // Deprecated twins the schema must strip, not choke on.
-                    wei: '6219123007416',
-                    eth: '0.000006219123007416',
-                },
-            })
-
-            const estimation = await fetchWalletWithdrawEstimation({
-                kind,
-                network: 'mainnet',
-            })
-
-            expect(request).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    method: 'GET',
-                    path: `${basePath}/withdraw-estimation`,
-                    authenticated: true,
-                }),
-            )
-            expect(estimation.fee.toString()).toBe('0.000006219123007416')
-            expect(estimation.gas).toBe('6219123007416')
         })
     })
 

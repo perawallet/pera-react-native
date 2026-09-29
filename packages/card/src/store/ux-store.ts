@@ -89,6 +89,15 @@ export const useCardStore: UseBoundStore<
                     // approval is recorded separately once the AB call succeeds.
                     escrowCardApproved: false,
                 }),
+            restoreEscrowCard: ({ cardAddress, ownerAddress, network }) =>
+                set({
+                    escrowCardAddress: cardAddress,
+                    escrowCardOwner: ownerAddress,
+                    escrowCardNetwork: network,
+                    escrowCardTxId: null,
+                    escrowCardApproved: true,
+                    connectedFundingSourceAddress: ownerAddress,
+                }),
             markEscrowCardApproved: () => set({ escrowCardApproved: true }),
             setCardSnapshot: ({ cardId, status, panLast4 }) =>
                 set({

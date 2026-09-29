@@ -19,7 +19,11 @@ import {
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
-import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatNumber,
+    isPeraNetworkError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useIsQuantumSwapEnabled } from '@hooks/useIsQuantumSwapEnabled'
 import { useLanguage } from '@hooks/useLanguage'
@@ -93,6 +97,10 @@ type UseSwapExecutionResult = {
 
 type DisplayedFailure = { message: string; title?: string }
 
+const isProviderRejection = (error: unknown): boolean =>
+    isPeraNetworkError(error) &&
+    (error.kind === 'client' || error.kind === 'server')
+
 // Status is set synchronously with the returned outcome rather than derived
 // from the mutation's result, which React Query publishes a macrotask later:
 // callers act on the outcome immediately and must not see a stale status.
@@ -137,7 +145,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     )
                     return { message: copy.body, title: copy.title }
                 }
-                case 'insufficient-algo': {
+                case 'insufficient-native-balance': {
                     const { sign, integer, fraction } = formatNumber(
                         microAlgosToAlgos(failure.shortfall),
                         6,
@@ -151,10 +159,25 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         title: t('swap.execution.insufficient_algo_title'),
                     }
                 }
-                // A backend 4xx or an offline failure surfaces its own copy —
-                // never the algod fallback, which would blame the node for a
-                // request that never reached it.
-                case 'prepare-failed':
+                // The backend answered, so the chosen provider couldn't build
+                // this swap; another provider usually can.
+                case 'prepare-failed': {
+                    if (isProviderRejection(failure.error)) {
+                        return {
+                            message: t('swap.execution.provider_failed_body'),
+                        }
+                    }
+                    const copy = resolveErrorCopy(
+                        failure.error,
+                        t,
+                        undefined,
+                        getMessage,
+                    )
+                    return { message: copy.body, title: copy.title }
+                }
+                // An offline failure surfaces its own copy — never the algod
+                // fallback, which would blame the node for a request that
+                // never reached it.
                 case 'submission-failed': {
                     const copy = resolveErrorCopy(
                         failure.error,

@@ -16,37 +16,31 @@ const GENERIC_REJECT_REASON = 'The user rejected the connection'
 
 /**
  * Errors whose `message` may be relayed verbatim to untrusted web content.
- * Deny-by-default — anything not named here gets {@link GENERIC_ERROR_MESSAGE}.
- * Membership of an error hierarchy is no substitute: `PipelineError` subclasses
- * wrap third-party text verbatim (`TransportError`, `SourceError`) and
- * interpolate wallet-held addresses (`CannotSignError`,
- * `NoLocalParticipantsError`) — the exact data `Arc0001Error`'s own docblock
- * forbids sending to a remote peer.
- *
- * The two entries earn their place: ARC-0001 requires a meaningful message
- * alongside the numeric code, and those strings only echo the dApp's own request
- * back at it; `UserCancelledError` is a fixed literal with no interpolation.
+ * Deny-by-default: anything not named here or by the caller gets
+ * {@link GENERIC_ERROR_MESSAGE}. `UserCancelledError` is a fixed literal with no
+ * interpolation; each chain adapter names its own protocol errors on top.
  *
  * Matched by name rather than `instanceof` deliberately. Importing the classes
- * would pull the blockchain and signing packages into this module, which is
- * bundled into content scripts running on every https page. A rename that breaks
- * a name here fails CLOSED (generic copy, no leak) and is caught by
- * sanitizeErrorForWebview.spec.ts, which pins each name to the real class.
+ * would pull chain packages into this module, which is bundled into content
+ * scripts running on every https page. A rename fails CLOSED (generic copy, no
+ * leak), and each chain adapter's spec pins its names to the real classes.
  */
-const WEBVIEW_SAFE_ERROR_NAMES: readonly string[] = [
-    'Arc0001Error',
-    'UserCancelledError',
-]
+const WEBVIEW_SAFE_ERROR_NAMES: readonly string[] = ['UserCancelledError']
 
 /**
  * This is a JSON-RPC protocol surface exposed to untrusted web content, and is
  * deliberately NOT localized — a protocol response must not vary by user
  * locale.
  */
-export const sanitizeErrorForWebview = (error: Error): string => {
-    const message = WEBVIEW_SAFE_ERROR_NAMES.includes(error.name)
-        ? error.message
-        : GENERIC_ERROR_MESSAGE
+export const sanitizeErrorForWebview = (
+    error: Error,
+    relayableNames: readonly string[] = [],
+): string => {
+    const message =
+        WEBVIEW_SAFE_ERROR_NAMES.includes(error.name) ||
+        relayableNames.includes(error.name)
+            ? error.message
+            : GENERIC_ERROR_MESSAGE
     return message.length > MAX_ERROR_LENGTH
         ? message.slice(0, MAX_ERROR_LENGTH)
         : message

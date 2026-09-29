@@ -16,7 +16,7 @@ import { renderHook } from '@testing-library/react'
 import { useAlgorandClient } from '../../hooks'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { useNetwork } from '../useNetwork'
-import { useCustomNetworkStore } from '../../store'
+import { setCustomNetwork, useNetworkStore } from '../../store'
 import { createTimeoutBoundedAlgorandClient } from '../../utils/createAlgorandClient'
 
 // Mock AlgorandClient factory methods so we can assert which one is chosen
@@ -67,7 +67,7 @@ describe('services/blockchain/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
-        useCustomNetworkStore.getState().resetState()
+        useNetworkStore.getState().resetState()
     })
 
     test('returns fromClients client for mainnet', () => {
@@ -126,7 +126,7 @@ describe('services/blockchain/hooks', () => {
 
     test('re-memoizes the client when the custom-network config changes while the active network is custom', () => {
         ;(useNetwork as Mock).mockReturnValue({ network: 'custom' })
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
             genesisHash: 'HASH',
@@ -139,11 +139,15 @@ describe('services/blockchain/hooks', () => {
         expect(createTimeoutBoundedAlgorandClient).toHaveBeenNthCalledWith(1, {
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+            explorerUrl: '',
             algodToken: '',
             indexerToken: '',
+            dispenserUrl: '',
         })
 
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://10.0.0.9:4001',
             indexerUrl: 'http://10.0.0.9:8980',
             genesisHash: 'HASH2',
@@ -159,8 +163,12 @@ describe('services/blockchain/hooks', () => {
         expect(createTimeoutBoundedAlgorandClient).toHaveBeenNthCalledWith(2, {
             algodUrl: 'http://10.0.0.9:4001',
             indexerUrl: 'http://10.0.0.9:8980',
+            genesisHash: 'HASH2',
+            genesisId: 'dockernet-v2',
+            explorerUrl: '',
             algodToken: '',
             indexerToken: '',
+            dispenserUrl: '',
         })
     })
 })
