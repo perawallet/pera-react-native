@@ -20,7 +20,9 @@ export {
     WC_SCHEME,
 } from './constants'
 export { DeeplinkTimeoutError } from './handlers/timeout'
+export { isNotificationAllowedDeeplinkType } from './notification-policy'
 export { navigateToScreen, pushScreen } from './navigateToScreen'
 export { isOriginGatedDeeplinkType } from './page-initiated-policy'
 export { parseDeeplink } from './parser'
 export { DeeplinkType } from './types'
+export { getUniversalLinkPath } from './utils'

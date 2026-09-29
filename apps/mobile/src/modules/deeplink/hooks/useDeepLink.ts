@@ -37,7 +37,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
 import { routeCapabilities } from '@routes/capabilities'
-import { navigateToScreen } from '../navigateToScreen'
+import { navigateHome, navigateToScreen } from '../navigateToScreen'
 import { isNotificationAllowedDeeplinkType } from '../notification-policy'
 import { isPeraOwnedDeeplink } from '../utils'
 import {
@@ -505,12 +505,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.HOME:
                 default: {
-                    // Reset the Home tab to its stack root so a HOME deeplink returns
-                    // home even from deep in the Home stack.
-                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
-                        screen: 'Home',
-                        params: { screen: 'AccountDetails' },
-                    })
+                    navigateHome(replaceCurrentScreen)
                     break
                 }
             }

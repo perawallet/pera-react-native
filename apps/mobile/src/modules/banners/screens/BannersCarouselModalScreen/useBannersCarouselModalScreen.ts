@@ -69,10 +69,7 @@ export const useBannersCarouselModalScreen =
 
         const onPressCTA = useCallback(
             (banner: Banner) => {
-                routeUrl({
-                    url: banner.buttonUrl,
-                    isExternal: banner.isButtonUrlExternal,
-                })
+                routeUrl({ url: banner.buttonUrl })
             },
             [routeUrl],
         )

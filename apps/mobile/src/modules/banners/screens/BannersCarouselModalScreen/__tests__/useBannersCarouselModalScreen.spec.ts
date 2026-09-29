@@ -116,7 +116,7 @@ describe('useBannersCarouselModalScreen', () => {
         expect(result.current.initialIndex).toBe(0)
     })
 
-    it('routes via banner link router with isButtonUrlExternal flag', () => {
+    it('routes the CTA URL via the banner link router', () => {
         mockUseVisibleBanners.mockReturnValue({
             banners: [buildBanner(1)],
             totalCount: 1,
@@ -130,7 +130,6 @@ describe('useBannersCarouselModalScreen', () => {
 
         expect(mockRoute).toHaveBeenCalledWith({
             url: 'pera://x',
-            isExternal: false,
         })
     })
 

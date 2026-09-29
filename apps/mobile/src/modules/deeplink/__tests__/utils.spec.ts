@@ -19,6 +19,7 @@ import {
     extractPath,
     isValidAssetId,
     isPeraOwnedDeeplink,
+    getUniversalLinkPath,
 } from '../utils'
 
 describe('Deeplink Parser - Helper Functions', () => {
@@ -102,6 +103,27 @@ describe('Deeplink Parser - Helper Functions', () => {
             expect(normalizeUrl('  perawallet://test  ')).toBe(
                 'perawallet://test',
             )
+        })
+    })
+
+    describe('getUniversalLinkPath', () => {
+        it('matches scheme and host in any case and returns the path as written', () => {
+            expect(
+                getUniversalLinkPath(
+                    '  HTTPS://PeraWallet.App/qr/perawallet/ABC?x=Y  ',
+                ),
+            ).toBe('/qr/perawallet/ABC?x=Y')
+        })
+
+        it('rejects other origins, including look-alike hosts', () => {
+            expect(
+                getUniversalLinkPath('https://perawallet.app.evil.com/qr/'),
+            ).toBeNull()
+            expect(
+                getUniversalLinkPath('https://perawallet.app@evil.com/qr/'),
+            ).toBeNull()
+            expect(getUniversalLinkPath('http://perawallet.app/qr/')).toBeNull()
+            expect(getUniversalLinkPath('perawallet://app/qr/')).toBeNull()
         })
     })
 

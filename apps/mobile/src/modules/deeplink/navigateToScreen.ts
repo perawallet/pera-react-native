@@ -34,6 +34,15 @@ export const navigateToScreen = (
     }
 }
 
+// Resets the Home tab to its stack root, so landing home works from deep
+// inside the Home stack.
+export const navigateHome = (replaceCurrentScreen: boolean): void => {
+    navigateToScreen(replaceCurrentScreen, 'TabBar', {
+        screen: 'Home',
+        params: { screen: 'AccountDetails' },
+    })
+}
+
 /**
  * Same reasoning as `navigateToScreen`, for callers that need `push` rather
  * than `navigate`. Needed because `useHandleInboxItemPress` is shared between

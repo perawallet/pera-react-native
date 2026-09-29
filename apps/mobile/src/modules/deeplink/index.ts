@@ -19,6 +19,8 @@ export {
     PERAWALLET_WC_SCHEME,
     WC_SCHEME,
     buildDeeplink,
+    getUniversalLinkPath,
+    isNotificationAllowedDeeplinkType,
     isOriginGatedDeeplinkType,
     navigateToScreen,
     parseDeeplink,
