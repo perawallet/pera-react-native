@@ -48,7 +48,7 @@ export type WalletOperation =
           payload: Arc60SignableData | PeraArbitraryDataMessage[]
       }
 
-/** ARC-0001 / ARC-60 response payloads. The handler owns enveloping. */
+/** Signing results, before the handler envelopes them for its wire. */
 export type WalletOperationResult =
     | { type: 'sign-transactions'; signed: Nullable<string>[] }
     | { type: 'sign-data'; signatures: Uint8Array[] }
@@ -106,7 +106,7 @@ type MessageBase = {
      */
     sourceType: SourceType
     /**
-     * Becomes ARC-0001's `authorizedAddresses`. Carried on the message rather
+     * The accounts the signer may sign for. Carried on the message rather
      * than looked up downstream: a store lookup could race a concurrent disconnect.
      */
     authorizedAccounts: string[]

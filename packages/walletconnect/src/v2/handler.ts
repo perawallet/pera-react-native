@@ -74,10 +74,9 @@ import {
 import { createWalletConnectV2Storage } from './storage'
 
 /**
- * The methods Pera answers over v2. ARC-0025 registers the `algorand`
- * namespace around `algo_signTxn`; `algo_signData` is the ARC-60 counterpart
- * v1 already serves. v1's third permission, `algo_getAccounts`, has no v2
- * equivalent — a v2 session discloses its accounts in the namespace itself.
+ * The methods Pera answers over v2, one per signing operation, the same pair
+ * v1 serves. v1's third permission (get-accounts) has no v2 equivalent: a v2
+ * session discloses its accounts in the namespace itself.
  */
 const OPERATION_TYPE_BY_METHOD: Readonly<Record<string, WalletOperationType>> =
     {
@@ -94,13 +93,12 @@ const PERA_V2_METHODS: readonly string[] = Object.keys(OPERATION_TYPE_BY_METHOD)
 const JSON_RPC_SERVER_ERROR = -32_000
 
 /**
- * Takes the JSON-RPC envelope off, and nothing else. ARC-0025 carries the
- * ARC-0001 group in the first positional slot (`params: [WalletTransaction[]]`)
- * exactly as v1 does; the registry's validator is what parses it, and a copy
- * of its schema here would strip the `msig` slots the resolver answers 4200
- * for. A non-array reaches the validator as it arrived, so the breadcrumb
- * describes what the dApp actually sent. `algo_signData` carries its payload
- * directly on both protocols.
+ * Takes the JSON-RPC envelope off, and nothing else. The transaction group
+ * arrives in the first positional slot exactly as on v1; the chain adapter's
+ * validator is what parses it, and a schema copy here would strip fields the
+ * resolver needs to answer. A non-array reaches the validator as it arrived,
+ * so the breadcrumb describes what the dApp actually sent. Sign-data carries
+ * its payload directly on both protocols.
  */
 const toRawOperationParams = (
     type: WalletOperationType,

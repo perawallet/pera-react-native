@@ -55,7 +55,7 @@ type ExpiredMessage = Extract<InboundMessage, { kind: 'request-expired' }>
 
 /**
  * One request the pipeline is holding open for the user. `withdraw` is null
- * while the ARC-0001 enqueue is still resolving fees; an expiry landing in
+ * while the chain's signing enqueue is still pending; an expiry landing in
  * that window marks the entry and the enqueue's continuation withdraws.
  */
 type PendingRequest = { withdraw: Nullable<() => void>; isExpired: boolean }
