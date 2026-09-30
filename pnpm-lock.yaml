@@ -3268,9 +3268,6 @@ importers:
       '@perawallet/wallet-core-messages':
         specifier: workspace:*
         version: link:../messages
-      '@perawallet/wallet-core-multisig':
-        specifier: workspace:*
-        version: link:../multisig
       '@perawallet/wallet-core-passkeys':
         specifier: workspace:*
         version: link:../passkeys
