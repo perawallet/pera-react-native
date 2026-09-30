@@ -12,7 +12,7 @@ catalog:
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
   "@algorandfoundation/provider-migrations": 1.0.0-canary.1
   "@algorandfoundation/react-native-keystore": 1.0.0-canary.20
-  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.27
+  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.29
   "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.19.16
@@ -209,20 +209,18 @@ patchedDependencies:
   # - The Android credential provider keeps the legacy native app's service
   #   class name, so Credential Manager carries the user's enablement across
   #   the upgrade.
-  # - Android WebAuthn through a browser: clientData names the page's origin,
-  #   read through Google's privileged-browser allowlist, not the browser's app
-  #   identity. A caller's clientDataHash is honoured only from such a browser;
-  #   upstream's assertion path signs it for any app, which could then pass off a
-  #   clientData it forged for a web origin. Registration also returns the
-  #   authenticatorData / publicKeyAlgorithm / publicKey fields without which
-  #   Chrome rejects it.
+  # - Android WebAuthn registration through a browser: an allowlisted browser's
+  #   clientDataHash is honoured (upstream honours it only on assertion), and the
+  #   response carries the authenticatorData / publicKeyAlgorithm / publicKey
+  #   fields without which Chrome rejects it. Drop the fields once upstream
+  #   ships them.
   # - The package's iOS strings name its own product ("Rocca"), including the
   #   Face ID usage text and the biometric / passcode prompt reasons.
   # - Android credentials live in the keystore's `k/`+`m/` split layout: the
   #   credential chooser lists plaintext `k/` metadata without decrypting
   #   anything, and one credential's sealed `m/` material is opened only after
   #   the user selects it. Upstream lists flat records by opening each one.
-  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.27.patch
+  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.29.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
