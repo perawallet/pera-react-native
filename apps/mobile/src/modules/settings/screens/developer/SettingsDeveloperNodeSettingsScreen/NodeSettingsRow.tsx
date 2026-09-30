@@ -11,33 +11,23 @@
  */
 
 import { PWRadioButton, PWView } from '@components/core'
-import type { NetworkRow } from './useSettingsDeveloperNodeSettingsScreen'
+import type { NodeSettingsRowModel } from './useSettingsDeveloperNodeSettingsScreen'
 
 export type NodeSettingsRowProps = {
-    row: NetworkRow
-    label: string
-    /** Disables the radio while a network switch is already in flight (web). */
-    isDisabled?: boolean
+    row: NodeSettingsRowModel
     onSelect: () => void
 }
 
-export const NodeSettingsRow = ({
-    row,
-    label,
-    isDisabled = false,
-    onSelect,
-}: NodeSettingsRowProps) => {
-    // Unstyled wrapper: matches main's bare-radio-in-a-column look (no card
-    // border/padding) while still giving on-device automation a stable
-    // `_row` testID distinct from the radio's own `_radio` testID.
+export const NodeSettingsRow = ({ row, onSelect }: NodeSettingsRowProps) => {
+    // Unstyled wrapper: a bare radio in a column, with a `_row` testID for
+    // on-device automation distinct from the radio's own `_radio` testID.
     return (
-        <PWView testID={`node_settings_${row.network}_row`}>
+        <PWView testID={`node_settings_${row.globalNetwork}_row`}>
             <PWRadioButton
-                testID={`node_settings_${row.network}_radio`}
-                title={label}
+                testID={`node_settings_${row.globalNetwork}_radio`}
+                title={row.label}
                 onPress={onSelect}
                 isSelected={row.isSelected}
-                isDisabled={isDisabled}
             />
         </PWView>
     )

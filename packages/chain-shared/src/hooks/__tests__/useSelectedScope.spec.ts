@@ -12,6 +12,13 @@
 
 import { describe, test, expect, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+    type ChainDescriptor,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useNetworkStore } from '../../store/network-store'
 import { useSelectedNetworkId, useSelectedScope } from '../useSelectedScope'
 
@@ -42,5 +49,29 @@ describe('useSelectedScope', () => {
         const { result } = renderHook(() => useSelectedNetworkId('algorand'))
 
         expect(result.current).toBe('mainnet')
+    })
+
+    test('a registered chain with no stored entry follows the global selection', () => {
+        const ethereum = 'ethereum' as ChainId
+        getProvider().chains.register(
+            {
+                id: ethereum,
+                networks: [
+                    { id: 'mainnet', tier: 'mainnet', isDefaultForTier: true },
+                    { id: 'sepolia', tier: 'testnet', isDefaultForTier: true },
+                ],
+            } as unknown as ChainDescriptor,
+            Object.fromEntries(
+                CHAIN_CAPABILITIES.map(capability => [capability, false]),
+            ) as ChainCapabilities,
+        )
+        const { result } = renderHook(() => useSelectedNetworkId(ethereum))
+        expect(result.current).toBe('mainnet')
+
+        act(() => {
+            useNetworkStore.getState().setGlobalNetwork('testnet')
+        })
+
+        expect(result.current).toBe('sepolia')
     })
 })

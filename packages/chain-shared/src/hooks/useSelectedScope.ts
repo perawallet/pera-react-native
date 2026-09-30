@@ -16,10 +16,10 @@ import type {
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '../store/network-store'
+import { selectChainNetworkId, useNetworkStore } from '../store/network-store'
 
 export const useSelectedNetworkId = (chainId: ChainId): NetworkId =>
-    useNetworkStore(state => state.selectedNetworkByChain[chainId])
+    useNetworkStore(state => selectChainNetworkId(state, chainId))
 
 export const useSelectedScope = (chainId: ChainId): ChainScope => {
     const networkId = useSelectedNetworkId(chainId)

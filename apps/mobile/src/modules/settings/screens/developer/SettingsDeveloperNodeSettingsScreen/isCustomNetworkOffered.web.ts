@@ -10,18 +10,13 @@
  limitations under the License
  */
 
-export * from './capabilities/adapters'
-export * from './capabilities/resolve'
-export * from './chain-registry'
-export * from './contracts/address-codec'
-export * from './contracts/key-derivation'
-export * from './errors'
-export * from './models/capabilities'
-export * from './models/descriptor'
-export * from './models/domain'
-export * from './models/identity'
-export * from './models/module'
-export * from './native-asset'
-export * from './network-selection'
-export * from './registry'
-export * from './scope'
+import { config } from '@perawallet/wallet-core-config'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+
+// A custom node serves balances and transaction previews, so a store-installed
+// production extension doesn't let a user be talked into pointing it anywhere.
+export const isCustomNetworkOffered = (): boolean =>
+    !(
+        config.appEnvironment === 'production' &&
+        getProvider().deviceInfo.isStoreBuild()
+    )

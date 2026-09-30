@@ -13,6 +13,7 @@
 import { PWScreen, PWView } from '@components/core'
 import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
+import { NodeSettingsChainNetworks } from './NodeSettingsChainNetworks'
 import { NodeSettingsRow } from './NodeSettingsRow'
 import { useSettingsDeveloperNodeSettingsScreen } from './useSettingsDeveloperNodeSettingsScreen'
 import { useStyles } from './styles'
@@ -20,7 +21,7 @@ import { useStyles } from './styles'
 export const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { networks, selectNetwork, isNonMainnetWarningVisible } =
+    const { rows, chainNetworks, selectNetwork, isNonMainnetWarningVisible } =
         useSettingsDeveloperNodeSettingsScreen()
 
     return (
@@ -29,15 +30,17 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
                 style={styles.container}
                 testID='node_settings_screen'
             >
-                {networks.map(row => (
+                {rows.map(row => (
                     <NodeSettingsRow
-                        key={row.network}
+                        key={row.globalNetwork}
                         row={row}
-                        label={t(row.labelKey)}
-                        onSelect={() => void selectNetwork(row.network)}
+                        onSelect={() => void selectNetwork(row.globalNetwork)}
                     />
                 ))}
             </PWView>
+            {chainNetworks.length > 0 && (
+                <NodeSettingsChainNetworks chainNetworks={chainNetworks} />
+            )}
             {isNonMainnetWarningVisible && (
                 <InfoCallout
                     title={t(

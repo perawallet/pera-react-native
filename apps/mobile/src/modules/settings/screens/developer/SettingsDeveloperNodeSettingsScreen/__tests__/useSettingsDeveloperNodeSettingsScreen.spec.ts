@@ -10,136 +10,239 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    algorandCapabilityDefaults,
+    algorandDescriptor,
+} from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    allCapabilities,
+    ETHEREUM_CHAIN_ID,
+    fixtureEthereumDescriptor,
+} from '@test-utils/chain-fixtures'
 import { useSettingsDeveloperNodeSettingsScreen } from '../useSettingsDeveloperNodeSettingsScreen'
 
-const switchNetwork = vi.fn()
-const mockRequestBottomSheet = vi.fn()
-
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useSwitchNetwork: () => ({ switchNetwork }),
+const mocks = vi.hoisted(() => ({
+    restart: vi.fn(),
+    getSyncService: vi.fn(),
+    requestBottomSheet: vi.fn(),
+    isCustomNetworkOffered: vi.fn(() => true),
 }))
 
-// Overrides the global vitest.setup.ts mock (which hard-codes 'mainnet') so
-// this suite can flip the active network per-test.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+vi.mock('@perawallet/wallet-core-background', () => ({
+    getSyncService: () => mocks.getSyncService(),
 }))
 
-// The screen hook no longer owns any sheet state itself — selecting `custom`
-// just routes to the shared bottom-sheet manager. The sheet's own state
-// machine (draft/save/reset validation, cache clearing, etc.) is fully
-// covered by useCustomNetworkSheet.spec.ts, so it isn't exercised here.
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({
-        request: mockRequestBottomSheet,
+        request: mocks.requestBottomSheet,
         requestByType: vi.fn(),
         dismiss: vi.fn(),
         dismissAll: vi.fn(),
     }),
 }))
 
+vi.mock('../isCustomNetworkOffered', () => ({
+    isCustomNetworkOffered: () => mocks.isCustomNetworkOffered(),
+}))
+
+// Echoes the key, with the interpolated values when there are any, so the
+// one-chain labels can be told apart from the tier labels.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, options?: { chain?: string; network?: string }) =>
+            options ? `${key}(${options.chain} ${options.network})` : key,
+    }),
+}))
+
+const NETWORK_LABEL = 'settings.developer.node_settings.network_label'
+const CUSTOM_LABEL = 'settings.developer.node_settings.custom_label'
+
+const registerEthereum = (customNetworks = false) =>
+    getProvider().chains.register(fixtureEthereumDescriptor, {
+        ...allCapabilities(false),
+        customNetworks,
+    })
+
+const renderScreenHook = () =>
+    renderHook(() => useSettingsDeveloperNodeSettingsScreen())
+
 describe('useSettingsDeveloperNodeSettingsScreen', () => {
     beforeEach(() => {
-        switchNetwork.mockClear()
-        mockRequestBottomSheet.mockClear()
+        vi.clearAllMocks()
+        mocks.isCustomNetworkOffered.mockReturnValue(true)
+        mocks.getSyncService.mockReturnValue({ restart: mocks.restart })
+        getProvider().chains.reset()
+        getProvider().chains.register(
+            algorandDescriptor,
+            algorandCapabilityDefaults,
+        )
+        useNetworkStore.getState().resetState()
     })
 
-    test('lists every network exactly once, regardless of display order', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
+    describe('with Algorand only', () => {
+        it('lists MainNet, TestNet and Custom with the chain name in each label', () => {
+            const { result } = renderScreenHook()
 
-        // Guards against a network being added to the union without a
-        // matching NETWORK_ROWS entry — a plain Network[] type
-        // can't catch that at compile time.
-        expect(result.current.networks.map(row => row.network).sort()).toEqual(
-            Object.values(Networks).sort(),
-        )
+            expect(result.current.rows).toEqual([
+                {
+                    globalNetwork: 'mainnet',
+                    label: `${NETWORK_LABEL}(Algorand MainNet)`,
+                    isSelected: true,
+                },
+                {
+                    globalNetwork: 'testnet',
+                    label: `${NETWORK_LABEL}(Algorand TestNet)`,
+                    isSelected: false,
+                },
+                {
+                    globalNetwork: 'custom',
+                    label: CUSTOM_LABEL,
+                    isSelected: false,
+                },
+            ])
+            expect(result.current.chainNetworks).toEqual([])
+        })
+
+        it('switches Algorand from a BetaNet pin to TestNet', async () => {
+            useNetworkStore.getState().setNetwork('betanet')
+            const { result } = renderScreenHook()
+            expect(
+                result.current.rows.find(row => row.isSelected)?.globalNetwork,
+            ).toBe('testnet')
+
+            await act(async () => {
+                await result.current.selectNetwork('testnet')
+            })
+
+            expect(useNetworkStore.getState().network).toBe('testnet')
+        })
     })
 
-    test.each(algorandDescriptor.networks.map(network => network.id))(
-        'has a row with its own label key for declared network %s',
-        networkId => {
-            const { result } = renderHook(() =>
-                useSettingsDeveloperNodeSettingsScreen(),
-            )
+    describe('with two chains', () => {
+        it('labels rows by tier and summarises the network each chain resolved to', () => {
+            registerEthereum()
+            useNetworkStore.getState().setGlobalNetwork('testnet')
+
+            const { result } = renderScreenHook()
+
+            expect(result.current.rows.map(row => row.label)).toEqual([
+                'common.network_label.mainnet',
+                'common.network_label.testnet',
+                CUSTOM_LABEL,
+            ])
+            expect(result.current.chainNetworks).toEqual([
+                {
+                    chainId: 'algorand',
+                    chainName: 'Algorand',
+                    networkLabel: 'TestNet',
+                    isMainnet: false,
+                },
+                {
+                    chainId: ETHEREUM_CHAIN_ID,
+                    chainName: 'Ethereum',
+                    networkLabel: 'Sepolia',
+                    isMainnet: false,
+                },
+            ])
+        })
+
+        it('labels a chain on a custom node as Custom', () => {
+            registerEthereum(true)
+            useNetworkStore.getState().setNetwork('custom')
+
+            const { result } = renderScreenHook()
 
             expect(
-                result.current.networks.find(row => row.network === networkId)
-                    ?.labelKey,
-            ).toBe(`settings.developer.node_settings.${networkId}_label`)
-        },
-    )
-
-    test('displays MainNet first, followed by TestNet, BetaNet, then Custom', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        expect(result.current.networks.map(row => row.network)).toEqual([
-            Networks.mainnet,
-            Networks.testnet,
-            Networks.betanet,
-            Networks.custom,
-        ])
-        expect(result.current.networks[0].network).toBe(Networks.mainnet)
+                result.current.chainNetworks.map(chain => chain.networkLabel),
+            ).toEqual([
+                'common.network_label.custom',
+                'common.network_label.custom',
+            ])
+        })
     })
 
-    test('marks the active network as selected and the rest as not', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
+    describe('the Custom row', () => {
+        it('is hidden when no registered chain supports custom networks', () => {
+            getProvider().chains.reset()
+            registerEthereum(false)
 
-        // Default mock: useNetwork() -> { network: 'mainnet' }.
-        const selected = result.current.networks.filter(row => row.isSelected)
-        expect(selected.map(row => row.network)).toEqual([Networks.mainnet])
-    })
+            const { result } = renderScreenHook()
 
-    test('selecting a real network switches and kicks the sync', async () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        await act(async () => {
-            await result.current.selectNetwork(Networks.betanet)
+            expect(result.current.rows.map(row => row.globalNetwork)).toEqual([
+                'mainnet',
+                'testnet',
+            ])
         })
 
-        expect(switchNetwork).toHaveBeenCalledWith(Networks.betanet)
-    })
+        it('is hidden when the build does not offer custom networks', () => {
+            mocks.isCustomNetworkOffered.mockReturnValue(false)
 
-    test('selecting custom requests the sheet from the bottom-sheet manager instead of switching', async () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
+            const { result } = renderScreenHook()
 
-        await act(async () => {
-            await result.current.selectNetwork(Networks.custom)
+            expect(result.current.rows.map(row => row.globalNetwork)).toEqual([
+                'mainnet',
+                'testnet',
+            ])
         })
 
-        expect(mockRequestBottomSheet).toHaveBeenCalledOnce()
-        expect(switchNetwork).not.toHaveBeenCalled()
+        it('requests the configuration sheet and writes nothing', async () => {
+            const { result } = renderScreenHook()
+
+            await act(async () => {
+                await result.current.selectNetwork('custom')
+            })
+
+            expect(mocks.requestBottomSheet).toHaveBeenCalledOnce()
+            expect(useNetworkStore.getState().globalNetwork).toBe('mainnet')
+            expect(mocks.restart).not.toHaveBeenCalled()
+        })
     })
 
-    test('warns on every network except mainnet', () => {
-        for (const network of ['testnet', 'betanet', 'custom'] as const) {
-            vi.mocked(useNetwork).mockReturnValue({ network } as never)
-            const { result } = renderHook(() =>
-                useSettingsDeveloperNodeSettingsScreen(),
-            )
-            expect(result.current.isNonMainnetWarningVisible).toBe(true)
-        }
+    describe('selecting a row', () => {
+        it('sets the global selection and restarts the sync', async () => {
+            registerEthereum()
+            const { result } = renderScreenHook()
 
-        vi.mocked(useNetwork).mockReturnValue({
-            network: Networks.mainnet,
-        } as never)
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
+            await act(async () => {
+                await result.current.selectNetwork('testnet')
+            })
+
+            expect(useNetworkStore.getState().globalNetwork).toBe('testnet')
+            expect(useNetworkStore.getState().network).toBe('testnet')
+            expect(
+                result.current.chainNetworks.find(
+                    chain => chain.chainId === ETHEREUM_CHAIN_ID,
+                )?.networkLabel,
+            ).toBe('Sepolia')
+            expect(mocks.restart).toHaveBeenCalledOnce()
+        })
+
+        it('still selects when the sync service is not initialized', async () => {
+            mocks.getSyncService.mockImplementation(() => {
+                throw new Error('SyncService not yet initialized')
+            })
+            const { result } = renderScreenHook()
+
+            await act(async () => {
+                await result.current.selectNetwork('testnet')
+            })
+
+            expect(useNetworkStore.getState().globalNetwork).toBe('testnet')
+        })
+    })
+
+    it('shows the non-mainnet warning off MainNet only', async () => {
+        const { result } = renderScreenHook()
         expect(result.current.isNonMainnetWarningVisible).toBe(false)
+
+        await act(async () => {
+            await result.current.selectNetwork('testnet')
+        })
+
+        expect(result.current.isNonMainnetWarningVisible).toBe(true)
     })
 })
