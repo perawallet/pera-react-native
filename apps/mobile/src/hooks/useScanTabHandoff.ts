@@ -10,6 +10,21 @@
  limitations under the License
  */
 
-// Web-only entry: import it from `.web` files only (see ScanQRScreen/index.ts).
-export { CameraAccessScreen } from './screens/CameraAccessScreen'
-export { ScanQRScreen } from './screens/ScanQRScreen'
+/** Scanners the extension popup hands off to its expanded tab. */
+export type ScanTabFlow = 'backup-restore-scan' | 'recover-qr'
+
+export type UseScanTabHandoffResult = {
+    /** Always false off-web: native has no popup surface to escape. */
+    shouldHandOff: boolean
+    openScanTab: () => Promise<void>
+}
+
+const openScanTab = async (): Promise<void> => {}
+
+// Native no-op; see the `.web.ts` twin.
+export const useScanTabHandoff = (
+    _flow: ScanTabFlow,
+): UseScanTabHandoffResult => ({
+    shouldHandOff: false,
+    openScanTab,
+})

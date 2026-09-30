@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
     resolveImportAccountType,
     setPendingImportMnemonic,
@@ -24,6 +25,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { useModalState } from '@hooks/useModalState'
+import { useScanTabHandoff } from '@hooks/useScanTabHandoff'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDeepLink, DeeplinkType } from '@modules/deeplink'
@@ -36,6 +38,7 @@ import {
     ImportOptionsContent,
     type ImportOptionsContentResult,
 } from '../../components/ImportOptionsContent'
+import type { ImportFlowParamList } from '../../routes/types'
 
 export type UseImportAccountOptionsScreenResult = {
     options: AccountOption[]
@@ -77,6 +80,22 @@ export const useImportAccountOptionsScreen =
             open: openQRScanner,
             close: closeQRScanner,
         } = useModalState()
+        const { shouldHandOff, openScanTab } = useScanTabHandoff('recover-qr')
+        const isScannerOpenOnArrival =
+            useRoute<RouteProp<ImportFlowParamList, 'ImportAccountOptions'>>()
+                .params?.isScannerOpen ?? false
+
+        useEffect(() => {
+            if (isScannerOpenOnArrival) openQRScanner()
+        }, [isScannerOpenOnArrival, openQRScanner])
+
+        const handleOpenQRScanner = useCallback(() => {
+            if (shouldHandOff) {
+                void openScanTab()
+                return
+            }
+            openQRScanner()
+        }, [shouldHandOff, openScanTab, openQRScanner])
 
         const handleOpenImportOptions = useCallback(async () => {
             const result = await requestBottomSheet<ImportOptionsContentResult>(
@@ -223,7 +242,7 @@ export const useImportAccountOptionsScreen =
                     descriptionKey:
                         'onboarding.import_account_options.recover_qr_description',
                     leftIcon: 'qr' as IconName,
-                    onPress: openQRScanner,
+                    onPress: handleOpenQRScanner,
                 },
                 {
                     testID: 'import_account_options_pair_ledger_button',
@@ -297,7 +316,7 @@ export const useImportAccountOptionsScreen =
             return allOptions
         }, [
             handleOpenImportOptions,
-            openQRScanner,
+            handleOpenQRScanner,
             handlePairLedgerBle,
             handlePairLedgerUsb,
             handleImportAsb,

@@ -17,11 +17,11 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useScanTabHandoff } from '@hooks/useScanTabHandoff'
 import { ChooseCredentialsFileSheet } from '../components/ChooseCredentialsFileSheet'
 import { OPTION_LIST_SHEET_OPTIONS } from '../components/OptionListSheet'
 import {
     RestoreBackupSheet,
-    useRestoreBackupChoices,
     type RestoreBackupSheetResult,
 } from '../components/RestoreBackupSheet'
 import { readBackupCredentials, type CredentialsFileSource } from '../storage'
@@ -41,7 +41,9 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
     const navigation = useAppNavigation()
     const { showError } = useErrorToast()
     const { request: requestBottomSheet } = useBottomSheet()
-    const choices = useRestoreBackupChoices()
+    const { shouldHandOff, openScanTab } = useScanTabHandoff(
+        'backup-restore-scan',
+    )
     const [isReadingCredentials, setIsReadingCredentials] = useState(false)
     // A double tap would otherwise open two sheets and race two pickers.
     const isBusyRef = useRef(false)
@@ -114,22 +116,22 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
         if (isBusyRef.current) return null
         isBusyRef.current = true
         try {
-            // A sheet with one row is just an extra tap.
-            const choice =
-                choices.length === 1
-                    ? choices[0]
-                    : await requestBottomSheet<RestoreBackupSheetResult>({
-                          contents: <RestoreBackupSheet />,
-                          options: OPTION_LIST_SHEET_OPTIONS,
-                      })
+            const choice = await requestBottomSheet<RestoreBackupSheetResult>({
+                contents: <RestoreBackupSheet />,
+                options: OPTION_LIST_SHEET_OPTIONS,
+            })
             if (!choice) return null
-            if (choice === 'scan') return ['CloudBackupRestoreScan']
+            if (choice === 'scan') {
+                if (!shouldHandOff) return ['CloudBackupRestoreScan']
+                void openScanTab()
+                return null
+            }
             if (choice === 'manual') return ['CloudBackupRestorePassphrase']
             return await importFrom(choice)
         } finally {
             isBusyRef.current = false
         }
-    }, [choices, requestBottomSheet, importFrom])
+    }, [requestBottomSheet, importFrom, shouldHandOff, openScanTab])
 
     return { chooseRestoreRoute, isReadingCredentials }
 }

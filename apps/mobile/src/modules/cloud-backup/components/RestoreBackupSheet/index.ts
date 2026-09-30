@@ -11,7 +11,4 @@
  */
 
 export { RestoreBackupSheet } from './RestoreBackupSheet'
-export {
-    useRestoreBackupChoices,
-    type RestoreBackupSheetResult,
-} from './useRestoreBackupChoices'
+export type { RestoreBackupSheetResult } from './useRestoreBackupSheet'

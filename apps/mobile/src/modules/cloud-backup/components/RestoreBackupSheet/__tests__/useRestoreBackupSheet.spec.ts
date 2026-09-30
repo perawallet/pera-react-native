@@ -14,7 +14,6 @@ import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { isAndroid, isIOS } from '@utils/platform'
 import { useCredentialsFileReadSources } from '../../../hooks/useCredentialsFileSources'
 import { useRestoreBackupSheet } from '../useRestoreBackupSheet'
 
@@ -27,11 +26,6 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: vi.fn(),
 }))
 
-vi.mock('@utils/platform', () => ({
-    isIOS: vi.fn(),
-    isAndroid: vi.fn(),
-}))
-
 vi.mock('../../../hooks/useCredentialsFileSources', () => ({
     useCredentialsFileReadSources: vi.fn(),
 }))
@@ -40,8 +34,6 @@ const mockResolve = vi.fn()
 
 beforeEach(() => {
     vi.clearAllMocks()
-    ;(isIOS as Mock).mockReturnValue(true)
-    ;(isAndroid as Mock).mockReturnValue(false)
     ;(useBottomSheetResult as Mock).mockReturnValue({
         resolve: mockResolve,
         dismiss: vi.fn(),
@@ -89,30 +81,6 @@ describe('useRestoreBackupSheet', () => {
             expect(result.current.description).toBe(expectedDescriptionKey)
         },
     )
-
-    test('offers no QR scan outside the mobile apps', () => {
-        ;(isIOS as Mock).mockReturnValue(false)
-        ;(useCredentialsFileReadSources as Mock).mockReturnValue(['device'])
-
-        const { result } = renderHook(() => useRestoreBackupSheet())
-
-        expect(result.current.options.map(row => row.key)).toEqual([
-            'device',
-            'manual',
-        ])
-        expect(result.current.description).toBe(
-            'cloud_backup.restore.sheet_description_import_or_manual',
-        )
-    })
-
-    test('still offers QR scan on Android', () => {
-        ;(isIOS as Mock).mockReturnValue(false)
-        ;(isAndroid as Mock).mockReturnValue(true)
-
-        const { result } = renderHook(() => useRestoreBackupSheet())
-
-        expect(result.current.options[0]?.key).toBe('scan')
-    })
 
     test('gives every row a title and a leading mark', () => {
         const { result } = renderHook(() => useRestoreBackupSheet())

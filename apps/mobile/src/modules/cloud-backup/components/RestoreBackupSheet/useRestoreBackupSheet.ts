@@ -16,11 +16,11 @@ import type { OptionListOption } from '@components/OptionList'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import type { CredentialsFileSource } from '../../storage'
+import { useCredentialsFileReadSources } from '../../hooks/useCredentialsFileSources'
 import { CREDENTIALS_FILE_SOURCE_ICONS } from '../credentialsFileSourceIcons'
-import {
-    useRestoreBackupChoices,
-    type RestoreBackupSheetResult,
-} from './useRestoreBackupChoices'
+
+export type RestoreBackupSheetResult = 'scan' | CredentialsFileSource | 'manual'
 
 type UseRestoreBackupSheetResult = {
     options: OptionListOption[]
@@ -57,28 +57,16 @@ const TEST_IDS: Record<RestoreBackupSheetResult, string> = {
     manual: 'cloud_backup_restore_sheet_manual',
 }
 
-// A manual-only list never reaches the sheet, so without scan there is always
-// a file source to mention.
-const describe = (choices: RestoreBackupSheetResult[]): string => {
-    if (!choices.includes('scan')) {
-        return 'cloud_backup.restore.sheet_description_import_or_manual'
-    }
-    const canImport = choices.some(
-        choice => choice !== 'scan' && choice !== 'manual',
-    )
-    return canImport
-        ? 'cloud_backup.restore.sheet_description_with_import'
-        : 'cloud_backup.restore.sheet_description'
-}
-
 export const useRestoreBackupSheet = (): UseRestoreBackupSheetResult => {
     const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<RestoreBackupSheetResult>()
-    const choices = useRestoreBackupChoices()
+    const fileSources = useCredentialsFileReadSources()
 
     const options = useMemo(
         () =>
-            choices.map(option => ({
+            (
+                ['scan', ...fileSources, 'manual'] as RestoreBackupSheetResult[]
+            ).map(option => ({
                 key: option,
                 ...ROW_ICONS[option],
                 title: t(TITLE_KEYS[option]),
@@ -89,8 +77,15 @@ export const useRestoreBackupSheet = (): UseRestoreBackupSheetResult => {
                     resolve(option)
                 },
             })),
-        [choices, t, resolve],
+        [fileSources, t, resolve],
     )
 
-    return { options, description: t(describe(choices)) }
+    return {
+        options,
+        description: t(
+            fileSources.length > 0
+                ? 'cloud_backup.restore.sheet_description_with_import'
+                : 'cloud_backup.restore.sheet_description',
+        ),
+    }
 }

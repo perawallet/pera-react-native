@@ -23,10 +23,10 @@ const {
     mockShowError,
     mockLoggerError,
     mockIsFocused,
-    mockChoices,
+    mockHandoff,
     readBackupCredentials,
 } = vi.hoisted(() => ({
-    mockChoices: vi.fn(),
+    mockHandoff: vi.fn(),
     mockRequest: vi.fn(),
     mockShowError: vi.fn(),
     mockLoggerError: vi.fn(),
@@ -57,9 +57,13 @@ vi.mock('@hooks/useErrorToast', () => ({
 vi.mock('@hooks/useLanguage')
 vi.mock('../../components/RestoreBackupSheet', () => ({
     RestoreBackupSheet: () => null,
-    useRestoreBackupChoices: mockChoices,
 }))
 vi.mock('../../storage', () => ({ readBackupCredentials }))
+vi.mock('@hooks/useScanTabHandoff', () => ({
+    useScanTabHandoff: mockHandoff,
+}))
+
+const mockOpenScanTab = vi.fn()
 
 const KEY = {
     salt: 'q311Z4ReDNWpMVuH8XdvSw==',
@@ -74,7 +78,10 @@ const KEY = {
 beforeEach(() => {
     vi.clearAllMocks()
     mockIsFocused.mockReturnValue(true)
-    mockChoices.mockReturnValue(['scan', 'device', 'manual'])
+    mockHandoff.mockReturnValue({
+        shouldHandOff: false,
+        openScanTab: mockOpenScanTab,
+    })
     readBackupCredentials.mockResolvedValue({ status: 'read', key: KEY })
 })
 
@@ -105,11 +112,15 @@ describe('useRestoreBackupOptions', () => {
         expect(readBackupCredentials).not.toHaveBeenCalled()
     })
 
-    test('skips the sheet when manual entry is the only way in', async () => {
-        mockChoices.mockReturnValue(['manual'])
+    test('hands the scan off to the expanded tab from the extension popup', async () => {
+        mockHandoff.mockReturnValue({
+            shouldHandOff: true,
+            openScanTab: mockOpenScanTab,
+        })
+        mockRequest.mockResolvedValueOnce('scan')
 
-        expect(await choose()).toEqual(['CloudBackupRestorePassphrase'])
-        expect(mockRequest).not.toHaveBeenCalled()
+        expect(await choose()).toBeNull()
+        expect(mockOpenScanTab).toHaveBeenCalledTimes(1)
     })
 
     test.each(['device', 'icloud', 'googleDrive'])(
