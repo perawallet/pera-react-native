@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { isChainId, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     ConnectionErrorScope,
     ConnectionProposal,
@@ -316,6 +317,8 @@ export type ConnectionApprovalRequest =
           kind: 'connection-request'
           connectionId: string
           correlationId: string
+          /** The chain this request answers for; the approval window rebuilds `InboundMessage` from it. */
+          chainId: ChainId
           operation: WireWalletOperation
           authorizedAccounts: string[]
           peer: ConnectionPeer
@@ -393,6 +396,7 @@ export const isConnectionApprovalRequest = (
             return (
                 typeof value.connectionId === 'string' &&
                 typeof value.correlationId === 'string' &&
+                isChainId(value.chainId) &&
                 isWireWalletOperation(value.operation) &&
                 isStringArray(value.authorizedAccounts) &&
                 isPeer(value.peer) &&

@@ -96,6 +96,7 @@ const signRequest = (
     kind: 'connection-request',
     connectionId: 'conn-1',
     correlationId: '9',
+    chainId: 'algorand',
     operation: { type: 'sign-transactions', group: [{ txn: 'dHhu' }] },
     authorizedAccounts: ['AAAA'],
     peer: PEER,
@@ -279,6 +280,7 @@ describe('installConnectionsApprovalRouter', () => {
                     faviconUrl: 'https://dapp.example/icon.png',
                     connectionId: 'conn-1',
                     correlationId: '9',
+                    chainId: 'algorand',
                     operation: {
                         type: 'sign-transactions',
                         group: [{ txn: 'dHhu' }],

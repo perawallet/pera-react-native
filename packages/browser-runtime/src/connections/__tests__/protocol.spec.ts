@@ -228,6 +228,7 @@ describe('isConnectionApprovalRequestMessage', () => {
                     kind: 'connection-request',
                     connectionId: 'c1',
                     correlationId: '9',
+                    chainId: 'algorand',
                     operation: { type: 'sign-transactions', group: [] },
                     authorizedAccounts: ['AAAA'],
                     peer: PEER,
@@ -245,10 +246,35 @@ describe('isConnectionApprovalRequestMessage', () => {
                     kind: 'connection-request',
                     connectionId: 'c1',
                     correlationId: '9',
+                    chainId: 'algorand',
                     operation: { type: 'sign-transactions', group: [] },
                     authorizedAccounts: ['AAAA'],
                     peer: PEER,
                 },
+            }),
+        ).toBe(false)
+    })
+
+    it('rejects a connection-request with a missing or unknown chainId', () => {
+        const base = {
+            kind: 'connection-request' as const,
+            connectionId: 'c1',
+            correlationId: '9',
+            operation: { type: 'sign-transactions' as const, group: [] },
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            sourceType: 'injected' as const,
+        }
+        expect(
+            isConnectionApprovalRequestMessage({
+                scope: CONNECTIONS_REQUEST_SCOPE,
+                request: base,
+            }),
+        ).toBe(false)
+        expect(
+            isConnectionApprovalRequestMessage({
+                scope: CONNECTIONS_REQUEST_SCOPE,
+                request: { ...base, chainId: 'not-a-real-chain' },
             }),
         ).toBe(false)
     })
@@ -261,6 +287,7 @@ describe('isConnectionApprovalRequestMessage', () => {
                     kind: 'connection-request',
                     connectionId: 'c1',
                     correlationId: '9',
+                    chainId: 'algorand',
                     operation: { type: 'sign-transactions', group: [] },
                     authorizedAccounts: ['AAAA'],
                     peer: PEER,
@@ -279,6 +306,7 @@ describe('isConnectionApprovalRequestMessage', () => {
                     kind: 'connection-request',
                     connectionId: 'c1',
                     correlationId: '9',
+                    chainId: 'algorand',
                     operation: { type: 'sign-transactions', group: [] },
                     authorizedAccounts: ['AAAA'],
                     peer: PEER,

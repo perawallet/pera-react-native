@@ -164,6 +164,7 @@ export const installConnectionsApprovalRouter = ({
                             faviconUrl: request.peer.icons?.[0],
                             connectionId,
                             correlationId,
+                            chainId: request.chainId,
                             operation: request.operation,
                             authorizedAccounts: request.authorizedAccounts,
                             peer: request.peer,

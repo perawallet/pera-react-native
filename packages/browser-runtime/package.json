@@ -23,6 +23,7 @@
         "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
     },
     "dependencies": {
+        "@perawallet/wallet-core-chain-contract": "workspace:*",
         "@perawallet/wallet-core-connections": "workspace:*",
         "@perawallet/wallet-core-dapp": "workspace:*",
         "@perawallet/wallet-core-passkeys": "workspace:*",

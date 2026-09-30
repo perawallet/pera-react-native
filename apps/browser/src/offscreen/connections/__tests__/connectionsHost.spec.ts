@@ -126,6 +126,7 @@ const makeRequest = (
     overrides: Partial<InboundRequest> = {},
 ): InboundRequest => ({
     kind: 'request',
+    chainId: 'algorand',
     sourceType: 'walletconnect',
     connectionId: 'conn-1',
     correlationId: '7',
@@ -317,6 +318,7 @@ describe('startConnectionsHost', () => {
                 kind: 'connection-request',
                 connectionId: 'conn-1',
                 correlationId: '7',
+                chainId: 'algorand',
                 operation: {
                     type: 'sign-data',
                     payload: { stdSigData: { authenticatorData: 'AQID' } },
