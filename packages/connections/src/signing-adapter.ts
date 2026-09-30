@@ -45,10 +45,15 @@ import type { ConnectionErrorScope, InboundMessage } from './models'
 import type { ConnectionRegistry } from './registry'
 
 /** The chain a request answers for, and how to enqueue its transaction signing. */
-export type ChainTransactionSigning = {
-    chainId: ChainId
-    enqueue: EnqueueTransactionSigning
-}
+/**
+ * Keyed by chain rather than compared against the message's chain, so shared
+ * code never branches on a chain id: a message for an unmounted chain simply
+ * finds no entry.
+ */
+export type ChainTransactionSigning = ReadonlyMap<
+    ChainId,
+    EnqueueTransactionSigning
+>
 
 type RequestMessage = Extract<InboundMessage, { kind: 'request' }>
 type ExpiredMessage = Extract<InboundMessage, { kind: 'request-expired' }>
@@ -399,10 +404,10 @@ export const enqueueInboundRequest = (
     if (message.kind !== 'request') return
 
     if (message.operation.type === 'sign-transactions') {
-        // A message naming a chain other than the one this adapter instance
-        // was mounted for cannot be signed: `useChainTransactionSigning`
-        // resolves one chain's hook per mount.
-        if (message.chainId !== deps.transactionSigning.chainId) {
+        // `useChainTransactionSigning` resolves one chain's hook per mount, so
+        // a message naming any other chain finds no enqueue and is declined.
+        const enqueue = deps.transactionSigning.get(message.chainId)
+        if (!enqueue) {
             declineRequest(
                 message,
                 new Error(
@@ -420,7 +425,7 @@ export const enqueueInboundRequest = (
         trackRequest(deps, message, null)
         let enqueued: ReturnType<EnqueueTransactionSigning>
         try {
-            enqueued = deps.transactionSigning.enqueue(
+            enqueued = enqueue(
                 {
                     group: message.operation.group,
                     authorizedAccounts: message.authorizedAccounts,
@@ -497,7 +502,10 @@ export const useChainTransactionSigning = (
     const useEnqueue =
         dappRequestChainAdapters.get(chainId).useEnqueueTransactionSigning
     const enqueue = useEnqueue()
-    return useMemo(() => ({ chainId, enqueue }), [chainId, enqueue])
+    return useMemo<ChainTransactionSigning>(
+        () => new Map([[chainId, enqueue]]),
+        [chainId, enqueue],
+    )
 }
 
 /** Every handler normalises into `InboundMessage`, so a new connection kind needs no change here. */

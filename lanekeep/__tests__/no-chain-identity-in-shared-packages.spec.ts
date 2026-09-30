@@ -15,7 +15,6 @@ const FIXTURES =
 // line goes; flip the rule to `error` when the list is empty.
 const KNOWN_OFFENDERS: readonly string[] = [
     "packages/walletconnect/src/shared/deeplink.ts: `'algorand'` is a chain id literal in a shared package",
-    "packages/walletconnect/src/v2/caip.ts: `'algorand'` is a chain id literal in a shared package",
 ]
 
 describe('pera/no-chain-identity-in-shared-packages', () => {

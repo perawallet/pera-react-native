@@ -1167,7 +1167,7 @@ describe('useConnectionSigningAdapter', () => {
         }
 
         enqueueInboundRequest(message, {
-            transactionSigning: { chainId: CHAIN_ID, enqueue: mockEnqueue },
+            transactionSigning: new Map([[CHAIN_ID, mockEnqueue]]),
             addSignRequest: mockAddSignRequest,
             removeSignRequest: mockRemoveSignRequest,
             accounts: [],
