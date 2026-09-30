@@ -27,7 +27,7 @@ import {
     upsertAssetPrices,
     getAssetsByIds,
     getAssetPricesByIds,
-    seedAlgoAsset,
+    seedNativeAssets,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -225,8 +225,8 @@ describe('cleanupRemovedAccountData', () => {
         expect(result.networksAffected.sort()).toEqual(['mainnet', 'testnet'])
     })
 
-    it('keeps the seeded ALGO row when the last ALGO-holding account goes', async () => {
-        await seedAlgoAsset(db)
+    it('keeps the seeded native row when the last account holding it goes', async () => {
+        await seedNativeAssets(db)
         await upsertAssetPrices({
             db,
             prices: [{ assetId: '0', usdPrice: new Decimal('0.2') }],

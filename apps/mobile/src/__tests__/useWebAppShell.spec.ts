@@ -29,7 +29,7 @@ const mocks = vi.hoisted(() => ({
         .fn<() => Promise<void>>()
         .mockResolvedValue(undefined),
     getDatabase: vi.fn(() => ({ __db: true })),
-    seedAlgoAsset: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    seedNativeAssets: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
     initializeSyncService: vi.fn(),
     syncStart: vi.fn(),
     syncStop: vi.fn(),
@@ -131,8 +131,8 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
     return {
         ...original,
-        seedAlgoAsset: (...args: unknown[]) =>
-            mocks.seedAlgoAsset(...(args as [])),
+        seedNativeAssets: (...args: unknown[]) =>
+            mocks.seedNativeAssets(...(args as [])),
     }
 })
 
@@ -184,7 +184,7 @@ describe('useWebAppShell', () => {
         mocks.hasAccounts = false
         vi.clearAllMocks()
         mocks.initializeDatabase.mockResolvedValue(undefined)
-        mocks.seedAlgoAsset.mockResolvedValue(undefined)
+        mocks.seedNativeAssets.mockResolvedValue(undefined)
         mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.armAutoLock.mockResolvedValue(undefined)
         mocks.getCurrentApproval.mockResolvedValue(null)
@@ -409,7 +409,7 @@ describe('useWebAppShell', () => {
         },
     )
 
-    it('bootstraps in order: keystore ready before initializeDatabase; seedAlgoAsset receives getDatabase(); initializeSyncService called once with queryClient + registerCompletionHandler', async () => {
+    it('bootstraps in order: keystore ready before initializeDatabase; seedNativeAssets receives getDatabase(); initializeSyncService called once with queryClient + registerCompletionHandler', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = true
         mocks.isUnlocked = true
@@ -422,8 +422,8 @@ describe('useWebAppShell', () => {
         mocks.initializeDatabase.mockImplementation(async () => {
             callOrder.push('initializeDatabase')
         })
-        mocks.seedAlgoAsset.mockImplementation(async () => {
-            callOrder.push('seedAlgoAsset')
+        mocks.seedNativeAssets.mockImplementation(async () => {
+            callOrder.push('seedNativeAssets')
         })
 
         const { result } = renderHook(() => useWebAppShell())
@@ -433,9 +433,9 @@ describe('useWebAppShell', () => {
         expect(callOrder).toEqual([
             'keystoreReady',
             'initializeDatabase',
-            'seedAlgoAsset',
+            'seedNativeAssets',
         ])
-        expect(mocks.seedAlgoAsset).toHaveBeenCalledWith(
+        expect(mocks.seedNativeAssets).toHaveBeenCalledWith(
             mocks.getDatabase.mock.results[0]?.value,
         )
         expect(mocks.initializeSyncService).toHaveBeenCalledOnce()

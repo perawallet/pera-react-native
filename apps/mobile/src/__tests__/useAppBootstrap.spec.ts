@@ -59,7 +59,7 @@ const mocks = vi.hoisted(() => {
         getProvider: vi.fn(() => provider),
         initializeDatabase: vi.fn(),
         getDatabase: vi.fn(() => ({})),
-        seedAlgoAsset: vi.fn(),
+        seedNativeAssets: vi.fn(),
         initializeSyncService: vi.fn(),
         setOnConfirmedHandler: vi.fn(),
         createAsyncStoragePersister: vi.fn(() => ({ persistClient: vi.fn() })),
@@ -95,7 +95,7 @@ vi.mock('@perawallet/wallet-core-database', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    seedAlgoAsset: mocks.seedAlgoAsset,
+    seedNativeAssets: mocks.seedNativeAssets,
 }))
 
 vi.mock('@perawallet/wallet-core-background', () => ({
@@ -221,7 +221,7 @@ describe('useAppBootstrap', () => {
             failedDecodeIds: [],
         })
         mocks.initializeDatabase.mockResolvedValue(undefined)
-        mocks.seedAlgoAsset.mockResolvedValue(undefined)
+        mocks.seedNativeAssets.mockResolvedValue(undefined)
         mocks.runPasskeyAutofillBootstrap.mockResolvedValue(undefined)
         mocks.configOverrides = {}
         mocks.settingsState.language = 'system'

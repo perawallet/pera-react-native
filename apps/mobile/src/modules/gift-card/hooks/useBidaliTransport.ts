@@ -23,7 +23,11 @@ import {
     useNetwork,
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET, getKnownAssetId } from '@perawallet/wallet-core-assets'
+import {
+    getKnownAssetId,
+    useNativeAsset,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useSigningRequest,
@@ -31,7 +35,6 @@ import {
 } from '@perawallet/wallet-core-signing'
 import {
     isAlgoAssetId,
-    ALGO_ASSET_ID,
     generateOrderedUniqueId,
     logger,
     type Optional,
@@ -54,10 +57,14 @@ type CurrencyInfo = {
 const getCurrencyInfo = (
     protocol: string,
     network: Network,
+    nativeAsset: PeraAsset,
 ): Nullable<CurrencyInfo> => {
     switch (protocol) {
         case 'algorand': {
-            return { assetId: ALGO_ASSET_ID, decimals: ALGO_ASSET.decimals }
+            return {
+                assetId: nativeAsset.assetId,
+                decimals: nativeAsset.decimals,
+            }
         }
         case 'testusdcalgorand':
         case 'usdcalgorand': {
@@ -69,7 +76,7 @@ const getCurrencyInfo = (
 
             return {
                 assetId,
-                decimals: ALGO_ASSET.decimals, //USDC has same number of decimals as algo
+                decimals: nativeAsset.decimals, //USDC has same number of decimals as algo
             }
         }
         default: {
@@ -182,6 +189,7 @@ export const useBidaliTransport = (
     balances: AccountBalances,
 ): UseBidaliTransportResult => {
     const { network } = useNetwork()
+    const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const algokit = useAlgorandClient()
     const { addSignRequest } = useSigningRequest()
@@ -234,7 +242,7 @@ export const useBidaliTransport = (
                 return
             }
 
-            const currencyInfo = getCurrencyInfo(protocol, network)
+            const currencyInfo = getCurrencyInfo(protocol, network, nativeAsset)
             if (!currencyInfo) {
                 logger.warn('Bidali: unsupported protocol', { protocol })
                 return
@@ -302,7 +310,7 @@ export const useBidaliTransport = (
                 sendBidaliEvent(webviewRef, 'paymentCancelled')
             }
         },
-        [account, network, algokit, addSignRequest, t],
+        [account, network, nativeAsset, algokit, addSignRequest, t],
     )
 
     const handleOpenUrl = useCallback((params: Record<string, unknown>) => {

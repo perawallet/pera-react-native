@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
@@ -55,6 +55,7 @@ export const RekeyConfirmView = ({
     isUnderfunded,
     onConfirmPress,
 }: RekeyConfirmViewProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
@@ -88,7 +89,7 @@ export const RekeyConfirmView = ({
                             {t(`${i18nPrefix}.fee_label`)}
                         </PWText>
                         <AssetAmount
-                            asset={ALGO_ASSET}
+                            asset={nativeAsset}
                             value={feeAlgos}
                             variant='bodyLarge'
                         />

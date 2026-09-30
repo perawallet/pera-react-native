@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
-    ALGO_ASSET,
+    useNativeAsset,
     PeraAssetType,
     isPureNft,
     useAssetPricesQuery,
@@ -78,6 +78,7 @@ export type UseBalanceImpactSummaryResult = {
 type SortableItem = BalanceImpactItem & { sortValue: Decimal }
 
 export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
+    const nativeAsset = useNativeAsset()
     const { transactions, signableAddresses, isSimulating, simulationFailed } =
         useImpactTransactions()
 
@@ -121,7 +122,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
         const items = movements.map<SortableItem>(({ assetId, amount }) => {
             const isAlgo = assetId === ALGO_ASSET_ID
             const asset: PeraAsset | undefined = isAlgo
-                ? ALGO_ASSET
+                ? nativeAsset
                 : assets.get(assetId)
             const decimals = asset?.decimals ?? 0
             const isCollectible =
@@ -214,5 +215,5 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
             isSimulating,
             simulationFailed,
         }
-    }, [impact, assets, prices, isSimulating, simulationFailed])
+    }, [impact, assets, prices, isSimulating, simulationFailed, nativeAsset])
 }

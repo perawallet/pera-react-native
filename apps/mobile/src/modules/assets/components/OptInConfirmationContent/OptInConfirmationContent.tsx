@@ -15,7 +15,7 @@ import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { ALGO_ASSET, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { useLanguage } from '@hooks/useLanguage'
@@ -38,6 +38,7 @@ export const OptInConfirmationContent = ({
     accountAddress,
     fee,
 }: OptInConfirmationContentProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
@@ -130,7 +131,7 @@ export const OptInConfirmationContent = ({
                         {t('add_asset.confirmation.fee_label')}
                     </PWText>
                     <AssetAmount
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         value={resolvedFee}
                         showSymbol
                         style={styles.rowValue}

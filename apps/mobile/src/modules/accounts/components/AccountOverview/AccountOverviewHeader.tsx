@@ -26,7 +26,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 import { WatchAccountButtonPanel } from '../WatchAccountButtonPanel'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useAccountOverviewHeader } from './useAccountOverviewHeader'
@@ -43,6 +43,7 @@ export const AccountOverviewHeader = ({
     chartVisible,
     isLoading,
 }: AccountOverviewHeaderProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -82,7 +83,7 @@ export const AccountOverviewHeader = ({
                                         ? new Decimal(selectedPoint.algoValue)
                                         : portfolioAlgoValue
                                 }
-                                asset={ALGO_ASSET}
+                                asset={nativeAsset}
                                 style={styles.primaryCurrency}
                                 isLoading={isPending}
                             />
@@ -208,6 +209,7 @@ export const AccountOverviewHeader = ({
         handleChartSelectionChange,
         setPeriod,
         t,
+        nativeAsset,
     ])
 
     const useLoadingHeight = isLoading && chartVisible

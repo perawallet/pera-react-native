@@ -28,7 +28,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    ALGO_ASSET,
+    useNativeAsset,
     isCollectible,
     toWholeUnits,
     useAssetsQuery,
@@ -72,6 +72,7 @@ type useTransactionConfirmationScreenResult = {
 
 export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
+        const nativeAsset = useNativeAsset()
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const { selectedAssetId, amount, destination, note, isCloseAccount } =
@@ -135,7 +136,7 @@ export const useTransactionConfirmationScreen =
 
         const { isRecipientBelowMbr, recipientMbrDisplay } = useMemo(() => {
             const mbr = recipientAccountInfo?.minBalance ?? 0n
-            const mbrDisplay = toWholeUnits(mbr, ALGO_ASSET).toString()
+            const mbrDisplay = toWholeUnits(mbr, nativeAsset).toString()
             if (!isAlgoSend || !amount || !recipientAccountInfo) {
                 return {
                     isRecipientBelowMbr: false,
@@ -143,7 +144,10 @@ export const useTransactionConfirmationScreen =
                 }
             }
             const amountInMicroAlgos = BigInt(
-                displayUnitsToBaseUnits(amount, ALGO_ASSET.decimals).toString(),
+                displayUnitsToBaseUnits(
+                    amount,
+                    nativeAsset.decimals,
+                ).toString(),
             )
             const recipientBalanceAfter =
                 recipientAccountInfo.amount + amountInMicroAlgos
@@ -156,7 +160,7 @@ export const useTransactionConfirmationScreen =
                     recipientBalanceAfter < recipientAccountInfo.minBalance,
                 recipientMbrDisplay: mbrDisplay,
             }
-        }, [isAlgoSend, amount, recipientAccountInfo])
+        }, [isAlgoSend, amount, recipientAccountInfo, nativeAsset])
 
         const [isSigning, setIsSigning] = useState(false)
         const isFocused = useIsFocused()

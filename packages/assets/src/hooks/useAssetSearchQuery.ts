@@ -13,11 +13,11 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { searchAssets } from '../api/assets/search-endpoints'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { assetsAdapterFor } from '../chain-adapter'
 import type { DisplayableAsset } from '../models/assets'
-import { transformSearchResult } from './mappers'
 import { MODULE_PREFIX } from './querykeys'
-import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type UseAssetSearchQueryOptions = {
     hasCollectible?: boolean
@@ -45,18 +45,6 @@ const getAssetSearchQueryKey = (
     hasCollectible: boolean,
 ) => [MODULE_PREFIX, 'search', { query, network, hasCollectible }]
 
-const extractCursor = (nextUrl: Maybe<string>): Optional<string> => {
-    if (!nextUrl) {
-        return undefined
-    }
-    try {
-        const url = new URL(nextUrl)
-        return url.searchParams.get('cursor') ?? undefined
-    } catch {
-        return undefined
-    }
-}
-
 export const useAssetSearchQuery = (
     query: string,
     options?: UseAssetSearchQueryOptions,
@@ -68,22 +56,20 @@ export const useAssetSearchQuery = (
 
     const infiniteQuery = useInfiniteQuery({
         queryKey: getAssetSearchQueryKey(query, network, hasCollectible),
-        queryFn: ({ pageParam }) =>
-            searchAssets({
-                query,
-                network,
-                cursor: pageParam,
-                hasCollectible,
-            }),
+        queryFn: ({ pageParam }) => {
+            const scope = scopeForLegacyNetwork(network)
+            return assetsAdapterFor(scope).searchAssets(
+                { query, cursor: pageParam, hasCollectible },
+                scope,
+            )
+        },
         enabled,
         initialPageParam: undefined as Optional<string>,
-        getNextPageParam: lastPage => extractCursor(lastPage.next),
+        getNextPageParam: lastPage => lastPage.nextCursor,
     })
 
     const results =
-        infiniteQuery.data?.pages.flatMap(page =>
-            page.results.map(transformSearchResult),
-        ) ?? []
+        infiniteQuery.data?.pages.flatMap(page => page.results) ?? []
 
     return {
         results,

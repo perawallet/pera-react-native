@@ -15,7 +15,7 @@ import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
@@ -31,6 +31,7 @@ export const OptOutConfirmationContent = ({
     assetId,
     accountAddress,
 }: OptOutConfirmationContentProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
@@ -121,7 +122,7 @@ export const OptOutConfirmationContent = ({
                         {t('asset_opt_out.fee_label')}
                     </PWText>
                     <AssetAmount
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         value={fee}
                         showSymbol
                         style={styles.rowValue}

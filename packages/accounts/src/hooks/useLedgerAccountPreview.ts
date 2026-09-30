@@ -15,7 +15,7 @@ import { Decimal } from 'decimal.js'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
-    ALGO_ASSET,
+    useNativeAsset,
     PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -36,6 +36,7 @@ import { useRekeyedAddressesQuery } from './useRekeyedAddressesQuery'
 export const useLedgerAccountPreview = (
     address: string,
 ): UseLedgerAccountPreviewResult => {
+    const nativeAsset = useNativeAsset()
     const onChain = useOnChainAccountInformationQuery(address)
     const rekeyed = useRekeyedAddressesQuery(address)
     const { usdToPreferred } = useCurrency()
@@ -61,9 +62,9 @@ export const useLedgerAccountPreview = (
 
         previewAssets.push({
             assetId: ALGO_ASSET_ID,
-            name: ALGO_ASSET.name ?? 'Algo',
-            unitName: ALGO_ASSET.unitName ?? ALGO_ASSET_NAME,
-            decimals: ALGO_ASSET.decimals,
+            name: nativeAsset.name ?? 'Algo',
+            unitName: nativeAsset.unitName ?? ALGO_ASSET_NAME,
+            decimals: nativeAsset.decimals,
             hasKnownDecimals: true,
             amount: algoBalance,
             fiatValue: usdToPreferred(algoBalance.times(algoUsdPrice)),

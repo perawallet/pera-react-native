@@ -31,12 +31,11 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 // this package's jsdom test environment (same class of issue as the
 // `@perawallet/wallet-core-blockchain` mock in
 // `useRekeyFeePreflight.spec.ts` and the provider stub in `vitest.setup.ts`).
-// `./indexer/endpoints` only imports these two named exports, and the routing
+// `./indexer/endpoints` only imports this one named export, and the routing
 // tests below that reach the indexer path use empty transaction pages, so
-// neither mock needs a return value configured.
+// the mock needs no return value configured.
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    fetchIndexerAssetDetails: vi.fn(),
-    transformIndexerAssetResponse: vi.fn(),
+    fetchOnChainAsset: vi.fn(),
 }))
 
 // Import after mocks are set up

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
+import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
 
 import type { Decimal } from 'decimal.js'
@@ -22,6 +22,7 @@ type UseOptOutConfirmationContentResult = {
 
 export const useOptOutConfirmationContent =
     (): UseOptOutConfirmationContentResult => {
+        const nativeAsset = useNativeAsset()
         const { minTxnFee } = useMinimumFeeConfig()
-        return { fee: toWholeUnits(minTxnFee, ALGO_ASSET) }
+        return { fee: toWholeUnits(minTxnFee, nativeAsset) }
     }

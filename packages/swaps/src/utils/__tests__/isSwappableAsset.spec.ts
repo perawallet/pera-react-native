@@ -13,7 +13,6 @@
 import { Decimal } from 'decimal.js'
 import { describe, it, expect } from 'vitest'
 import {
-    ALGO_ASSET,
     PeraAssetType,
     type PeraAsset,
     type PeraAssetVerificationTier,
@@ -116,7 +115,19 @@ describe('isSwappableAsset', () => {
         expect(isSwappableAsset(asset)).toBe(false)
     })
 
-    it('returns true for the ALGO asset', () => {
-        expect(isSwappableAsset(ALGO_ASSET)).toBe(true)
+    it('returns true for a verified native asset', () => {
+        const native = makeAsset({
+            assetId: '0',
+            name: 'Algo',
+            unitName: 'ALGO',
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'verified',
+                type: PeraAssetType.algo,
+                isFavorited: false,
+                isPriceAlertEnabled: false,
+            },
+        })
+        expect(isSwappableAsset(native)).toBe(true)
     })
 })

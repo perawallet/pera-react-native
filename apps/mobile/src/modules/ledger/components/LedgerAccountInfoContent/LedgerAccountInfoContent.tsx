@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { ActivityIndicator } from 'react-native'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PWView, PWText, PWButton, PWFlatList } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
@@ -39,6 +39,7 @@ export const LedgerAccountInfoContent = ({
     accountIndex,
     title,
 }: LedgerAccountInfoContentProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -82,7 +83,7 @@ export const LedgerAccountInfoContent = ({
                             />
                             <PWView style={styles.balanceContainer}>
                                 <AssetAmount
-                                    asset={ALGO_ASSET}
+                                    asset={nativeAsset}
                                     value={item.algoBalance}
                                     density='compact'
                                     variant='bodyCompact'
@@ -145,7 +146,7 @@ export const LedgerAccountInfoContent = ({
                 }
             }
         },
-        [styles],
+        [styles, nativeAsset],
     )
 
     return (

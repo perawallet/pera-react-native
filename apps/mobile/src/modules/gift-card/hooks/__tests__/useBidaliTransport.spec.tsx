@@ -62,8 +62,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     }),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET: { decimals: 6 },
+    useNativeAsset: () => NATIVE_ASSET,
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane, so
     // getCurrencyInfo's `assetId === null` branch is reachable here.
     getKnownAssetId: (

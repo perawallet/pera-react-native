@@ -75,8 +75,10 @@ vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({}))
 
+const NATIVE_ASSET = vi.hoisted(() => ({ id: '0', decimals: 6 }))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET: { id: '0', decimals: 6 },
+    useNativeAsset: () => NATIVE_ASSET,
     toWholeUnits: vi.fn((value: number | bigint) => Number(value) / 1_000_000),
     useSingleAssetDetailsQuery: vi.fn(() => ({
         data: null,

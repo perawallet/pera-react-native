@@ -1175,10 +1175,10 @@ describe('SyncService', () => {
             expect(getAllHeldAssetIdsForNetwork).toHaveBeenCalledWith({
                 network: 'mainnet',
             })
-            expect(fetchAndPersistAssets).toHaveBeenCalledWith(
-                ['123', '456'],
-                'mainnet',
-            )
+            expect(fetchAndPersistAssets).toHaveBeenCalledWith(['123', '456'], {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            })
             expect(fetchAndPersistPrices).toHaveBeenCalledWith(
                 ['123', '456'],
                 'mainnet',

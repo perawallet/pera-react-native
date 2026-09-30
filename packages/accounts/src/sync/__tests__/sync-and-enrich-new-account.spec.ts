@@ -96,10 +96,10 @@ describe('syncAndEnrichNewAccount', () => {
                 priorResourceCount: 0,
             },
         )
-        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(
-            ['0', '100'],
-            'mainnet',
-        )
+        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['0', '100'], {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(mockFetchAndPersistPrices).toHaveBeenCalledWith(
             ['0', '100'],
             'mainnet',

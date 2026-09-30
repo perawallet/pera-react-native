@@ -24,6 +24,7 @@ import {
     getAssetsQueryKey,
 } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useAvailableAssetsQuery,
     type DexSwapAsset,
@@ -121,7 +122,10 @@ export const useSwapToAssetSelectionList = ({
             // Seed the query cache so the AssetSelector can display the asset
             // immediately after selection, even for unowned assets that aren't
             // in the local asset database yet.
-            const queryKey = getAssetsQueryKey([assetId], network)
+            const queryKey = getAssetsQueryKey(
+                [assetId],
+                scopeForLegacyNetwork(network),
+            )
             // An empty array counts as "not cached": the DB-only assets query
             // caches [] (staleTime Infinity) for an asset the account doesn't
             // hold, and skipping the seed then leaves the selector unable to

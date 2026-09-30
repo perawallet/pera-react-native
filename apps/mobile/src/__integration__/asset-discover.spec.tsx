@@ -20,7 +20,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
 import { createQueryClientWrapper } from '@test-utils/render'
-import { mockAssetSearch } from '@perawallet/wallet-core-assets/test-handlers'
+import { mockAssetSearch } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
 
 describe('Flow: Asset discovery (search)', () => {

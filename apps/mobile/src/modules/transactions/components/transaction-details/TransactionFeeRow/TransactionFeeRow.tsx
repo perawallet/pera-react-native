@@ -14,7 +14,7 @@ import {
     microAlgosToAlgos,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
@@ -24,6 +24,7 @@ export const TransactionFeeRow = ({
 }: {
     transaction: PeraDisplayableTransaction
 }) => {
+    const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
 
     return (
@@ -32,7 +33,7 @@ export const TransactionFeeRow = ({
             title={t('transactions.common.fee')}
         >
             <AssetAmount
-                asset={ALGO_ASSET}
+                asset={nativeAsset}
                 value={microAlgosToAlgos(transaction.fee ?? 0n)}
                 showSymbol
                 ignorePrivacyMode

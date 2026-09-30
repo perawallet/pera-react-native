@@ -80,10 +80,10 @@ describe('useEnsureAccountEnriched', () => {
             'ADDR1',
             'mainnet',
         )
-        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(
-            ['0', '100'],
-            'mainnet',
-        )
+        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['0', '100'], {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(mockFetchAndPersistPrices).toHaveBeenCalledWith(
             ['0', '100'],
             'mainnet',

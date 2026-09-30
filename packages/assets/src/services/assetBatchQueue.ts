@@ -11,8 +11,9 @@
  */
 
 import { BatchQueue } from '@perawallet/wallet-core-shared/queue'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-import { fetchAndPersistAssets } from '../sync/asset-syncer'
+import { fetchAndPersistAssets } from '../chain-adapter'
 import { getAssetsByIds } from '../db'
 import type { PeraAsset } from '../models'
 
@@ -28,7 +29,7 @@ export const assetBatchQueue = new BatchQueue<
     Nullable<PeraAsset>,
     Network
 >(async (assetIds, network) => {
-    await fetchAndPersistAssets(assetIds, network)
+    await fetchAndPersistAssets(assetIds, scopeForLegacyNetwork(network))
 
     const assets = await getAssetsByIds({ assetIds, network })
     const map = new Map<string, Nullable<PeraAsset>>()

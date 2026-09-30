@@ -25,9 +25,9 @@ const mockUseSingleAssetDetailsQuery = vi.hoisted(() => vi.fn())
 const mockSetQueryData = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    getAssetsQueryKey: (assetIDs: string[], network: string) => [
+    getAssetsQueryKey: (assetIDs: string[], scope: { networkId: string }) => [
         'assets',
-        { assetIDs, network },
+        { assetIDs, network: scope.networkId },
     ],
     useSingleAssetDetailsQuery: mockUseSingleAssetDetailsQuery,
 }))

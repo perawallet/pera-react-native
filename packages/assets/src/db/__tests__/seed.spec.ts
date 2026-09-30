@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-config'
 import {
     runMigrations,
@@ -27,10 +27,13 @@ import {
     updateAssetPeraMetadata,
     getAssetPeraMetadata,
 } from '../metadataRepository'
-import { seedAlgoAsset } from '../seed'
-import { ALGO_ASSET } from '../../models'
+import { assetsChainAdapters } from '../../chain-adapter'
+import { FAKE_NATIVE_ASSET } from '../../__tests__/fakeAssetsChain'
+import { seedNativeAssets } from '../seed'
 
-describe('seedAlgoAsset', () => {
+const NATIVE_ID = FAKE_NATIVE_ASSET.assetId
+
+describe('seedNativeAssets', () => {
     let db: Database
     let teardown: () => void
 
@@ -51,8 +54,8 @@ describe('seedAlgoAsset', () => {
     // ALGO row was missing there and `InputScreen` (which gates on `!asset`)
     // spun forever, making Send unusable. Driving the assertion off the enum
     // means adding a network fails here until it is seeded.
-    it('seeds ALGO into every network', async () => {
-        await seedAlgoAsset(db)
+    it('seeds the native asset into every network', async () => {
+        await seedNativeAssets(db)
 
         const networks = Object.values(Networks)
         expect(networks.length).toBeGreaterThan(2)
@@ -60,12 +63,15 @@ describe('seedAlgoAsset', () => {
         for (const network of networks) {
             const rows = await getAssetsByIds({
                 db,
-                assetIds: [ALGO_ASSET_ID],
+                assetIds: [NATIVE_ID],
                 network,
             })
 
-            expect(rows, `ALGO must be seeded for ${network}`).toHaveLength(1)
-            expect(rows[0].assetId).toBe(ALGO_ASSET_ID)
+            expect(
+                rows,
+                `the native asset must be seeded for ${network}`,
+            ).toHaveLength(1)
+            expect(rows[0].assetId).toBe(NATIVE_ID)
             expect(rows[0].name).toBe('Algo')
             expect(rows[0].unitName).toBe('ALGO')
             expect(rows[0].decimals).toBe(6)
@@ -73,12 +79,12 @@ describe('seedAlgoAsset', () => {
     })
 
     it('is idempotent — running twice does not duplicate', async () => {
-        await seedAlgoAsset(db)
-        await seedAlgoAsset(db)
+        await seedNativeAssets(db)
+        await seedNativeAssets(db)
 
         const result = await getAssetsByIds({
             db,
-            assetIds: [ALGO_ASSET_ID],
+            assetIds: [NATIVE_ID],
             network: 'mainnet',
         })
 
@@ -89,20 +95,20 @@ describe('seedAlgoAsset', () => {
         // The seed runs on every bootstrap, but favorites and price alerts are
         // device-local state it must not assert —: favoriting ALGO
         // then force-closing removed the favorite.
-        await seedAlgoAsset(db)
+        await seedNativeAssets(db)
 
         await updateAssetPeraMetadata({
             db,
-            assetId: ALGO_ASSET_ID,
+            assetId: NATIVE_ID,
             network: 'mainnet',
             updates: { isFavorited: true, isPriceAlertEnabled: true },
         })
 
-        await seedAlgoAsset(db)
+        await seedNativeAssets(db)
 
         const meta = await getAssetPeraMetadata({
             db,
-            assetId: ALGO_ASSET_ID,
+            assetId: NATIVE_ID,
             network: 'mainnet',
         })
         expect(meta?.isFavorited).toBe(true)
@@ -115,18 +121,26 @@ describe('seedAlgoAsset', () => {
         // than leave the stored value alone.
         await upsertAssets({
             db,
-            items: [{ ...ALGO_ASSET, totalSupply: new Decimal('1e19') }],
+            items: [{ ...FAKE_NATIVE_ASSET, totalSupply: new Decimal('1e19') }],
             network: 'mainnet',
         })
 
-        await seedAlgoAsset(db)
+        await seedNativeAssets(db)
 
         const [algo] = await getAssetsByIds({
             db,
-            assetIds: [ALGO_ASSET_ID],
+            assetIds: [NATIVE_ID],
             network: 'mainnet',
         })
 
         expect(algo.totalSupply.toFixed()).toBe('10000000000000000')
+    })
+
+    it('rejects when no assets adapter is registered', async () => {
+        assetsChainAdapters.reset()
+
+        await expect(seedNativeAssets(db)).rejects.toBeInstanceOf(
+            ChainAdapterNotRegisteredError,
+        )
     })
 })

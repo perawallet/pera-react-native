@@ -54,8 +54,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     displayUnitsToBaseUnits: () => ({ toFixed: () => '0' }),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({ decimals: 6 }))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET: { decimals: 6 },
+    useNativeAsset: () => NATIVE_ASSET,
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane.
     getKnownAssetId: (
         key: string,

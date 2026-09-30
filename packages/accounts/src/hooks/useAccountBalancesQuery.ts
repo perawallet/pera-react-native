@@ -27,7 +27,7 @@ import type {
     AssetWithAccountBalance,
     WalletAccount,
 } from '../models'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
@@ -88,6 +88,7 @@ export const useAccountBalancesQuery = (
     filters?: AccountHoldingsFilters,
 ): AccountBalancesWithTotals => {
     const { network } = useNetwork()
+    const nativeAsset = useNativeAsset()
     const hasAccounts = !!accounts?.length
 
     // Call sites routinely pass a fresh array literal (`[account]`) per
@@ -186,7 +187,7 @@ export const useAccountBalancesQuery = (
                     const isAlgo = isAlgoAssetId(holding.assetId)
                     // ALGO metadata is seeded, but fall back defensively so the
                     // native balance always renders even mid-sync.
-                    const asset = holding.asset ?? (isAlgo ? ALGO_ASSET : null)
+                    const asset = holding.asset ?? (isAlgo ? nativeAsset : null)
                     // Without asset metadata we can't scale base units to
                     // display units, so emit zeros until the metadata syncs —
                     // otherwise the sort-by-value key is inflated by 10^decimals.
@@ -262,7 +263,7 @@ export const useAccountBalancesQuery = (
         // `results` is read inside but deliberately not a dep — `resultsSig`
         // is its stable stand-in; see the comment where it is built.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, addresses, hasAccounts])
+    }, [resultsSig, addresses, hasAccounts, nativeAsset])
 
     return {
         accountBalances,

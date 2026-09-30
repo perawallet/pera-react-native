@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { AssetSearchResultResponse } from '../api/assets/search-schema'
-import type { DisplayableAsset } from '../models/assets'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { AssetSearchResultResponse } from './search-schema'
 
 /** Maps a raw `/v1/assets/search/` result to the shared DisplayableAsset shape,
  *  nesting metadata exactly like PeraAsset so one UI can render both. */

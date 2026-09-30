@@ -27,7 +27,7 @@ import {
     getDatabase,
     initializeDatabase,
 } from '@perawallet/wallet-core-database'
-import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
+import { seedNativeAssets } from '@perawallet/wallet-core-assets'
 import {
     createSyncStorePorts,
     getSyncService,
@@ -98,9 +98,14 @@ export const runOffscreenApp = async ({
         window.close()
     })
 
+    // In-memory only, so it can go first. The seed below reads the native
+    // asset from the chain adapter; sync's first tick reads the chain kill
+    // switch, and the dApp handler refuses a chain that has no adapter.
+    registerChainAdapters()
+
     // Migrations run before the host answers ready to anyone.
     await initializeDatabase(services.database)
-    await seedAlgoAsset(getDatabase())
+    await seedNativeAssets(getDatabase())
     host.setReady()
 
     // chrome.storage here is the SW-proxied shim (offscreen docs have none), and
@@ -111,9 +116,6 @@ export const runOffscreenApp = async ({
         key => void REHYDRATE_BY_KEY[key]?.persist.rehydrate(),
     )
 
-    // Before sync starts, since its first tick reads the chain kill switch, and
-    // before the dApp handler, which refuses a chain that has no adapter.
-    registerChainAdapters()
     initializeSyncService({
         queryClient,
         stores: createSyncStorePorts(),
