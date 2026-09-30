@@ -30,42 +30,12 @@ vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
 }))
 
 const mockKeyStoreImport = vi.fn()
-const mockKeyStoreDeriveFromSeed = vi.fn()
-const mockKeyStoreSign = vi.fn()
-const mockKeyStoreExport = vi.fn()
 const mockKeyStoreRemove = vi.fn()
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
         keyStore: {
             import: (...args: any[]) => mockKeyStoreImport(...args),
-            deriveFromSeed: (...args: any[]) =>
-                mockKeyStoreDeriveFromSeed(...args),
-            sign: (...args: any[]) => mockKeyStoreSign(...args),
-            export: (...args: any[]) => mockKeyStoreExport(...args),
             remove: (...args: any[]) => mockKeyStoreRemove(...args),
-        },
-    }),
-}))
-
-// `getDerivedPublicKey` reads the publicKey from the live reactive store
-// (rather than calling `keyStore.export`, since the rn-keystore stamps
-// derived keys `extractable: false`).
-const mockReactiveKeys: {
-    id: string
-    type?: string
-    publicKey?: Uint8Array
-    metadata?: Record<string, unknown>
-}[] = []
-const pushHdSeed = () =>
-    mockReactiveKeys.push({
-        id: 'hd-1',
-        type: 'hd-root-key',
-        metadata: { scheme: 'bip39' },
-    })
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getKeystoreStore: () => ({
-        get state() {
-            return { keys: mockReactiveKeys, status: 'idle' as const }
         },
     }),
 }))
@@ -103,7 +73,6 @@ import { SeedScheme } from '../../constants'
 describe('useHDWallet', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockReactiveKeys.length = 0
     })
 
     describe('createHDWalletKey', () => {
@@ -261,96 +230,6 @@ describe('useHDWallet', () => {
             expect(keyResult!.seedKey.id).toBe('hd-1')
             expect(mockKeyStoreRemove).not.toHaveBeenCalled()
             expect(mockLoggerError).toHaveBeenCalled()
-        })
-    })
-
-    describe('generateDerivedKey', () => {
-        beforeEach(() => {
-            pushHdSeed()
-            mockKeyStoreDeriveFromSeed.mockResolvedValue('derived-id-1')
-        })
-
-        test('calls deriveFromSeed with the BIP44 path, deterministic id, and sign-ready metadata', async () => {
-            const { result } = renderHook(() => useHDWallet())
-
-            await act(async () => {
-                await result.current.generateDerivedKey('hd-1', 7, 3, 9)
-            })
-
-            expect(mockKeyStoreDeriveFromSeed).toHaveBeenCalledTimes(1)
-            const [seedId, path, opts] =
-                mockKeyStoreDeriveFromSeed.mock.calls[0]
-            expect(seedId).toBe('hd-1')
-            expect(path).toBe("m/44'/283'/7'/0/3")
-            expect(opts).toMatchObject({
-                id: 'hd-1-acc7-idx3-dt9',
-                algorithm: 'EdDSA',
-                mode: 'peikert',
-                // The full canonical path metadata signXHDEd25519 reads.
-                // path/context/account/index/derivation all need to be on
-                // the persisted child or the BIP44 path resolves wrong and
-                // verification fails dApp-side.
-                metadata: {
-                    path: "m/44'/283'/7'/0/3",
-                    context: 0, // KeyContext.Address
-                    account: 7,
-                    index: 3,
-                    derivation: 9,
-                },
-            })
-        })
-
-        test('passes mode="standard" for Khovratovich derivation', async () => {
-            const { result } = renderHook(() => useHDWallet())
-            await act(async () => {
-                await result.current.generateDerivedKey('hd-1', 0, 0, 32)
-            })
-            expect(mockKeyStoreDeriveFromSeed.mock.calls[0][2].mode).toBe(
-                'standard',
-            )
-        })
-    })
-
-    describe('getDerivedPublicKey', () => {
-        beforeEach(() => {
-            // deriveFromSeed commits the entry to the reactive store as a
-            // side effect; the hook then reads the publicKey back from
-            // that snapshot. Mirror both halves here.
-            pushHdSeed()
-            mockKeyStoreDeriveFromSeed.mockImplementation(async () => {
-                mockReactiveKeys.push({
-                    id: 'hd-1-acc0-idx1-dt9',
-                    publicKey: new Uint8Array(32).fill(0x77),
-                })
-                return 'hd-1-acc0-idx1-dt9'
-            })
-        })
-
-        test('derives the child and returns its publicKey from the reactive store', async () => {
-            const { result } = renderHook(() => useHDWallet())
-            let pub: Optional<Uint8Array>
-            await act(async () => {
-                pub = await result.current.getDerivedPublicKey('hd-1', 0, 1, 9)
-            })
-            expect(mockKeyStoreDeriveFromSeed).toHaveBeenCalledTimes(1)
-            // We do NOT call keyStore.export — derived keys are
-            // committed `extractable: false`, so we read the live
-            // reactive snapshot instead.
-            expect(mockKeyStoreExport).not.toHaveBeenCalled()
-            expect(pub).toEqual(new Uint8Array(32).fill(0x77))
-        })
-
-        test('throws when the derived key has no publicKey on the reactive snapshot', async () => {
-            mockKeyStoreDeriveFromSeed.mockImplementationOnce(async () => {
-                mockReactiveKeys.push({ id: 'hd-1-acc0-idx1-dt9' })
-                return 'hd-1-acc0-idx1-dt9'
-            })
-            const { result } = renderHook(() => useHDWallet())
-            await expect(
-                act(async () => {
-                    await result.current.getDerivedPublicKey('hd-1', 0, 1, 9)
-                }),
-            ).rejects.toThrow()
         })
     })
 })

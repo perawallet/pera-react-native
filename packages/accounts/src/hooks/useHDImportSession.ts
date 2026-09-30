@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { useHDImportSessionStore } from '../import-session'
 import { discoverAccounts } from '../account-discovery'
-import { accountsAdapterFor } from '../chain-adapter'
+import { accountsAdapterFor, deriveHdAccount } from '../chain-adapter'
 import type { DerivationType, HDWalletAccount } from '../models/accounts'
 import { useAccountsStore } from '../store'
 import { HDImportSessionNotFoundError } from '../errors'
@@ -40,8 +40,7 @@ export type UseHDImportSessionResult = {
 }
 
 export const useHDImportSession = (): UseHDImportSessionResult => {
-    const { persistHDMasterKey, generateDerivedKey, removeKeyAndChildren } =
-        useKMS()
+    const { persistHDMasterKey, removeKeyAndChildren } = useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const { network } = useNetwork()
 
@@ -104,11 +103,10 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
             try {
                 await Promise.all(
                     selectedAccounts.map(acc =>
-                        generateDerivedKey(
+                        deriveHdAccount(
+                            network,
                             pending.walletKeyId,
-                            acc.hdWalletDetails.account,
-                            acc.hdWalletDetails.keyIndex,
-                            acc.hdWalletDetails.derivationType,
+                            acc.hdWalletDetails,
                         ),
                     ),
                 )
@@ -133,12 +131,7 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
 
             return selectedAccounts
         },
-        [
-            persistHDMasterKey,
-            generateDerivedKey,
-            removeKeyAndChildren,
-            setAccounts,
-        ],
+        [persistHDMasterKey, removeKeyAndChildren, network, setAccounts],
     )
 
     const cancelImport = useCallback(() => {

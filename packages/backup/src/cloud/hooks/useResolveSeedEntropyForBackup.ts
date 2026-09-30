@@ -11,15 +11,14 @@
  */
 
 import { useCallback } from 'react'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { deriveHdAccount } from '@perawallet/wallet-core-accounts'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     BACKUP_ACCESS_DOMAIN,
     SeedScheme,
     canAccess,
     entropyChildIdOf,
     seedSchemeOf,
-    useKMS,
     withSecret,
 } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
@@ -32,7 +31,7 @@ import type { SeedEntropyResolver } from './useCloudBackupPasskeyImport'
  * and searches the on-device bip39 seeds for the one that reproduces it.
  */
 export const useResolveSeedEntropyForBackup = (): SeedEntropyResolver => {
-    const { getDerivedPublicKey } = useKMS()
+    const { network } = useNetwork()
 
     return useCallback<SeedEntropyResolver>(
         async seedAddress => {
@@ -41,15 +40,11 @@ export const useResolveSeedEntropyForBackup = (): SeedEntropyResolver => {
             for (const key of keys) {
                 if (seedSchemeOf(key) !== SeedScheme.Bip39) continue
 
-                const firstDerived = await getDerivedPublicKey(
-                    key.id,
-                    0,
-                    0,
-                    BIP32DerivationType.Peikert,
-                )
-                if (encodeAlgorandAddress(firstDerived) !== seedAddress) {
-                    continue
-                }
+                const firstDerived = await deriveHdAccount(network, key.id, {
+                    account: 0,
+                    keyIndex: 0,
+                })
+                if (firstDerived.address !== seedAddress) continue
                 if (!canAccess(key, BACKUP_ACCESS_DOMAIN)) return null
 
                 const entropyId = entropyChildIdOf(key.id, keys)
@@ -67,6 +62,6 @@ export const useResolveSeedEntropyForBackup = (): SeedEntropyResolver => {
 
             return null
         },
-        [getDerivedPublicKey],
+        [network],
     )
 }

@@ -15,25 +15,25 @@ import { renderHook } from '@testing-library/react'
 import type { HDWalletAccount } from '@perawallet/wallet-core-accounts'
 
 const {
-    getDerivedPublicKeyMock,
+    deriveHdAccountMock,
     withSecretMock,
     withExportedKeyMock,
     executeWithMnemonicMock,
     loggerWarnMock,
 } = vi.hoisted(() => ({
-    getDerivedPublicKeyMock: vi.fn(),
+    deriveHdAccountMock: vi.fn(),
     withSecretMock: vi.fn(),
     withExportedKeyMock: vi.fn(),
     executeWithMnemonicMock: vi.fn(),
     loggerWarnMock: vi.fn(),
 }))
 
-vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
-    BIP32DerivationType: { Khovratovich: 32, Peikert: 9 },
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    deriveHdAccount: deriveHdAccountMock,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    encodeAlgorandAddress: (pub: Uint8Array) => `ADDR-${pub[0]}`,
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
@@ -49,7 +49,6 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     useKMS: () => ({
         seedIdOf: (childId?: string) =>
             childId === 'child-1' ? 'seed-1' : undefined,
-        getDerivedPublicKey: getDerivedPublicKeyMock,
         withExportedKey: withExportedKeyMock,
         executeWithMnemonic: executeWithMnemonicMock,
     }),
@@ -76,11 +75,24 @@ describe('useResolveHdSeedForBackup', () => {
 
     beforeEach(() => {
         grantedDomain = BACKUP_ACCESS_DOMAIN
-        getDerivedPublicKeyMock
+        deriveHdAccountMock
             .mockReset()
             .mockImplementation(
-                async (_seedId: string, acc: number, idx: number) =>
-                    new Uint8Array([acc === 0 && idx === 0 ? 1 : 2]),
+                async (
+                    _network: string,
+                    _seedId: string,
+                    {
+                        account: acc,
+                        keyIndex: idx,
+                    }: { account: number; keyIndex: number },
+                ) => {
+                    const marker = acc === 0 && idx === 0 ? 1 : 2
+                    return {
+                        keyPairId: `child-${marker}`,
+                        publicKey: new Uint8Array([marker]),
+                        address: `ADDR-${marker}`,
+                    }
+                },
             )
         withSecretMock
             .mockReset()
@@ -138,8 +150,15 @@ describe('useResolveHdSeedForBackup', () => {
             entropyHex: '000102030405060708090a0b0c0d0e0f',
         })
         // The dedup key is always acc0/idx0/Peikert, never the child's own path.
-        expect(getDerivedPublicKeyMock).toHaveBeenCalledWith('seed-1', 0, 0, 9)
-        expect(getDerivedPublicKeyMock).toHaveBeenCalledWith('seed-1', 3, 7, 9)
+        expect(deriveHdAccountMock).toHaveBeenCalledWith('mainnet', 'seed-1', {
+            account: 0,
+            keyIndex: 0,
+        })
+        expect(deriveHdAccountMock).toHaveBeenCalledWith(
+            'mainnet',
+            'seed-1',
+            account.hdWalletDetails,
+        )
     })
 
     it('reads no entropy when the seed ACL does not grant the backup domain', async () => {

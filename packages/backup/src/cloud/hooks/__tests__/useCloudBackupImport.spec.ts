@@ -26,12 +26,9 @@ const {
     persistHDMasterKeyMock,
     seedKeysState,
     hasSeedWithEntropyMock,
-    getDerivedPublicKeyMock,
-    generateDerivedKeyMock,
-    encodeAlgorandAddressMock,
+    deriveHdAccountMock,
     deriveMultisigAddressMock,
     isValidAlgorandAddressMock,
-    hdDerivedKeyIdMock,
     callOrder,
     DuplicateAccountError,
     MOCK_WORDLIST,
@@ -51,12 +48,9 @@ const {
         // The keystore's seed keys, as `useKMS().keys` exposes them.
         seedKeysState: { value: new Map<string, unknown>() },
         hasSeedWithEntropyMock: vi.fn(() => false),
-        getDerivedPublicKeyMock: vi.fn(),
-        generateDerivedKeyMock: vi.fn(),
-        encodeAlgorandAddressMock: vi.fn(),
+        deriveHdAccountMock: vi.fn(),
         deriveMultisigAddressMock: vi.fn(),
         isValidAlgorandAddressMock: vi.fn(() => true),
-        hdDerivedKeyIdMock: vi.fn(() => 'derived-key-id'),
         callOrder: [] as string[],
         DuplicateAccountError,
         MOCK_WORDLIST: [
@@ -90,6 +84,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             quantum: 'quantum',
         },
         DuplicateAccountError,
+        deriveHdAccount: deriveHdAccountMock,
         useAccountsStore,
         useImportAccount: () => importAccountMock,
         useUpdateAccount: () => updateAccountMock,
@@ -97,8 +92,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 })
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    encodeAlgorandAddress: encodeAlgorandAddressMock,
     isValidAlgorandAddress: isValidAlgorandAddressMock,
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
@@ -108,7 +103,6 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    hdDerivedKeyId: hdDerivedKeyIdMock,
     hexToBytes: (hex: string) => new Uint8Array(hex.length / 2),
     // Mirrors the real null-on-unknown-word contract, so the fixtures below
     // exercise both the happy path and the reject path.
@@ -123,13 +117,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         keys: seedKeysState.value,
         hasSeedWithEntropy: hasSeedWithEntropyMock,
         persistHDMasterKey: persistHDMasterKeyMock,
-        getDerivedPublicKey: getDerivedPublicKeyMock,
-        generateDerivedKey: generateDerivedKeyMock,
     }),
-}))
-
-vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
-    BIP32DerivationType: { Khovratovich: 32, Peikert: 9 },
 }))
 
 let idCounter = 0
@@ -142,6 +130,26 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 import { useCloudBackupImport } from '../useCloudBackupImport'
 
 // --- helpers ---------------------------------------------------------------
+
+type HdCoordinates = { account: number; keyIndex: number }
+
+/** acc0/idx0 is the seed's first-derived address, `FIRST`. */
+const derivedAt = (
+    seedKeyId: string,
+    { account, keyIndex }: HdCoordinates,
+    address = account === 0 && keyIndex === 0
+        ? 'FIRST'
+        : `ADDR-${account}-${keyIndex}`,
+) => ({
+    keyPairId: `${seedKeyId}-acc${account}-idx${keyIndex}-dt9`,
+    publicKey: new Uint8Array([account, keyIndex]),
+    address,
+})
+
+const appendedKeyPairIds = (): (string | undefined)[] =>
+    (setAccountsMock.mock.calls.at(-1)?.[0] as { keyPairId?: string }[]).map(
+        account => account.keyPairId,
+    )
 
 const renderImport = () => renderHook(() => useCloudBackupImport()).result
 
@@ -430,18 +438,20 @@ describe('useCloudBackupImport', () => {
         persistHDMasterKeyMock.mockImplementation(async () => {
             callOrder.push('persistHDMasterKey')
         })
-        // `getDerivedPublicKey` both derives AND persists the child key, so the
-        // importer no longer calls `generateDerivedKey` separately. Track the
-        // derive calls to assert the seed is persisted before the child derives.
-        getDerivedPublicKeyMock.mockImplementation(async () => {
-            callOrder.push('getDerivedPublicKey')
-            return new Uint8Array([1, 2, 3])
-        })
-        // First derived (acc0/idx0) for the seed -> first-derived address;
-        // the hdWallet child's coords -> its own address.
-        encodeAlgorandAddressMock
-            .mockReturnValueOnce('SEED_FIRST_DERIVED')
-            .mockReturnValue('HD_KEY_ADDR')
+        // Deriving also commits the child key, so track the derive calls to
+        // assert the seed is persisted before the child derives.
+        deriveHdAccountMock.mockImplementation(
+            async (_network: string, seed: string, coords: HdCoordinates) => {
+                callOrder.push('deriveHdAccount')
+                return derivedAt(
+                    seed,
+                    coords,
+                    coords.account === 0 && coords.keyIndex === 0
+                        ? 'SEED_FIRST_DERIVED'
+                        : 'HD_KEY_ADDR',
+                )
+            },
+        )
 
         const { current } = renderImport()
 
@@ -479,7 +489,7 @@ describe('useCloudBackupImport', () => {
         // The seed master key is persisted before the child is derived (the
         // last derive call corresponds to the child's own coords).
         expect(callOrder.indexOf('persistHDMasterKey')).toBeLessThan(
-            callOrder.lastIndexOf('getDerivedPublicKey'),
+            callOrder.lastIndexOf('deriveHdAccount'),
         )
         // Only the hdWallet child surfaces as an imported account; the bare
         // seed does not.
@@ -496,12 +506,9 @@ describe('useCloudBackupImport', () => {
     })
 
     test('persists the seed carried on the first hdWallet account, then imports all HD children', async () => {
-        getDerivedPublicKeyMock.mockImplementation(
-            async (_seed: string, account: number, keyIndex: number) =>
-                new Uint8Array([account, keyIndex]),
-        )
-        encodeAlgorandAddressMock.mockImplementation((pub: Uint8Array) =>
-            pub[0] === 0 && pub[1] === 0 ? 'FIRST' : `ADDR-${pub[0]}-${pub[1]}`,
+        deriveHdAccountMock.mockImplementation(
+            async (_network: string, seed: string, coords: HdCoordinates) =>
+                derivedAt(seed, coords),
         )
         const { current } = renderImport()
 
@@ -553,12 +560,9 @@ describe('useCloudBackupImport', () => {
         // derives to FIRST, which is what the backup names its seed secret by.
         seedKeysState.value = new Map([['held-seed', {}]])
         hasSeedWithEntropyMock.mockReturnValue(true)
-        getDerivedPublicKeyMock.mockImplementation(
-            async (_seed: string, account: number, keyIndex: number) =>
-                new Uint8Array([account, keyIndex]),
-        )
-        encodeAlgorandAddressMock.mockImplementation((pub: Uint8Array) =>
-            pub[0] === 0 && pub[1] === 0 ? 'FIRST' : `ADDR-${pub[0]}-${pub[1]}`,
+        deriveHdAccountMock.mockImplementation(
+            async (_network: string, seed: string, coords: HdCoordinates) =>
+                derivedAt(seed, coords),
         )
         const { current } = renderImport()
 
@@ -603,8 +607,12 @@ describe('useCloudBackupImport', () => {
         // No second HD root, and therefore no orphaned entropy child.
         expect(persistHDMasterKeyMock).not.toHaveBeenCalled()
         // The restored children bind to the seed already in the keystore.
-        expect(hdDerivedKeyIdMock).toHaveBeenCalledWith('held-seed', 0, 0, 9)
-        expect(hdDerivedKeyIdMock).toHaveBeenCalledWith('held-seed', 0, 1, 9)
+        expect(deriveHdAccountMock).toHaveBeenCalledWith(
+            'mainnet',
+            'held-seed',
+            expect.objectContaining({ account: 0, keyIndex: 1 }),
+        )
+        expect(appendedKeyPairIds()).toContain('held-seed-acc0-idx1-dt9')
         expect(summary.imported).toBe(2)
         expect(summary.failed).toEqual([])
     })
@@ -612,15 +620,14 @@ describe('useCloudBackupImport', () => {
     test('imports the seed when the held seed derives to a different address', async () => {
         seedKeysState.value = new Map([['other-seed', {}]])
         hasSeedWithEntropyMock.mockReturnValue(true)
-        getDerivedPublicKeyMock.mockImplementation(
-            async (seed: string, account: number, keyIndex: number) =>
+        deriveHdAccountMock.mockImplementation(
+            async (_network: string, seed: string, coords: HdCoordinates) =>
                 // The held seed derives elsewhere; the restored one derives to FIRST.
-                seed === 'other-seed'
-                    ? new Uint8Array([9, 9])
-                    : new Uint8Array([account, keyIndex]),
-        )
-        encodeAlgorandAddressMock.mockImplementation((pub: Uint8Array) =>
-            pub[0] === 0 && pub[1] === 0 ? 'FIRST' : `ADDR-${pub[0]}-${pub[1]}`,
+                derivedAt(
+                    seed,
+                    coords,
+                    seed === 'other-seed' ? 'OTHER' : undefined,
+                ),
         )
         const { current } = renderImport()
 
