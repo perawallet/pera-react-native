@@ -18,7 +18,6 @@ const mocks = vi.hoisted(() => {
     return {
         GenesisHashMismatchError,
         useDappRequest: vi.fn(),
-        resolve: vi.fn(),
         enqueue: vi.fn(),
         addSignRequest: vi.fn(),
         removeSignRequest: vi.fn(),
@@ -39,8 +38,6 @@ vi.mock('../../../hooks/useDappRequest.web', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useArc0001Resolver: () => mocks.resolve,
-    useEnqueueArc0001SignRequest: () => mocks.enqueue,
     useSigningRequest: mocks.useSigningRequest,
     GenesisHashMismatchError: mocks.GenesisHashMismatchError,
 }))
@@ -53,6 +50,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-connections', () => ({
     enqueueInboundRequest: mocks.enqueueInboundRequest,
     isConnectionAlive: mocks.isConnectionAlive,
+    useChainTransactionSigning: () => ({
+        chainId: 'algorand',
+        enqueue: mocks.enqueue,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
@@ -83,6 +84,7 @@ const CONNECTION_REQUEST_APPROVAL = {
     origin: 'https://dapp.example',
     connectionId: 'connection-1',
     correlationId: '9',
+    chainId: 'algorand' as const,
     operation: WIRE_OPERATION,
     authorizedAccounts: ['ADDR'],
     peer: PEER,
@@ -94,7 +96,6 @@ describe('useSignRequestApprovalScreen', () => {
 
     beforeEach(() => {
         mocks.useDappRequest.mockReset()
-        mocks.resolve.mockReset()
         mocks.enqueue.mockReset()
         mocks.addSignRequest.mockReset()
         mocks.useSigningRequest.mockReset()
@@ -191,15 +192,13 @@ describe('useSignRequestApprovalScreen', () => {
                 sourceType: 'injected',
             })
             expect(deps).toMatchObject({
-                resolveArc0001: mocks.resolve,
-                enqueueArc0001: mocks.enqueue,
+                transactionSigning: { chainId: 'algorand', enqueue: mocks.enqueue },
                 addSignRequest: mocks.addSignRequest,
                 removeSignRequest: mocks.removeSignRequest,
                 accounts: [{ address: 'ADDR' }],
             })
             // The adapter owns validation and enqueueing; this screen never
             // re-parses the payload itself.
-            expect(mocks.resolve).not.toHaveBeenCalled()
             expect(mocks.enqueue).not.toHaveBeenCalled()
             expect(mocks.addSignRequest).not.toHaveBeenCalled()
         })
