@@ -156,6 +156,51 @@ describe('useBiometrics', () => {
         })
     })
 
+    test('concurrent mounts share one reconcile and one availability read', async () => {
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+
+        const { result } = renderHook(() => [
+            useBiometrics(),
+            useBiometrics(),
+            useBiometrics(),
+            useBiometrics(),
+        ])
+
+        await waitFor(() => {
+            expect(result.current.every(hook => hook.isAvailable)).toBe(true)
+        })
+        expect(mockCheckEnrollmentBinding).toHaveBeenCalledTimes(1)
+        expect(mockCheckBiometricsAvailable).toHaveBeenCalledTimes(2)
+    })
+
+    test('an explicit check runs afresh while a mount reconcile is in flight', async () => {
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+        let releaseMount: (binding: string) => void = () => undefined
+        mockCheckEnrollmentBinding.mockImplementationOnce(
+            () =>
+                new Promise<string>(resolve => {
+                    releaseMount = resolve
+                }),
+        )
+        mockCheckEnrollmentBinding.mockResolvedValue('changed')
+
+        const { result } = renderHook(() => useBiometrics())
+        await waitFor(() => {
+            expect(mockCheckEnrollmentBinding).toHaveBeenCalledTimes(1)
+        })
+
+        let isEnabled: boolean | undefined
+        await act(async () => {
+            isEnabled = await result.current.checkBiometricsEnabled()
+        })
+        await act(async () => {
+            releaseMount('valid')
+        })
+
+        expect(isEnabled).toBe(false)
+        expect(mockCheckEnrollmentBinding).toHaveBeenCalledTimes(2)
+    })
+
     // `checkBiometricsAvailable` is false for a lockout, a busy sensor and a
     // pending security update as well as for "nothing enrolled" — Android folds
     // every non-SUCCESS `canAuthenticate` code into the same boolean. Deleting

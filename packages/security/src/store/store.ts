@@ -148,7 +148,9 @@ export const useSecurityStore: UseBoundStore<
                     biometricUnwrapFailures: sanitizeUnwrapFailures(
                         stored?.biometricUnwrapFailures,
                     ),
-                    // A forged true only re-arms after the PIN is proven.
+                    // A forged true lets one biometric ceremony re-arm with no
+                    // PIN (`recoverPendingRearm`). Accepted so users who forgot
+                    // their PIN keep biometric unlock across the upgrade.
                     isBiometricRearmPending:
                         stored?.isBiometricRearmPending === true,
                 }
