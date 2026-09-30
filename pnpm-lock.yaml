@@ -242,7 +242,7 @@ overrides:
   expo-constants: 57.0.9
   '@types/react': ~19.2.14
   expo-build-properties: 57.0.9
-  '@grpc/grpc-js@<1.9.16': 1.9.16
+  '@grpc/grpc-js@<1.13.6': 1.13.6
   '@xmldom/xmldom': 0.8.15
   bn.js@4: 4.12.3
   brace-expansion@1: 1.1.18
@@ -6059,9 +6059,9 @@ packages:
       react: 19.2.3
       react-native: 0.86.2
 
-  '@grpc/grpc-js@1.9.16':
-    resolution: {integrity: sha512-wE4Ut/olIzfKqp631XrG+wbF0v1vWFN4YL9FyXC2LJiG33DsV7PLzURjrCvY/6je2ntdRkeLpPDluzSRGaVltQ==}
-    engines: {node: ^8.13.0 || >=10.10.0}
+  '@grpc/grpc-js@1.13.6':
+    resolution: {integrity: sha512-S9U8ioEds9fo8zCt4K8CyWHLJPg63FBgZo/hYUPVTiKppwsx/ykTnFg4g4/70beoa/DYao9uROQRcoahVH8PVQ==}
+    engines: {node: '>=12.10.0'}
 
   '@grpc/proto-loader@0.7.15':
     resolution: {integrity: sha512-tMXdRCfYVixjuFK+Hk0Q1s38gV9zDiDJfWL3h1rv4Qc39oILCu1TRTDt7+fGUI8K4G1Fj125Hx/ru3azECWTyQ==}
@@ -6412,6 +6412,9 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@js-sdsl/ordered-map@4.4.2':
+    resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
 
   '@lanekeep/darwin-arm64@0.12.0':
     resolution: {integrity: sha512-4QEKjpVtNMQyvz+1NVkpx6OIlwuNQaczovGc53ogWkYcgj77AJm7GR81QI9GMyhc5C9KORDBmIc/9KM23OAjQw==}
@@ -13856,7 +13859,7 @@ snapshots:
       '@firebase/logger': 0.5.1
       '@firebase/util': 1.15.1
       '@firebase/webchannel-wrapper': 1.0.6
-      '@grpc/grpc-js': 1.9.16
+      '@grpc/grpc-js': 1.13.6
       '@grpc/proto-loader': 0.7.15
       re2js: 0.4.3
       tslib: 2.8.1
@@ -13868,7 +13871,7 @@ snapshots:
       '@firebase/logger': 0.5.2
       '@firebase/util': 1.15.3
       '@firebase/webchannel-wrapper': 1.0.7
-      '@grpc/grpc-js': 1.9.16
+      '@grpc/grpc-js': 1.13.6
       '@grpc/proto-loader': 0.7.15
       re2js: 2.8.6
       tslib: 2.8.1
@@ -14187,10 +14190,10 @@ snapshots:
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
 
-  '@grpc/grpc-js@1.9.16':
+  '@grpc/grpc-js@1.13.6':
     dependencies:
       '@grpc/proto-loader': 0.7.15
-      '@types/node': 26.1.2
+      '@js-sdsl/ordered-map': 4.4.2
 
   '@grpc/proto-loader@0.7.15':
     dependencies:
@@ -14441,6 +14444,8 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@js-sdsl/ordered-map@4.4.2': {}
 
   '@lanekeep/darwin-arm64@0.12.0':
     optional: true
@@ -15724,7 +15729,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+      vitest: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@vitest/expect@4.1.11':
     dependencies:
