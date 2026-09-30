@@ -522,6 +522,12 @@
         "title": "Scan a QR Code",
         "camera_unavailable": "Camera unavailable. Paste the code below instead.",
         "scan_with_camera": "Open camera scanner in a tab",
+        "allow_camera": "Allow camera access",
+        "camera_access_title": "Camera Access",
+        "camera_access_requesting": "Allow Pera to use your camera when your browser asks.",
+        "camera_access_granted": "Camera access is on. Close this tab and scan again from the extension.",
+        "camera_access_denied": "Camera access is blocked. Allow the camera for Pera in your browser’s site settings, then try again.",
+        "camera_access_close": "Close Tab",
         "paste_label": "Or paste a QR payload",
         "paste_placeholder": "Paste an address or WalletConnect URI",
         "paste_submit": "Submit"

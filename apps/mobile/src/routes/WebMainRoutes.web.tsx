@@ -34,7 +34,7 @@ import { MessagesStackNavigator } from '@modules/messages/routes'
 import { PeraCardStackNavigator, peraCardFlowScreens } from '@modules/card'
 import { AddAccountStackNavigator } from '@modules/onboarding/routes'
 import { BackupStackNavigator } from '@modules/backup'
-import { ScanQRScreen } from '@modules/menu/web'
+import { CameraAccessScreen, ScanQRScreen } from '@modules/menu/web'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
@@ -129,6 +129,10 @@ export const WebMainRoutes = ({
                     <RootStack.Screen
                         name='ScanQR'
                         component={ScanQRScreen}
+                    />
+                    <RootStack.Screen
+                        name='CameraAccess'
+                        component={CameraAccessScreen}
                     />
                     <RootStack.Screen
                         name='Settings'

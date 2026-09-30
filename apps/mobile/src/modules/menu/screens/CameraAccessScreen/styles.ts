@@ -10,6 +10,15 @@
  limitations under the License
  */
 
-// Web-only entry: import it from `.web` files only (see ScanQRScreen/index.ts).
-export { CameraAccessScreen } from './screens/CameraAccessScreen'
-export { ScanQRScreen } from './screens/ScanQRScreen'
+import { makeStyles } from '@rneui/themed'
+
+const CONTENT_MAX_WIDTH = 480
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        width: '100%',
+        maxWidth: CONTENT_MAX_WIDTH,
+        alignSelf: 'center',
+        gap: theme.spacing.lg,
+    },
+}))

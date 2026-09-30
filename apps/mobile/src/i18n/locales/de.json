@@ -522,6 +522,12 @@
         "title": "QR-Code scannen",
         "camera_unavailable": "Kamera nicht verfügbar. Füge stattdessen den Code unten ein.",
         "scan_with_camera": "Kamera-Scanner in einem Tab öffnen",
+        "allow_camera": "Kamerazugriff erlauben",
+        "camera_access_title": "Kamerazugriff",
+        "camera_access_requesting": "Erlaube Pera die Nutzung deiner Kamera, wenn dein Browser danach fragt.",
+        "camera_access_granted": "Der Kamerazugriff ist aktiviert. Schließe diesen Tab und scanne erneut über die Erweiterung.",
+        "camera_access_denied": "Der Kamerazugriff ist blockiert. Erlaube Pera die Kamera in den Website-Einstellungen deines Browsers und versuche es dann erneut.",
+        "camera_access_close": "Tab schließen",
         "paste_label": "Oder QR-Inhalt einfügen",
         "paste_placeholder": "Adresse oder WalletConnect-URI einfügen",
         "paste_submit": "Absenden"

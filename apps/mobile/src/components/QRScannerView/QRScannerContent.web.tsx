@@ -239,6 +239,13 @@ export const QRScannerContent = ({
         void openExpandedTab('scan')
     }, [])
 
+    // A field scanner can't move to the tab, but the camera permission is
+    // per-origin: granting it there once lets this popup start the camera
+    // inline from then on.
+    const handleAllowCamera = useCallback(() => {
+        void openExpandedTab('camera-access')
+    }, [])
+
     return (
         <PWView style={styles.container}>
             <PWView style={styles.header}>
@@ -271,6 +278,14 @@ export const QRScannerContent = ({
                     variant='secondary'
                     title={t('qr_scanner.scan_with_camera')}
                     onPress={handleScanWithCamera}
+                    style={styles.scanWithCamera}
+                />
+            ) : isPopup && cameraPermission !== 'denied' && !hasCameraError ? (
+                <PWButton
+                    testID='qr-allow-camera'
+                    variant='secondary'
+                    title={t('qr_scanner.allow_camera')}
+                    onPress={handleAllowCamera}
                     style={styles.scanWithCamera}
                 />
             ) : (

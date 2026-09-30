@@ -17,6 +17,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useScanTabHandoff } from '@hooks/useScanTabHandoff'
 import { ChooseCredentialsFileSheet } from '../components/ChooseCredentialsFileSheet'
 import { OPTION_LIST_SHEET_OPTIONS } from '../components/OptionListSheet'
 import {
@@ -40,6 +41,9 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
     const navigation = useAppNavigation()
     const { showError } = useErrorToast()
     const { request: requestBottomSheet } = useBottomSheet()
+    const { shouldHandOff, openScanTab } = useScanTabHandoff(
+        'backup-restore-scan',
+    )
     const [isReadingCredentials, setIsReadingCredentials] = useState(false)
     // A double tap would otherwise open two sheets and race two pickers.
     const isBusyRef = useRef(false)
@@ -117,13 +121,17 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
                 options: OPTION_LIST_SHEET_OPTIONS,
             })
             if (!choice) return null
-            if (choice === 'scan') return ['CloudBackupRestoreScan']
+            if (choice === 'scan') {
+                if (!shouldHandOff) return ['CloudBackupRestoreScan']
+                void openScanTab()
+                return null
+            }
             if (choice === 'manual') return ['CloudBackupRestorePassphrase']
             return await importFrom(choice)
         } finally {
             isBusyRef.current = false
         }
-    }, [requestBottomSheet, importFrom])
+    }, [requestBottomSheet, importFrom, shouldHandOff, openScanTab])
 
     return { chooseRestoreRoute, isReadingCredentials }
 }

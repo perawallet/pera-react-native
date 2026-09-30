@@ -522,6 +522,12 @@
         "title": "Escanear um código QR",
         "camera_unavailable": "Câmera indisponível. Cole o código abaixo.",
         "scan_with_camera": "Abrir o leitor da câmera em uma aba",
+        "allow_camera": "Permitir acesso à câmera",
+        "camera_access_title": "Acesso à câmera",
+        "camera_access_requesting": "Permita que a Pera use sua câmera quando o navegador pedir.",
+        "camera_access_granted": "O acesso à câmera está ativado. Feche esta aba e escaneie novamente pela extensão.",
+        "camera_access_denied": "O acesso à câmera está bloqueado. Permita a câmera para a Pera nas configurações de sites do navegador e tente novamente.",
+        "camera_access_close": "Fechar aba",
         "paste_label": "Ou cole um payload de QR",
         "paste_placeholder": "Cole um endereço ou URI do WalletConnect",
         "paste_submit": "Enviar"

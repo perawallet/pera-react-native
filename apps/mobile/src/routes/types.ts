@@ -44,6 +44,7 @@ export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
     TabBar: NavigatorScreenParams<TabBarStackParamList>
     ScanQR: undefined
+    CameraAccess: undefined
     AddAccount: NavigatorScreenParams<AddAccountStackParamList>
     Messages: NavigatorScreenParams<MessagesStackParamList>
     Settings: NavigatorScreenParams<SettingsStackParamsList>

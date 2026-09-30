@@ -78,7 +78,8 @@ export type ImportSelectAddressesParams =
  * via `renderImportFlowScreens` (see `./shared-screens.tsx`).
  */
 export type ImportFlowParamList = {
-    ImportAccountOptions: undefined
+    /** `isScannerOpen`: the extension popup handed its QR scan off to this tab. */
+    ImportAccountOptions: Optional<{ isScannerOpen?: boolean }>
     NameAccount: Optional<{
         account?: WalletAccount
         /** Override the post-naming destination (defaults to exit-to-Home). */

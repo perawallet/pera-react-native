@@ -10,6 +10,6 @@
  limitations under the License
  */
 
-// Web-only entry: import it from `.web` files only (see ScanQRScreen/index.ts).
-export { CameraAccessScreen } from './screens/CameraAccessScreen'
-export { ScanQRScreen } from './screens/ScanQRScreen'
+// Web-only screen, registered solely in WebMainRoutes; see ScanQRScreen/index.ts
+// for why the `.web` suffix is explicit.
+export { CameraAccessScreen } from './CameraAccessScreen.web'
