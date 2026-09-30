@@ -14,6 +14,16 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
+        chains: {
+            flexDirection: 'column',
+            gap: theme.spacing.xl,
+        },
+        chainHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+            marginBottom: theme.spacing.md,
+        },
         container: {
             flexDirection: 'column',
             gap: theme.spacing.md,

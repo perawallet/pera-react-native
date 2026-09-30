@@ -16,6 +16,7 @@ import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnab
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { config } from '@perawallet/wallet-core-config'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { routeCapabilities } from '@routes/capabilities'
 import { withLanguageParam } from '@modules/webview'
 import type { IconName } from '@components/core'
@@ -42,6 +43,8 @@ export const useSettingsOptions = () => {
     const isCloudBackupConfigured = useCloudBackupStore(state =>
         state.isConfigured(),
     )
+    // One chain has nothing to choose between beyond the developer picker.
+    const hasMultipleChains = getProvider().chains.list().length > 1
 
     const settingsOptions = useMemo<SettingsOptionSection[]>(() => {
         const sections: SettingsOptionSection[] = [
@@ -135,6 +138,15 @@ export const useSettingsOptions = () => {
                         icon: 'dollar',
                         title: t('settings.main.currency_title'),
                     },
+                    ...(hasMultipleChains
+                        ? [
+                              {
+                                  route: 'NetworksSettings',
+                                  icon: 'tree',
+                                  title: t('settings.main.networks_title'),
+                              } satisfies SettingsOptionItem,
+                          ]
+                        : []),
                     {
                         route: 'ThemeSettings',
                         icon: 'moon',
@@ -203,6 +215,7 @@ export const useSettingsOptions = () => {
         isLanguageSelectionEnabled,
         isCloudBackupEnabled,
         isCloudBackupConfigured,
+        hasMultipleChains,
     ])
 
     return {

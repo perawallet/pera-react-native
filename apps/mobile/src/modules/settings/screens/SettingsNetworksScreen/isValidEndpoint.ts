@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-/**
- * Platform-neutral on purpose: this file has no `.web` twin, unlike
- * `useSettingsDeveloperNodeSettingsScreen(.web).ts`. A bare import of THAT
- * pair resolves to whichever platform variant Metro/webpack pick for the
- * importing bundle, which is exactly why `isValidEndpoint` used to be
- * duplicated three times (once per file that needed it) instead of shared
- * via a cross-import between the two screen-hook variants. Importing this
- * module instead is unambiguous on every platform.
- */
+// The extension's stricter rule (https only, loopback http outside production) lives in isValidEndpoint.web.ts.
 export const isValidEndpoint = (value: string): boolean => {
     try {
         const { protocol } = new URL(value)

@@ -31,7 +31,7 @@ import { SettingsConfirmationScreen } from '@modules/settings/screens/SettingsCo
 import { SettingsLanguageScreen } from '@modules/settings/screens/SettingsLanguageScreen'
 import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/SettingsDeveloperScreen'
 import { fullScreenLayout } from '@layouts/index'
-import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
+import { SettingsNetworksScreen } from '@modules/settings/screens/SettingsNetworksScreen'
 import type { NavigatorScreenParams } from '@react-navigation/native'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import {
@@ -96,7 +96,7 @@ const DeveloperSettingsStackNavigator = () => {
                 options={{
                     title: 'screens.node_settings',
                 }}
-                component={SettingsDeveloperNodeSettingsScreen}
+                component={SettingsNetworksScreen}
             />
             <DeveloperSettingsStack.Screen
                 name='DevMenu'
@@ -231,6 +231,7 @@ export type SettingsStackParamsList = {
     PasskeysSettings: undefined
     ConnectionsSettings: undefined
     CurrencySettings: undefined
+    NetworksSettings: undefined
     ThemeSettings: undefined
     AdvancedSettings: undefined
     LaunchSettings: undefined
@@ -331,6 +332,13 @@ export const SettingsStackNavigator = () => {
                     title: 'screens.currency',
                 }}
                 component={SettingsCurrencyScreen}
+            />
+            <SettingsStack.Screen
+                name='NetworksSettings'
+                options={{
+                    title: 'screens.networks',
+                }}
+                component={SettingsNetworksScreen}
             />
             <SettingsStack.Screen
                 name='ThemeSettings'
