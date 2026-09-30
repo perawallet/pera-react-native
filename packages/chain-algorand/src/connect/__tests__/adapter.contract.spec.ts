@@ -28,4 +28,5 @@ dappRequestContractTests(() => algorandDappRequestAdapter, {
         reportedAs: 'mainnet',
     },
     undisclosed: { scope: scopeForLegacyNetwork('custom') },
+    walletConnect: { networkWithCaip2: 'mainnet', v1ChainId: 4160 },
 })

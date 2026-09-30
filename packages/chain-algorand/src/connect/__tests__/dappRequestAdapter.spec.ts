@@ -159,6 +159,65 @@ describe('algorandDappRequestAdapter', () => {
         })
     })
 
+    describe('validateTransactionPayload', () => {
+        it('rejects an empty group', () => {
+            const result = adapter.validateTransactionPayload([])
+
+            expect(result).toMatchObject({
+                ok: false,
+                message: expect.stringContaining('Invalid algo_signTxn payload'),
+            })
+        })
+
+        it('rejects a group over the transaction cap', () => {
+            const group = Array.from(
+                { length: MAX_TRANSACTION_SIGN_REQUESTS + 1 },
+                () => ({ txn: 'AA==' }),
+            )
+
+            expect(adapter.validateTransactionPayload(group)).toMatchObject({
+                ok: false,
+            })
+        })
+
+        it('keeps a msig slot unstripped, so the resolver can reject it as unsupported', () => {
+            const result = adapter.validateTransactionPayload([
+                {
+                    txn: 'AA==',
+                    msig: {
+                        version: 1,
+                        threshold: 2,
+                        addrs: ['A'.repeat(58), 'B'.repeat(58)],
+                    },
+                },
+            ])
+
+            expect(result).toMatchObject({
+                ok: true,
+                group: [
+                    {
+                        txn: 'AA==',
+                        msig: {
+                            version: 1,
+                            threshold: 2,
+                            addrs: ['A'.repeat(58), 'B'.repeat(58)],
+                        },
+                    },
+                ],
+            })
+        })
+
+        it('reports the failing field path in the same wording validate.ts used to produce inline', () => {
+            const result = adapter.validateTransactionPayload([{}])
+
+            expect(result).toMatchObject({
+                ok: false,
+                message:
+                    'Invalid algo_signTxn payload — 0.txn: Invalid input: expected string, received undefined',
+            })
+        })
+    })
+
     describe('relayableErrorNames', () => {
         // The relay matches on `error.name`, so these pins fail loudly on a
         // class rename instead of silently dropping to generic copy.

@@ -33,11 +33,22 @@ const fixtureAdapter: DappRequestChainAdapter = {
         scope.networkId === 'custom' ? undefined : scope.networkId,
     walletConnect: {
         namespace: 'algorand',
-        caip2ChainIdFor: () => null,
-        networkForCaip2ChainId: () => null,
+        caip2ChainIdFor: networkId =>
+            networkId === 'testnet' ? 'algorand:testnet-fixture' : null,
+        networkForCaip2ChainId: caip2 =>
+            caip2 === 'algorand:testnet-fixture' ? 'testnet' : null,
         toWireResult: () => null,
+        v1: {
+            isChainIdAcceptable: (chainId, networkId) =>
+                chainId === 4160 && networkId === 'testnet',
+            networksFor: chainId => (chainId === 4160 ? ['testnet'] : []),
+            screenRequest: () => ({ ok: true }),
+        },
     },
-    validateTransactionPayload: () => ({ ok: true, group: [] }),
+    validateTransactionPayload: payload =>
+        Array.isArray(payload) && payload.length > 0
+            ? { ok: true, group: payload }
+            : { ok: false, message: 'Empty transaction payload' },
     useEnqueueTransactionSigning: () => async () => null,
 }
 
@@ -48,4 +59,5 @@ dappRequestContractTests(() => fixtureAdapter, {
         reportedAs: 'testnet',
     },
     undisclosed: { scope: scopeForLegacyNetwork('custom') },
+    walletConnect: { networkWithCaip2: 'testnet', v1ChainId: 4160 },
 })
