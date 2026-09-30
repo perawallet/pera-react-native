@@ -21,11 +21,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { PipelineStage, TransactionSignRequest } from '../models'
 import {
-    createTransactionListItems,
+    aggregateTransactionWarnings,
     classifyRequestStructure,
-} from '../utils/classification'
+    createTransactionListItems,
+} from '../chain-adapter'
 import { calculateTotalFee, detectHighGroupFee } from '../utils/fees'
-import { aggregateTransactionWarnings } from '../utils/warnings'
 import type {
     SigningConfiguration,
     SigningPipeline,

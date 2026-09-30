@@ -16,11 +16,8 @@ import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 
 import { assertTransactionsMatchNetwork } from '../assertTransactionsMatchNetwork'
-import { GenesisHashMismatchError } from '../../pipeline/errors'
-import {
-    makeTestAddress,
-    makeTestPaymentTx,
-} from '../../test-utils/transactions'
+import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'
+import { makeTestAddress, makeTestPaymentTx } from './transactions'
 
 const MAINNET_HASH = 'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8='
 const TESTNET_HASH = 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='

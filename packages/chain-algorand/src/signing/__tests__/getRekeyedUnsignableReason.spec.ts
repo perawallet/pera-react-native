@@ -15,7 +15,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { SignRequest } from '../../models'
+import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { getRekeyedUnsignableReason } from '../getRekeyedUnsignableReason'
 
 const OK_SENDER = 'OK_SENDER'

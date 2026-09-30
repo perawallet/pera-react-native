@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
 import { useTransactionWarnings } from '../useTransactionWarnings'
 
 const SENDER = 'SENDER_ADDR'
@@ -29,6 +30,10 @@ const makeTx = (overrides: object) =>
     ({ sender: SENDER, ...overrides }) as unknown as PeraDisplayableTransaction
 
 describe('useTransactionWarnings', () => {
+    beforeEach(() => {
+        registerAlgorandReviewerAdapter()
+    })
+
     it('buckets a payment close-remainder as close-account', () => {
         const { result } = renderHook(() =>
             useTransactionWarnings(

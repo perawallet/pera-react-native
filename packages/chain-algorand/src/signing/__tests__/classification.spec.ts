@@ -11,10 +11,10 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import type { GroupTransactionItem } from '@perawallet/wallet-core-signing'
 import {
     classifyRequestStructure,
     createTransactionListItems,
-    type GroupTransactionItem,
 } from '../classification'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 

@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
+import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
 import { useIsQuantumDataSigningBlocked } from '../useIsQuantumDataSigningBlocked'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -42,6 +43,7 @@ const buildArbitraryDataRequest = (signers: string[]) =>
 describe('useIsQuantumDataSigningBlocked', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandReviewerAdapter()
         ;(useAllAccounts as Mock).mockReturnValue([
             { address: QUANTUM_ADDRESS, type: 'quantum' },
             { address: STANDARD_ADDRESS, type: 'algo25' },

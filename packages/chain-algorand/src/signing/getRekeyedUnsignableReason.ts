@@ -18,14 +18,9 @@ import {
     isArbitraryDataRequest,
     isArc60Request,
     isTransactionRequest,
+    type RekeyedUnsignableReason,
     type SignRequest,
-} from '../models'
-
-export type RekeyedUnsignableReason = {
-    kind: 'authMissing' | 'authIsWatch'
-    senderAddress: string
-    authAddress: string
-}
+} from '@perawallet/wallet-core-signing'
 
 // Every signer the request names, across all transactions/data entries — not
 // just the first (a mixed group can hide its unsignable sender in a later

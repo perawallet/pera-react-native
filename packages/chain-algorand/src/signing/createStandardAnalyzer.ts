@@ -10,28 +10,26 @@
  limitations under the License
  */
 
-import type {
-    DataAnalyzer,
-    SignableGroup,
-    SignableAnalysis,
-    AnalysisContext,
-    AnalysisWarning,
-    AlgorandTransactionSummary,
-} from '../types'
 import {
     AnalysisError,
-    TransactionRoundTripError,
     GenesisHashMismatchError,
-} from '../errors'
+    isArc60OriginMismatch,
+    TransactionRoundTripError,
+    type AlgorandTransactionSummary,
+    type AnalysisContext,
+    type AnalysisWarning,
+    type DataAnalyzer,
+    type SignableAnalysis,
+    type SignableGroup,
+} from '@perawallet/wallet-core-signing'
 import {
     type PeraTransaction,
     encodeAlgorandAddress,
     classifyPeraTransaction,
     getExpectedGenesisHash,
 } from '@perawallet/wallet-core-blockchain'
-import { validateTransactionRoundTrip } from '../../utils/validateTransactionRoundTrip'
-import { assertTransactionsMatchNetwork } from '../../utils/assertTransactionsMatchNetwork'
-import { isArc60OriginMismatch } from '../../utils/arc60-wire'
+import { validateTransactionRoundTrip } from './validateTransactionRoundTrip'
+import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
 
 /**
  * Creates the standard analyzer that provides basic analysis:

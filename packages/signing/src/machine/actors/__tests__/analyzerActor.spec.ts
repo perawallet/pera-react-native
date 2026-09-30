@@ -10,15 +10,14 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createActor, toPromise } from 'xstate'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { registerFakeReviewerAdapter } from '../../../__tests__/fakeReviewerAdapter'
+import { reviewerChainAdapters } from '../../../chain-adapter'
 
 const mocks = vi.hoisted(() => ({
     analyze: vi.fn(),
-}))
-
-vi.mock('../../../pipeline/analyzers/createStandardAnalyzer', () => ({
-    createStandardAnalyzer: () => ({ analyze: mocks.analyze }),
 }))
 
 import { analyzerActor } from '../analyzerActor'
@@ -60,6 +59,11 @@ const buildInput = (groups: SignableGroup[]): AnalyzerActorInput => ({
 })
 
 describe('analyzerActor', () => {
+    beforeEach(() => {
+        mocks.analyze.mockReset()
+        registerFakeReviewerAdapter({ analyze: mocks.analyze })
+    })
+
     it('returns one analysis per group, in order', async () => {
         mocks.analyze
             .mockResolvedValueOnce({ ...emptyAnalysis, totalFees: 100n })
@@ -105,5 +109,18 @@ describe('analyzerActor', () => {
         actor.start()
 
         await expect(toPromise(actor)).rejects.toThrow('analysis blew up')
+    })
+
+    it('rejects with ChainAdapterNotRegisteredError when no reviewer adapter is registered', async () => {
+        reviewerChainAdapters.reset()
+
+        const actor = createActor(analyzerActor, {
+            input: buildInput([makeGroup('A')]),
+        })
+        actor.start()
+
+        await expect(toPromise(actor)).rejects.toBeInstanceOf(
+            ChainAdapterNotRegisteredError,
+        )
     })
 })

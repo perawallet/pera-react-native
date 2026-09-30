@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { TransactionSignRequest } from '../../models'
+import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
 
 const mockSigningRequest = {
     currentRequest: undefined as unknown,
@@ -158,32 +159,26 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableIndices).toEqual(new Set([0]))
     })
 
-    test('stamps isExternal on list items based on signableIndices', () => {
-        // Three transactions without a group so they each become a
-        // SingleTransactionItem directly (no group-expansion path).
+    test('builds list items from the full group context and the signable subset', () => {
+        const adapter = registerFakeReviewerAdapter()
         const tx0 = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
         const tx1 = { sender: { toString: () => 'ADDR_B' }, fee: 1000n }
         const tx2 = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
-        const request: TransactionSignRequest = {
+        mockSigningRequest.currentRequest = {
             id: 'req-external',
             type: 'transactions',
             transport: 'algod',
-            // Wallet signs slots 0 and 2; slot 1 belongs to the other party.
             txs: [tx0 as never, tx2 as never],
             groupContext: [tx0 as never, tx1 as never, tx2 as never],
             signableIndices: [0, 2],
-        }
-        mockSigningRequest.currentRequest = request
+        } satisfies TransactionSignRequest
 
-        const { result } = renderHook(() => useSigningPipeline())
+        renderHook(() => useSigningPipeline())
 
-        // Three items, one per transaction (no grouping without a `group` field).
-        expect(result.current.listItems).toHaveLength(3)
-        expect(
-            result.current.listItems.map(
-                item => (item as { isExternal: boolean }).isExternal,
-            ),
-        ).toEqual([false, true, false])
+        expect(adapter.createTransactionListItems).toHaveBeenCalledWith(
+            [tx0, tx1, tx2],
+            new Set([0, 2]),
+        )
     })
 
     test('shares the display transform across consumers — computes once per request', () => {
@@ -254,67 +249,71 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableIndices).toEqual(new Set([0, 1]))
     })
 
-    // a dApp can set a foreign `sender` it never imported while
-    // signing with a wallet-held account via `signerOverrides`. The rekey/close
-    // warning (and its blocking gate) must follow the authorizing entity, and
-    // the override is keyed by position in `txs` (the signable subset) — so the
+    // The override is keyed by position in `txs` (the signable subset), so the
     // pipeline must translate it into the full-group display index space via
-    // `signableIndices` before gating.
-    test('gates warnings on signerOverrides, translating subset index via signableIndices', () => {
-        mockAllAccounts.mockReturnValue([{ address: 'ADDR_O', type: 'algo25' }])
-
+    // `signableIndices` before handing it to the adapter.
+    test('passes signerOverrides to the warnings aggregator, translating subset index via signableIndices', () => {
+        const adapter = registerFakeReviewerAdapter()
         const otherPartyTx = { sender: 'OTHER', fee: 1000n }
-        const foreignRekeyTx = {
-            sender: 'FOREIGN_E',
-            fee: 1000n,
-            rekeyTo: { publicKey: new Uint8Array(32) },
-        }
-        const request: TransactionSignRequest = {
+        const foreignTx = { sender: 'FOREIGN_E', fee: 1000n }
+        mockSigningRequest.currentRequest = {
             id: 'req-override',
             type: 'transactions',
             transport: 'callback',
-            // Wallet signs only the foreign-sender tx, authorized by ADDR_O.
-            txs: [foreignRekeyTx as never],
-            groupContext: [otherPartyTx as never, foreignRekeyTx as never],
-            // foreignRekeyTx sits at group index 1; override is keyed by its
-            // subset index 0.
+            txs: [foreignTx as never],
+            groupContext: [otherPartyTx as never, foreignTx as never],
             signableIndices: [1],
             signerOverrides: new Map([[0, 'ADDR_O']]),
-        }
-        mockSigningRequest.currentRequest = request
+        } satisfies TransactionSignRequest
 
-        const { result } = renderHook(() => useSigningPipeline())
+        renderHook(() => useSigningPipeline())
 
-        const rekeyWarnings = result.current.warnings.filter(
-            w => w.type === 'rekey',
+        expect(adapter.aggregateTransactionWarnings).toHaveBeenCalledWith(
+            [otherPartyTx, foreignTx],
+            expect.any(Set),
+            expect.any(Set),
+            new Map([[1, 'ADDR_O']]),
         )
-        expect(rekeyWarnings).toHaveLength(1)
-        expect(
-            (rekeyWarnings[0] as { senderAddress: string }).senderAddress,
-        ).toBe('FOREIGN_E')
     })
 
-    test('does not warn for a foreign sender when no signerOverride authorizes it', () => {
-        mockAllAccounts.mockReturnValue([{ address: 'ADDR_O', type: 'algo25' }])
-
-        const foreignRekeyTx = {
-            sender: 'FOREIGN_E',
-            fee: 1000n,
-            rekeyTo: { publicKey: new Uint8Array(32) },
-        }
-        const request: TransactionSignRequest = {
+    test('passes an empty authorizer map when there are no signerOverrides', () => {
+        const adapter = registerFakeReviewerAdapter()
+        mockSigningRequest.currentRequest = {
             id: 'req-no-override',
             type: 'transactions',
             transport: 'callback',
-            txs: [foreignRekeyTx as never],
-        }
-        mockSigningRequest.currentRequest = request
+            txs: [{ sender: 'FOREIGN_E', fee: 1000n } as never],
+        } satisfies TransactionSignRequest
+
+        renderHook(() => useSigningPipeline())
+
+        expect(adapter.aggregateTransactionWarnings).toHaveBeenCalledWith(
+            expect.any(Array),
+            expect.any(Set),
+            expect.any(Set),
+            new Map(),
+        )
+    })
+
+    test("surfaces the adapter's warnings", () => {
+        registerFakeReviewerAdapter({
+            aggregateTransactionWarnings: vi.fn(() => [
+                {
+                    type: 'rekey',
+                    senderAddress: 'FOREIGN_E',
+                } as never,
+            ]),
+        })
+        mockSigningRequest.currentRequest = {
+            id: 'req-warn',
+            type: 'transactions',
+            transport: 'callback',
+            txs: [{ sender: 'FOREIGN_E', fee: 1000n } as never],
+        } satisfies TransactionSignRequest
 
         const { result } = renderHook(() => useSigningPipeline())
 
-        expect(
-            result.current.warnings.filter(w => w.type === 'rekey'),
-        ).toHaveLength(0)
+        expect(result.current.warnings.map(w => w.type)).toEqual(['rekey'])
     })
 
     test('subscribes to actor ref and derives stage from snapshot', () => {
