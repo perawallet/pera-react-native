@@ -11,8 +11,7 @@
  */
 
 import { vi, type Mock } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-shared'
-import { getCaip2ChainId } from '../caip'
+import { walletConnectSupportFor } from '../../shared/chainSupport'
 import type {
     WalletKitClient,
     WalletKitEvent,
@@ -39,8 +38,18 @@ export const PAIRING_TOPIC = 'c'.repeat(64)
 export const SYM_KEY = 'd'.repeat(64)
 export const ADDRESS = 'A'.repeat(58)
 export const OTHER_ADDRESS = 'B'.repeat(58)
-export const MAINNET_CHAIN_ID = getCaip2ChainId(Networks.mainnet) ?? ''
-export const TESTNET_CHAIN_ID = getCaip2ChainId(Networks.testnet) ?? ''
+// The real registered adapter's own ids (registerDappRequestAdapter.ts, run
+// as this package's vitest setup), so a genesis-hash or CAIP-2 typo on either
+// side of the adapter boundary fails a real test rather than passing against
+// a second, independently-recomputed copy.
+const support = walletConnectSupportFor('mainnet')
+if (!support) {
+    throw new Error(
+        'fakeWalletKit.ts requires the chain adapter registered by registerDappRequestAdapter.ts',
+    )
+}
+export const MAINNET_CHAIN_ID = support.caip2ChainIdFor('mainnet') ?? ''
+export const TESTNET_CHAIN_ID = support.caip2ChainIdFor('testnet') ?? ''
 export const PROPOSAL_ID = 1701
 export const REQUEST_ID = 4242
 

@@ -13,7 +13,7 @@
 import type { IClientMeta } from '@perawallet/walletconnect'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
-import { isChainIdAcceptable } from '../shared/chain'
+import { isV1ChainIdAcceptable } from '../shared/chainSupport'
 import { readString } from '../shared/read'
 
 // The session-level check proves only the session's network; a dApp can stamp
@@ -25,7 +25,7 @@ export const legacyItemChainIdsAcceptable = (
     params.every(item => {
         if (typeof item !== 'object' || item === null) return false
         const { chainId } = item as { chainId?: unknown }
-        return isChainIdAcceptable(
+        return isV1ChainIdAcceptable(
             typeof chainId === 'number' ? chainId : undefined,
             network,
         )

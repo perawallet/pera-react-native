@@ -11,6 +11,7 @@
  */
 
 import type WalletConnect from '@perawallet/walletconnect'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     logger,
     type Network,
@@ -23,8 +24,10 @@ import {
 } from '@perawallet/wallet-core-connections/handlerKit'
 import type { WalletConnectConnectorRegistry } from '../connection'
 import { WC_DELIVERY_TIMEOUT_MS } from '../shared/constants'
-import { isChainIdAcceptable } from '../shared/chain'
-import { toWireResult } from '../shared/wire'
+import {
+    isV1ChainIdAcceptable,
+    walletConnectSupportFor,
+} from '../shared/chainSupport'
 import {
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
@@ -122,8 +125,14 @@ export const createV1RequestHandlers = (deps: {
             send(connector)
         }
 
+        // The gate already proved the session's chain id acceptable on this
+        // network, which requires a registered adapter — `support` is only
+        // undefined here if the network changed between the gate and this call.
+        const support = walletConnectSupportFor(getNetwork())
+
         requireContext().onMessage({
             kind: 'request',
+            chainId: scopeForLegacyNetwork(getNetwork()).chainId,
             connectionId: connection.id,
             correlationId: String(requestId),
             sourceType: 'walletconnect',
@@ -136,7 +145,7 @@ export const createV1RequestHandlers = (deps: {
                 deliver(connector =>
                     connector.approveRequest({
                         id: requestId,
-                        result: toWireResult(result),
+                        result: support?.toWireResult(result) ?? null,
                     }),
                 ),
             reject: error =>
@@ -267,7 +276,7 @@ export const createV1RequestHandlers = (deps: {
         // `gateSignDataRequest` rejects the legacy array shape outright, so that
         // branch gets only the chain check; the registry validates its payload.
         const verdict: GateResult = Array.isArray(request.params)
-            ? isChainIdAcceptable(connection.metadata.chainId, network) &&
+            ? isV1ChainIdAcceptable(connection.metadata.chainId, network) &&
               legacyItemChainIdsAcceptable(request.params, network)
                 ? { ok: true }
                 : {

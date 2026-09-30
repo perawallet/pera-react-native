@@ -23,7 +23,10 @@ export default defineConfig({
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
-        setupFiles: ['./vitest.setup.ts'],
+        setupFiles: [
+            './vitest.setup.ts',
+            './src/__tests__/registerDappRequestAdapter.ts',
+        ],
     },
     resolve: {
         conditions: ['default'],
@@ -113,6 +116,14 @@ export default defineConfig({
                 __dirname,
                 '../connections/src/handlerKit.ts',
             ),
+            // Registering the real Algorand adapter (registerDappRequestAdapter.ts)
+            // through a dist copy of connections would land in a different
+            // `dappRequestChainAdapters` registry instance than the one this
+            // package's own source resolves to below.
+            '@perawallet/wallet-core-connections/dappRequest': path.resolve(
+                __dirname,
+                '../connections/src/dappRequest.ts',
+            ),
             '@perawallet/wallet-core-connections': path.resolve(
                 __dirname,
                 '../connections/src/index.ts',
@@ -120,6 +131,14 @@ export default defineConfig({
             '@perawallet/wallet-extension-connections': path.resolve(
                 __dirname,
                 '../../extensions/connections/src/index.ts',
+            ),
+            // Test-only: the one place walletconnect names a chain package,
+            // to register its adapter (see registerDappRequestAdapter.ts).
+            // Source, so it shares the module graph above rather than a dist
+            // copy resolving its own dependencies separately.
+            '@perawallet/wallet-core-chain-algorand/connect': path.resolve(
+                __dirname,
+                '../chain-algorand/src/connect/index.ts',
             ),
         },
     },

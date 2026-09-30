@@ -11,12 +11,10 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
-import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing'
-import { isChainIdAcceptable } from '../shared/chain'
 import {
-    arc60PayloadSchema,
-    assertArc60RequestWithinLimits,
-} from '../shared/schema'
+    isV1ChainIdAcceptable,
+    walletConnectSupportFor,
+} from '../shared/chainSupport'
 
 /**
  * Which error the caller answers the peer with. `reason` is developer English
@@ -43,6 +41,9 @@ const accept: GateResult = { ok: true }
 const SESSION_NOT_FOUND_REASON =
     'session not found — please disconnect and reconnect the dapp'
 
+const NO_SIGNING_SUPPORT_REASON =
+    'no signing support registered for this network'
+
 type WcEnvelope = { id: number; params: unknown[] }
 
 // A payload without a numeric id cannot be responded to, so it is dropped.
@@ -53,22 +54,6 @@ const asEnvelope = (payload: unknown): WcEnvelope | null => {
     if (!Array.isArray(candidate.params)) return null
     return { id: candidate.id, params: candidate.params }
 }
-
-type WalletTxnEntry = { txn?: unknown; signers?: unknown }
-
-/**
- * Deliberately does not decode the msgpack `txn` for its sender: multisig,
- * authAddr and rekey make a naive `snd` read wrong, and that is ARC-0001
- * resolution's job. An empty result means "cannot tell", not "nobody".
- */
-const namedSigners = (entries: WalletTxnEntry[]): string[] =>
-    entries.flatMap(entry =>
-        Array.isArray(entry.signers)
-            ? entry.signers.filter(
-                  (value): value is string => typeof value === 'string',
-              )
-            : [],
-    )
 
 export const gateSignTxnRequest = (input: {
     payload: unknown
@@ -82,35 +67,25 @@ export const gateSignTxnRequest = (input: {
     if (input.sessionChainId === undefined) {
         return reject(SESSION_NOT_FOUND_REASON, 'session-not-found')
     }
-    if (!isChainIdAcceptable(input.sessionChainId, input.network)) {
+    if (!isV1ChainIdAcceptable(input.sessionChainId, input.network)) {
         return reject(
             'chain id not acceptable on the active network',
             'invalid-network',
         )
     }
 
-    const group = envelope.params[0]
-    if (!Array.isArray(group) || group.length === 0) {
-        return reject('empty or non-array transaction list')
-    }
-    if (group.length > MAX_TRANSACTION_SIGN_REQUESTS) {
-        return reject('too many transactions in one request')
-    }
+    // `isV1ChainIdAcceptable` above already proved a chain adapter serving v1
+    // is registered for this network; this repeats the lookup rather than
+    // threading it through, since both are cheap map reads.
+    const support = walletConnectSupportFor(input.network)
+    if (!support?.v1) return reject(NO_SIGNING_SUPPORT_REASON)
 
-    const entries = group as WalletTxnEntry[]
-    if (entries.some(entry => typeof entry?.txn !== 'string')) {
-        return reject('transaction entry without a txn string')
-    }
-
-    // Conservative: only reject when the request names signers and none of
-    // them is ours. Naming nothing is deferred to the pipeline.
-    const named = namedSigners(entries)
-    if (named.length > 0) {
-        const known = new Set(input.knownAddresses)
-        if (!named.some(address => known.has(address))) {
-            return reject('no named signer belongs to this wallet')
-        }
-    }
+    const verdict = support.v1.screenRequest(
+        'sign-transactions',
+        envelope.params[0],
+        input.knownAddresses,
+    )
+    if (!verdict.ok) return reject(verdict.reason)
 
     return accept
 }
@@ -118,7 +93,7 @@ export const gateSignTxnRequest = (input: {
 type SignDataEnvelope = { id: number; params: unknown }
 
 // `algo_signData`'s `params` is a single ARC-60 wire object, not `algo_signTxn`'s
-// array; only the id is checked here and the caller validates `params`.
+// array; only the id is checked here and the chain adapter validates `params`.
 const asSignDataEnvelope = (payload: unknown): SignDataEnvelope | null => {
     if (typeof payload !== 'object' || payload === null) return null
     const candidate = payload as { id?: unknown; params?: unknown }
@@ -143,26 +118,18 @@ export const gateSignDataRequest = (input: {
     if (input.sessionChainId === undefined) {
         return reject(SESSION_NOT_FOUND_REASON, 'session-not-found')
     }
-    if (!isChainIdAcceptable(input.sessionChainId, input.network)) {
+    if (!isV1ChainIdAcceptable(input.sessionChainId, input.network)) {
         return reject(
             'chain id not acceptable on the active network',
             'invalid-network',
         )
     }
 
-    try {
-        assertArc60RequestWithinLimits(envelope.params)
-    } catch (error) {
-        return reject(
-            error instanceof Error
-                ? error.message
-                : 'ARC-60 payload rejected by size cap',
-        )
-    }
+    const support = walletConnectSupportFor(input.network)
+    if (!support?.v1) return reject(NO_SIGNING_SUPPORT_REASON)
 
-    // Structural shape only; canonification and signer authorization stay in the pipeline.
-    const parsed = arc60PayloadSchema.safeParse(envelope.params)
-    if (!parsed.success) return reject('ARC-60 payload failed schema')
+    const verdict = support.v1.screenRequest('sign-data', envelope.params, [])
+    if (!verdict.ok) return reject(verdict.reason)
 
     return accept
 }

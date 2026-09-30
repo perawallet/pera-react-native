@@ -19,6 +19,12 @@
       ],
       "@perawallet/wallet-core-connections/handlerKit": [
         "../connections/src/handlerKit.ts"
+      ],
+      "@perawallet/wallet-core-connections/dappRequest": [
+        "../connections/src/dappRequest.ts"
+      ],
+      "@perawallet/wallet-core-chain-algorand/connect": [
+        "../chain-algorand/src/connect/index.ts"
       ]
     }
   },

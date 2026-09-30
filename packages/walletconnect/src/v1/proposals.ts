@@ -13,7 +13,6 @@
 import type WalletConnect from '@perawallet/walletconnect'
 import {
     logger,
-    Networks,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -37,7 +36,10 @@ import {
     SESSION_REQUEST_TTL_MS,
     WC_DELIVERY_TIMEOUT_MS,
 } from '../shared/constants'
-import { isChainIdAcceptable } from '../shared/chain'
+import {
+    isV1ChainIdAcceptable,
+    v1NetworksFor,
+} from '../shared/chainSupport'
 import { toPeer } from '../shared/peer'
 import {
     WalletConnectError,
@@ -53,12 +55,6 @@ import type { V1ConnectorEventHandler, V1RequestHandlers } from './requests'
 import { scopeFor } from './scope'
 import type { WalletConnectV1SessionKeyStore } from './secrets'
 import { asSessionRequestParams, asWcRequest } from './wire'
-
-// The 4160 wildcard expands to every network, and TestNet's id also covers `custom`.
-const networksForChainId = (chainId: number): Network[] =>
-    Object.values(Networks).filter(network =>
-        isChainIdAcceptable(chainId, network),
-    )
 
 export type V1ProposalHandlers = {
     handleSessionRequest: V1ConnectorEventHandler
@@ -260,7 +256,7 @@ export const createV1ProposalHandlers = (deps: {
         const { chainId } = params
         if (
             typeof chainId !== 'number' ||
-            !isChainIdAcceptable(chainId, network)
+            !isV1ChainIdAcceptable(chainId, network)
         ) {
             // `rejectSession()` throws on an already-connected connector.
             if (!connector.connected) {
@@ -295,7 +291,7 @@ export const createV1ProposalHandlers = (deps: {
             pairingId: clientId,
             peer,
             requested: {
-                networks: networksForChainId(chainId),
+                networks: v1NetworksFor(chainId),
                 methods,
             },
             expiresAt,
