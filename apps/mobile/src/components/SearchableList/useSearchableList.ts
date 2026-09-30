@@ -27,7 +27,10 @@ import {
 import type { PWFlatListRef } from '@components/core'
 import type { SearchInputRef } from '@components/SearchInput'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { shouldUnpinSearchOnScroll } from './scrollUnpin'
+import {
+    shouldReleasePinOnScrollUp,
+    shouldUnpinSearchOnScroll,
+} from './scrollUnpin'
 
 const SEARCH_KEY = '__searchable_list_search__'
 const HEADER_KEY = '__searchable_list_header__'
@@ -319,6 +322,20 @@ export const useSearchableList = <T>({
             scrollOffsetRef.current = offsetY
             if (headerH > 0 && offsetY >= headerH) {
                 isCollapsedRef.current = true
+            } else if (offsetY <= 0) {
+                // A fling can coast to the top without an end-drag inside the
+                // header, so the snap never runs to clear the latch.
+                isCollapsedRef.current = false
+            } else if (shouldReleasePinOnScrollUp && !isSearchingRef.current) {
+                // A shrink that pushed the offset above the pin leaves it
+                // clamped at the max offset; anywhere else the user scrolled
+                // there, and correcting would yank them off the header. Skipped
+                // while searching: the pin animation's own ticks land here.
+                const { contentSize, layoutMeasurement } = event.nativeEvent
+                const maxOffset = contentSize.height - layoutMeasurement.height
+                if (offsetY < maxOffset - WEB_PIN_SETTLE_EPSILON) {
+                    isCollapsedRef.current = false
+                }
             }
 
             // Web has no onScrollBeginDrag/onScrollEndDrag to drive

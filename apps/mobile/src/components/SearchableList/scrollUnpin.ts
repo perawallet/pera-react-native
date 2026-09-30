@@ -12,3 +12,6 @@
 
 /** Native exits search mode from onScrollBeginDrag, so onScroll alone never unpins. */
 export const shouldUnpinSearchOnScroll = false
+
+/** Native keeps the latch through a drag into the header so handleScrollEndDrag can snap. */
+export const shouldReleasePinOnScrollUp = false
