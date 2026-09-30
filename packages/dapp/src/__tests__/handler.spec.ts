@@ -65,6 +65,17 @@ const fakeChainAdapter = (
         if (scope.networkId !== 'custom') return scope.networkId
         return customGenesisHash === KNOWN_GENESIS_HASH ? 'testnet' : undefined
     },
+    walletConnect: {
+        namespace: 'algorand',
+        caip2ChainIdFor: () => null,
+        networkForCaip2ChainId: () => null,
+        toWireResult: () => null,
+    },
+    validateTransactionPayload: payload =>
+        Array.isArray(payload) && payload.length > 0
+            ? { ok: true, group: payload }
+            : { ok: false, message: 'Invalid algo_signTxn payload' },
+    useEnqueueTransactionSigning: () => async () => null,
     ...overrides,
 })
 

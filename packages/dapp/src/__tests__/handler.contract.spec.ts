@@ -22,6 +22,17 @@ dappRequestChainAdapters.register({
     relayableErrorNames: [],
     parseSigningParams: (_type, params) => ({ ok: true, payload: params.txns }),
     resolveReportedNetwork: scope => scope.networkId,
+    walletConnect: {
+        namespace: 'algorand',
+        caip2ChainIdFor: () => null,
+        networkForCaip2ChainId: () => null,
+        toWireResult: () => null,
+    },
+    validateTransactionPayload: payload =>
+        Array.isArray(payload) && payload.length > 0
+            ? { ok: true, group: payload }
+            : { ok: false, message: 'Invalid algo_signTxn payload' },
+    useEnqueueTransactionSigning: () => async () => null,
 })
 
 // One transport per handler instance: the suite builds handlers repeatedly.
