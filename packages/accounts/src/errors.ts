@@ -155,6 +155,12 @@ export class QuantumAccountsUnsupportedError extends ChainFeatureUnsupportedErro
     }
 }
 
+export class SingleKeyAccountsUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Single-key accounts', chainId)
+    }
+}
+
 export class HdDerivationTypeUnsupportedError extends ChainFeatureUnsupportedError {
     constructor(derivationType: number, chainId: ChainId) {
         super(`HD derivation type ${derivationType}`, chainId)

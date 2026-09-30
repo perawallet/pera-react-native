@@ -28,6 +28,11 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
         alias: {
+            // Test-only suite, never built or exported.
+            '@perawallet/wallet-core-chain-contract/testing': path.resolve(
+                __dirname,
+                '../chain-contract/src/__tests__/testing.ts',
+            ),
             '@perawallet/wallet-core-blockchain/test-handlers': path.resolve(
                 __dirname,
                 '../blockchain/src/test-handlers.ts',

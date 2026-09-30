@@ -18,6 +18,7 @@ export {
     type CapabilityAdapterRegistries,
 } from './capability-adapter-contract'
 export { addressCodecContractTests } from './address-codec-contract'
+export { FIXTURE_CHAIN_ID, fixtureCodec } from './fixture-chain'
 export {
     createFakeChainKeyStore,
     keyDerivationContractTests,

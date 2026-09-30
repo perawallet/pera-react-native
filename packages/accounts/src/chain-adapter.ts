@@ -25,14 +25,21 @@ import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
 import {
     kmsCore,
     type QuantumChainDerivation,
+    type useKMS,
 } from '@perawallet/wallet-core-kms'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import {
     HdDerivationTypeUnsupportedError,
     QuantumAccountsUnsupportedError,
     RekeyUnsupportedError,
+    SingleKeyAccountsUnsupportedError,
 } from './errors'
-import type { DerivationType, HDWalletDetails } from './models'
+import type {
+    AccountTypes,
+    DerivationType,
+    HDWalletDetails,
+    WalletAccount,
+} from './models'
 
 export type AccountHoldingSnapshot = {
     assetId: string
@@ -74,6 +81,49 @@ export type GetPublicKey = (params: {
     keyIndex: number
     derivationType: DerivationType
 }) => Promise<Uint8Array>
+
+export type SingleKeyAccountKind =
+    | typeof AccountTypes.algo25
+    | typeof AccountTypes.quantum
+
+/** The `useKMS()` calls single-key creation and import make; the hooks pass their own. */
+export type AccountKeystore = Pick<
+    ReturnType<typeof useKMS>,
+    'getKey' | 'createAlgo25Key' | 'createQuantumKey' | 'removeKeyAndChildren'
+>
+
+export type MintedAccount = {
+    /** Not yet persisted. */
+    account: WalletAccount
+    seedKeyId: string
+    /** This call created the seed, so abandoning the account must remove it. */
+    isNewSeed: boolean
+}
+
+export type SingleKeyAccountOps = {
+    create(
+        keystore: AccountKeystore,
+        request: { kind: SingleKeyAccountKind; id?: string },
+        scope: ChainScope,
+    ): Promise<MintedAccount>
+    /**
+     * Awaits `save` on each account before minting the next, so a failure part-way keeps
+     * what was already saved. Candidates `isHeld` accepts are skipped before minting where
+     * the address is known up front. A kind that can resolve to several accounts returns
+     * an array even when it mints one.
+     */
+    importMnemonic(
+        keystore: AccountKeystore,
+        request: {
+            kind: SingleKeyAccountKind
+            /** Wordlist indices; the caller zeroes them. */
+            mnemonicIndices: Uint16Array
+            isHeld: (address: string) => boolean
+        },
+        scope: ChainScope,
+        save: (minted: MintedAccount) => Promise<void>,
+    ): Promise<WalletAccount | WalletAccount[]>
+}
 
 /** The chain-specific half of account state, discovery, creation and rekey; registered by the chain package. */
 export interface AccountsChainAdapter {
@@ -122,6 +172,8 @@ export interface AccountsChainAdapter {
     assertHdPathMatches(hdPath: string, details: HDWalletDetails): void
     /** Absent on a chain with no post-quantum accounts. */
     readonly quantum?: QuantumChainDerivation
+    /** Absent on a chain whose only software accounts are HD. */
+    readonly singleKeyAccounts?: SingleKeyAccountOps
     /** Accounts whose signer is `authAddress`. Absent on a chain without rekey. */
     fetchRekeyedAddresses?(
         authAddress: string,
@@ -201,6 +253,16 @@ export const requireQuantum = (
         throw new QuantumAccountsUnsupportedError(adapter.chainId)
     }
     return adapter.quantum
+}
+
+/** Throws {@link SingleKeyAccountsUnsupportedError} on a chain without single-key accounts. */
+export const requireSingleKeyAccounts = (
+    adapter: AccountsChainAdapter,
+): SingleKeyAccountOps => {
+    if (!adapter.singleKeyAccounts) {
+        throw new SingleKeyAccountsUnsupportedError(adapter.chainId)
+    }
+    return adapter.singleKeyAccounts
 }
 
 /** Rejects with {@link RekeyUnsupportedError} on a chain without rekey. */

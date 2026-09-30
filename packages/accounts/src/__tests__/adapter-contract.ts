@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import { setupServer } from 'msw/node'
 import type { RequestHandler } from 'msw'
 import type { Decimal } from 'decimal.js'
@@ -21,7 +29,11 @@ import type {
 import {
     requireQuantum,
     requireRekey,
+    requireSingleKeyAccounts,
+    type AccountKeystore,
     type AccountsChainAdapter,
+    type MintedAccount,
+    type SingleKeyAccountKind,
 } from '../chain-adapter'
 import { DerivationTypes, type HDWalletDetails } from '../models'
 
@@ -59,6 +71,12 @@ export interface AccountsContractFixtures {
         mismatched: string
         malformed: string
     }
+    /** Required when the adapter implements single-key accounts. */
+    singleKey?: {
+        mnemonicIndices: Uint16Array
+        /** Handlers under which every candidate the import probes exists on chain. */
+        handlers: readonly RequestHandler[]
+    }
     /** Required when the adapter implements rekey. */
     rekeyed?: {
         authAddress: string
@@ -66,6 +84,50 @@ export interface AccountsContractFixtures {
         handlers: readonly RequestHandler[]
     }
 }
+
+// Mints distinct 32-byte keys; the address comes from the adapter's own quantum
+// derivation so it stays valid for the chain under test.
+const createFakeKeystore = () => {
+    let minted = 0
+    const keystore = {
+        getKey: vi.fn(() => undefined),
+        createAlgo25Key: vi.fn(async (params?: { id?: string }) => {
+            const n = ++minted
+            return {
+                seedKey: { id: params?.id ?? `seed-${n}` },
+                publicKey: new Uint8Array(32).fill(n),
+            }
+        }),
+        createQuantumKey: vi.fn(
+            async (params: {
+                id?: string
+                reuseSeedId?: string
+                chain: { addressFromPublicKey(publicKey: Uint8Array): string }
+            }) => {
+                const n = ++minted
+                return {
+                    seedKey: {
+                        id: params.reuseSeedId ?? params.id ?? `seed-${n}`,
+                    },
+                    address: params.chain.addressFromPublicKey(
+                        new Uint8Array(32).fill(n),
+                    ),
+                    signKeyId: `seed-${n}-sign`,
+                }
+            },
+        ),
+        removeKeyAndChildren: vi.fn(async () => {}),
+    }
+    return {
+        keystore,
+        port: keystore as unknown as AccountKeystore,
+        mintCount: () =>
+            keystore.createAlgo25Key.mock.calls.length +
+            keystore.createQuantumKey.mock.calls.length,
+    }
+}
+
+const SINGLE_KEY_KINDS: SingleKeyAccountKind[] = ['algo25', 'quantum']
 
 /** Every chain package runs this against its own accounts adapter. */
 export const accountsContractTests = (
@@ -232,5 +294,94 @@ export const accountsContractTests = (
             expect(seed.length).toBeGreaterThan(0)
             expect(seed).not.toBe(entropy)
         })
+
+        for (const kind of SINGLE_KEY_KINDS) {
+            it(`creates an unsaved ${kind} account on a new seed, or refuses`, async () => {
+                const adapter = makeAdapter()
+                if (!adapter.singleKeyAccounts) {
+                    expect(() => requireSingleKeyAccounts(adapter)).toThrow(
+                        expect.objectContaining({ chainId: adapter.chainId }),
+                    )
+                    return
+                }
+                const { port } = createFakeKeystore()
+
+                const minted = await adapter.singleKeyAccounts.create(
+                    port,
+                    { kind },
+                    scope,
+                )
+
+                expect(minted.account.type).toBe(kind)
+                expect(
+                    codec.isValid(minted.account.address, scope.networkId),
+                ).toBe(true)
+                expect(minted.isNewSeed).toBe(true)
+            })
+
+            it(`imports a ${kind} mnemonic, awaiting save on each account before resolving, or refuses`, async () => {
+                const adapter = makeAdapter()
+                if (!adapter.singleKeyAccounts) {
+                    expect(() => requireSingleKeyAccounts(adapter)).toThrow(
+                        expect.objectContaining({ chainId: adapter.chainId }),
+                    )
+                    return
+                }
+                expect(fixtures.singleKey).toBeDefined()
+                const { mnemonicIndices, handlers } = fixtures.singleKey!
+                server.use(...handlers)
+                const { keystore, port } = createFakeKeystore()
+                const saved: MintedAccount[] = []
+                const save = async (minted: MintedAccount) => {
+                    await Promise.resolve()
+                    saved.push(minted)
+                }
+
+                const result = await adapter.singleKeyAccounts.importMnemonic(
+                    port,
+                    { kind, mnemonicIndices, isHeld: () => false },
+                    scope,
+                    save,
+                )
+
+                const accounts = Array.isArray(result) ? result : [result]
+                expect(accounts.length).toBeGreaterThan(0)
+                expect(accounts).toEqual(saved.map(minted => minted.account))
+                for (const account of accounts) {
+                    expect(account.type).toBe(kind)
+                    expect(
+                        codec.isValid(account.address, scope.networkId),
+                    ).toBe(true)
+                }
+                // The stale-keystore-snapshot regression: import must not look keys up.
+                expect(keystore.getKey).not.toHaveBeenCalled()
+            })
+
+            it(`stops minting ${kind} accounts once save rejects, or refuses`, async () => {
+                const adapter = makeAdapter()
+                if (!adapter.singleKeyAccounts) {
+                    expect(() => requireSingleKeyAccounts(adapter)).toThrow(
+                        expect.objectContaining({ chainId: adapter.chainId }),
+                    )
+                    return
+                }
+                const { mnemonicIndices, handlers } = fixtures.singleKey!
+                server.use(...handlers)
+                const { port, mintCount } = createFakeKeystore()
+
+                await expect(
+                    adapter.singleKeyAccounts.importMnemonic(
+                        port,
+                        { kind, mnemonicIndices, isHeld: () => false },
+                        scope,
+                        async () => {
+                            throw new Error('save failed')
+                        },
+                    ),
+                ).rejects.toThrow('save failed')
+
+                expect(mintCount()).toBe(1)
+            })
+        }
     })
 }

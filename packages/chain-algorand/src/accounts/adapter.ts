@@ -25,6 +25,7 @@ import {
 import { fetchAccountInformation, fetchAssetOptInRounds } from './information'
 import { algorandNetworkOf } from '../legacy-network'
 import { algorandQuantumDerivation } from './quantum'
+import { algorandSingleKeyAccounts } from './single-key-accounts'
 
 export const algorandAccountsAdapter: AccountsChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
@@ -44,6 +45,7 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
         hdDerivedKeyId(seedKeyId, account, keyIndex, derivationType),
     assertHdPathMatches: assertAlgorandBip44PathMatches,
     quantum: algorandQuantumDerivation,
+    singleKeyAccounts: algorandSingleKeyAccounts,
     fetchRekeyedAddresses: (authAddress, scope) =>
         fetchAlgorandRekeyedAddresses(authAddress, algorandNetworkOf(scope)),
 }

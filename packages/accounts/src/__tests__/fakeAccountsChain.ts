@@ -94,6 +94,7 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
             fakeEncode(publicKey),
         ),
     },
+    singleKeyAccounts: { create: vi.fn(), importMnemonic: vi.fn() },
     fetchRekeyedAddresses: vi.fn(async () => []),
 })
 
