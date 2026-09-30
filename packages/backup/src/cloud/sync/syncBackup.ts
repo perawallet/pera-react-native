@@ -21,6 +21,7 @@ import { buildLocalPasskeyItems } from './buildLocalPasskeyItems'
 import { pushDirty } from './pushDirty'
 import { fetchDeltaOrRebuild } from './rebuildFromManifest'
 import { reconcile } from './reconcile'
+import { reconcileLocalSettings } from './reconcileSettings'
 import { BackupSyncAbortedError } from './types'
 import type { LocalSnapshot, SyncEngineDeps } from './types'
 
@@ -93,7 +94,7 @@ export const syncBackup = async (
         // that could not be re-derived never reaches this list.
         skipped: accounts.skipped,
     }
-    let next = reconcile(state, local, now)
+    let next = reconcileLocalSettings(reconcile(state, local, now), deps, now)
 
     // 2. Manifest short-circuit.
     const manifest = await fetchManifestOrNull(deps)
@@ -139,10 +140,14 @@ export const syncBackup = async (
             importAccounts: deps.importAccounts,
             importContacts: deps.importContacts,
             importPasskeys: deps.importPasskeys,
+            importSettings: deps.importSettings,
             readItems,
             decrypt: decryptItemPayload,
         },
     })
+
+    // Baselines what the import just wrote, so it is not pushed back as an edit.
+    next = reconcileLocalSettings(next, deps, now)
 
     // 5. Push local changes (use the freshly-built local items).
     abortIfStopped(deps)

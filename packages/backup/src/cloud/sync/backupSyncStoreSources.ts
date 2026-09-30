@@ -13,6 +13,11 @@
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
+import {
+    applyBackupSettings,
+    readBackupSettings,
+    subscribeBackupSettings,
+} from './backupSettingsStores'
 import type { BackupSyncSources } from './types'
 
 export const createBackupSyncStoreSources = (): BackupSyncSources => ({
@@ -23,4 +28,7 @@ export const createBackupSyncStoreSources = (): BackupSyncSources => ({
     listContacts: () => useContactsStore.getState().contacts ?? [],
     subscribeContacts: listener =>
         useContactsStore.subscribe(state => listener(state.contacts ?? [])),
+    getSettings: readBackupSettings,
+    subscribeSettings: subscribeBackupSettings,
+    importSettings: applyBackupSettings,
 })

@@ -23,6 +23,7 @@ import type {
     BackupId,
     BackupItemKey,
     BackupItemType,
+    BackupSettings,
     ContactBackupPayload,
     DeviceId,
     PasskeyBackupPayload,
@@ -157,6 +158,10 @@ export type PasskeyImportFn = (
     passkeys: PasskeyBackupPayload[],
 ) => Promise<PasskeyImportSummary>
 
+/** A value this device cannot apply is skipped; the sync keeps the remote's
+ *  copy rather than pushing this device's own over it. */
+export type SettingsImportFn = (settings: Partial<BackupSettings>) => void
+
 export type SyncEngineDeps = {
     network: Network
     backupId: BackupId
@@ -187,6 +192,8 @@ export type SyncEngineDeps = {
     listPasskeys: () => Promise<BackupPasskey[]>
     /** Decrypted remote credentials → native provider records. */
     importPasskeys: PasskeyImportFn
+    getSettings: () => BackupSettings
+    importSettings: SettingsImportFn
 }
 
 /** The wallet state the sync manager reads and watches but does not own. */
@@ -199,6 +206,11 @@ export type BackupSyncSources = {
     ) => () => void
     listContacts: () => Contact[]
     subscribeContacts: (listener: (contacts: Contact[]) => void) => () => void
+    getSettings: () => BackupSettings
+    /** Fires on any write to a store holding a synced setting; the manager
+     *  diffs by fingerprint. */
+    subscribeSettings: (listener: () => void) => () => void
+    importSettings: SettingsImportFn
 }
 
 /** The backup's own persisted state, which the sync manager reads and writes. */

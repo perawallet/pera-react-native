@@ -16,6 +16,7 @@ import { decryptItemPayload } from '../crypto/itemPayload'
 import { isLegacyItemKey, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { fetchDeltaOrRebuild } from './rebuildFromManifest'
+import { reconcileLocalSettings } from './reconcileSettings'
 import { BackupSyncAbortedError } from './types'
 import type { SyncEngineDeps } from './types'
 
@@ -34,6 +35,9 @@ export const pullBackupDeltas = async (
         | 'importContacts'
         | 'isAborted'
         | 'importPasskeys'
+        | 'getSettings'
+        | 'importSettings'
+        | 'hashAddress'
     >,
     state: SyncState,
     now: number = Date.now(),
@@ -58,7 +62,7 @@ export const pullBackupDeltas = async (
     }
 
     if (deps.isAborted()) throw new BackupSyncAbortedError()
-    const next = await applyDeltas({
+    const applied = await applyDeltas({
         state,
         deltas,
         deps: {
@@ -69,10 +73,14 @@ export const pullBackupDeltas = async (
             importAccounts: deps.importAccounts,
             importContacts: deps.importContacts,
             importPasskeys: deps.importPasskeys,
+            importSettings: deps.importSettings,
             readItems,
             decrypt: decryptItemPayload,
         },
     })
+
+    // Baselines what the import just wrote, so it is not pushed back as an edit.
+    const next = reconcileLocalSettings(applied, deps, now)
 
     // A device that only ever receives over the socket never runs `syncBackup`,
     // so without this it reads as never-synced with a full account list.

@@ -41,15 +41,34 @@ import {
     accountItemKey,
     contactItemKey,
     createEmptySyncState,
+    settingsItemKey,
+    SETTINGS_ITEM_ID,
+    type SyncState,
 } from '../../models'
+import { reconcileSettings } from '../reconcileSettings'
 import { serializeAccountItems } from '../serializeAccountItems'
 import { syncBackup } from '../syncBackup'
 import { BackupSyncAbortedError } from '../types'
 import { canonicalJson, contentHash } from '../canonicalize'
+import { TEST_SETTINGS } from './testSettings'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const accountKey = (address: string) => accountItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
+const settingsKey = settingsItemKey(hashAddress(SETTINGS_ITEM_ID))
+
+/** Settings the server already holds, so they add no push of their own. */
+const withSyncedSettings = (state: SyncState): SyncState => {
+    const next = reconcileSettings(state, settingsKey, TEST_SETTINGS, 1)
+    next.items[settingsKey] = {
+        ...next.items[settingsKey],
+        isDirty: false,
+        knownVer: 1,
+        baseVer: 1,
+        lastRemoteHash: 's',
+    }
+    return next
+}
 
 const encryptionKey = new Uint8Array(32).fill(7)
 const watch: WalletAccount = {
@@ -76,6 +95,8 @@ const deps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
+    getSettings: () => TEST_SETTINGS,
+    importSettings: vi.fn(),
     listPasskeys: async () => [],
     importPasskeys: async () => ({ imported: 0, skipped: [], failed: [] }),
 })
@@ -110,7 +131,7 @@ describe('syncBackup', () => {
             localUpdatedAt: 1,
             address: 'W',
         }
-        const next = await syncBackup(deps(), state)
+        const next = await syncBackup(deps(), withSyncedSettings(state))
         expect(fetchDelta).not.toHaveBeenCalled()
         expect(next.lastSyncResult).toBe('SUCCESS')
     })
@@ -129,6 +150,13 @@ describe('syncBackup', () => {
                     status: BackupItemStatus.ACTIVE,
                     hash: 'r',
                     lastSeq: 97,
+                },
+                [settingsKey]: {
+                    type: BackupItemType.SETTINGS,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 's',
+                    lastSeq: 98,
                 },
             },
         })
@@ -154,7 +182,7 @@ describe('syncBackup', () => {
             address: 'W',
         }
 
-        const next = await syncBackup(deps(), state)
+        const next = await syncBackup(deps(), withSyncedSettings(state))
 
         expect(next.lastSyncResult).toBe('SUCCESS')
         expect(next.lastSyncedSeq).toBe(100)
@@ -475,7 +503,7 @@ describe('syncBackup', () => {
         const [, , , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key).sort(),
-        ).toEqual([accountKey('W'), contactKey('C1')].sort())
+        ).toEqual([accountKey('W'), contactKey('C1'), settingsKey].sort())
         expect(next.items[contactKey('C1')]).toMatchObject({
             type: BackupItemType.CONTACT,
             isDirty: false,
@@ -522,7 +550,7 @@ describe('syncBackup', () => {
         const [, , , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key).sort(),
-        ).toEqual([accountKey('W'), contactKey('C1')].sort())
+        ).toEqual([accountKey('W'), contactKey('C1'), settingsKey].sort())
         expect(next.lastSyncResult).toBe('SUCCESS')
         expect(warn).toHaveBeenCalledWith(
             'syncBackup: listPasskeys failed, skipping passkeys',

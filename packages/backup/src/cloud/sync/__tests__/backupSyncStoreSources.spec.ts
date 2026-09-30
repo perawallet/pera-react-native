@@ -45,6 +45,17 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
     },
 }))
 
+vi.mock('../backupSettingsStores', () => ({
+    readBackupSettings: vi.fn(),
+    subscribeBackupSettings: vi.fn(),
+    applyBackupSettings: vi.fn(),
+}))
+
+import {
+    applyBackupSettings,
+    readBackupSettings,
+    subscribeBackupSettings,
+} from '../backupSettingsStores'
 import { createBackupSyncStoreSources } from '../backupSyncStoreSources'
 
 describe('createBackupSyncStoreSources', () => {
@@ -69,5 +80,13 @@ describe('createBackupSyncStoreSources', () => {
         expect(onAccounts).toHaveBeenCalledWith([{ address: 'ADDR2' }])
         expect(onContacts).toHaveBeenCalledWith([])
         expect(unsubscribe).toBe(mocks.unsubscribe)
+    })
+
+    it('reads, watches and applies settings through the settings stores', () => {
+        const sources = createBackupSyncStoreSources()
+
+        expect(sources.getSettings).toBe(readBackupSettings)
+        expect(sources.subscribeSettings).toBe(subscribeBackupSettings)
+        expect(sources.importSettings).toBe(applyBackupSettings)
     })
 })

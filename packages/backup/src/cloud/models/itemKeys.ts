@@ -47,6 +47,19 @@ export const passkeyItemKey = (hash: ItemKeyHash): BackupItemKey =>
 export const isPasskeyItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX)
 
+export const BACKUP_SETTINGS_KEY_PREFIX = 'settings/'
+
+/** The single settings item is still keyed by a hash, of a fixed id rather
+ *  than an address: an unhashed segment reads as a legacy key, and a legacy
+ *  key makes sync refuse the whole backup. */
+export const SETTINGS_ITEM_ID = 'app-settings'
+
+export const settingsItemKey = (hash: ItemKeyHash): BackupItemKey =>
+    `${BACKUP_SETTINGS_KEY_PREFIX}${hash}`
+
+export const isSettingsItemKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_SETTINGS_KEY_PREFIX)
+
 const HASHED_SEGMENT = /^[0-9a-f]{64}$/
 
 /** An item written before keys were hashed. Such a backup is re-created rather

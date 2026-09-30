@@ -93,6 +93,8 @@ import {
     accountItemKey,
     contactItemKey,
     secretsItemKey,
+    settingsItemKey,
+    SETTINGS_ITEM_ID,
     BackupAccountType,
 } from '../../models'
 import {
@@ -112,6 +114,7 @@ const ACCOUNT_KEY = accountItemKey(hashAddress('A'))
 const SECRETS_KEY = secretsItemKey(hashAddress('A'))
 const CONTACT_KEY = contactItemKey(hashAddress('C'))
 const UNREADABLE_KEY = accountItemKey(hashAddress('GONE'))
+const SETTINGS_KEY = settingsItemKey(hashAddress(SETTINGS_ITEM_ID))
 
 const MNEMONIC = ['abandon', 'ability', 'able']
 const SUMMARY = { imported: 1, skippedDuplicate: 0, failed: [] }
@@ -122,6 +125,7 @@ const PASSKEY_SUMMARY = { imported: 1, skipped: [], failed: [] }
 const importAccounts = vi.fn()
 const importContacts = vi.fn()
 const importPasskeys = vi.fn()
+const importSettings = vi.fn()
 
 const params = () => ({
     mnemonic: MNEMONIC,
@@ -131,6 +135,7 @@ const params = () => ({
     importAccounts,
     importContacts,
     importPasskeys,
+    importSettings,
 })
 
 const keys = (fill = 5) => ({
@@ -175,6 +180,7 @@ const pull = {
     ],
     contacts: [{ address: 'C', name: 'Alice', updatedAt: 5 }],
     passkeys: [{ credentialId: 'cred-1', seedAddress: 'A' }],
+    settings: null,
     skipped: [],
 }
 
@@ -197,6 +203,7 @@ describe('restoreCloudBackup', () => {
         importAccounts.mockReset().mockResolvedValue(SUMMARY)
         importContacts.mockReset().mockResolvedValue(CONTACT_SUMMARY)
         importPasskeys.mockReset().mockResolvedValue(PASSKEY_SUMMARY)
+        importSettings.mockReset()
     })
 
     test('persists the keys, imports the pulled accounts and seeds the sync state', async () => {
@@ -363,6 +370,54 @@ describe('restoreCloudBackup', () => {
         await restoreCloudBackup(params())
 
         expect(importPasskeys).not.toHaveBeenCalled()
+    })
+
+    test('adopts the backup settings and seeds them unobserved for the first sync', async () => {
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            manifestItems: {
+                ...pull.manifestItems,
+                [SETTINGS_KEY]: manifestItem({ type: 'SETTINGS', ver: 4 }),
+            },
+            settings: {
+                key: SETTINGS_KEY,
+                payload: { language: { value: 'de', updatedAt: 50 } },
+            },
+        })
+
+        const result = await restoreCloudBackup(params())
+
+        expect(importSettings).toHaveBeenCalledWith({ language: 'de' })
+        expect(result.syncState.items[SETTINGS_KEY]).toMatchObject({
+            knownVer: 4,
+            settingsFields: {
+                language: { value: 'de', updatedAt: 50, observed: null },
+            },
+        })
+    })
+
+    test('keeps a restore whose accounts landed when the settings import throws', async () => {
+        importSettings.mockImplementation(() => {
+            throw new Error('store unavailable')
+        })
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            settings: {
+                key: SETTINGS_KEY,
+                payload: { language: { value: 'de', updatedAt: 50 } },
+            },
+        })
+
+        const result = await restoreCloudBackup(params())
+
+        expect(result.summary).toBe(SUMMARY)
+        expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('does not call the settings importer when the backup holds none', async () => {
+        await restoreCloudBackup(params())
+
+        expect(importSettings).not.toHaveBeenCalled()
     })
 
     test('persists the keys before pulling, so the signed request can read them', async () => {

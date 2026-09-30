@@ -24,8 +24,10 @@ import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import { passkeyItemKey } from '../../models'
 import { buildLocalPasskeyItems } from '../buildLocalPasskeyItems'
 import { pushDirty } from '../pushDirty'
+import { reconcileSettings } from '../reconcileSettings'
 import { BackupSyncAbortedError } from '../types'
 import type { LocalItem } from '../types'
+import { TEST_SETTINGS } from './testSettings'
 
 const encryptionKey = new Uint8Array(32).fill(7)
 /** `key` is an opaque hash, as in production, so the address is declared. */
@@ -285,5 +287,53 @@ describe('pushDirty', () => {
             key,
         })
         expect(JSON.parse(plaintext).updatedAt).toBe(1_700_000_000)
+    })
+
+    it('pushes a settings item from its tracked document, with no local item', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockResolvedValue({
+            results: [
+                {
+                    key: 'settings/S',
+                    result: UpsertResult.OK,
+                    new_ver: 1,
+                    seq: 3,
+                },
+            ],
+        })
+        const state = reconcileSettings(
+            createEmptySyncState('b'),
+            'settings/S',
+            TEST_SETTINGS,
+            100,
+        )
+
+        const next = await pushDirty({ state, localItems: [], deps })
+
+        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const [entry] = request.items
+        expect(entry).toMatchObject({
+            key: 'settings/S',
+            type: BackupItemType.SETTINGS,
+            expected_ver: 0,
+        })
+        expect(
+            JSON.parse(
+                decryptItemPayload(entry.payload, {
+                    encryptionKey,
+                    backupId: 'b',
+                    key: 'settings/S',
+                }),
+            ),
+        ).toEqual({
+            confirmationMode: { value: 'slide', updatedAt: 0 },
+            currency: { value: TEST_SETTINGS.currency, updatedAt: 0 },
+            language: { value: 'system', updatedAt: 0 },
+            launchAccount: { value: TEST_SETTINGS.launchAccount, updatedAt: 0 },
+        })
+        expect(next.items['settings/S']).toMatchObject({
+            isDirty: false,
+            knownVer: 1,
+        })
     })
 })

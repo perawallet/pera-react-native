@@ -40,6 +40,7 @@ import {
     markPasskeyForBackup,
 } from '../reviewActions'
 import type { PulledAccount } from '../types'
+import { TEST_SETTINGS } from './testSettings'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
@@ -78,6 +79,8 @@ const baseDeps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 1, failed: [] })),
+    getSettings: () => TEST_SETTINGS,
+    importSettings: vi.fn(),
     importPasskeys: vi.fn(async () => ({
         imported: 1,
         skipped: [],

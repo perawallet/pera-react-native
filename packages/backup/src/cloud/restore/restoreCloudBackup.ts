@@ -37,11 +37,17 @@ import type {
     ContactImportSummary,
     ImportSummary,
     PasskeyImportFn,
+    SettingsImportFn,
     SyncImportFn,
 } from '../sync/types'
+import { mergeRemoteSettings } from '../sync/settingsDocument'
 import type { BackupKeys } from '../crypto/deriveBackupKeys'
 import { pullBackupItems } from './pullBackupItems'
-import type { PulledAccount, PullBackupItemsResult } from './pullBackupItems'
+import type {
+    PulledAccount,
+    PulledSettings,
+    PullBackupItemsResult,
+} from './pullBackupItems'
 
 /** What a failure means to the restore flow. Deliberately not the shared
  *  `errors.api.*` mapping: "no backup for this phrase" is not "not found". */
@@ -77,6 +83,8 @@ type RestoreCloudBackupParams = {
     /** Re-derives and writes each credential. Runs after `importAccounts`,
      *  which is what puts the owning seed in the keystore. */
     importPasskeys: PasskeyImportFn
+    /** Runs last, so a pinned launch account is already in the wallet. */
+    importSettings: SettingsImportFn
 }
 
 export type RestoreCloudBackupResult = {
@@ -217,6 +225,40 @@ const importPasskeysSafely = async (
     }
 }
 
+/** Joining a backup adopts its settings outright: this device's values are
+ *  either defaults or older than anything the backup has been told. */
+const importSettingsSafely = (
+    importSettings: SettingsImportFn,
+    settings: PulledSettings | null,
+): void => {
+    if (settings === null) return
+    try {
+        importSettings(mergeRemoteSettings(undefined, settings.payload).toApply)
+    } catch (error) {
+        logger.warn('restoreCloudBackup: settings import failed', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+    }
+}
+
+/** Every field starts unobserved, so the first sync records what the import
+ *  wrote as this device's baseline rather than as an edit to push. */
+const withPulledSettings = (
+    items: Record<BackupItemKey, SyncItemState>,
+    settings: PulledSettings | null,
+): Record<BackupItemKey, SyncItemState> => {
+    const tracked = settings ? items[settings.key] : undefined
+    if (!settings || !tracked) return items
+    return {
+        ...items,
+        [settings.key]: {
+            ...tracked,
+            settingsFields: mergeRemoteSettings(undefined, settings.payload)
+                .doc,
+        },
+    }
+}
+
 const syncStateFromPull = (
     backupId: BackupId,
     pull: PullBackupItemsResult,
@@ -226,7 +268,7 @@ const syncStateFromPull = (
     lastSyncedSeq: pull.lastSeq,
     lastSyncedAt: Date.now(),
     lastSyncResult: 'SUCCESS',
-    items: trackedItemsFromPull(pull),
+    items: withPulledSettings(trackedItemsFromPull(pull), pull.settings),
 })
 
 const deriveKeys = async (
@@ -261,6 +303,7 @@ export const restoreCloudBackup = async ({
     importAccounts,
     importContacts,
     importPasskeys,
+    importSettings,
 }: RestoreCloudBackupParams): Promise<RestoreCloudBackupResult> => {
     const { backupId, encryptionKey, authSecretKey, itemKey } =
         await deriveKeys(mnemonic, salt, argon2id)
@@ -300,6 +343,7 @@ export const restoreCloudBackup = async ({
             pull.contacts,
         )
         await importPasskeysSafely(importPasskeys, pull.passkeys)
+        importSettingsSafely(importSettings, pull.settings)
 
         return {
             backupId,

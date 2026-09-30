@@ -30,6 +30,8 @@ import {
     accountItemKey,
     contactItemKey,
     secretsItemKey,
+    settingsItemKey,
+    SETTINGS_ITEM_ID,
     BackupAccountType,
 } from '../../models'
 import { pullBackupItems, buildPulledAccounts } from '../pullBackupItems'
@@ -379,6 +381,38 @@ describe('pullBackupItems', () => {
             { address: 'CADDR', name: 'Alice', updatedAt: 7 },
         ])
         expect(result.skipped).toHaveLength(0)
+    })
+
+    it('reads the settings item and keeps it apart from the address map', async () => {
+        const key = settingsItemKey(hashAddress(SETTINGS_ITEM_ID))
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: 2,
+            items: {
+                [key]: {
+                    type: 'SETTINGS',
+                    ver: 1,
+                    status: 'ACTIVE',
+                    hash: 'h1',
+                    lastSeq: 2,
+                },
+            },
+        })
+        readItems.mockResolvedValue([
+            item(key, {
+                language: { value: 'de', updatedAt: 50 },
+                confirmationMode: { value: 42, updatedAt: 50 },
+            }),
+        ])
+
+        const result = await pull()
+
+        // An unparseable field is dropped; the rest of the item survives.
+        expect(result.settings).toEqual({
+            key,
+            payload: { language: { value: 'de', updatedAt: 50 } },
+        })
+        expect(result.addressByKey).toEqual({})
     })
 
     it('skips an unreadable contact without sinking the pull', async () => {

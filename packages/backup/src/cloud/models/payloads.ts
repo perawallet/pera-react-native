@@ -189,3 +189,43 @@ export const passkeyBackupPayloadSchema = z.object({
 })
 
 export type PasskeyBackupPayload = z.infer<typeof passkeyBackupPayloadSchema>
+
+/** `updatedAt` is per field (epoch millis; 0 = never edited) so edits to
+ *  different settings on two devices both survive. A field that fails to parse
+ *  is dropped, not the item: a newer client may write values this one lacks. */
+const settingsField = <T extends z.ZodType>(value: T) =>
+    z.object({ value, updatedAt: nonNegativeInt }).optional().catch(undefined)
+
+export const settingsBackupPayloadSchema = z.object({
+    currency: settingsField(
+        z.object({
+            preferred: z.string().min(1),
+            fallback: z.string().min(1),
+        }),
+    ),
+    language: settingsField(z.string().min(1)),
+    confirmationMode: settingsField(z.string().min(1)),
+    launchAccount: settingsField(
+        z.object({
+            mode: z.string().min(1),
+            address: z.string().nullable(),
+        }),
+    ),
+})
+
+export type SettingsBackupPayload = z.infer<typeof settingsBackupPayloadSchema>
+
+export type BackupSettings = {
+    [K in keyof SettingsBackupPayload]-?: NonNullable<
+        SettingsBackupPayload[K]
+    >['value']
+}
+
+export type BackupSettingsField = keyof BackupSettings
+
+export const BACKUP_SETTINGS_FIELDS: readonly BackupSettingsField[] = [
+    'currency',
+    'language',
+    'confirmationMode',
+    'launchAccount',
+]

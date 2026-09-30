@@ -18,6 +18,7 @@ import {
     type RestoreCloudBackupResult,
 } from '../restore/restoreCloudBackup'
 import type { Argon2idConfig } from '../models'
+import { applyBackupSettings } from '../sync/backupSettingsStores'
 import { readCloudBackupRestoreMnemonic } from '../store/draftStore'
 import { useCloudBackupStore } from '../store/store'
 import { useBackupSyncStateStore } from '../store/syncStateStore'
@@ -80,6 +81,7 @@ export const useRestoreCloudBackupMutation = (
                 importAccounts,
                 importContacts,
                 importPasskeys,
+                importSettings: applyBackupSettings,
             })
             // The backup is registered server-side under exactly this device
             // id, and every later signed request has to reuse it.

@@ -18,6 +18,7 @@ import {
     parseContactPayload,
     parsePasskeyPayload,
     parseSecretsPayload,
+    parseSettingsPayload,
 } from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import {
@@ -25,10 +26,12 @@ import {
     BACKUP_CONTACTS_KEY_PREFIX,
     BACKUP_PASSKEYS_KEY_PREFIX,
     BACKUP_SECRETS_KEY_PREFIX,
+    BACKUP_SETTINGS_KEY_PREFIX,
     BackupAccountType,
     BackupItemStatus,
     isContactItemKey,
     isPasskeyItemKey,
+    isSettingsItemKey,
     type AddressBackupPayload,
     type BackupId,
     type BackupItemKey,
@@ -38,6 +41,7 @@ import {
     type ManifestItem,
     type PasskeyBackupPayload,
     type SecretsBackupPayload,
+    type SettingsBackupPayload,
 } from '../models'
 
 const READ_BATCH_SIZE = 50
@@ -46,6 +50,11 @@ export type PulledAccount = {
     address: string
     addressPayload: AddressBackupPayload
     secretsPayload: SecretsBackupPayload | null
+}
+
+export type PulledSettings = {
+    key: BackupItemKey
+    payload: SettingsBackupPayload
 }
 
 export type SkippedItem = {
@@ -66,6 +75,7 @@ export type PullBackupItemsResult = {
     accounts: PulledAccount[]
     contacts: ContactBackupPayload[]
     passkeys: PasskeyBackupPayload[]
+    settings: PulledSettings | null
     skipped: SkippedItem[]
 }
 
@@ -102,7 +112,8 @@ const selectWantedKeys = (
                 (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
                     key.startsWith(BACKUP_SECRETS_KEY_PREFIX) ||
                     key.startsWith(BACKUP_CONTACTS_KEY_PREFIX) ||
-                    key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX)),
+                    key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_SETTINGS_KEY_PREFIX)),
         )
         .map(([key]) => key)
 
@@ -143,6 +154,7 @@ type CollectedPayloads = {
     secretsPayloads: Map<string, SecretsBackupPayload>
     contacts: ContactBackupPayload[]
     passkeys: PasskeyBackupPayload[]
+    settings: PulledSettings | null
     addressByKey: Record<BackupItemKey, string>
     skipped: SkippedItem[]
 }
@@ -152,6 +164,7 @@ type ParsedItemPayload =
     | { kind: 'secrets'; payload: SecretsBackupPayload }
     | { kind: 'contact'; payload: ContactBackupPayload }
     | { kind: 'passkey'; payload: PasskeyBackupPayload }
+    | { kind: 'settings'; payload: SettingsBackupPayload }
 
 /** The prefixes are deliberately in the clear, so they still say which of the
  *  shapes a payload is; everything after the prefix is a hash. */
@@ -163,6 +176,8 @@ const parseItemPayload = (
         return { kind: 'contact', payload: parseContactPayload(plaintext) }
     if (isPasskeyItemKey(key))
         return { kind: 'passkey', payload: parsePasskeyPayload(plaintext) }
+    if (isSettingsItemKey(key))
+        return { kind: 'settings', payload: parseSettingsPayload(plaintext) }
     if (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX))
         return { kind: 'address', payload: parseAddressPayload(plaintext) }
     return { kind: 'secrets', payload: parseSecretsPayload(plaintext) }
@@ -180,6 +195,7 @@ const collectItemPayloads = (
     const secretsPayloads = new Map<string, SecretsBackupPayload>()
     const contacts: ContactBackupPayload[] = []
     const passkeys: PasskeyBackupPayload[] = []
+    let settings: PulledSettings | null = null
     const addressByKey: Record<BackupItemKey, string> = {}
     const skipped: SkippedItem[] = []
 
@@ -198,6 +214,11 @@ const collectItemPayloads = (
                 key: item.key,
             })
             skipped.push({ key: item.key, reason: 'parse' })
+            continue
+        }
+
+        if (parsed.kind === 'settings') {
+            settings = { key: item.key, payload: parsed.payload }
             continue
         }
 
@@ -222,6 +243,7 @@ const collectItemPayloads = (
         secretsPayloads,
         contacts,
         passkeys,
+        settings,
         addressByKey,
         skipped,
     }
@@ -277,6 +299,7 @@ export const pullBackupItems = async ({
         secretsPayloads,
         contacts,
         passkeys,
+        settings,
         addressByKey,
         skipped,
     } = collectItemPayloads(items, encryptionKey, backupId)
@@ -289,6 +312,7 @@ export const pullBackupItems = async ({
         accounts: buildPulledAccounts(addressPayloads, secretsPayloads),
         contacts,
         passkeys,
+        settings,
         skipped,
     }
 }

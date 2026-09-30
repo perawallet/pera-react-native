@@ -24,6 +24,7 @@ export const BackupItemType = {
     ACCOUNT: 'ACCOUNT',
     CONTACT: 'CONTACT',
     PASSKEY: 'PASSKEY',
+    SETTINGS: 'SETTINGS',
 } as const
 export type BackupItemType =
     (typeof BackupItemType)[keyof typeof BackupItemType]

@@ -31,6 +31,7 @@ import { deleteFromBackup, markAccountForBackup } from '../reviewActions'
 import { pushDirty } from '../pushDirty'
 import { reconcile } from '../reconcile'
 import type { LocalItem, LocalSnapshot } from '../types'
+import { TEST_SETTINGS } from './testSettings'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
@@ -104,6 +105,8 @@ const pullDeps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 1, failed: [] })),
+    getSettings: () => TEST_SETTINGS,
+    importSettings: vi.fn(),
     importPasskeys: vi.fn(async () => ({
         imported: 0,
         skipped: [],

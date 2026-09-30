@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { BackupAccountType } from './payloads'
+import type { BackupAccountType, BackupSettings } from './payloads'
 import type {
     BackupGlobalHash,
     BackupId,
@@ -20,6 +20,20 @@ import type {
     ItemHash,
     ManifestItem,
 } from './types'
+
+export type SettingsFieldState<T> = {
+    value: T
+    /** Epoch millis of the edit that produced `value`; 0 = never edited. */
+    updatedAt: number
+    /** Canonical JSON of this device's own value when last observed, which is
+     *  what separates a user edit from a remote value this device declined to
+     *  apply. Null until observed: seeded by a restore or an import. */
+    observed: string | null
+}
+
+export type SettingsDocument = {
+    [K in keyof BackupSettings]?: SettingsFieldState<BackupSettings[K]>
+}
 
 export type SyncItemState = {
     type: BackupItemType
@@ -46,6 +60,10 @@ export type SyncItemState = {
     /** Null means never decrypted — unknown, never "not ours". */
     address?: string | null
     accountType?: BackupAccountType | null
+    /** SETTINGS only. Unlike every other type, a settings push is built from
+     *  this document rather than from the device's current values, so a
+     *  remote value this device could not apply is not overwritten by it. */
+    settingsFields?: SettingsDocument
 }
 
 export type BackupSyncResult = 'SUCCESS' | 'FAILED'
