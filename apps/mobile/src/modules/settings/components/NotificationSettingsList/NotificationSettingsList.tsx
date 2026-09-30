@@ -94,6 +94,7 @@ export const NotificationSettingsList = ({
     const {
         isSystemNotificationEnabled,
         isSystemNotificationLoading,
+        isPushServiceUnavailable,
         isPushSupported,
         accounts,
         disabledAccounts,
@@ -160,6 +161,16 @@ export const NotificationSettingsList = ({
                                 />
                             </PWView>
                         </PWView>
+                    )}
+                    {isPushSupported && isPushServiceUnavailable && (
+                        <PWText
+                            variant='caption'
+                            style={styles.grayText}
+                        >
+                            {t(
+                                'settings.notifications.push_service_unavailable',
+                            )}
+                        </PWText>
                     )}
                     <PWView style={styles.headerRow}>
                         <PWView style={styles.headerLabelContainer}>

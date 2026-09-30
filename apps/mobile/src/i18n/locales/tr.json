@@ -2877,6 +2877,7 @@
         "notifications": {
             "push_notifications": "Push bildirimleri",
             "account_notifications": "Bildirim gösterilecek hesaplar",
+            "push_service_unavailable": "Bu tarayıcı push bildirimlerini iletmiyor. Brave'de gizlilik ayarlarından \"Push mesajlaşma için Google hizmetlerini kullan\" seçeneğini aç, ardından Pera'yı yeniden aç.",
             "no_accounts": "Hesap bulunamadı.",
             "no_accounts_body": "Hesap bulunamadı. Bildirim tercihlerini yönetmek için bir hesap ekle."
         },

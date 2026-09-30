@@ -2869,6 +2869,7 @@
         "notifications": {
             "push_notifications": "Push-Benachrichtigungen",
             "account_notifications": "Benachrichtigungen anzeigen für",
+            "push_service_unavailable": "Dieser Browser stellt keine Push-Benachrichtigungen zu. Aktiviere in Brave in den Datenschutzeinstellungen „Google-Dienste für Push-Benachrichtigungen verwenden“ und öffne Pera dann erneut.",
             "no_accounts": "Keine Konten gefunden.",
             "no_accounts_body": "Keine Konten gefunden. Füge ein Konto hinzu, um Benachrichtigungseinstellungen zu verwalten."
         },

@@ -24,6 +24,8 @@ import { trackEvent, SettingsEvent, AnalyticsMetadataKey } from '@analytics'
 type UseSettingsNotificationsScreenResult = {
     isSystemNotificationEnabled: boolean
     isSystemNotificationLoading: boolean
+    /** Permission is granted but the browser's push service refused a token. */
+    isPushServiceUnavailable: boolean
     /** Whether this platform can deliver push at all (static platform fact). */
     isPushSupported: boolean
     accounts: WalletAccount[]
@@ -50,7 +52,7 @@ type UseSettingsNotificationsScreenResult = {
 
 export const useSettingsNotificationsScreen =
     (): UseSettingsNotificationsScreenResult => {
-        const { isEnabled, isLoading, openSettings } =
+        const { isEnabled, isLoading, isPushServiceUnavailable, openSettings } =
             useSystemNotificationPermission()
         const accounts = useAllAccounts()
         const { isAccountEnabled, disabledAccounts } =
@@ -76,6 +78,7 @@ export const useSettingsNotificationsScreen =
         return {
             isSystemNotificationEnabled: isEnabled,
             isSystemNotificationLoading: isLoading,
+            isPushServiceUnavailable,
             isPushSupported: getProvider().pushNotification.isSupported(),
             accounts,
             disabledAccounts,

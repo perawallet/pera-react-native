@@ -89,6 +89,19 @@ describe('useSettingsNotificationsScreen', () => {
         expect(result.current.isPushSupported).toBe(false)
     })
 
+    it('passes the push-service availability through', () => {
+        vi.mocked(useSystemNotificationPermission).mockReturnValueOnce({
+            isEnabled: false,
+            isLoading: false,
+            isPushServiceUnavailable: true,
+            openSettings: vi.fn(),
+        } as any)
+
+        const { result } = renderHook(() => useSettingsNotificationsScreen())
+
+        expect(result.current.isPushServiceUnavailable).toBe(true)
+    })
+
     it('calls openSettings when handleSystemNotificationToggle is called', () => {
         const openSettings = vi.fn()
         vi.mocked(useSystemNotificationPermission).mockReturnValueOnce({
