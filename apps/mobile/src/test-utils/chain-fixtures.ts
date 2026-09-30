@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
-// `CHAIN_IDS` only lists shipped chains, so a second chain is a cast until one lands.
+// A cast: `CHAIN_IDS` lists shipped chains only.
 export const ETHEREUM_CHAIN_ID = 'ethereum' as ChainId
 
 export const allCapabilities = (isEnabled: boolean): ChainCapabilities =>

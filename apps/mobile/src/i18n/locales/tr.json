@@ -2532,7 +2532,6 @@
         "language": "Dil",
         "developer_settings": "Geliştirici ayarları",
         "node_settings": "Node ayarları",
-        "networks": "Ağlar",
         "feature_flags": "Özellik bayrakları",
         "developer_menu": "Geliştirici seçenekleri",
         "manage_cache": "Önbelleği yönet",
@@ -2741,7 +2740,6 @@
             "connections_title": "Bağlantılar",
             "app_preferences_section": "Uygulama tercihleri",
             "currency_title": "Para birimi",
-            "networks_title": "Ağlar",
             "theme_title": "Tema",
             "advanced_title": "Gelişmiş tercihler",
             "language_title": "Dil",
@@ -2794,6 +2792,7 @@
             "node_settings": {
                 "network_label": "{{chain}} {{network}}",
                 "custom_label": "Özel ağ",
+                "chain_networks_title": "Blok zinciri başına ağ",
                 "non_mainnet_warning_title": "MainNet dışında sınırlı destek",
                 "non_mainnet_warning_body": "Tam olarak desteklenen tek ağ MainNet’tir. Pera servislerine dayanan özellikler — varlık detayları, swap, satın alma, kart, staking ve gelen kutusu — TestNet’te sınırlıdır; BetaNet ve özel node’larda hiç kullanılamaz.",
                 "enable_mainnet": "MainNet’i etkinleştir",

@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { isCustomNetworkOffered } from '../isCustomNetworkOffered.web'
 
 const mocks = vi.hoisted(() => ({
     appEnvironment: 'development',
@@ -37,28 +38,26 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-import { isCustomNetworkOffered } from '../isCustomNetworkOffered.web'
-
 describe('isCustomNetworkOffered (web)', () => {
     beforeEach(() => {
         mocks.appEnvironment = 'development'
         mocks.isStoreBuild = false
     })
 
-    it('is withheld in a store-installed production build', () => {
+    it('is false in a store-installed production build', () => {
         mocks.appEnvironment = 'production'
         mocks.isStoreBuild = true
 
         expect(isCustomNetworkOffered()).toBe(false)
     })
 
-    it('is offered in an unpacked production build', () => {
+    it('is true in an unpacked production build', () => {
         mocks.appEnvironment = 'production'
 
         expect(isCustomNetworkOffered()).toBe(true)
     })
 
-    it('is offered outside production even in a store build', () => {
+    it('is true outside production, even from a store', () => {
         mocks.isStoreBuild = true
 
         expect(isCustomNetworkOffered()).toBe(true)

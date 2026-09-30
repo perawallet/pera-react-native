@@ -19,6 +19,7 @@ import {
     type ChainContext,
     type ChainSetupEntry,
 } from '@perawallet/wallet-core-chain-contract'
+import { selectChainNetworkId } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
@@ -27,8 +28,10 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
     getScope: () => ({
         chainId: entry.chainId,
-        networkId:
-            useNetworkStore.getState().selectedNetworkByChain[entry.chainId],
+        networkId: selectChainNetworkId(
+            useNetworkStore.getState(),
+            entry.chainId,
+        ),
     }),
     getEndpoints: () => entry.endpoints,
     // Nothing implements ChainHttpClient; a module that calls it must fail loudly.

@@ -45,12 +45,14 @@ vi.mock('@tanstack/react-query', () => ({
 // database/query-cache respectively.
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const store = await vi.importActual<
-        typeof import('../../../../../../../../packages/chain-shared/src/store/network-store')
-    >('../../../../../../../../packages/chain-shared/src/store/network-store')
-    const { shouldClearCustomCache } = await vi.importActual<
-        typeof import('../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache')
+        typeof import('../../../../../../../../../packages/chain-shared/src/store/network-store')
     >(
-        '../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache',
+        '../../../../../../../../../packages/chain-shared/src/store/network-store',
+    )
+    const { shouldClearCustomCache } = await vi.importActual<
+        typeof import('../../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache')
+    >(
+        '../../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache',
     )
 
     return {

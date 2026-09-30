@@ -10,19 +10,5 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { getProvider } from '@perawallet/wallet-extension-provider'
-
-type UseSettingsNetworksScreenResult = {
-    chains: { chainId: ChainId }[]
-    isChainHeaderVisible: boolean
-}
-
-export const useSettingsNetworksScreen =
-    (): UseSettingsNetworksScreenResult => {
-        const chains = getProvider()
-            .chains.list()
-            .map(descriptor => ({ chainId: descriptor.id }))
-
-        return { chains, isChainHeaderVisible: chains.length > 1 }
-    }
+// Native offers a custom node in every build; see the .web variant for the extension's gate.
+export const isCustomNetworkOffered = (): boolean => true

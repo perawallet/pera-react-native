@@ -2532,7 +2532,6 @@
         "language": "Langue",
         "developer_settings": "Paramètres développeur",
         "node_settings": "Paramètres du nœud",
-        "networks": "Réseaux",
         "feature_flags": "Feature flags",
         "developer_menu": "Options développeur",
         "manage_cache": "Gérer le cache",
@@ -2741,7 +2740,6 @@
             "connections_title": "Connexions",
             "app_preferences_section": "Préférences de l’app",
             "currency_title": "Devise",
-            "networks_title": "Réseaux",
             "theme_title": "Thème",
             "advanced_title": "Préférences avancées",
             "language_title": "Langue",
@@ -2794,6 +2792,7 @@
             "node_settings": {
                 "network_label": "{{chain}} {{network}}",
                 "custom_label": "Réseau personnalisé",
+                "chain_networks_title": "Réseau par blockchain",
                 "non_mainnet_warning_title": "Prise en charge limitée hors MainNet",
                 "non_mainnet_warning_body": "MainNet est le seul réseau entièrement pris en charge. Les fonctionnalités qui reposent sur les services Pera — détails des actifs, swap, achat, carte, staking et boîte de réception — sont limitées sur TestNet, et indisponibles sur BetaNet et sur les nœuds personnalisés.",
                 "enable_mainnet": "Activer MainNet",

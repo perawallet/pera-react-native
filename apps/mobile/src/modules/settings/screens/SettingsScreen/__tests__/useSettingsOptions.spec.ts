@@ -16,12 +16,6 @@ import { useSettingsOptions } from '../useSettingsOptions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
-import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
-import { getProvider } from '@perawallet/wallet-extension-provider'
-import {
-    allCapabilities,
-    fixtureEthereumDescriptor,
-} from '@test-utils/chain-fixtures'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(),
@@ -399,40 +393,5 @@ describe('useSettingsOptions', () => {
         expect(result.current.settingsOptions[0].items[0].value).toBe(
             'settings.main.cloud_backup_on',
         )
-    })
-
-    describe('networks row', () => {
-        const preferenceRoutes = () =>
-            renderHook(() => useSettingsOptions())
-                .result.current.settingsOptions.find(
-                    section =>
-                        section.title ===
-                        'settings.main.app_preferences_section',
-                )
-                ?.items.map(item => item.route)
-
-        beforeEach(() => {
-            const { chains } = getProvider()
-            chains.reset()
-            chains.register(algorandDescriptor, allCapabilities(true))
-        })
-
-        it('is left out while one chain is registered', () => {
-            expect(preferenceRoutes()).not.toContain('NetworksSettings')
-        })
-
-        it('routes to the Networks screen once a second chain is registered', () => {
-            getProvider().chains.register(
-                fixtureEthereumDescriptor,
-                allCapabilities(false),
-            )
-
-            const routes = preferenceRoutes()
-
-            expect(routes).toContain('NetworksSettings')
-            expect(routes?.indexOf('NetworksSettings')).toBe(
-                (routes?.indexOf('CurrencySettings') ?? -2) + 1,
-            )
-        })
     })
 })

@@ -2548,7 +2548,6 @@
         "language": "Idioma",
         "developer_settings": "Configurações de desenvolvedor",
         "node_settings": "Configurações do nó",
-        "networks": "Redes",
         "feature_flags": "Feature flags",
         "developer_menu": "Opções de desenvolvedor",
         "manage_cache": "Gerenciar cache",
@@ -2757,7 +2756,6 @@
             "connections_title": "Conexões",
             "app_preferences_section": "Preferências do app",
             "currency_title": "Moeda",
-            "networks_title": "Redes",
             "theme_title": "Tema",
             "advanced_title": "Preferências avançadas",
             "language_title": "Idioma",
@@ -2810,6 +2808,7 @@
             "node_settings": {
                 "network_label": "{{chain}} {{network}}",
                 "custom_label": "Rede personalizada",
+                "chain_networks_title": "Rede por blockchain",
                 "non_mainnet_warning_title": "Suporte limitado fora da MainNet",
                 "non_mainnet_warning_body": "A MainNet é a única rede totalmente compatível. Os recursos que dependem dos serviços da Pera — detalhes de ativos, conversão, compra, card, staking e caixa de entrada — são limitados na TestNet e indisponíveis na BetaNet e em nós personalizados.",
                 "enable_mainnet": "Ativar MainNet",

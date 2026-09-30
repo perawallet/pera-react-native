@@ -2532,7 +2532,6 @@
         "language": "Language",
         "developer_settings": "Developer Settings",
         "node_settings": "Node Settings",
-        "networks": "Networks",
         "feature_flags": "Feature Flags",
         "developer_menu": "Developer Options",
         "manage_cache": "Manage Cache",
@@ -2741,7 +2740,6 @@
             "connections_title": "Connections",
             "app_preferences_section": "App Preferences",
             "currency_title": "Currency",
-            "networks_title": "Networks",
             "theme_title": "Theme",
             "advanced_title": "Advanced Preferences",
             "language_title": "Language",
@@ -2794,6 +2792,7 @@
             "node_settings": {
                 "network_label": "{{chain}} {{network}}",
                 "custom_label": "Custom network",
+                "chain_networks_title": "Network per chain",
                 "non_mainnet_warning_title": "Limited support outside MainNet",
                 "non_mainnet_warning_body": "MainNet is the only fully supported network. Features that rely on Pera services — asset details, swap, buy, card, staking and inbox — are limited on TestNet, and unavailable on BetaNet and custom nodes.",
                 "enable_mainnet": "Enable MainNet",
