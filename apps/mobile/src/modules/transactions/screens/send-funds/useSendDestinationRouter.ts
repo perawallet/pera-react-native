@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
@@ -148,7 +149,7 @@ export const useSendDestinationRouter = () => {
             // Check if receiver is a local account we can sign for
             const receiver = accounts.find(a => a.address === address)
             const isLocalSignable =
-                !!receiver && canSignWith(receiver, accounts)
+                !!receiver && canSignWith(receiver, accounts, LEGACY_CHAIN_ID)
 
             if (isLocalSignable) {
                 // Express send: local account, we handle opt-in + transfer

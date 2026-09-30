@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback, useRef } from 'react'
 import {
     getAccountDisplayName,
@@ -200,7 +201,11 @@ export const useRekeyConfirmScreen = ({
         // Rekeying a quantum account to an Ed25519 authority strips its
         // quantum-safe protection — warn before it happens. Not shown when the
         // target's effective authority is also quantum, nor for Ed25519 sources.
-        if (source && target && isQuantumDowngrade(source, target, accounts)) {
+        if (
+            source &&
+            target &&
+            isQuantumDowngrade(source, target, accounts, LEGACY_CHAIN_ID)
+        ) {
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
                     <QuantumDowngradeWarningSheet

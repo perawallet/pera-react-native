@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import { renderHook } from '@testing-library/react'
 import type { Arc0001ResolveResult } from '@perawallet/wallet-core-blockchain'
 

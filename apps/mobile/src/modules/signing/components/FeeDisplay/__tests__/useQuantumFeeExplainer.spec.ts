@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { useQuantumFeeExplainer } from '../useQuantumFeeExplainer'
 
 // Rekey resolution is what these cases exercise, so opt out of the unit
@@ -78,6 +79,7 @@ const buildTransaction = (
 describe('useQuantumFeeExplainer', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
         ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(true)
         ;(useSigningPipeline as Mock).mockReturnValue({ resolved: null })
         useAccountsStore.getState().setAccounts([])

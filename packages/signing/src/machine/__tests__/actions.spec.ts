@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import type { SignableGroup } from '../../pipeline/types'

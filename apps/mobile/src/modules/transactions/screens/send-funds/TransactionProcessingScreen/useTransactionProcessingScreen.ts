@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useEffect, useMemo, useRef } from 'react'
 import { BackHandler } from 'react-native'
 
@@ -199,7 +200,11 @@ export const useTransactionProcessingScreen =
         const signingAccount = useMemo(() => {
             if (!selectedAccount) return undefined
             try {
-                return resolveAuthAccount(selectedAccount, allAccounts)
+                return resolveAuthAccount(
+                    selectedAccount,
+                    allAccounts,
+                    LEGACY_CHAIN_ID,
+                )
             } catch {
                 return selectedAccount
             }

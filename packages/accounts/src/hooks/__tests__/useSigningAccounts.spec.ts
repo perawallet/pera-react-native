@@ -14,6 +14,7 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSigningAccounts } from '../useSigningAccounts'
 import { useAccountsStore } from '../../store'
+import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
 vi.mock('../../store', () => ({
     useAccountsStore: vi.fn(),
@@ -22,13 +23,22 @@ vi.mock('../../store', () => ({
 describe('useSigningAccounts', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerFakeAccountsChain()
     })
 
     it('should return only accounts that can sign', () => {
         const mockAccounts = [
-            { address: 'addr1', type: 'algo25', keyPairId: 'pk1' },
+            {
+                address: 'addr1',
+                type: 'algo25',
+                keyPairId: 'pk1',
+            },
             { address: 'addr2', type: 'watch' },
-            { address: 'addr3', type: 'hdWallet', keyPairId: 'pk3' },
+            {
+                address: 'addr3',
+                type: 'hdWallet',
+                keyPairId: 'pk3',
+            },
         ]
 
         ;(useAccountsStore as any).mockImplementation((selector: any) =>
@@ -38,8 +48,16 @@ describe('useSigningAccounts', () => {
         const { result } = renderHook(() => useSigningAccounts())
 
         expect(result.current).toEqual([
-            { address: 'addr1', type: 'algo25', keyPairId: 'pk1' },
-            { address: 'addr3', type: 'hdWallet', keyPairId: 'pk3' },
+            {
+                address: 'addr1',
+                type: 'algo25',
+                keyPairId: 'pk1',
+            },
+            {
+                address: 'addr3',
+                type: 'hdWallet',
+                keyPairId: 'pk3',
+            },
         ])
     })
 

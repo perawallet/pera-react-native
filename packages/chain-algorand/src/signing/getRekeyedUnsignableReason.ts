@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     resolveSignerForAccount,
     type WalletAccount,
@@ -69,7 +70,11 @@ export const getRekeyedUnsignableReason = (
     for (const address of uniqueSigners) {
         const account = accounts.find(a => a.address === address)
         if (!account) continue
-        const resolution = resolveSignerForAccount(account, accounts)
+        const resolution = resolveSignerForAccount(
+            account,
+            accounts,
+            LEGACY_CHAIN_ID,
+        )
         if (resolution.kind === 'authMissing') {
             return {
                 kind: 'authMissing',

@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { useRekeyConfirmScreen } from '../useRekeyConfirmScreen'
 
 const mockNavigate = vi.fn()
@@ -122,6 +123,7 @@ const config = {
 describe('useRekeyConfirmScreen - quantum downgrade gate', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
         currentSource = mockQuantumSource

@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import { renderHook } from '@testing-library/react'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useMinFeeForSender } from '../useMinFeeForSender'

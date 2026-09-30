@@ -28,6 +28,13 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
         alias: {
+            // Test-only: the real Algorand accounts adapter, so specs resolve
+            // signers with the production rules. Not a package dependency,
+            // because chain-algorand depends on signing.
+            '@perawallet/wallet-core-chain-algorand/accounts': path.resolve(
+                __dirname,
+                '../chain-algorand/src/accounts/index.ts',
+            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',

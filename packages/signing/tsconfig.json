@@ -1,7 +1,12 @@
 {
   "extends": "@perawallet/wallet-core-devtools/tsconfig/vite.json",
   "compilerOptions": {
-    "outDir": "./dist"
+    "outDir": "./dist",
+    // Must match the alias in vitest.config.ts. Typecheck-only: the build's
+    // program excludes the specs that import it.
+    "paths": {
+      "@perawallet/wallet-core-chain-algorand/accounts": ["../chain-algorand/src/accounts/index.ts"]
+    }
   },
   "include": [
     "src"

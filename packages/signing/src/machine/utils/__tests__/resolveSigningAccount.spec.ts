@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { RekeyTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import type { SourceMetadata } from '../../../pipeline/types'

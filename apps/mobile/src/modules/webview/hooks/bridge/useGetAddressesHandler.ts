@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
 import {
@@ -67,7 +68,7 @@ const toWebviewAccountType = (
     accounts: WalletAccount[],
 ): WebviewAccountType => {
     if (isRekeyedAccount(account)) {
-        return canSignWith(account, accounts)
+        return canSignWith(account, accounts, LEGACY_CHAIN_ID)
             ? 'RekeyedSignable'
             : 'RekeyedUnsignable'
     }

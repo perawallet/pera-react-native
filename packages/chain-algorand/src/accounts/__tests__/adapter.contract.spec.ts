@@ -20,7 +20,11 @@ import {
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
-import { DerivationTypes } from '@perawallet/wallet-core-accounts'
+import {
+    AccountTypes,
+    DerivationTypes,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
@@ -38,6 +42,24 @@ const QUANTUM_CANONICAL =
     'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
 const QUANTUM_LEGACY =
     'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
+
+const keyed = (id: string, address: string, extra = {}): WalletAccount => ({
+    id,
+    address,
+    type: AccountTypes.algo25,
+    keyPairId: `${id}-key`,
+    ...extra,
+})
+
+const rekeyedWatch = (
+    address: string,
+    rekeyAddress: string,
+): WalletAccount => ({
+    id: 'rekeyed',
+    address,
+    type: AccountTypes.watch,
+    rekeyAddress,
+})
 
 accountsContractTests(() => algorandAccountsAdapter, {
     scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' },
@@ -105,7 +127,20 @@ accountsContractTests(() => algorandAccountsAdapter, {
             }),
         ),
     },
+    signers: {
+        signing: keyed('signing', FUNDED),
+        watch: {
+            id: 'watch',
+            address: EMPTY,
+            type: AccountTypes.watch,
+        },
+    },
     rekeyed: {
+        accounts: {
+            account: rekeyedWatch(REKEYED, FUNDED),
+            auth: keyed('auth', FUNDED, { rekeyAddress: EMPTY }),
+            next: keyed('next', EMPTY),
+        },
         authAddress: FUNDED,
         rekeyedAddresses: [REKEYED],
         handlers: [

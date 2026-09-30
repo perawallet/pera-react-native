@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
@@ -154,7 +155,9 @@ describe('Flow: Ledger rekeyed-account import', () => {
                 expect(watch?.type).toBe(AccountTypes.watch)
                 expect(watch?.rekeyAddress).toBe(LEDGER_ADDRESS)
                 expect(hw?.type).toBe(AccountTypes.hardware)
-                expect(canSignWith(watch!, accounts)).toBe(true)
+                expect(canSignWith(watch!, accounts, LEGACY_CHAIN_ID)).toBe(
+                    true,
+                )
             },
             { timeout: 10_000 },
         )

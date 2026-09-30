@@ -10,19 +10,9 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { getSignerFor } from '../signer-resolution'
-import { useAccountsStore } from '../store'
-import type { WalletAccount } from '../models'
+import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import { algorandAccountsAdapter } from '../accounts'
 
-export const useSignerFor = (
-    address: string | undefined | null,
-): WalletAccount | null => {
-    const accounts = useAccountsStore(state => state.accounts)
-    return useMemo(
-        () =>
-            address ? getSignerFor(address, accounts, LEGACY_CHAIN_ID) : null,
-        [address, accounts],
-    )
-}
+// Importing this file is the registration: specs that resolve signers need the
+// production Algorand rules registered under the chain the pipeline signs on.
+accountsChainAdapters.register(algorandAccountsAdapter)

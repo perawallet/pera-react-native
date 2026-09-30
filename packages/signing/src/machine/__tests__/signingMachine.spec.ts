@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import { createActor, fromPromise, waitFor, setup } from 'xstate'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { AlgodError } from '@perawallet/wallet-core-blockchain'

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     isMultisigAccount,
@@ -55,7 +56,11 @@ export const createMultisigStrategy = (
             }
 
             const allAccounts = getAllAccounts()
-            const multisigAccount = resolveAuthAccount(account, allAccounts)
+            const multisigAccount = resolveAuthAccount(
+                account,
+                allAccounts,
+                LEGACY_CHAIN_ID,
+            )
             const localParticipants = getLocalParticipants(
                 multisigAccount,
                 allAccounts,

@@ -30,45 +30,13 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-// Stateful network-store fake: the accounts store mirrors each account's
-// active-network rekey address and re-derives it when the network changes.
-const fakeNetwork = vi.hoisted(() => {
-    const listeners: Array<(state: unknown, prev: unknown) => void> = []
-    const holder = {
-        current: 'mainnet',
-        listeners,
-        switchTo(network: string) {
-            const prev = holder.current
-            holder.current = network
-            for (const cb of [...listeners]) {
-                cb({ network }, { network: prev })
-            }
-        },
-    }
-    return holder
-})
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetworkStore: {
-        getState: () => ({ network: fakeNetwork.current }),
-        subscribe: (cb: (state: unknown, prev: unknown) => void) => {
-            fakeNetwork.listeners.push(cb)
-            return () => {}
-        },
-    },
-}))
-
 describe('services/accounts/store', () => {
     let useAccountsStore: typeof import('../store').useAccountsStore
 
     beforeEach(async () => {
         vi.resetModules()
-        fakeNetwork.current = 'mainnet'
-        fakeNetwork.listeners.length = 0
         const module = await import('../store')
         useAccountsStore = module.useAccountsStore
-        // Installs the network-switch subscription against the fake above.
-        await import('../network-rekey-sync')
     })
 
     test('defaults to empty list and setAccounts updates state', () => {
@@ -538,16 +506,12 @@ describe('services/accounts/store', () => {
                 .getState()
                 .updateAccountRekeyAddress('A', null, 'testnet')
 
-            act(() => {
-                fakeNetwork.switchTo('testnet')
-            })
+            useAccountsStore.getState().applyNetworkRekeyState('testnet')
             expect(
                 useAccountsStore.getState().accounts[0].rekeyAddress,
             ).toBeUndefined()
 
-            act(() => {
-                fakeNetwork.switchTo('mainnet')
-            })
+            useAccountsStore.getState().applyNetworkRekeyState('mainnet')
             expect(useAccountsStore.getState().accounts[0].rekeyAddress).toBe(
                 'AUTH',
             )
@@ -565,9 +529,7 @@ describe('services/accounts/store', () => {
                 .getState()
                 .updateAccountRekeyAddress('A', 'AUTH', 'mainnet')
 
-            act(() => {
-                fakeNetwork.switchTo('testnet')
-            })
+            useAccountsStore.getState().applyNetworkRekeyState('testnet')
 
             expect(
                 useAccountsStore.getState().accounts[0].rekeyAddress,
@@ -587,45 +549,11 @@ describe('services/accounts/store', () => {
                 } as unknown as WalletAccount,
             ])
 
-            act(() => {
-                fakeNetwork.switchTo('testnet')
-            })
+            useAccountsStore.getState().applyNetworkRekeyState('testnet')
 
             expect(useAccountsStore.getState().accounts[0].rekeyAddress).toBe(
                 'AUTH',
             )
-        })
-
-        test('rekeyed/signable derivation follows the network switch', async () => {
-            const { isRekeyedAccount } = await import('../../utils')
-            const { canSignWith } = await import('../../signer-resolution')
-            useAccountsStore.getState().setAccounts([
-                {
-                    type: 'algo25',
-                    address: 'A',
-                    keyPairId: 'k',
-                } as unknown as WalletAccount,
-            ])
-            useAccountsStore.getState().applyNetworkRekeyState('mainnet')
-            // Rekeyed on mainnet to an external (not-in-wallet) auth.
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', 'EXTERNAL', 'mainnet')
-            useAccountsStore
-                .getState()
-                .updateAccountRekeyAddress('A', null, 'testnet')
-
-            const onMainnet = useAccountsStore.getState().accounts[0]
-            expect(isRekeyedAccount(onMainnet)).toBe(true)
-            expect(canSignWith(onMainnet, [onMainnet])).toBe(false)
-
-            act(() => {
-                fakeNetwork.switchTo('testnet')
-            })
-
-            const onTestnet = useAccountsStore.getState().accounts[0]
-            expect(isRekeyedAccount(onTestnet)).toBe(false)
-            expect(canSignWith(onTestnet, [onTestnet])).toBe(true)
         })
 
         test('applyNetworkRekeyState leaves state referentially unchanged when nothing differs', () => {

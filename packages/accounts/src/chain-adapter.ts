@@ -40,6 +40,7 @@ import type {
     HDWalletDetails,
     WalletAccount,
 } from './models'
+import type { SignerResolution } from './signer-resolution'
 
 export type AccountHoldingSnapshot = {
     assetId: string
@@ -179,6 +180,20 @@ export interface AccountsChainAdapter {
         authAddress: string,
         scope: ChainScope,
     ): Promise<string[]>
+    /** `account` need not be in `accounts`; whatever signs for it must be. */
+    resolveSigner(
+        account: WalletAccount,
+        accounts: WalletAccount[],
+    ): SignerResolution
+    /**
+     * The account whose key authorises `account` (itself when nothing is
+     * delegated), with no signability check. Null only when that account isn't
+     * held.
+     */
+    getAuthAccount(
+        account: WalletAccount,
+        accounts: WalletAccount[],
+    ): WalletAccount | null
 }
 
 export const accountsChainAdapters =

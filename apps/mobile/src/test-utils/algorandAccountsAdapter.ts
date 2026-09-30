@@ -10,19 +10,12 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { getSignerFor } from '../signer-resolution'
-import { useAccountsStore } from '../store'
-import type { WalletAccount } from '../models'
+import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
 
-export const useSignerFor = (
-    address: string | undefined | null,
-): WalletAccount | null => {
-    const accounts = useAccountsStore(state => state.accounts)
-    return useMemo(
-        () =>
-            address ? getSignerFor(address, accounts, LEGACY_CHAIN_ID) : null,
-        [address, accounts],
-    )
+// Unit specs skip the app bootstrap, so signer resolution over real accounts
+// has no adapter unless a spec registers one.
+export const registerAlgorandAccountsAdapter = (): void => {
+    accountsChainAdapters.reset()
+    accountsChainAdapters.register(algorandAccountsAdapter)
 }

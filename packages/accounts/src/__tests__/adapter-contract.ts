@@ -35,7 +35,11 @@ import {
     type MintedAccount,
     type SingleKeyAccountKind,
 } from '../chain-adapter'
-import { DerivationTypes, type HDWalletDetails } from '../models'
+import {
+    DerivationTypes,
+    type HDWalletDetails,
+    type WalletAccount,
+} from '../models'
 
 type ChainState = {
     address: string
@@ -77,11 +81,19 @@ export interface AccountsContractFixtures {
         /** Handlers under which every candidate the import probes exists on chain. */
         handlers: readonly RequestHandler[]
     }
+    /** Accounts on this chain: one that holds its own key, one that only watches. */
+    signers: { signing: WalletAccount; watch: WalletAccount }
     /** Required when the adapter implements rekey. */
     rekeyed?: {
         authAddress: string
         rekeyedAddresses: readonly string[]
         handlers: readonly RequestHandler[]
+        /** `account` is rekeyed to `auth`, which is itself rekeyed on to `next`; `auth` and `next` hold their keys. */
+        accounts: {
+            account: WalletAccount
+            auth: WalletAccount
+            next: WalletAccount
+        }
     }
 }
 
@@ -276,6 +288,45 @@ export const accountsContractTests = (
             const found = await requireRekey(adapter)(authAddress, scope)
 
             expect([...found].sort()).toEqual([...rekeyedAddresses].sort())
+        })
+
+        it('resolves a key-holding account to itself and a watch account to no signer', () => {
+            const adapter = makeAdapter()
+            const { signing, watch } = fixtures.signers
+            const accounts = [signing, watch]
+
+            expect(adapter.resolveSigner(signing, accounts)).toEqual({
+                kind: 'ok',
+                signer: signing,
+            })
+            expect(adapter.getAuthAccount(signing, accounts)).toBe(signing)
+            expect(adapter.resolveSigner(watch, accounts)).toEqual({
+                kind: 'watch',
+                account: watch,
+            })
+        })
+
+        it('follows a delegation exactly one hop, or has none to follow', () => {
+            const adapter = makeAdapter()
+            if (!adapter.fetchRekeyedAddresses) return
+
+            expect(fixtures.rekeyed).toBeDefined()
+            const { account, auth, next } = fixtures.rekeyed!.accounts
+
+            expect(
+                adapter.resolveSigner(account, [account, auth, next]),
+            ).toEqual({
+                kind: 'ok',
+                signer: auth,
+            })
+            expect(adapter.getAuthAccount(account, [account, auth, next])).toBe(
+                auth,
+            )
+            expect(adapter.resolveSigner(account, [account])).toMatchObject({
+                kind: 'authMissing',
+                authAddress: auth.address,
+            })
+            expect(adapter.getAuthAccount(account, [account])).toBeNull()
         })
 
         it('derives a quantum keygen seed without touching the entropy, or refuses', () => {

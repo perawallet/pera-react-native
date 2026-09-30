@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     resolveAuthAccount,
     type WalletAccount,
@@ -50,5 +51,5 @@ export const resolveSigningAccount = (
     if (dataType === 'arbitrary-data' || dataType === 'arc60') {
         return signerAccount
     }
-    return resolveAuthAccount(signerAccount, allAccounts)
+    return resolveAuthAccount(signerAccount, allAccounts, LEGACY_CHAIN_ID)
 }
