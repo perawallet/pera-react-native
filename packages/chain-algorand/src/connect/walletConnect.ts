@@ -11,7 +11,7 @@
  */
 
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-config'
+import { getChainConfig, Networks } from '@perawallet/wallet-core-config'
 import type {
     DappRequestChainAdapter,
     WalletOperationResult,
@@ -22,7 +22,7 @@ import {
     assertArc60RequestWithinLimits as assertArc60WireRequestWithinLimits,
 } from '@perawallet/wallet-core-signing'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
-import { algorandDescriptor } from '../descriptor'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 /**
  * CAIP-2 chain ids, which only WalletConnect v2 speaks — v1 has no concept of
@@ -30,18 +30,52 @@ import { algorandDescriptor } from '../descriptor'
  */
 export const ALGORAND_CAIP2_NAMESPACE = 'algorand'
 
-// The descriptor already carries each network's CAIP-2 id (the URL-safe first
-// 32 characters of its genesis hash); `custom` is left out of it on purpose,
-// since a custom node's genesis is user data with no id until probed, so
-// lookups here fail closed to `null` for it the same way.
+const CAIP2_REFERENCE_LENGTH = 32
+
+/**
+ * The namespace + the first 32 characters of the genesis hash in the *URL-safe*
+ * base64 alphabet, so betanet's plain-base64 hash is not the id a dApp
+ * presents. A blanked env override yields no id rather than a bare prefix.
+ */
+export const toCaip2ChainId = (genesisHash: string): Nullable<string> => {
+    if (genesisHash.length < CAIP2_REFERENCE_LENGTH) return null
+    const reference = genesisHash
+        .replaceAll('+', '-')
+        .replaceAll('/', '_')
+        .slice(0, CAIP2_REFERENCE_LENGTH)
+    return `${ALGORAND_CAIP2_NAMESPACE}:${reference}`
+}
+
+// Read from config, not the descriptor's baked `caip2`, so an env genesis
+// override still decides which chain v2 sessions are checked against. `custom`
+// has no id: its genesis is whatever node the developer pointed at.
+const CAIP2_CHAIN_ID_BY_NETWORK: ReadonlyMap<
+    NetworkId,
+    Nullable<string>
+> = new Map(
+    Object.values(Networks).map(networkId => [
+        networkId,
+        networkId === Networks.custom
+            ? null
+            : toCaip2ChainId(
+                  getChainConfig({ chainId: ALGORAND_CHAIN_ID, networkId })
+                      .genesisHash,
+              ),
+    ]),
+)
+
+const NETWORK_BY_CAIP2_CHAIN_ID: ReadonlyMap<string, NetworkId> = new Map(
+    [...CAIP2_CHAIN_ID_BY_NETWORK].flatMap(([networkId, caip2]) =>
+        caip2 === null ? [] : [[caip2, networkId] as const],
+    ),
+)
+
 const caip2ChainIdFor = (networkId: NetworkId): Nullable<string> =>
-    algorandDescriptor.networks.find(network => network.id === networkId)
-        ?.caip2 ?? null
+    CAIP2_CHAIN_ID_BY_NETWORK.get(networkId) ?? null
 
 /** The network a chain id names, or null for one that names none of ours. */
 const networkForCaip2ChainId = (caip2: string): Nullable<NetworkId> =>
-    algorandDescriptor.networks.find(network => network.caip2 === caip2)?.id ??
-    null
+    NETWORK_BY_CAIP2_CHAIN_ID.get(caip2) ?? null
 
 /**
  * Mirrors `AlgorandWalletConnectChainId` in

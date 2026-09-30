@@ -13,10 +13,13 @@
 import { describe, expect, it } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-config'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
-import { algorandWalletConnectSupport as support } from '../walletConnect'
+import {
+    algorandWalletConnectSupport as support,
+    toCaip2ChainId,
+} from '../walletConnect'
 
 // The registered ids from the Chain Agnostic `algorand` namespace. Hard-coded
-// on purpose: the descriptor derives them from config's genesis hashes, so
+// on purpose: the adapter derives them from config's genesis hashes, so
 // comparing against the published values catches a typo on either side.
 const MAINNET_CHAIN_ID = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
 const TESTNET_CHAIN_ID = 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe'
@@ -31,6 +34,27 @@ const V1_BETANET = 416_003
 describe('namespace', () => {
     it('is the registered algorand CAIP-2 namespace', () => {
         expect(support.namespace).toBe('algorand')
+    })
+})
+
+describe('toCaip2ChainId', () => {
+    it('has no id for a genesis hash shorter than the CAIP-2 reference', () => {
+        // A blanked env override reaches here as an empty or truncated hash; a
+        // bare `algorand:` prefix would match no chain any dApp presents.
+        expect(toCaip2ChainId('')).toBeNull()
+        expect(toCaip2ChainId('wGHE2Pwdvd7S12BL5FaOP2')).toBeNull()
+    })
+
+    it('accepts a hash exactly the reference length', () => {
+        expect(toCaip2ChainId('wGHE2Pwdvd7S12BL5FaOP20EGYesN73k')).toBe(
+            MAINNET_CHAIN_ID,
+        )
+    })
+
+    it('uses the URL-safe alphabet', () => {
+        expect(toCaip2ChainId('mFgazF+2uRS1tMiL9dsj01hJGySEmPN2yFs=')).toBe(
+            BETANET_CHAIN_ID,
+        )
     })
 })
 
