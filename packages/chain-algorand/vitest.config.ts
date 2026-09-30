@@ -74,6 +74,21 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/provider/src/index.ts',
             ),
+            // The backup and migrate packages reach passkeys, whose dist would
+            // load the keystore's native storage before the setup file's mock
+            // applies. Subpaths first: a bare-name key also prefix-matches them.
+            '@perawallet/wallet-core-passkeys/native': path.resolve(
+                __dirname,
+                '../passkeys/src/native.ts',
+            ),
+            '@perawallet/wallet-core-passkeys/crypto': path.resolve(
+                __dirname,
+                '../passkeys/src/crypto.ts',
+            ),
+            '@perawallet/wallet-core-passkeys': path.resolve(
+                __dirname,
+                '../passkeys/src/index.ts',
+            ),
             '@perawallet/wallet-extension-platform-driver': path.resolve(
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',

@@ -42,7 +42,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     zeroBytes: mocks.zeroBytes,
 }))
 
-vi.mock('../../mnemonic', () => ({
+vi.mock('@perawallet/wallet-core-backup', () => ({
     useMarkMnemonicBackupComplete: () => mocks.markBackupComplete,
 }))
 

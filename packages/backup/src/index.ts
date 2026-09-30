@@ -15,9 +15,12 @@
 //   - asb:      Algorand Secure Backup (ARC-35) recovery-only support
 //   - peraweb:  Pera Web "Transfer Accounts" QR-based import
 //   - cloud:    end-to-end encrypted multi-device cloud backup + sync
-//   - shared:   primitives common to ASB + Pera Web (secretbox, seed→
-//               mnemonic import, private_key decoder)
+//   - shared:   primitives common to ASB + Pera Web (secretbox,
+//               private_key decoder)
+// The chain-specific halves (ASB format, key import, seed reference, HD
+// derivation) are a registered BackupChainAdapter; see chain-adapter.ts.
 export * from './asb'
+export * from './chain-adapter'
 export * from './cloud'
 export * from './errors'
 export * from './mnemonic'

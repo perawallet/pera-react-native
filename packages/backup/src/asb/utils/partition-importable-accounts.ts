@@ -11,49 +11,14 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import type { AsbBackupAccount } from '../models'
+import { backupAdapterFor } from '../../chain-adapter'
+import type { AsbBackupAccount, AsbImportablePartition } from '../models'
 
-export type AsbImportablePartition = {
-    importable: AsbBackupAccount[]
-    alreadyImported: AsbBackupAccount[]
-    unsupported: AsbBackupAccount[]
-}
-
-/**
- * Bucket the decrypted accounts into three lists driven by the wallet's
- * current state:
- *
- *  - `importable`     valid + not already present → user can choose to import
- *  - `alreadyImported` valid + matches an existing wallet account → shown in
- *                     the selection list but locked, mirroring iOS/Android
- *  - `unsupported`    invalid address → silently filtered (mirrors Android's
- *                     `AsbAccountImportParser` which drops these)
- *
- * Address comparison is exact; case sensitivity matches the on-disk format
- * since Algorand addresses are canonical base32.
- */
 export const partitionImportableAccounts = (
     asbAccounts: AsbBackupAccount[],
     existingAccounts: WalletAccount[],
-): AsbImportablePartition => {
-    const existingAddresses = new Set(existingAccounts.map(a => a.address))
-
-    const importable: AsbBackupAccount[] = []
-    const alreadyImported: AsbBackupAccount[] = []
-    const unsupported: AsbBackupAccount[] = []
-
-    for (const account of asbAccounts) {
-        if (!isValidAlgorandAddress(account.address)) {
-            unsupported.push(account)
-            continue
-        }
-        if (existingAddresses.has(account.address)) {
-            alreadyImported.push(account)
-            continue
-        }
-        importable.push(account)
-    }
-
-    return { importable, alreadyImported, unsupported }
-}
+): AsbImportablePartition =>
+    backupAdapterFor().secureBackup.partitionImportable(
+        asbAccounts,
+        existingAccounts,
+    )

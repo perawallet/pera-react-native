@@ -54,7 +54,6 @@
         "vite": "catalog:",
         "vitest": "catalog:",
         "@perawallet/wallet-extension-connections": "workspace:*",
-        "@scure/bip39": "catalog:",
-        "algosdk": "catalog:"
+        "@scure/bip39": "catalog:"
     }
 }

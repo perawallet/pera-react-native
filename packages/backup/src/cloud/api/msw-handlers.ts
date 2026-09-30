@@ -11,7 +11,7 @@
  */
 
 import { http, HttpResponse, type HttpHandler, type PathParams } from 'msw'
-import { decodeAddress } from 'algosdk'
+import { base32nopad } from '@scure/base'
 import nacl from 'tweetnacl'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, decodeFromBase64 } from '@perawallet/wallet-core-shared'
@@ -59,9 +59,9 @@ const createAuthorizer = (
 
     // The client derives both from one keypair, so the address the backupId
     // encodes carries the key the backup was registered under.
-    const registeredAuthKey = decodeAddress(
-        backupIdToAddress(backupId),
-    ).publicKey
+    const registeredAuthKey = base32nopad
+        .decode(backupIdToAddress(backupId))
+        .slice(0, 32)
     const seenNonces = new Set<string>()
 
     return async request => {

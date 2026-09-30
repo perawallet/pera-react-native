@@ -23,7 +23,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     },
 }))
 
-vi.mock('../accountStoreOps', () => ({
+vi.mock('@perawallet/wallet-core-migrate', () => ({
     addKeylessAccountToStore: vi.fn(account => account),
 }))
 
@@ -51,7 +51,7 @@ import {
     isKeylessLegacyAccount,
     classifyLegacyAccountRoute,
 } from '../migrateLegacyAccount'
-import { addKeylessAccountToStore } from '../accountStoreOps'
+import { addKeylessAccountToStore } from '@perawallet/wallet-core-migrate'
 import {
     buildLedgerAccount,
     buildMultiSigAccount,
@@ -59,7 +59,7 @@ import {
 } from '../buildKeylessAccount'
 import { migrateAlgo25Account } from '../migrateAlgo25Account'
 import { migrateHdAccount } from '../migrateHdAccount'
-import type { MigrateAccountArgs } from '../types'
+import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
 
 const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
     ({

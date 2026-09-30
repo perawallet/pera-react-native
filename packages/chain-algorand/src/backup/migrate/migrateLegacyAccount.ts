@@ -13,7 +13,7 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { logger, truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
-import { addKeylessAccountToStore } from './accountStoreOps'
+import { addKeylessAccountToStore } from '@perawallet/wallet-core-migrate'
 import {
     buildLedgerAccount,
     buildMultiSigAccount,
@@ -22,7 +22,7 @@ import {
 import { describeBytes } from './legacyKeyConversion'
 import { migrateAlgo25Account } from './migrateAlgo25Account'
 import { migrateHdAccount } from './migrateHdAccount'
-import type { MigrateAccountArgs } from './types'
+import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
 
 export const migrateLegacyAccount = async (
     args: MigrateAccountArgs,

@@ -42,7 +42,6 @@
     "zustand": "catalog:"
   },
   "devDependencies": {
-    "@perawallet/wallet-core-chain-algorand": "workspace:*",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@types/react": "catalog:",
     "@types/node": "catalog:",

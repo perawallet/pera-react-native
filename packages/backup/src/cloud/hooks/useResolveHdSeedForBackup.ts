@@ -11,22 +11,16 @@
  */
 
 import { useCallback } from 'react'
-import {
-    deriveHdAccount,
-    type HDWalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { HDWalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     BACKUP_ACCESS_DOMAIN,
     indicesToEntropy,
+    kmsCore,
     useKMS,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import {
-    bytesToHex,
-    logger,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
+import { backupAdapterFor, backupSeedReference } from '../../chain-adapter'
 import type { SerializeHdResolver } from '../sync/types'
 
 type KMS = ReturnType<typeof useKMS>
@@ -54,31 +48,20 @@ const readSeedHex = async (
         keyData.privateKey ? bytesToHex(keyData.privateKey) : '',
     )
 
-const deriveKeys = async (
-    network: Network,
-    seedKeyId: string,
-    hdWalletDetails: HDWalletAccount['hdWalletDetails'],
-) => ({
-    first: await deriveHdAccount(network, seedKeyId, {
-        account: 0,
-        keyIndex: 0,
-    }),
-    child: await deriveHdAccount(network, seedKeyId, hdWalletDetails),
-})
-
 /** Resolves null when the seed is unavailable, which skips that account.
- *  `seedHex`/`entropyHex` are hex; the first-derived address is acc0/idx0/Peikert. */
+ *  `seedHex`/`entropyHex` are hex; `seedFirstDerivedAddress` is the chain's seed reference. */
 export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
     const { seedIdOf, withExportedKey, executeWithMnemonic } = useKMS()
-    const { network } = useNetwork()
 
     return useCallback<SerializeHdResolver>(
         async (account: HDWalletAccount) => {
             const seedKeyId = seedIdOf(account.keyPairId)
             if (!seedKeyId) return null
             try {
-                const derived = await deriveKeys(
-                    network,
+                const seedFirstDerivedAddress =
+                    await backupSeedReference(seedKeyId)
+                const child = await backupAdapterFor().deriveHdAccount(
+                    kmsCore,
                     seedKeyId,
                     account.hdWalletDetails,
                 )
@@ -91,8 +74,8 @@ export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
                 if (!seedHex) return null
 
                 return {
-                    seedFirstDerivedAddress: derived.first.address,
-                    publicKeyHex: bytesToHex(derived.child.publicKey),
+                    seedFirstDerivedAddress,
+                    publicKeyHex: bytesToHex(child.publicKey),
                     seedHex,
                     entropyHex,
                 }
@@ -104,6 +87,6 @@ export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
                 return null
             }
         },
-        [seedIdOf, network, withExportedKey, executeWithMnemonic],
+        [seedIdOf, withExportedKey, executeWithMnemonic],
     )
 }

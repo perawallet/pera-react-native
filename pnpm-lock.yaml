@@ -2092,15 +2092,15 @@ importers:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
+      '@scure/base':
+        specifier: 'catalog:'
+        version: 2.4.0
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/react':
         specifier: ~19.2.14
         version: 19.2.17
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -2420,6 +2420,9 @@ importers:
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
+      '@perawallet/wallet-core-backup':
+        specifier: workspace:*
+        version: link:../backup
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
@@ -2444,6 +2447,9 @@ importers:
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
+      '@perawallet/wallet-core-migrate':
+        specifier: workspace:*
+        version: link:../migrate
       '@perawallet/wallet-core-multisig':
         specifier: workspace:*
         version: link:../multisig
@@ -2471,6 +2477,9 @@ importers:
       '@perawallet/wallet-extension-ledger-shared':
         specifier: workspace:*
         version: link:../../extensions/ledger-shared
+      '@perawallet/wallet-extension-platform':
+        specifier: workspace:*
+        version: link:../../extensions/platform
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
@@ -2496,9 +2505,15 @@ importers:
       '@algorandfoundation/algokit-client-generator':
         specifier: 6.0.1
         version: 6.0.1(@algorandfoundation/algokit-utils@9.2.2(algosdk@3.7.0))(algosdk@3.7.0)
+      '@algorandfoundation/react-native-keystore':
+        specifier: 1.0.0-canary.20
+        version: 1.0.0-canary.20(685e4e97f63a794b035dd4d23667524b)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
+      '@perawallet/wallet-core-walletconnect':
+        specifier: workspace:*
+        version: link:../walletconnect
       '@scure/bip39':
         specifier: 'catalog:'
         version: 2.2.0
@@ -3308,9 +3323,6 @@ importers:
       '@types/react':
         specifier: ~19.2.14
         version: 19.2.17
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       react-dom:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
@@ -4229,9 +4241,6 @@ importers:
         specifier: 'catalog:'
         version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.7.0(react@19.2.3))
     devDependencies:
-      '@perawallet/wallet-core-chain-algorand':
-        specifier: workspace:*
-        version: link:../chain-algorand
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools

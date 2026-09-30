@@ -12,23 +12,21 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useListPasskeysForBackup } from '../useListPasskeysForBackup'
 import { useProvenPasskeysStore } from '@perawallet/wallet-core-backup'
+import { useListPasskeysForBackup } from '../useListPasskeysForBackup'
 
 const keystoreKeys = vi.fn().mockReturnValue([])
 const inputsFor = vi.fn()
-const deriveHdAccountMock = vi.fn()
+const backupSeedReferenceMock = vi.fn<(seedKeyId: string) => Promise<string>>()
 const entropyChildIdOfMock = vi.fn<() => string | undefined>()
 const withSecretMock = vi.fn<() => Promise<Uint8Array | null>>()
 const zeroBytesMock = vi.fn<(secret: Uint8Array) => void>()
 const canAccessMock = vi.fn<(key: unknown, domain: string) => boolean>()
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    deriveHdAccount: (...args: unknown[]) => deriveHdAccountMock(...args),
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    backupSeedReference: (seedKeyId: string) =>
+        backupSeedReferenceMock(seedKeyId),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -50,7 +48,7 @@ vi.mock('@perawallet/wallet-core-passkeys', () => ({
 describe('useListPasskeysForBackup', () => {
     beforeEach(() => {
         act(() => useProvenPasskeysStore.getState().resetState())
-        deriveHdAccountMock.mockReset().mockResolvedValue({ address: 'ADDR-9' })
+        backupSeedReferenceMock.mockReset().mockResolvedValue('SEED-REF')
         inputsFor.mockReset()
         entropyChildIdOfMock.mockReset().mockReturnValue(undefined)
         withSecretMock.mockReset().mockResolvedValue(null)
@@ -94,11 +92,8 @@ describe('useListPasskeysForBackup', () => {
         const { result } = renderHook(() => useListPasskeysForBackup())
         const [passkey] = await result.current()
 
-        expect(deriveHdAccountMock).toHaveBeenCalledWith('mainnet', 'seed-1', {
-            account: 0,
-            keyIndex: 0,
-        })
-        expect(passkey.seedAddress).toBe('ADDR-9')
+        expect(backupSeedReferenceMock).toHaveBeenCalledWith('seed-1')
+        expect(passkey.seedAddress).toBe('SEED-REF')
         expect('seedKeyId' in passkey).toBe(false)
     })
 

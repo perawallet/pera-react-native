@@ -15,7 +15,10 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { AsbAccountKind, type AsbBackupAccount } from '../../models'
+import {
+    AsbAccountKind,
+    type AsbBackupAccount,
+} from '@perawallet/wallet-core-backup'
 import { partitionImportableAccounts } from '../partition-importable-accounts'
 
 const validAddressA =

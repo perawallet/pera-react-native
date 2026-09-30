@@ -20,7 +20,7 @@ import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import { migrateAlgo25Account } from '../migrateAlgo25Account'
 import { algo25SecretKeyToIndices } from '../legacyKeyConversion'
-import type { MigrateAccountArgs } from '../types'
+import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
 
 const buildLegacyAccount = (
     overrides: Partial<LegacyAccount> = {},

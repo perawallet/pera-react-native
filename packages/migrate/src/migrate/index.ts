@@ -15,7 +15,13 @@ export {
     type MigrationRunResult,
     type MigrationRunIncompleteReason,
 } from './runMigration'
-export type { MigrationDeps, MigrationResult } from './types'
+export type {
+    ImportedHdRoot,
+    MigrateAccountArgs,
+    MigrationDeps,
+    MigrationResult,
+} from './types'
+export { addKeylessAccountToStore } from './accountStoreOps'
 export {
     ALL_MIGRATION_STEPS,
     MIGRATION_STEP_TARGET_VERSIONS,

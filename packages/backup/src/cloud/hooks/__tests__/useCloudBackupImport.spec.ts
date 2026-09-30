@@ -26,9 +26,10 @@ const {
     persistHDMasterKeyMock,
     seedKeysState,
     hasSeedWithEntropyMock,
+    seedReferenceMock,
     deriveHdAccountMock,
     deriveMultisigAddressMock,
-    isValidAlgorandAddressMock,
+    isValidAddressMock,
     callOrder,
     DuplicateAccountError,
     MOCK_WORDLIST,
@@ -48,9 +49,10 @@ const {
         // The keystore's seed keys, as `useKMS().keys` exposes them.
         seedKeysState: { value: new Map<string, unknown>() },
         hasSeedWithEntropyMock: vi.fn(() => false),
+        seedReferenceMock: vi.fn(),
         deriveHdAccountMock: vi.fn(),
         deriveMultisigAddressMock: vi.fn(),
-        isValidAlgorandAddressMock: vi.fn(() => true),
+        isValidAddressMock: vi.fn((_address?: string) => true),
         callOrder: [] as string[],
         DuplicateAccountError,
         MOCK_WORDLIST: [
@@ -95,11 +97,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    isValidAlgorandAddress: isValidAlgorandAddressMock,
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     multisigChainAdapters: {
         get: () => ({ deriveAddress: deriveMultisigAddressMock }),
@@ -107,6 +104,7 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
+    kmsCore: {},
     hexToBytes: (hex: string) => new Uint8Array(hex.length / 2),
     // Mirrors the real null-on-unknown-word contract, so the fixtures below
     // exercise both the happy path and the reject path.
@@ -134,6 +132,12 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 }))
 
 // Imported after mocks are registered.
+import {
+    ChainAdapterNotRegisteredError,
+    addressCodecs,
+} from '@perawallet/wallet-core-chain-contract'
+import { backupChainAdapters } from '../../../chain-adapter'
+import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { useCloudBackupImport } from '../useCloudBackupImport'
 
 // --- helpers ---------------------------------------------------------------
@@ -185,7 +189,35 @@ beforeEach(() => {
     submittedIndices = null
     seedKeysState.value = new Map()
     hasSeedWithEntropyMock.mockReturnValue(false)
-    isValidAlgorandAddressMock.mockReturnValue(true)
+    isValidAddressMock.mockReturnValue(true)
+    addressCodecs.reset()
+    addressCodecs.register({
+        chainId: 'algorand',
+        isValid: isValidAddressMock,
+    } as never)
+    // The first-derived (acc0/idx0) child is the seed's own reference.
+    seedReferenceMock.mockImplementation(async () => 'FIRST')
+    deriveHdAccountMock.mockImplementation(
+        async (
+            _kms: unknown,
+            seedKeyId: string,
+            { account, keyIndex }: { account: number; keyIndex: number },
+        ) => ({
+            keyPairId: `derived-${seedKeyId}-${account}-${keyIndex}`,
+            publicKey: new Uint8Array([account, keyIndex]),
+            address:
+                account === 0 && keyIndex === 0
+                    ? 'FIRST'
+                    : `ADDR-${account}-${keyIndex}`,
+        }),
+    )
+    backupChainAdapters.reset()
+    backupChainAdapters.register(
+        fakeBackupAdapter({
+            seedReference: seedReferenceMock,
+            deriveHdAccount: deriveHdAccountMock,
+        }),
+    )
     // Default: each append to the store updates the live accounts list so
     // subsequent duplicate checks see prior writes.
     setAccountsMock.mockImplementation((next: { address: string }[]) => {
@@ -476,7 +508,7 @@ describe('useCloudBackupImport', () => {
 
     test('one failing account does not abort the batch and is recorded in failed', async () => {
         // First account is a watch account with an invalid address -> throws.
-        isValidAlgorandAddressMock.mockImplementation(
+        isValidAddressMock.mockImplementation(
             (addr?: string) => addr !== 'BAD_ADDR',
         )
         const { current } = renderImport()
@@ -502,20 +534,18 @@ describe('useCloudBackupImport', () => {
         persistHDMasterKeyMock.mockImplementation(async () => {
             callOrder.push('persistHDMasterKey')
         })
-        // Deriving also commits the child key, so track the derive calls to
+        // `deriveHdAccount` both derives AND persists the child key, so the
+        // importer no longer generates it separately. Track the derive calls to
         // assert the seed is persisted before the child derives.
-        deriveHdAccountMock.mockImplementation(
-            async (_network: string, seed: string, coords: HdCoordinates) => {
-                callOrder.push('deriveHdAccount')
-                return derivedAt(
-                    seed,
-                    coords,
-                    coords.account === 0 && coords.keyIndex === 0
-                        ? 'SEED_FIRST_DERIVED'
-                        : 'HD_KEY_ADDR',
-                )
-            },
-        )
+        seedReferenceMock.mockResolvedValue('SEED_FIRST_DERIVED')
+        deriveHdAccountMock.mockImplementation(async () => {
+            callOrder.push('deriveHdAccount')
+            return {
+                keyPairId: 'derived-key-id',
+                publicKey: new Uint8Array([1, 2, 3]),
+                address: 'HD_KEY_ADDR',
+            }
+        })
 
         const { current } = renderImport()
 
@@ -583,10 +613,6 @@ describe('useCloudBackupImport', () => {
     })
 
     test('persists the seed carried on the first hdWallet account, then imports all HD children', async () => {
-        deriveHdAccountMock.mockImplementation(
-            async (_network: string, seed: string, coords: HdCoordinates) =>
-                derivedAt(seed, coords),
-        )
         const { current } = renderImport()
 
         const summary = await current.importAccounts([
@@ -637,10 +663,6 @@ describe('useCloudBackupImport', () => {
         // derives to FIRST, which is what the backup names its seed secret by.
         seedKeysState.value = new Map([['held-seed', {}]])
         hasSeedWithEntropyMock.mockReturnValue(true)
-        deriveHdAccountMock.mockImplementation(
-            async (_network: string, seed: string, coords: HdCoordinates) =>
-                derivedAt(seed, coords),
-        )
         const { current } = renderImport()
 
         const summary = await current.importAccounts([
@@ -685,11 +707,15 @@ describe('useCloudBackupImport', () => {
         expect(persistHDMasterKeyMock).not.toHaveBeenCalled()
         // The restored children bind to the seed already in the keystore.
         expect(deriveHdAccountMock).toHaveBeenCalledWith(
-            'mainnet',
+            expect.anything(),
+            'held-seed',
+            expect.objectContaining({ account: 0, keyIndex: 0 }),
+        )
+        expect(deriveHdAccountMock).toHaveBeenCalledWith(
+            expect.anything(),
             'held-seed',
             expect.objectContaining({ account: 0, keyIndex: 1 }),
         )
-        expect(appendedKeyPairIds()).toContain('held-seed-acc0-idx1-dt9')
         expect(summary.imported).toBe(2)
         expect(summary.failed).toEqual([])
     })
@@ -697,14 +723,9 @@ describe('useCloudBackupImport', () => {
     test('imports the seed when the held seed derives to a different address', async () => {
         seedKeysState.value = new Map([['other-seed', {}]])
         hasSeedWithEntropyMock.mockReturnValue(true)
-        deriveHdAccountMock.mockImplementation(
-            async (_network: string, seed: string, coords: HdCoordinates) =>
-                // The held seed derives elsewhere; the restored one derives to FIRST.
-                derivedAt(
-                    seed,
-                    coords,
-                    seed === 'other-seed' ? 'OTHER' : undefined,
-                ),
+        // The held seed derives elsewhere; the restored one derives to FIRST.
+        seedReferenceMock.mockImplementation(async (_kms, seed: string) =>
+            seed === 'other-seed' ? 'OTHER' : 'FIRST',
         )
         const { current } = renderImport()
 
@@ -788,5 +809,18 @@ describe('useCloudBackupImport', () => {
         const firstFailures = summary.failed.filter(f => f.address === 'FIRST')
         expect(firstFailures).toHaveLength(1)
         expect(summary.imported).toBe(0)
+    })
+
+    test('with no backup adapter registered, rejects before any keystore or store write', async () => {
+        backupChainAdapters.reset()
+        const { current } = renderImport()
+
+        await expect(
+            current.importAccounts([watchAccount('WATCH_ADDR')]),
+        ).rejects.toThrow(ChainAdapterNotRegisteredError)
+
+        expect(persistHDMasterKeyMock).not.toHaveBeenCalled()
+        expect(importAccountMock).not.toHaveBeenCalled()
+        expect(setAccountsMock).not.toHaveBeenCalled()
     })
 })
