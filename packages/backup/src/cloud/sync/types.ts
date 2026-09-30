@@ -48,6 +48,21 @@ export class BackupSyncAbortedError extends Error {
     }
 }
 
+/** A push failed part-way. `state` records what did land, so the next sync
+ *  resends only the rest instead of conflicting on items the server already
+ *  versioned. */
+export class BackupPushIncompleteError extends Error {
+    constructor(
+        readonly state: SyncState,
+        error: unknown,
+    ) {
+        super(
+            `Backup push incomplete: ${error instanceof Error ? error.message : String(error)}`,
+        )
+        this.name = 'BackupPushIncompleteError'
+    }
+}
+
 /**
  * How far a review action got:
  *

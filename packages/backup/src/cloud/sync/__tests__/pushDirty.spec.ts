@@ -25,7 +25,7 @@ import { passkeyItemKey } from '../../models'
 import { buildLocalPasskeyItems } from '../buildLocalPasskeyItems'
 import { pushDirty } from '../pushDirty'
 import { reconcileSettings } from '../reconcileSettings'
-import { BackupSyncAbortedError } from '../types'
+import { BackupPushIncompleteError, BackupSyncAbortedError } from '../types'
 import type { LocalItem } from '../types'
 import { TEST_SETTINGS } from './testSettings'
 
@@ -53,7 +53,97 @@ const baseDeps = () => ({
     isAborted: () => false,
 })
 
+const dirtyState = (count: number) => {
+    const state = createEmptySyncState('b')
+    const localItems: LocalItem[] = []
+    for (let i = 0; i < count; i++) {
+        state.items[`accounts/${i}`] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 0,
+            baseVer: 0,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 1,
+        }
+        localItems.push(item(`accounts/${i}`, `ADDR${i}`))
+    }
+    return { state, localItems }
+}
+
+const acceptAll = async (
+    _network: unknown,
+    _backupId: unknown,
+    _deviceId: unknown,
+    request: { items: { key: string }[] },
+) => ({
+    results: request.items.map((entry, i) => ({
+        key: entry.key,
+        result: UpsertResult.OK,
+        new_ver: 1,
+        seq: i + 1,
+    })),
+})
+
 describe('pushDirty', () => {
+    it('uploads a large backlog in bounded batches', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockImplementation(acceptAll)
+        const { state, localItems } = dirtyState(60)
+
+        const next = await pushDirty({ state, localItems, deps })
+
+        const sizes = deps.batchUpsertItems.mock.calls.map(
+            call => (call[3] as { items: unknown[] }).items.length,
+        )
+        expect(sizes).toEqual([25, 25, 10])
+        expect(Object.values(next.items).every(i => !i.isDirty)).toBe(true)
+    })
+
+    it("holds the cursor below another device's write that landed between batches", async () => {
+        const deps = baseDeps()
+        // seq 26 went to another device between our two batches.
+        deps.batchUpsertItems
+            .mockImplementationOnce(acceptAll)
+            .mockImplementationOnce(
+                async (...args: Parameters<typeof acceptAll>) => {
+                    const response = await acceptAll(...args)
+                    return {
+                        results: response.results.map(r => ({
+                            ...r,
+                            seq: r.seq + 26,
+                        })),
+                    }
+                },
+            )
+        const { state, localItems } = dirtyState(30)
+
+        const next = await pushDirty({ state, localItems, deps })
+
+        expect(next.lastSyncedSeq).toBe(25)
+        expect(Object.values(next.items).every(i => !i.isDirty)).toBe(true)
+    })
+
+    it('carries the batches that landed when a later one fails', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems
+            .mockImplementationOnce(acceptAll)
+            .mockRejectedValueOnce(new Error('timeout'))
+        const { state, localItems } = dirtyState(60)
+
+        const error = await pushDirty({ state, localItems, deps }).catch(
+            (e: unknown) => e,
+        )
+
+        expect(error).toBeInstanceOf(BackupPushIncompleteError)
+        const partial = (error as BackupPushIncompleteError).state
+        const landed = Object.values(partial.items).filter(i => !i.isDirty)
+        expect(landed).toHaveLength(25)
+        expect(landed.every(i => i.baseVer === 1)).toBe(true)
+        expect(deps.batchUpsertItems).toHaveBeenCalledTimes(2)
+    })
+
     it('pushes dirty items and on OK clears dirty + advances ver/seq', async () => {
         const deps = baseDeps()
         deps.batchUpsertItems.mockResolvedValue({
@@ -66,7 +156,7 @@ describe('pushDirty', () => {
                 },
             ],
         })
-        const state = createEmptySyncState('b')
+        const state = { ...createEmptySyncState('b'), lastSyncedSeq: 50 }
         state.items['accounts/A'] = {
             type: BackupItemType.ACCOUNT,
             knownVer: 7,
