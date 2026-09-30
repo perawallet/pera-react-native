@@ -121,30 +121,34 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     }),
 }))
 
-// The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so
-// the real transactions package (whose api/history schema imports from the
-// mocked shared package) isn't loaded into this unit test's import graph.
-vi.mock('@perawallet/wallet-core-transactions', () => ({
-    useAssetOptInMutation: () => ({ optIn: vi.fn() }),
-}))
-
 const { mockOnlineKeyRegistration, mockOfflineKeyRegistration } = vi.hoisted(
     () => ({
-        mockOnlineKeyRegistration: vi.fn(async () => ({
+        mockOnlineKeyRegistration: vi.fn(async (_params?: unknown) => ({
             type: 'keyreg',
             mock: 'tx',
         })),
-        mockOfflineKeyRegistration: vi.fn(async () => ({
+        mockOfflineKeyRegistration: vi.fn(async (_params?: unknown) => ({
             type: 'keyreg-offline',
             mock: 'tx',
         })),
     }),
 )
 
+// The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so
+// the real transactions package isn't loaded into this unit test's import
+// graph. The keyreg handler builds through the chain adapter, so the mock
+// routes each keyreg kind to its builder spy.
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useAssetOptInMutation: () => ({ optIn: vi.fn() }),
+    buildKeyRegistrationTx: (params: { kind: string }) =>
+        params.kind === 'offline'
+            ? mockOfflineKeyRegistration(params)
+            : mockOnlineKeyRegistration(params),
+}))
+
 // Re-mocks only what useDeepLink consumes. Keeps `microAlgosToAlgos` /
 // `isValidAlgorandAddress` / `useNetwork` consistent with the global
-// vitest.setup.ts contract while overlaying useAlgorandClient with keyreg
-// builder mocks the keyreg deeplink test asserts against.
+// vitest.setup.ts contract.
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: (address: string) => {
         if (!address) return false
@@ -160,12 +164,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         networkConfig: { genesisId: 'mainnet-v1.0' },
     }),
     getExpectedGenesisHash: () => 'mainnet-hash',
-    useAlgorandClient: () => ({
-        createTransaction: {
-            onlineKeyRegistration: mockOnlineKeyRegistration,
-            offlineKeyRegistration: mockOfflineKeyRegistration,
-        },
-    }),
     // Identity encode/decode pair for the keyreg shape-normalization
     // step. Real impl encodes to msgpack bytes then decodes back to a
     // string-sender txn; the tests don't care about byte representation.
@@ -2006,9 +2004,7 @@ describe('useDeepLink', () => {
                 voteFirst: 1n,
                 voteLast: 1000n,
                 voteKeyDilution: 10n,
-                // staticFee is wrapped in algokit's AlgoAmount; just assert it
-                // was passed through (AlgoAmount.microAlgos === 1000n).
-                staticFee: expect.objectContaining({ microAlgos: 1000n }),
+                fee: 1000n,
             }),
         )
         expect(mockAddSignRequest).toHaveBeenCalledWith(

@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export * from './history'
 export * from './csv-export'

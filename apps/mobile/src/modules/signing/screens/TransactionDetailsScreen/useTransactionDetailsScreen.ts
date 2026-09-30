@@ -22,6 +22,7 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import {
     useTransactionDetailQuery,
     useGroupTransactionsQuery,
+    useNetwork,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'
@@ -75,6 +76,7 @@ export const useTransactionDetailsScreen =
         const { groupTransactions } = useGroupTransactionsQuery({ groupId })
 
         const { hasInternet } = useNetworkStatus()
+        const { network } = useNetwork()
 
         // The signing flow's in-memory object is authoritative (unsigned txns
         // have no on-chain id). The indexer fetch enriches the history row
@@ -83,9 +85,12 @@ export const useTransactionDetailsScreen =
         const localTransaction = useMemo(
             () =>
                 historyTransaction
-                    ? mapHistoryItemToDisplayableTransaction(historyTransaction)
+                    ? mapHistoryItemToDisplayableTransaction(
+                          historyTransaction,
+                          network,
+                      )
                     : null,
-            [historyTransaction],
+            [historyTransaction, network],
         )
         const transaction =
             paramTransaction ?? detailQuery.data ?? localTransaction ?? null

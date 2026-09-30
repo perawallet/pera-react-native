@@ -13,8 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ZodError } from 'zod'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { ALGORAND_CHAIN_ID } from '../../chain-id'
-import { algorandSendFlowAdapter } from '../adapter'
+import { algorandAssetInbox } from '../adapter'
 
 const mocks = vi.hoisted(() => ({
     createWalletAlgorandClient: vi.fn(),
@@ -45,19 +44,15 @@ const summary = {
     warning_message: null,
 }
 
-const inbox = algorandSendFlowAdapter.assetInbox!
+const inbox = algorandAssetInbox
 
-describe('algorandSendFlowAdapter', () => {
+describe('algorandAssetInbox', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.createWalletAlgorandClient.mockReturnValue(CLIENT)
         mocks.buildArc59SendViaInboxTxs.mockResolvedValue(TXNS)
         mocks.buildArc59ClaimTxs.mockResolvedValue(TXNS)
         mocks.buildArc59RejectTxs.mockResolvedValue(TXNS)
-    })
-
-    it('serves the Algorand chain', () => {
-        expect(algorandSendFlowAdapter.chainId).toBe(ALGORAND_CHAIN_ID)
     })
 
     it("builds an inbox send with the scope's wallet client", async () => {

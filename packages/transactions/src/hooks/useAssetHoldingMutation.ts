@@ -11,10 +11,11 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
-    useAlgorandClient,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     useMinimumFeeCalculator,
     useSignAndSubmitGroup,
@@ -26,16 +27,11 @@ import { mutationDefaults, toError } from '@perawallet/wallet-core-shared'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 
-type AlgorandClient = ReturnType<typeof useAlgorandClient>
-type GroupComposer = ReturnType<AlgorandClient['newGroup']>
-
 export type AssetHoldingMutationContext = {
-    algokit: AlgorandClient
+    scope: ChainScope
     network: Network
-    /** Composes a group and returns it with the sender's minimum fee applied. */
-    buildGroup: (
-        addTransactions: (composer: GroupComposer) => void,
-    ) => Promise<PeraTransaction[]>
+    /** Returns the built group with the sender's minimum fee applied. */
+    assignFees: (unsignedTxs: PeraTransaction[]) => Promise<PeraTransaction[]>
     submit: (unsignedTxs: PeraTransaction[]) => Promise<{ txIds: string[] }>
 }
 
@@ -61,15 +57,14 @@ export type UseAssetHoldingMutationResult<TParams> = {
 }
 
 /**
- * Shared flow for asset opt-in and opt-out: `run` validates, builds via
- * `buildGroup`, submits and reconciles the local DB; this hook then
- * invalidates the sender's account reads.
+ * Shared flow for asset opt-in and opt-out: `run` validates, builds through
+ * the chain adapter, applies `assignFees`, submits and reconciles the local
+ * DB; this hook then invalidates the sender's account reads.
  */
 export const useAssetHoldingMutation = <TParams>({
     source,
     run,
 }: UseAssetHoldingMutationOptions<TParams>): UseAssetHoldingMutationResult<TParams> => {
-    const algokit = useAlgorandClient()
     const { submit } = useSignAndSubmitGroup()
     const { assignFeeToGroup } = useMinimumFeeCalculator()
     const { network } = useNetwork()
@@ -84,22 +79,14 @@ export const useAssetHoldingMutation = <TParams>({
         mutationFn: async params => {
             try {
                 const { txIds, sender } = await run(params, {
-                    algokit,
+                    scope: scopeForLegacyNetwork(network),
                     network,
-                    buildGroup: async addTransactions => {
-                        const composer = algokit.newGroup()
-                        addTransactions(composer)
-                        const { transactions } = await composer.build()
-                        // AlgoKit sizes fees for an Ed25519 envelope; a Falcon
-                        // signer needs the PQ minimum or algod rejects the
-                        // whole group (`txgroup with 1mA fees is less than
-                        // 3mA`). Non-quantum senders pass through untouched.
-                        const { transactions: unsignedTxs } =
-                            await assignFeeToGroup({
-                                transactions: transactions.map(t => t.txn),
-                            })
-                        return unsignedTxs
-                    },
+                    // A Falcon signer needs the PQ minimum or algod rejects
+                    // the whole group (`txgroup with 1mA fees is less than
+                    // 3mA`). Non-quantum senders pass through untouched.
+                    assignFees: async unsignedTxs =>
+                        (await assignFeeToGroup({ transactions: unsignedTxs }))
+                            .transactions,
                     submit: unsignedTxs => submit({ unsignedTxs, source }),
                 })
                 // Not balances-only: account reads (holdings page, NFT

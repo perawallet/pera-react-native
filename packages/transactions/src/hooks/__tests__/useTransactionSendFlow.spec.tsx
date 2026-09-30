@@ -28,26 +28,14 @@ import {
     type SendFlowChainAdapter,
 } from '../../chain-adapter'
 
-// BigInt.prototype.microAlgo() (added by algokit-utils) returns an
-// AlgoAmount wrapper, not a raw bigint. Patch it to return the bigint itself
-// so staticFee/amount assertions below can compare against plain bigints —
-// mirrors useSubmitRekeyMutation.spec.ts.
-;(BigInt.prototype as unknown as { microAlgo: () => bigint }).microAlgo =
-    function () {
-        return this as unknown as bigint
-    }
-
 const mockSubmit = vi.fn()
 const mockBuildSendViaInbox = vi.fn()
 const mockBuildClaimAsset = vi.fn()
 const mockBuildRejectAsset = vi.fn()
 const mockAccountInformation = vi.fn()
 const mockGetSuggestedParams = vi.fn()
-const mockNewGroup = vi.fn()
-const mockBuild = vi.fn()
-const mockAddPayment = vi.fn()
-const mockAddAssetTransfer = vi.fn()
-const mockAddAssetOptIn = vi.fn()
+const mockBuildTransfer = vi.fn()
+const mockBuildExpress = vi.fn()
 const mockAddToAssetHolding = vi.fn()
 const mockIsAssetFrozen = vi.fn()
 const mockFetchAndPersistAssets = vi.fn()
@@ -70,6 +58,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 // these tests verify only that this hook wires the resolver's inputs
 // correctly and applies the override guard on its output.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    fetchAccountInformation: (...args: unknown[]) =>
+        mockAccountInformation(...args),
     addToAssetHolding: (...args: unknown[]) => mockAddToAssetHolding(...args),
     isAssetFrozen: (...args: unknown[]) => mockIsAssetFrozen(...args),
     useAccountBalancesInvalidator: () => ({
@@ -80,6 +70,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 const fakeSendFlowAdapter: SendFlowChainAdapter = {
     chainId: 'algorand',
+    buildTransferTxs: mockBuildTransfer,
+    express: { buildTxs: mockBuildExpress },
     assetInbox: {
         buildSendTxs: mockBuildSendViaInbox,
         buildClaimTxs: mockBuildClaimAsset,
@@ -88,24 +80,6 @@ const fakeSendFlowAdapter: SendFlowChainAdapter = {
 }
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => ({
-        client: {
-            algod: {
-                accountInformation: () => ({ do: mockAccountInformation }),
-            },
-        },
-        getSuggestedParams: mockGetSuggestedParams,
-        newGroup: () => {
-            const group = {
-                addPayment: mockAddPayment.mockReturnThis(),
-                addAssetTransfer: mockAddAssetTransfer.mockReturnThis(),
-                addAssetOptIn: mockAddAssetOptIn.mockReturnThis(),
-                build: mockBuild,
-            }
-            mockNewGroup(group)
-            return group
-        },
-    }),
     displayUnitsToBaseUnits: (val: Decimal, _decimals: number) => val,
     useNetwork: () => ({ network: 'mainnet' }),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
@@ -136,7 +110,8 @@ describe('useTransactionSendFlow', () => {
         // Default: nothing frozen. The guard reads holdings on every send.
         freezeHoldings()
         mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
-        mockBuild.mockResolvedValue({ transactions: [{ txn: TXN }] })
+        mockBuildTransfer.mockResolvedValue([TXN])
+        mockBuildExpress.mockResolvedValue([TXN])
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
         mockAccountInformation.mockResolvedValue({
             amount: 0n,
@@ -154,11 +129,11 @@ describe('useTransactionSendFlow', () => {
             assetMbr: 100000n,
         })
         // Default: no PQ signer — resolver returns the base fee, which must
-        // never force a staticFee override (regression-safe default).
+        // never be passed on as a fee override (regression-safe default).
         mockResolveMinFeeForSender.mockReturnValue(1000n)
     })
 
-    it('normal ALGO send: builds payment + submits via pipeline', async () => {
+    it('normal ALGO send: builds through the chain adapter + submits via pipeline', async () => {
         const { result } = renderHook(() => useTransactionSendFlow())
         await act(async () => {
             const id = await result.current.execute({
@@ -172,7 +147,16 @@ describe('useTransactionSendFlow', () => {
             })
             expect(id).toBe('tx1')
         })
-        expect(mockAddPayment).toHaveBeenCalled()
+        expect(mockBuildTransfer).toHaveBeenCalledWith({
+            scope: scopeForLegacyNetwork('mainnet'),
+            sender: 'A',
+            receiver: 'B',
+            assetId: '0',
+            amount: 1n,
+            note: undefined,
+            isCloseAccount: undefined,
+            fee: undefined,
+        })
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
@@ -184,7 +168,7 @@ describe('useTransactionSendFlow', () => {
         )
     })
 
-    it('normal ASA send: builds asset transfer + submits via pipeline', async () => {
+    it('normal ASA send: passes the asset id on + submits via pipeline', async () => {
         const { result } = renderHook(() => useTransactionSendFlow())
         await act(async () => {
             await result.current.execute({
@@ -192,12 +176,14 @@ describe('useTransactionSendFlow', () => {
                     sendMode: 'normal',
                     sender: { address: 'A' } as any,
                     receiver: 'B',
-                    asset: { assetId: 99n, decimals: 0 } as any,
+                    asset: { assetId: '99', decimals: 0 } as any,
                     amount: new Decimal(1),
                 },
             })
         })
-        expect(mockAddAssetTransfer).toHaveBeenCalled()
+        expect(mockBuildTransfer).toHaveBeenCalledWith(
+            expect.objectContaining({ assetId: '99' }),
+        )
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
@@ -209,7 +195,7 @@ describe('useTransactionSendFlow', () => {
         )
     })
 
-    it('express send: includes funding payment when receiver is underfunded', async () => {
+    it('express send: sizes the receiver funding from its account state', async () => {
         mockAccountInformation.mockResolvedValueOnce({
             amount: 0n,
             minBalance: 100000n,
@@ -221,14 +207,23 @@ describe('useTransactionSendFlow', () => {
                     sendMode: 'express',
                     sender: { address: 'A' } as any,
                     receiver: 'B',
-                    asset: { assetId: 99n, decimals: 0 } as any,
+                    asset: { assetId: '99', decimals: 0 } as any,
                     amount: new Decimal(1),
                 },
             })
         })
-        expect(mockAddPayment).toHaveBeenCalled()
-        expect(mockAddAssetOptIn).toHaveBeenCalled()
-        expect(mockAddAssetTransfer).toHaveBeenCalled()
+        expect(mockAccountInformation).toHaveBeenCalledWith('B', 'mainnet')
+        // mbrAfterOptIn (200000) + receiverFee (1000) - balance (0).
+        expect(mockBuildExpress).toHaveBeenCalledWith({
+            scope: scopeForLegacyNetwork('mainnet'),
+            sender: 'A',
+            receiver: 'B',
+            assetId: 99n,
+            amount: 1n,
+            funding: 201000n,
+            senderFee: undefined,
+            receiverFee: undefined,
+        })
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
@@ -241,7 +236,7 @@ describe('useTransactionSendFlow', () => {
     })
 
     describe('PQ-aware min fee overrides', () => {
-        it('normal ALGO send: quantum sender gets a staticFee override', async () => {
+        it('normal ALGO send: quantum sender gets a fee override', async () => {
             mockResolveMinFeeForSender.mockReturnValue(3000n)
             const { result } = renderHook(() => useTransactionSendFlow())
             await act(async () => {
@@ -255,8 +250,8 @@ describe('useTransactionSendFlow', () => {
                     },
                 })
             })
-            expect(mockAddPayment.mock.calls[0][0]).toMatchObject({
-                staticFee: 3000n,
+            expect(mockBuildTransfer.mock.calls[0][0]).toMatchObject({
+                fee: 3000n,
             })
             expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
                 senderAddress: 'A',
@@ -267,7 +262,7 @@ describe('useTransactionSendFlow', () => {
             })
         })
 
-        it('normal ALGO send: algo25 sender builds without a staticFee key (regression)', async () => {
+        it('normal ALGO send: algo25 sender passes no fee (regression)', async () => {
             // Default beforeEach resolves 1000n === suggestedMinFee.
             const { result } = renderHook(() => useTransactionSendFlow())
             await act(async () => {
@@ -281,12 +276,10 @@ describe('useTransactionSendFlow', () => {
                     },
                 })
             })
-            expect(mockAddPayment.mock.calls[0][0]).not.toHaveProperty(
-                'staticFee',
-            )
+            expect(mockBuildTransfer.mock.calls[0][0].fee).toBeUndefined()
         })
 
-        it('close-account send: quantum sender gets staticFee and close semantics are preserved', async () => {
+        it('close-account send: quantum sender gets a fee override and the close flag is preserved', async () => {
             mockResolveMinFeeForSender.mockReturnValue(3000n)
             const { result } = renderHook(() => useTransactionSendFlow())
             await act(async () => {
@@ -301,14 +294,13 @@ describe('useTransactionSendFlow', () => {
                     },
                 })
             })
-            expect(mockAddPayment.mock.calls[0][0]).toMatchObject({
-                staticFee: 3000n,
-                closeRemainderTo: 'B',
-                amount: 0n,
+            expect(mockBuildTransfer.mock.calls[0][0]).toMatchObject({
+                fee: 3000n,
+                isCloseAccount: true,
             })
         })
 
-        it('express send: quantum sender + external receiver — funding & transfer get staticFee, opt-in untouched', async () => {
+        it('express send: quantum sender + external receiver — only the sender fee is overridden', async () => {
             mockAccountInformation.mockResolvedValueOnce({
                 amount: 0n,
                 minBalance: 100000n,
@@ -324,23 +316,18 @@ describe('useTransactionSendFlow', () => {
                         sendMode: 'express',
                         sender: { address: 'A' } as any,
                         receiver: 'B',
-                        asset: { assetId: 99n, decimals: 0 } as any,
+                        asset: { assetId: '99', decimals: 0 } as any,
                         amount: new Decimal(1),
                     },
                 })
             })
             // Funding reserves the receiver's (base, non-quantum) fee:
             // mbrAfterOptIn (200000) + receiverFee (1000) = 201000.
-            expect(mockAddPayment.mock.calls[0][0]).toMatchObject({
-                amount: 201000n,
-                staticFee: 3000n,
+            expect(mockBuildExpress.mock.calls[0][0]).toMatchObject({
+                funding: 201000n,
+                senderFee: 3000n,
+                receiverFee: undefined,
             })
-            expect(mockAddAssetTransfer.mock.calls[0][0]).toMatchObject({
-                staticFee: 3000n,
-            })
-            expect(mockAddAssetOptIn.mock.calls[0][0]).not.toHaveProperty(
-                'staticFee',
-            )
             expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
                 senderAddress: 'B',
                 accounts: [],
@@ -350,7 +337,7 @@ describe('useTransactionSendFlow', () => {
             })
         })
 
-        it('express send: algo25 sender + quantum receiver — opt-in gets staticFee, funding & transfer stay at base rate', async () => {
+        it('express send: algo25 sender + quantum receiver — only the receiver fee is overridden', async () => {
             mockAccountInformation.mockResolvedValueOnce({
                 amount: 0n,
                 minBalance: 100000n,
@@ -366,24 +353,17 @@ describe('useTransactionSendFlow', () => {
                         sendMode: 'express',
                         sender: { address: 'A' } as any,
                         receiver: 'B',
-                        asset: { assetId: 99n, decimals: 0 } as any,
+                        asset: { assetId: '99', decimals: 0 } as any,
                         amount: new Decimal(1),
                     },
                 })
             })
             // Funding reserves the receiver's (quantum) fee:
             // mbrAfterOptIn (200000) + receiverFee (3000) = 203000.
-            expect(mockAddPayment.mock.calls[0][0]).toMatchObject({
-                amount: 203000n,
-            })
-            expect(mockAddPayment.mock.calls[0][0]).not.toHaveProperty(
-                'staticFee',
-            )
-            expect(mockAddAssetTransfer.mock.calls[0][0]).not.toHaveProperty(
-                'staticFee',
-            )
-            expect(mockAddAssetOptIn.mock.calls[0][0]).toMatchObject({
-                staticFee: 3000n,
+            expect(mockBuildExpress.mock.calls[0][0]).toMatchObject({
+                funding: 203000n,
+                senderFee: undefined,
+                receiverFee: 3000n,
             })
         })
 
@@ -400,23 +380,16 @@ describe('useTransactionSendFlow', () => {
                         sendMode: 'express',
                         sender: { address: 'A' } as any,
                         receiver: 'B',
-                        asset: { assetId: 99n, decimals: 0 } as any,
+                        asset: { assetId: '99', decimals: 0 } as any,
                         amount: new Decimal(1),
                     },
                 })
             })
-            expect(mockAddPayment.mock.calls[0][0]).toMatchObject({
-                amount: 201000n,
+            expect(mockBuildExpress.mock.calls[0][0]).toMatchObject({
+                funding: 201000n,
+                senderFee: undefined,
+                receiverFee: undefined,
             })
-            expect(mockAddPayment.mock.calls[0][0]).not.toHaveProperty(
-                'staticFee',
-            )
-            expect(mockAddAssetTransfer.mock.calls[0][0]).not.toHaveProperty(
-                'staticFee',
-            )
-            expect(mockAddAssetOptIn.mock.calls[0][0]).not.toHaveProperty(
-                'staticFee',
-            )
         })
 
         it('express send: MBR reservation follows the remote-config asset MBR', async () => {
@@ -439,13 +412,13 @@ describe('useTransactionSendFlow', () => {
                         sendMode: 'express',
                         sender: { address: 'A' } as any,
                         receiver: 'B',
-                        asset: { assetId: 99n, decimals: 0 } as any,
+                        asset: { assetId: '99', decimals: 0 } as any,
                         amount: new Decimal(1),
                     },
                 })
             })
-            expect(mockAddPayment.mock.calls[0][0]).toMatchObject({
-                amount: 301000n,
+            expect(mockBuildExpress.mock.calls[0][0]).toMatchObject({
+                funding: 301000n,
             })
         })
     })
@@ -458,7 +431,7 @@ describe('useTransactionSendFlow', () => {
                     sendMode: 'sendArc59',
                     sender: { address: 'A' } as any,
                     receiver: 'B',
-                    asset: { assetId: 99n, decimals: 0 } as any,
+                    asset: { assetId: '99', decimals: 0 } as any,
                     amount: new Decimal(1),
                     arc59Summary: {
                         algo_fund_amount: 0,
@@ -493,7 +466,7 @@ describe('useTransactionSendFlow', () => {
                     sendMode: 'sendArc59',
                     sender: { address: 'A' } as any,
                     receiver: 'B',
-                    asset: { assetId: 99n, decimals: 0 } as any,
+                    asset: { assetId: '99', decimals: 0 } as any,
                     amount: new Decimal(1),
                     arc59Summary: {
                         algo_fund_amount: 0,
@@ -523,7 +496,7 @@ describe('useTransactionSendFlow', () => {
                 params: {
                     sendMode: 'claimArc59',
                     sender: { address: 'A' } as any,
-                    asset: { assetId: 99n, decimals: 0 } as any,
+                    asset: { assetId: '99', decimals: 0 } as any,
                     shouldClaimAlgo: false,
                     inboxAddress: 'INBOX',
                 },
@@ -680,15 +653,17 @@ describe('useTransactionSendFlow', () => {
             })
         })
 
-        it('sends normally without any adapter registered', async () => {
+        it('refuses a normal send when no adapter is registered for the chain', async () => {
             sendFlowChainAdapters.reset()
             const { result } = renderHook(() => useTransactionSendFlow())
             await act(async () => {
-                await result.current.execute({
-                    params: { ...arc59Params, sendMode: 'normal' },
-                })
+                await expect(
+                    result.current.execute({
+                        params: { ...arc59Params, sendMode: 'normal' },
+                    }),
+                ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
             })
-            expect(mockSubmit).toHaveBeenCalled()
+            expect(mockSubmit).not.toHaveBeenCalled()
         })
 
         it('refuses an inbox send when no adapter is registered for the chain', async () => {
@@ -704,7 +679,10 @@ describe('useTransactionSendFlow', () => {
 
         it('refuses a claim when the chain has no asset inbox', async () => {
             sendFlowChainAdapters.reset()
-            sendFlowChainAdapters.register({ chainId: 'algorand' })
+            sendFlowChainAdapters.register({
+                chainId: 'algorand',
+                buildTransferTxs: mockBuildTransfer,
+            })
             const { result } = renderHook(() => useTransactionSendFlow())
             await act(async () => {
                 await expect(

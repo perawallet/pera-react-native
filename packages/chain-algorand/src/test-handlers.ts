@@ -14,3 +14,8 @@ export {
     mockFeeDelegation,
     type MockFeeDelegationParams,
 } from './fee-delegation/api/msw-handlers'
+
+export {
+    mockTransactionHistory,
+    type MockTransactionHistoryParams,
+} from './transactions/history/msw-handlers'

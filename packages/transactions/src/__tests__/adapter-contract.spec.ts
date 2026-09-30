@@ -19,6 +19,7 @@ const isQuote = (summary: unknown): boolean =>
 
 const adapter: SendFlowChainAdapter = {
     chainId: 'algorand',
+    buildTransferTxs: async () => [],
     assetInbox: {
         buildSendTxs: async ({ summary }) => {
             if (!isQuote(summary)) throw new Error('malformed quote')
@@ -40,4 +41,7 @@ sendFlowContractTests(() => adapter, {
         senderMinFee: 1000n,
     },
 })
-sendFlowContractTests(() => ({ chainId: 'algorand' }), {})
+sendFlowContractTests(
+    () => ({ chainId: 'algorand', buildTransferTxs: async () => [] }),
+    {},
+)

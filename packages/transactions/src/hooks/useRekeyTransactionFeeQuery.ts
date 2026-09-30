@@ -14,13 +14,13 @@ import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     microAlgosToAlgos,
-    useAlgorandClient,
     useMinimumFeeConfig,
     useNetwork,
     useSuggestedParametersQuery,
 } from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { resolveMinFeeForSender } from '@perawallet/wallet-core-signing'
-import { effectiveRekeyFee } from './effectiveRekeyFee'
+import { sendFlowFeatureFor } from '../chain-adapter'
 
 import type { Decimal } from 'decimal.js'
 
@@ -32,24 +32,21 @@ export type UseRekeyTransactionFeeQueryResult = {
 
 /**
  * Resolves the fee a rekey transaction will pay by building the actual
- * transaction and reading the fee AlgoKit sized for it
- * (`max(minFee, feePerByte × encodedSize)`). Building the real transaction —
- * rather than estimating from a byte-count constant — keeps the displayed
- * fee correct under network congestion and in lockstep with what
+ * transaction and reading the fee the chain sized for it. Building the real
+ * transaction, rather than estimating from a byte-count constant, keeps the
+ * displayed fee correct under network congestion and in lockstep with what
  * `useSubmitRekeyMutation` submits.
  *
  * The rekey transaction is signed by `sourceAddress`'s CURRENT auth account
  * (pre-rekey), so `resolveMinFeeForSender`'s `getSignerFor` resolution is the
  * correct fee basis — a sender currently rekeyed to a quantum auth pays the
- * PQ fee regardless of the rekey's direction. The result is never allowed to
- * fall below AlgoKit's auto-sized fee, and `resolveMinFeeForSender` owns the
+ * PQ fee regardless of the rekey's direction. `resolveMinFeeForSender` owns the
  * network-congestion guard (`max(suggestedMinFee, configMinTxnFee)`).
  */
 export const useRekeyTransactionFeeQuery = (
     sourceAddress: string,
     rekeyToAddress: string,
 ): UseRekeyTransactionFeeQueryResult => {
-    const algokit = useAlgorandClient()
     const { network } = useNetwork()
     const accounts = useAllAccounts()
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
@@ -81,22 +78,12 @@ export const useRekeyTransactionFeeQuery = (
             String(suggestedMinFee),
         ],
         queryFn: async () => {
-            const txn = await algokit.createTransaction.payment({
-                sender: sourceAddress,
-                receiver: sourceAddress,
-                amount: 0n.microAlgo(),
-                rekeyTo: rekeyToAddress,
-            })
-            // AlgoKit populates `fee` when it builds the transaction; fall
-            // back to the network minimum only to satisfy the optional type.
-            const builtFee = txn.fee ?? minTxnFee
             // The rekey txn is signed by `sourceAddress`'s CURRENT auth
             // account (pre-rekey) — resolveMinFeeForSender resolves the
             // effective signer via getSignerFor, so a sender currently
             // rekeyed to a quantum auth (e.g. mid undo-rekey) correctly pays
             // the PQ fee. The max(suggested, config) congestion guard also
-            // lives there. Never let the displayed fee fall below what
-            // useSubmitRekeyMutation will actually pay.
+            // lives there.
             const resolvedMinFee = resolveMinFeeForSender({
                 senderAddress: sourceAddress,
                 accounts,
@@ -104,9 +91,16 @@ export const useRekeyTransactionFeeQuery = (
                 configMinTxnFee: minTxnFee,
                 pqMultiplier,
             })
-            return microAlgosToAlgos(
-                effectiveRekeyFee(resolvedMinFee, builtFee),
-            )
+            // Built through the same adapter call the submit mutation uses,
+            // so the fee shown is the fee paid.
+            const scope = scopeForLegacyNetwork(network)
+            const txn = await sendFlowFeatureFor(scope, 'rekey').buildTx({
+                scope,
+                sourceAddress,
+                rekeyToAddress,
+                minFee: resolvedMinFee,
+            })
+            return microAlgosToAlgos(txn.fee ?? resolvedMinFee)
         },
         enabled:
             !!sourceAddress && !!rekeyToAddress && suggestedMinFee !== null,

@@ -15,16 +15,16 @@ import type {
     TransactionHistoryItemApiResponse,
     TransactionHistoryApiResponse,
 } from './schema'
-import type {
-    TransactionHistoryItem,
-    TransactionHistoryResult,
-    TransactionAssetSummary,
-    TransactionSwapGroupDetail,
-    TransactionInterpretedMeaning,
-    TransactionBalanceImpact,
-} from '../../models/types'
+import {
+    resolveAssetFacts,
+    type TransactionHistoryItem,
+    type TransactionHistoryResult,
+    type TransactionAssetSummary,
+    type TransactionSwapGroupDetail,
+    type TransactionInterpretedMeaning,
+    type TransactionBalanceImpact,
+} from '@perawallet/wallet-core-transactions'
 import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
-import { resolveAssetFacts } from '../../utils/algoAssetFacts'
 
 /**
  * Transforms a swap group detail from API response format to domain format,

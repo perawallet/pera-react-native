@@ -22,17 +22,24 @@ on:
             - 'packages/blockchain/**'
             - 'packages/signing/**'
             - 'packages/kms/**'
-            # `api/history/indexer/*` — the transformers and balance-impact
-            # arithmetic pinned by suites/history against real indexer output.
+            # The send-flow and history param types and page constants the
+            # chain-algorand builders and fetchers are written against.
             - 'packages/transactions/**'
-            # `hooks/endpoints`, `hooks/mappers`, `bip44`, `models/accounts` —
-            # every balance and auth-addr assertion in the suite reads the chain
-            # through this package's transformer.
+            # `models/accounts` and `signer-resolution`: the account shapes the
+            # harness mints and the effective-signer rule the app's signer and
+            # PQ fee resolver read.
             - 'packages/accounts/**'
-            # Aspirational: ARC-59 is out of scope today, so the suite doesn't
-            # import this one yet. Left in so the filter is ready once that
-            # coverage lands, rather than a mistake to prune.
+            # The send-flow builders, the history fetchers and transformers,
+            # and the account, bip44 and multisig code the harness derives with.
             - 'packages/chain-algorand/**'
+            # getChainConfig: how every builder and fetcher in the suite
+            # resolves its node.
+            - 'packages/config/**'
+            # The network store harness/scope.ts saves LocalNet into as the
+            # custom network.
+            - 'packages/chain-shared/**'
+            # ChainScope, which every builder and fetcher takes.
+            - 'packages/chain-contract/**'
 
 # Least-privilege default, matching ci-pre-merge.yml.
 permissions:

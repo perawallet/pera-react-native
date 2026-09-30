@@ -19,6 +19,7 @@ import {
     NonZeroBalanceError,
     CreatorCannotOptOutError,
 } from '../useAssetOptOutMutation'
+import { sendFlowChainAdapters } from '../../chain-adapter'
 
 const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: new QueryClient() }, children)
@@ -26,11 +27,6 @@ const wrapper = ({ children }: { children: ReactNode }) =>
 const mockSubmit = vi.fn()
 const mockAccountInformation = vi.fn()
 const mockBuild = vi.fn()
-const mockAddAssetTransfer = vi.fn()
-const mockNewGroup = vi.fn(() => ({
-    addAssetTransfer: mockAddAssetTransfer.mockReturnThis(),
-    build: mockBuild,
-}))
 const mockFetchIndexerAssetDetails = vi.fn()
 const mockDeleteAssetHoldings = vi.fn().mockResolvedValue(undefined)
 const mockInvalidate = vi.fn()
@@ -45,14 +41,6 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'testnet' }),
-    useAlgorandClient: () => ({
-        client: {
-            algod: {
-                accountInformation: () => ({ do: mockAccountInformation }),
-            },
-        },
-        newGroup: mockNewGroup,
-    }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -61,6 +49,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    fetchAccountInformation: (...args: unknown[]) =>
+        mockAccountInformation(...args),
     deleteAssetHoldings: (...args: unknown[]) =>
         mockDeleteAssetHoldings(...args),
     invalidateAccountQueriesForAddresses: (...args: unknown[]) =>
@@ -77,8 +67,15 @@ describe('useAssetOptOutMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockAccountInformation.mockResolvedValue(baseAccount)
-        mockBuild.mockResolvedValue({
-            transactions: [{ txn: { sender: 'SENDER' } }],
+        mockBuild.mockResolvedValue([{ sender: 'SENDER' }])
+        sendFlowChainAdapters.reset()
+        sendFlowChainAdapters.register({
+            chainId: 'algorand',
+            buildTransferTxs: vi.fn(),
+            assetHolding: {
+                buildOptInTxs: vi.fn(),
+                buildOptOutTxs: mockBuild,
+            },
         })
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
         // Default: the calculator passes the group through untouched, which is
@@ -108,15 +105,12 @@ describe('useAssetOptOutMutation', () => {
             expect(res.txIds).toEqual(['tx1'])
         })
 
-        expect(mockAddAssetTransfer).toHaveBeenCalledWith(
-            expect.objectContaining({
-                sender: 'SENDER',
-                receiver: 'SENDER',
-                assetId: 12345n,
-                amount: 0n,
-                closeAssetTo: 'CREATOR',
-            }),
-        )
+        expect(mockBuild).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+            optOuts: [
+                { sender: 'SENDER', assetId: 12345n, creator: 'CREATOR' },
+            ],
+        })
         expect(mockSubmit).toHaveBeenCalledWith({
             unsignedTxs: [{ sender: 'SENDER' }],
             source: {
@@ -138,12 +132,10 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('opts out of multiple assets in a single grouped pipeline request', async () => {
-        mockBuild.mockResolvedValueOnce({
-            transactions: [
-                { txn: { sender: 'SENDER' } },
-                { txn: { sender: 'SENDER' } },
-            ],
-        })
+        mockBuild.mockResolvedValueOnce([
+            { sender: 'SENDER' },
+            { sender: 'SENDER' },
+        ])
         mockSubmit.mockResolvedValueOnce({ txIds: ['tx1', 'tx2'] })
         mockAccountInformation.mockResolvedValueOnce({
             ...baseAccount,
@@ -165,7 +157,7 @@ describe('useAssetOptOutMutation', () => {
             expect(res.txIds).toEqual(['tx1', 'tx2'])
         })
 
-        expect(mockAddAssetTransfer).toHaveBeenCalledTimes(2)
+        expect(mockBuild).toHaveBeenCalledTimes(1)
         expect(mockSubmit).toHaveBeenCalledWith({
             unsignedTxs: [{ sender: 'SENDER' }, { sender: 'SENDER' }],
             source: {
@@ -187,7 +179,7 @@ describe('useAssetOptOutMutation', () => {
     it('submits the fee-raised group returned by the minimum-fee calculator', async () => {
         const built = { sender: 'SENDER', fee: 1000n }
         const raised = { sender: 'SENDER', fee: 3000n }
-        mockBuild.mockResolvedValueOnce({ transactions: [{ txn: built }] })
+        mockBuild.mockResolvedValueOnce([built])
         mockAssignFeeToGroup.mockResolvedValueOnce({
             transactions: [raised],
             adjustments: [
@@ -280,7 +272,7 @@ describe('useAssetOptOutMutation', () => {
             expect(res.txIds).toEqual([])
         })
 
-        expect(mockAddAssetTransfer).not.toHaveBeenCalled()
+        expect(mockBuild).not.toHaveBeenCalled()
         expect(mockSubmit).not.toHaveBeenCalled()
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
@@ -295,9 +287,7 @@ describe('useAssetOptOutMutation', () => {
             ...baseAccount,
             assets: [{ assetId: 12345n, amount: 0n }],
         })
-        mockBuild.mockResolvedValueOnce({
-            transactions: [{ txn: { sender: 'SENDER' } }],
-        })
+        mockBuild.mockResolvedValueOnce([{ sender: 'SENDER' }])
         mockSubmit.mockResolvedValueOnce({ txIds: ['tx1'] })
 
         const { result } = renderHook(() => useAssetOptOutMutation(), {
@@ -312,9 +302,10 @@ describe('useAssetOptOutMutation', () => {
             expect(res.txIds).toEqual(['tx1'])
         })
 
-        expect(mockAddAssetTransfer).toHaveBeenCalledTimes(1)
-        expect(mockAddAssetTransfer).toHaveBeenCalledWith(
-            expect.objectContaining({ assetId: 12345n }),
+        expect(mockBuild).toHaveBeenCalledWith(
+            expect.objectContaining({
+                optOuts: [{ sender: 'SENDER', assetId: 12345n, creator: 'C1' }],
+            }),
         )
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',

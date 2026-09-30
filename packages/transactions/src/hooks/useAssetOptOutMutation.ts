@@ -12,8 +12,12 @@
 
 import { useCallback } from 'react'
 import { fetchIndexerAssetDetails } from '@perawallet/wallet-core-assets'
-import { deleteAssetHoldings } from '@perawallet/wallet-core-accounts'
+import {
+    deleteAssetHoldings,
+    fetchAccountInformation,
+} from '@perawallet/wallet-core-accounts'
 import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
+import { sendFlowFeatureFor } from '../chain-adapter'
 import { useAssetHoldingMutation } from './useAssetHoldingMutation'
 
 import type {
@@ -88,17 +92,15 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
         AssetOptOutParams[]
     >({
         source: SOURCE,
-        run: async (rawList, { algokit, network, buildGroup, submit }) => {
+        run: async (rawList, { scope, network, assignFees, submit }) => {
             const paramsList = await Promise.all(
                 rawList.map(p => resolveCreator(p, network)),
             )
 
             const sender = paramsList[0].sender
 
-            const accountInfo = await algokit.client.algod
-                .accountInformation(sender)
-                .do()
-            const assets = accountInfo.assets ?? []
+            const accountInfo = await fetchAccountInformation(sender, network)
+            const assets = accountInfo.assets
 
             // Skip txn-building for assets the chain shows as already
             // gone (a prior opt-out already settled and the local UI
@@ -112,17 +114,12 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
 
             let txIds: string[] = []
             if (toSubmit.length > 0) {
-                const unsignedTxs = await buildGroup(composer => {
-                    for (const p of toSubmit) {
-                        composer.addAssetTransfer({
-                            sender: p.sender,
-                            receiver: p.sender,
-                            assetId: p.assetId,
-                            amount: 0n,
-                            closeAssetTo: p.creator,
-                        })
-                    }
-                })
+                const unsignedTxs = await assignFees(
+                    await sendFlowFeatureFor(
+                        scope,
+                        'assetHolding',
+                    ).buildOptOutTxs({ scope, optOuts: toSubmit }),
+                )
                 const result = await submit(unsignedTxs)
                 txIds = result.txIds
             }

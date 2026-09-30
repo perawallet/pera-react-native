@@ -18,18 +18,7 @@ import { Decimal } from 'decimal.js'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-// algokit-utils adds BigInt.prototype.microAlgo() at runtime; patch for tests.
-;(BigInt.prototype as unknown as { microAlgo: () => bigint }).microAlgo =
-    function () {
-        return this as unknown as bigint
-    }
-
-const mockPayment = vi.fn()
-const mockGetSuggestedParams = vi.fn()
-const mockAlgokit = {
-    createTransaction: { payment: mockPayment },
-    getSuggestedParams: mockGetSuggestedParams,
-}
+const mockBuildRekeyTx = vi.fn()
 const mockUseNetwork = vi.fn(() => ({ network: 'mainnet' }))
 const mockUseAllAccounts = vi.fn()
 const mockUseMinimumFeeConfig = vi.fn()
@@ -44,7 +33,6 @@ const mockResolveMinFeeForSender = vi.fn()
 // these tests verify only that this hook wires the resolver's inputs
 // correctly and applies the override guard on its output.
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => mockAlgokit,
     useNetwork: () => mockUseNetwork(),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
     useSuggestedParametersQuery: () => mockUseSuggestedParametersQuery(),
@@ -61,6 +49,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         mockResolveMinFeeForSender(...args),
 }))
 
+import { sendFlowChainAdapters } from '../../chain-adapter'
 import { useRekeyTransactionFeeQuery } from '../useRekeyTransactionFeeQuery'
 
 const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
@@ -99,7 +88,12 @@ const buildWrapper = () => {
 beforeEach(() => {
     vi.clearAllMocks()
     mockUseNetwork.mockReturnValue({ network: 'mainnet' })
-    mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
+    sendFlowChainAdapters.reset()
+    sendFlowChainAdapters.register({
+        chainId: 'algorand',
+        buildTransferTxs: vi.fn(),
+        rekey: { buildTx: mockBuildRekeyTx },
+    })
     mockUseSuggestedParametersQuery.mockReturnValue({
         data: { minFee: 1000n },
         isPending: false,
@@ -116,8 +110,8 @@ beforeEach(() => {
 
 describe('useRekeyTransactionFeeQuery', () => {
     it('resolves to feeAlgos derived from the built transaction fee', async () => {
-        // AlgoKit returned a 2000 microAlgo fee → 0.002 ALGO.
-        mockPayment.mockResolvedValueOnce({ fee: 2000n })
+        // The chain adapter returned a 2000 microAlgo fee → 0.002 ALGO.
+        mockBuildRekeyTx.mockResolvedValueOnce({ fee: 2000n })
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
@@ -129,17 +123,16 @@ describe('useRekeyTransactionFeeQuery', () => {
             expect(result.current.isPending).toBe(false)
         })
         expect(result.current.feeAlgos?.toString()).toBe('0.002')
-        expect(mockPayment).toHaveBeenCalledWith(
-            expect.objectContaining({
-                sender: 'SRC',
-                receiver: 'SRC',
-                rekeyTo: 'TGT',
-            }),
-        )
+        expect(mockBuildRekeyTx).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+            sourceAddress: 'SRC',
+            rekeyToAddress: 'TGT',
+            minFee: 1000n,
+        })
     })
 
-    it('reuses the shared suggested-params query instead of fetching its own', async () => {
-        mockPayment.mockResolvedValueOnce({ fee: 2000n })
+    it('feeds the shared suggested-params query into the fee resolver', async () => {
+        mockBuildRekeyTx.mockResolvedValueOnce({ fee: 2000n })
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
@@ -148,7 +141,6 @@ describe('useRekeyTransactionFeeQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect(mockGetSuggestedParams).not.toHaveBeenCalled()
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
             expect.objectContaining({ suggestedMinFee: 1000n }),
         )
@@ -167,7 +159,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         )
 
         expect(result.current.isPending).toBe(true)
-        expect(mockPayment).not.toHaveBeenCalled()
+        expect(mockBuildRekeyTx).not.toHaveBeenCalled()
     })
 
     it('falls back to the config min fee when the shared params query errors', async () => {
@@ -179,7 +171,7 @@ describe('useRekeyTransactionFeeQuery', () => {
             isPending: false,
             isError: true,
         })
-        mockPayment.mockResolvedValueOnce({ fee: 2000n })
+        mockBuildRekeyTx.mockResolvedValueOnce({ fee: 2000n })
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
@@ -194,10 +186,9 @@ describe('useRekeyTransactionFeeQuery', () => {
         )
     })
 
-    it('falls back to the config min fee when the built transaction has no fee', async () => {
-        // AlgoKit may leave `fee` undefined in some constructs; the optional
-        // chain falls back to the network minimum (1000 microAlgo → 0.001 ALGO).
-        mockPayment.mockResolvedValueOnce({ fee: undefined })
+    it('falls back to the resolved minimum fee when the built transaction has no fee', async () => {
+        // Some constructs leave `fee` undefined (1000 microAlgo → 0.001 ALGO).
+        mockBuildRekeyTx.mockResolvedValueOnce({ fee: undefined })
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
@@ -211,16 +202,15 @@ describe('useRekeyTransactionFeeQuery', () => {
         expect(result.current.feeAlgos?.toString()).toBe('0.001')
     })
 
-    it('uses the remote-config min fee as the built-txn fallback (follows remote config)', async () => {
-        // Non-default config: 2000 µAlgo. With txn.fee undefined the built-fee
-        // fallback comes from config; the resolver (base 1000n ≤ config) must
-        // not eclipse it, so the displayed fee is 0.002 ALGO.
+    it('follows the resolved minimum fee when the built transaction has no fee', async () => {
+        // Non-default config: the resolver floors at the 2000 µAlgo config
+        // minimum, so the displayed fee is 0.002 ALGO.
         mockUseMinimumFeeConfig.mockReturnValue({
             minTxnFee: 2000n,
             pqMultiplier: 3n,
         })
-        mockResolveMinFeeForSender.mockReturnValue(1000n)
-        mockPayment.mockResolvedValueOnce({ fee: undefined })
+        mockResolveMinFeeForSender.mockReturnValue(2000n)
+        mockBuildRekeyTx.mockResolvedValueOnce({ fee: undefined })
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
@@ -240,7 +230,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         )
 
         // No fetch should have been queued.
-        expect(mockPayment).not.toHaveBeenCalled()
+        expect(mockBuildRekeyTx).not.toHaveBeenCalled()
         expect(result.current.feeAlgos).toBeUndefined()
     })
 
@@ -251,14 +241,14 @@ describe('useRekeyTransactionFeeQuery', () => {
             { wrapper },
         )
 
-        expect(mockPayment).not.toHaveBeenCalled()
+        expect(mockBuildRekeyTx).not.toHaveBeenCalled()
         expect(result.current.feeAlgos).toBeUndefined()
     })
 
     it('caches per network — a mainnet fee does not satisfy a testnet query', async () => {
         // Same QueryClient across both renders — but the network change should
         // produce a fresh fetch because network is part of the query key.
-        mockPayment
+        mockBuildRekeyTx
             .mockResolvedValueOnce({ fee: 1000n })
             .mockResolvedValueOnce({ fee: 5000n })
         const { wrapper } = buildWrapper()
@@ -277,16 +267,15 @@ describe('useRekeyTransactionFeeQuery', () => {
         )
         await waitFor(() => expect(testnet.current.isPending).toBe(false))
         expect(testnet.current.feeAlgos?.toString()).toBe('0.005')
-        expect(mockPayment).toHaveBeenCalledTimes(2)
+        expect(mockBuildRekeyTx).toHaveBeenCalledTimes(2)
     })
 
-    it('overrides a lower built fee with the PQ-resolved fee for a quantum sender', async () => {
+    it('builds with the PQ-resolved minimum fee for a quantum sender', async () => {
         const accounts = [quantum({ address: 'SRC' })]
         mockUseAllAccounts.mockReturnValue(accounts)
-        // resolveMinFeeForSender (1000n base * 3n multiplier = 3000n) exceeds
-        // AlgoKit's auto-sized built fee and must win.
+        // resolveMinFeeForSender: 1000n base * 3n multiplier = 3000n.
         mockResolveMinFeeForSender.mockReturnValue(3000n)
-        mockPayment.mockResolvedValueOnce({ fee: 1000n })
+        mockBuildRekeyTx.mockResolvedValueOnce({ fee: 3000n })
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
@@ -296,6 +285,9 @@ describe('useRekeyTransactionFeeQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.feeAlgos?.toString()).toBe('0.003')
+        expect(mockBuildRekeyTx).toHaveBeenCalledWith(
+            expect.objectContaining({ minFee: 3000n }),
+        )
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
             senderAddress: 'SRC',
             accounts,
@@ -308,7 +300,7 @@ describe('useRekeyTransactionFeeQuery', () => {
     it('regression: resolves the built txn fee unchanged for an algo25 sender', async () => {
         mockUseAllAccounts.mockReturnValue([algo25()])
         mockResolveMinFeeForSender.mockReturnValue(1000n)
-        mockPayment.mockResolvedValueOnce({ fee: 2000n })
+        mockBuildRekeyTx.mockResolvedValueOnce({ fee: 2000n })
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
@@ -331,7 +323,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         ]
         mockUseAllAccounts.mockReturnValue(accounts)
         mockResolveMinFeeForSender.mockReturnValue(3000n)
-        mockPayment.mockResolvedValueOnce({ fee: 1000n })
+        mockBuildRekeyTx.mockResolvedValueOnce({ fee: 3000n })
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(

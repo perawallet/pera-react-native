@@ -49,12 +49,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     // valid vs invalid sender discrimination in this hook.
     isValidAlgorandAddress: (address: string) =>
         typeof address === 'string' && /^[A-Z2-7]{58}$/.test(address),
-    useAlgorandClient: () => ({
-        createTransaction: {
-            onlineKeyRegistration: mockOnlineKeyRegistration,
-            offlineKeyRegistration: mockOfflineKeyRegistration,
-        },
-    }),
     useTransactionEncoder: () => ({
         encodeTransaction: mockEncodeTransaction,
         decodeTransaction: mockDecodeTransaction,
@@ -90,11 +84,11 @@ vi.mock('../useDeeplinkErrorHandler', () => ({
     useDeeplinkErrorHandler: () => mockShowError,
 }))
 
-// algokit's microAlgo helper returns an `AlgoAmount`; the hook passes it
-// straight to createTransaction so the unit test only needs to forward the
-// number it was constructed with.
-vi.mock('@algorandfoundation/algokit-utils', () => ({
-    microAlgo: (n: bigint) => ({ microAlgos: n }),
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    buildKeyRegistrationTx: (params: { kind: string }) =>
+        params.kind === 'offline'
+            ? mockOfflineKeyRegistration(params)
+            : mockOnlineKeyRegistration(params),
 }))
 
 import { useKeyregDeeplink } from '../useKeyregDeeplink'
@@ -356,8 +350,10 @@ describe('useKeyregDeeplink', () => {
 
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
+                    kind: 'offline',
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
                     sender: VALID_ADDRESS,
-                    staticFee: { microAlgos: 2000n },
+                    fee: 2000n,
                 }),
             )
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
@@ -372,7 +368,7 @@ describe('useKeyregDeeplink', () => {
             expect(mockShowError).not.toHaveBeenCalled()
         })
 
-        it('builds an online keyreg with every participation field forwarded to algokit', async () => {
+        it('builds an online keyreg with every participation field forwarded to the chain adapter', async () => {
             seedSenderInWallet()
 
             const { result } = renderHook(() => useKeyregDeeplink())
@@ -389,6 +385,7 @@ describe('useKeyregDeeplink', () => {
 
             expect(mockOnlineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
+                    kind: 'online',
                     sender: VALID_ADDRESS,
                     voteFirst: 1300n,
                     voteLast: 11_300n,
@@ -461,7 +458,7 @@ describe('useKeyregDeeplink', () => {
             // The dApp fee reaches the builder untouched; the raise happens
             // after build, on the normalized txn.
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ staticFee: { microAlgos: 1000n } }),
+                expect.objectContaining({ fee: 1000n }),
             )
             expect(mockAssignFeeToGroup).toHaveBeenCalledExactlyOnceWith({
                 transactions: [{ kind: 'offline-tx' }],
@@ -492,7 +489,7 @@ describe('useKeyregDeeplink', () => {
             })
 
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ staticFee: undefined }),
+                expect.objectContaining({ fee: undefined }),
             )
             // The raised txn is still what gets signed…
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
@@ -514,7 +511,7 @@ describe('useKeyregDeeplink', () => {
             })
 
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ staticFee: { microAlgos: 1000n } }),
+                expect.objectContaining({ fee: 1000n }),
             )
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
@@ -524,7 +521,7 @@ describe('useKeyregDeeplink', () => {
             )
         })
 
-        it('leaves staticFee undefined for a non-quantum sender with no dApp fee', async () => {
+        it('leaves the fee undefined for a non-quantum sender with no dApp fee', async () => {
             seedSenderInWallet()
 
             const { result } = renderHook(() => useKeyregDeeplink())
@@ -534,17 +531,17 @@ describe('useKeyregDeeplink', () => {
             })
 
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ staticFee: undefined }),
+                expect.objectContaining({ fee: undefined }),
             )
         })
     })
 
     describe('build failures', () => {
         it('surfaces a build error through the error sheet with the "keyreg" variant', async () => {
-            // algokit's createTransaction can fail for many reasons (algod
-            // unreachable, suggestedParams 500, decoder threw, …). The hook
-            // is supposed to catch the whole pipeline and route to the
-            // error sheet rather than crashing the dispatcher.
+            // Building can fail for many reasons (algod unreachable,
+            // suggestedParams 500, decoder threw, …). The hook is supposed to
+            // catch the whole pipeline and route to the error sheet rather
+            // than crashing the dispatcher.
             seedSenderInWallet()
             const buildErr = new Error('algod refused to compute params')
             mockOfflineKeyRegistration.mockRejectedValueOnce(buildErr)

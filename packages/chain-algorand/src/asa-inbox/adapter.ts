@@ -11,8 +11,7 @@
  */
 
 import { createWalletAlgorandClient } from '@perawallet/wallet-core-blockchain'
-import type { SendFlowChainAdapter } from '@perawallet/wallet-core-transactions'
-import { ALGORAND_CHAIN_ID } from '../chain-id'
+import type { AssetInboxSendFlow } from '@perawallet/wallet-core-transactions'
 import { algorandNetworkOf } from '../legacy-network'
 import { arc59SendSummaryResponseSchema } from './api'
 import {
@@ -23,34 +22,31 @@ import {
 
 // Built per call so a custom-network edit is picked up, as useAlgorandClient's
 // memo does.
-export const algorandSendFlowAdapter: SendFlowChainAdapter = {
-    chainId: ALGORAND_CHAIN_ID,
-    assetInbox: {
-        buildSendTxs: async ({ scope, summary, ...params }) => {
-            const network = algorandNetworkOf(scope)
-            return buildArc59SendViaInboxTxs(
-                { algokit: createWalletAlgorandClient(network), network },
-                {
-                    ...params,
-                    // Re-validated here because the send flow carries the
-                    // summary opaquely and it decides a headlessly signed payment.
-                    summary: arc59SendSummaryResponseSchema.parse(summary),
-                },
-            )
-        },
-        buildClaimTxs: ({ scope, ...params }) => {
-            const network = algorandNetworkOf(scope)
-            return buildArc59ClaimTxs(
-                { algokit: createWalletAlgorandClient(network), network },
-                params,
-            )
-        },
-        buildRejectTxs: ({ scope, ...params }) => {
-            const network = algorandNetworkOf(scope)
-            return buildArc59RejectTxs(
-                { algokit: createWalletAlgorandClient(network), network },
-                params,
-            )
-        },
+export const algorandAssetInbox: AssetInboxSendFlow = {
+    buildSendTxs: async ({ scope, summary, ...params }) => {
+        const network = algorandNetworkOf(scope)
+        return buildArc59SendViaInboxTxs(
+            { algokit: createWalletAlgorandClient(network), network },
+            {
+                ...params,
+                // Re-validated here because the send flow carries the
+                // summary opaquely and it decides a headlessly signed payment.
+                summary: arc59SendSummaryResponseSchema.parse(summary),
+            },
+        )
+    },
+    buildClaimTxs: ({ scope, ...params }) => {
+        const network = algorandNetworkOf(scope)
+        return buildArc59ClaimTxs(
+            { algokit: createWalletAlgorandClient(network), network },
+            params,
+        )
+    },
+    buildRejectTxs: ({ scope, ...params }) => {
+        const network = algorandNetworkOf(scope)
+        return buildArc59RejectTxs(
+            { algokit: createWalletAlgorandClient(network), network },
+            params,
+        )
     },
 }

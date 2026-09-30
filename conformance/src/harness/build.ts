@@ -58,10 +58,11 @@ const buildClient = (): AlgorandClient => {
 }
 
 /**
- * Builds an unsigned group by making the same `newGroup().addX(...)` composer
- * calls the app's send hooks make, which is as close to the app's builders as
- * headless code can get: every builder in `packages/transactions` is a React
- * hook with no pure entry point.
+ * Builds an unsigned group from raw composer calls, for the transactions no app
+ * builder produces: asset creation, pinned fees, negative cases. A shape the
+ * app does build (transfers, opt-in/out, rekey, key registration, express send)
+ * goes through the builders in `chain-algorand/src/transactions/builders.ts`
+ * with `localNetScope()`, so a regression in them fails the suite.
  *
  * AlgoKit assigns the group id during `build()` whenever there is more than one
  * transaction, exactly as it does in the app.
@@ -75,17 +76,19 @@ export const buildGroup = async (
     return transactions.map(withSigner => withSigner.txn)
 }
 
-export const buildTxn = async (
-    compose: (composer: ConformanceComposer) => void,
-): Promise<Transaction> => {
-    const transactions = await buildGroup(compose)
+/** Unwraps a one-transaction group, failing on any other length. */
+export const onlyTxn = (transactions: Transaction[]): Transaction => {
     if (transactions.length !== 1) {
         throw new Error(
-            `buildTxn expects exactly one transaction, got ${transactions.length}`,
+            `expected exactly one transaction, got ${transactions.length}`,
         )
     }
     return transactions[0]
 }
+
+export const buildTxn = async (
+    compose: (composer: ConformanceComposer) => void,
+): Promise<Transaction> => onlyTxn(await buildGroup(compose))
 
 /**
  * The dependency set the app's own local-key signer runs on, backed by the

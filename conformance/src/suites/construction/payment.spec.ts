@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import { microAlgo } from '@algorandfoundation/algokit-utils'
 import { beforeAll, describe, expect, it } from 'vitest'
+
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { buildTransferTxs } from '@perawallet/wallet-core-chain-algorand/transactions/builders'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 
 import {
     createAlgo25Account,
@@ -21,7 +24,7 @@ import {
 import type { TxnIntent } from '../../harness/assert/intent'
 import { expectConformant } from '../../harness/assert/roundTrip'
 import {
-    buildTxn,
+    onlyTxn,
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
@@ -30,13 +33,18 @@ import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
+import { localNetScope } from '../../harness/scope'
 
+// Built by the app's send-flow builder, the one `useTransactionSendFlow`
+// reaches through the chain adapter, so a regression there fails here.
 describe('payment construction conformance', () => {
+    let scope: ChainScope
     let keyStore: ConformanceKeyStore
     let sender: ConformanceAccount
     let receiver: ConformanceAccount
 
     beforeAll(async () => {
+        scope = await localNetScope()
         keyStore = await createConformanceKeyStore()
         sender = await createAlgo25Account(keyStore)
         receiver = await createAlgo25Account(keyStore)
@@ -47,13 +55,15 @@ describe('payment construction conformance', () => {
         const senderBalanceBefore = await balanceOf(sender.address)
         const amount = 250_000n
 
-        const txn = await buildTxn(composer => {
-            composer.addPayment({
+        const txn = onlyTxn(
+            await buildTransferTxs({
+                scope,
                 sender: sender.address,
                 receiver: receiver.address,
-                amount: microAlgo(amount),
-            })
-        })
+                assetId: ALGO_ASSET_ID,
+                amount,
+            }),
+        )
         const signedBytes = await signWithKeystore(keyStore, sender, txn)
         const { txId } = await submitAndConfirm(signedBytes)
 
@@ -79,14 +89,18 @@ describe('payment construction conformance', () => {
         await fundAccount(closer.address, 5_000_000n)
         const closerBalanceBefore = await balanceOf(closer.address)
 
-        const txn = await buildTxn(composer => {
-            composer.addPayment({
+        // The amount is ignored on a close-out: the builder must send 0 and
+        // let closeRemainderTo carry the balance.
+        const txn = onlyTxn(
+            await buildTransferTxs({
+                scope,
                 sender: closer.address,
                 receiver: target.address,
-                amount: microAlgo(0n),
-                closeRemainderTo: target.address,
-            })
-        })
+                assetId: ALGO_ASSET_ID,
+                amount: 1234n,
+                isCloseAccount: true,
+            }),
+        )
         const signedBytes = await signWithKeystore(keyStore, closer, txn)
         const { txId } = await submitAndConfirm(signedBytes)
 
@@ -117,16 +131,19 @@ describe('payment construction conformance', () => {
     it('carries a note that survives byte-identically to the confirmed transaction', async () => {
         const senderBalanceBefore = await balanceOf(sender.address)
         const amount = 10_000n
-        const note = new TextEncoder().encode('conformance payment note')
+        const noteText = 'conformance payment note'
+        const note = new TextEncoder().encode(noteText)
 
-        const txn = await buildTxn(composer => {
-            composer.addPayment({
+        const txn = onlyTxn(
+            await buildTransferTxs({
+                scope,
                 sender: sender.address,
                 receiver: receiver.address,
-                amount: microAlgo(amount),
-                note,
-            })
-        })
+                assetId: ALGO_ASSET_ID,
+                amount,
+                note: noteText,
+            }),
+        )
         const signedBytes = await signWithKeystore(keyStore, sender, txn)
         const { txId } = await submitAndConfirm(signedBytes)
 

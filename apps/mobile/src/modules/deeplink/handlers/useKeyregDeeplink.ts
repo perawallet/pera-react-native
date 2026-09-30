@@ -11,18 +11,18 @@
  */
 
 import { useCallback } from 'react'
-import { microAlgo } from '@algorandfoundation/algokit-utils'
 import {
     getExpectedGenesisHash,
     isValidAlgorandAddress,
-    useAlgorandClient,
     useNetwork,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useMinimumFeeCalculator,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
+import { buildKeyRegistrationTx } from '@perawallet/wallet-core-transactions'
 import {
     resolveSignerForAccount,
     useAllAccounts,
@@ -41,7 +41,7 @@ import type { KeyregDeeplink } from '../types'
 export type KeyregDeeplinkHandler = (data: KeyregDeeplink) => Promise<void>
 
 /**
- * `createTransaction` fetches `suggestedParams()` internally, which hangs
+ * Building the transaction fetches `suggestedParams()` internally, which hangs
  * indefinitely on an unreachable algod — leaving the dispatcher's `await`
  * pending and the QR scanner open with no feedback.
  */
@@ -124,7 +124,6 @@ const namesActiveNetwork = (
     target === getExpectedGenesisHash(network)
 
 export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
-    const algorandClient = useAlgorandClient()
     const { network, networkConfig } = useNetwork()
     const { encodeTransaction, decodeTransaction } = useTransactionEncoder()
     const { addSignRequest } = useSigningRequest()
@@ -193,21 +192,20 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 // not throw out of the handler. An out-of-range fee is caught at
                 // review time by the high-fee warning.
                 const dAppFee = data.fee ? BigInt(data.fee) : undefined
-                const staticFee =
-                    dAppFee !== undefined ? microAlgo(dAppFee) : undefined
+                const scope = scopeForLegacyNetwork(network)
 
                 let tx
                 if (data.keyregType === 'offline') {
                     tx = await withTimeout(
                         'offlineKeyRegistration',
                         KEYREG_BUILD_TIMEOUT_MS,
-                        algorandClient.createTransaction.offlineKeyRegistration(
-                            {
-                                sender: data.senderAddress,
-                                note: noteBytes,
-                                staticFee,
-                            },
-                        ),
+                        buildKeyRegistrationTx({
+                            kind: 'offline',
+                            scope,
+                            sender: data.senderAddress,
+                            note: noteBytes,
+                            fee: dAppFee,
+                        }),
                     )
                 } else {
                     if (
@@ -228,7 +226,9 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                     tx = await withTimeout(
                         'onlineKeyRegistration',
                         KEYREG_BUILD_TIMEOUT_MS,
-                        algorandClient.createTransaction.onlineKeyRegistration({
+                        buildKeyRegistrationTx({
+                            kind: 'online',
+                            scope,
                             sender: data.senderAddress,
                             voteKey: decodeKeyregBase64(data.voteKey),
                             selectionKey: decodeKeyregBase64(data.selkey),
@@ -237,7 +237,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                             voteLast: BigInt(data.votelst),
                             voteKeyDilution: BigInt(data.votekd),
                             note: noteBytes,
-                            staticFee,
+                            fee: dAppFee,
                         }),
                     )
                 }
@@ -283,7 +283,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
         },
         [
             addSignRequest,
-            algorandClient,
             allAccounts,
             assignFeeToGroup,
             decodeTransaction,

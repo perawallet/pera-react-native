@@ -12,6 +12,9 @@
 
 import { beforeAll, describe, it } from 'vitest'
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { buildKeyRegistrationTx } from '@perawallet/wallet-core-chain-algorand/transactions/builders'
+
 import {
     createAlgo25Account,
     fundAccount,
@@ -19,16 +22,13 @@ import {
 } from '../../harness/accounts'
 import type { TxnIntent } from '../../harness/assert/intent'
 import { expectConformant } from '../../harness/assert/roundTrip'
-import {
-    buildTxn,
-    signWithKeystore,
-    submitAndConfirm,
-} from '../../harness/build'
+import { signWithKeystore, submitAndConfirm } from '../../harness/build'
 import { balanceOf } from '../../harness/client'
 import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
+import { localNetScope } from '../../harness/scope'
 
 /**
  * Only the offline variant is covered here. An online key registration needs
@@ -42,10 +42,12 @@ import {
  * online registration what it is.
  */
 describe('key-registration construction conformance', () => {
+    let scope: ChainScope
     let keyStore: ConformanceKeyStore
     let account: ConformanceAccount
 
     beforeAll(async () => {
+        scope = await localNetScope()
         keyStore = await createConformanceKeyStore()
         account = await createAlgo25Account(keyStore)
         await fundAccount(account.address, 1_000_000n)
@@ -54,10 +56,10 @@ describe('key-registration construction conformance', () => {
     it('submits an offline key registration', async () => {
         const senderBalanceBefore = await balanceOf(account.address)
 
-        const txn = await buildTxn(composer => {
-            composer.addOfflineKeyRegistration({
-                sender: account.address,
-            })
+        const txn = await buildKeyRegistrationTx({
+            kind: 'offline',
+            scope,
+            sender: account.address,
         })
         const signedBytes = await signWithKeystore(keyStore, account, txn)
         const { txId } = await submitAndConfirm(signedBytes)
@@ -70,6 +72,36 @@ describe('key-registration construction conformance', () => {
 
         await expectConformant({
             intent,
+            signedBytes,
+            txId,
+            senderBalanceBefore,
+        })
+    })
+
+    // The keyreg deeplink's shape: the dApp names the fee and a note, and the
+    // builder must pin that fee rather than let AlgoKit auto-size it.
+    it('pins a dApp-specified fee and carries the note', async () => {
+        const senderBalanceBefore = await balanceOf(account.address)
+        const fee = 2000n
+        const note = new TextEncoder().encode('conformance keyreg note')
+
+        const txn = await buildKeyRegistrationTx({
+            kind: 'offline',
+            scope,
+            sender: account.address,
+            note,
+            fee,
+        })
+        const signedBytes = await signWithKeystore(keyStore, account, txn)
+        const { txId } = await submitAndConfirm(signedBytes)
+
+        await expectConformant({
+            intent: {
+                type: 'keyreg',
+                sender: account.address,
+                note,
+                fee,
+            },
             signedBytes,
             txId,
             senderBalanceBefore,

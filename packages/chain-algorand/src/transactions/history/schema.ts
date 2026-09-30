@@ -12,7 +12,7 @@
 
 import { z } from 'zod'
 import { logger, uint64IdSchema } from '@perawallet/wallet-core-shared'
-import type { TransactionType } from '../../models/types'
+import type { TransactionType } from '@perawallet/wallet-core-transactions'
 
 /**
  * Helper to coerce string to number (API sometimes returns numeric fields as

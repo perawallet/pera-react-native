@@ -12,6 +12,7 @@
 
 import { useMutation } from '@tanstack/react-query'
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     useAlgorandClient,
@@ -29,7 +30,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { assertOnline } from '@perawallet/wallet-core-shared'
 import { RekeyError } from '../errors'
-import { effectiveRekeyFee } from './effectiveRekeyFee'
+import { sendFlowFeatureFor } from '../chain-adapter'
 import { requestRekeySignatures } from './requestRekeySignatures'
 
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
@@ -140,31 +141,13 @@ export const useSubmitRekeyMutation = ({
                     configMinTxnFee: minTxnFee,
                     pqMultiplier,
                 })
-                const draft = await algokit.createTransaction.payment({
-                    sender: sourceAddress,
-                    receiver: sourceAddress,
-                    amount: 0n.microAlgo(),
-                    rekeyTo: rekeyToAddress,
+                const scope = scopeForLegacyNetwork(network)
+                unsignedTxn = await sendFlowFeatureFor(scope, 'rekey').buildTx({
+                    scope,
+                    sourceAddress,
+                    rekeyToAddress,
+                    minFee: resolvedMinFee,
                 })
-                // AlgoKit populates `fee` when it builds the transaction;
-                // fall back to the network minimum only to satisfy the
-                // optional type. Mirrors useRekeyTransactionFeeQuery.
-                const builtFee = draft.fee ?? minTxnFee
-                const targetFee = effectiveRekeyFee(resolvedMinFee, builtFee)
-                // Rebuild with an explicit fee only when the PQ-aware minimum
-                // exceeds what AlgoKit auto-sized from the encoded size — an
-                // override below the auto-sized fee could underpay under
-                // per-byte congestion pricing.
-                unsignedTxn =
-                    targetFee > builtFee
-                        ? await algokit.createTransaction.payment({
-                              sender: sourceAddress,
-                              receiver: sourceAddress,
-                              amount: 0n.microAlgo(),
-                              rekeyTo: rekeyToAddress,
-                              staticFee: targetFee.microAlgo(),
-                          })
-                        : draft
             } catch (error) {
                 throw new RekeyError('build_failed', error)
             }

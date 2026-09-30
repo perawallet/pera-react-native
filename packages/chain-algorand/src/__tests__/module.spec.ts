@@ -30,13 +30,19 @@ import { capabilityAdapterContractTests } from '@perawallet/wallet-core-chain-co
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
-import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
+import {
+    historyChainAdapters,
+    sendFlowChainAdapters,
+} from '@perawallet/wallet-core-transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { chainModule } from '..'
 import { algorandDappRequestAdapter } from '../connect'
-import { algorandSendFlowAdapter } from '../asa-inbox/adapter'
+import {
+    algorandHistoryAdapter,
+    algorandSendFlowAdapter,
+} from '../transactions'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
 import { algorandNameServiceAdapter } from '../nfd'
@@ -55,6 +61,7 @@ const resetAdapters = () => {
     swapChainAdapters.reset()
     dappRequestChainAdapters.reset()
     sendFlowChainAdapters.reset()
+    historyChainAdapters.reset()
     nameServiceChainAdapters.reset()
     cardChainAdapters.reset()
     rampChainAdapters.reset()
@@ -69,6 +76,7 @@ const expectAdaptersRegistered = () => {
         algorandDappRequestAdapter,
     )
     expect(sendFlowChainAdapters.get('algorand')).toBe(algorandSendFlowAdapter)
+    expect(historyChainAdapters.get('algorand')).toBe(algorandHistoryAdapter)
     expect(nameServiceChainAdapters.get('algorand')).toBe(
         algorandNameServiceAdapter,
     )
@@ -136,6 +144,7 @@ describe('capability-to-adapter parity (algorand)', () => {
 
     capabilityAdapterContractTests(chains, {
         'send flow': sendFlowChainAdapters,
+        'transaction history': historyChainAdapters,
         swap: swapChainAdapters,
         'name service': nameServiceChainAdapters,
         card: cardChainAdapters,
