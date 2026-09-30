@@ -14,7 +14,6 @@ export const name = '@perawallet/wallet-core-connections'
 
 export * from './errors'
 export * from './models'
-export * from './schema'
 export * from './validate'
 export * from './handler'
 export * from './handlerKit'
