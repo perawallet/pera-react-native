@@ -27,9 +27,9 @@ import {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
     markSubmissionUnknown,
-} from '../../db'
-import { SubmissionAttemptsSchema } from '../../db/schema'
-import type { SubmissionAttempt } from '../types'
+    SubmissionAttemptsSchema,
+    type SubmissionAttempt,
+} from '@perawallet/wallet-core-signing'
 import type { SubmissionProbeClient } from '../reconcile'
 
 type PendingResponse = Record<string, unknown>

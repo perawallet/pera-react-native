@@ -10,11 +10,6 @@
  limitations under the License
  */
 
-export type {
-    AlgodClientInterface,
-    AlgokitClientInterface,
-    EncodeSignedTransactionsFn,
-} from './types'
 export { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
 export { submitRawSignedTransactionGroup } from './submitRawSignedTransactionGroup'
 export { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
@@ -22,12 +17,8 @@ export {
     submitAndAutoRefresh,
     submitAndAutoRefreshCore,
     type SubmitAndAutoRefreshCoreInput,
-    type SubmitAndAutoRefreshOptions,
 } from './submitAndAutoRefresh'
-export {
-    setOnConfirmedHandler,
-    type OnConfirmedHandler,
-} from './onConfirmedRegistry'
+export { setOnConfirmedHandler } from './onConfirmedRegistry'
 export {
     classifySubmitFailure,
     type SubmitFailureOutcome,

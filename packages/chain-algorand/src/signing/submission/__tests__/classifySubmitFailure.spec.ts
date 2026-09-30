@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { AlgodError } from '@perawallet/wallet-core-blockchain'
-import { SubmissionError } from '../../errors'
+import { SubmissionError } from '@perawallet/wallet-core-signing'
 import { classifySubmitFailure } from '../classifySubmitFailure'
 
 const TX_IDS = ['TXID_A', 'TXID_B']

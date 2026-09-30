@@ -12,12 +12,7 @@
 
 import { decodeSignedTransaction } from 'algosdk'
 import { logger } from '@perawallet/wallet-core-shared'
-
-export type DerivedSubmissionAttempt = {
-    txIds: string[]
-    /** Highest lastValid in the group, in rounds. */
-    lastValid?: number
-}
+import type { DerivedSubmissionAttempt } from '@perawallet/wallet-core-signing'
 
 /**
  * A validity round, or undefined when absent or non-numeric. Bare

@@ -33,7 +33,7 @@ import { getNextQueuedRequest } from '../pipeline/queue'
 import { approvalGate } from '../pipeline/approvalGate'
 import { signingEventBus } from '../pipeline/signingEventBus'
 import { isInteractiveSource } from '../pipeline/types'
-import { isRequestGroupAlreadySubmitted } from '../ledger'
+import { isRequestGroupAlreadySubmitted } from '../broadcaster'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SignRequest } from '../models'
 

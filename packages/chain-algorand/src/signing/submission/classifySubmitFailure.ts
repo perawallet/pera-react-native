@@ -15,7 +15,7 @@ import {
     type AlgodError,
 } from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
-import { SubmissionError } from '../errors'
+import { SubmissionError } from '@perawallet/wallet-core-signing'
 
 /**
  * Codes that carry no node verdict — the request may or may not have reached

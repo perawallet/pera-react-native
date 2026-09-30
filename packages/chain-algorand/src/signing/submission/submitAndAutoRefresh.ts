@@ -17,21 +17,21 @@ import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
-import { SubmissionError } from '../errors'
-import { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
-import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
-import { getOnConfirmedHandler } from './onConfirmedRegistry'
 import {
+    SubmissionError,
     markSubmissionUnknown,
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
-} from '../../db'
-import { toRound } from '../../ledger'
-import type { IntentKey, SubmissionFlow } from '../../ledger'
-import type {
-    AlgokitClientInterface,
-    EncodeSignedTransactionsFn,
-} from './types'
+    type AlgokitClientInterface,
+    type EncodeSignedTransactionsFn,
+    type IntentKey,
+    type SubmissionFlow,
+    type SubmitAndAutoRefreshOptions,
+} from '@perawallet/wallet-core-signing'
+import { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
+import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
+import { getOnConfirmedHandler } from './onConfirmedRegistry'
+import { toRound } from '../submission-ledger'
 
 const DEFAULT_ROUNDS_TO_WAIT = 10
 
@@ -91,17 +91,6 @@ export interface SubmitAndAutoRefreshCoreInput {
         sender?: string
     }
     db?: Database
-}
-
-/**
- * Optional submission-ledger metadata for {@link submitAndAutoRefresh} —
- * the flow's identity so a rebuild/retry can be matched against an earlier
- * unresolved attempt. Defaults to the generic flow.
- */
-export type SubmitAndAutoRefreshOptions = {
-    flow?: SubmissionFlow
-    intentKey?: IntentKey
-    sender?: string
 }
 
 /**

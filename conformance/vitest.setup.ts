@@ -12,7 +12,7 @@
 
 import { vi } from 'vitest'
 
-// The submission chokepoint (packages/signing/pipeline/submission) reaches
+// The submission chokepoint (packages/chain-algorand/src/signing/submission) reaches
 // `@perawallet/wallet-core-blockchain`'s network/accounts stores for their
 // persisted state, and those stores resolve storage through
 // `getProvider().keyValueStorage`. The real provider pulls in RN-native

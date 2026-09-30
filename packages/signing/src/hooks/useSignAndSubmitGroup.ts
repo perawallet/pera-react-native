@@ -27,7 +27,7 @@ import {
     generateOrderedUniqueId,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { submitAndAutoRefresh } from '../pipeline/submission/submitAndAutoRefresh'
+import { submitAndAutoRefresh } from '../broadcaster'
 import type { TransactionSignRequest } from '../models'
 import { useSigningRequest } from './useSigningRequest'
 

@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AlgodError } from '@perawallet/wallet-core-blockchain'
-import { SubmissionError } from '../../errors'
+import { SubmissionError } from '@perawallet/wallet-core-signing'
 import { submitRawSignedTransactionGroup } from '../submitRawSignedTransactionGroup'
 
 const mockSendRawTransaction = vi.fn()

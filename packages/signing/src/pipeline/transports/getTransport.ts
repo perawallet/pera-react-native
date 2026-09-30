@@ -17,9 +17,9 @@ import type { Network } from '@perawallet/wallet-core-shared'
 import type { DataTransport, SourceMetadata } from '../types'
 import { isExternalCallbackSource } from '../types'
 import {
-    createAlgodTransport,
+    createSubmitTransport,
     type AlgokitClientInterface,
-} from './createAlgodTransport'
+} from '../../broadcaster'
 import { createWalletConnectTransport } from './createWalletConnectTransport'
 import { createCallbackTransport } from './createCallbackTransport'
 import {
@@ -141,7 +141,7 @@ export const createTransportSelector = (
         }
 
         // Everything else goes directly to algod
-        return createAlgodTransport(
+        return createSubmitTransport(
             options.algokit,
             options.encodeSignedTransactions,
             options.network,

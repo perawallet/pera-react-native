@@ -69,7 +69,7 @@ const PQ_FEE_MULTIPLIER = 3n
 const PQSIG_UNSUPPORTED = /no matching struct field found.*pqsig/i
 
 // Mirrors `DEFAULT_ROUNDS_TO_WAIT` in
-// `packages/signing/src/pipeline/submission/submitAndAutoRefresh.ts` — that
+// `packages/chain-algorand/src/signing/submission/submitAndAutoRefresh.ts` — that
 // constant isn't exported, so this script keeps its own copy of the same
 // default and calls algosdk's `waitForConfirmation` the same way that file
 // does (client, txid, waitRounds).

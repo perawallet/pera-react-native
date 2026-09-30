@@ -13,7 +13,7 @@
 import { decodeSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { concatBytes, logger } from '@perawallet/wallet-core-shared'
 import { classifySubmitFailure } from './classifySubmitFailure'
-import type { AlgokitClientInterface } from './types'
+import type { AlgokitClientInterface } from '@perawallet/wallet-core-signing'
 
 /**
  * Submit a group of already-encoded signed transactions (raw msgpack bytes)

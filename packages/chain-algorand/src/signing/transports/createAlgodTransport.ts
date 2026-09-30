@@ -12,26 +12,18 @@
 
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { logger, toError, type Network } from '@perawallet/wallet-core-shared'
-import type {
-    DataTransport,
-    SigningResult,
-    SourceMetadata,
-    TransportResult,
-} from '../types'
-import { NetworkChangedError, SubmissionError, TransportError } from '../errors'
 import {
-    submitAndAutoRefresh,
+    NetworkChangedError,
+    SubmissionError,
+    TransportError,
     type AlgokitClientInterface,
+    type DataTransport,
     type EncodeSignedTransactionsFn,
-} from '../submission'
-
-// Re-export for backward compatibility with callers that import these
-// types from `createAlgodTransport`. The source of truth lives in
-// `../submission/types`.
-export type {
-    AlgokitClientInterface,
-    EncodeSignedTransactionsFn,
-} from '../submission'
+    type SigningResult,
+    type SourceMetadata,
+    type TransportResult,
+} from '@perawallet/wallet-core-signing'
+import { submitAndAutoRefresh } from '../submission'
 
 /**
  * Creates a transport that submits transactions directly to algod.

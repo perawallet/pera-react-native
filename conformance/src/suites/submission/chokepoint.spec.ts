@@ -30,7 +30,7 @@ import { Networks } from '@perawallet/wallet-core-config/models/network'
 // Without those dists this import fails at collection time (an
 // unresolvable-import crash, not a test failure) and takes every file in
 // the run down with it.
-import { submitAndAutoRefreshCore } from '@perawallet/wallet-core-signing/pipeline/submission/submitAndAutoRefresh'
+import { submitAndAutoRefreshCore } from '@perawallet/wallet-core-chain-algorand/signing/submission/submitAndAutoRefresh'
 
 import {
     createAlgo25Account,
