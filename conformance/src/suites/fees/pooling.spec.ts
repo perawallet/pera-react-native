@@ -25,7 +25,7 @@ import { calculateMinTxnFee } from '@perawallet/wallet-core-blockchain/fees/feeC
 import {
     assignMinimumFeesToGroup,
     groupHasQuantumSigner,
-} from '@perawallet/wallet-core-signing/pipeline/sources/assignMinimumFeesToGroup'
+} from '@perawallet/wallet-core-chain-algorand/signing/assignMinimumFeesToGroup'
 
 import {
     createAlgo25Account,
