@@ -497,6 +497,75 @@ describe('BackupSyncManager', () => {
         })
     })
 
+    describe('suspend', () => {
+        it('resolves only once the in-flight run has wound down', async () => {
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+            const running = mgr.syncNow()
+            let settled = false
+
+            const suspending = mgr.suspend().then(() => {
+                settled = true
+            })
+            await vi.advanceTimersByTimeAsync(0)
+            expect(held.deps?.isAborted()).toBe(true)
+            expect(settled).toBe(false)
+
+            held.release()
+            await running
+            await suspending
+            expect(settled).toBe(true)
+        })
+
+        it('resume restarts a manager that was running', async () => {
+            const mgr = new BackupSyncManager(makeDeps())
+            await mgr.start()
+            const resume = await mgr.suspend()
+            mockSyncBackup.mockClear()
+
+            await resume()
+
+            expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+            mgr.stop()
+        })
+
+        it('resume leaves alone a manager the lifecycle stopped meanwhile', async () => {
+            const mgr = new BackupSyncManager(makeDeps())
+            await mgr.start()
+            const resume = await mgr.suspend()
+            mgr.stop()
+            mockSyncBackup.mockClear()
+
+            await resume()
+
+            expect(mockSyncBackup).not.toHaveBeenCalled()
+        })
+
+        it('resume does not start a manager that was never running', async () => {
+            const mgr = new BackupSyncManager(makeDeps())
+            const resume = await mgr.suspend()
+
+            await resume()
+
+            expect(mockSyncBackup).not.toHaveBeenCalled()
+        })
+
+        it('drops a review action still queued behind the run it waited out', async () => {
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+            const running = mgr.syncNow()
+            const kept = mgr.keepAccountInBackup('ADDR')
+
+            const suspending = mgr.suspend()
+            held.release()
+            await running
+            await suspending
+
+            expect(await kept).toBe(false)
+            expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        })
+    })
+
     it('publishes the syncing flag around a background sync', async () => {
         const mgr = new BackupSyncManager(makeDeps())
 

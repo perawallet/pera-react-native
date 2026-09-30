@@ -143,6 +143,12 @@ export class BackupSyncManager {
         return run
     }
 
+    private async waitUntilIdle(): Promise<void> {
+        while (this.inFlight) {
+            await this.inFlight.catch(() => undefined)
+        }
+    }
+
     /** The checks and the claim share one continuation, or every waiter sees the
      *  same free slot. Null when a stop or the app lock landed while waiting:
      *  a queued action must not outlive the one or read keys under the other. */
@@ -505,6 +511,20 @@ export class BackupSyncManager {
         this.unwatchSettings = null
         this.socket?.disconnect()
         this.socket = null
+    }
+
+    /** Stops and waits out the run under way, whose last request still holds
+     *  the server's write lock. The resume restarts only a manager that was
+     *  running and nothing has stopped since, so it never overrides the lifecycle. */
+    async suspend(): Promise<() => Promise<void>> {
+        const wasRunning = this.running
+        this.stop()
+        const epoch = this.stopEpoch
+        await this.waitUntilIdle()
+        return async () => {
+            if (!wasRunning || this.running || this.stopEpoch !== epoch) return
+            await this.start()
+        }
     }
 
     /** The server deleted the backup: stop syncing and wipe all on-device backup
