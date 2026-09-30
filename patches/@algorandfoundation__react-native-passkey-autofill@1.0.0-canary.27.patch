@@ -1,5 +1,5 @@
 diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
-index e664746a384e1403297d47c42c1383f0f41d4766..e6e8cd6ac5ca2a69e4489fc5efad613c860fb1b4 100644
+index e664746a384e1403297d47c42c1383f0f41d4766..cd02af5d23a2820e1f3314a55e2bb75305b3ec42 100644
 --- a/android/src/main/AndroidManifest.xml
 +++ b/android/src/main/AndroidManifest.xml
 @@ -2,8 +2,19 @@
@@ -23,6 +23,32 @@ index e664746a384e1403297d47c42c1383f0f41d4766..e6e8cd6ac5ca2a69e4489fc5efad613c
              android:enabled="true"
              android:exported="true"
              android:label="@string/passkey_autofill_label"
+@@ -16,8 +27,12 @@
+                 android:name="android.credentials.provider"
+                 android:resource="@xml/provider" />
+         </service>
+-        <activity android:name="co.algorand.passkeyautofill.GetPasskeyActivity" 
+-            android:exported="true" 
++        <!--
++          Not exported: both activities trust the extras they are started with, so only the
++          provider service's own PendingIntent (explicit component, this app's UID) may start them.
++        -->
++        <activity android:name="co.algorand.passkeyautofill.GetPasskeyActivity"
++            android:exported="false"
+             android:launchMode="singleTop"
+             android:theme="@style/Theme.PasskeyAutofill.Dialog">
+             <intent-filter>
+@@ -25,8 +40,8 @@
+                 <category android:name="android.intent.category.DEFAULT"/>
+             </intent-filter>
+         </activity>
+-        <activity android:name="co.algorand.passkeyautofill.CreatePasskeyActivity" 
+-            android:exported="true" 
++        <activity android:name="co.algorand.passkeyautofill.CreatePasskeyActivity"
++            android:exported="false"
+             android:launchMode="singleTop"
+             android:theme="@style/Theme.PasskeyAutofill.Dialog">
+             <intent-filter>
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
 index 1e3b4a4ff4d3f81d73ca99564509f14398053c7a..9f15b328adfd3f7f00dab54c930a555806e40929 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt

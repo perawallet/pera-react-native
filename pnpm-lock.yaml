@@ -292,7 +292,7 @@ patchedDependencies:
     hash: d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f
     path: patches/@algorandfoundation__keystore-web@1.0.0-canary.4.patch
   '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27':
-    hash: a5d6e333b2ca4b230e1861c5110b8dfe33487ace2d69269b41e373794a9c1b94
+    hash: 3cd68c867c50577c46791d95cd0edf2cca1f3c87aed6264a9b7cf09991c42e03
     path: patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.27.patch
   expo-modules-jsi@57.0.4:
     hash: 9487cc4ef8eab2ab6ee171b069286c1805635c375abc7a725c52043b5bd3a1b1
@@ -500,7 +500,7 @@ importers:
         version: 9.2.2(algosdk@3.7.0)
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.27(patch_hash=a5d6e333b2ca4b230e1861c5110b8dfe33487ace2d69269b41e373794a9c1b94)(685e4e97f63a794b035dd4d23667524b)
+        version: 1.0.0-canary.27(patch_hash=3cd68c867c50577c46791d95cd0edf2cca1f3c87aed6264a9b7cf09991c42e03)(685e4e97f63a794b035dd4d23667524b)
       '@craftzdog/react-native-buffer':
         specifier: ^6.1.1
         version: 6.1.2(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -1395,7 +1395,7 @@ importers:
         version: 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.27(patch_hash=a5d6e333b2ca4b230e1861c5110b8dfe33487ace2d69269b41e373794a9c1b94)(@algorandfoundation/provider-migrations@1.0.0-canary.1(before-after-hook@4.0.0))(@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(expo@57.0.11)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
+        version: 1.0.0-canary.27(patch_hash=3cd68c867c50577c46791d95cd0edf2cca1f3c87aed6264a9b7cf09991c42e03)(@algorandfoundation/provider-migrations@1.0.0-canary.1(before-after-hook@4.0.0))(@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(expo@57.0.11)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
       '@algorandfoundation/wallet-provider':
         specifier: 1.0.0-canary.6
         version: 1.0.0-canary.6
@@ -11878,7 +11878,7 @@ snapshots:
       - react-native-nitro-modules
       - react-native-quick-base64
 
-  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27(patch_hash=a5d6e333b2ca4b230e1861c5110b8dfe33487ace2d69269b41e373794a9c1b94)(685e4e97f63a794b035dd4d23667524b)':
+  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27(patch_hash=3cd68c867c50577c46791d95cd0edf2cca1f3c87aed6264a9b7cf09991c42e03)(685e4e97f63a794b035dd4d23667524b)':
     dependencies:
       '@algorandfoundation/react-native-keystore': 1.0.0-canary.20(685e4e97f63a794b035dd4d23667524b)
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@7.0.2)
@@ -11895,7 +11895,7 @@ snapshots:
       - react-native-nitro-modules
       - react-native-quick-base64
 
-  ? '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27(patch_hash=a5d6e333b2ca4b230e1861c5110b8dfe33487ace2d69269b41e373794a9c1b94)(@algorandfoundation/provider-migrations@1.0.0-canary.1(before-after-hook@4.0.0))(@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(expo@57.0.11)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)'
+  ? '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27(patch_hash=3cd68c867c50577c46791d95cd0edf2cca1f3c87aed6264a9b7cf09991c42e03)(@algorandfoundation/provider-migrations@1.0.0-canary.1(before-after-hook@4.0.0))(@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(expo@57.0.11)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)'
   : dependencies:
       '@algorandfoundation/react-native-keystore': 1.0.0-canary.20(@algorandfoundation/provider-migrations@1.0.0-canary.1(before-after-hook@4.0.0))(@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(expo@57.0.11)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(typescript@7.0.2)
@@ -15721,7 +15721,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+      vitest: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@vitest/expect@4.1.11':
     dependencies:
