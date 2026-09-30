@@ -167,10 +167,7 @@ describe('useSaveCredentialsFile', () => {
         expect(saveCredentialsFile).toHaveBeenCalledTimes(1)
     })
 
-    // The destination rows disable themselves off this, so a save in a picker
-    // or a cloud sign-in is visible rather than a row that silently does
-    // nothing.
-    test('reports that a save is in flight until it settles', async () => {
+    test('reports that a cloud save is in flight until it settles', async () => {
         let finishSave: (value: string) => void = () => {}
         saveCredentialsFile.mockImplementationOnce(
             () =>
@@ -182,12 +179,36 @@ describe('useSaveCredentialsFile', () => {
 
         expect(result.current.isSaving).toBe(false)
 
-        const pending = result.current.saveCredentials('device', CREDENTIALS)
+        const pending = result.current.saveCredentials('icloud', CREDENTIALS)
         await waitFor(() => expect(result.current.isSaving).toBe(true))
 
         finishSave('saved')
         await pending
 
         await waitFor(() => expect(result.current.isSaving).toBe(false))
+    })
+
+    test('does not report a device save, whose picker is its own UI', async () => {
+        let finishSave: (value: string) => void = () => {}
+        saveCredentialsFile.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    finishSave = resolve
+                }),
+        )
+        const { result } = renderSaveHook()
+
+        const pending = result.current.saveCredentials('device', CREDENTIALS)
+        await waitFor(() =>
+            expect(saveCredentialsFile).toHaveBeenCalledWith(
+                'device',
+                CREDENTIALS,
+            ),
+        )
+
+        expect(result.current.isSaving).toBe(false)
+
+        finishSave('saved')
+        await pending
     })
 })
