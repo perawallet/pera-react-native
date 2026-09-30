@@ -312,12 +312,14 @@ overrides:
   # GHSA-rgw5-rvv9-x895 is patched per major line, not by one version: the 1.x
   # and 2.x consumers (minimatch@3/@9 via eslint, glob, @expo/cli) default-import
   # brace-expansion, and 5.x only ships a named `expand` export — so they have to
-  # stay on their own patched lines rather than all pointing at 5.0.9.
+  # stay on their own patched lines rather than all pointing at 5.x. 5.0.12 also
+  # covers GHSA-6j4f-fj2g-mc7p, GHSA-qhr7-859c-m2p7 and GHSA-q2hr-2g5m-vwhr (CPU
+  # denial of service on crafted patterns).
   brace-expansion@1: 1.1.18
   brace-expansion@2: 2.1.4
-  brace-expansion@3: 5.0.9
-  brace-expansion@4: 5.0.9
-  brace-expansion@5: 5.0.9
+  brace-expansion@3: 5.0.12
+  brace-expansion@4: 5.0.12
+  brace-expansion@5: 5.0.12
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
@@ -326,17 +328,21 @@ overrides:
   # GHSA-jqff-g426-hqxp (host confusion / SSRF via IDN, IPv6 and
   # percent-decoding normalization), patched in 4.1.3; then GHSA-qw65-cvwx-89v3
   # (authority injection via an unvalidated port) and GHSA-58mr-gqgx-xq4g (host
-  # confusion via an unclosed bracket), patched in 4.1.4. Pinned to the lowest
-  # patched version rather than latest so the resolution stays behind the
-  # minimumReleaseAge window without an exclude entry.
-  fast-uri@<4.1.4: 4.1.4
+  # confusion via an unclosed bracket), patched in 4.1.4; then
+  # GHSA-hrr3-gc8f-f4qj and GHSA-jvvf-x445-j334 (mailto header injection),
+  # patched in 4.1.5. Pinned to the lowest patched version rather than latest so
+  # the resolution stays behind the minimumReleaseAge window without an exclude
+  # entry.
+  fast-uri@<4.1.5: 4.1.5
   flatted@3: 3.4.2
   glob@>=10.2.0 <10.5.0: '>=10.5.0'
   happy-dom@<20.0.0: '>=20.0.0'
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
   js-yaml@<3.14.2: '>=3.14.2'
-  js-yaml@>=4.0.0 <4.3.1: '>=4.3.1'
-  js-yaml@>=5.0.0 <5.2.2: '>=5.2.2'
+  # The 4.x consumers already resolve to 5.x through this open range; the floor
+  # names the patched 5.x so a stale lock entry cannot hold them below it.
+  js-yaml@>=4.0.0 <4.3.1: '>=5.4.1'
+  js-yaml@>=5.0.0 <5.4.1: '>=5.4.1'
   lodash@4: 4.18.1
   # GHSA-2v37-7h3g-55p8 (custom generators loop forever when size is 0). Exact
   # target, not '>=3.3.18': an open range resolves to nanoid 6.

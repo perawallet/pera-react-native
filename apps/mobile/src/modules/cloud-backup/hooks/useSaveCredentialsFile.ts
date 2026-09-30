@@ -45,7 +45,7 @@ export const useSaveCredentialsFile = (): UseSaveCredentialsFileResult => {
     const { showToast } = useToast()
     const { showError } = useErrorToast()
 
-    const { mutateAsync, isPending } = useMutation({
+    const { mutateAsync, isPending, variables } = useMutation({
         throwOnError: false,
         mutationFn: async ({
             destination,
@@ -99,5 +99,10 @@ export const useSaveCredentialsFile = (): UseSaveCredentialsFileResult => {
         [mutateAsync],
     )
 
-    return { saveCredentials, isSaving: isPending }
+    // The device save is the OS picker itself, so it gets no overlay. On iOS the
+    // overlay is a modal view controller, and Save to Files presented while it
+    // animates in is dropped by UIKit, leaving `Share.open` pending forever.
+    const isSaving = isPending && variables?.destination !== 'device'
+
+    return { saveCredentials, isSaving }
 }
