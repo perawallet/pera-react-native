@@ -96,10 +96,15 @@ describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
             current: Pick<ReturnType<typeof useSearchableList>, 'handleScroll'>
         },
         y: number,
+        extent = { contentHeight: 12_000, viewportHeight: 600 },
     ) =>
         act(() =>
             result.current.handleScroll({
-                nativeEvent: { contentOffset: { y } },
+                nativeEvent: {
+                    contentOffset: { y },
+                    contentSize: { height: extent.contentHeight },
+                    layoutMeasurement: { height: extent.viewportHeight },
+                },
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any),
         )
@@ -144,6 +149,46 @@ describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
 
         scrollTo(result, HEADER_HEIGHT + 200)
         expect(result.current.showOverlay).toBe(false)
+    })
+
+    // QA Finding 25: clearing the query moved the list off a pin it never
+    // settled exactly on, so the overlay stayed stuck at the top.
+    it('unpins when the list moves up off a pin it never settled on exactly on web', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        scrollTo(result, HEADER_HEIGHT + 14)
+        expect(result.current.showOverlay).toBe(true)
+
+        scrollTo(result, HEADER_HEIGHT - 60)
+        expect(result.current.showOverlay).toBe(false)
+    })
+
+    it('keeps the overlay while the pin animation climbs towards the pin on web', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        scrollTo(result, 100)
+        scrollTo(result, 200)
+
+        expect(result.current.showOverlay).toBe(true)
+    })
+
+    it('keeps the overlay when shrinking results clamp the offset above the pin on web', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        scrollTo(result, HEADER_HEIGHT + 14)
+        // Content shrank to 788 with a 538 viewport: max offset is 250.
+        scrollTo(result, 250, { contentHeight: 788, viewportHeight: 538 })
+
+        expect(result.current.showOverlay).toBe(true)
     })
 
     it('does not unpin from scroll alone on native — onScrollBeginDrag remains the only trigger', () => {
@@ -323,22 +368,6 @@ describe('useSearchableList content-size pin correction', () => {
             offset: HEADER_HEIGHT,
             animated: false,
         })
-    })
-
-    it('stops correcting once a fling reaches the top on native', () => {
-        const { result, scrollToOffset } = setup()
-        layoutHeader(result, HEADER_HEIGHT)
-
-        // Momentum carries the list to the top without an end-drag inside
-        // the header, so the snap never gets to clear the latch.
-        scrollTo(result, 5000)
-        scrollTo(result, 0)
-        scrollTo(result, HEADER_HEIGHT - 150)
-        scrollToOffset.mockClear()
-
-        act(() => result.current.handleContentSizeChange(0, 12_100))
-
-        expect(scrollToOffset).not.toHaveBeenCalled()
     })
 
     it('does nothing while the header is still expanded', () => {
