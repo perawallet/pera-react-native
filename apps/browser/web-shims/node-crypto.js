@@ -18,13 +18,20 @@
 //   packages/kms/algo25-utils      — { createHash }          (sha512-256)
 //   packages/kms/falcon-utils      — { createHash }          (sha512-256)
 //   @algorandfoundation/xhd-wallet-api — { createHash, createHmac } (sha512, sha256)
+//   packages/kms/argon2id          — { argon2 }                  (quick-crypto's signature)
+//   packages/kms/aesGcm            — { createCipheriv, createDecipheriv } (aes-256-gcm)
 //
-// On web (Chrome extension) all operations use @noble/hashes (synchronous) and
-// the browser's SubtleCrypto (async PBKDF2). This shim replaces react-native-quick-crypto
+// On web (Chrome extension) all operations use @noble/hashes and @noble/ciphers
+// (synchronous) and the browser's SubtleCrypto (async PBKDF2). This shim replaces react-native-quick-crypto
 // which bundles react-native-worklets and throws __fbBatchedBridgeConfig on eval.
+//
+// Metro does not fail on a named import this file lacks; the consumer just gets
+// `undefined` at call time. Add every primitive a consumer above imports.
 
 import { sha256, sha512, sha512_256 } from '@noble/hashes/sha2.js'
 import { hmac } from '@noble/hashes/hmac.js'
+import { argon2idAsync } from '@noble/hashes/argon2.js'
+import { gcm } from '@noble/ciphers/aes.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -159,4 +166,118 @@ export function pbkdf2(password, salt, iterations, keylen, digest, callback) {
     }).catch(err => {
         callback(err, null)
     })
+}
+
+// Served next to the extension pages by scripts/build.mjs, which bundles
+// extensions/keystore-chrome/src/vault/argon2-worker.ts to this name. That
+// worker always derives 32 bytes at Argon2 v0x13; anything else runs inline.
+const ARGON2_WORKER_URL = 'argon2-worker.js'
+const ARGON2_WORKER_OUTPUT_LENGTH = 32
+const ARGON2_VERSION_13 = 0x13
+
+function deriveArgon2idInWorker(message, nonce, opts) {
+    return new Promise((resolve, reject) => {
+        const worker = new Worker(ARGON2_WORKER_URL, { type: 'module' })
+        worker.onmessage = event => {
+            worker.terminate()
+            resolve(event.data)
+        }
+        worker.onerror = event => {
+            worker.terminate()
+            reject(new Error(event.message || 'argon2 worker failed'))
+        }
+        worker.postMessage({ password: message, salt: nonce, m: opts.m, t: opts.t, p: opts.p })
+    })
+}
+
+// react-native-quick-crypto's callback API. `memory` is in KiB, as noble's `m`.
+// Cloud backup derives at 256 MiB, which freezes the page for seconds on the
+// main thread, so the worker is preferred and the async variant is the fallback.
+export function argon2(algorithm, params, callback) {
+    if (algorithm !== 'argon2id') {
+        callback(new Error('node-crypto argon2 shim: unsupported algorithm "' + algorithm + '"'), null)
+        return
+    }
+    const message = toUint8(params.message)
+    const nonce = toUint8(params.nonce)
+    const version = params.version ?? ARGON2_VERSION_13
+    const opts = { t: params.passes, m: params.memory, p: params.parallelism, dkLen: params.tagLength, version }
+    const deriveInline = () => argon2idAsync(message, nonce, opts)
+    const canUseWorker =
+        typeof Worker !== 'undefined' &&
+        opts.dkLen === ARGON2_WORKER_OUTPUT_LENGTH &&
+        version === ARGON2_VERSION_13
+    const derivation = canUseWorker
+        ? deriveArgon2idInWorker(message, nonce, opts).catch(deriveInline)
+        : deriveInline()
+    derivation.then(
+        result => callback(null, result),
+        error => callback(error, null),
+    )
+}
+
+const AES_GCM_ALGORITHM = 'aes-256-gcm'
+const AES_256_KEY_LENGTH = 32
+const AES_GCM_TAG_LENGTH = 16
+
+function concatChunks(chunks) {
+    const total = chunks.reduce((n, c) => n + c.length, 0)
+    const buf = new Uint8Array(total)
+    let offset = 0
+    for (const c of chunks) { buf.set(c, offset); offset += c.length }
+    return buf
+}
+
+function assertAesGcm(algorithm, key) {
+    if (algorithm.toLowerCase() !== AES_GCM_ALGORITHM) {
+        throw new Error('node-crypto cipher shim: unsupported algorithm "' + algorithm + '"')
+    }
+    if (toUint8(key).length !== AES_256_KEY_LENGTH) {
+        throw new Error('node-crypto cipher shim: aes-256-gcm needs a 32-byte key')
+    }
+}
+
+// noble's GCM is one-shot, so update() only buffers and final() returns the
+// whole output. Callers must concatenate update() and final(), as kms does;
+// one that streams update() output alone would see nothing.
+export function createCipheriv(algorithm, key, iv) {
+    assertAesGcm(algorithm, key)
+    const chunks = []
+    let aad
+    let tag = null
+    return {
+        setAAD(data) { aad = toUint8(data); return this },
+        update(data) { chunks.push(toUint8(data)); return new Uint8Array(0) },
+        final() {
+            const plaintext = concatChunks(chunks)
+            try {
+                const sealed = gcm(toUint8(key), toUint8(iv), aad).encrypt(plaintext)
+                tag = sealed.slice(sealed.length - AES_GCM_TAG_LENGTH)
+                return sealed.slice(0, sealed.length - AES_GCM_TAG_LENGTH)
+            } finally {
+                plaintext.fill(0)
+            }
+        },
+        getAuthTag() {
+            if (!tag) throw new Error('node-crypto cipher shim: getAuthTag() before final()')
+            return tag
+        },
+    }
+}
+
+export function createDecipheriv(algorithm, key, iv) {
+    assertAesGcm(algorithm, key)
+    const chunks = []
+    let aad
+    let tag = null
+    return {
+        setAAD(data) { aad = toUint8(data); return this },
+        setAuthTag(data) { tag = toUint8(data); return this },
+        update(data) { chunks.push(toUint8(data)); return new Uint8Array(0) },
+        // Throws on a wrong key, wrong AAD or tampered bytes, as Node's does.
+        final() {
+            if (!tag) throw new Error('node-crypto cipher shim: final() before setAuthTag()')
+            return gcm(toUint8(key), toUint8(iv), aad).decrypt(concatChunks([...chunks, tag]))
+        },
+    }
 }
