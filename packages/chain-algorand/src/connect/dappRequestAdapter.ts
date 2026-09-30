@@ -115,10 +115,6 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
 
     walletConnect: algorandWalletConnectSupport,
 
-    // The resolver's own schema, so a divergence from what
-    // `useAlgorandTransactionSigning` decodes cannot silently disarm a
-    // refusal; every transport's `sign-transactions` payload passes through
-    // here before it reaches the signing pipeline.
     validateTransactionPayload(payload) {
         const parsed = arc0001GroupSchema.safeParse(payload)
         if (!parsed.success) {
