@@ -188,7 +188,7 @@ import {
     type SyncState,
 } from '../../models'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
-import { BackupSyncAbortedError } from '../types'
+import { BackupPushIncompleteError, BackupSyncAbortedError } from '../types'
 import type { BackupSyncSources, BackupSyncStatePort } from '../types'
 import type { BackupSettings } from '../../models'
 import { TEST_SETTINGS } from './testSettings'
@@ -475,6 +475,28 @@ describe('BackupSyncManager', () => {
         )
     })
 
+    it('keeps what a part-way push landed when a later batch fails', async () => {
+        const landed = {
+            backupId: 'backup-123',
+            lastSyncResult: 'SUCCESS',
+            items: { 'accounts/A': { knownVer: 1, isDirty: false } },
+        }
+        mockSyncBackup.mockRejectedValueOnce(
+            new BackupPushIncompleteError(
+                landed as never,
+                new Error('timeout'),
+            ),
+        )
+        const mgr = new BackupSyncManager(makeDeps())
+
+        await mgr.syncNow()
+
+        expect(mockSetSyncState).toHaveBeenLastCalledWith({
+            ...landed,
+            lastSyncResult: 'FAILED',
+        })
+    })
+
     it('publishes the syncing flag around a background sync', async () => {
         const mgr = new BackupSyncManager(makeDeps())
 
@@ -570,6 +592,72 @@ describe('BackupSyncManager', () => {
             const mgr = new BackupSyncManager(makeDeps())
 
             expect(await mgr.backUpAccount(ADDR)).toBe(false)
+            mgr.stop()
+        })
+
+        it('waits out a running sync instead of refusing, then backs the account up', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 })
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+            const running = mgr.syncNow()
+
+            const backingUp = mgr.backUpAccount(ADDR)
+            await vi.advanceTimersByTimeAsync(0)
+            expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+
+            held.release()
+            await running
+
+            expect(await backingUp).toBe(true)
+            expect(mockSyncBackup).toHaveBeenCalledTimes(2)
+            mgr.stop()
+        })
+
+        it('runs two rows queued behind one sync one after the other', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 })
+            const held = holdNextSync()
+            let active = 0
+            let maxActive = 0
+            mockWithBackupEncryptionKey.mockImplementation(
+                async (fn: (key: Uint8Array) => unknown) => {
+                    active += 1
+                    maxActive = Math.max(maxActive, active)
+                    try {
+                        return await fn(new Uint8Array(32))
+                    } finally {
+                        active -= 1
+                    }
+                },
+            )
+            const mgr = new BackupSyncManager(makeDeps())
+            const running = mgr.syncNow()
+
+            const rows = [mgr.backUpAccount(ADDR), mgr.backUpAccount(ADDR)]
+            await vi.advanceTimersByTimeAsync(0)
+            held.release()
+            await running
+
+            expect(await Promise.all(rows)).toEqual([true, true])
+            expect(maxActive).toBe(1)
+            mgr.stop()
+        })
+
+        it('reads no key for a row still queued when the app locks', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 })
+            const held = holdNextSync()
+            const deps = makeDeps()
+            const mgr = new BackupSyncManager(deps)
+            const running = mgr.syncNow()
+
+            const backingUp = mgr.backUpAccount(ADDR)
+            await vi.advanceTimersByTimeAsync(0)
+            deps.isLocked.mockReturnValue(true)
+            held.release()
+            await running
+
+            expect(await backingUp).toBe(false)
+            expect(mockWithBackupEncryptionKey).toHaveBeenCalledTimes(1)
+            expect(mockSyncBackup).toHaveBeenCalledTimes(1)
             mgr.stop()
         })
 
