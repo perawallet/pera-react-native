@@ -39,6 +39,8 @@ import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain/pq/deriva
 import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain/pq/quantumAdapter'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain/utils/addresses'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig/address'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { Networks } from '@perawallet/wallet-core-config/models/network'
 import { entropyToMnemonic } from '@perawallet/wallet-core-kms/crypto/hdwallet-utils'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms/crypto/mnemonic-indices'
 import { prepareHDMasterKey } from '@perawallet/wallet-core-kms/crypto/prepare-hd-master-key'
@@ -121,8 +123,10 @@ export const createAlgo25Account = async (
     const signPair = nacl.sign.keyPair.fromSeed(seed)
     const publicKey = new Uint8Array(signPair.publicKey)
     signPair.secretKey.fill(0)
+    // LocalNet is the app's custom network, as the submission suite models it.
     const address = algorandAddressCodec.fromPublicKey(publicKey, {
         scheme: 'ed25519',
+        networkId: scopeForLegacyNetwork(Networks.custom).networkId,
     })
     const keyId = await keyStore.import(
         {
