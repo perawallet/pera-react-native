@@ -19,6 +19,7 @@ import {
 export type ConnectionsErrorCode =
     | 'invalid-payload'
     | 'no-handler'
+    | 'unsupported-chain'
     | 'unknown-connection'
     | 'duplicate-kind'
     | 'already-initialized'
@@ -29,6 +30,9 @@ export type ConnectionsErrorCode =
 const MESSAGE_KEY_BY_CODE: Record<ConnectionsErrorCode, string> = {
     'invalid-payload': 'errors.connections.invalid_payload',
     'no-handler': 'errors.connections.no_handler',
+    // A chain with no registered adapter is, from the peer's perspective, the
+    // same "nobody can answer this" as no-handler; no new locale copy needed.
+    'unsupported-chain': 'errors.connections.no_handler',
     'unknown-connection': 'errors.connections.unknown_connection',
     'duplicate-kind': 'errors.connections.duplicate_kind',
     'already-initialized': 'errors.connections.already_initialized',

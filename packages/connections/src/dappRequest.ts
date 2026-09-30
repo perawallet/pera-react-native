@@ -10,17 +10,43 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     createChainAdapterRegistry,
     type ChainId,
     type ChainScope,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { WalletOperationType } from './models'
+// Type-only: keeps the `./dappRequest` subpath hook-free and light, since
+// walletconnect resolves it from source without pulling in signing's runtime.
+import type {
+    ExternalSignTxnTransport,
+    SignRequest,
+} from '@perawallet/wallet-core-signing'
+import type { WalletOperationResult, WalletOperationType } from './models'
 
 export type DappSigningParamsResult =
     | { ok: true; payload: unknown }
     | { ok: false; reason: 'missing' | 'out-of-bounds'; message: string }
+
+/**
+ * A `sign-transactions` payload the registry's own validation has accepted,
+ * plus the accounts it may sign for.
+ */
+export type TransactionSigningRequest = {
+    group: readonly unknown[]
+    authorizedAccounts: string[]
+}
+
+/**
+ * Resolves with the enqueued request, or `null` when the group was answered
+ * without one (nothing signable, or an invalid group refused up front).
+ * Throws synchronously to refuse before anything is queued.
+ */
+export type EnqueueTransactionSigning = (
+    request: TransactionSigningRequest,
+    transport: ExternalSignTxnTransport,
+) => Promise<Nullable<SignRequest>>
 
 /**
  * The per-chain half of answering a dApp's signing request. Shared by every
@@ -47,6 +73,38 @@ export interface DappRequestChainAdapter {
         scope: ChainScope,
         customGenesisHash: string | undefined,
     ): NetworkId | undefined
+    /** What WalletConnect (v1 and v2) needs to route and validate this chain's requests. */
+    readonly walletConnect: {
+        /** CAIP-2 namespace, v2 only. */
+        readonly namespace: string
+        /** `null`: this network has no CAIP-2 identity (e.g. a custom node). */
+        caip2ChainIdFor(networkId: NetworkId): string | null
+        /** The network a CAIP-2 chain id names, or `null` for none of ours. */
+        networkForCaip2ChainId(caip2: string): NetworkId | null
+        toWireResult(result: WalletOperationResult): unknown
+        /** Omitted by a chain v1 never served. */
+        readonly v1?: {
+            isChainIdAcceptable(
+                chainId: number | undefined,
+                networkId: NetworkId,
+            ): boolean
+            /** Wildcard already expanded to every network it covers. */
+            networksFor(chainId: number): NetworkId[]
+            screenRequest(
+                type: WalletOperationType,
+                params: unknown,
+                knownAddresses: readonly string[],
+            ): { ok: true } | { ok: false; reason: string }
+        }
+    }
+    /**
+     * The registry's full validation for a `sign-transactions` payload, for
+     * every transport; `message` reaches the peer.
+     */
+    validateTransactionPayload(
+        payload: unknown,
+    ): { ok: true; group: readonly unknown[] } | { ok: false; message: string }
+    useEnqueueTransactionSigning: () => EnqueueTransactionSigning
 }
 
 export const dappRequestChainAdapters =

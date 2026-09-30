@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     generateOrderedUniqueId,
     isRetryableError,
@@ -21,18 +22,14 @@ import {
 import {
     MAX_DATA_SIGN_REQUESTS,
     isFeeAdjustmentDeliveryError,
-    useArc0001Resolver,
-    useEnqueueArc0001SignRequest,
     useSigningRequest,
     type Arc60SignRequest,
     type Arc60SignableData,
     type ArbitraryDataSignRequest,
-    type EnqueueArc0001SignRequest,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type RejectReason,
     type SignRequest,
-    type UseArc0001ResolverResult,
 } from '@perawallet/wallet-core-signing'
 import {
     canSignArbitraryData,
@@ -40,8 +37,18 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    dappRequestChainAdapters,
+    type EnqueueTransactionSigning,
+} from './dappRequest'
 import type { ConnectionErrorScope, InboundMessage } from './models'
 import type { ConnectionRegistry } from './registry'
+
+/** The chain a request answers for, and how to enqueue its transaction signing. */
+export type ChainTransactionSigning = {
+    chainId: ChainId
+    enqueue: EnqueueTransactionSigning
+}
 
 type RequestMessage = Extract<InboundMessage, { kind: 'request' }>
 type ExpiredMessage = Extract<InboundMessage, { kind: 'request-expired' }>
@@ -359,8 +366,7 @@ const enqueueSignDataRequest = (
 }
 
 export type EnqueueInboundRequestDeps = {
-    resolveArc0001: UseArc0001ResolverResult
-    enqueueArc0001: EnqueueArc0001SignRequest
+    transactionSigning: ChainTransactionSigning
     addSignRequest: (request: SignRequest) => void
     removeSignRequest: (request: SignRequest) => void
     accounts: WalletAccount[]
@@ -393,54 +399,73 @@ export const enqueueInboundRequest = (
     if (message.kind !== 'request') return
 
     if (message.operation.type === 'sign-transactions') {
-        // The resolver enforces `authorizedAddresses` by throwing; an escaped
-        // throw would kill the registry's listener loop, so answer the peer here.
-        let resolved: ReturnType<UseArc0001ResolverResult>
-        try {
-            resolved = deps.resolveArc0001(
-                { transactions: message.operation.group },
-                {
-                    authorizedAddresses: new Set(message.authorizedAccounts),
-                },
+        // A message naming a chain other than the one this adapter instance
+        // was mounted for cannot be signed: `useChainTransactionSigning`
+        // resolves one chain's hook per mount.
+        if (message.chainId !== deps.transactionSigning.chainId) {
+            declineRequest(
+                message,
+                new Error(
+                    `No signing adapter mounted for chain ${message.chainId}`,
+                ),
+                deps.onError,
             )
-        } catch (error) {
-            declineRequest(message, toError(error), deps.onError)
             return
         }
 
-        // Tracked before the enqueue, which awaits the fee calculator: an
-        // expiry can land in between.
+        // Tracked before the enqueue, which resolves and then awaits the fee
+        // calculator: an expiry can land in between, and the resolve step
+        // itself can throw synchronously (an escaped throw would kill the
+        // registry's listener loop, so answer the peer here instead).
         trackRequest(deps, message, null)
+        let enqueued: ReturnType<EnqueueTransactionSigning>
+        try {
+            enqueued = deps.transactionSigning.enqueue(
+                {
+                    group: message.operation.group,
+                    authorizedAccounts: message.authorizedAccounts,
+                },
+                {
+                    sourceType: message.sourceType,
+                    transportId: message.connectionId,
+                    // Serializable id so a multisig sync-flow handoff can
+                    // answer this exact request after an app kill.
+                    payloadId: handoffPayloadId(message.correlationId),
+                    sourceMetadata: message.peer,
+                    verifiedOrigin: message.verifiedOrigin,
+                    // A failed delivery must propagate: it is how a
+                    // dead-socket revival surfaces as retryable rather than
+                    // as a fake success.
+                    respondWithResult: async signed => {
+                        await message.respond({
+                            type: 'sign-transactions',
+                            signed,
+                        })
+                        forgetRequest(deps, message)
+                    },
+                    respondWithReject: () => {
+                        forgetRequest(deps, message)
+                        rejectInBackground(message, new Error('User rejected'))
+                    },
+                    respondWithSoftReject: async error => {
+                        await message.reject(error)
+                        forgetRequest(deps, message)
+                    },
+                    respondWithError: error => {
+                        if (failRequest(message, error, deps.onError)) {
+                            forgetRequest(deps, message)
+                        }
+                    },
+                },
+            )
+        } catch (error) {
+            forgetRequest(deps, message)
+            declineRequest(message, toError(error), deps.onError)
+            return
+        }
         // `enqueue` can still reject past its own handling (re-encoding a
         // fee-adjusted group); un-caught that is an unanswered peer.
-        deps.enqueueArc0001(resolved, {
-            sourceType: message.sourceType,
-            transportId: message.connectionId,
-            // Serializable id so a multisig sync-flow handoff can answer this
-            // exact request after an app kill.
-            payloadId: handoffPayloadId(message.correlationId),
-            sourceMetadata: message.peer,
-            verifiedOrigin: message.verifiedOrigin,
-            // A failed delivery must propagate: it is how a dead-socket revival
-            // surfaces as retryable rather than as a fake success.
-            respondWithResult: async signed => {
-                await message.respond({ type: 'sign-transactions', signed })
-                forgetRequest(deps, message)
-            },
-            respondWithReject: () => {
-                forgetRequest(deps, message)
-                rejectInBackground(message, new Error('User rejected'))
-            },
-            respondWithSoftReject: async error => {
-                await message.reject(error)
-                forgetRequest(deps, message)
-            },
-            respondWithError: error => {
-                if (failRequest(message, error, deps.onError)) {
-                    forgetRequest(deps, message)
-                }
-            },
-        }).then(
+        enqueued.then(
             request =>
                 settleTrackedRequest(
                     deps,
@@ -459,12 +484,28 @@ export const enqueueInboundRequest = (
     enqueueSignDataRequest(message, message.operation.payload, deps)
 }
 
+/**
+ * Resolves the chain's own `useEnqueueTransactionSigning` hook and memoises
+ * the result with the chain id it answers for. Mirrors the onramp
+ * `useEnsureRampDestination` pattern: the adapter's hook runs as part of this
+ * one, so a caller switching `chainId` between renders changes the hook
+ * order underneath it and must remount rather than re-render.
+ */
+export const useChainTransactionSigning = (
+    chainId: ChainId,
+): ChainTransactionSigning => {
+    const useEnqueue =
+        dappRequestChainAdapters.get(chainId).useEnqueueTransactionSigning
+    const enqueue = useEnqueue()
+    return useMemo(() => ({ chainId, enqueue }), [chainId, enqueue])
+}
+
 /** Every handler normalises into `InboundMessage`, so a new connection kind needs no change here. */
 export const useConnectionSigningAdapter = (
     registry: ConnectionRegistry,
+    chainId: ChainId,
 ): void => {
-    const resolveArc0001 = useArc0001Resolver()
-    const enqueueArc0001 = useEnqueueArc0001SignRequest()
+    const transactionSigning = useChainTransactionSigning(chainId)
     const { addSignRequest, removeSignRequest } = useSigningRequest()
     const accounts = useAllAccounts()
 
@@ -475,8 +516,7 @@ export const useConnectionSigningAdapter = (
 
     const pendingRequestsRef = useRef<PendingRequestLedger>(new Map())
     const depsRef = useRef<EnqueueInboundRequestDeps>({
-        resolveArc0001,
-        enqueueArc0001,
+        transactionSigning,
         addSignRequest,
         removeSignRequest,
         accounts,
@@ -484,8 +524,7 @@ export const useConnectionSigningAdapter = (
         onError,
     })
     depsRef.current = {
-        resolveArc0001,
-        enqueueArc0001,
+        transactionSigning,
         addSignRequest,
         removeSignRequest,
         accounts,

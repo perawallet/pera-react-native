@@ -16,13 +16,14 @@ import {
     parseArc60WireRequest,
     type Arc60SignableData,
 } from '@perawallet/wallet-core-signing'
+import { dappRequestChainAdapters } from './dappRequest'
 import { ConnectionsError } from './errors'
 import type {
     InboundMessage,
     RawInboundMessage,
     WalletOperation,
 } from './models'
-import { arc0001GroupSchema, legacyArbitraryDataSchema } from './schema'
+import { legacyArbitraryDataSchema } from './schema'
 
 export type ValidationOutcome =
     | { ok: true; message: InboundMessage }
@@ -80,8 +81,12 @@ const accepted = (
     }
 }
 
-/** Join zod issues into a field-path breadcrumb the peer can act on. */
-const describe = (error: z.ZodError): string =>
+/**
+ * Join zod issues into a field-path breadcrumb the peer can act on. Exported
+ * so a chain's own `validateTransactionPayload` can format its schema
+ * failures with the same wording this boundary used to produce inline.
+ */
+export const describeZodIssues = (error: z.ZodError): string =>
     error.issues
         .map(issue => `${issue.path.join('.') || '(root)'}: ${issue.message}`)
         .join('; ')
@@ -93,22 +98,32 @@ export const validateRawMessage = (
         return { ok: true, message: raw }
     }
 
+    if (!dappRequestChainAdapters.has(raw.chainId)) {
+        return {
+            ok: false,
+            error: new ConnectionsError(
+                'unsupported-chain',
+                `No handler registered for chain ${raw.chainId}`,
+            ),
+        }
+    }
+
     const { rawOperation } = raw
 
     if (rawOperation.type === 'sign-transactions') {
-        const parsed = arc0001GroupSchema.safeParse(rawOperation.params)
-        if (!parsed.success) {
+        const result =
+            dappRequestChainAdapters
+                .get(raw.chainId)
+                .validateTransactionPayload(rawOperation.params)
+        if (!result.ok) {
             return {
                 ok: false,
-                error: new ConnectionsError(
-                    'invalid-payload',
-                    `Invalid algo_signTxn payload — ${describe(parsed.error)}`,
-                ),
+                error: new ConnectionsError('invalid-payload', result.message),
             }
         }
         return accepted(raw, {
             type: 'sign-transactions',
-            group: parsed.data,
+            group: result.group,
         })
     }
 
@@ -121,7 +136,7 @@ export const validateRawMessage = (
                 ok: false,
                 error: new ConnectionsError(
                     'invalid-payload',
-                    `Invalid algo_signData payload — ${describe(parsed.error)}`,
+                    `Invalid algo_signData payload — ${describeZodIssues(parsed.error)}`,
                 ),
             }
         }

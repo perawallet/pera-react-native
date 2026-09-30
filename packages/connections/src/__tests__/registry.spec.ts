@@ -11,6 +11,10 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    dappRequestChainAdapters,
+    type DappRequestChainAdapter,
+} from '../dappRequest'
 import { createConnectionRegistry } from '../registry'
 import type { ConnectionHandler, ConnectionHandlerContext } from '../handler'
 import type {
@@ -25,6 +29,43 @@ import type {
     ConnectionStoreAPI,
 } from '@perawallet/wallet-extension-connections'
 import { memoryStore } from './handler-contract'
+
+/**
+ * A fixture chain adapter, registered for every test below so
+ * `validateRawMessage`'s `sign-transactions` path has somewhere to delegate.
+ * Reproduces just enough of the real ARC-0001 shape (a `txn` string per slot)
+ * for this file's own fixtures to exercise the delegation, not the adapter's
+ * own validation rules — those are chain-algorand's tests.
+ */
+const fixtureAdapter: DappRequestChainAdapter = {
+    chainId: 'algorand',
+    relayableErrorNames: [],
+    parseSigningParams: () => ({ ok: true, payload: [] }),
+    resolveReportedNetwork: scope => scope.networkId,
+    walletConnect: {
+        namespace: 'algorand',
+        caip2ChainIdFor: () => null,
+        networkForCaip2ChainId: () => null,
+        toWireResult: () => null,
+    },
+    validateTransactionPayload: payload => {
+        if (!Array.isArray(payload) || payload.length === 0) {
+            return { ok: false, message: 'Invalid algo_signTxn payload — empty' }
+        }
+        const entries = payload as Record<string, unknown>[]
+        const missingIndex = entries.findIndex(
+            entry => typeof entry.txn !== 'string',
+        )
+        if (missingIndex !== -1) {
+            return {
+                ok: false,
+                message: `Invalid algo_signTxn payload — ${missingIndex}.txn: Required`,
+            }
+        }
+        return { ok: true, group: payload }
+    },
+    useEnqueueTransactionSigning: () => async () => null,
+}
 
 /** A handler with no URI: the origin-identified `'dapp'` shape. */
 const makeOriginHandler = (
@@ -98,6 +139,7 @@ const makeRawRequest = (options?: {
     reject?: RawRequestMessage['reject']
 }): RawInboundMessage => ({
     kind: 'request',
+    chainId: 'algorand',
     connectionId: 'c1',
     correlationId: '1',
     sourceType: 'walletconnect',
@@ -124,6 +166,8 @@ describe('createConnectionRegistry', () => {
 
     beforeEach(() => {
         store = memoryStore()
+        dappRequestChainAdapters.reset()
+        dappRequestChainAdapters.register(fixtureAdapter)
     })
 
     /** Registers one handler, initializes the registry, and hands back the context it captured. */

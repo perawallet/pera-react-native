@@ -12,18 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { MAX_DATA_SIGN_REQUESTS } from '@perawallet/wallet-core-signing'
-import { arc0001GroupSchema, legacyArbitraryDataSchema } from '../schema'
-
-describe('arc0001GroupSchema', () => {
-    // The slot shape itself is the resolver's own schema, covered by
-    // packages/blockchain's schema.spec.ts. The one thing this boundary adds
-    // is the non-empty requirement.
-    it('rejects an empty group', () => {
-        const parsed = arc0001GroupSchema.safeParse([])
-
-        expect(parsed.success).toBe(false)
-    })
-})
+import { legacyArbitraryDataSchema } from '../schema'
 
 describe('legacyArbitraryDataSchema', () => {
     it('caps the batch at the signing pipeline maximum', () => {

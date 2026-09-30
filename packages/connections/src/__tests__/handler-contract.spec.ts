@@ -10,16 +10,49 @@
  limitations under the License
  */
 
+import { beforeEach } from 'vitest'
 import { Networks, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
     ConnectionStoreAPI,
 } from '@perawallet/wallet-extension-connections'
+import {
+    dappRequestChainAdapters,
+    type DappRequestChainAdapter,
+} from '../dappRequest'
 import type { ConnectionHandler } from '../handler'
 import {
     runHandlerContractTests,
     type HandlerContractPeer,
 } from './handler-contract'
+
+/**
+ * A fixture chain adapter so `validateRawMessage` (run by the registry on
+ * every message this suite's fixture handler emits) has somewhere to
+ * delegate `sign-transactions` validation.
+ */
+const fixtureAdapter: DappRequestChainAdapter = {
+    chainId: 'algorand',
+    relayableErrorNames: [],
+    parseSigningParams: () => ({ ok: true, payload: [] }),
+    resolveReportedNetwork: scope => scope.networkId,
+    walletConnect: {
+        namespace: 'algorand',
+        caip2ChainIdFor: () => null,
+        networkForCaip2ChainId: () => null,
+        toWireResult: () => null,
+    },
+    validateTransactionPayload: payload => ({
+        ok: true,
+        group: payload as readonly unknown[],
+    }),
+    useEnqueueTransactionSigning: () => async () => null,
+}
+
+beforeEach(() => {
+    dappRequestChainAdapters.reset()
+    dappRequestChainAdapters.register(fixtureAdapter)
+})
 
 const ORIGIN_KIND = 'origin-identified'
 // The page's own origin is the connection id: nothing is scanned or pasted,
@@ -95,6 +128,7 @@ const createOriginHandler = (): ConnectionHandler => {
                     }
                     ctx.onMessage({
                         kind: 'request',
+                        chainId: 'algorand',
                         connectionId,
                         correlationId: '1',
                         // A page-hosted dApp, so not the WalletConnect label — the

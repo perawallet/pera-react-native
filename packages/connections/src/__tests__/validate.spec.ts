@@ -10,19 +10,50 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { ARC60_MAX_REQUEST_BYTES } from '@perawallet/wallet-core-signing'
 import {
-    ARC60_MAX_REQUEST_BYTES,
-    MAX_TRANSACTION_SIGN_REQUESTS,
-} from '@perawallet/wallet-core-signing'
+    dappRequestChainAdapters,
+    type DappRequestChainAdapter,
+} from '../dappRequest'
 import { validateRawMessage } from '../validate'
 import type { RawInboundMessage } from '../models'
+
+/**
+ * A fixture chain adapter. `sign-transactions` validation itself is the
+ * adapter's job now (chain-algorand's own tests cover its real ARC-0001
+ * rules); this file only proves `validateRawMessage` delegates to whatever
+ * is registered for the message's chain, and refuses a chain with nothing
+ * registered.
+ */
+const fixtureAdapter: DappRequestChainAdapter = {
+    chainId: 'algorand',
+    relayableErrorNames: [],
+    parseSigningParams: () => ({ ok: true, payload: [] }),
+    resolveReportedNetwork: scope => scope.networkId,
+    walletConnect: {
+        namespace: 'algorand',
+        caip2ChainIdFor: () => null,
+        networkForCaip2ChainId: () => null,
+        toWireResult: () => null,
+    },
+    validateTransactionPayload: payload => {
+        if (!Array.isArray(payload) || payload.length === 0) {
+            return { ok: false, message: 'Invalid algo_signTxn payload — empty' }
+        }
+        return { ok: true, group: payload }
+    },
+    useEnqueueTransactionSigning: () => async () => null,
+}
 
 const request = (
     type: 'sign-transactions' | 'sign-data',
     params: unknown,
+    chainId: ChainId = 'algorand',
 ): RawInboundMessage => ({
     kind: 'request',
+    chainId,
     connectionId: 'c1',
     correlationId: '1',
     sourceType: 'walletconnect',
@@ -40,7 +71,27 @@ const VALID_AUTH_DATA = 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8='
 const VALID_AUTH_DATA_BYTES = Uint8Array.from({ length: 32 }, (_, i) => i)
 
 describe('validateRawMessage', () => {
-    it('accepts a well-formed ARC-0001 group', () => {
+    beforeEach(() => {
+        dappRequestChainAdapters.reset()
+        dappRequestChainAdapters.register(fixtureAdapter)
+    })
+
+    it('refuses a message naming a chain with no registered adapter', () => {
+        const result = validateRawMessage(
+            request(
+                'sign-transactions',
+                [{ txn: 'base64==' }],
+                'other' as ChainId,
+            ),
+        )
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) expect(result.error).toMatchObject({
+            code: 'unsupported-chain',
+        })
+    })
+
+    it('accepts a payload the chain adapter validates', () => {
         const result = validateRawMessage(
             request('sign-transactions', [{ txn: 'base64==' }]),
         )
@@ -54,92 +105,16 @@ describe('validateRawMessage', () => {
         }
     })
 
-    it('keeps stxn on a do-not-sign slot so the resolver can reject it', () => {
-        // `{ signers: [], stxn }` is ARC-0001's pre-signed passthrough, which
-        // the resolver answers with 4200. A schema that strips `stxn` turns
-        // that refusal into an ordinary signing sheet.
-        const result = validateRawMessage(
-            request('sign-transactions', [
-                { txn: 'base64==', signers: [], stxn: 'c3R4bg==' },
-            ]),
-        )
+    it('rejects with the adapter own message on an invalid payload', () => {
+        const result = validateRawMessage(request('sign-transactions', []))
 
-        expect(result.ok).toBe(true)
-        if (result.ok && result.message.kind === 'request') {
-            expect(result.message.operation.type).toBe('sign-transactions')
-            if (result.message.operation.type === 'sign-transactions') {
-                expect(result.message.operation.group[0].stxn).toBe('c3R4bg==')
-            }
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toMatchObject({
+                code: 'invalid-payload',
+                message: 'Invalid algo_signTxn payload — empty',
+            })
         }
-    })
-
-    it('keeps msig and groupMessage so the resolver can reject multisig', () => {
-        const result = validateRawMessage(
-            request('sign-transactions', [
-                {
-                    txn: 'base64==',
-                    msig: {
-                        version: 1,
-                        threshold: 2,
-                        addrs: ['A'.repeat(58), 'B'.repeat(58)],
-                    },
-                    groupMessage: 'a group',
-                },
-            ]),
-        )
-
-        expect(result.ok).toBe(true)
-        if (result.ok && result.message.kind === 'request') {
-            expect(result.message.operation.type).toBe('sign-transactions')
-            if (result.message.operation.type === 'sign-transactions') {
-                expect(result.message.operation.group[0].msig).toEqual({
-                    version: 1,
-                    threshold: 2,
-                    addrs: ['A'.repeat(58), 'B'.repeat(58)],
-                })
-                expect(result.message.operation.group[0].groupMessage).toBe(
-                    'a group',
-                )
-            }
-        }
-    })
-
-    it('rejects an ARC-0001 slot carrying an unknown key', () => {
-        // The resolver answers an unrecognised field with 4300; a non-strict
-        // boundary schema would strip it first and that refusal could never
-        // fire on this route.
-        const result = validateRawMessage(
-            request('sign-transactions', [{ txn: 'base64==', signeers: [] }]),
-        )
-
-        expect(result.ok).toBe(false)
-        if (!result.ok) expect(result.error.message).toMatch(/signeers/)
-    })
-
-    it('rejects an ARC-0001 group whose entries have no txn', () => {
-        const result = validateRawMessage(
-            request('sign-transactions', [{ message: 'hi' }]),
-        )
-
-        expect(result.ok).toBe(false)
-    })
-
-    it('rejects an ARC-0001 group over the transaction cap', () => {
-        const group = Array.from(
-            { length: MAX_TRANSACTION_SIGN_REQUESTS + 1 },
-            () => ({ txn: 'base64==' }),
-        )
-
-        const result = validateRawMessage(request('sign-transactions', group))
-
-        expect(result.ok).toBe(false)
-    })
-
-    it('reports the failing field path so the peer gets a real error', () => {
-        const result = validateRawMessage(request('sign-transactions', [{}]))
-
-        expect(result.ok).toBe(false)
-        if (!result.ok) expect(result.error.message).toMatch(/txn/)
     })
 
     it('discriminates ARC-60 from legacy arbitrary data without sniffing', () => {
@@ -234,8 +209,9 @@ describe('validateRawMessage', () => {
     })
 
     it('accepts a legacy payload without chainId', () => {
-        // `chainId` is a WalletConnect v1 wire concept, checked by the v1
-        // handler before the message reaches this transport-neutral boundary.
+        // `chainId` (the wire field, on a legacy `sign-data` entry) is a
+        // WalletConnect v1 concept, checked by the v1 handler before the
+        // message reaches this transport-neutral boundary.
         const result = validateRawMessage(
             request('sign-data', [
                 { data: 'ZGF0YQ==', signer: 'A'.repeat(58) },
