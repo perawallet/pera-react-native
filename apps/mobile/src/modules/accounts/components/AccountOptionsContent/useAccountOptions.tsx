@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback, useMemo, useState } from 'react'
 import {
     type WalletAccount,
@@ -122,7 +123,7 @@ export const useAccountOptions = ({
     useMultisigDetailsBackfill(account)
 
     const canSign = useCanSignWith(account)
-    const isRekeyed = isRekeyedAccount(account)
+    const isRekeyed = isRekeyedAccount(account, LEGACY_CHAIN_ID)
     const showPassphrase =
         !isRekeyed &&
         (isAlgo25Account(account) ||

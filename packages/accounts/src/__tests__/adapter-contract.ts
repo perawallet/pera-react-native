@@ -329,6 +329,54 @@ export const accountsContractTests = (
             expect(adapter.getAuthAccount(account, [account])).toBeNull()
         })
 
+        it('moves signing authority between accounts, or has none to move', () => {
+            const adapter = makeAdapter()
+            const { authority } = adapter
+            if (!authority) return
+
+            expect(fixtures.rekeyed).toBeDefined()
+            const { account, auth, next } = fixtures.rekeyed!.accounts
+            const { signing } = fixtures.signers
+            const held = [account, auth, next, signing]
+            const options = { isQuantumTargetEnabled: false }
+
+            expect(authority.isDelegated(account)).toBe(true)
+            expect(authority.isDelegated(signing)).toBe(false)
+            expect(authority.accountsDelegatedTo(auth.address, held)).toEqual([
+                account,
+            ])
+            expect(
+                authority.isEligibleTarget(
+                    'standard',
+                    signing,
+                    account,
+                    held,
+                    options,
+                ),
+            ).toBe(true)
+            // Its current authority, and itself, are no-op rekeys.
+            expect(
+                authority.isEligibleTarget(
+                    'standard',
+                    auth,
+                    account,
+                    held,
+                    options,
+                ),
+            ).toBe(false)
+            expect(
+                authority.isEligibleTarget(
+                    'standard',
+                    account,
+                    account,
+                    held,
+                    options,
+                ),
+            ).toBe(false)
+            expect(authority.canSignProgram(signing)).toBe(true)
+            expect(authority.canSignProgram(account)).toBe(false)
+        })
+
         it('derives a quantum keygen seed without touching the entropy, or refuses', () => {
             const adapter = makeAdapter()
             if (!adapter.quantum) {

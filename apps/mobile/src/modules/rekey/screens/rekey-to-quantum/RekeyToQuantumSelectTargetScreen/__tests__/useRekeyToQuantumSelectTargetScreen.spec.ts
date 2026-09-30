@@ -38,27 +38,20 @@ vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
     useIsQuantumAccountsEnabled: () => quantumEnabled,
 }))
 
-const mockIsEligibleQuantumRekeyTarget = vi.fn(
-    (
-        account: WalletAccount,
-        _source: WalletAccount,
-        _isQuantumTargetEnabled: boolean,
-    ) => account.address !== 'SRC',
+const mockUseAuthorityTargets = vi.fn(
+    (_source: WalletAccount | undefined, _kind: string, _options?: object) => [
+        targetA,
+        targetB,
+    ],
 )
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [sourceAccount, targetA, targetB],
     useFindAccountByAddress: (address: string) =>
         address === 'SRC' ? sourceAccount : undefined,
-    isEligibleQuantumRekeyTarget: (
-        account: WalletAccount,
-        source: WalletAccount,
-        isQuantumTargetEnabled: boolean,
-    ) =>
-        mockIsEligibleQuantumRekeyTarget(
-            account,
-            source,
-            isQuantumTargetEnabled,
-        ),
+    useAuthorityTargets: (
+        source: WalletAccount | undefined,
+        kind: string,
+        options?: object,
+    ) => mockUseAuthorityTargets(source, kind, options),
 }))
 
 describe('useRekeyToQuantumSelectTargetScreen', () => {
@@ -67,21 +60,16 @@ describe('useRekeyToQuantumSelectTargetScreen', () => {
         quantumEnabled = true
     })
 
-    it('filters out ineligible accounts via isEligibleQuantumRekeyTarget', () => {
+    it('returns the targets the chain accepts for the resolved source', () => {
         const { result } = renderHook(() =>
             useRekeyToQuantumSelectTargetScreen(),
         )
 
         expect(result.current.targets).toEqual([targetA, targetB])
-    })
-
-    it('passes the resolved source account and the quantum flag to isEligibleQuantumRekeyTarget', () => {
-        renderHook(() => useRekeyToQuantumSelectTargetScreen())
-
-        expect(mockIsEligibleQuantumRekeyTarget).toHaveBeenCalledWith(
-            targetA,
+        expect(mockUseAuthorityTargets).toHaveBeenCalledWith(
             sourceAccount,
-            true,
+            'quantum',
+            { isQuantumTargetEnabled: true },
         )
     })
 
@@ -90,10 +78,10 @@ describe('useRekeyToQuantumSelectTargetScreen', () => {
 
         renderHook(() => useRekeyToQuantumSelectTargetScreen())
 
-        expect(mockIsEligibleQuantumRekeyTarget).toHaveBeenCalledWith(
-            targetA,
+        expect(mockUseAuthorityTargets).toHaveBeenCalledWith(
             sourceAccount,
-            false,
+            'quantum',
+            { isQuantumTargetEnabled: false },
         )
     })
 

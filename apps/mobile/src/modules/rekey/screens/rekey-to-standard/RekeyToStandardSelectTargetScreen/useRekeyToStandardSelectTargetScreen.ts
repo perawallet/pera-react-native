@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-    isEligibleRekeyTarget,
-    useAllAccounts,
+    useAuthorityTargets,
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -39,19 +38,9 @@ export const useRekeyToStandardSelectTargetScreen =
                 >
             >()
         const sourceAddress = route.params.sourceAddress
-        const accounts = useAllAccounts()
         const source = useFindAccountByAddress(sourceAddress)
 
-        const targets = useMemo(
-            () =>
-                accounts.filter(account =>
-                    isEligibleRekeyTarget(
-                        account,
-                        source ?? { address: sourceAddress },
-                    ),
-                ),
-            [accounts, source, sourceAddress],
-        )
+        const targets = useAuthorityTargets(source, 'standard')
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {

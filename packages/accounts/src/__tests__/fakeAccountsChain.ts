@@ -103,6 +103,12 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
             : { kind: 'watch' as const, account },
     ),
     getAuthAccount: vi.fn(account => account),
+    authority: {
+        isDelegated: vi.fn(account => !!account.rekeyAddress),
+        accountsDelegatedTo: vi.fn(() => []),
+        isEligibleTarget: vi.fn(() => false),
+        canSignProgram: vi.fn(() => false),
+    },
 })
 
 let current: FakeAccountsChain | undefined

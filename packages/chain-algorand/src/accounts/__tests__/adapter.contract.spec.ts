@@ -33,6 +33,7 @@ import { algorandAddressCodec } from '../address-codec'
 
 const FUNDED = 'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM'
 const EMPTY = 'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
+const SIGNER = 'GD64YIY3TWGDMCNPP553DZPPR6LDUSFQOIJVFDPPXWEG3FVOJCCDBBHU5A'
 const REKEYED = 'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
 // Pinned vector shared with the kms quantum candidate specs: both derivations'
 // addresses are known, so the on-chain probe can be stubbed.
@@ -128,7 +129,7 @@ accountsContractTests(() => algorandAccountsAdapter, {
         ),
     },
     signers: {
-        signing: keyed('signing', FUNDED),
+        signing: keyed('signing', SIGNER),
         watch: {
             id: 'watch',
             address: EMPTY,

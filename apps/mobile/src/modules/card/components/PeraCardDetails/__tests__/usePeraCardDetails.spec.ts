@@ -201,9 +201,14 @@ import { CardEvent } from '@analytics'
 import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
 import { ReportSuspiciousActivitySheet } from '../../ReportSuspiciousActivitySheet'
 import { usePeraCardDetails } from '../usePeraCardDetails'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const walletAccount = (address: string): WalletAccount =>
-    ({ address, type: 'algo25', keyPairId: `key-${address}` }) as WalletAccount
+    ({
+        address,
+        type: 'algo25',
+        keyPairId: `key-${address}`,
+    }) as WalletAccount
 
 const ledgerAccount = (address: string): WalletAccount =>
     ({
@@ -217,6 +222,7 @@ const SECURE_VIEW = { token: 'tok', imageUrl: 'https://secure/card.png' }
 
 describe('usePeraCardDetails', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         Object.assign(mockCapabilities, { inAppWebView: true })
         mocks.panLast4 = null

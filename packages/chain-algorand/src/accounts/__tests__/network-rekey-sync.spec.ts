@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
@@ -39,15 +39,12 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     },
 }))
 
-const loadModules = async () => {
-    vi.resetModules()
-    const accounts = await import('@perawallet/wallet-core-accounts')
-    const { algorandAccountsAdapter } = await import('../adapter')
-    accounts.accountsChainAdapters.reset()
-    accounts.accountsChainAdapters.register(algorandAccountsAdapter)
-    const { startNetworkRekeySync } = await import('../network-rekey-sync')
-    return { ...accounts, startNetworkRekeySync }
-}
+type Modules = typeof import('@perawallet/wallet-core-accounts') &
+    typeof import('../network-rekey-sync')
+
+// Imported once: re-importing the accounts graph per test is slow enough to
+// time out under a loaded runner.
+let modules: Modules
 
 const account = (): WalletAccount => ({
     id: 'a',
@@ -57,13 +54,34 @@ const account = (): WalletAccount => ({
 })
 
 describe('startNetworkRekeySync', () => {
+    beforeAll(async () => {
+        const accounts = await import('@perawallet/wallet-core-accounts')
+        const { algorandAccountsAdapter } = await import('../adapter')
+        accounts.accountsChainAdapters.reset()
+        accounts.accountsChainAdapters.register(algorandAccountsAdapter)
+        modules = {
+            ...accounts,
+            ...(await import('../network-rekey-sync')),
+        }
+    }, 30_000)
+
     beforeEach(() => {
         network.current = 'mainnet'
-        network.listeners.length = 0
+        modules.useAccountsStore.getState().resetState()
     })
 
-    it('flips each account mirror to the new network on a switch', async () => {
-        const { useAccountsStore, startNetworkRekeySync } = await loadModules()
+    // First, while the module's started flag is still unset.
+    it('subscribes once however often it is started', () => {
+        const before = network.listeners.length
+
+        modules.startNetworkRekeySync()
+        modules.startNetworkRekeySync()
+
+        expect(network.listeners).toHaveLength(before + 1)
+    })
+
+    it('flips each account mirror to the new network on a switch', () => {
+        const { useAccountsStore } = modules
         useAccountsStore.getState().setAccounts([account()])
         useAccountsStore.getState().applyNetworkRekeyState('mainnet')
         useAccountsStore
@@ -72,7 +90,6 @@ describe('startNetworkRekeySync', () => {
         useAccountsStore
             .getState()
             .updateAccountRekeyAddress('A', null, 'testnet')
-        startNetworkRekeySync()
 
         network.switchTo('testnet')
         expect(
@@ -85,23 +102,8 @@ describe('startNetworkRekeySync', () => {
         )
     })
 
-    it('subscribes once however often it is started', async () => {
-        const { startNetworkRekeySync } = await loadModules()
-        const before = network.listeners.length
-
-        startNetworkRekeySync()
-        startNetworkRekeySync()
-
-        expect(network.listeners).toHaveLength(before + 1)
-    })
-
-    it('makes rekeyed and signable state follow the network switch', async () => {
-        const {
-            useAccountsStore,
-            startNetworkRekeySync,
-            isRekeyedAccount,
-            canSignWith,
-        } = await loadModules()
+    it('makes rekeyed and signable state follow the network switch', () => {
+        const { useAccountsStore, isRekeyedAccount, canSignWith } = modules
         useAccountsStore.getState().setAccounts([account()])
         useAccountsStore.getState().applyNetworkRekeyState('mainnet')
         // Rekeyed on mainnet to an auth the wallet doesn't hold.
@@ -111,10 +113,9 @@ describe('startNetworkRekeySync', () => {
         useAccountsStore
             .getState()
             .updateAccountRekeyAddress('A', null, 'testnet')
-        startNetworkRekeySync()
 
         const onMainnet = useAccountsStore.getState().accounts[0]
-        expect(isRekeyedAccount(onMainnet)).toBe(true)
+        expect(isRekeyedAccount(onMainnet, ALGORAND_CHAIN_ID)).toBe(true)
         expect(canSignWith(onMainnet, [onMainnet], ALGORAND_CHAIN_ID)).toBe(
             false,
         )
@@ -122,7 +123,7 @@ describe('startNetworkRekeySync', () => {
         network.switchTo('testnet')
 
         const onTestnet = useAccountsStore.getState().accounts[0]
-        expect(isRekeyedAccount(onTestnet)).toBe(false)
+        expect(isRekeyedAccount(onTestnet, ALGORAND_CHAIN_ID)).toBe(false)
         expect(canSignWith(onTestnet, [onTestnet], ALGORAND_CHAIN_ID)).toBe(
             true,
         )

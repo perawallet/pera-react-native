@@ -67,7 +67,7 @@ const toWebviewAccountType = (
     account: WalletAccount,
     accounts: WalletAccount[],
 ): WebviewAccountType => {
-    if (isRekeyedAccount(account)) {
+    if (isRekeyedAccount(account, LEGACY_CHAIN_ID)) {
         return canSignWith(account, accounts, LEGACY_CHAIN_ID)
             ? 'RekeyedSignable'
             : 'RekeyedUnsignable'

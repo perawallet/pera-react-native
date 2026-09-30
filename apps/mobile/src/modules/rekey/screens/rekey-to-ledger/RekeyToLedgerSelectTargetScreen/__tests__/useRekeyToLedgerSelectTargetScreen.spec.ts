@@ -33,18 +33,20 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-const mockIsEligibleLedgerRekeyTarget = vi.fn(
-    (account: WalletAccount, _source: WalletAccount) =>
-        account.address !== 'SRC',
+const mockUseAuthorityTargets = vi.fn(
+    (_source: WalletAccount | undefined, _kind: string, _options?: object) => [
+        targetA,
+        targetB,
+    ],
 )
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [sourceAccount, targetA, targetB],
     useFindAccountByAddress: (address: string) =>
         address === 'SRC' ? sourceAccount : undefined,
-    isEligibleLedgerRekeyTarget: (
-        account: WalletAccount,
-        source: WalletAccount,
-    ) => mockIsEligibleLedgerRekeyTarget(account, source),
+    useAuthorityTargets: (
+        source: WalletAccount | undefined,
+        kind: string,
+        options?: object,
+    ) => mockUseAuthorityTargets(source, kind, options),
 }))
 
 describe('useRekeyToLedgerSelectTargetScreen', () => {
@@ -52,20 +54,16 @@ describe('useRekeyToLedgerSelectTargetScreen', () => {
         vi.clearAllMocks()
     })
 
-    it('filters out ineligible accounts via isEligibleLedgerRekeyTarget', () => {
+    it('returns the targets the chain accepts for the resolved source', () => {
         const { result } = renderHook(() =>
             useRekeyToLedgerSelectTargetScreen(),
         )
 
         expect(result.current.targets).toEqual([targetA, targetB])
-    })
-
-    it('passes the resolved source account to isEligibleLedgerRekeyTarget', () => {
-        renderHook(() => useRekeyToLedgerSelectTargetScreen())
-
-        expect(mockIsEligibleLedgerRekeyTarget).toHaveBeenCalledWith(
-            targetA,
+        expect(mockUseAuthorityTargets).toHaveBeenCalledWith(
             sourceAccount,
+            'hardware',
+            undefined,
         )
     })
 

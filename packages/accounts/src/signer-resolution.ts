@@ -110,7 +110,7 @@ export const getRekeyAccount = (
     chainId: ChainId,
 ): WalletAccount | null => {
     const account = accounts.find(a => a.address === address)
-    if (!account || !isRekeyedAccount(account)) return null
+    if (!account || !isRekeyedAccount(account, chainId)) return null
     return getAuthAccount(account, accounts, chainId)
 }
 
@@ -120,7 +120,8 @@ export const isRekeyedUnsignable = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): boolean =>
-    isRekeyedAccount(account) && !canSignWith(account, accounts, chainId)
+    isRekeyedAccount(account, chainId) &&
+    !canSignWith(account, accounts, chainId)
 
 /** Display-state counterpart to `isRekeyedUnsignable`. */
 export const isMultisigUnsignable = (
@@ -153,7 +154,7 @@ export const rekeyTransitionFor = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): RekeyTransition | null => {
-    if (!isRekeyedAccount(account)) return null
+    if (!isRekeyedAccount(account, chainId)) return null
     const r = resolveSignerForAccount(account, accounts, chainId)
     return r.kind === 'ok' ? { from: account.type, to: r.signer.type } : null
 }

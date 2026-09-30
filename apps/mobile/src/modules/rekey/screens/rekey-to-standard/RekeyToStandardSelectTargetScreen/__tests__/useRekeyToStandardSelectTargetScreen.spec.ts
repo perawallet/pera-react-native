@@ -33,16 +33,20 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-const mockIsEligibleRekeyTarget = vi.fn(
-    (account: WalletAccount, _source: WalletAccount) =>
-        account.address !== 'SRC',
+const mockUseAuthorityTargets = vi.fn(
+    (_source: WalletAccount | undefined, _kind: string, _options?: object) => [
+        targetA,
+        targetB,
+    ],
 )
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [sourceAccount, targetA, targetB],
     useFindAccountByAddress: (address: string) =>
         address === 'SRC' ? sourceAccount : undefined,
-    isEligibleRekeyTarget: (account: WalletAccount, source: WalletAccount) =>
-        mockIsEligibleRekeyTarget(account, source),
+    useAuthorityTargets: (
+        source: WalletAccount | undefined,
+        kind: string,
+        options?: object,
+    ) => mockUseAuthorityTargets(source, kind, options),
 }))
 
 describe('useRekeyToStandardSelectTargetScreen', () => {
@@ -50,20 +54,16 @@ describe('useRekeyToStandardSelectTargetScreen', () => {
         vi.clearAllMocks()
     })
 
-    it('filters out ineligible accounts via isEligibleRekeyTarget', () => {
+    it('returns the targets the chain accepts for the resolved source', () => {
         const { result } = renderHook(() =>
             useRekeyToStandardSelectTargetScreen(),
         )
 
         expect(result.current.targets).toEqual([targetA, targetB])
-    })
-
-    it('passes the resolved source account to isEligibleRekeyTarget', () => {
-        renderHook(() => useRekeyToStandardSelectTargetScreen())
-
-        expect(mockIsEligibleRekeyTarget).toHaveBeenCalledWith(
-            targetA,
+        expect(mockUseAuthorityTargets).toHaveBeenCalledWith(
             sourceAccount,
+            'standard',
+            undefined,
         )
     })
 

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback, useMemo } from 'react'
 import {
     AccountTypes,
@@ -111,7 +112,7 @@ export const useAccountTypeInfo = ({
             }
         }
 
-        if (isRekeyedAccount(account)) {
+        if (isRekeyedAccount(account, LEGACY_CHAIN_ID)) {
             const i18n = canSign
                 ? REKEYED_SIGNABLE_I18N
                 : REKEYED_UNSIGNABLE_I18N

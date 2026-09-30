@@ -112,7 +112,7 @@ export const useRekeyConfirmScreen = ({
     // created (and before the Ledger device prompt for hardware auths).
     const { isUnderfunded } = useRekeyFeePreflight(sourceAddress, feeAlgos)
 
-    const hasPreviousRekey = isRekeyedAccount(source)
+    const hasPreviousRekey = isRekeyedAccount(source, LEGACY_CHAIN_ID)
 
     // Synchronous in-flight guard: `isSubmitting` only propagates on the
     // next render, so a same-frame double tap would submit twice without it.

@@ -11,7 +11,8 @@
  */
 
 import { useMemo } from 'react'
-import { getAccountsRekeyedTo } from '../utils'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { accountsChainAdapters } from '../chain-adapter'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
 
@@ -25,8 +26,10 @@ export const useAccountsRekeyedTo = (
     address: string | null | undefined,
 ): WalletAccount[] => {
     const accounts = useAccountsStore(state => state.accounts)
-    return useMemo(
-        () => (address ? getAccountsRekeyedTo(address, accounts) : []),
-        [address, accounts],
-    )
+    return useMemo(() => {
+        const authority = accountsChainAdapters.get(LEGACY_CHAIN_ID).authority
+        return address && authority
+            ? authority.accountsDelegatedTo(address, accounts)
+            : []
+    }, [address, accounts])
 }

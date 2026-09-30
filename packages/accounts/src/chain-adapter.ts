@@ -42,6 +42,27 @@ import type {
 } from './models'
 import type { SignerResolution } from './signer-resolution'
 
+export type AuthorityTargetKind = 'standard' | 'quantum' | 'hardware' | 'shared'
+
+/** Moving an account's signing authority to another account. */
+export type AccountAuthorityOps = {
+    isDelegated(account: WalletAccount): boolean
+    /** Held accounts whose authority is `address`; never `address` itself. */
+    accountsDelegatedTo(
+        address: string,
+        accounts: WalletAccount[],
+    ): WalletAccount[]
+    isEligibleTarget(
+        kind: AuthorityTargetKind,
+        target: WalletAccount,
+        source: WalletAccount,
+        accounts: WalletAccount[],
+        options: { isQuantumTargetEnabled: boolean },
+    ): boolean
+    /** Whether the account can produce a usable delegated program signature. */
+    canSignProgram(account: WalletAccount): boolean
+}
+
 export type AccountHoldingSnapshot = {
     assetId: string
     /** Base units. */
@@ -180,6 +201,8 @@ export interface AccountsChainAdapter {
         authAddress: string,
         scope: ChainScope,
     ): Promise<string[]>
+    /** Absent on a chain whose signing authority can't move to another account. */
+    readonly authority?: AccountAuthorityOps
     /** `account` need not be in `accounts`; whatever signs for it must be. */
     resolveSigner(
         account: WalletAccount,

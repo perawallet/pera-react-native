@@ -11,8 +11,7 @@
  */
 
 import { vi } from 'vitest'
-import { accountsChainAdapters } from '@perawallet/wallet-core-accounts/chain-adapter'
-import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
+import './src/harness/registerAlgorandAccounts'
 
 // The submission chokepoint (packages/chain-algorand/src/signing/submission) reaches
 // `@perawallet/wallet-core-blockchain`'s network/accounts stores for their
@@ -74,7 +73,3 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         },
     }),
 }))
-
-// Signer resolution routes through the adapter registered for the account's
-// chain, so suites that resolve a signer need Algorand's registered.
-accountsChainAdapters.register(algorandAccountsAdapter)
