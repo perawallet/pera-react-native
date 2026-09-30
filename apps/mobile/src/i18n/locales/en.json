@@ -2790,10 +2790,9 @@
             "node_settings_title": "Node Settings",
             "dispenser_title": "Algorand Dispenser",
             "node_settings": {
-                "mainnet_label": "Algorand MainNet",
-                "testnet_label": "Algorand TestNet",
-                "betanet_label": "Algorand BetaNet",
+                "network_label": "{{chain}} {{network}}",
                 "custom_label": "Custom network",
+                "chain_networks_title": "Network per chain",
                 "non_mainnet_warning_title": "Limited support outside MainNet",
                 "non_mainnet_warning_body": "MainNet is the only fully supported network. Features that rely on Pera services — asset details, swap, buy, card, staking and inbox — are limited on TestNet, and unavailable on BetaNet and custom nodes.",
                 "enable_mainnet": "Enable MainNet",

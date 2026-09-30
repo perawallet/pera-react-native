@@ -16,12 +16,11 @@ import {
     type ChainCapabilities,
 } from '../models/capabilities'
 import type { ChainDescriptor, ExplorerUrlBuilders } from '../models/descriptor'
+import { CUSTOM_NETWORK_ID, NETWORK_TIERS } from '../models/identity'
 
 type Rule = 'tiers' | 'caip2' | 'explorer' | 'capabilities'
 
 type Violation = { rule: Rule; message: string }
-
-const CUSTOM_NETWORK_ID = 'custom'
 
 const EXPLORER_SAMPLES: Record<keyof ExplorerUrlBuilders, string> = {
     accountUrl: 'sample-address',
@@ -50,8 +49,8 @@ const collectViolations = (
         network => network.id !== CUSTOM_NETWORK_ID,
     )
 
-    const tiers = [...new Set(descriptor.networks.map(n => n.tier))]
-    for (const tier of tiers) {
+    // Every tier, declared or not: the global selection maps onto each one.
+    for (const tier of NETWORK_TIERS) {
         const defaults = descriptor.networks.filter(
             n => n.tier === tier && n.isDefaultForTier,
         ).length

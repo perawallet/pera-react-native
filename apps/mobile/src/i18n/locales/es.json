@@ -2790,10 +2790,9 @@
             "node_settings_title": "Ajustes del nodo",
             "dispenser_title": "Dispensador de Algorand",
             "node_settings": {
-                "mainnet_label": "Algorand MainNet",
-                "testnet_label": "Algorand TestNet",
-                "betanet_label": "Algorand BetaNet",
+                "network_label": "{{chain}} {{network}}",
                 "custom_label": "Red personalizada",
+                "chain_networks_title": "Red por blockchain",
                 "non_mainnet_warning_title": "Soporte limitado fuera de MainNet",
                 "non_mainnet_warning_body": "MainNet es la única red totalmente compatible. Las funciones que dependen de los servicios de Pera —detalles de activos, swap, compra, tarjeta, staking y bandeja de entrada— están limitadas en TestNet y no están disponibles en BetaNet ni en nodos personalizados.",
                 "enable_mainnet": "Activar MainNet",

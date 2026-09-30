@@ -303,7 +303,11 @@ overrides:
   # with the catalog entry, not on its own.
   '@types/react': ~19.2.14
   expo-build-properties: 57.0.9
-  '@grpc/grpc-js@<1.9.16': 1.9.16
+  # GHSA-m9gg-hp2v-232j floor. @firebase/firestore still declares ~1.9.0 and
+  # 1.9.x has no patched release, so this forces it past its range; safe
+  # because grpc-js is only loaded by firestore's Node entry, which no bundle
+  # here reaches (the browser and RN builds use webchannel).
+  '@grpc/grpc-js@<1.13.6': 1.13.6
   # Single copy across the expo config-plugin toolchain; 0.8.15 is the
   # GHSA-6gmq-8vp8-gcm6 floor (XML fragment injection, patched >=0.8.15).
   # Stay on the 0.8 line — 0.9 changed the package's API surface.

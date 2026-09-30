@@ -178,6 +178,19 @@ describe('registerChainAdapters', () => {
             expect(after).toEqual({ chainId: 'algorand', networkId: 'testnet' })
         })
 
+        it('resolves a chain with no stored entry from the global selection', () => {
+            registerChainAdapters()
+            mocks.networkGetState.mockReturnValue({
+                globalNetwork: 'testnet',
+                selectedNetworkByChain: {},
+            })
+
+            expect(contextGivenToModule().getScope()).toEqual({
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
+        })
+
         it('hands over the setup entry endpoints', () => {
             registerChainAdapters()
 

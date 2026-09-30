@@ -136,6 +136,16 @@ describe('descriptorContractViolations', () => {
         ])
     })
 
+    it('names a tier the chain does not declare', () => {
+        const descriptor = withNetworks(
+            fixture.networks.filter(n => n.tier === 'mainnet'),
+        )
+
+        expect(descriptorContractViolations(descriptor, defaults)).toEqual([
+            'tier "testnet" has 0 default networks; expected exactly 1',
+        ])
+    })
+
     it('names a non-custom network without a CAIP-2 id', () => {
         const descriptor = withNetworks(
             fixture.networks.map(n =>

@@ -18,13 +18,23 @@ export type ChainId = (typeof CHAIN_IDS)[number]
 /** Grown the same way as `ChainId`. */
 export type ChainFamily = 'algorand'
 
-export type NetworkTier = 'mainnet' | 'testnet'
+export const NETWORK_TIERS = ['mainnet', 'testnet'] as const
+
+export type NetworkTier = (typeof NETWORK_TIERS)[number]
 
 /**
  * Chain-local: lowercase letters, digits and `-` (see `isNetworkId`), so it
  * never contains the scope-key separator.
  */
 export type NetworkId = string
+
+/** Persisted as a record id, so it is a storage format as well as a network id. */
+export const CUSTOM_NETWORK_ID: NetworkId = 'custom'
+
+/** The wallet-wide choice; each chain maps it onto one of its own networks. */
+export const GLOBAL_NETWORKS = [...NETWORK_TIERS, 'custom'] as const
+
+export type GlobalNetwork = (typeof GLOBAL_NETWORKS)[number]
 
 /**
  * The network as its own chain identifies it. A chain package adds its own
@@ -76,3 +86,7 @@ export const isChainId = (value: unknown): value is ChainId =>
 
 export const isNetworkId = (value: unknown): value is NetworkId =>
     typeof value === 'string' && NETWORK_ID_PATTERN.test(value)
+
+export const isGlobalNetwork = (value: unknown): value is GlobalNetwork =>
+    typeof value === 'string' &&
+    (GLOBAL_NETWORKS as readonly string[]).includes(value)

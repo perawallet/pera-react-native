@@ -12,71 +12,116 @@
 
 import { useCallback, useMemo } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useSwitchNetwork } from '@perawallet/wallet-core-device'
-import { Networks, type Network } from '@perawallet/wallet-core-shared'
+import {
+    defaultNetworkForTier,
+    GLOBAL_NETWORKS,
+    type ChainId,
+    type GlobalNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    selectChainNetworkId,
+    useAnyEnabledChainHasCapability,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useLanguage } from '@hooks/useLanguage'
+import { useNetworkLabel } from '@hooks/useNetworkLabel'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CustomNetworkSheet } from './CustomNetworkSheet'
+import { isCustomNetworkOffered } from './isCustomNetworkOffered'
 
-export type NetworkRow = {
-    network: Network
-    labelKey: string
+export type NodeSettingsRowModel = {
+    globalNetwork: GlobalNetwork
+    label: string
     isSelected: boolean
 }
 
-// Explicit display order: MainNet first. Object.values(Networks) follows the
-// declaration order in packages/config, which is testnet-first, and a screen's
-// row order should not be hostage to an unrelated object literal's ordering.
-// Static keys: the i18n lint rules cannot verify an interpolated key.
-const NETWORK_ROWS: readonly { network: Network; labelKey: string }[] = [
-    {
-        network: Networks.mainnet,
-        labelKey: 'settings.developer.node_settings.mainnet_label',
-    },
-    {
-        network: Networks.testnet,
-        labelKey: 'settings.developer.node_settings.testnet_label',
-    },
-    {
-        network: Networks.betanet,
-        labelKey: 'settings.developer.node_settings.betanet_label',
-    },
-    {
-        network: Networks.custom,
-        labelKey: 'settings.developer.node_settings.custom_label',
-    },
-]
+export type ChainNetworkSummary = {
+    chainId: ChainId
+    chainName: string
+    networkLabel: string
+    isMainnet: boolean
+}
 
 type UseSettingsDeveloperNodeSettingsScreenResult = {
-    networks: NetworkRow[]
-    selectNetwork: (network: Network) => Promise<void>
-    /** Non-MainNet networks are not fully supported — see the screen's callout. */
+    rows: NodeSettingsRowModel[]
+    /** Empty with one chain, where the row labels already name its networks. */
+    chainNetworks: ChainNetworkSummary[]
+    selectNetwork: (globalNetwork: GlobalNetwork) => Promise<void>
     isNonMainnetWarningVisible: boolean
 }
 
 export const useSettingsDeveloperNodeSettingsScreen =
     (): UseSettingsDeveloperNodeSettingsScreenResult => {
-        const { network: activeNetwork } = useNetwork()
-        const { switchNetwork } = useSwitchNetwork()
+        const { t } = useLanguage()
+        const networkLabel = useNetworkLabel()
         const { request } = useBottomSheet()
-
-        const networks = useMemo(
-            () =>
-                NETWORK_ROWS.map<NetworkRow>(row => ({
-                    ...row,
-                    isSelected: row.network === activeNetwork,
-                })),
-            [activeNetwork],
+        const globalNetwork = useNetworkStore(state => state.globalNetwork)
+        const selectedNetworkByChain = useNetworkStore(
+            state => state.selectedNetworkByChain,
         )
+        const setGlobalNetwork = useNetworkStore(
+            state => state.setGlobalNetwork,
+        )
+        const hasCustomNetworks =
+            useAnyEnabledChainHasCapability('customNetworks')
+        // Registered once at bootstrap, before any screen mounts.
+        const descriptors = useMemo(() => getProvider().chains.list(), [])
+        const onlyChain = descriptors.length === 1 ? descriptors[0] : undefined
+
+        const rows = useMemo(() => {
+            const labelFor = (option: GlobalNetwork): string => {
+                if (option === 'custom') {
+                    return t('settings.developer.node_settings.custom_label')
+                }
+                const network =
+                    onlyChain && defaultNetworkForTier(onlyChain, option)
+                return network
+                    ? t('settings.developer.node_settings.network_label', {
+                          chain: onlyChain.displayName,
+                          network: network.displayName,
+                      })
+                    : networkLabel(option)
+            }
+            const isCustomOffered =
+                hasCustomNetworks && isCustomNetworkOffered()
+            return GLOBAL_NETWORKS.filter(
+                option => option !== 'custom' || isCustomOffered,
+            ).map<NodeSettingsRowModel>(option => ({
+                globalNetwork: option,
+                label: labelFor(option),
+                isSelected: option === globalNetwork,
+            }))
+        }, [hasCustomNetworks, onlyChain, globalNetwork, t, networkLabel])
+
+        const chainNetworks = useMemo(() => {
+            if (descriptors.length < 2) {
+                return []
+            }
+            return descriptors.map<ChainNetworkSummary>(descriptor => {
+                const networkId = selectChainNetworkId(
+                    { globalNetwork, selectedNetworkByChain },
+                    descriptor.id,
+                )
+                const network = descriptor.networks.find(
+                    candidate => candidate.id === networkId,
+                )
+                return {
+                    chainId: descriptor.id,
+                    chainName: descriptor.displayName,
+                    // A custom node has no descriptor entry to name it.
+                    networkLabel:
+                        network?.displayName ?? networkLabel(networkId),
+                    isMainnet: network?.tier === 'mainnet',
+                }
+            })
+        }, [descriptors, globalNetwork, selectedNetworkByChain, networkLabel])
 
         const selectNetwork = useCallback(
-            async (network: Network) => {
-                // Custom has no baked endpoints to switch to — tapping it
-                // opens the config sheet instead, which is the only path
-                // that can ever commit `custom` as the active network (see
-                // useCustomNetworkSheet's handleSave). This never switches.
-                // The sheet owns its own commit, so the result is ignored.
-                if (network === Networks.custom) {
+            async (option: GlobalNetwork) => {
+                // Custom has no baked endpoints: the sheet is the only path
+                // that commits it (see useCustomNetworkSheet's handleSave).
+                if (option === 'custom') {
                     await request({
                         contents: <CustomNetworkSheet />,
                         options: { size: 'modal', autoCreateContainer: false },
@@ -84,23 +129,24 @@ export const useSettingsDeveloperNodeSettingsScreen =
                     return
                 }
 
-                // Offline-safe local write; device registration is deferred
-                // (see useSwitchNetwork). Nothing to toast about.
-                await switchNetwork(network)
+                // No same-row shortcut: re-selecting TestNet is how a wallet
+                // pinned to BetaNet gets back onto TestNet.
+                setGlobalNetwork(option)
                 try {
-                    // Invalidation is owned by RootComponent's network effect —
-                    // calling it here too would double-refetch every mounted query.
+                    // Invalidation is owned by the shell's network effect;
+                    // calling it here too would double-refetch every query.
                     getSyncService().restart()
                 } catch {
                     // SyncService not yet initialized
                 }
             },
-            [switchNetwork, request],
+            [request, setGlobalNetwork],
         )
 
         return {
-            networks,
+            rows,
+            chainNetworks,
             selectNetwork,
-            isNonMainnetWarningVisible: activeNetwork !== Networks.mainnet,
+            isNonMainnetWarningVisible: globalNetwork !== 'mainnet',
         }
     }

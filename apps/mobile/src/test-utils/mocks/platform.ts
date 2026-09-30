@@ -195,6 +195,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getBooleanValue: vi.fn().mockReturnValue(false),
             getNumberValue: vi.fn().mockReturnValue(0),
         },
+        // An empty registry, as production starts before `registerChainAdapters`,
+        // so a spec can register a chain through it.
+        chains: require('@perawallet/wallet-core-chain-contract').createChainRegistry(),
         // A real (empty) registry, as `WithHardwareWalletExtension` supplies in
         // production, so a spec can register a fake transport through it.
         hardwareWalletRegistry:
