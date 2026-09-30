@@ -170,11 +170,11 @@ describe('chain-shared network-store', () => {
             expect(merged.customNetworksByChain.algorand).toEqual([record])
         })
 
-        test('drops a malformed custom entry and unknown chain keys', async () => {
+        test('drops a malformed custom entry and unknown chain custom records', async () => {
             const { mergePersistedNetwork } = await loadStore()
 
             const merged = mergePersistedNetwork({
-                selectedNetworkByChain: { algorand: 'testnet', solana: 'x' },
+                selectedNetworkByChain: { algorand: 'testnet' },
                 customNetworksByChain: {
                     algorand: [record, { id: 'Bad Id', algodUrl: 1 }, null],
                     solana: [record],
@@ -184,6 +184,45 @@ describe('chain-shared network-store', () => {
             expect(merged.customNetworksByChain).toEqual({ algorand: [record] })
             expect(merged.selectedNetworkByChain).toEqual({
                 algorand: 'testnet',
+            })
+        })
+
+        test("keeps another chain's selection and drops one that is not a network id", async () => {
+            const { mergePersistedNetwork } = await loadStore()
+
+            const merged = mergePersistedNetwork({
+                selectedNetworkByChain: {
+                    algorand: 'testnet',
+                    ethereum: 'sepolia',
+                    solana: 'Not An Id',
+                    cosmos: 7,
+                },
+            })
+
+            expect(merged.selectedNetworkByChain).toEqual({
+                algorand: 'testnet',
+                ethereum: 'sepolia',
+            })
+            expect(merged.network).toBe('testnet')
+        })
+
+        test("keeps another chain's selection through a rehydrate", async () => {
+            const { useNetworkStore } = await loadStore()
+            const { merge } = useNetworkStore.persist.getOptions()
+
+            const merged = merge?.(
+                {
+                    selectedNetworkByChain: {
+                        algorand: 'mainnet',
+                        ethereum: 'sepolia',
+                    },
+                },
+                useNetworkStore.getState(),
+            )
+
+            expect(merged?.selectedNetworkByChain).toEqual({
+                algorand: 'mainnet',
+                ethereum: 'sepolia',
             })
         })
 

@@ -41,7 +41,7 @@ const LEGACY_CUSTOM_NETWORK_KEY = 'custom-network-store'
 // Persisted as the record id, so it is a storage format and is not read from
 // `Networks`. Module load must not touch the config enum: test mocks of the
 // config omit it.
-const CUSTOM_NETWORK_ID: NetworkId = 'custom'
+export const CUSTOM_NETWORK_ID: NetworkId = 'custom'
 
 // ponytail: Algorand-shaped; widen customNetworksByChain's value to a per-chain union when a second chain adds custom networks.
 /**
@@ -132,8 +132,18 @@ export const mergePersistedNetwork = (
         (selected !== CUSTOM_NETWORK_ID ||
             findCustomNetwork(algorandCustom) !== undefined)
 
+    // The registry may be empty at hydrate, so another chain's entry is kept
+    // on shape alone and resolved against its descriptor when it is read.
+    const otherChains = Object.entries(
+        state.selectedNetworkByChain ?? {},
+    ).filter(
+        ([chainId, networkId]) =>
+            chainId !== 'algorand' && isNetworkId(networkId),
+    )
+
     return {
         ...withNetworkShim({
+            ...Object.fromEntries(otherChains),
             algorand: isUsable ? selected : config.defaultNetwork,
         }),
         customNetworksByChain: { algorand: algorandCustom },
