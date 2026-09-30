@@ -13,3 +13,7 @@
 // react-native-web's ScrollView never emits onScrollBeginDrag, so onScroll is
 // the only signal left to exit search mode on.
 export const shouldUnpinSearchOnScroll = true
+
+// With no onScrollEndDrag there is no snap to clear the collapsed latch, so a
+// user scroll back above the pin has to clear it from onScroll.
+export const shouldReleasePinOnScrollUp = true
