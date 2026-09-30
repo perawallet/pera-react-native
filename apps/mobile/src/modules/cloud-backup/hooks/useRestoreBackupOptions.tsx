@@ -21,6 +21,7 @@ import { ChooseCredentialsFileSheet } from '../components/ChooseCredentialsFileS
 import { OPTION_LIST_SHEET_OPTIONS } from '../components/OptionListSheet'
 import {
     RestoreBackupSheet,
+    useRestoreBackupChoices,
     type RestoreBackupSheetResult,
 } from '../components/RestoreBackupSheet'
 import { readBackupCredentials, type CredentialsFileSource } from '../storage'
@@ -40,6 +41,7 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
     const navigation = useAppNavigation()
     const { showError } = useErrorToast()
     const { request: requestBottomSheet } = useBottomSheet()
+    const choices = useRestoreBackupChoices()
     const [isReadingCredentials, setIsReadingCredentials] = useState(false)
     // A double tap would otherwise open two sheets and race two pickers.
     const isBusyRef = useRef(false)
@@ -112,10 +114,14 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
         if (isBusyRef.current) return null
         isBusyRef.current = true
         try {
-            const choice = await requestBottomSheet<RestoreBackupSheetResult>({
-                contents: <RestoreBackupSheet />,
-                options: OPTION_LIST_SHEET_OPTIONS,
-            })
+            // A sheet with one row is just an extra tap.
+            const choice =
+                choices.length === 1
+                    ? choices[0]
+                    : await requestBottomSheet<RestoreBackupSheetResult>({
+                          contents: <RestoreBackupSheet />,
+                          options: OPTION_LIST_SHEET_OPTIONS,
+                      })
             if (!choice) return null
             if (choice === 'scan') return ['CloudBackupRestoreScan']
             if (choice === 'manual') return ['CloudBackupRestorePassphrase']
@@ -123,7 +129,7 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
         } finally {
             isBusyRef.current = false
         }
-    }, [requestBottomSheet, importFrom])
+    }, [choices, requestBottomSheet, importFrom])
 
     return { chooseRestoreRoute, isReadingCredentials }
 }

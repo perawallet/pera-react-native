@@ -779,6 +779,7 @@
             "sheet_title": "Backup wiederherstellen/abrufen",
             "sheet_description": "Stelle dein Backup wieder her, indem du einen QR-Code scannst oder deine Zugangsdaten manuell eingibst.",
             "sheet_description_with_import": "Stelle dein Backup wieder her, indem du einen QR-Code scannst, deinen Verschlüsselungsschlüssel von dort importierst, wo du ihn gespeichert hast, oder deine Zugangsdaten manuell eingibst.",
+            "sheet_description_import_or_manual": "Stelle dein Backup wieder her, indem du deinen Verschlüsselungsschlüssel von dort importierst, wo du ihn gespeichert hast, oder deine Zugangsdaten manuell eingibst.",
             "sheet_scan": "QR-Code scannen",
             "sheet_manual": "Details manuell eingeben",
             "sheet_device": "Von diesem Gerät importieren",

@@ -787,6 +787,7 @@
             "sheet_title": "Restaurar/recuperar una copia de seguridad",
             "sheet_description": "Restaura tu copia de seguridad escaneando un código QR o introduciendo tus credenciales manualmente.",
             "sheet_description_with_import": "Restaura tu copia de seguridad escaneando un código QR, importando tu clave de cifrado desde donde la guardaste o introduciendo tus credenciales manualmente.",
+            "sheet_description_import_or_manual": "Restaura tu copia de seguridad importando tu clave de cifrado desde donde la guardaste o introduciendo tus credenciales manualmente.",
             "sheet_scan": "Escanear código QR",
             "sheet_manual": "Introducir los datos manualmente",
             "sheet_device": "Importar desde este dispositivo",

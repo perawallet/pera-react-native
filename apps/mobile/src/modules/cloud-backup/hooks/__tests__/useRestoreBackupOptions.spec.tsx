@@ -23,8 +23,10 @@ const {
     mockShowError,
     mockLoggerError,
     mockIsFocused,
+    mockChoices,
     readBackupCredentials,
 } = vi.hoisted(() => ({
+    mockChoices: vi.fn(),
     mockRequest: vi.fn(),
     mockShowError: vi.fn(),
     mockLoggerError: vi.fn(),
@@ -55,6 +57,7 @@ vi.mock('@hooks/useErrorToast', () => ({
 vi.mock('@hooks/useLanguage')
 vi.mock('../../components/RestoreBackupSheet', () => ({
     RestoreBackupSheet: () => null,
+    useRestoreBackupChoices: mockChoices,
 }))
 vi.mock('../../storage', () => ({ readBackupCredentials }))
 
@@ -71,6 +74,7 @@ const KEY = {
 beforeEach(() => {
     vi.clearAllMocks()
     mockIsFocused.mockReturnValue(true)
+    mockChoices.mockReturnValue(['scan', 'device', 'manual'])
     readBackupCredentials.mockResolvedValue({ status: 'read', key: KEY })
 })
 
@@ -99,6 +103,13 @@ describe('useRestoreBackupOptions', () => {
 
         expect(await choose()).toEqual([route])
         expect(readBackupCredentials).not.toHaveBeenCalled()
+    })
+
+    test('skips the sheet when manual entry is the only way in', async () => {
+        mockChoices.mockReturnValue(['manual'])
+
+        expect(await choose()).toEqual(['CloudBackupRestorePassphrase'])
+        expect(mockRequest).not.toHaveBeenCalled()
     })
 
     test.each(['device', 'icloud', 'googleDrive'])(

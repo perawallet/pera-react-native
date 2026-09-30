@@ -787,6 +787,7 @@
             "sheet_title": "Restore/Retrieve a Backup",
             "sheet_description": "Restore your backup by scanning a QR code or entering your credentials manually.",
             "sheet_description_with_import": "Restore your backup by scanning a QR code, importing your encryption key from where you saved it, or entering your credentials manually.",
+            "sheet_description_import_or_manual": "Restore your backup by importing your encryption key from where you saved it, or entering your credentials manually.",
             "sheet_scan": "Scan QR Code",
             "sheet_manual": "Enter Details Manually",
             "sheet_device": "Import from This Device",

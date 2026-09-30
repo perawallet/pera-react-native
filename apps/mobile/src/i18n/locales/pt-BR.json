@@ -787,6 +787,7 @@
             "sheet_title": "Restaurar/recuperar um backup",
             "sheet_description": "Restaure seu backup escaneando um código QR ou digitando suas credenciais manualmente.",
             "sheet_description_with_import": "Restaure seu backup escaneando um código QR, importando sua chave de criptografia de onde você a salvou ou digitando suas credenciais manualmente.",
+            "sheet_description_import_or_manual": "Restaure seu backup importando sua chave de criptografia de onde você a salvou ou digitando suas credenciais manualmente.",
             "sheet_scan": "Escanear código QR",
             "sheet_manual": "Inserir dados manualmente",
             "sheet_device": "Importar deste dispositivo",

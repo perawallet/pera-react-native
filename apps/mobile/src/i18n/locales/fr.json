@@ -787,6 +787,7 @@
             "sheet_title": "Restaurer/récupérer une sauvegarde",
             "sheet_description": "Restaurez votre sauvegarde en scannant un QR code ou en saisissant vos identifiants manuellement.",
             "sheet_description_with_import": "Restaurez votre sauvegarde en scannant un QR code, en important votre clé de chiffrement depuis l’endroit où vous l’avez enregistrée ou en saisissant vos identifiants manuellement.",
+            "sheet_description_import_or_manual": "Restaurez votre sauvegarde en important votre clé de chiffrement depuis l’endroit où vous l’avez enregistrée ou en saisissant vos identifiants manuellement.",
             "sheet_scan": "Scanner le QR code",
             "sheet_manual": "Saisir les informations manuellement",
             "sheet_device": "Importer depuis cet appareil",

@@ -787,6 +787,7 @@
             "sheet_title": "Yedeklemeyi geri yükle/al",
             "sheet_description": "QR kodu tarayarak veya kimlik bilgilerini elle girerek yedeklemeni geri yükle.",
             "sheet_description_with_import": "QR kodu tarayarak, şifreleme anahtarını kaydettiğin yerden içe aktararak veya kimlik bilgilerini elle girerek yedeklemeni geri yükle.",
+            "sheet_description_import_or_manual": "Şifreleme anahtarını kaydettiğin yerden içe aktararak veya kimlik bilgilerini elle girerek yedeklemeni geri yükle.",
             "sheet_scan": "QR kodu tara",
             "sheet_manual": "Bilgileri manuel gir",
             "sheet_device": "Bu cihazdan içe aktar",
