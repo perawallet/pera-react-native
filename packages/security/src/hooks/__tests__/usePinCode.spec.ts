@@ -473,6 +473,53 @@ describe('usePinCode', () => {
         })
     }, 30_000)
 
+    test('concurrent mounts share one record read instead of one each', async () => {
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+        kmsMocks.pinBytes = serializePinRecord({
+            ...(await createPinRecord('123456')),
+            failedAttempts: 2,
+        })
+
+        renderHook(() => {
+            usePinCode()
+            usePinCode()
+            usePinCode()
+            usePinCode()
+        })
+
+        await waitFor(() => {
+            expect(mockSetFailedAttempts).toHaveBeenCalledTimes(4)
+        })
+        const pinReads = kmsMocks.withSecret.mock.calls.filter(
+            ([id]) => id === PIN_RECORD_KEY_ID,
+        )
+        // One for the v3 migration's version check, one for the hydration.
+        expect(pinReads).toHaveLength(2)
+    }, 30_000)
+
+    test('a mount after hydration settles reads the record afresh', async () => {
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+        const base = await createPinRecord('123456')
+        kmsMocks.pinBytes = serializePinRecord({ ...base, failedAttempts: 1 })
+
+        renderHook(() => usePinCode())
+        await waitFor(() => {
+            expect(mockSetFailedAttempts).toHaveBeenCalledWith(1)
+        })
+
+        kmsMocks.pinBytes = serializePinRecord({
+            ...base,
+            failedAttempts: 4,
+            lockoutEndTime: 123456789,
+        })
+        renderHook(() => usePinCode())
+
+        await waitFor(() => {
+            expect(mockSetFailedAttempts).toHaveBeenLastCalledWith(4)
+            expect(mockSetLockoutEndTime).toHaveBeenLastCalledWith(123456789)
+        })
+    }, 30_000)
+
     test('a failed verify increments and persists the attempt to the record', async () => {
         setupMock({ failedAttempts: 2, lockoutEndTime: null })
 

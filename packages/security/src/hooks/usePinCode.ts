@@ -67,6 +67,37 @@ type UsePinCodeResult = {
     checkDuressPinEnabled: () => Promise<boolean>
 }
 
+type LockoutState = Pick<PinRecord, 'failedAttempts' | 'lockoutEndTime'>
+
+type HydrationKms = Parameters<typeof migratePinRecordToV3>[0]
+
+// Every mounted instance hydrates, each read is a round trip through the
+// Keychain's single lock, and the lock screen's biometric prompt reads the same
+// record behind them. Shared only while in flight, so a later mount still reads
+// the record rather than a remembered copy; only the lockout counters leave the
+// read, never the hashes.
+let hydration: Nullable<Promise<Nullable<LockoutState>>> = null
+
+const hydrateLockoutState = (
+    kms: HydrationKms,
+): Promise<Nullable<LockoutState>> => {
+    hydration ??= (async () => {
+        await migratePinRecordToV3(kms)
+        return kms.withSecret(PIN_RECORD_KEY_ID, bytes => {
+            const record = parsePinRecord(bytes)
+            return record
+                ? {
+                      failedAttempts: record.failedAttempts,
+                      lockoutEndTime: record.lockoutEndTime,
+                  }
+                : null
+        })
+    })().finally(() => {
+        hydration = null
+    })
+    return hydration
+}
+
 const calculateLockoutSeconds = (failedAttempts: number): number => {
     const lockoutBlock = Math.floor(
         failedAttempts / MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
@@ -137,15 +168,14 @@ export const usePinCode = (): UsePinCodeResult => {
     useEffect(() => {
         let cancelled = false
         void (async () => {
-            await migratePinRecordToV3({
+            const lockout = await hydrateLockoutState({
                 withSecret,
                 commitSecret,
                 removeSecret,
             })
-            const record = await loadRecord()
-            if (cancelled || !record) return
-            setFailedAttemptsInStore(record.failedAttempts)
-            setLockoutEndTimeInStore(record.lockoutEndTime)
+            if (cancelled || !lockout) return
+            setFailedAttemptsInStore(lockout.failedAttempts)
+            setLockoutEndTimeInStore(lockout.lockoutEndTime)
         })()
         return () => {
             cancelled = true
@@ -154,7 +184,6 @@ export const usePinCode = (): UsePinCodeResult => {
         withSecret,
         commitSecret,
         removeSecret,
-        loadRecord,
         setFailedAttemptsInStore,
         setLockoutEndTimeInStore,
     ])

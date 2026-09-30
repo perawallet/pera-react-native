@@ -96,6 +96,12 @@ type UseBiometricsResult = {
 // clear is in flight would lose its fresh key.
 let legacySweep: Nullable<Promise<void>> = null
 
+// The mount-time reads are fire-and-forget, and every native call shares one
+// Expo queue with the lock screen's own checks, so concurrent mounts share one
+// run. Explicit calls never join: the unlock path decides on a fresh reading.
+let mountReconcile: Nullable<Promise<boolean>> = null
+let mountAvailability: Nullable<Promise<boolean>> = null
+
 const sha256Hex = (bytes: Uint8Array): string =>
     bytesToHex(new Uint8Array(createHash('sha256').update(bytes).digest()))
 
@@ -267,8 +273,13 @@ export const useBiometrics = (): UseBiometricsResult => {
     }, [biometricsService])
 
     useEffect(() => {
-        void checkBiometricsEnabled()
-        void checkBiometricsAvailable().then(setIsAvailable)
+        mountReconcile ??= checkBiometricsEnabled().finally(() => {
+            mountReconcile = null
+        })
+        mountAvailability ??= checkBiometricsAvailable().finally(() => {
+            mountAvailability = null
+        })
+        void mountAvailability.then(setIsAvailable)
     }, [checkBiometricsEnabled, checkBiometricsAvailable])
 
     const writeBiometricBlob = useCallback(
@@ -412,9 +423,12 @@ export const useBiometrics = (): UseBiometricsResult => {
     const readLockoutEndTime = useCallback(async (): Promise<
         Nullable<number>
     > => {
-        const record = await withSecret(PIN_RECORD_KEY_ID, parsePinRecord)
-        const endTime = record?.lockoutEndTime ?? null
-        return endTime !== null && endTime > Date.now() ? endTime : null
+        // Only the timestamp leaves the read; the record's hashes stay inside it.
+        const endTime = await withSecret(
+            PIN_RECORD_KEY_ID,
+            bytes => parsePinRecord(bytes)?.lockoutEndTime ?? null,
+        )
+        return endTime != null && endTime > Date.now() ? endTime : null
     }, [withSecret])
 
     // Only a pre-binding opt-in swept by the reconcile and never re-armed; a
