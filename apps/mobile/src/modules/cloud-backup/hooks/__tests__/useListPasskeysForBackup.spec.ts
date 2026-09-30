@@ -24,7 +24,7 @@ const zeroBytesMock = vi.fn<(secret: Uint8Array) => void>()
 const canAccessMock = vi.fn<(key: unknown, domain: string) => boolean>()
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    deriveHdAccount: deriveHdAccountMock,
+    deriveHdAccount: (...args: unknown[]) => deriveHdAccountMock(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
