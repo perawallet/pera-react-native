@@ -11,9 +11,9 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    useArc0001Resolver,
-    useEnqueueArc0001SignRequest,
     useSigningRequest,
     GenesisHashMismatchError,
     type SignRequest,
@@ -25,6 +25,7 @@ import {
 import {
     enqueueInboundRequest,
     isConnectionAlive,
+    useChainTransactionSigning,
     type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import {
@@ -57,8 +58,12 @@ export const useSignRequestApprovalScreen =
     (): UseSignRequestApprovalScreenResult => {
         const { requestId, approval, isLoading } = useDappRequest()
         const { t } = useLanguage()
-        const resolve = useArc0001Resolver()
-        const enqueue = useEnqueueArc0001SignRequest()
+        // Every legacy network is the same chain, so reading it once is safe
+        // (the pattern useConnectionsProvider.web.ts already uses); the
+        // approval's own `chainId` still goes on the message below.
+        const transactionSigning = useChainTransactionSigning(
+            scopeForLegacyNetwork(useNetworkStore.getState().network).chainId,
+        )
         const { addSignRequest, removeSignRequest, currentRequest } =
             useSigningRequest()
         const accounts = useSigningAccounts()
@@ -91,6 +96,7 @@ export const useSignRequestApprovalScreen =
             // the neutral adapter's input from the wire.
             const message: InboundMessage = {
                 kind: 'request',
+                chainId: approval.chainId,
                 sourceType: approval.sourceType,
                 connectionId: approval.connectionId,
                 correlationId: approval.correlationId,
@@ -111,8 +117,7 @@ export const useSignRequestApprovalScreen =
                 },
             }
             enqueueInboundRequest(message, {
-                resolveArc0001: resolve,
-                enqueueArc0001: enqueue,
+                transactionSigning,
                 addSignRequest,
                 removeSignRequest,
                 accounts: allAccounts,
@@ -125,8 +130,7 @@ export const useSignRequestApprovalScreen =
         }, [
             requestId,
             approval,
-            resolve,
-            enqueue,
+            transactionSigning,
             addSignRequest,
             removeSignRequest,
             accounts,

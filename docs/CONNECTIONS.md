@@ -14,9 +14,12 @@ be stale or half-migrated.
 `packages/connections` owns the runtime. A `ConnectionHandler` (`src/handler.ts`) is one protocol
 managing N connections; the `ConnectionRegistry` (`src/registry.ts`) owns the handlers, validates
 every inbound payload before a subscriber can see it, and reconciles the store from each handler's
-`restore()` on boot. Handlers emit protocol-neutral `WalletOperation`s (ARC-0001 groups, ARC-60 or
-legacy sign-data); `src/signing-adapter.ts` is the single bridge from those into the signing
-pipeline, so a new protocol needs a handler and nothing else. The bridge runs both ways: a handler
+`restore()` on boot. Handlers emit protocol-neutral `WalletOperation`s and declare the chain each
+message belongs to. That chain's dApp request adapter (`src/dappRequest.ts`) validates the
+transaction payload and supplies the signing hook, and a message for a chain with no registered
+adapter is refused. `src/signing-adapter.ts` is the single bridge from those operations into the
+signing pipeline, so a new protocol needs a handler and a new chain needs an adapter, nothing else.
+The bridge runs both ways: a handler
 whose peer stops waiting for an answer reports `onRequestExpired`, and the adapter withdraws the
 sign request it is holding for the user, since answering late would only fail on the wire.
 
@@ -26,7 +29,7 @@ legitimate handler cannot satisfy is an interface finding, not a reason to bend 
 `src/handlerKit.ts` (`createHandlerKit`) is the scaffolding a handler closure would otherwise
 repeat: the context guard, error reporting with pairing/connection scopes, `lastActiveAt` stamping
 and pending pair-time origins. Handlers import it from the `./handlerKit` subpath, not the barrel,
-which would pull signing and blockchain into the walletconnect and dapp module graphs.
+which would pull signing into the walletconnect and dapp module graphs.
 
 ## Client and host surfaces
 

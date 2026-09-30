@@ -10,44 +10,50 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { z } from 'zod'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-shared'
+import {
+    dappRequestChainAdapters,
+    type DappRequestChainAdapter,
+} from '@perawallet/wallet-core-connections/dappRequest'
 import { AlgorandWalletConnectChainId } from '../../models'
-import { gateSignTxnRequest, gateSignDataRequest } from '../inboundRequestGate'
+import { gateSignDataRequest, gateSignTxnRequest } from '../inboundRequestGate'
 
-// `../schema` re-exports `arc60WireSchema`/`assertArc60RequestWithinLimits`
-// from `@perawallet/wallet-core-signing`, whose barrel drags in RN-only deps
-// (react-native-mmkv) that don't resolve in this test environment. Mock the
-// package the same way `connectorRegistry.spec.ts` does, keeping the numeric
-// limits at their real value (1000) so the "too many" tests still mean
-// something, and mirroring the real ARC-60 wire shape so schema-shape
-// assertions stay meaningful. `vi.hoisted` so the mock fn reference survives
-// past `vi.mock`'s hoisting and can be reconfigured per-test.
-const mocks = vi.hoisted(() => ({
-    assertArc60RequestWithinLimits: vi.fn(),
-}))
+// The gate's own job is the envelope, the session-chain check and the
+// array-vs-object discriminator; the payload itself (transaction-list shape,
+// ARC-60 schema) is the chain adapter's, covered by that chain's own tests
+// (e.g. chain-algorand's `walletConnect.spec.ts`). A fake adapter here lets
+// this file assert on the DELEGATION alone, decoupled from any one chain's
+// payload rules.
+const screenRequest = vi.fn()
 
-vi.mock('@perawallet/wallet-core-signing', () => ({
-    MAX_DATA_SIGN_REQUESTS: 1000,
-    MAX_TRANSACTION_SIGN_REQUESTS: 1000,
-    arc60WireSchema: z.object({
-        data: z.string().max(16 * 1024),
-        signer: z.string().min(1).max(128),
-        domain: z.string().min(1).max(256),
-        authenticatorData: z.string().min(1).max(512),
-        requestId: z.string().max(256).optional(),
-        hdPath: z.string().max(256).optional(),
-        metadata: z.object({
-            scope: z.number().int(),
-            encoding: z.string().min(1).max(32),
-        }),
-    }),
-    assertArc60RequestWithinLimits: mocks.assertArc60RequestWithinLimits,
-}))
+const fakeAdapter: DappRequestChainAdapter = {
+    chainId: 'algorand',
+    relayableErrorNames: [],
+    parseSigningParams: () => ({ ok: true, payload: [] }),
+    resolveReportedNetwork: scope => scope.networkId,
+    walletConnect: {
+        namespace: 'algorand',
+        caip2ChainIdFor: () => null,
+        networkForCaip2ChainId: () => null,
+        toWireResult: () => null,
+        v1: {
+            isChainIdAcceptable: (chainId, networkId) =>
+                chainId === AlgorandWalletConnectChainId.mainnet &&
+                networkId === 'mainnet',
+            networksFor: () => ['mainnet'],
+            screenRequest,
+        },
+    },
+    validateTransactionPayload: () => ({ ok: true, group: [] }),
+    useEnqueueTransactionSigning: () => async () => null,
+}
 
 beforeEach(() => {
-    mocks.assertArc60RequestWithinLimits.mockReset()
+    dappRequestChainAdapters.reset()
+    dappRequestChainAdapters.register(fakeAdapter)
+    screenRequest.mockReset()
+    screenRequest.mockReturnValue({ ok: true })
 })
 
 const KNOWN = ['AAAA', 'BBBB']
@@ -61,30 +67,13 @@ const baseInput = {
 }
 
 describe('gateSignTxnRequest', () => {
-    it('accepts a well-formed request naming a known signer', () => {
-        const result = gateSignTxnRequest({
-            ...baseInput,
-            payload: signTxnPayload([[{ txn: 'dHhu', signers: ['AAAA'] }]]),
-        })
-        expect(result).toEqual({ ok: true })
-    })
-
-    it('accepts a request that names no addresses at all', () => {
-        // Sender resolution needs full ARC-0001 decoding; the gate stays
-        // conservative and defers rather than guessing.
-        const result = gateSignTxnRequest({
-            ...baseInput,
-            payload: signTxnPayload([[{ txn: 'dHhu' }]]),
-        })
-        expect(result).toEqual({ ok: true })
-    })
-
     it('rejects a payload with no numeric id', () => {
         const result = gateSignTxnRequest({
             ...baseInput,
             payload: { params: [[{ txn: 'dHhu' }]] },
         })
         expect(result.ok).toBe(false)
+        expect(screenRequest).not.toHaveBeenCalled()
     })
 
     it('rejects a payload whose params is not an array', () => {
@@ -93,22 +82,7 @@ describe('gateSignTxnRequest', () => {
             payload: signTxnPayload('nope'),
         })
         expect(result.ok).toBe(false)
-    })
-
-    it('rejects an empty transaction list', () => {
-        const result = gateSignTxnRequest({
-            ...baseInput,
-            payload: signTxnPayload([[]]),
-        })
-        expect(result.ok).toBe(false)
-    })
-
-    it('rejects an entry with no txn string', () => {
-        const result = gateSignTxnRequest({
-            ...baseInput,
-            payload: signTxnPayload([[{ signers: ['AAAA'] }]]),
-        })
-        expect(result.ok).toBe(false)
+        expect(screenRequest).not.toHaveBeenCalled()
     })
 
     it('rejects a chain id for the other network', () => {
@@ -117,10 +91,12 @@ describe('gateSignTxnRequest', () => {
             sessionChainId: AlgorandWalletConnectChainId.testnet,
             payload: signTxnPayload([[{ txn: 'dHhu' }]]),
         })
-        expect(result.ok).toBe(false)
         expect(result).toMatchObject({
+            ok: false,
             reason: 'chain id not acceptable on the active network',
+            code: 'invalid-network',
         })
+        expect(screenRequest).not.toHaveBeenCalled()
     })
 
     it('rejects an unknown session with a session-not-found reason, not the wrong-network one', () => {
@@ -136,94 +112,82 @@ describe('gateSignTxnRequest', () => {
             reason: 'session not found — please disconnect and reconnect the dapp',
             code: 'session-not-found',
         })
+        expect(screenRequest).not.toHaveBeenCalled()
     })
 
-    it('rejects when every named signer is unknown', () => {
+    it('extracts the positional group and delegates it with the known addresses', () => {
+        const group = [{ txn: 'dHhu', signers: ['AAAA'] }]
         const result = gateSignTxnRequest({
             ...baseInput,
-            payload: signTxnPayload([[{ txn: 'dHhu', signers: ['ZZZZ'] }]]),
+            payload: signTxnPayload([group]),
         })
-        expect(result.ok).toBe(false)
-    })
 
-    it('accepts when at least one named signer is known', () => {
-        const result = gateSignTxnRequest({
-            ...baseInput,
-            payload: signTxnPayload([
-                [
-                    { txn: 'dHhu', signers: ['ZZZZ'] },
-                    { txn: 'dHhu', signers: ['BBBB'] },
-                ],
-            ]),
-        })
+        expect(screenRequest).toHaveBeenCalledWith(
+            'sign-transactions',
+            group,
+            KNOWN,
+        )
         expect(result).toEqual({ ok: true })
     })
 
-    it('rejects more transactions than the shared limit allows', () => {
-        const tooMany = Array.from({ length: 1001 }, () => ({ txn: 'dHhu' }))
+    it('turns an adapter refusal into a gate rejection with its own reason', () => {
+        screenRequest.mockReturnValue({
+            ok: false,
+            reason: 'too many transactions in one request',
+        })
         const result = gateSignTxnRequest({
             ...baseInput,
-            payload: signTxnPayload([tooMany]),
+            payload: signTxnPayload([[{ txn: 'dHhu' }]]),
         })
-        expect(result.ok).toBe(false)
+        expect(result).toEqual({
+            ok: false,
+            reason: 'too many transactions in one request',
+            code: 'invalid-request',
+        })
     })
-})
-
-const arc60Payload = (overrides: Record<string, unknown> = {}) => ({
-    data: 'ZGF0YQ==',
-    signer: 'AAAA',
-    domain: 'example.com',
-    authenticatorData: 'ZGF0YQ==',
-    metadata: { scope: 1, encoding: 'base64' },
-    ...overrides,
 })
 
 describe('gateSignDataRequest', () => {
     // algo_signData's wire envelope is `{ id, params: <arc60 object> }` — a
     // single object, unlike algo_signTxn's `[[...]]` array-of-arrays.
 
-    it('accepts a well-formed ARC-60 params object', () => {
-        const result = gateSignDataRequest({
-            payload: { id: 1, params: arc60Payload() },
-            network: Networks.mainnet,
-            sessionChainId: AlgorandWalletConnectChainId.mainnet,
-        })
-        expect(result).toEqual({ ok: true })
-    })
-
     it('rejects a payload with no numeric id', () => {
         const result = gateSignDataRequest({
-            payload: { params: arc60Payload() },
+            payload: { params: {} },
             network: Networks.mainnet,
             sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
         expect(result.ok).toBe(false)
+        expect(screenRequest).not.toHaveBeenCalled()
     })
 
     it('rejects when params is an array (the algo_signTxn envelope shape arriving on the wrong method)', () => {
         const result = gateSignDataRequest({
-            payload: { id: 1, params: [arc60Payload()] },
+            payload: { id: 1, params: [{}] },
             network: Networks.mainnet,
             sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
         expect(result.ok).toBe(false)
+        expect(screenRequest).not.toHaveBeenCalled()
     })
 
     it('rejects a chain id for the other network', () => {
         const result = gateSignDataRequest({
-            payload: { id: 1, params: arc60Payload() },
+            payload: { id: 1, params: {} },
             network: Networks.mainnet,
             sessionChainId: AlgorandWalletConnectChainId.testnet,
         })
-        expect(result.ok).toBe(false)
         expect(result).toMatchObject({
+            ok: false,
             reason: 'chain id not acceptable on the active network',
+            code: 'invalid-network',
         })
+        expect(screenRequest).not.toHaveBeenCalled()
     })
 
     it('rejects an unknown session with a session-not-found reason, not the wrong-network one', () => {
         const result = gateSignDataRequest({
-            payload: { id: 1, params: arc60Payload() },
+            payload: { id: 1, params: {} },
             network: Networks.mainnet,
             sessionChainId: undefined,
         })
@@ -232,29 +196,31 @@ describe('gateSignDataRequest', () => {
             reason: 'session not found — please disconnect and reconnect the dapp',
             code: 'session-not-found',
         })
+        expect(screenRequest).not.toHaveBeenCalled()
     })
 
-    it('rejects a payload that fails the ARC-60 schema', () => {
+    it('delegates the params object to the chain adapter with no known addresses', () => {
+        const payload = { data: 'ZGF0YQ==' }
+        const result = gateSignDataRequest({
+            payload: { id: 1, params: payload },
+            network: Networks.mainnet,
+            sessionChainId: AlgorandWalletConnectChainId.mainnet,
+        })
+
+        expect(screenRequest).toHaveBeenCalledWith('sign-data', payload, [])
+        expect(result).toEqual({ ok: true })
+    })
+
+    it('turns an adapter refusal into a gate rejection with its own reason', () => {
+        screenRequest.mockReturnValue({
+            ok: false,
+            reason: 'Invalid ARC-60 sign request payload — request exceeds the maximum allowed size',
+        })
         const result = gateSignDataRequest({
             payload: { id: 1, params: {} },
             network: Networks.mainnet,
             sessionChainId: AlgorandWalletConnectChainId.mainnet,
         })
-        expect(result.ok).toBe(false)
-    })
-
-    it('rejects an oversized ARC-60 payload', () => {
-        mocks.assertArc60RequestWithinLimits.mockImplementationOnce(() => {
-            throw new Error('request exceeds the maximum allowed size')
-        })
-        const result = gateSignDataRequest({
-            payload: { id: 1, params: arc60Payload() },
-            network: Networks.mainnet,
-            sessionChainId: AlgorandWalletConnectChainId.mainnet,
-        })
-        // `../schema`'s assertArc60RequestWithinLimits wraps the underlying
-        // signing-package error in a WalletConnectSignRequestError with a
-        // prefixed message — assert on that real wrapping, not the raw text.
         expect(result).toEqual({
             ok: false,
             reason: 'Invalid ARC-60 sign request payload — request exceeds the maximum allowed size',

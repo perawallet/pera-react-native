@@ -12,47 +12,38 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorCategory,
     ErrorSeverity,
     logger,
 } from '@perawallet/wallet-core-shared'
-import {
-    Arc0001Error,
-    Arc0001ErrorCode,
-    resolveArc0001SignTxnRequest,
-    type Arc0001ResolveResult,
-    type Arc0001SignTxnsRequest,
-} from '@perawallet/wallet-core-blockchain'
 import type {
     Arc60SignableData,
     ExternalSignTxnTransport,
     PeraArbitraryDataMessage,
+    SignRequest,
     SourceType,
 } from '@perawallet/wallet-core-signing'
-import type { InboundMessage, RawInboundMessage } from '../models'
+import {
+    dappRequestChainAdapters,
+    type DappRequestChainAdapter,
+} from '../dappRequest'
+import type { InboundMessage } from '../models'
 import type { ConnectionRegistry } from '../registry'
-import { validateRawMessage } from '../validate'
+import type { PendingRequestLedger } from '../signing-adapter'
 
-const mockResolve = vi.fn(
-    (
-        _request: Arc0001SignTxnsRequest,
-        _options?: { authorizedAddresses?: Set<string> },
-    ): Arc0001ResolveResult => ({
-        allDecoded: [],
-        toSign: [],
-        signerOverrides: new Map(),
-    }),
-)
-// Typed to the real `EnqueueArc0001SignRequest` shape, so the transport object
+const CHAIN_ID = 'algorand' as ChainId
+
+// Typed to the real `ExternalSignTxnTransport` shape, so the transport object
 // the adapter hands over is read back below with its true type rather than as
 // an implicit `any`.
 const mockEnqueue = vi.fn(
     async (
-        _resolved: unknown,
+        _request: { group: readonly unknown[]; authorizedAccounts: string[] },
         _transport: ExternalSignTxnTransport,
-    ): Promise<void> => {},
+    ): Promise<SignRequest | null> => null,
 )
 
 const lastTransport = (): ExternalSignTxnTransport => {
@@ -64,8 +55,6 @@ const mockAddSignRequest = vi.fn()
 const mockRemoveSignRequest = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useArc0001Resolver: () => mockResolve,
-    useEnqueueArc0001SignRequest: () => mockEnqueue,
     useSigningRequest: () => ({
         addSignRequest: mockAddSignRequest,
         removeSignRequest: mockRemoveSignRequest,
@@ -74,7 +63,6 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // value (1000, `@perawallet/wallet-core-signing`'s `constants.ts`) is
     // exercised by that package's own tests.
     MAX_DATA_SIGN_REQUESTS: 2,
-    MAX_TRANSACTION_SIGN_REQUESTS: 1000,
     // `schema.ts` and `validate.ts` import these eagerly; only the
     // sign-transactions path is driven from this file, so neither is used.
     arc60WireSchema: { safeParse: vi.fn() },
@@ -111,19 +99,30 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 const { enqueueInboundRequest, useConnectionSigningAdapter } =
     await import('../signing-adapter')
 
+// A fixture registered into the shared `dappRequestChainAdapters` registry,
+// so `useChainTransactionSigning` resolves `mockEnqueue` as this chain's
+// `useEnqueueTransactionSigning`. Only the members this file's hooks reach
+// are exercised; the rest are stubs satisfying the interface.
+const fixtureAdapter = (): DappRequestChainAdapter => ({
+    chainId: CHAIN_ID,
+    relayableErrorNames: [],
+    parseSigningParams: () => ({ ok: true, payload: [] }),
+    resolveReportedNetwork: scope => scope.networkId,
+    walletConnect: {
+        namespace: 'algorand',
+        caip2ChainIdFor: () => null,
+        networkForCaip2ChainId: () => null,
+        toWireResult: () => null,
+    },
+    validateTransactionPayload: () => ({ ok: true, group: [] }),
+    useEnqueueTransactionSigning: () => mockEnqueue,
+})
+
 // Two accounts distinct from every other fixture in this file (default
 // `authorizedAccounts` below is `['AAAA']`), so a mutant that hardcodes a
 // signer value cannot survive these tests.
 const PRIMARY_SIGNER = 'SIGNERPRIMARYQWERTYUIOP123456'
 const REKEYED_SIGNER = 'SIGNERREKEYEDASDFGHJKL7890123'
-
-// A canonically encoded 1-microAlgo payment. The real ARC-0001 resolver
-// msgpack-decodes every slot before it reaches the `msig` check, so the
-// multisig test below needs a transaction algosdk actually accepts.
-const PAYMENT_TXN_BASE64 =
-    'iaNhbXQBo2ZlZc4AA6WYomZ2zQPoo2dlbqxtYWlubmV0LXYxLjCiZ2jEIKurq6urq6urq6urq6urq6urq6urq6urq6urq6urq6uromx2zQfQo3JjdsQgAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgKjc25kxCABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAaR0eXBlo3BheQ=='
-const PAYMENT_TXN_SENDER =
-    'AEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEA5RCDXMI'
 
 // A peer identity distinct from every other fixture in this file, so a
 // mutant that hardcodes or drops `sourceMetadata` cannot survive the tests
@@ -139,6 +138,7 @@ const signDataMessage = (
     sourceType: SourceType = 'walletconnect',
 ) => ({
     kind: 'request' as const,
+    chainId: CHAIN_ID,
     connectionId: 'c1',
     correlationId: '9',
     sourceType,
@@ -190,16 +190,19 @@ describe('useConnectionSigningAdapter', () => {
         mockAccounts = []
         mockAddSignRequest.mockClear()
         mockRemoveSignRequest.mockClear()
-        mockResolve.mockClear()
         mockEnqueue.mockClear()
+        mockEnqueue.mockResolvedValue(null)
+        dappRequestChainAdapters.reset()
+        dappRequestChainAdapters.register(fixtureAdapter())
     })
 
     it('enqueues a sign-transactions request with the connection as transportId', () => {
         const { registry, send } = makeRegistry()
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             sourceType: 'walletconnect' as const,
@@ -211,7 +214,7 @@ describe('useConnectionSigningAdapter', () => {
         })
 
         expect(mockEnqueue).toHaveBeenCalledWith(
-            expect.anything(),
+            { group: [{ txn: 'b64' }], authorizedAccounts: ['AAAA'] },
             expect.objectContaining({
                 sourceType: 'walletconnect',
                 transportId: 'c1',
@@ -222,14 +225,43 @@ describe('useConnectionSigningAdapter', () => {
         )
     })
 
+    it('declines a message naming a chain no adapter is mounted for', () => {
+        const { registry, reportError, send } = makeRegistry()
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+        const reject = vi.fn(async () => {})
+
+        send({
+            kind: 'request',
+            chainId: 'other' as ChainId,
+            connectionId: 'c1',
+            correlationId: '7',
+            sourceType: 'walletconnect' as const,
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(),
+            reject,
+        })
+
+        expect(reject).toHaveBeenCalled()
+        expect(mockEnqueue).not.toHaveBeenCalled()
+        expect(reportError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                message: expect.stringContaining('other'),
+            }),
+            expect.anything(),
+        )
+    })
+
     it('forwards the source type the handler declared', () => {
         // `'webview'` is a SourceType no WalletConnect handler declares, so
         // an adapter deciding this for itself cannot pass.
         const { registry, send } = makeRegistry()
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             sourceType: 'webview',
@@ -246,12 +278,13 @@ describe('useConnectionSigningAdapter', () => {
         )
     })
 
-    it('threads the transport-verified origin through to the ARC-0001 enqueue', () => {
+    it('threads the transport-verified origin through to the enqueue', () => {
         const { registry, send } = makeRegistry()
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             sourceType: 'injected',
@@ -271,13 +304,14 @@ describe('useConnectionSigningAdapter', () => {
 
     it('binds the request to the connection approved accounts', () => {
         // Without this, a session approved for account A could sign for
-        // account B. `authorizedAddresses` is the guarantee; it must reach
-        // the resolver on every request.
+        // account B. `authorizedAccounts` is the guarantee; it must reach
+        // the chain's own enqueue on every request.
         const { registry, send } = makeRegistry()
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             sourceType: 'walletconnect' as const,
@@ -288,18 +322,22 @@ describe('useConnectionSigningAdapter', () => {
             reject: vi.fn(),
         })
 
-        expect(mockResolve).toHaveBeenCalledWith(expect.anything(), {
-            authorizedAddresses: new Set(['AAAA', 'BBBB']),
-        })
+        expect(mockEnqueue).toHaveBeenCalledWith(
+            expect.objectContaining({
+                authorizedAccounts: ['AAAA', 'BBBB'],
+            }),
+            expect.anything(),
+        )
     })
 
     it('routes the signed result back through respond, not a transport call', async () => {
         const { registry, send } = makeRegistry()
         const respond = vi.fn(async () => {})
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             sourceType: 'walletconnect' as const,
@@ -323,10 +361,11 @@ describe('useConnectionSigningAdapter', () => {
         const respond = vi.fn(async () => {
             throw new Error('socket dead')
         })
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             sourceType: 'walletconnect' as const,
@@ -347,10 +386,11 @@ describe('useConnectionSigningAdapter', () => {
         // `handoffDelivery` is gated on `payloadId`; without it a group whose
         // app is killed mid-signing has no delivery channel on relaunch.
         const { registry, send } = makeRegistry()
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '1747',
             authorizedAccounts: ['AAAA'],
@@ -367,10 +407,11 @@ describe('useConnectionSigningAdapter', () => {
         // The id is opaque by contract; a handler that numbers its requests
         // otherwise gets no post-kill handoff rather than a NaN one.
         const { registry, send } = makeRegistry()
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: 'thid:abc',
             authorizedAccounts: ['AAAA'],
@@ -390,10 +431,11 @@ describe('useConnectionSigningAdapter', () => {
         // toast over the RETRY sheet the machine is already showing.
         const { registry, reportError, send } = makeRegistry()
         const reject = vi.fn(async () => {})
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             authorizedAccounts: ['AAAA'],
@@ -420,10 +462,11 @@ describe('useConnectionSigningAdapter', () => {
         // hear that the dApp may not accept the higher fees.
         const { registry, reportError, send } = makeRegistry()
         const reject = vi.fn(async () => {})
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             authorizedAccounts: ['AAAA'],
@@ -453,10 +496,11 @@ describe('useConnectionSigningAdapter', () => {
     it('answers the peer and reports a delivery failure the machine cannot retry', async () => {
         const { registry, reportError, send } = makeRegistry()
         const reject = vi.fn(async () => {})
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             authorizedAccounts: ['AAAA'],
@@ -476,31 +520,6 @@ describe('useConnectionSigningAdapter', () => {
         })
     })
 
-    it('reports a refused request on the error channel, not only to the peer', async () => {
-        // Otherwise a request the adapter turns away closes with no toast.
-        const { registry, reportError, send } = makeRegistry()
-        const violation = new Error('Invalid base64 in transaction 0')
-        mockResolve.mockImplementationOnce(() => {
-            throw violation
-        })
-        renderHook(() => useConnectionSigningAdapter(registry))
-
-        send({
-            kind: 'request',
-            connectionId: 'c1',
-            correlationId: '7',
-            authorizedAccounts: ['AAAA'],
-            peer: PEER,
-            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
-            respond: vi.fn(),
-            reject: vi.fn(async () => {}),
-        })
-
-        expect(reportError).toHaveBeenCalledWith(violation, {
-            connectionId: 'c1',
-        })
-    })
-
     it('swallows a failed rejection delivery instead of leaking it', async () => {
         // `respondWithReject` is typed as returning void, so there is nowhere
         // to propagate a delivery failure to. Un-caught, the rejection escapes
@@ -512,10 +531,11 @@ describe('useConnectionSigningAdapter', () => {
         const reject = vi.fn(async () => {
             throw new Error('socket dead')
         })
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             sourceType: 'walletconnect' as const,
@@ -546,10 +566,11 @@ describe('useConnectionSigningAdapter', () => {
         const reject = vi.fn(() => {
             throw new Error('no connector')
         })
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         send({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             sourceType: 'walletconnect' as const,
@@ -573,21 +594,21 @@ describe('useConnectionSigningAdapter', () => {
         warn.mockRestore()
     })
 
-    it('rejects the peer when the resolver throws an ARC-0001 violation', () => {
-        // `resolveArc0001SignTxnRequest` throws on every spec violation (bad
-        // base64, msig, over-max count, disagreeing authAddr...). Nothing
-        // downstream answers the peer for us: an escaped throw dies in the
-        // registry's listener loop as a log line and the dApp waits out its
-        // own timeout.
+    it('declines the peer when the chain enqueue throws synchronously, and untracks the request', () => {
+        // The chain's own resolver may enforce invariants (bad base64, msig,
+        // over-max count...) by throwing synchronously. Nothing downstream
+        // answers the peer for us: an escaped throw dies in the registry's
+        // listener loop as a log line and the dApp waits out its own timeout.
         const { registry, send } = makeRegistry()
         const violation = new Error('Invalid base64 in transaction 0')
-        mockResolve.mockImplementationOnce(() => {
+        mockEnqueue.mockImplementationOnce(() => {
             throw violation
         })
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         const message = {
             kind: 'request' as const,
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             sourceType: 'walletconnect' as const,
@@ -603,90 +624,44 @@ describe('useConnectionSigningAdapter', () => {
         expect(() => send(message)).not.toThrow()
 
         expect(message.reject).toHaveBeenCalledWith(violation)
-        expect(mockEnqueue).not.toHaveBeenCalled()
     })
 
-    it('rejects a multisig slot to the peer with ARC-0001 4200', () => {
-        // End to end over the real resolver: the boundary schema has to carry
-        // `msig` through, or the resolver never sees it and a request for
-        // multisig sub-signing renders as an ordinary signing sheet.
-        const { registry, send } = makeRegistry()
-        mockResolve.mockImplementationOnce((request, options) =>
-            resolveArc0001SignTxnRequest(request, {
-                signableAddresses: new Set([PAYMENT_TXN_SENDER]),
-                authorizedAddresses: options?.authorizedAddresses,
-            }),
-        )
-        renderHook(() => useConnectionSigningAdapter(registry))
-
-        const reject = vi.fn(async (_error: Error) => {})
-        const raw: RawInboundMessage = {
-            kind: 'request',
-            connectionId: 'c1',
-            correlationId: '7',
-            sourceType: 'walletconnect' as const,
-            authorizedAccounts: [PAYMENT_TXN_SENDER],
-            peer: PEER,
-            rawOperation: {
-                type: 'sign-transactions',
-                params: [
-                    {
-                        txn: PAYMENT_TXN_BASE64,
-                        msig: {
-                            version: 1,
-                            threshold: 2,
-                            addrs: [PAYMENT_TXN_SENDER, PAYMENT_TXN_SENDER],
-                        },
-                    },
-                ],
-            },
-            respond: vi.fn(async () => {}),
-            reject,
-        }
-        const validated = validateRawMessage(raw)
-
-        expect(validated.ok).toBe(true)
-        if (!validated.ok) return
-        send(validated.message)
-
-        const relayed = reject.mock.calls[0][0]
-        if (!(relayed instanceof Arc0001Error)) {
-            throw new Error(`expected an Arc0001Error, got ${String(relayed)}`)
-        }
-        expect(relayed.code).toBe(Arc0001ErrorCode.Unsupported)
-        expect(mockEnqueue).not.toHaveBeenCalled()
-    })
-
-    it('rejects an unauthorized signer to the peer, not just silently', () => {
-        // The branch's headline security property: a session approved for
-        // account A must not sign for account B. The resolver enforces it by
-        // throwing `Unauthorized`, so "nothing is signed" is only half the
-        // contract — the refusal has to reach the dApp and the user too.
-        const { registry, send } = makeRegistry()
-        const unauthorized = new Error('Signer BBBB is not authorized')
-        mockResolve.mockImplementationOnce(() => {
-            throw unauthorized
+    it('leaves nothing in the pending ledger after a synchronous enqueue throw', () => {
+        const pendingRequests: PendingRequestLedger = new Map()
+        const onError = vi.fn()
+        const violation = new Error('Invalid base64 in transaction 0')
+        const throwingEnqueue = vi.fn(() => {
+            throw violation
         })
-        renderHook(() => useConnectionSigningAdapter(registry))
 
-        const message = {
-            kind: 'request' as const,
-            connectionId: 'c1',
-            correlationId: '7',
-            sourceType: 'walletconnect' as const,
-            authorizedAccounts: ['AAAA'],
-            peer: PEER,
-            operation: {
-                type: 'sign-transactions' as const,
-                group: [{ txn: 'b64', signers: ['BBBB'] }],
+        enqueueInboundRequest(
+            {
+                kind: 'request',
+                chainId: CHAIN_ID,
+                connectionId: 'c1',
+                correlationId: '7',
+                sourceType: 'walletconnect',
+                authorizedAccounts: ['AAAA'],
+                peer: PEER,
+                operation: {
+                    type: 'sign-transactions',
+                    group: [{ txn: 'not-base64' }],
+                },
+                respond: vi.fn(async () => {}),
+                reject: vi.fn(async () => {}),
             },
-            respond: vi.fn(async () => {}),
-            reject: vi.fn(async () => {}),
-        }
-        send(message)
+            {
+                transactionSigning: new Map([[CHAIN_ID, throwingEnqueue]]),
+                addSignRequest: mockAddSignRequest,
+                removeSignRequest: mockRemoveSignRequest,
+                accounts: [],
+                pendingRequests,
+                onError,
+            },
+        )
 
-        expect(message.reject).toHaveBeenCalledWith(unauthorized)
-        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(pendingRequests.size).toBe(0)
+        expect(onError).toHaveBeenCalledWith(violation, expect.anything())
     })
 
     it('rejects the peer when enqueueing the sign request fails', async () => {
@@ -697,10 +672,11 @@ describe('useConnectionSigningAdapter', () => {
         const { registry, send } = makeRegistry()
         const failure = new Error('encode failed')
         mockEnqueue.mockRejectedValueOnce(failure)
-        renderHook(() => useConnectionSigningAdapter(registry))
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
         const message = {
             kind: 'request' as const,
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId: '7',
             sourceType: 'walletconnect' as const,
@@ -728,6 +704,7 @@ describe('useConnectionSigningAdapter', () => {
 
         const txnMessage = (correlationId = '7'): InboundMessage => ({
             kind: 'request',
+            chainId: CHAIN_ID,
             connectionId: 'c1',
             correlationId,
             sourceType: 'walletconnect',
@@ -744,7 +721,7 @@ describe('useConnectionSigningAdapter', () => {
             const signRequest = { id: 'sr-1', type: 'transactions' }
             mockEnqueue.mockResolvedValueOnce(signRequest as never)
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             send(txnMessage())
             await Promise.resolve()
@@ -764,7 +741,7 @@ describe('useConnectionSigningAdapter', () => {
                 }),
             )
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             send(txnMessage())
             send(expired())
@@ -779,7 +756,7 @@ describe('useConnectionSigningAdapter', () => {
         it('withdraws a sign-data request by its connection and correlation id', () => {
             mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
             send(
                 signDataMessage(
                     {
@@ -809,7 +786,7 @@ describe('useConnectionSigningAdapter', () => {
             const signRequest = { id: 'sr-3', type: 'transactions' }
             mockEnqueue.mockResolvedValueOnce(signRequest as never)
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
             send(txnMessage())
             await Promise.resolve()
             await lastTransport().respondWithResult([null])
@@ -824,7 +801,7 @@ describe('useConnectionSigningAdapter', () => {
         it('enqueues an ARC-60 sign request', () => {
             mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             const stdSigData = {
                 data: 'ZGF0YQ==',
@@ -855,7 +832,7 @@ describe('useConnectionSigningAdapter', () => {
         it('stamps the ARC-60 request with the source type the handler declared', () => {
             mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             send(
                 signDataMessage(
@@ -882,7 +859,7 @@ describe('useConnectionSigningAdapter', () => {
         it('threads the transport-verified origin onto the ARC-60 request so the domain-mismatch warning can fire', () => {
             mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             send({
                 ...signDataMessage(
@@ -913,7 +890,7 @@ describe('useConnectionSigningAdapter', () => {
         it('threads the transport-verified origin onto a legacy arbitrary-data request', () => {
             mockAccounts = [{ address: PRIMARY_SIGNER, canSignData: true }]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             send({
                 ...signDataMessage(
@@ -941,7 +918,7 @@ describe('useConnectionSigningAdapter', () => {
         it('enqueues a legacy arbitrary-data sign request', () => {
             mockAccounts = [{ address: PRIMARY_SIGNER, canSignData: true }]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             const payload = [
                 { data: 'ZGF0YQ==', signer: PRIMARY_SIGNER, chainId: 4160 },
@@ -965,7 +942,7 @@ describe('useConnectionSigningAdapter', () => {
             // must not sign for REKEYED_SIGNER.
             mockAccounts = [{ address: REKEYED_SIGNER, canSignData: true }]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             const message = signDataMessage(
                 [
@@ -985,7 +962,7 @@ describe('useConnectionSigningAdapter', () => {
 
         it('rejects more items than MAX_DATA_SIGN_REQUESTS', () => {
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             // Mocked MAX_DATA_SIGN_REQUESTS is 2, above.
             const message = signDataMessage(
@@ -1006,7 +983,7 @@ describe('useConnectionSigningAdapter', () => {
             // A watch account: present and authorized, but keyless.
             mockAccounts = [{ address: PRIMARY_SIGNER, canSignData: false }]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             const message = signDataMessage(
                 [
@@ -1029,7 +1006,7 @@ describe('useConnectionSigningAdapter', () => {
             // signature can never be represented in a single ARC-60 response.
             mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: false }]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             const message = signDataMessage(
                 {
@@ -1063,7 +1040,7 @@ describe('useConnectionSigningAdapter', () => {
                 { address: PRIMARY_SIGNER, canArc60: true },
             ]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             send(
                 signDataMessage(
@@ -1099,7 +1076,7 @@ describe('useConnectionSigningAdapter', () => {
                 { address: REKEYED_SIGNER, canArc60: true },
             ]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             const message = signDataMessage(
                 {
@@ -1126,11 +1103,12 @@ describe('useConnectionSigningAdapter', () => {
                 { address: REKEYED_SIGNER, canSignData: true },
             ]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             const respond = vi.fn(async () => {})
             const message = {
                 kind: 'request' as const,
+                chainId: CHAIN_ID,
                 connectionId: 'c1',
                 correlationId: '9',
                 sourceType: 'walletconnect' as const,
@@ -1176,13 +1154,14 @@ describe('useConnectionSigningAdapter', () => {
             // rather than swallowing it.
             mockAccounts = [{ address: PRIMARY_SIGNER, canSignData: true }]
             const { registry, send } = makeRegistry()
-            renderHook(() => useConnectionSigningAdapter(registry))
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
             const respond = vi.fn(async () => {
                 throw new Error('socket dead')
             })
             const message = {
                 kind: 'request' as const,
+                chainId: CHAIN_ID,
                 connectionId: 'c1',
                 correlationId: '9',
                 sourceType: 'walletconnect' as const,
@@ -1218,6 +1197,7 @@ describe('useConnectionSigningAdapter', () => {
     it('enqueues through the pure function with explicit deps, no hook mounted', () => {
         const message = {
             kind: 'request' as const,
+            chainId: CHAIN_ID,
             sourceType: 'walletconnect' as const,
             connectionId: 'c1',
             correlationId: '7',
@@ -1232,19 +1212,15 @@ describe('useConnectionSigningAdapter', () => {
         }
 
         enqueueInboundRequest(message, {
-            resolveArc0001: mockResolve,
-            enqueueArc0001: mockEnqueue,
+            transactionSigning: new Map([[CHAIN_ID, mockEnqueue]]),
             addSignRequest: mockAddSignRequest,
             removeSignRequest: mockRemoveSignRequest,
             accounts: [],
             pendingRequests: new Map(),
         })
 
-        expect(mockResolve).toHaveBeenCalledWith(expect.anything(), {
-            authorizedAddresses: new Set(['AAAA']),
-        })
         expect(mockEnqueue).toHaveBeenCalledWith(
-            expect.anything(),
+            expect.objectContaining({ authorizedAccounts: ['AAAA'] }),
             expect.objectContaining({
                 transportId: 'c1',
                 sourceMetadata: PEER,
@@ -1255,7 +1231,7 @@ describe('useConnectionSigningAdapter', () => {
     it('unsubscribes on unmount', () => {
         const { registry, isSubscribed } = makeRegistry()
         const { unmount } = renderHook(() =>
-            useConnectionSigningAdapter(registry),
+            useConnectionSigningAdapter(registry, CHAIN_ID),
         )
 
         expect(isSubscribed()).toBe(true)

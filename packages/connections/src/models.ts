@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import type { Arc0001WalletTransaction } from '@perawallet/wallet-core-blockchain'
-import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Arc60SignableData,
@@ -26,14 +25,10 @@ import type {
     ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 
-export type { Arc0001WalletTransaction }
 // Re-exported because `InboundMessage.sourceType` is part of this package's
 // published surface: the extension realms that carry it across a message hop
 // have no reason to depend on the signing package for the type alone.
 export type { SourceType }
-
-/** ARC-0001 request payload: one entry per transaction slot. */
-export type Arc0001TxnGroup = Arc0001WalletTransaction[]
 
 export const WALLET_OPERATION_TYPES = [
     'sign-transactions',
@@ -47,13 +42,13 @@ export type WalletOperationType = (typeof WALLET_OPERATION_TYPES)[number]
  * own envelope boundary rather than emitting an `unknown` variant.
  */
 export type WalletOperation =
-    | { type: 'sign-transactions'; group: Arc0001TxnGroup }
+    | { type: 'sign-transactions'; group: readonly unknown[] }
     | {
           type: 'sign-data'
           payload: Arc60SignableData | PeraArbitraryDataMessage[]
       }
 
-/** ARC-0001 / ARC-60 response payloads. The handler owns enveloping. */
+/** Signing results, before the handler envelopes them for its wire. */
 export type WalletOperationResult =
     | { type: 'sign-transactions'; signed: Nullable<string>[] }
     | { type: 'sign-data'; signatures: Uint8Array[] }
@@ -94,6 +89,12 @@ export const matchesScope = (
 
 type MessageBase = {
     connectionId: ConnectionId
+    /**
+     * The chain this request answers for. The handler declares it, the same
+     * way it declares `sourceType`; a message naming a chain with no
+     * registered adapter is refused rather than passed through unvalidated.
+     */
+    chainId: ChainId
     /** Handler-scoped and opaque (WalletConnect id, DIDComm `thid`, ...). Do not parse it. */
     correlationId: string
     /**
@@ -105,7 +106,7 @@ type MessageBase = {
      */
     sourceType: SourceType
     /**
-     * Becomes ARC-0001's `authorizedAddresses`. Carried on the message rather
+     * The accounts the signer may sign for. Carried on the message rather
      * than looked up downstream: a store lookup could race a concurrent disconnect.
      */
     authorizedAccounts: string[]

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { arc0001SignTxnRequestSchema } from '@perawallet/wallet-core-blockchain'
 import { ARC0001_MAX_TXN_B64_LENGTH } from '@perawallet/wallet-core-blockchain/arc0001/limits'
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -17,13 +18,27 @@ import {
     Networks,
     type Network,
 } from '@perawallet/wallet-core-config'
-import type {
-    DappRequestChainAdapter,
-    DappSigningParamsResult,
+import {
+    describeZodIssues,
+    type DappRequestChainAdapter,
+    type DappSigningParamsResult,
 } from '@perawallet/wallet-core-connections'
 import { isArc60WirePayload } from '@perawallet/wallet-core-signing'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { useAlgorandTransactionSigning } from './transactionSigning'
+import { algorandWalletConnectSupport } from './walletConnect'
+
+/**
+ * The resolver's own schema, not a copy: zod strips undeclared keys, so any
+ * divergence would silently disarm a resolver refusal (a dropped `msig` turns
+ * a 4200 into an ordinary signing sheet). Capped here because this is the one
+ * gate every transport passes; the resolver decodes every entry before any
+ * later check could refuse the group.
+ */
+const arc0001GroupSchema = arc0001SignTxnRequestSchema
+    .min(1)
+    .max(MAX_TRANSACTION_SIGN_REQUESTS)
 
 const BAKED_NETWORKS: Network[] = [
     Networks.mainnet,
@@ -97,4 +112,19 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
             baked => getNetworkConfig(baked).genesisHash === customGenesisHash,
         )
     },
+
+    walletConnect: algorandWalletConnectSupport,
+
+    validateTransactionPayload(payload) {
+        const parsed = arc0001GroupSchema.safeParse(payload)
+        if (!parsed.success) {
+            return {
+                ok: false,
+                message: `Invalid algo_signTxn payload — ${describeZodIssues(parsed.error)}`,
+            }
+        }
+        return { ok: true, group: parsed.data }
+    },
+
+    useEnqueueTransactionSigning: useAlgorandTransactionSigning,
 }

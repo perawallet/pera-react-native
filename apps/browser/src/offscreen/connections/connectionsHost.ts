@@ -182,6 +182,7 @@ export const startConnectionsHost = (
                 kind: 'connection-request',
                 connectionId: message.connectionId,
                 correlationId: message.correlationId,
+                chainId: message.chainId,
                 operation: encodeWalletOperation(message.operation),
                 authorizedAccounts: message.authorizedAccounts,
                 peer: message.peer,

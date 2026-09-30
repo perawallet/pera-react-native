@@ -11,8 +11,7 @@
  */
 
 import { vi, type Mock } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-shared'
-import { getCaip2ChainId } from '../caip'
+import { walletConnectSupportFor } from '../../shared/chainSupport'
 import type {
     WalletKitClient,
     WalletKitEvent,
@@ -39,8 +38,43 @@ export const PAIRING_TOPIC = 'c'.repeat(64)
 export const SYM_KEY = 'd'.repeat(64)
 export const ADDRESS = 'A'.repeat(58)
 export const OTHER_ADDRESS = 'B'.repeat(58)
-export const MAINNET_CHAIN_ID = getCaip2ChainId(Networks.mainnet) ?? ''
-export const TESTNET_CHAIN_ID = getCaip2ChainId(Networks.testnet) ?? ''
+// The real registered adapter's own ids (registerDappRequestAdapter.ts, run
+// as this package's vitest setup), so a genesis-hash or CAIP-2 typo on either
+// side of the adapter boundary fails a real test rather than passing against
+// a second, independently-recomputed copy.
+//
+// Resolved lazily rather than at module load: a consumer outside this
+// package (apps/mobile's `walletkit-stub.ts`, aliased in for `@reown/walletkit`)
+// can import this file before its OWN chain-registration bootstrap has run
+// (mobile defers it to a `beforeAll`, deliberately, so chain packages load
+// after a test file's `vi.unmock` calls take effect). `ensureChainIds` is
+// called by every function below that needs a value, always from inside a
+// test body — by which point any consumer's setup has long finished — and
+// mutates these `let` exports; ESM bindings are live, so already-imported
+// references see the resolved value too.
+export let MAINNET_CHAIN_ID = ''
+export let TESTNET_CHAIN_ID = ''
+let chainIdsResolved = false
+
+/**
+ * Exported so a spec that deliberately drives the handler with no adapter
+ * registered (e.g. `handler.unregistered.spec.ts`) can resolve these ids
+ * once, up front, while the real adapter is still in place, before its own
+ * `beforeEach` clears the registry — the fixtures need a realistic chain id
+ * regardless of what the handler itself can currently look up.
+ */
+export const ensureChainIds = (): void => {
+    if (chainIdsResolved) return
+    const support = walletConnectSupportFor('mainnet')
+    if (!support) {
+        throw new Error(
+            'fakeWalletKit.ts requires a chain adapter registered before the test body runs (registerDappRequestAdapter.ts, or the consuming app’s own bootstrap)',
+        )
+    }
+    MAINNET_CHAIN_ID = support.caip2ChainIdFor('mainnet') ?? ''
+    TESTNET_CHAIN_ID = support.caip2ChainIdFor('testnet') ?? ''
+    chainIdsResolved = true
+}
 export const PROPOSAL_ID = 1701
 export const REQUEST_ID = 4242
 
@@ -88,43 +122,46 @@ export type FakeWalletKit = WalletKitClient & {
 
 export const makeSession = (
     overrides: Partial<WalletKitSession> = {},
-): WalletKitSession => ({
-    topic: TOPIC,
-    pairingTopic: PAIRING_TOPIC,
-    relay: { protocol: 'irn' },
-    expiry: 1_800_000_000,
-    acknowledged: true,
-    controller: 'controller-public-key',
-    namespaces: {
-        algorand: {
-            chains: [MAINNET_CHAIN_ID],
-            accounts: [`${MAINNET_CHAIN_ID}:${ADDRESS}`],
-            methods: ['algo_signTxn'],
-            events: [],
+): WalletKitSession => {
+    ensureChainIds()
+    return {
+        topic: TOPIC,
+        pairingTopic: PAIRING_TOPIC,
+        relay: { protocol: 'irn' },
+        expiry: 1_800_000_000,
+        acknowledged: true,
+        controller: 'controller-public-key',
+        namespaces: {
+            algorand: {
+                chains: [MAINNET_CHAIN_ID],
+                accounts: [`${MAINNET_CHAIN_ID}:${ADDRESS}`],
+                methods: ['algo_signTxn'],
+                events: [],
+            },
         },
-    },
-    requiredNamespaces: {},
-    optionalNamespaces: {},
-    self: {
-        publicKey: 'self-public-key',
-        metadata: {
-            name: 'Pera Wallet',
-            description: '',
-            url: 'https://perawallet.app',
-            icons: [],
+        requiredNamespaces: {},
+        optionalNamespaces: {},
+        self: {
+            publicKey: 'self-public-key',
+            metadata: {
+                name: 'Pera Wallet',
+                description: '',
+                url: 'https://perawallet.app',
+                icons: [],
+            },
         },
-    },
-    peer: {
-        publicKey: 'peer-public-key',
-        metadata: {
-            name: 'Test dApp',
-            description: 'A dApp',
-            url: 'https://dapp.example',
-            icons: ['https://dapp.example/icon.png'],
+        peer: {
+            publicKey: 'peer-public-key',
+            metadata: {
+                name: 'Test dApp',
+                description: 'A dApp',
+                url: 'https://dapp.example',
+                icons: ['https://dapp.example/icon.png'],
+            },
         },
-    },
-    ...overrides,
-})
+        ...overrides,
+    }
+}
 
 export const createFakeWalletKit = (
     initial: Record<string, WalletKitSession> = {},
@@ -210,36 +247,39 @@ export const createFakeWalletKit = (
 
 export const makeProposal = (
     overrides: Partial<WalletKitSessionProposal['params']> = {},
-): WalletKitSessionProposal => ({
-    id: PROPOSAL_ID,
-    params: {
+): WalletKitSessionProposal => {
+    ensureChainIds()
+    return {
         id: PROPOSAL_ID,
-        // Seconds, as WalletKit reports it.
-        expiryTimestamp: 1_800_000_000,
-        relays: [{ protocol: 'irn' }],
-        proposer: {
-            publicKey: 'peer-public-key',
-            metadata: makeSession().peer.metadata,
+        params: {
+            id: PROPOSAL_ID,
+            // Seconds, as WalletKit reports it.
+            expiryTimestamp: 1_800_000_000,
+            relays: [{ protocol: 'irn' }],
+            proposer: {
+                publicKey: 'peer-public-key',
+                metadata: makeSession().peer.metadata,
+            },
+            requiredNamespaces: {
+                algorand: {
+                    chains: [MAINNET_CHAIN_ID],
+                    methods: ['algo_signTxn'],
+                    events: [],
+                },
+            },
+            optionalNamespaces: {},
+            pairingTopic: PAIRING_TOPIC,
+            ...overrides,
         },
-        requiredNamespaces: {
-            algorand: {
-                chains: [MAINNET_CHAIN_ID],
-                methods: ['algo_signTxn'],
-                events: [],
+        verifyContext: {
+            verified: {
+                verifyUrl: '',
+                validation: 'UNKNOWN',
+                origin: 'https://dapp.example',
             },
         },
-        optionalNamespaces: {},
-        pairingTopic: PAIRING_TOPIC,
-        ...overrides,
-    },
-    verifyContext: {
-        verified: {
-            verifyUrl: '',
-            validation: 'UNKNOWN',
-            origin: 'https://dapp.example',
-        },
-    },
-})
+    }
+}
 
 export type RequestOverrides = {
     id?: number
@@ -251,21 +291,24 @@ export type RequestOverrides = {
 
 export const makeRequest = (
     overrides: RequestOverrides = {},
-): WalletKitEventArguments['session_request'] => ({
-    id: overrides.id ?? REQUEST_ID,
-    topic: overrides.topic ?? TOPIC,
-    params: {
-        request: {
-            method: overrides.method ?? 'algo_signTxn',
-            params: overrides.params ?? SIGN_TXN_PARAMS,
+): WalletKitEventArguments['session_request'] => {
+    ensureChainIds()
+    return {
+        id: overrides.id ?? REQUEST_ID,
+        topic: overrides.topic ?? TOPIC,
+        params: {
+            request: {
+                method: overrides.method ?? 'algo_signTxn',
+                params: overrides.params ?? SIGN_TXN_PARAMS,
+            },
+            chainId: overrides.chainId ?? MAINNET_CHAIN_ID,
         },
-        chainId: overrides.chainId ?? MAINNET_CHAIN_ID,
-    },
-    verifyContext: {
-        verified: {
-            verifyUrl: '',
-            validation: 'UNKNOWN',
-            origin: 'https://dapp.example',
+        verifyContext: {
+            verified: {
+                verifyUrl: '',
+                validation: 'UNKNOWN',
+                origin: 'https://dapp.example',
+            },
         },
-    },
-})
+    }
+}

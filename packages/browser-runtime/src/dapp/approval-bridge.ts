@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { SourceType } from '@perawallet/wallet-core-connections'
@@ -57,6 +58,8 @@ export type PendingApproval =
           faviconUrl?: string
           connectionId: string
           correlationId: string
+          /** The chain this request answers for; the approval window rebuilds `InboundMessage` from it. */
+          chainId: ChainId
           operation: WireWalletOperation
           authorizedAccounts: string[]
           peer: ConnectionPeer
@@ -214,6 +217,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         faviconUrl?: string
         connectionId: string
         correlationId: string
+        chainId: ChainId
         operation: WireWalletOperation
         authorizedAccounts: string[]
         peer: ConnectionPeer

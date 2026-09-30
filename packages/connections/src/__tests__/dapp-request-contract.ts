@@ -29,6 +29,15 @@ export interface DappRequestContractFixtures {
     }
     /** A wallet scope the chain must not disclose. */
     undisclosed: { scope: ChainScope; customGenesisHash?: string }
+    walletConnect: {
+        /** A network this chain reports a CAIP-2 identity for. */
+        networkWithCaip2: NetworkId
+        /**
+         * A WalletConnect v1 chain id acceptable on at least one network.
+         * Omit on a chain whose adapter serves no v1 (`walletConnect.v1` unset).
+         */
+        v1ChainId?: number
+    }
 }
 
 /** Every chain package runs this against its own dApp request adapter. */
@@ -76,6 +85,76 @@ export const dappRequestContractTests = (
             expect(
                 makeAdapter().resolveReportedNetwork(scope, customGenesisHash),
             ).toBeUndefined()
+        })
+
+        it('rejects an empty transaction payload with a non-empty message', () => {
+            const result = makeAdapter().validateTransactionPayload([])
+
+            expect(result.ok).toBe(false)
+            if (!result.ok) expect(result.message).toMatch(/\S/)
+        })
+
+        describe('walletConnect', () => {
+            it('names a non-empty namespace', () => {
+                expect(makeAdapter().walletConnect.namespace).toMatch(/\S/)
+            })
+
+            it("gives a disclosed network's CAIP-2 id the adapter's own namespace prefix", () => {
+                const adapter = makeAdapter()
+                const caip2 = adapter.walletConnect.caip2ChainIdFor(
+                    fixtures.walletConnect.networkWithCaip2,
+                )
+
+                expect(caip2).not.toBeNull()
+                expect(
+                    caip2?.startsWith(`${adapter.walletConnect.namespace}:`),
+                ).toBe(true)
+            })
+
+            it('round-trips a CAIP-2 id back to the network it names', () => {
+                const adapter = makeAdapter()
+                const { networkWithCaip2 } = fixtures.walletConnect
+                const caip2 =
+                    adapter.walletConnect.caip2ChainIdFor(networkWithCaip2)
+                if (caip2 === null) {
+                    throw new Error(
+                        'fixtures.walletConnect.networkWithCaip2 has no CAIP-2 id',
+                    )
+                }
+
+                expect(
+                    adapter.walletConnect.networkForCaip2ChainId(caip2),
+                ).toBe(networkWithCaip2)
+            })
+
+            it('names no network for an unknown CAIP-2 id', () => {
+                expect(
+                    makeAdapter().walletConnect.networkForCaip2ChainId(
+                        'unknown-namespace:0000000000000000000000000000000',
+                    ),
+                ).toBeNull()
+            })
+
+            if (fixtures.walletConnect.v1ChainId !== undefined) {
+                it('accepts a v1 chain id on every network its own networksFor names', () => {
+                    const { v1ChainId } = fixtures.walletConnect
+                    const v1 = makeAdapter().walletConnect.v1
+                    if (!v1) {
+                        throw new Error(
+                            'fixtures declared v1ChainId but the adapter has no walletConnect.v1',
+                        )
+                    }
+                    if (v1ChainId === undefined) return
+
+                    const networks = v1.networksFor(v1ChainId)
+                    expect(networks.length).toBeGreaterThan(0)
+                    for (const network of networks) {
+                        expect(v1.isChainIdAcceptable(v1ChainId, network)).toBe(
+                            true,
+                        )
+                    }
+                })
+            }
         })
     })
 }

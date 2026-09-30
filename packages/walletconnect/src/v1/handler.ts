@@ -21,7 +21,7 @@ import {
     createConnectorRegistry,
     createWalletConnectConnector,
 } from '../connection'
-import { isChainIdAcceptable } from '../shared/chain'
+import { isV1ChainIdAcceptable } from '../shared/chainSupport'
 import { redactWalletConnectUri, walletConnectLogContext } from '../shared/uri'
 import { WalletConnectError } from '../shared/errors'
 import { createV1ConnectorBinding } from './binding'
@@ -196,7 +196,7 @@ export const createWalletConnectV1Handler = (
         // Narrowed first: a malformed own-kind record must not throw here.
         matchesNetwork: (connection, network) =>
             isWalletConnectV1Connection(connection) &&
-            isChainIdAcceptable(connection.metadata.chainId, network),
+            isV1ChainIdAcceptable(connection.metadata.chainId, network),
 
         methodsFor: connection =>
             isWalletConnectV1Connection(connection)

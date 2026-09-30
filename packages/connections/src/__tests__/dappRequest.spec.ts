@@ -23,6 +23,14 @@ const fakeAdapter: DappRequestChainAdapter = {
     relayableErrorNames: [],
     parseSigningParams: () => ({ ok: true, payload: [] }),
     resolveReportedNetwork: scope => scope.networkId,
+    walletConnect: {
+        namespace: 'algorand',
+        caip2ChainIdFor: () => null,
+        networkForCaip2ChainId: () => null,
+        toWireResult: () => null,
+    },
+    validateTransactionPayload: () => ({ ok: true, group: [] }),
+    useEnqueueTransactionSigning: () => async () => null,
 }
 
 describe('dappRequestChainAdapters', () => {

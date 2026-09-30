@@ -424,6 +424,7 @@ export const createDappConnectionHandler = (
 
         requireContext().onMessage({
             kind: 'request',
+            chainId: deps.chainId,
             connectionId: connection.id,
             correlationId,
             sourceType: 'injected',

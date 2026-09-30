@@ -11,66 +11,10 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
-import { Networks } from '@perawallet/wallet-core-shared'
-import {
-    getCaip2ChainId,
-    getNetworkFromCaip2ChainId,
-    parseAlgorandCaip10Account,
-    parseCaip10Account,
-    toCaip2ChainId,
-} from '../caip'
+import type { WalletConnectSupport } from '../../shared/chainSupport'
+import { parseCaip10Account, parseCaip10AccountIn } from '../caip'
 
-// The registered ids from the Chain Agnostic `algorand` namespace. Hard-coded
-// on purpose: the implementation derives them from config's genesis hashes, so
-// comparing against the published values catches a typo on either side.
 const MAINNET_CHAIN_ID = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
-const TESTNET_CHAIN_ID = 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe'
-const BETANET_CHAIN_ID = 'algorand:mFgazF-2uRS1tMiL9dsj01hJGySEmPN2'
-
-describe('getCaip2ChainId', () => {
-    it('derives mainnet, testnet and betanet from their genesis hashes', () => {
-        expect(getCaip2ChainId(Networks.mainnet)).toBe(MAINNET_CHAIN_ID)
-        expect(getCaip2ChainId(Networks.testnet)).toBe(TESTNET_CHAIN_ID)
-        expect(getCaip2ChainId(Networks.betanet)).toBe(BETANET_CHAIN_ID)
-    })
-
-    it("encodes betanet's genesis hash with the URL-safe alphabet", () => {
-        // BetaNet's base64 genesis hash contains `+` within the first 32
-        // characters; plain base64 would produce an id no dApp presents.
-        expect(getCaip2ChainId(Networks.betanet)).toContain('mFgazF-2')
-    })
-
-    it('truncates the reference to 32 characters and drops base64 padding', () => {
-        for (const network of [
-            Networks.mainnet,
-            Networks.testnet,
-            Networks.betanet,
-        ]) {
-            const reference = getCaip2ChainId(network)?.split(':')[1] ?? ''
-            expect(reference).toHaveLength(32)
-            expect(reference).toMatch(/^[-_a-zA-Z0-9]{32}$/)
-        }
-    })
-
-    it('has no chain id for custom', () => {
-        expect(getCaip2ChainId(Networks.custom)).toBeNull()
-    })
-
-    it('has no chain id for a network no chain declares', () => {
-        expect(getCaip2ChainId('fnet')).toBeNull()
-    })
-
-    it.each(algorandDescriptor.networks)(
-        "matches the descriptor's CAIP-2 id for $id and round-trips it",
-        network => {
-            const chainId = getCaip2ChainId(network.id)
-
-            expect(chainId).toBe(network.caip2)
-            expect(getNetworkFromCaip2ChainId(chainId ?? '')).toBe(network.id)
-        },
-    )
-})
 
 describe('parseCaip10Account', () => {
     const ADDRESS = 'A'.repeat(58)
@@ -102,72 +46,40 @@ describe('parseCaip10Account', () => {
     })
 })
 
-describe('parseAlgorandCaip10Account', () => {
+describe('parseCaip10AccountIn', () => {
     const ADDRESS = 'A'.repeat(58)
 
-    it('accepts an account on a chain id this wallet knows', () => {
+    // A minimal support double: only `networkForCaip2ChainId` is read.
+    const support = (knownChainId: string): WalletConnectSupport => ({
+        namespace: 'algorand',
+        caip2ChainIdFor: () => null,
+        networkForCaip2ChainId: caip2 =>
+            caip2 === knownChainId ? 'mainnet' : null,
+        toWireResult: () => null,
+    })
+
+    it('accepts an account on a chain id the support recognises', () => {
         expect(
-            parseAlgorandCaip10Account(`${MAINNET_CHAIN_ID}:${ADDRESS}`),
+            parseCaip10AccountIn(
+                support(MAINNET_CHAIN_ID),
+                `${MAINNET_CHAIN_ID}:${ADDRESS}`,
+            ),
         ).toEqual({ chainId: MAINNET_CHAIN_ID, address: ADDRESS })
     })
 
     it('refuses a foreign namespace, which a namespace key does not constrain', () => {
-        expect(parseAlgorandCaip10Account('eip155:1:0xabc')).toBeNull()
-    })
-
-    it('refuses an algorand chain id this wallet has no network for', () => {
+        // `namespaces.<key>.accounts` can list an `eip155:1:0x…` under a key
+        // this chain owns, and that address must not land in the approved list.
         expect(
-            parseAlgorandCaip10Account(`algorand:${'z'.repeat(32)}:${ADDRESS}`),
-        ).toBeNull()
-    })
-})
-
-describe('toCaip2ChainId', () => {
-    it('has no id for a genesis hash shorter than the CAIP-2 reference', () => {
-        // A blanked env override reaches here as an empty or truncated hash; a
-        // bare `algorand:` prefix would match no chain any dApp presents.
-        expect(toCaip2ChainId('')).toBeNull()
-        expect(toCaip2ChainId('wGHE2Pwdvd7S12BL5FaOP2')).toBeNull()
-    })
-
-    it('accepts a hash exactly the reference length', () => {
-        expect(toCaip2ChainId('wGHE2Pwdvd7S12BL5FaOP20EGYesN73k')).toBe(
-            MAINNET_CHAIN_ID,
-        )
-    })
-})
-
-describe('getNetworkFromCaip2ChainId', () => {
-    it('round-trips every network that has a chain id', () => {
-        for (const network of [
-            Networks.mainnet,
-            Networks.testnet,
-            Networks.betanet,
-        ]) {
-            const chainId = getCaip2ChainId(network)
-            expect(chainId).not.toBeNull()
-            expect(getNetworkFromCaip2ChainId(chainId ?? '')).toBe(network)
-        }
-    })
-
-    it('refuses an unknown chain id', () => {
-        expect(getNetworkFromCaip2ChainId('algorand:notAChainAtAll')).toBeNull()
-        expect(getNetworkFromCaip2ChainId('eip155:1')).toBeNull()
-        expect(getNetworkFromCaip2ChainId('')).toBeNull()
-    })
-
-    it('refuses a plain-base64 chain id, matching only the URL-safe form', () => {
-        expect(
-            getNetworkFromCaip2ChainId(
-                'algorand:mFgazF+2uRS1tMiL9dsj01hJGySEmPN2',
-            ),
+            parseCaip10AccountIn(support(MAINNET_CHAIN_ID), 'eip155:1:0xabc'),
         ).toBeNull()
     })
 
-    it('refuses an untruncated genesis hash', () => {
+    it('refuses a chain id the support has no network for', () => {
         expect(
-            getNetworkFromCaip2ChainId(
-                'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
+            parseCaip10AccountIn(
+                support(MAINNET_CHAIN_ID),
+                `algorand:${'z'.repeat(32)}:${ADDRESS}`,
             ),
         ).toBeNull()
     })
