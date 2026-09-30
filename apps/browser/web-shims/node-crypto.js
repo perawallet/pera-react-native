@@ -198,6 +198,9 @@ export function argon2(algorithm, params, callback) {
         callback(new Error('node-crypto argon2 shim: unsupported algorithm "' + algorithm + '"'), null)
         return
     }
+    // A Uint8Array message is the caller's to wipe (kms zeroes it once this
+    // settles); only a copy made here from a string is ours.
+    const isOwnCopy = typeof params.message === 'string'
     const message = toUint8(params.message)
     const nonce = toUint8(params.nonce)
     const version = params.version ?? ARGON2_VERSION_13
@@ -210,10 +213,14 @@ export function argon2(algorithm, params, callback) {
     const derivation = canUseWorker
         ? deriveArgon2idInWorker(message, nonce, opts).catch(deriveInline)
         : deriveInline()
-    derivation.then(
-        result => callback(null, result),
-        error => callback(error, null),
-    )
+    derivation
+        .finally(() => {
+            if (isOwnCopy) message.fill(0)
+        })
+        .then(
+            result => callback(null, result),
+            error => callback(error, null),
+        )
 }
 
 const AES_GCM_ALGORITHM = 'aes-256-gcm'
@@ -237,6 +244,13 @@ function assertAesGcm(algorithm, key) {
     }
 }
 
+// noble refuses a second encrypt() per instance, but final() builds a fresh one,
+// so reuse after final() must be refused here: a second plaintext under the
+// same key and IV leaks the GCM auth key. Node's Cipher refuses it too.
+function assertNotFinished(isFinished) {
+    if (isFinished) throw new Error('node-crypto cipher shim: cipher already finalized')
+}
+
 // noble's GCM is one-shot, so update() only buffers and final() returns the
 // whole output. Callers must concatenate update() and final(), as kms does;
 // one that streams update() output alone would see nothing.
@@ -245,10 +259,14 @@ export function createCipheriv(algorithm, key, iv) {
     const chunks = []
     let aad
     let tag = null
+    let isFinished = false
     return {
-        setAAD(data) { aad = toUint8(data); return this },
-        update(data) { chunks.push(toUint8(data)); return new Uint8Array(0) },
+        setAAD(data) { assertNotFinished(isFinished); aad = toUint8(data); return this },
+        update(data) { assertNotFinished(isFinished); chunks.push(toUint8(data)); return new Uint8Array(0) },
         final() {
+            assertNotFinished(isFinished)
+            // Set before encrypting, so even a throw can't leave the IV reusable.
+            isFinished = true
             const plaintext = concatChunks(chunks)
             try {
                 const sealed = gcm(toUint8(key), toUint8(iv), aad).encrypt(plaintext)
@@ -270,13 +288,25 @@ export function createDecipheriv(algorithm, key, iv) {
     const chunks = []
     let aad
     let tag = null
+    let isFinished = false
     return {
-        setAAD(data) { aad = toUint8(data); return this },
-        setAuthTag(data) { tag = toUint8(data); return this },
-        update(data) { chunks.push(toUint8(data)); return new Uint8Array(0) },
+        setAAD(data) { assertNotFinished(isFinished); aad = toUint8(data); return this },
+        // Node accepts a truncated tag; a short one would weaken the forgery bound.
+        setAuthTag(data) {
+            assertNotFinished(isFinished)
+            const bytes = toUint8(data)
+            if (bytes.length !== AES_GCM_TAG_LENGTH) {
+                throw new Error('node-crypto cipher shim: aes-256-gcm needs a 16-byte auth tag')
+            }
+            tag = bytes
+            return this
+        },
+        update(data) { assertNotFinished(isFinished); chunks.push(toUint8(data)); return new Uint8Array(0) },
         // Throws on a wrong key, wrong AAD or tampered bytes, as Node's does.
         final() {
+            assertNotFinished(isFinished)
             if (!tag) throw new Error('node-crypto cipher shim: final() before setAuthTag()')
+            isFinished = true
             return gcm(toUint8(key), toUint8(iv), aad).decrypt(concatChunks([...chunks, tag]))
         },
     }

@@ -136,9 +136,9 @@ describe('node-crypto web shim vs node:crypto', () => {
         const message = new TextEncoder().encode('correct horse battery staple')
         const nonce = new TextEncoder().encode('a-fixed-test-salt')
 
-        const derive = (algorithm, params) =>
+        const derive = (algorithm, params, input = { message, nonce }) =>
             new Promise((resolve, reject) => {
-                shim.argon2(algorithm, { message, nonce, ...params }, (err, result) => {
+                shim.argon2(algorithm, { ...input, ...params }, (err, result) => {
                     if (err) reject(err)
                     else resolve(result)
                 })
@@ -146,6 +146,7 @@ describe('node-crypto web shim vs node:crypto', () => {
 
         afterEach(() => {
             vi.unstubAllGlobals()
+            vi.restoreAllMocks()
         })
 
         for (const { label, params, expected } of VECTORS) {
@@ -154,6 +155,33 @@ describe('node-crypto web shim vs node:crypto', () => {
                 expect(Buffer.from(result).toString('hex')).toBe(expected)
             })
         }
+
+        it("leaves the caller's Uint8Array message for the caller to wipe", async () => {
+            const callerMessage = Uint8Array.from(message)
+
+            await derive('argon2id', VECTORS[0].params, { message: callerMessage, nonce })
+
+            expect(callerMessage).toEqual(message)
+        })
+
+        it('zeroes the copy it makes from a string message once derived', async () => {
+            const encoded = []
+            const encode = TextEncoder.prototype.encode
+            vi.spyOn(TextEncoder.prototype, 'encode').mockImplementation(function (input) {
+                const bytes = encode.call(this, input)
+                encoded.push(bytes)
+                return bytes
+            })
+
+            const result = await derive('argon2id', VECTORS[0].params, {
+                message: 'correct horse battery staple',
+                nonce,
+            })
+
+            expect(Buffer.from(result).toString('hex')).toBe(VECTORS[0].expected)
+            expect(encoded).toHaveLength(1)
+            expect(encoded[0].every(byte => byte === 0)).toBe(true)
+        })
 
         it('derives in the vault argon2 worker when one can start', async () => {
             const posted = []
@@ -238,6 +266,35 @@ describe('node-crypto web shim vs node:crypto', () => {
         it('rejects other ciphers and key sizes', () => {
             expect(() => shim.createCipheriv('aes-128-gcm', key.subarray(0, 16), iv)).toThrow('unsupported algorithm')
             expect(() => shim.createCipheriv('aes-256-gcm', key.subarray(0, 16), iv)).toThrow('32-byte key')
+        })
+
+        it('refuses to encrypt again under the same key and IV once finalized', () => {
+            const cipher = shim.createCipheriv('aes-256-gcm', key, iv)
+            cipher.update(plaintext)
+            cipher.final()
+
+            expect(() => cipher.update(new TextEncoder().encode('second message'))).toThrow('already finalized')
+            expect(() => cipher.final()).toThrow('already finalized')
+            expect(() => cipher.setAAD(aad)).toThrow('already finalized')
+        })
+
+        it('refuses to reuse a decipher once finalized', () => {
+            const sealed = seal(shim)
+            const decipher = shim.createDecipheriv('aes-256-gcm', key, iv)
+            decipher.setAAD(aad)
+            decipher.setAuthTag(sealed.tag)
+            decipher.update(sealed.ciphertext)
+            decipher.final()
+
+            expect(() => decipher.update(sealed.ciphertext)).toThrow('already finalized')
+            expect(() => decipher.final()).toThrow('already finalized')
+        })
+
+        it('rejects a truncated auth tag', () => {
+            const sealed = seal(shim)
+            const decipher = shim.createDecipheriv('aes-256-gcm', key, iv)
+
+            expect(() => decipher.setAuthTag(sealed.tag.subarray(0, 12))).toThrow('16-byte auth tag')
         })
     })
 })
