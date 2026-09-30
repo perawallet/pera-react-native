@@ -32,6 +32,7 @@ import { logger, truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useSingleFlight } from '@hooks/useSingleFlight'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { routeCapabilities } from '@routes/capabilities'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
@@ -78,6 +79,8 @@ export type RemoveConfirmView =
     | 'remove-confirm'
     | 'cloud-backup-delete'
 
+type BackupChoice = 'delete' | 'keep'
+
 export type UseAccountOptionsResult = {
     options: AccountOption[]
     isCloudBackupEnabled: boolean
@@ -91,6 +94,7 @@ export type UseAccountOptionsResult = {
     handleConfirmRemove: () => void
     handleDeleteFromBackup: () => Promise<void>
     handleKeepInBackup: () => Promise<void>
+    pendingBackupChoice: BackupChoice | undefined
     handleCancelRemove: () => void
     handleToggleNotifications: () => void
 }
@@ -398,32 +402,45 @@ export const useAccountOptions = ({
         finishRemove,
     ])
 
+    const { pendingKey: pendingBackupChoice, run: runBackupChoice } =
+        useSingleFlight<BackupChoice>()
+
     /** Both branches record the backup choice before the account leaves the
      *  device: a refused choice would strand it in neither review bucket. */
     const finishRemoveWithBackupChoice = useCallback(
-        async (choose: () => Promise<boolean>, errorKey: string) => {
-            let isRecorded = false
-            try {
-                isRecorded = await choose()
-            } catch (error) {
-                logger.warn('useAccountOptions: backup choice failed', {
-                    address: account.address,
-                    error:
-                        error instanceof Error ? error.message : String(error),
-                })
-            }
+        async (
+            choice: BackupChoice,
+            choose: () => Promise<boolean>,
+            errorKey: string,
+        ) => {
+            const isRecorded = await runBackupChoice(async () => {
+                try {
+                    return await choose()
+                } catch (error) {
+                    logger.warn('useAccountOptions: backup choice failed', {
+                        address: account.address,
+                        error:
+                            error instanceof Error
+                                ? error.message
+                                : String(error),
+                    })
+                    return false
+                }
+            }, choice)
+            if (isRecorded === undefined) return
             if (!isRecorded) {
                 showToast({ title: t(errorKey), body: '', type: 'error' })
                 return
             }
             finishRemove()
         },
-        [showToast, t, finishRemove, account.address],
+        [runBackupChoice, showToast, t, finishRemove, account.address],
     )
 
     const handleDeleteFromBackup = useCallback(() => {
         trackEvent(AccountOptionsEvent.DeleteFromCloudBackup)
         return finishRemoveWithBackupChoice(
+            'delete',
             async () =>
                 (await getBackupSyncManager().deleteAccountFromBackup(
                     account.address,
@@ -435,6 +452,7 @@ export const useAccountOptions = ({
     const handleKeepInBackup = useCallback(() => {
         trackEvent(AccountOptionsEvent.KeepInCloudBackup)
         return finishRemoveWithBackupChoice(
+            'keep',
             () => getBackupSyncManager().keepAccountInBackup(account.address),
             'cloud_backup.accounts.keep_error',
         )
@@ -595,6 +613,7 @@ export const useAccountOptions = ({
         handleConfirmRemove,
         handleDeleteFromBackup,
         handleKeepInBackup,
+        pendingBackupChoice,
         handleCancelRemove,
         handleToggleNotifications,
     }

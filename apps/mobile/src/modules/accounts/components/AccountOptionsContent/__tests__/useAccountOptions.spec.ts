@@ -760,6 +760,41 @@ describe('useAccountOptions', () => {
             )
         })
 
+        it('ignores a second choice while the first is still being recorded', async () => {
+            mockIsBackedUp.mockReturnValue(true)
+            let release: (outcome: BackupActionOutcome) => void = () => {}
+            mockDeleteAccountFromBackup.mockImplementationOnce(
+                () =>
+                    new Promise<BackupActionOutcome>(resolve => {
+                        release = resolve
+                    }),
+            )
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+            await driveFullRemoval(result)
+
+            let first: Promise<void> = Promise.resolve()
+            act(() => {
+                first = result.current.handleDeleteFromBackup()
+            })
+            expect(result.current.pendingBackupChoice).toBe('delete')
+            await act(() => result.current.handleKeepInBackup())
+
+            await act(async () => {
+                release('settled')
+                await first
+            })
+
+            expect(mockKeepAccountInBackup).not.toHaveBeenCalled()
+            expect(mockRemoveAccountByAddress).toHaveBeenCalledTimes(1)
+            expect(result.current.pendingBackupChoice).toBeUndefined()
+        })
+
         it('keeps the backup copy, then removes locally', async () => {
             mockIsBackedUp.mockReturnValue(true)
             const { result } = renderHook(() =>

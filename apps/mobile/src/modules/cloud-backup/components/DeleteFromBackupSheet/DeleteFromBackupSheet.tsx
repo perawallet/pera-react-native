@@ -22,6 +22,7 @@ type DeleteFromBackupSheetProps = {
     declineLabel?: string
     onConfirm?: () => void
     onDecline?: () => void
+    pendingChoice?: 'delete' | 'keep'
 }
 
 export const DeleteFromBackupSheet = ({
@@ -30,6 +31,7 @@ export const DeleteFromBackupSheet = ({
     declineLabel,
     onConfirm,
     onDecline,
+    pendingChoice,
 }: DeleteFromBackupSheetProps = {}) => {
     const { t } = useLanguage()
 
@@ -52,6 +54,10 @@ export const DeleteFromBackupSheet = ({
             tertiaryValue={false}
             onConfirm={onConfirm}
             onTertiary={onDecline}
+            pendingAction={
+                pendingChoice &&
+                (pendingChoice === 'delete' ? 'confirm' : 'tertiary')
+            }
             testID='delete_from_backup_sheet'
             confirmTestID='delete_from_backup_confirm'
             tertiaryTestID='delete_from_backup_cancel'
