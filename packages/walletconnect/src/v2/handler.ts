@@ -429,7 +429,11 @@ export const createWalletConnectV2Handler = (
         // active network's may sign, or a mainnet dApp could have a testnet
         // group signed while the wallet shows mainnet.
         const activeChainId = support?.caip2ChainIdFor(network) ?? null
-        if (activeChainId === null || event.params.chainId !== activeChainId) {
+        if (
+            !support ||
+            activeChainId === null ||
+            event.params.chainId !== activeChainId
+        ) {
             refuseRequest(
                 topic,
                 id,
@@ -476,9 +480,7 @@ export const createWalletConnectV2Handler = (
                 await respond({
                     id,
                     jsonrpc: '2.0',
-                    // `support` is non-null here: `activeChainId` above
-                    // required it to answer the acceptability check.
-                    result: support?.toWireResult(result),
+                    result: support.toWireResult(result),
                 }),
             reject: async error =>
                 await respond({

@@ -125,10 +125,14 @@ export const createV1RequestHandlers = (deps: {
             send(connector)
         }
 
-        // The gate already proved the session's chain id acceptable on this
-        // network, which requires a registered adapter — `support` is only
-        // undefined here if the network changed between the gate and this call.
+        // The gate already required a registered adapter for this network.
         const support = walletConnectSupportFor(getNetwork())
+        if (!support) {
+            const unsupported = new WalletConnectInvalidNetworkError()
+            rejectToPeer(connection.id, requestId, unsupported)
+            reportError(unsupported, connectionScope(connection.id))
+            return
+        }
 
         requireContext().onMessage({
             kind: 'request',
@@ -145,7 +149,7 @@ export const createV1RequestHandlers = (deps: {
                 deliver(connector =>
                     connector.approveRequest({
                         id: requestId,
-                        result: support?.toWireResult(result) ?? null,
+                        result: support.toWireResult(result),
                     }),
                 ),
             reject: error =>
