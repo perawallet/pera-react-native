@@ -17,6 +17,7 @@ import notifee, { AuthorizationStatus } from '@notifee/react-native'
 type UseSystemNotificationPermissionResult = {
     isEnabled: boolean
     isLoading: boolean
+    isPushServiceUnavailable: boolean
     openSettings: () => void
     refetch: () => Promise<void>
 }
@@ -68,6 +69,10 @@ export const useSystemNotificationPermission =
         return {
             isEnabled,
             isLoading,
+            // Native OS push has no user-disableable transport behind the
+            // permission, and the token resolves after launch, so a missing
+            // token here means "not yet", never "unavailable".
+            isPushServiceUnavailable: false,
             openSettings,
             refetch: checkPermission,
         }

@@ -12,10 +12,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { openExternalTab } from '@perawallet/wallet-core-browser-runtime'
+import { usePushToken } from '@perawallet/wallet-core-device'
 
 type UseSystemNotificationPermissionResult = {
     isEnabled: boolean
     isLoading: boolean
+    isPushServiceUnavailable: boolean
     openSettings: () => void
     refetch: () => Promise<void>
 }
@@ -36,11 +38,12 @@ const CHROME_NOTIFICATION_SETTINGS_URL =
  */
 export const useSystemNotificationPermission =
     (): UseSystemNotificationPermissionResult => {
-        const [isEnabled, setIsEnabled] = useState(false)
+        const [isPermissionGranted, setIsPermissionGranted] = useState(false)
         const [isLoading, setIsLoading] = useState(true)
+        const { pushToken } = usePushToken()
 
         const checkPermission = useCallback(async () => {
-            setIsEnabled(
+            setIsPermissionGranted(
                 typeof Notification !== 'undefined' &&
                     Notification.permission === 'granted',
             )
@@ -76,9 +79,17 @@ export const useSystemNotificationPermission =
             openExternalTab(CHROME_NOTIFICATION_SETTINGS_URL)
         }, [])
 
+        // Permission alone proves nothing on extension pages (the manifest
+        // auto-grants it). Delivery needs an FCM token, and browsers that
+        // disable Google's push service (Brave by default) fail getToken
+        // silently, so a granted permission with no token means no push.
+        const hasPushToken = !!pushToken
+
         return {
-            isEnabled,
+            isEnabled: isPermissionGranted && hasPushToken,
             isLoading,
+            isPushServiceUnavailable:
+                !isLoading && isPermissionGranted && !hasPushToken,
             openSettings,
             refetch: checkPermission,
         }

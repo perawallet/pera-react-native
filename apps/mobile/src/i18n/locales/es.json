@@ -2877,6 +2877,7 @@
         "notifications": {
             "push_notifications": "Notificaciones push",
             "account_notifications": "Mostrar notificaciones de",
+            "push_service_unavailable": "Este navegador no está entregando notificaciones push. En Brave, activa «Usar los servicios de Google para mensajes push» en la configuración de privacidad y vuelve a abrir Pera.",
             "no_accounts": "No se encontraron cuentas.",
             "no_accounts_body": "No se encontraron cuentas. Añade una cuenta para gestionar las preferencias de notificaciones."
         },
