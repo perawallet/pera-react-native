@@ -106,20 +106,19 @@ export const dappRequestContractTests = (
                 )
 
                 expect(caip2).not.toBeNull()
-                expect(caip2?.startsWith(`${adapter.walletConnect.namespace}:`)).toBe(
-                    true,
-                )
+                expect(
+                    caip2?.startsWith(`${adapter.walletConnect.namespace}:`),
+                ).toBe(true)
             })
 
             it('round-trips a CAIP-2 id back to the network it names', () => {
                 const adapter = makeAdapter()
                 const { networkWithCaip2 } = fixtures.walletConnect
-                const caip2 = adapter.walletConnect.caip2ChainIdFor(
-                    networkWithCaip2,
-                )
+                const caip2 =
+                    adapter.walletConnect.caip2ChainIdFor(networkWithCaip2)
                 if (caip2 === null) {
                     throw new Error(
-                        "fixtures.walletConnect.networkWithCaip2 has no CAIP-2 id",
+                        'fixtures.walletConnect.networkWithCaip2 has no CAIP-2 id',
                     )
                 }
 
@@ -137,7 +136,7 @@ export const dappRequestContractTests = (
             })
 
             if (fixtures.walletConnect.v1ChainId !== undefined) {
-                it("accepts a v1 chain id on every network its own networksFor names", () => {
+                it('accepts a v1 chain id on every network its own networksFor names', () => {
                     const { v1ChainId } = fixtures.walletConnect
                     const v1 = makeAdapter().walletConnect.v1
                     if (!v1) {

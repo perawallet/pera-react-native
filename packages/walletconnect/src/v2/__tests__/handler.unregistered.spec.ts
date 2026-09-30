@@ -20,6 +20,7 @@ import type { WalletKitFactory } from '../client'
 import { createWalletConnectV2Handler } from '../handler'
 import {
     createFakeWalletKit,
+    ensureChainIds,
     flush,
     makeProposal,
     makeRequest,
@@ -28,6 +29,12 @@ import {
     TOPIC,
     type FakeWalletKit,
 } from './fakeWalletKit'
+
+// Resolved once, up front, while the real adapter this package's setup file
+// registers is still in place — this file's own `beforeEach` clears the
+// registry to drive the handler with nothing registered, but the fixtures
+// below still need a realistic chain id.
+ensureChainIds()
 
 // Same stand-in as the v1/v2 handler specs: the connections barrel reaches
 // the provider, whose keystore migration ledger imports react-native-mmkv at
@@ -90,7 +97,9 @@ describe('WalletConnect v2 with no chain adapter registered', () => {
             }),
         )
         expect(context.onError).toHaveBeenCalledWith(
-            expect.objectContaining({ name: 'WalletConnectInvalidNetworkError' }),
+            expect.objectContaining({
+                name: 'WalletConnectInvalidNetworkError',
+            }),
             expect.objectContaining({ pairingId: PAIRING_TOPIC }),
         )
     })
@@ -127,7 +136,9 @@ describe('WalletConnect v2 with no chain adapter registered', () => {
         expect(walletKit.respondSessionRequest).toHaveBeenCalledWith(
             expect.objectContaining({
                 response: expect.objectContaining({
-                    error: expect.objectContaining({ code: expect.any(Number) }),
+                    error: expect.objectContaining({
+                        code: expect.any(Number),
+                    }),
                 }),
             }),
         )

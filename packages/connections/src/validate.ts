@@ -111,10 +111,9 @@ export const validateRawMessage = (
     const { rawOperation } = raw
 
     if (rawOperation.type === 'sign-transactions') {
-        const result =
-            dappRequestChainAdapters
-                .get(raw.chainId)
-                .validateTransactionPayload(rawOperation.params)
+        const result = dappRequestChainAdapters
+            .get(raw.chainId)
+            .validateTransactionPayload(rawOperation.params)
         if (!result.ok) {
             return {
                 ok: false,

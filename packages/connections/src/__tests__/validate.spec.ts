@@ -40,7 +40,10 @@ const fixtureAdapter: DappRequestChainAdapter = {
     },
     validateTransactionPayload: payload => {
         if (!Array.isArray(payload) || payload.length === 0) {
-            return { ok: false, message: 'Invalid algo_signTxn payload — empty' }
+            return {
+                ok: false,
+                message: 'Invalid algo_signTxn payload — empty',
+            }
         }
         return { ok: true, group: payload }
     },
@@ -86,9 +89,10 @@ describe('validateRawMessage', () => {
         )
 
         expect(result.ok).toBe(false)
-        if (!result.ok) expect(result.error).toMatchObject({
-            code: 'unsupported-chain',
-        })
+        if (!result.ok)
+            expect(result.error).toMatchObject({
+                code: 'unsupported-chain',
+            })
     })
 
     it('accepts a payload the chain adapter validates', () => {

@@ -39,16 +39,27 @@ describe('AlgorandWalletConnectChainId parity with the registered adapter', () =
     )
 
     it('accepts the 4160 wildcard on every network', () => {
-        for (const network of ['mainnet', 'testnet', 'betanet', 'custom'] as const) {
+        for (const network of [
+            'mainnet',
+            'testnet',
+            'betanet',
+            'custom',
+        ] as const) {
             expect(
-                v1.isChainIdAcceptable(AlgorandWalletConnectChainId.all, network),
+                v1.isChainIdAcceptable(
+                    AlgorandWalletConnectChainId.all,
+                    network,
+                ),
             ).toBe(true)
         }
     })
 
     it("does not accept mainnet's id on testnet", () => {
         expect(
-            v1.isChainIdAcceptable(AlgorandWalletConnectChainId.mainnet, 'testnet'),
+            v1.isChainIdAcceptable(
+                AlgorandWalletConnectChainId.mainnet,
+                'testnet',
+            ),
         ).toBe(false)
     })
 })

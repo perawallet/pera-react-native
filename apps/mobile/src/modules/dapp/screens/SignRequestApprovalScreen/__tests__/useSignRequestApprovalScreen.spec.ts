@@ -192,7 +192,10 @@ describe('useSignRequestApprovalScreen', () => {
                 sourceType: 'injected',
             })
             expect(deps).toMatchObject({
-                transactionSigning: { chainId: 'algorand', enqueue: mocks.enqueue },
+                transactionSigning: {
+                    chainId: 'algorand',
+                    enqueue: mocks.enqueue,
+                },
                 addSignRequest: mocks.addSignRequest,
                 removeSignRequest: mocks.removeSignRequest,
                 accounts: [{ address: 'ADDR' }],

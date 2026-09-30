@@ -165,7 +165,9 @@ describe('algorandDappRequestAdapter', () => {
 
             expect(result).toMatchObject({
                 ok: false,
-                message: expect.stringContaining('Invalid algo_signTxn payload'),
+                message: expect.stringContaining(
+                    'Invalid algo_signTxn payload',
+                ),
             })
         })
 

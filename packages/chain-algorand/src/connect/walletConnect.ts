@@ -40,8 +40,8 @@ const caip2ChainIdFor = (networkId: NetworkId): Nullable<string> =>
 
 /** The network a chain id names, or null for one that names none of ours. */
 const networkForCaip2ChainId = (caip2: string): Nullable<NetworkId> =>
-    algorandDescriptor.networks.find(network => network.caip2 === caip2)
-        ?.id ?? null
+    algorandDescriptor.networks.find(network => network.caip2 === caip2)?.id ??
+    null
 
 /**
  * Mirrors `AlgorandWalletConnectChainId` in
@@ -62,13 +62,14 @@ const ALGORAND_WC_V1_CHAIN_ID = {
  * session at all; the resolver's own genesis check still rejects a mismatch
  * at submit time, so this never decides what gets signed.
  */
-const EXPECTED_V1_CHAIN_ID_BY_NETWORK: ReadonlyMap<NetworkId, number> =
-    new Map([
+const EXPECTED_V1_CHAIN_ID_BY_NETWORK: ReadonlyMap<NetworkId, number> = new Map(
+    [
         [Networks.mainnet, ALGORAND_WC_V1_CHAIN_ID.mainnet],
         [Networks.testnet, ALGORAND_WC_V1_CHAIN_ID.testnet],
         [Networks.betanet, ALGORAND_WC_V1_CHAIN_ID.betanet],
         [Networks.custom, ALGORAND_WC_V1_CHAIN_ID.testnet],
-    ])
+    ],
+)
 
 const getExpectedV1ChainId = (networkId: NetworkId): Nullable<number> =>
     EXPECTED_V1_CHAIN_ID_BY_NETWORK.get(networkId) ?? null
@@ -131,7 +132,10 @@ const screenTransactionRequest = (
     if (named.length > 0) {
         const known = new Set(knownAddresses)
         if (!named.some(address => known.has(address))) {
-            return { ok: false, reason: 'no named signer belongs to this wallet' }
+            return {
+                ok: false,
+                reason: 'no named signer belongs to this wallet',
+            }
         }
     }
     return { ok: true }
@@ -152,7 +156,8 @@ const screenDataRequest = (
     }
     // Structural shape only; canonification and signer authorization stay in the pipeline.
     const parsed = arc60WireSchema.safeParse(params)
-    if (!parsed.success) return { ok: false, reason: 'ARC-60 payload failed schema' }
+    if (!parsed.success)
+        return { ok: false, reason: 'ARC-60 payload failed schema' }
     return { ok: true }
 }
 

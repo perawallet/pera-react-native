@@ -179,9 +179,7 @@ const screenRequiredNamespaces = (
     namespaces: ProposalNamespaces,
 ): Nullable<ProposalRefusal> => {
     if (
-        !Object.keys(namespaces).every(key =>
-            isChainNamespaceKey(support, key),
-        )
+        !Object.keys(namespaces).every(key => isChainNamespaceKey(support, key))
     ) {
         return 'UNSUPPORTED_NAMESPACE_KEY'
     }
@@ -728,9 +726,17 @@ export const createWalletConnectV2Handler = (
 
         const support = walletConnectSupportFor(getNetwork())
         if (!support) {
-            await deliverRejection(id, 'UNSUPPORTED_CHAINS', undefined, pairingId)
+            await deliverRejection(
+                id,
+                'UNSUPPORTED_CHAINS',
+                undefined,
+                pairingId,
+            )
             releasePairing(pairingId)
-            reportError(new WalletConnectInvalidNetworkError(), pairingScope(pairingId))
+            reportError(
+                new WalletConnectInvalidNetworkError(),
+                pairingScope(pairingId),
+            )
             return
         }
 

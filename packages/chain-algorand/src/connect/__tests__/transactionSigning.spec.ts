@@ -64,7 +64,10 @@ describe('useAlgorandTransactionSigning', () => {
         const { result } = renderHook(() => useAlgorandTransactionSigning())
         const group = [{ txn: 'AA==' }]
 
-        result.current({ group, authorizedAccounts: ['AAAA', 'BBBB'] }, transport)
+        result.current(
+            { group, authorizedAccounts: ['AAAA', 'BBBB'] },
+            transport,
+        )
 
         expect(mockResolve).toHaveBeenCalledWith(
             { transactions: group },

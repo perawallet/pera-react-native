@@ -50,7 +50,10 @@ const fixtureAdapter: DappRequestChainAdapter = {
     },
     validateTransactionPayload: payload => {
         if (!Array.isArray(payload) || payload.length === 0) {
-            return { ok: false, message: 'Invalid algo_signTxn payload — empty' }
+            return {
+                ok: false,
+                message: 'Invalid algo_signTxn payload — empty',
+            }
         }
         const entries = payload as Record<string, unknown>[]
         const missingIndex = entries.findIndex(

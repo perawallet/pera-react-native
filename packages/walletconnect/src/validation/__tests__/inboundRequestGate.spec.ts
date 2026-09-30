@@ -214,8 +214,7 @@ describe('gateSignDataRequest', () => {
     it('turns an adapter refusal into a gate rejection with its own reason', () => {
         screenRequest.mockReturnValue({
             ok: false,
-            reason:
-                'Invalid ARC-60 sign request payload — request exceeds the maximum allowed size',
+            reason: 'Invalid ARC-60 sign request payload — request exceeds the maximum allowed size',
         })
         const result = gateSignDataRequest({
             payload: { id: 1, params: {} },
@@ -224,8 +223,7 @@ describe('gateSignDataRequest', () => {
         })
         expect(result).toEqual({
             ok: false,
-            reason:
-                'Invalid ARC-60 sign request payload — request exceeds the maximum allowed size',
+            reason: 'Invalid ARC-60 sign request payload — request exceeds the maximum allowed size',
             code: 'invalid-request',
         })
     })

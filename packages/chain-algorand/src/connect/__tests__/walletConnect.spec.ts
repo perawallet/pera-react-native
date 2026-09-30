@@ -40,15 +40,9 @@ describe('caip2ChainIdFor / networkForCaip2ChainId', () => {
         expect(support.caip2ChainIdFor('testnet')).toBe(TESTNET_CHAIN_ID)
         expect(support.caip2ChainIdFor('betanet')).toBe(BETANET_CHAIN_ID)
 
-        expect(support.networkForCaip2ChainId(MAINNET_CHAIN_ID)).toBe(
-            'mainnet',
-        )
-        expect(support.networkForCaip2ChainId(TESTNET_CHAIN_ID)).toBe(
-            'testnet',
-        )
-        expect(support.networkForCaip2ChainId(BETANET_CHAIN_ID)).toBe(
-            'betanet',
-        )
+        expect(support.networkForCaip2ChainId(MAINNET_CHAIN_ID)).toBe('mainnet')
+        expect(support.networkForCaip2ChainId(TESTNET_CHAIN_ID)).toBe('testnet')
+        expect(support.networkForCaip2ChainId(BETANET_CHAIN_ID)).toBe('betanet')
     })
 
     it("encodes betanet's genesis hash with the URL-safe alphabet", () => {
@@ -66,7 +60,9 @@ describe('caip2ChainIdFor / networkForCaip2ChainId', () => {
     })
 
     it('refuses an unknown chain id, including a foreign namespace', () => {
-        expect(support.networkForCaip2ChainId('algorand:notAChainAtAll')).toBeNull()
+        expect(
+            support.networkForCaip2ChainId('algorand:notAChainAtAll'),
+        ).toBeNull()
         expect(support.networkForCaip2ChainId('eip155:1')).toBeNull()
         expect(support.networkForCaip2ChainId('')).toBeNull()
     })

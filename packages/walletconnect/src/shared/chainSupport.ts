@@ -15,7 +15,11 @@ import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
 } from '@perawallet/wallet-core-connections/dappRequest'
-import { Networks, type Network, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    Networks,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 /** Shared by v1 and v2 (`pera/no-cross-protocol-imports` forbids them importing each other). */
 export type WalletConnectSupport = DappRequestChainAdapter['walletConnect']

@@ -36,10 +36,7 @@ import {
     SESSION_REQUEST_TTL_MS,
     WC_DELIVERY_TIMEOUT_MS,
 } from '../shared/constants'
-import {
-    isV1ChainIdAcceptable,
-    v1NetworksFor,
-} from '../shared/chainSupport'
+import { isV1ChainIdAcceptable, v1NetworksFor } from '../shared/chainSupport'
 import { toPeer } from '../shared/peer'
 import {
     WalletConnectError,

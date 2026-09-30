@@ -58,12 +58,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     canSignArc60: () => false,
 }))
 
-const { dappRequestChainAdapters } = await import(
-    '@perawallet/wallet-core-connections/dappRequest'
-)
-const { algorandDappRequestAdapter } = await import(
-    '@perawallet/wallet-core-chain-algorand/connect'
-)
+const { dappRequestChainAdapters } =
+    await import('@perawallet/wallet-core-connections/dappRequest')
+const { algorandDappRequestAdapter } =
+    await import('@perawallet/wallet-core-chain-algorand/connect')
 
 // A vitest setup file, run before every spec in this package: registers the
 // real Algorand adapter so every v1/v2 handler spec resolves live
