@@ -28,6 +28,7 @@ import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useSingleFlight } from '@hooks/useSingleFlight'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { useIsContactBackedUp } from '@modules/cloud-backup'
 import { trackEvent, ContactsEvent } from '@analytics'
@@ -49,6 +50,7 @@ export type UseEditContactFormResult = UseContactFormResult & {
     needsBackupChoice: boolean
     save: (data: Contact) => void
     removeContact: (backupChoice?: ContactBackupChoice) => Promise<void>
+    isRemoving: boolean
 }
 
 export const useEditContactForm = (): UseEditContactFormResult => {
@@ -125,9 +127,11 @@ export const useEditContactForm = (): UseEditContactFormResult => {
         [form, t, editContact, targetContact, setSelectedContact, navigation],
     )
 
+    const { isPending: isRemoving, run: runRemoval } = useSingleFlight()
+
     /** Records the backup choice before the contact leaves the device: a
      *  refused choice would strand it in neither review bucket. */
-    const removeContact = useCallback(
+    const removeContactOnce = useCallback(
         async (backupChoice?: ContactBackupChoice) => {
             if (!targetContact) {
                 navigation.replace('Contacts')
@@ -191,6 +195,13 @@ export const useEditContactForm = (): UseEditContactFormResult => {
         ],
     )
 
+    const removeContact = useCallback(
+        async (backupChoice?: ContactBackupChoice) => {
+            await runRemoval(() => removeContactOnce(backupChoice))
+        },
+        [runRemoval, removeContactOnce],
+    )
+
     return useMemo(
         () => ({
             ...form,
@@ -198,7 +209,15 @@ export const useEditContactForm = (): UseEditContactFormResult => {
             needsBackupChoice,
             save,
             removeContact,
+            isRemoving,
         }),
-        [form, targetContact, needsBackupChoice, save, removeContact],
+        [
+            form,
+            targetContact,
+            needsBackupChoice,
+            save,
+            removeContact,
+            isRemoving,
+        ],
     )
 }

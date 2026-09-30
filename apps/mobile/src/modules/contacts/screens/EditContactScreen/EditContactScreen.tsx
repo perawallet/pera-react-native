@@ -38,6 +38,7 @@ export const EditContactScreen = () => {
         onPickImage,
         save,
         removeContact,
+        isRemoving,
     } = useEditContactForm()
     const { request: requestBottomSheet } = useBottomSheet()
 
@@ -102,6 +103,7 @@ export const EditContactScreen = () => {
                     onPress={() => void openDeleteConfirm()}
                     title={t('contacts.edit_contact.delete_this')}
                     variant='destructive'
+                    isLoading={isRemoving}
                     testID='edit_contact_delete_button'
                 />
             }

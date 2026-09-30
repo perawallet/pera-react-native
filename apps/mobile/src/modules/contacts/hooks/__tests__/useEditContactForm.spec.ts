@@ -337,6 +337,33 @@ describe('useEditContactForm', () => {
             expect(deleteContactMock).toHaveBeenCalledWith(selectedContact)
         })
 
+        it('ignores a second removal while the first is still recording its choice', async () => {
+            let release: (outcome: BackupActionOutcome) => void = () => {}
+            deleteContactFromBackupMock.mockImplementationOnce(
+                () =>
+                    new Promise<BackupActionOutcome>(resolve => {
+                        release = resolve
+                    }),
+            )
+            const { result } = renderHook(() => useEditContactForm())
+
+            let first: Promise<void> = Promise.resolve()
+            act(() => {
+                first = result.current.removeContact('delete')
+            })
+            expect(result.current.isRemoving).toBe(true)
+            await act(() => result.current.removeContact('keep'))
+
+            await act(async () => {
+                release('settled')
+                await first
+            })
+
+            expect(keepContactInBackupMock).not.toHaveBeenCalled()
+            expect(deleteContactMock).toHaveBeenCalledTimes(1)
+            expect(result.current.isRemoving).toBe(false)
+        })
+
         it('keeps the cloud copy, named, when the user chooses Keep it', async () => {
             const { result } = renderHook(() => useEditContactForm())
 
