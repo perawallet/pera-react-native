@@ -32,6 +32,7 @@ import {
 } from '../dappRequest'
 import type { InboundMessage } from '../models'
 import type { ConnectionRegistry } from '../registry'
+import type { PendingRequestLedger } from '../signing-adapter'
 
 const CHAIN_ID = 'algorand' as ChainId
 
@@ -225,7 +226,7 @@ describe('useConnectionSigningAdapter', () => {
     })
 
     it('declines a message naming a chain no adapter is mounted for', () => {
-        const { registry, send } = makeRegistry()
+        const { registry, reportError, send } = makeRegistry()
         renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
         const reject = vi.fn(async () => {})
 
@@ -244,6 +245,12 @@ describe('useConnectionSigningAdapter', () => {
 
         expect(reject).toHaveBeenCalled()
         expect(mockEnqueue).not.toHaveBeenCalled()
+        expect(reportError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                message: expect.stringContaining('other'),
+            }),
+            expect.anything(),
+        )
     })
 
     it('forwards the source type the handler declared', () => {
@@ -617,6 +624,44 @@ describe('useConnectionSigningAdapter', () => {
         expect(() => send(message)).not.toThrow()
 
         expect(message.reject).toHaveBeenCalledWith(violation)
+    })
+
+    it('leaves nothing in the pending ledger after a synchronous enqueue throw', () => {
+        const pendingRequests: PendingRequestLedger = new Map()
+        const onError = vi.fn()
+        const violation = new Error('Invalid base64 in transaction 0')
+        const throwingEnqueue = vi.fn(() => {
+            throw violation
+        })
+
+        enqueueInboundRequest(
+            {
+                kind: 'request',
+                chainId: CHAIN_ID,
+                connectionId: 'c1',
+                correlationId: '7',
+                sourceType: 'walletconnect',
+                authorizedAccounts: ['AAAA'],
+                peer: PEER,
+                operation: {
+                    type: 'sign-transactions',
+                    group: [{ txn: 'not-base64' }],
+                },
+                respond: vi.fn(async () => {}),
+                reject: vi.fn(async () => {}),
+            },
+            {
+                transactionSigning: new Map([[CHAIN_ID, throwingEnqueue]]),
+                addSignRequest: mockAddSignRequest,
+                removeSignRequest: mockRemoveSignRequest,
+                accounts: [],
+                pendingRequests,
+                onError,
+            },
+        )
+
+        expect(pendingRequests.size).toBe(0)
+        expect(onError).toHaveBeenCalledWith(violation, expect.anything())
     })
 
     it('rejects the peer when enqueueing the sign request fails', async () => {

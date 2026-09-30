@@ -44,9 +44,8 @@ import {
 import type { ConnectionErrorScope, InboundMessage } from './models'
 import type { ConnectionRegistry } from './registry'
 
-/** The chain a request answers for, and how to enqueue its transaction signing. */
 /**
- * Keyed by chain rather than compared against the message's chain, so shared
+ * The mounted chain's transaction-signing enqueue. Keyed by chain rather than compared against the message's chain, so shared
  * code never branches on a chain id: a message for an unmounted chain simply
  * finds no entry.
  */
