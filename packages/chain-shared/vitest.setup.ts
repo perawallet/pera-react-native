@@ -11,11 +11,17 @@
  */
 
 import { vi, beforeEach } from 'vitest'
+import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
 
 const store = new Map<string, string>()
 
+// One instance for the whole file: a store module re-imported after
+// vi.resetModules must see what the test registered.
+const chains = createChainRegistry()
+
 beforeEach(() => {
     store.clear()
+    chains.reset()
 })
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -27,5 +33,6 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
                 store.delete(key)
             },
         },
+        chains,
     }),
 }))
