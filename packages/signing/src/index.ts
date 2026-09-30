@@ -69,6 +69,11 @@ export { useWalletConnectHandoffResolver } from './hooks/useWalletConnectHandoff
 
 export { decodeArbitraryDataForDisplay } from './utils/arbitraryDataDisplay'
 export {
+    LEGACY_DATA_MAX_ITEM_CHARS,
+    LEGACY_DATA_MAX_REQUEST_CHARS,
+    legacyArbitraryDataWireSchema,
+} from './utils/arbitrary-data-wire'
+export {
     ARC60_MAX_REQUEST_BYTES,
     arc60WireSchema,
     assertArc60RequestWithinLimits,

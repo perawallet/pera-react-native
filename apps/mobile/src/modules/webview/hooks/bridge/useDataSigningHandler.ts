@@ -27,6 +27,7 @@ import {
     type PeraArbitraryDataSignResult,
     type SignRequestSource,
     isArc60WirePayload,
+    legacyArbitraryDataWireSchema,
     parseArc60WireRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -163,6 +164,16 @@ export const useDataSigningHandler = (
                 )
                 return
             }
+            const parsed = legacyArbitraryDataWireSchema.safeParse([data])
+            if (!parsed.success) {
+                sendErrorToWebview(
+                    message.id,
+                    JsonRpcErrorCode.InvalidParams,
+                    'Invalid arbitrary data payload',
+                    webview,
+                )
+                return
+            }
             const metadata = message.params!['metadata'] as SignRequestSource
             try {
                 addSignRequest({
@@ -172,7 +183,7 @@ export const useDataSigningHandler = (
                     // Platform-observed origin, not page-asserted — gates the
                     // verification badge.
                     verifiedOrigin: sourceUrl ?? undefined,
-                    data: [data as PeraArbitraryDataMessage],
+                    data: parsed.data,
                 })
             } catch (e) {
                 sendErrorToWebview(

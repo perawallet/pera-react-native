@@ -14,13 +14,15 @@ import { vi } from 'vitest'
 
 // The signing barrel transitively reaches react-native-mmkv, which has no
 // loadable binding under vitest, so the whole package is unimportable here
-// (`packages/walletconnect` hits the same wall). Only the ARC-60 wire module
-// is needed at this layer and it is dependency-light, so it is re-exported
+// (`packages/walletconnect` hits the same wall). Only the wire modules
+// are needed at this layer and they are dependency-light, so they are re-exported
 // for real instead of faked — a spec that needs more overrides this file with
 // its own `vi.mock`.
 vi.mock('@perawallet/wallet-core-signing', async () => {
     const wire = await import('../signing/src/utils/arc60-wire')
+    const legacyWire = await import('../signing/src/utils/arbitrary-data-wire')
     return {
+        legacyArbitraryDataWireSchema: legacyWire.legacyArbitraryDataWireSchema,
         ARC60_MAX_REQUEST_BYTES: wire.ARC60_MAX_REQUEST_BYTES,
         arc60WireSchema: wire.arc60WireSchema,
         assertArc60RequestWithinLimits: wire.assertArc60RequestWithinLimits,

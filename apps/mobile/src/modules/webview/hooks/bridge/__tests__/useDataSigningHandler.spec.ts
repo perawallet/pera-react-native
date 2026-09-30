@@ -56,8 +56,12 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
     const wire = await vi.importActual<
         typeof import('../../../../../../../../packages/signing/src/utils/arc60-wire')
     >('../../../../../../../../packages/signing/src/utils/arc60-wire')
+    const legacyWire = await vi.importActual<
+        typeof import('../../../../../../../../packages/signing/src/utils/arbitrary-data-wire')
+    >('../../../../../../../../packages/signing/src/utils/arbitrary-data-wire')
     return {
         isArc60WirePayload: wire.isArc60WirePayload,
+        legacyArbitraryDataWireSchema: legacyWire.legacyArbitraryDataWireSchema,
         parseArc60WireRequest: vi.fn(
             (params: { authenticatorData: string; metadata: unknown }) => {
                 if (params.authenticatorData.length < 44) {
@@ -203,6 +207,27 @@ describe('useDataSigningHandler', () => {
             expect(mockAddSignRequest).not.toHaveBeenCalled()
             expect(injectedScript(webview)).toContain(
                 '"error":{"code":-32602,"message":"errors.webview.invalid_params"}',
+            )
+        })
+
+        it.each([
+            ['is not a string', { nested: true }],
+            ['is not base64', '!!!!'],
+            ['exceeds the size cap', 'A'.repeat(128 * 1024)],
+        ])('answers InvalidParams when the data %s', (_, data) => {
+            const { webview, handle } = render()
+
+            handle(
+                bridgeMessage('14-bad-data', 'requestDataSigning', {
+                    data: { data, signer: 'addr1' },
+                    metadata,
+                }),
+                TRUSTED,
+            )
+
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(injectedScript(webview)).toContain(
+                '"error":{"code":-32602,"message":"Invalid arbitrary data payload"}',
             )
         })
 

@@ -41,7 +41,7 @@ export const assertArc60RequestWithinLimits = (rawParams: unknown): void => {
  * five random 37-byte payloads carry one of those characters — has always been
  * accepted, so a §4-only pattern would reject producers that work today.
  */
-const BASE64_PATTERN =
+export const BASE64_PATTERN =
     /^(?:[A-Za-z0-9+/_-]{4})*(?:[A-Za-z0-9+/_-]{2}==|[A-Za-z0-9+/_-]{3}=|[A-Za-z0-9+/_-]{4})$/
 
 /** ARC-60's `StdSigData` + `Metadata` as sent on the wire; `authenticatorData` is base64 and decoded after parsing. */

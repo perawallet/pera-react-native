@@ -13,6 +13,7 @@
 import type { z } from 'zod'
 import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
+    legacyArbitraryDataWireSchema,
     parseArc60WireRequest,
     type Arc60SignableData,
 } from '@perawallet/wallet-core-signing'
@@ -23,7 +24,6 @@ import type {
     RawInboundMessage,
     WalletOperation,
 } from './models'
-import { legacyArbitraryDataSchema } from './schema'
 
 export type ValidationOutcome =
     | { ok: true; message: InboundMessage }
@@ -129,7 +129,9 @@ export const validateRawMessage = (
     // Discriminate on the raw input rather than `z.union`, which collapses
     // every failure to one root-level `invalid_union` issue.
     if (Array.isArray(rawOperation.params)) {
-        const parsed = legacyArbitraryDataSchema.safeParse(rawOperation.params)
+        const parsed = legacyArbitraryDataWireSchema.safeParse(
+            rawOperation.params,
+        )
         if (!parsed.success) {
             return {
                 ok: false,

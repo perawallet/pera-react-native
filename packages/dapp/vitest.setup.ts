@@ -23,6 +23,7 @@ import { vi } from 'vitest'
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await import('../signing/src/pipeline/errors')),
     ...(await import('../signing/src/utils/arc60-wire')),
+    ...(await import('../signing/src/utils/arbitrary-data-wire')),
     ...(await import('../signing/src/constants')),
 }))
 vi.mock(

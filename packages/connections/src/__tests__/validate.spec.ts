@@ -225,6 +225,18 @@ describe('validateRawMessage', () => {
         expect(result.ok).toBe(true)
     })
 
+    it.each([
+        ['non-string', { nested: true }],
+        ['oversized', 'A'.repeat(128 * 1024)],
+    ])('rejects %s legacy data before it is queued', (_, data) => {
+        const result = validateRawMessage(
+            request('sign-data', [{ data, signer: 'A'.repeat(58) }]),
+        )
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) expect(result.error.message).toMatch(/data/)
+    })
+
     it('rejects an ARC-60 payload over the shared size cap', () => {
         const result = validateRawMessage(
             request('sign-data', {
