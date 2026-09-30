@@ -26,7 +26,7 @@ import {
     getDatabase,
     initializeDatabase,
 } from '@perawallet/wallet-core-database'
-import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
+import { seedNativeAssets } from '@perawallet/wallet-core-assets'
 import {
     createSyncStorePorts,
     getSyncService,
@@ -137,7 +137,7 @@ export const useWebAppShell = (): UseWebAppShellResult => {
                 })
             }
             await initializeDatabase(getProvider().database)
-            await seedAlgoAsset(getDatabase())
+            await seedNativeAssets(getDatabase())
             initializeSyncService({
                 queryClient,
                 stores: createSyncStorePorts(),

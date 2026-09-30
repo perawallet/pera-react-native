@@ -12,7 +12,7 @@
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
 import type { TransactionWarning } from '../models'
 
 export const calculateTotalFee = (
@@ -22,11 +22,7 @@ export const calculateTotalFee = (
     transactions.reduce(
         (sum, tx) =>
             signableAddresses.has(tx.sender)
-                ? sum.add(
-                      new Decimal(tx.fee ?? 0n).dividedBy(
-                          10 ** ALGO_ASSET.decimals,
-                      ),
-                  )
+                ? sum.add(microAlgosToAlgos(tx.fee ?? 0n))
                 : sum,
         new Decimal(0),
     )

@@ -69,7 +69,7 @@ Before accepting any new component/hook/util/type/constant, ask what already exi
 
 - Components: `EmptyView`, `PWFlatList`, `SearchableList`, `AddressDisplay`, `PWRadioButton`, `PWSkeleton`, `TitledExpandablePanel`, `PWButton` variants.
 - Hooks/utils: `useSignableAccounts`/`useSigningAccounts`, `errorToast`/`showError` (from `useToast`), `useDebounce`, `getTypography`, `truncatedAlgorandAddress`.
-- Types/constants: `Nullable`/`Maybe`, `DEFAULT_PRECISION`, `ALGO_ASSET.decimals` — don't redefine.
+- Types/constants: `Nullable`/`Maybe`, `DEFAULT_PRECISION`, `useNativeAsset().decimals` — don't redefine.
 - If a pattern repeats, propose extracting one reusable version (and note we should adopt it at the other call sites).
 
 ### 3. Secret & memory hygiene (crypto wallet — security-critical)

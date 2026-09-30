@@ -40,4 +40,4 @@ export {
     getStaleOrMissingPriceAssetIds,
     getCollectibleIdsMissingUrl,
 } from './syncQueries'
-export { seedAlgoAsset } from './seed'
+export { seedNativeAssets } from './seed'

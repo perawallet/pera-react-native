@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
+import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import {
     addressCodecs,
     keyDerivations,
@@ -32,6 +33,7 @@ import {
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
+import { algorandAssetsAdapter } from '../assets'
 import { algorandNameServiceAdapter } from '../nfd'
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
@@ -48,6 +50,7 @@ import {
 describe('registerChain', () => {
     beforeEach(() => {
         ledgerAppDriverRegistry.reset()
+        assetsChainAdapters.reset()
         swapChainAdapters.reset()
         dappRequestChainAdapters.reset()
         sendFlowChainAdapters.reset()
@@ -70,6 +73,14 @@ describe('registerChain', () => {
         expect(addressCodecs.get(ALGORAND_CHAIN_ID)).toBe(algorandAddressCodec)
         expect(keyDerivations.get(ALGORAND_CHAIN_ID)).toBe(
             algorandKeyDerivation,
+        )
+    })
+
+    it('registers the Algorand assets adapter', () => {
+        registerChain()
+
+        expect(assetsChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandAssetsAdapter,
         )
     })
 

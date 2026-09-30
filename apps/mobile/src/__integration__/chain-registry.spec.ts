@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
+import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import { chainModule } from '@perawallet/wallet-core-chain-algorand'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -40,6 +41,19 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     }
 })
 
+// The native asset is needed even on a chain with `assets` switched off (fees,
+// balances), which the capability-to-adapter parity test cannot see.
+const expectAssetsAdapterForEveryChain = (): void => {
+    const chainIds = getProvider()
+        .chains.list()
+        .map(descriptor => descriptor.id)
+
+    expect(chainIds.length).toBeGreaterThan(0)
+    for (const chainId of chainIds) {
+        expect(assetsChainAdapters.has(chainId), chainId).toBe(true)
+    }
+}
+
 describe('chain registry', () => {
     it('holds the Algorand chain after the integration setup registers it', () => {
         const { chains } = getProvider()
@@ -49,6 +63,7 @@ describe('chain registry', () => {
             chainModule.capabilityDefaults,
         )
         expect(dappRequestChainAdapters.has('algorand')).toBe(true)
+        expectAssetsAdapterForEveryChain()
     })
 
     it.each(chainModule.descriptor.networks)(
@@ -64,18 +79,22 @@ describe('chain registry', () => {
     it('holds the Algorand chain after the native bootstrap', () => {
         const { chains } = getProvider()
         chains.reset()
+        assetsChainAdapters.reset()
 
         initNativeRuntime()
 
         expect(chains.get('algorand').descriptor.id).toBe('algorand')
+        expectAssetsAdapterForEveryChain()
     })
 
     it('holds the Algorand chain after the web shell bootstrap', () => {
         const { chains } = getProvider()
         chains.reset()
+        assetsChainAdapters.reset()
 
         initWebShellRuntime()
 
         expect(chains.get('algorand').descriptor.id).toBe('algorand')
+        expectAssetsAdapterForEveryChain()
     })
 })

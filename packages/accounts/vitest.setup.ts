@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, vi } from 'vitest'
+import { registerFakeAssetsAdapter } from '@perawallet/wallet-core-assets/testing'
 import { registerFakeAccountsChain } from './src/__tests__/fakeAccountsChain'
 
 const kvStore = new Map<string, string>()
@@ -51,4 +52,5 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 // Hooks and the syncer resolve the chain through the registries.
 beforeEach(() => {
     registerFakeAccountsChain()
+    registerFakeAssetsAdapter()
 })

@@ -21,6 +21,7 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     upsertAssets,
     upsertAssetPrices,
+    nativeAssetFor,
     PeraAssetType,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
@@ -481,9 +482,9 @@ describe('account holdings queries', () => {
             peraMetadataJson: null,
         })
 
-        it('falls back to the ALGO constant when its seeded row is gone', () => {
-            expect(assetFromHoldingLiteRow(unsyncedRow('0'))).toEqual(
-                expect.objectContaining({ assetId: '0', decimals: 6 }),
+        it('falls back to the adapter native asset when its seeded row is gone', () => {
+            expect(assetFromHoldingLiteRow(unsyncedRow('0'))).toBe(
+                nativeAssetFor('algorand'),
             )
         })
 

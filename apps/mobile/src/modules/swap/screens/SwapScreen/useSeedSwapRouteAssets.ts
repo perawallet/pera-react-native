@@ -18,7 +18,11 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isAlgoAssetId, type Network } from '@perawallet/wallet-core-shared'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 
 type UseSeedSwapRouteAssetsParams = {
     assetInId?: string
@@ -29,11 +33,11 @@ type UseSeedSwapRouteAssetsParams = {
 // show. Seed it via setQueryData (not invalidate) to update despite staleTime.
 const seedAssetCache = (
     queryClient: QueryClient,
-    network: Network,
+    scope: ChainScope,
     assetId: string,
     asset: PeraAsset,
 ): void => {
-    const key = getAssetsQueryKey([assetId], network)
+    const key = getAssetsQueryKey([assetId], scope)
     queryClient.setQueryData<PeraAsset[]>(key, prev =>
         prev?.some(existing => existing.assetId === assetId)
             ? prev
@@ -62,13 +66,23 @@ export const useSeedSwapRouteAssets = ({
 
     useEffect(() => {
         if (assetOutId && outAsset) {
-            seedAssetCache(queryClient, network, assetOutId, outAsset)
+            seedAssetCache(
+                queryClient,
+                scopeForLegacyNetwork(network),
+                assetOutId,
+                outAsset,
+            )
         }
     }, [assetOutId, outAsset, network, queryClient])
 
     useEffect(() => {
         if (assetInId && inAsset) {
-            seedAssetCache(queryClient, network, assetInId, inAsset)
+            seedAssetCache(
+                queryClient,
+                scopeForLegacyNetwork(network),
+                assetInId,
+                inAsset,
+            )
         }
     }, [assetInId, inAsset, network, queryClient])
 }

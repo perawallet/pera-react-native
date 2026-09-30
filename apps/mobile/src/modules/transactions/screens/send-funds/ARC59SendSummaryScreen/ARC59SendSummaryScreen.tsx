@@ -18,11 +18,12 @@ import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { AssetTitle } from '@modules/assets'
 import { LoadingView } from '@components/LoadingView'
 
 export const ARC59SendSummaryScreen = () => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -141,7 +142,7 @@ export const ARC59SendSummaryScreen = () => {
                         </PWText>
                         <AssetAmount
                             value={fee}
-                            asset={ALGO_ASSET}
+                            asset={nativeAsset}
                             ignorePrivacyMode
                         />
                     </PWView>

@@ -88,10 +88,12 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useMinFeeForSender: vi.fn(),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({ id: '0', decimals: 6 }))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
-    ALGO_ASSET: { id: '0', decimals: 6 },
+    useNativeAsset: () => NATIVE_ASSET,
     isCollectible: (asset: { peraMetadata?: { type?: string } }) =>
         asset?.peraMetadata?.type === 'collectible',
     toDecimalUnits: (value: number | Decimal) => {

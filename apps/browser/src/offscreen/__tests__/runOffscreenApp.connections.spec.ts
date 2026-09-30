@@ -11,6 +11,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { seedNativeAssets } from '@perawallet/wallet-core-assets'
+import { initializeDatabase } from '@perawallet/wallet-core-database'
 import type { ConnectionsHostDeps } from '../connections/connectionsHost'
 
 // Every dependency below is captured through `vi.hoisted` so the mock
@@ -122,7 +124,7 @@ vi.mock('@perawallet/wallet-core-database', () => ({
 // be some object; the real module drags several packages into the graph.
 vi.mock('@providers/queryClient', () => ({ queryClient: {} }))
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    seedAlgoAsset: vi.fn().mockResolvedValue(undefined),
+    seedNativeAssets: vi.fn().mockResolvedValue(undefined),
 }))
 vi.mock('@perawallet/wallet-core-background', () => ({
     createSyncStorePorts: vi.fn(() => ({})),
@@ -219,11 +221,17 @@ describe('runOffscreenApp connections wiring', () => {
         expect(options.getCustomNetworkGenesisHash()).toBe('custom-genesis')
     })
 
-    it('registers the chains once, before sync starts and before either handler is built', async () => {
+    it('registers the chains once, before the database is seeded, sync starts and either handler is built', async () => {
         await boot()
 
         expect(registerChainAdapters).toHaveBeenCalledOnce()
         const [registeredAt] = registerChainAdapters.mock.invocationCallOrder
+        expect(registeredAt).toBeLessThan(
+            vi.mocked(initializeDatabase).mock.invocationCallOrder[0],
+        )
+        expect(registeredAt).toBeLessThan(
+            vi.mocked(seedNativeAssets).mock.invocationCallOrder[0],
+        )
         expect(registeredAt).toBeLessThan(
             initializeSyncService.mock.invocationCallOrder[0],
         )

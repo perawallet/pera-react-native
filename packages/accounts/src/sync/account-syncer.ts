@@ -126,7 +126,7 @@ export async function syncAndEnrichNewAccount(
         // Metadata + prices in parallel; both fetchers skip already-fresh
         // assets, so overlap with the background sync stays cheap.
         await Promise.allSettled([
-            fetchAndPersistAssets(assetIds, network),
+            fetchAndPersistAssets(assetIds, scopeForLegacyNetwork(network)),
             fetchAndPersistPrices(assetIds, network),
         ])
         invalidateAccountQueriesForAddresses(queryClient, [address])

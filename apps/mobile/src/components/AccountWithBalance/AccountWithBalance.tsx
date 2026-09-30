@@ -20,7 +20,7 @@ import { useStyles } from './styles'
 
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PreferredAmount } from '@components/PreferredAmount'
 
 export type AccountWithBalanceProps = {
@@ -33,6 +33,7 @@ export const AccountWithBalance = ({
     isHighlighted,
     ...rest
 }: AccountWithBalanceProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles({ isHighlighted })
     const { accountValueTotals } = useAccountValueTotalsQuery([account], true)
 
@@ -48,7 +49,7 @@ export const AccountWithBalance = ({
             />
             <PWView style={styles.balanceContainer}>
                 <AssetAmount
-                    asset={ALGO_ASSET}
+                    asset={nativeAsset}
                     value={accountValueTotals.get(account.address)?.algoValue}
                     density='compact'
                     variant='bodyLarge'

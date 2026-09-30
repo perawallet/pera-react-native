@@ -26,7 +26,7 @@ import { Decimal } from 'decimal.js'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
+import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
     ALGO_ASSET_NAME,
@@ -49,6 +49,7 @@ type UseAssetClaimDetailScreenResult = {
 
 export const useAssetClaimDetailScreen =
     (): UseAssetClaimDetailScreenResult => {
+        const nativeAsset = useNativeAsset()
         const { push, navigate } = useAppNavigation()
         const route =
             useRoute<RouteProp<MessagesStackParamList, 'AssetClaimDetail'>>()
@@ -115,9 +116,9 @@ export const useAssetClaimDetailScreen =
             const algoDisplayAmount = formatCurrency(
                 baseUnitsToDisplayUnits(
                     request.microAlgoGainOnReject,
-                    ALGO_ASSET.decimals,
+                    nativeAsset.decimals,
                 ),
-                ALGO_ASSET.decimals,
+                nativeAsset.decimals,
                 ALGO_ASSET_NAME,
                 undefined,
                 false,
@@ -161,6 +162,7 @@ export const useAssetClaimDetailScreen =
             t,
             errorToast,
             isRejectBlocked,
+            nativeAsset.decimals,
         ])
 
         const handleCopyAssetId = useCallback(() => {

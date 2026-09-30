@@ -21,7 +21,8 @@ import {
     upsertNodeAssets,
     getStaleOrMissingAssetIds,
     getCollectibleIdsMissingUrl,
-} from '../db'
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 
 import {
     ARC19_COLLECTIBLE_RECHECK_TTL_MS,
@@ -38,7 +39,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import type { PeraAsset } from '../models'
 
 const ASSET_FETCH_CONCURRENCY = 5
 

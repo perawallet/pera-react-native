@@ -12,16 +12,14 @@
 
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ALGO_ASSET, type PeraAsset } from '../models'
+import type { PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import {
-    ALGO_ASSET_ID,
-    isAlgoAssetId,
-    useStableIdList,
-} from '@perawallet/wallet-core-shared'
+import { useStableIdList } from '@perawallet/wallet-core-shared'
 import { getAssetsByIds } from '../db'
-import { fetchAndPersistAssets } from '../sync/asset-syncer'
+import { fetchAndPersistAssets } from '../chain-adapter'
+import { useNativeAsset } from './useNativeAsset'
 
 type UseAssetsQueryResult = {
     data: Map<string, PeraAsset>
@@ -48,6 +46,8 @@ export const useAssetsQuery = (
     { fetchMissing = false }: UseAssetsQueryOptions = {},
 ): UseAssetsQueryResult => {
     const { network } = useNetwork()
+    const scope = scopeForLegacyNetwork(network)
+    const nativeAsset = useNativeAsset()
 
     // Keep a stable reference to ids — only update when the actual content
     // changes. This prevents query recomputation when callers pass a new array
@@ -59,8 +59,8 @@ export const useAssetsQuery = (
         // entry — a DB-only caller must never satisfy it from cache (with
         // staleTime Infinity that would strand the missing assets).
         queryKey: fetchMissing
-            ? [...getAssetsQueryKey(stableIds, network), { fetchMissing: true }]
-            : getAssetsQueryKey(stableIds, network),
+            ? [...getAssetsQueryKey(stableIds, scope), { fetchMissing: true }]
+            : getAssetsQueryKey(stableIds, scope),
         staleTime: Infinity,
         // No ids → nothing to fetch. Skip the query entirely so callers that
         // already supply the asset (e.g. the asset-list rows pass skipFetch and
@@ -68,7 +68,7 @@ export const useAssetsQuery = (
         enabled: stableIds.length > 0,
         queryFn: async () => {
             if (fetchMissing) {
-                await fetchAndPersistAssets(stableIds, network)
+                await fetchAndPersistAssets(stableIds, scope)
             }
             return getAssetsByIds({ assetIds: stableIds, network })
         },
@@ -85,20 +85,20 @@ export const useAssetsQuery = (
             assets.set(asset.assetId, asset)
         })
 
-        // ALGO's metadata is seeded, never fetched, so a DB miss is a local-
-        // state failure the network can't repair — and consumers that gate a
-        // whole screen on the asset (Send's amount form) would spin forever.
-        // The constant is the same record the seed writes.
+        // The native asset's metadata is seeded, never fetched, so a DB miss is
+        // a local-state failure the network can't repair — and consumers that
+        // gate a whole screen on the asset (Send's amount form) would spin
+        // forever. The adapter's record is the one the seed writes.
         if (
             query.isFetched &&
-            stableIds.some(isAlgoAssetId) &&
-            !assets.has(ALGO_ASSET_ID)
+            stableIds.includes(nativeAsset.assetId) &&
+            !assets.has(nativeAsset.assetId)
         ) {
-            assets.set(ALGO_ASSET_ID, ALGO_ASSET)
+            assets.set(nativeAsset.assetId, nativeAsset)
         }
 
         return assets
-    }, [query.data, query.isFetched, stableIds])
+    }, [query.data, query.isFetched, stableIds, nativeAsset])
 
     return useMemo(
         () => ({

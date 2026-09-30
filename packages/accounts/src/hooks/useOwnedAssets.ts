@@ -11,11 +11,11 @@
  */
 
 import { useMemo } from 'react'
-import { isAlgoAssetId, ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import {
-    ALGO_ASSET,
     useAssetsQuery,
+    useNativeAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
@@ -42,6 +42,7 @@ export const useOwnedAssets = (
 ): UseOwnedAssetsResult => {
     const enabled = options?.enabled ?? true
     const { network } = useNetwork()
+    const nativeAsset = useNativeAsset()
 
     const { data: ownedAssetIds = [], isLoading: isIdsLoading } = useQuery({
         queryKey: getOwnedAssetIdsQueryKey(network),
@@ -50,24 +51,26 @@ export const useOwnedAssets = (
         staleTime: OWNED_ASSET_IDS_STALE_TIME_MS,
     })
 
-    // ALGO's id is added explicitly rather than relied on from the holdings
-    // rows: an account still syncing has none yet, and the id is what picks up
-    // the DB-backed peraMetadata (e.g. isFavorited). The constant is only a
-    // pre-seed fallback.
+    // The native id is added explicitly rather than relied on from the
+    // holdings rows: an account still syncing has none yet, and the id is what
+    // picks up the DB-backed peraMetadata (e.g. isFavorited). The adapter's
+    // record is only a pre-seed fallback.
     const { data: assetsMap, isPending: isAssetsPending } = useAssetsQuery([
-        ALGO_ASSET_ID,
+        nativeAsset.assetId,
         ...ownedAssetIds,
     ])
 
     const assets = useMemo<PeraAsset[]>(() => {
-        const list: PeraAsset[] = [assetsMap.get(ALGO_ASSET_ID) ?? ALGO_ASSET]
+        const list: PeraAsset[] = [
+            assetsMap.get(nativeAsset.assetId) ?? nativeAsset,
+        ]
         for (const id of ownedAssetIds) {
             if (isAlgoAssetId(id)) continue
             const asset = assetsMap.get(id)
             if (asset) list.push(asset)
         }
         return list
-    }, [ownedAssetIds, assetsMap])
+    }, [ownedAssetIds, assetsMap, nativeAsset])
 
     return {
         assets,

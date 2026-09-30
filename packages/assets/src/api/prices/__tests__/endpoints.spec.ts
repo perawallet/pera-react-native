@@ -23,40 +23,11 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-import { fetchAssetPrices, fetchAssetPriceHistory } from '../endpoints'
-
-const validPrice = {
-    asset_id: '123',
-    price: '1.5',
-    currency: 'USD',
-}
+import { fetchAssetPriceHistory } from '../endpoints'
 
 describe('prices endpoints', () => {
     beforeEach(() => {
         queryClientMock.mockReset()
-    })
-
-    test('fetchAssetPrices hits /api/v3/asset-prices with comma-joined asset_ids', async () => {
-        queryClientMock.mockResolvedValue({
-            data: [
-                validPrice,
-                { asset_id: '456', price: null, currency: 'USD' },
-            ],
-        })
-
-        const result = await fetchAssetPrices(['123', '456'], 'mainnet')
-
-        expect(queryClientMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                url: '/api/v3/asset-prices',
-                params: { asset_ids: '123,456' },
-                network: 'mainnet',
-            }),
-        )
-        expect(result).toEqual([
-            { asset_id: '123', price: '1.5', currency: 'USD' },
-            { asset_id: '456', price: null, currency: 'USD' },
-        ])
     })
 
     test('fetchAssetPriceHistory hits /v1/assets/price-chart/ with asset_id and period', async () => {
@@ -73,11 +44,5 @@ describe('prices endpoints', () => {
                 network: 'testnet',
             }),
         )
-    })
-
-    test('fetchAssetPrices throws when response fails schema validation', async () => {
-        queryClientMock.mockResolvedValue({ data: { bad: 'shape' } })
-
-        await expect(fetchAssetPrices(['123'], 'mainnet')).rejects.toThrow()
     })
 })

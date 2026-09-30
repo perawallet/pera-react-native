@@ -15,16 +15,16 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 
-const ALGO_ASSET = { assetId: 0, name: 'Algorand', unitName: 'ALGO' }
-
 const mocks = vi.hoisted(() => ({
     useAssetsQuery: vi.fn(),
     getAllHeldAssetIdsForNetwork: vi.fn(),
+    nativeAsset: { assetId: 0, name: 'Algorand', unitName: 'ALGO' },
 }))
 
+const ALGO_ASSET = mocks.nativeAsset
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: 0,
-    ALGO_ASSET: { assetId: 0, name: 'Algorand', unitName: 'ALGO' },
+    useNativeAsset: () => mocks.nativeAsset,
     useAssetsQuery: mocks.useAssetsQuery,
 }))
 

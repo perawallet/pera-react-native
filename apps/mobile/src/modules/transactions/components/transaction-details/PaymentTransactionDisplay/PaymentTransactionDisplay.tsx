@@ -23,7 +23,7 @@ import { TransactionFeeRow } from '../TransactionFeeRow/TransactionFeeRow'
 import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { usePaymentTransactionDisplay } from './usePaymentTransactionDisplay'
 
 export type PaymentTransactionDisplayProps = {
@@ -37,6 +37,7 @@ export const PaymentTransactionDisplay = ({
     transaction,
     isInnerTransaction = false,
 }: PaymentTransactionDisplayProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
@@ -93,7 +94,7 @@ export const PaymentTransactionDisplay = ({
                     title={t('transactions.common.amount')}
                 >
                     <AssetAmount
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         value={amount}
                         showSymbol
                         style={amountStyle}
@@ -118,7 +119,7 @@ export const PaymentTransactionDisplay = ({
                         title={t('transactions.common.close_amount')}
                     >
                         <AssetAmount
-                            asset={ALGO_ASSET}
+                            asset={nativeAsset}
                             value={closeAmountValue}
                             showSymbol
                             ignorePrivacyMode

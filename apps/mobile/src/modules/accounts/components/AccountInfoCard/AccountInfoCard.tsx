@@ -19,7 +19,7 @@ import {
     PWView,
 } from '@components/core'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountInfoCard } from './useAccountInfoCard'
@@ -55,6 +55,7 @@ export const AccountInfoCard = ({
     onClose,
     rekeyedTo,
 }: AccountInfoCardProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -151,7 +152,7 @@ export const AccountInfoCard = ({
                         title={t('min_balance_info.title')}
                         trigger={
                             <AssetAmount
-                                asset={ALGO_ASSET}
+                                asset={nativeAsset}
                                 value={minBalanceAlgos}
                                 showSymbol
                                 symbolPosition='start'

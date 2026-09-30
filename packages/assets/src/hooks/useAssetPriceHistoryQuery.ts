@@ -22,6 +22,7 @@ import type {
 } from '../api'
 import { useCallback } from 'react'
 import { getAssetPriceHistoryQueryKey } from './querykeys'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import type { AssetPriceHistory } from '../models'
@@ -43,7 +44,11 @@ export const useAssetPriceHistoryQuery = (
 ): UseAssetPriceHistoryQueryResult => {
     const { network } = useNetwork()
     const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
-    const queryKey = getAssetPriceHistoryQueryKey(assetID, period, network)
+    const queryKey = getAssetPriceHistoryQueryKey(
+        assetID,
+        period,
+        scopeForLegacyNetwork(network),
+    )
 
     const query = useQuery({
         queryKey,

@@ -30,10 +30,18 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
     useImpactTransactions: vi.fn(),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({
+    assetId: '0',
+    name: 'Algo',
+    unitName: 'ALGO',
+    decimals: 6,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-assets')
     >()),
+    useNativeAsset: () => NATIVE_ASSET,
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
 }))

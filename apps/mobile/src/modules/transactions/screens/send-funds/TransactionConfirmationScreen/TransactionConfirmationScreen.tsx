@@ -28,7 +28,7 @@ import { AccountDisplay } from '@components/AccountDisplay'
 import { QuantumFeeExplainer } from '@modules/transactions/components/QuantumFeeExplainer'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useStyles } from './styles'
-import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
+import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
@@ -36,6 +36,7 @@ import { CloseAccountWarning } from './CloseAccountWarning'
 import { RecipientBelowMbrWarning } from '../RecipientBelowMbrWarning/RecipientBelowMbrWarning'
 
 export const TransactionConfirmationScreen = () => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -127,12 +128,12 @@ export const TransactionConfirmationScreen = () => {
                 <KeyValueRow title={t('send_funds.confirmation.fee')}>
                     <PWView style={styles.feeValueContainer}>
                         <AssetAmount
-                            asset={ALGO_ASSET}
+                            asset={nativeAsset}
                             showSymbol
                             ignorePrivacyMode
                             value={
                                 params?.minFee != null
-                                    ? toWholeUnits(params.minFee, ALGO_ASSET)
+                                    ? toWholeUnits(params.minFee, nativeAsset)
                                     : null
                             }
                             isLoading={paramsPending}

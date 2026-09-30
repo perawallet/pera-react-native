@@ -27,6 +27,7 @@ import {
     type ChainSetup,
 } from '@perawallet/wallet-core-chain-contract'
 import { capabilityAdapterContractTests } from '@perawallet/wallet-core-chain-contract/testing'
+import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
@@ -45,6 +46,7 @@ import {
 } from '../transactions'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
+import { algorandAssetsAdapter } from '../assets'
 import { algorandNameServiceAdapter } from '../nfd'
 import { algorandCardAdapter } from '../card'
 import { algorandRampAdapter } from '../onramp'
@@ -58,6 +60,7 @@ const setup: ChainSetup = [
 
 const resetAdapters = () => {
     ledgerAppDriverRegistry.reset()
+    assetsChainAdapters.reset()
     swapChainAdapters.reset()
     dappRequestChainAdapters.reset()
     sendFlowChainAdapters.reset()
@@ -71,6 +74,7 @@ const expectAdaptersRegistered = () => {
     expect(ledgerAppDriverRegistry.resolve('algorand')).toBe(
         algorandLedgerAppDriver,
     )
+    expect(assetsChainAdapters.get('algorand')).toBe(algorandAssetsAdapter)
     expect(swapChainAdapters.get('algorand')).toBe(algorandSwapAdapter)
     expect(dappRequestChainAdapters.get('algorand')).toBe(
         algorandDappRequestAdapter,
@@ -145,6 +149,7 @@ describe('capability-to-adapter parity (algorand)', () => {
     capabilityAdapterContractTests(chains, {
         'send flow': sendFlowChainAdapters,
         'transaction history': historyChainAdapters,
+        assets: assetsChainAdapters,
         swap: swapChainAdapters,
         'name service': nameServiceChainAdapters,
         card: cardChainAdapters,

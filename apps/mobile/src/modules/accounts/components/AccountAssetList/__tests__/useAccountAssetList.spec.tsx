@@ -103,11 +103,21 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({
+    assetId: '0',
+    unitName: 'ALGO',
+    decimals: 6,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
     return {
         ...actual,
+        useNativeAsset: () => NATIVE_ASSET,
+        nativeAssetFor: () => NATIVE_ASSET,
+        isNativeAssetId: (_chainId: string, assetId: string) =>
+            assetId === NATIVE_ASSET.assetId,
         useAssetPreferencesStore: vi.fn(
             (selector: (state: unknown) => unknown) =>
                 selector({

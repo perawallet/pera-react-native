@@ -370,7 +370,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                         })
                         await fetchAndPersistAssets(
                             [String(params.asset.assetId)],
-                            network,
+                            scopeForLegacyNetwork(network),
                         )
                     } catch (error) {
                         // Cosmetic-only failure — the post-confirmation

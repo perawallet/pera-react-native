@@ -11,32 +11,22 @@
  */
 
 import {
-    fetchAssetPrices,
-    fetchPublicAssetDetails,
-    ASSET_PRICES_MAX_IDS_PER_REQUEST,
-} from '../api'
-import {
     upsertAssetPrices,
     getStaleOrMissingPriceAssetIds,
     recordPriceMisses,
     clearPriceMisses,
 } from '../db'
 
-import { Decimal } from 'decimal.js'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import {
-    isAlgoAssetId,
-    ALGO_ASSET_ID,
-    partition,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { partition, type Network } from '@perawallet/wallet-core-shared'
+import { assetsAdapterFor } from '../chain-adapter'
 
-const PRICE_BATCH_SIZE = ASSET_PRICES_MAX_IDS_PER_REQUEST
 const PRICE_FETCH_CONCURRENCY = 5
 // Below the sync service's 60 s price-resync cadence so the periodic pass
 // always refreshes, while the overlapping enrichment/post-submission callers
-// (which have no gate of their own) dedupe against it. Gates the ALGO fetch
-// and the non-ALGO batches alike.
+// (which have no gate of their own) dedupe against it. Gates the native-asset
+// fetch and the other batches alike.
 const PRICE_CACHE_TTL_MS = 30_000
 // Ids the bulk endpoint returned no price for never get a price row, so the
 // TTL gate alone would refetch them on every pass forever. Misses are
@@ -93,45 +83,41 @@ async function runPricePass(
     network: Network,
 ): Promise<void> {
     if (assetIds.length === 0) return
-    // No Pera backend on this network — both fetchAssetPrices and
-    // fetchPublicAssetDetails (the ALGO branch) below would only throw.
+    // Resolved before the gate below so a missing adapter fails closed on
+    // every network, not only the Pera-backed ones.
+    const scope = scopeForLegacyNetwork(network)
+    const adapter = assetsAdapterFor(scope)
+    const nativeId = adapter.getNativeAsset().assetId
+    // No Pera backend on this network — both price fetches below would only throw.
     if (!isPeraBackedNetwork(network)) return
 
-    const nonAlgoIds = assetIds.filter(id => !isAlgoAssetId(id))
+    const nonNativeIds = assetIds.filter(id => id !== nativeId)
     const staleIds = await getStaleOrMissingPriceAssetIds({
-        assetIds: nonAlgoIds,
+        assetIds: nonNativeIds,
         network,
         ttlMs: PRICE_CACHE_TTL_MS,
         missRetryMs: PRICE_MISS_RETRY_MS,
     })
-    const batches = partition(staleIds, PRICE_BATCH_SIZE)
+    const batches = partition(staleIds, adapter.maxPriceIdsPerRequest)
 
-    // ALGO uses a different endpoint, so it doesn't compete with the
-    // throttled batches for the bulk-assets endpoint.
-    let algoSkippedFresh = false
-    const algoResult = await Promise.allSettled([
+    // The native asset uses a different endpoint, so it doesn't compete with
+    // the throttled batches for the bulk-assets endpoint.
+    let nativeSkippedFresh = false
+    const nativeResult = await Promise.allSettled([
         (async () => {
-            const staleAlgo = await getStaleOrMissingPriceAssetIds({
-                assetIds: [ALGO_ASSET_ID],
+            const staleNative = await getStaleOrMissingPriceAssetIds({
+                assetIds: [nativeId],
                 network,
                 ttlMs: PRICE_CACHE_TTL_MS,
             })
-            if (staleAlgo.length === 0) {
-                algoSkippedFresh = true
+            if (staleNative.length === 0) {
+                nativeSkippedFresh = true
                 return
             }
 
-            const algoDetails = await fetchPublicAssetDetails(
-                ALGO_ASSET_ID,
-                network,
-            )
+            const usdPrice = await adapter.fetchNativeUsdPrice(scope)
             await upsertAssetPrices({
-                prices: [
-                    {
-                        assetId: ALGO_ASSET_ID,
-                        usdPrice: new Decimal(algoDetails.usd_value ?? '0'),
-                    },
-                ],
+                prices: [{ assetId: nativeId, usdPrice }],
                 network,
             })
         })(),
@@ -144,16 +130,9 @@ async function runPricePass(
         const slice = batches.slice(i, i + PRICE_FETCH_CONCURRENCY)
         const sliceResults = await Promise.allSettled(
             slice.map(async batch => {
-                const response = await fetchAssetPrices(batch, network)
-                // The endpoint answers every requested id; `price: null`
-                // means "no price known", not a transport gap — persist it
-                // as a miss rather than inventing a 0 price.
-                const prices = response
-                    .filter(r => r.price !== null)
-                    .map(r => ({
-                        assetId: r.asset_id,
-                        usdPrice: new Decimal(r.price as string),
-                    }))
+                // An id the source has no price for is left out, not priced
+                // 0: persist it as a miss instead.
+                const prices = await adapter.fetchUsdPrices(batch, scope)
                 const pricedIds = new Set(prices.map(p => p.assetId))
                 const hitIds = batch.filter(id => pricedIds.has(id))
                 const missedIds = batch.filter(id => !pricedIds.has(id))
@@ -171,9 +150,9 @@ async function runPricePass(
 
     // A fresh-skip did no work, so it must not count as a success when
     // deciding whether the whole pass failed.
-    const results = algoSkippedFresh
+    const results = nativeSkippedFresh
         ? batchResults
-        : [...algoResult, ...batchResults]
+        : [...nativeResult, ...batchResults]
 
     // Re-throw if all batches failed
     const allFailed = results.every(r => r.status === 'rejected')

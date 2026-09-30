@@ -11,38 +11,42 @@
  */
 
 import type { Database } from '@perawallet/wallet-core-database'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-config'
-import { ALGO_ASSET, DEFAULT_ASSET_METADATA } from '../models'
+import { nativeAssetFor } from '../chain-adapter'
+import { DEFAULT_ASSET_METADATA } from '../models'
 import { upsertAssets } from './metadataRepository'
 
 /**
- * Seeds the ALGO asset row for EVERY network.
+ * Seeds the native asset row for EVERY network.
  *
  * Derived from `Networks` rather than a hand-written list: this seed previously
  * named mainnet and testnet literally, so when betanet and the runtime-
  * configurable custom slot were added the row was silently missing for them.
  * `useAssetsQuery` reads assets from this table (network-scoped) and only hits
- * the network when explicitly asked to `fetchMissing`, so a missing ALGO row is
- * not merely cosmetic — `InputScreen` gates its whole form on `!asset` and
+ * the network when explicitly asked to `fetchMissing`, so a missing native row
+ * is not merely cosmetic — `InputScreen` gates its whole form on `!asset` and
  * renders a spinner forever, making Send permanently unusable on the affected
  * network. Iterating the enum means a future network cannot reintroduce that.
  *
- * ALGO's metadata is a local constant (`ALGO_ASSET`), so this needs no Pera
- * service and is correct even on a network with no Pera deployment.
+ * The native asset's metadata comes from the chain adapter, so this needs no
+ * Pera service and is correct even on a network with no Pera deployment. The
+ * adapter must be registered before this runs.
  *
  * The device-local fields (isFavorited, isPriceAlertEnabled) are stripped:
- * `ALGO_ASSET` carries concrete `false` defaults, and upsertPeraAssets only
- * preserves the stored value when the incoming one is nullish — seeding the
- * constant as-is reset ALGO's favorite on every launch. ALGO is
+ * the adapter's record carries concrete `false` defaults, and upsertPeraAssets
+ * only preserves the stored value when the incoming one is nullish — seeding
+ * the record as-is reset the native asset's favorite on every launch. It is
  * also excluded from the device-scoped bulk sync, so nothing would restore it.
  */
-export async function seedAlgoAsset(db: Database): Promise<void> {
+export async function seedNativeAssets(db: Database): Promise<void> {
+    const nativeAsset = nativeAssetFor(LEGACY_CHAIN_ID)
     const items = [
         {
-            ...ALGO_ASSET,
+            ...nativeAsset,
             peraMetadata: {
                 ...DEFAULT_ASSET_METADATA,
-                ...ALGO_ASSET.peraMetadata,
+                ...nativeAsset.peraMetadata,
                 isFavorited: undefined,
                 isPriceAlertEnabled: undefined,
             },

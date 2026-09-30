@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAssetAuthoritiesQuery } from '../useAssetAuthoritiesQuery'
-import * as api from '../../api'
+import { registerFakeAssetsAdapter } from '../../__tests__/fakeAssetsChain'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
@@ -28,31 +28,15 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
     return React.createElement(QueryClientProvider, { client }, children)
 }
 
-const makeIndexerResponse = (params: {
-    freeze?: string
-    clawback?: string
-}): Awaited<ReturnType<typeof api.fetchIndexerAssetDetails>> => ({
-    asset: {
-        index: '123',
-        params: {
-            creator: 'CREATOR',
-            decimals: 6,
-            total: '1000',
-            ...params,
-        },
-    },
-    'current-round': 1,
-})
-
 describe('useAssetAuthoritiesQuery', () => {
-    beforeEach(() => {
-        vi.restoreAllMocks()
-    })
-
-    it('reports hasFreeze/hasClawback true when both authority addresses are present', async () => {
-        vi.spyOn(api, 'fetchIndexerAssetDetails').mockResolvedValue(
-            makeIndexerResponse({ freeze: 'FREEZEADDR', clawback: 'CLAWADDR' }),
-        )
+    it('maps the adapter result and passes the active scope', async () => {
+        const fetchAssetAuthorities = vi.fn().mockResolvedValue({
+            hasFreeze: true,
+            hasClawback: false,
+            freezeAddress: 'FREEZEADDR',
+            clawbackAddress: null,
+        })
+        registerFakeAssetsAdapter({ fetchAssetAuthorities })
 
         const { result } = renderHook(() => useAssetAuthoritiesQuery('123'), {
             wrapper,
@@ -60,71 +44,38 @@ describe('useAssetAuthoritiesQuery', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(result.current.hasFreeze).toBe(true)
-        expect(result.current.hasClawback).toBe(true)
-        expect(result.current.freezeAddress).toBe('FREEZEADDR')
-        expect(result.current.clawbackAddress).toBe('CLAWADDR')
-    })
-
-    it('reports both false when the authority addresses are absent', async () => {
-        vi.spyOn(api, 'fetchIndexerAssetDetails').mockResolvedValue(
-            makeIndexerResponse({}),
-        )
-
-        const { result } = renderHook(() => useAssetAuthoritiesQuery('123'), {
-            wrapper,
-        })
-
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(result.current.hasFreeze).toBe(false)
         expect(result.current.hasClawback).toBe(false)
-        expect(result.current.freezeAddress).toBeNull()
+        expect(result.current.freezeAddress).toBe('FREEZEADDR')
         expect(result.current.clawbackAddress).toBeNull()
+        expect(fetchAssetAuthorities).toHaveBeenCalledWith('123', {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
     })
 
-    it('does not query for ALGO (assetId 0)', () => {
-        const spy = vi.spyOn(api, 'fetchIndexerAssetDetails')
+    it('does not query for the native asset', () => {
+        const fetchAssetAuthorities = vi.fn()
+        registerFakeAssetsAdapter({ fetchAssetAuthorities })
 
         const { result } = renderHook(() => useAssetAuthoritiesQuery('0'), {
             wrapper,
         })
 
-        expect(spy).not.toHaveBeenCalled()
+        expect(fetchAssetAuthorities).not.toHaveBeenCalled()
         expect(result.current.hasFreeze).toBe(false)
         expect(result.current.hasClawback).toBe(false)
     })
 
-    it('treats the all-zero address as a cleared authority', async () => {
-        const ZERO_ADDRESS =
-            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
-        vi.spyOn(api, 'fetchIndexerAssetDetails').mockResolvedValue(
-            makeIndexerResponse({
-                freeze: ZERO_ADDRESS,
-                clawback: ZERO_ADDRESS,
-            }),
-        )
+    it('surfaces an adapter failure as an error, not a cleared authority', async () => {
+        registerFakeAssetsAdapter({
+            fetchAssetAuthorities: vi.fn().mockRejectedValue(new Error('down')),
+        })
 
         const { result } = renderHook(() => useAssetAuthoritiesQuery('123'), {
             wrapper,
         })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.hasFreeze).toBe(false)
-        expect(result.current.hasClawback).toBe(false)
-        expect(result.current.freezeAddress).toBeNull()
-        expect(result.current.clawbackAddress).toBeNull()
-    })
-
-    it('still reports a normal address as an active authority', async () => {
-        vi.spyOn(api, 'fetchIndexerAssetDetails').mockResolvedValue(
-            makeIndexerResponse({ freeze: 'FREEZEADDR' }),
-        )
-
-        const { result } = renderHook(() => useAssetAuthoritiesQuery('123'), {
-            wrapper,
-        })
-
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(result.current.hasFreeze).toBe(true)
-        expect(result.current.freezeAddress).toBe('FREEZEADDR')
     })
 })

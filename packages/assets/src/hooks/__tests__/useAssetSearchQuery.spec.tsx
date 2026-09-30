@@ -14,6 +14,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useAssetSearchQuery } from '../useAssetSearchQuery'
+import { registerFakeAssetsAdapter } from '../../__tests__/fakeAssetsChain'
 import { createWrapper } from './test-utils'
 
 const mocks = vi.hoisted(() => ({
@@ -21,38 +22,17 @@ const mocks = vi.hoisted(() => ({
     useNetwork: vi.fn(),
 }))
 
-vi.mock('../../api/assets/search-endpoints', () => ({
-    searchAssets: mocks.searchAssets,
-}))
-
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mocks.useNetwork,
 }))
 
-const makeApiResult = (
-    assetId: number,
-    overrides: Partial<{
-        name: string | null
-        unit_name: string | null
-        logo: string | null
-        verification_tier: 'verified' | 'unverified' | 'suspicious'
-        usd_value: string | null
-        type: 'algo' | 'standard_asset' | 'dapp_asset' | 'collectible' | null
-        collectible: {
-            title?: string | null
-            primary_image?: string | null
-            collection?: { name?: string | null } | null
-        } | null
-    }> = {},
-) => ({
-    asset_id: assetId,
-    name: overrides.name ?? `Asset ${assetId}`,
-    unit_name: overrides.unit_name ?? `A${assetId}`,
-    logo: overrides.logo ?? null,
-    verification_tier: overrides.verification_tier ?? 'verified',
-    usd_value: overrides.usd_value ?? '1.00',
-    type: overrides.type ?? 'standard_asset',
-    collectible: overrides.collectible ?? null,
+const mainnetScope = { chainId: 'algorand', networkId: 'mainnet' }
+
+const makeResult = (assetId: number, name = `Asset ${assetId}`) => ({
+    assetId: String(assetId),
+    name,
+    unitName: `A${assetId}`,
+    peraMetadata: { verificationTier: 'verified' as const },
 })
 
 describe('useAssetSearchQuery', () => {
@@ -61,6 +41,7 @@ describe('useAssetSearchQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+        registerFakeAssetsAdapter({ searchAssets: mocks.searchAssets })
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -96,10 +77,10 @@ describe('useAssetSearchQuery', () => {
         queryClient.clear()
     })
 
-    it('fetches and transforms results from the API', async () => {
+    it('returns the adapter results', async () => {
         mocks.searchAssets.mockResolvedValue({
-            results: [makeApiResult(123, { name: 'USDC', unit_name: 'USDC' })],
-            next: null,
+            results: [makeResult(123, 'USDC')],
+            nextCursor: undefined,
         })
 
         const { result } = renderHook(() => useAssetSearchQuery('usdc'), {
@@ -108,22 +89,11 @@ describe('useAssetSearchQuery', () => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-        expect(mocks.searchAssets).toHaveBeenCalledWith({
-            query: 'usdc',
-            network: 'mainnet',
-            cursor: undefined,
-            hasCollectible: false,
-        })
-        expect(result.current.results).toEqual([
-            expect.objectContaining({
-                assetId: '123',
-                name: 'USDC',
-                unitName: 'USDC',
-                peraMetadata: expect.objectContaining({
-                    verificationTier: 'verified',
-                }),
-            }),
-        ])
+        expect(mocks.searchAssets).toHaveBeenCalledWith(
+            { query: 'usdc', cursor: undefined, hasCollectible: false },
+            mainnetScope,
+        )
+        expect(result.current.results).toEqual([makeResult(123, 'USDC')])
         expect(result.current.isError).toBe(false)
     })
 
@@ -164,7 +134,10 @@ describe('useAssetSearchQuery', () => {
         'reports isUnavailableOnNetwork false and fetches normally on %s',
         async network => {
             mocks.useNetwork.mockReturnValue({ network })
-            mocks.searchAssets.mockResolvedValue({ results: [], next: null })
+            mocks.searchAssets.mockResolvedValue({
+                results: [],
+                nextCursor: undefined,
+            })
 
             const { result } = renderHook(() => useAssetSearchQuery('algo'), {
                 wrapper: createWrapper(queryClient),
@@ -177,7 +150,10 @@ describe('useAssetSearchQuery', () => {
     )
 
     it('passes hasCollectible through to the endpoint', async () => {
-        mocks.searchAssets.mockResolvedValue({ results: [], next: null })
+        mocks.searchAssets.mockResolvedValue({
+            results: [],
+            nextCursor: undefined,
+        })
 
         renderHook(() => useAssetSearchQuery('nft', { hasCollectible: true }), {
             wrapper: createWrapper(queryClient),
@@ -186,6 +162,7 @@ describe('useAssetSearchQuery', () => {
         await waitFor(() =>
             expect(mocks.searchAssets).toHaveBeenCalledWith(
                 expect.objectContaining({ hasCollectible: true }),
+                mainnetScope,
             ),
         )
     })
@@ -202,10 +179,10 @@ describe('useAssetSearchQuery', () => {
         expect(result.current.results).toEqual([])
     })
 
-    it('exposes hasNextPage when the API returns a next url', async () => {
+    it('exposes hasNextPage when the adapter returns a cursor', async () => {
         mocks.searchAssets.mockResolvedValue({
-            results: [makeApiResult(1)],
-            next: 'https://api.example.com/v1/assets/search/?cursor=abc123',
+            results: [makeResult(1)],
+            nextCursor: 'abc123',
         })
 
         const { result } = renderHook(() => useAssetSearchQuery('a'), {
@@ -217,15 +194,15 @@ describe('useAssetSearchQuery', () => {
         expect(result.current.hasNextPage).toBe(true)
     })
 
-    it('fetches the next page using the cursor extracted from the next url', async () => {
+    it('fetches the next page using the adapter cursor', async () => {
         mocks.searchAssets
             .mockResolvedValueOnce({
-                results: [makeApiResult(1)],
-                next: 'https://api.example.com/v1/assets/search/?cursor=CURSOR_TOKEN',
+                results: [makeResult(1)],
+                nextCursor: 'CURSOR_TOKEN',
             })
             .mockResolvedValueOnce({
-                results: [makeApiResult(2)],
-                next: null,
+                results: [makeResult(2)],
+                nextCursor: undefined,
             })
 
         const { result } = renderHook(() => useAssetSearchQuery('a'), {
@@ -241,48 +218,20 @@ describe('useAssetSearchQuery', () => {
             expect(result.current.isFetchingNextPage).toBe(false),
         )
 
-        expect(mocks.searchAssets).toHaveBeenNthCalledWith(2, {
-            query: 'a',
-            network: 'mainnet',
-            cursor: 'CURSOR_TOKEN',
-            hasCollectible: false,
-        })
+        expect(mocks.searchAssets).toHaveBeenNthCalledWith(
+            2,
+            { query: 'a', cursor: 'CURSOR_TOKEN', hasCollectible: false },
+            mainnetScope,
+        )
         expect(result.current.results.map(r => r.assetId)).toEqual(['1', '2'])
         expect(result.current.hasNextPage).toBe(false)
     })
 
-    it('treats a malformed next url as no more pages', async () => {
-        mocks.searchAssets.mockResolvedValue({
-            results: [makeApiResult(1)],
-            next: 'not a url',
-        })
-
-        const { result } = renderHook(() => useAssetSearchQuery('a'), {
-            wrapper: createWrapper(queryClient),
-        })
-
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-        expect(result.current.hasNextPage).toBe(false)
-    })
-
-    it('treats a next url without a cursor param as no more pages', async () => {
-        mocks.searchAssets.mockResolvedValue({
-            results: [makeApiResult(1)],
-            next: 'https://api.example.com/v1/assets/search/?limit=25',
-        })
-
-        const { result } = renderHook(() => useAssetSearchQuery('a'), {
-            wrapper: createWrapper(queryClient),
-        })
-
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-        expect(result.current.hasNextPage).toBe(false)
-    })
-
     it('refetches when the query string changes', async () => {
-        mocks.searchAssets.mockResolvedValue({ results: [], next: null })
+        mocks.searchAssets.mockResolvedValue({
+            results: [],
+            nextCursor: undefined,
+        })
 
         const { rerender } = renderHook(
             ({ q }: { q: string }) => useAssetSearchQuery(q),
@@ -295,6 +244,7 @@ describe('useAssetSearchQuery', () => {
         await waitFor(() =>
             expect(mocks.searchAssets).toHaveBeenCalledWith(
                 expect.objectContaining({ query: 'foo' }),
+                mainnetScope,
             ),
         )
 
@@ -303,44 +253,8 @@ describe('useAssetSearchQuery', () => {
         await waitFor(() =>
             expect(mocks.searchAssets).toHaveBeenCalledWith(
                 expect.objectContaining({ query: 'bar' }),
+                mainnetScope,
             ),
-        )
-    })
-
-    it('transforms collectible fields from the API response', async () => {
-        mocks.searchAssets.mockResolvedValue({
-            results: [
-                makeApiResult(42, {
-                    type: 'collectible',
-                    collectible: {
-                        title: 'Pera #42',
-                        primary_image: 'https://img/42.png',
-                        collection: { name: 'Pera Collection' },
-                    },
-                }),
-            ],
-            next: null,
-        })
-
-        const { result } = renderHook(
-            () => useAssetSearchQuery('pera', { hasCollectible: true }),
-            { wrapper: createWrapper(queryClient) },
-        )
-
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-        expect(result.current.results[0]).toEqual(
-            expect.objectContaining({
-                assetId: '42',
-                peraMetadata: expect.objectContaining({
-                    type: 'collectible',
-                    collectible: {
-                        title: 'Pera #42',
-                        primaryImage: 'https://img/42.png',
-                        collection: { name: 'Pera Collection' },
-                    },
-                }),
-            }),
         )
     })
 })

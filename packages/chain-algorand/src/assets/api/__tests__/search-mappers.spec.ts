@@ -11,8 +11,8 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { transformSearchResult } from '../mappers'
-import type { AssetSearchResultResponse } from '../../api/assets/search-schema'
+import { transformSearchResult } from '../search-mappers'
+import type { AssetSearchResultResponse } from '../search-schema'
 
 describe('transformSearchResult', () => {
     test('maps a standard asset search result to a DisplayableAsset', () => {

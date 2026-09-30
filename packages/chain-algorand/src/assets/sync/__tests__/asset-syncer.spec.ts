@@ -33,7 +33,7 @@ vi.mock('../../api', () => ({
     transformIndexerAssetResponse: transformIndexerAssetResponseMock,
 }))
 
-vi.mock('../../db', () => ({
+vi.mock('@perawallet/wallet-core-assets', () => ({
     upsertAssets: upsertAssetsMock,
     upsertNodeAssets: upsertNodeAssetsMock,
     upsertPeraAssets: upsertPeraAssetsMock,

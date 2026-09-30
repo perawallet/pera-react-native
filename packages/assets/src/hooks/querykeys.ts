@@ -11,10 +11,10 @@
  */
 
 import {
-    ALGO_ASSET_ID,
-    type HistoryPeriod,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+    legacyColumnValue,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'assets'
@@ -61,24 +61,31 @@ export const hashAssetIds = (assetIDs: string[]): string => {
     return `${(low >>> 0).toString(36)}.${(high >>> 0).toString(36)}.${assetIDs.length}`
 }
 
+// Keys carry `network`, not the scope key: clearCustomNetworkCache finds custom-network
+// entries by that field. legacyColumnValue keeps it the bare network for Algorand.
 export const getAssetPricesQueryKey = (
     assetIDs: string[],
-    network: Network,
+    scope: ChainScope,
 ) => {
     return [
         MODULE_PREFIX,
         'prices',
         'usd',
-        { assetIDs: hashAssetIds(assetIDs), network },
+        { assetIDs: hashAssetIds(assetIDs), network: legacyColumnValue(scope) },
     ]
 }
 
 export const getAssetPriceHistoryQueryKey = (
     assetID: string,
     period: HistoryPeriod,
-    network: Network,
+    scope: ChainScope,
 ) => {
-    return [MODULE_PREFIX, 'prices', 'history', { assetID, period, network }]
+    return [
+        MODULE_PREFIX,
+        'prices',
+        'history',
+        { assetID, period, network: legacyColumnValue(scope) },
+    ]
 }
 
 /**
@@ -91,19 +98,18 @@ export const isAssetPriceHistoryQuery = (queryKey: QueryKey): boolean =>
     queryKey[1] === 'prices' &&
     queryKey[2] === 'history'
 
-export const getAssetsQueryKey = (assetIDs: string[], network: Network) => {
-    return [MODULE_PREFIX, { assetIDs: hashAssetIds(assetIDs), network }]
-}
-
-export const getAlgoQueryKey = (network: Network) => {
-    return [MODULE_PREFIX, { algo: ALGO_ASSET_ID, network }]
+export const getAssetsQueryKey = (assetIDs: string[], scope: ChainScope) => {
+    return [
+        MODULE_PREFIX,
+        { assetIDs: hashAssetIds(assetIDs), network: legacyColumnValue(scope) },
+    ]
 }
 
 /** Canonical single-asset cache entry (DB-backed read path). */
-export const getAssetDetailsQueryKey = (assetId: string, network: Network) => [
+export const getAssetDetailsQueryKey = (assetId: string, scope: ChainScope) => [
     MODULE_PREFIX,
     'detail',
-    { assetId, network },
+    { assetId, network: legacyColumnValue(scope) },
 ]
 
 /**
@@ -115,26 +121,22 @@ export const getAssetDetailsQueryKey = (assetId: string, network: Network) => [
  */
 export const getRemoteAssetDetailsQueryKey = (
     assetId: string,
-    network: Network,
-) => [MODULE_PREFIX, 'detail-remote', { assetId, network }]
-
-export const getPublicAssetDetailsQueryKey = (assetId: string) => [
+    scope: ChainScope,
+) => [
     MODULE_PREFIX,
-    'public',
-    { assetId },
-]
-
-export const getIndexerAssetDetailsQueryKey = (assetId: string) => [
-    MODULE_PREFIX,
-    'indexer',
-    { assetId },
+    'detail-remote',
+    { assetId, network: legacyColumnValue(scope) },
 ]
 
 /** Freeze/clawback authorities, read from the indexer's asset params. */
 export const getAssetAuthoritiesQueryKey = (
     assetId: string,
-    network: Network,
-) => [MODULE_PREFIX, 'authorities', { assetId, network }]
+    scope: ChainScope,
+) => [
+    MODULE_PREFIX,
+    'authorities',
+    { assetId, network: legacyColumnValue(scope) },
+]
 
 export function invalidateAssetQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({
