@@ -17,18 +17,18 @@ import { useProvenPasskeysStore } from '@perawallet/wallet-core-backup'
 
 const keystoreKeys = vi.fn().mockReturnValue([])
 const inputsFor = vi.fn()
-const getDerivedPublicKeyMock = vi.fn()
+const deriveHdAccountMock = vi.fn()
 const entropyChildIdOfMock = vi.fn<() => string | undefined>()
 const withSecretMock = vi.fn<() => Promise<Uint8Array | null>>()
 const zeroBytesMock = vi.fn<(secret: Uint8Array) => void>()
 const canAccessMock = vi.fn<(key: unknown, domain: string) => boolean>()
 
-vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
-    BIP32DerivationType: { Khovratovich: 32, Peikert: 9 },
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    deriveHdAccount: (...args: unknown[]) => deriveHdAccountMock(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    encodeAlgorandAddress: (pub: Uint8Array) => `ADDR-${pub[0]}`,
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -37,7 +37,6 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     entropyChildIdOf: () => entropyChildIdOfMock(),
     withSecret: () => withSecretMock(),
     zeroBytes: (secret: Uint8Array) => zeroBytesMock(secret),
-    useKMS: () => ({ getDerivedPublicKey: getDerivedPublicKeyMock }),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -51,9 +50,7 @@ vi.mock('@perawallet/wallet-core-passkeys', () => ({
 describe('useListPasskeysForBackup', () => {
     beforeEach(() => {
         act(() => useProvenPasskeysStore.getState().resetState())
-        getDerivedPublicKeyMock
-            .mockReset()
-            .mockResolvedValue(new Uint8Array([9]))
+        deriveHdAccountMock.mockReset().mockResolvedValue({ address: 'ADDR-9' })
         inputsFor.mockReset()
         entropyChildIdOfMock.mockReset().mockReturnValue(undefined)
         withSecretMock.mockReset().mockResolvedValue(null)
@@ -97,7 +94,10 @@ describe('useListPasskeysForBackup', () => {
         const { result } = renderHook(() => useListPasskeysForBackup())
         const [passkey] = await result.current()
 
-        expect(getDerivedPublicKeyMock).toHaveBeenCalledWith('seed-1', 0, 0, 9)
+        expect(deriveHdAccountMock).toHaveBeenCalledWith('mainnet', 'seed-1', {
+            account: 0,
+            keyIndex: 0,
+        })
         expect(passkey.seedAddress).toBe('ADDR-9')
         expect('seedKeyId' in passkey).toBe(false)
     })

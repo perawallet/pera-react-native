@@ -27,8 +27,21 @@ import {
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
 
-const { mockCapabilities } = vi.hoisted(() => ({
+const { mockCapabilities, mockRouteParams, mockHandoff } = vi.hoisted(() => ({
     mockCapabilities: {} as Record<string, boolean>,
+    mockRouteParams: {
+        current: undefined as { isScannerOpen?: boolean } | undefined,
+    },
+    mockHandoff: { shouldHandOff: false, openScanTab: vi.fn() },
+}))
+
+vi.mock('@react-navigation/native', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useRoute: () => ({ params: mockRouteParams.current }),
+}))
+
+vi.mock('@hooks/useScanTabHandoff', () => ({
+    useScanTabHandoff: () => mockHandoff,
 }))
 vi.mock('@routes/capabilities', async () => {
     const actual = await vi.importActual<typeof import('@routes/capabilities')>(
@@ -151,6 +164,8 @@ const pressCloudBackupOption = async (result: {
 describe('useImportAccountOptionsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRouteParams.current = undefined
+        mockHandoff.shouldHandOff = false
         mockCapabilities.ledgerUsb = false
         mockRequestBottomSheet.mockResolvedValue(undefined)
         mockQuantumFlag.enabled = false
@@ -242,6 +257,31 @@ describe('useImportAccountOptionsScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
             accountType: 'algo25',
         })
+    })
+
+    it('hands the QR scan off to the expanded tab from the extension popup', () => {
+        mockHandoff.shouldHandOff = true
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        act(() => {
+            result.current.options
+                .find(
+                    o =>
+                        o.testID === 'import_account_options_recover_qr_button',
+                )!
+                .onPress()
+        })
+
+        expect(mockHandoff.openScanTab).toHaveBeenCalledTimes(1)
+        expect(result.current.isQRScannerVisible).toBe(false)
+    })
+
+    it('opens the scanner on arrival when the popup handed the scan off', () => {
+        mockRouteParams.current = { isScannerOpen: true }
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        expect(result.current.isQRScannerVisible).toBe(true)
     })
 
     it('QR option opens QR scanner', () => {

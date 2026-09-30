@@ -11,4 +11,5 @@
  */
 
 // Web-only entry: import it from `.web` files only (see ScanQRScreen/index.ts).
+export { CameraAccessScreen } from './screens/CameraAccessScreen'
 export { ScanQRScreen } from './screens/ScanQRScreen'

@@ -73,9 +73,6 @@
     // apps/mobile: polyfills metro.config.js maps node core modules onto by path.
     "@craftzdog/react-native-buffer",
     "readable-stream",
-    // packages/kms: its vite build inlines wallet-core-blockchain rather than
-    // externalising it, so kms/dist imports algokit-utils though kms/src never does.
-    "@algorandfoundation/algokit-utils",
     // conformance: the harness signs quantum transactions through kms's WASM
     // Falcon provider, which loads falcon-1024 with a lazy `require`.
     "falcon-1024"

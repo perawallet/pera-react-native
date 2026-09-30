@@ -11,9 +11,9 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import {
     AccountTypes,
+    deriveHdAccount,
     DuplicateAccountError,
     useAccountsStore,
     useImportAccount,
@@ -25,19 +25,22 @@ import {
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    encodeAlgorandAddress,
     isValidAlgorandAddress,
+    useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    hdDerivedKeyId,
     hexToBytes,
     mnemonicWordsToIndices,
     useKMS,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    logger,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import {
     BackupAccountType,
     type Algo25AddressPayload,
@@ -59,8 +62,9 @@ export type UseCloudBackupImportResult = {
 
 type ImportContext = Pick<
     ReturnType<typeof useKMS>,
-    'keys' | 'hasSeedWithEntropy' | 'persistHDMasterKey' | 'getDerivedPublicKey'
+    'keys' | 'hasSeedWithEntropy' | 'persistHDMasterKey'
 > & {
+    network: Network
     importAccount: ReturnType<typeof useImportAccount>
     updateAccount: ReturnType<typeof useUpdateAccount>
     appendAccount: (account: WalletAccount) => void
@@ -140,26 +144,21 @@ const buildMultisigAccount = (
 }
 
 const buildHdWalletAccount = async (
-    { getDerivedPublicKey }: ImportContext,
+    { network }: ImportContext,
     seedKeyId: string,
     payload: HdWalletAddressPayload,
 ): Promise<HDWalletAccount> => {
-    const derivationType = payload.derivationType as BIP32DerivationType
-    const publicKey = await getDerivedPublicKey(
-        seedKeyId,
-        payload.account,
-        payload.keyIndex,
-        derivationType,
-    )
-    const derivedAddress = encodeAlgorandAddress(publicKey)
-    if (derivedAddress !== payload.address) {
+    // Deriving also commits the child key to the keystore under `keyPairId`.
+    const derived = await deriveHdAccount(network, seedKeyId, {
+        account: payload.account,
+        keyIndex: payload.keyIndex,
+        derivationType: payload.derivationType,
+    })
+    if (derived.address !== payload.address) {
         throw new Error(
-            `hdWallet address mismatch: derived ${derivedAddress} != backup ${payload.address}`,
+            `hdWallet address mismatch: derived ${derived.address} != backup ${payload.address}`,
         )
     }
-    // `getDerivedPublicKey` above already commits the child key to the keystore
-    // (under the deterministic `hdDerivedKeyId`) as a side effect, so no
-    // separate `generateDerivedKey` call is needed here.
     return {
         id: generateOrderedUniqueId(),
         address: payload.address,
@@ -171,12 +170,7 @@ const buildHdWalletAccount = async (
             derivationType:
                 payload.derivationType as HDWalletAccount['hdWalletDetails']['derivationType'],
         },
-        keyPairId: hdDerivedKeyId(
-            seedKeyId,
-            payload.account,
-            payload.keyIndex,
-            derivationType,
-        ),
+        keyPairId: derived.keyPairId,
         ...nameField(payload.customName),
     }
 }
@@ -232,7 +226,7 @@ const importFromMnemonic = async (
  * base64 + entropy-driven import and is not yet interoperable.
  */
 const persistSeedFromBackup = async (
-    { persistHDMasterKey, getDerivedPublicKey }: ImportContext,
+    { persistHDMasterKey, network }: ImportContext,
     secretsPayload: { seed: string; entropy: string },
 ): Promise<{ seedKeyId: string; firstDerivedAddress: string }> => {
     if (secretsPayload.seed.length % 2 !== 0) {
@@ -249,16 +243,11 @@ const persistSeedFromBackup = async (
     // `persistHDMasterKey` zeroes `rootKey`/`entropy` in a finally.
     await persistHDMasterKey({ keyId: seedKeyId, rootKey, entropy })
 
-    const firstDerivedPublicKey = await getDerivedPublicKey(
-        seedKeyId,
-        0,
-        0,
-        BIP32DerivationType.Peikert,
-    )
-    return {
-        seedKeyId,
-        firstDerivedAddress: encodeAlgorandAddress(firstDerivedPublicKey),
-    }
+    const first = await deriveHdAccount(network, seedKeyId, {
+        account: 0,
+        keyIndex: 0,
+    })
+    return { seedKeyId, firstDerivedAddress: first.address }
 }
 
 /**
@@ -269,7 +258,7 @@ const persistSeedFromBackup = async (
 const resolveHeldSeeds = async ({
     keys,
     hasSeedWithEntropy,
-    getDerivedPublicKey,
+    network,
 }: ImportContext): Promise<Map<string, string>> => {
     const held = new Map<string, string>()
     for (const seedKeyId of keys.keys()) {
@@ -277,13 +266,11 @@ const resolveHeldSeeds = async ({
         // nothing to derive an address path against.
         if (!hasSeedWithEntropy(seedKeyId)) continue
         try {
-            const firstDerivedPublicKey = await getDerivedPublicKey(
-                seedKeyId,
-                0,
-                0,
-                BIP32DerivationType.Peikert,
-            )
-            held.set(encodeAlgorandAddress(firstDerivedPublicKey), seedKeyId)
+            const first = await deriveHdAccount(network, seedKeyId, {
+                account: 0,
+                keyIndex: 0,
+            })
+            held.set(first.address, seedKeyId)
         } catch (error) {
             // A seed we can't derive against can't be matched, so it just
             // doesn't participate in the guard.
@@ -493,12 +480,8 @@ const importBatch = async (
 const useImportContext = (): ImportContext => {
     const importAccount = useImportAccount()
     const updateAccount = useUpdateAccount()
-    const {
-        keys,
-        hasSeedWithEntropy,
-        persistHDMasterKey,
-        getDerivedPublicKey,
-    } = useKMS()
+    const { keys, hasSeedWithEntropy, persistHDMasterKey } = useKMS()
+    const { network } = useNetwork()
     // Reading the hook-subscribed snapshot would close over a single render's
     // account list, so back-to-back appends in the loop would clobber each
     // other. We always read+write the live store instead.
@@ -509,7 +492,7 @@ const useImportContext = (): ImportContext => {
             keys,
             hasSeedWithEntropy,
             persistHDMasterKey,
-            getDerivedPublicKey,
+            network,
             importAccount,
             updateAccount,
             appendAccount: newAccount =>
@@ -522,7 +505,7 @@ const useImportContext = (): ImportContext => {
             keys,
             hasSeedWithEntropy,
             persistHDMasterKey,
-            getDerivedPublicKey,
+            network,
             importAccount,
             updateAccount,
             setAccounts,

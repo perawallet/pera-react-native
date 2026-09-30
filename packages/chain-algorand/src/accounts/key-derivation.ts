@@ -17,13 +17,11 @@ import type {
     DiscoveryCandidate,
     KeyDerivation,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    algorandHdDerivationRequest,
-    SIGNING_ACCESS_DOMAIN,
-} from '@perawallet/wallet-core-kms'
+import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandAddressCodec } from './address-codec'
 import { ALGORAND_HD_DERIVATION_TYPE } from './constants'
+import { algorandHdDerivationRequest } from './hd-derivation'
 
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5

@@ -17,7 +17,10 @@ import type { PWFlatListRef } from '@components/core'
 import * as webScrollUnpin from '../scrollUnpin.web'
 
 // vitest doesn't resolve `.web.ts` twins, so the web cases swap one in here.
-const scrollUnpin = vi.hoisted(() => ({ shouldUnpinSearchOnScroll: false }))
+const scrollUnpin = vi.hoisted(() => ({
+    shouldUnpinSearchOnScroll: false,
+    shouldReleasePinOnScrollUp: false,
+}))
 vi.mock('../scrollUnpin', () => scrollUnpin)
 
 const HEADER_SENTINEL = { __searchableListHeader: true, key: 'h' }
@@ -103,6 +106,7 @@ describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
 
     beforeEach(() => {
         scrollUnpin.shouldUnpinSearchOnScroll = false
+        scrollUnpin.shouldReleasePinOnScrollUp = false
     })
 
     it('unpins (hides the overlay) once a real scroll moves away from the settled pin offset on web', () => {
@@ -216,16 +220,22 @@ describe('useSearchableList content-size pin correction', () => {
             current: Pick<ReturnType<typeof useSearchableList>, 'handleScroll'>
         },
         y: number,
+        extent = { contentHeight: 12_000, viewportHeight: 600 },
     ) =>
         act(() =>
             result.current.handleScroll({
-                nativeEvent: { contentOffset: { y } },
+                nativeEvent: {
+                    contentOffset: { y },
+                    contentSize: { height: extent.contentHeight },
+                    layoutMeasurement: { height: extent.viewportHeight },
+                },
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any),
         )
 
     beforeEach(() => {
         scrollUnpin.shouldUnpinSearchOnScroll = false
+        scrollUnpin.shouldReleasePinOnScrollUp = false
     })
 
     it('leaves a scroll position deep in the list alone when content size changes', () => {
@@ -258,6 +268,77 @@ describe('useSearchableList content-size pin correction', () => {
             offset: HEADER_HEIGHT,
             animated: false,
         })
+    })
+
+    // QA on the extension: scrolling back up into the chart jumped straight to
+    // the pin, because web never emits onScrollEndDrag and so never cleared the
+    // collapsed latch.
+    it('lets a web user scroll back up into the header', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result, scrollToOffset } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        scrollTo(result, 5000)
+        scrollTo(result, HEADER_HEIGHT - 150)
+        scrollToOffset.mockClear()
+
+        act(() => result.current.handleContentSizeChange(0, 12_100))
+
+        expect(scrollToOffset).not.toHaveBeenCalled()
+    })
+
+    it('still corrects a web offset clamped above the pin by shrinking content', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result, scrollToOffset } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        scrollTo(result, 5000)
+        // Content shrank to 880: the platform clamps to its max offset (280).
+        scrollTo(result, HEADER_HEIGHT - 40, {
+            contentHeight: 880,
+            viewportHeight: 600,
+        })
+        scrollToOffset.mockClear()
+
+        act(() => result.current.handleContentSizeChange(0, 880))
+
+        expect(scrollToOffset).toHaveBeenCalledWith({
+            offset: HEADER_HEIGHT,
+            animated: false,
+        })
+    })
+
+    it('keeps the latch through the web search-pin animation', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result, scrollToOffset } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        scrollTo(result, HEADER_HEIGHT / 2)
+        scrollToOffset.mockClear()
+
+        act(() => result.current.handleContentSizeChange(0, 900))
+
+        expect(scrollToOffset).toHaveBeenCalledWith({
+            offset: HEADER_HEIGHT,
+            animated: false,
+        })
+    })
+
+    it('stops correcting once a fling reaches the top on native', () => {
+        const { result, scrollToOffset } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        // Momentum carries the list to the top without an end-drag inside
+        // the header, so the snap never gets to clear the latch.
+        scrollTo(result, 5000)
+        scrollTo(result, 0)
+        scrollTo(result, HEADER_HEIGHT - 150)
+        scrollToOffset.mockClear()
+
+        act(() => result.current.handleContentSizeChange(0, 12_100))
+
+        expect(scrollToOffset).not.toHaveBeenCalled()
     })
 
     it('does nothing while the header is still expanded', () => {

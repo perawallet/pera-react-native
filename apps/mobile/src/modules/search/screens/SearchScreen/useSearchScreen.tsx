@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import { useWindowDimensions } from 'react-native'
 import {
     type WalletAccount,
     useResolveAssetHolderAddress,
@@ -27,7 +28,27 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SearchFilterContent } from '../../components/SearchFilterContent'
 
-const DEFAULT_SECTION_LIMIT = 5
+const MIN_SECTION_LIMIT = 5
+// Result rows render ~56pt at fontScale 1. Sizing against the whole window
+// rather than the measured list overshoots slightly, which is the point: the
+// results should reach past the fold instead of stopping short of it.
+const ESTIMATED_ROW_HEIGHT = 56
+
+const allocateSectionLimits = (counts: number[], budget: number): number[] => {
+    const limits = counts.map(() => 0)
+    let remaining = budget
+    while (remaining > 0 && limits.some((limit, i) => limit < counts[i])) {
+        for (let i = 0; i < counts.length && remaining > 0; i++) {
+            if (limits[i] < counts[i]) {
+                limits[i]++
+                remaining--
+            }
+        }
+    }
+    return limits.map((limit, i) =>
+        Math.min(counts[i], Math.max(limit, MIN_SECTION_LIMIT)),
+    )
+}
 
 export type SearchRow =
     | { type: 'section_header'; kind: SearchScope; key: string }
@@ -106,6 +127,11 @@ export const useSearchScreen = (): UseSearchScreenResult => {
         setExpandedSections(prev => ({ ...prev, [kind]: true }))
     }, [])
 
+    const { height: windowHeight, fontScale = 1 } = useWindowDimensions()
+    const rowBudget = Math.ceil(
+        windowHeight / (ESTIMATED_ROW_HEIGHT * fontScale),
+    )
+
     const rows = useMemo<SearchRow[]>(() => {
         const sections: SectionConfig[] = [
             {
@@ -137,9 +163,14 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             },
         ]
 
+        const limits = allocateSectionLimits(
+            sections.map(section => section.items.length),
+            rowBudget,
+        )
+
         const out: SearchRow[] = []
-        for (const section of sections) {
-            if (section.items.length === 0) continue
+        sections.forEach((section, index) => {
+            if (section.items.length === 0) return
 
             out.push({
                 type: 'section_header',
@@ -150,7 +181,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             const isExpanded = expandedSections[section.kind]
             const visible = isExpanded
                 ? section.items
-                : section.items.slice(0, DEFAULT_SECTION_LIMIT)
+                : section.items.slice(0, limits[index])
 
             for (const item of visible) {
                 out.push((section.toRow as (i: unknown) => SearchRow)(item))
@@ -165,10 +196,10 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                     key: `show-more-${section.kind}`,
                 })
             }
-        }
+        })
 
         return out
-    }, [results, expandedSections])
+    }, [results, expandedSections, rowBudget])
 
     const onAccountPress = useCallback(
         (account: WalletAccount) => {

@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import type { KeyId } from '@algorandfoundation/keystore-core'
 import {
     BIP32DerivationType,
     KeyContext,
 } from '@algorandfoundation/xhd-wallet-api'
-import type { KmsDerivationRequest } from './types'
+import type { KeyDerivationRequest } from '@perawallet/wallet-core-chain-contract'
 
 // BIP44 Algorand address path (coin type 283). The rn-keystore's `parsePath`
 // adds the hardened bit (0x80000000) to apostrophe-suffixed components, so
@@ -24,11 +23,11 @@ const buildAddressPath = (account: number, keyIndex: number): string =>
     `m/44'/283'/${account}'/0/${keyIndex}`
 
 export const algorandHdDerivationRequest = (
-    seedKeyId: KeyId,
+    seedKeyId: string,
     account: number,
     keyIndex: number,
     derivationType: BIP32DerivationType,
-): KmsDerivationRequest => {
+): KeyDerivationRequest => {
     const path = buildAddressPath(account, keyIndex)
     return {
         scheme: 'ed25519',
@@ -61,7 +60,7 @@ export const algorandHdDerivationRequest = (
  * before the child is actually committed).
  */
 export const hdDerivedKeyId = (
-    seedKeyId: KeyId,
+    seedKeyId: string,
     account: number,
     keyIndex: number,
     derivationType: BIP32DerivationType,

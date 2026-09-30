@@ -15,9 +15,15 @@ import { renderHook, act } from '@testing-library/react'
 import { useCreateAccount } from '../useCreateAccount'
 import { useAccountsStore } from '../../store'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
-import { QuantumAccountsUnsupportedError } from '../../errors'
+import { SingleKeyAccountsUnsupportedError } from '../../errors'
+import type { MintedAccount } from '../../chain-adapter'
+import {
+    consumePendingAccountRollback,
+    usePendingAccountCreationStore,
+} from '../../store/pendingAccountCreation'
 import {
     fakeAccountsChain,
+    MAINNET_SCOPE,
     registerFakeAccountsChain,
 } from '../../__tests__/fakeAccountsChain'
 
@@ -51,8 +57,6 @@ const kmsMock = vi.hoisted(() => ({
     getKey: vi.fn(),
     getKeyOrThrow: vi.fn(),
     createHDWalletKey: vi.fn(),
-    createAlgo25Key: vi.fn(),
-    createQuantumKey: vi.fn(),
     removeKeyAndChildren: vi.fn(),
 }))
 
@@ -96,8 +100,6 @@ describe('useCreateAccount', () => {
         kmsMock.getKey.mockReset()
         kmsMock.getKeyOrThrow.mockReset()
         kmsMock.createHDWalletKey.mockReset()
-        kmsMock.createAlgo25Key.mockReset()
-        kmsMock.createQuantumKey.mockReset()
         kmsMock.removeKeyAndChildren.mockReset()
 
         kmsMock.getKey.mockReturnValue(null)
@@ -110,27 +112,6 @@ describe('useCreateAccount', () => {
                 extractable: true,
                 metadata: { scheme: SeedScheme.Bip39 },
             },
-        })
-        kmsMock.createAlgo25Key.mockResolvedValue({
-            seedKey: {
-                id: 'WALLET1',
-                type: 'seed',
-                algorithm: 'raw',
-                extractable: true,
-                metadata: { scheme: SeedScheme.Algo25 },
-            },
-            address: 'ALGO25_PUBLIC_KEY',
-        })
-        kmsMock.createQuantumKey.mockResolvedValue({
-            seedKey: {
-                id: 'QSEED1',
-                type: 'seed',
-                algorithm: 'raw',
-                extractable: true,
-                metadata: { scheme: SeedScheme.Quantum },
-            },
-            address: 'QUANTUM_ADDRESS',
-            signKeyId: 'QSEED1-quantum',
         })
         kmsMock.removeKeyAndChildren.mockResolvedValue(undefined)
     })
@@ -279,73 +260,6 @@ describe('useCreateAccount', () => {
         })
     })
 
-    test('throws for algo25 when createAlgo25Key fails', async () => {
-        kmsMock.createAlgo25Key.mockRejectedValueOnce(
-            new Error('Algo25 creation failed'),
-        )
-
-        const { result } = renderHook(() => useCreateAccount())
-
-        await act(async () => {
-            await expect(
-                result.current.createAlgo25WalletAccount({
-                    id: 'WALLET1',
-                }),
-            ).rejects.toThrow('Algo25 creation failed')
-        })
-    })
-
-    test('creates a new algo25 account', async () => {
-        uuidSpies.v7
-            .mockImplementationOnce(() => 'WALLET1')
-            .mockImplementationOnce(() => 'ACC1')
-
-        const { result } = renderHook(() => useCreateAccount())
-
-        let created: any
-        await act(async () => {
-            created = await result.current.createAlgo25WalletAccount({})
-        })
-
-        expect(created.type).toBe('algo25')
-        expect(created.address).toBe('ALGO25_PUBLIC_KEY')
-        // keyPairId is the deterministic ed25519 child id committed
-        // alongside the seed at `${seedKeyId}-ed25519`.
-        expect(created.keyPairId).toBe('WALLET1-ed25519')
-    })
-
-    test('creates an algo25 account from an existing root key', async () => {
-        kmsMock.getKey.mockReturnValueOnce({
-            id: 'WALLET1',
-            type: 'seed',
-            algorithm: 'raw',
-            extractable: true,
-            publicKey: new Uint8Array(),
-            metadata: { scheme: SeedScheme.Algo25 },
-        })
-
-        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
-
-        const { result } = renderHook(() => useCreateAccount())
-
-        let created: any
-        await act(async () => {
-            created = await result.current.createAlgo25WalletAccount({
-                id: 'WALLET1',
-            })
-        })
-
-        expect(kmsMock.createAlgo25Key).not.toHaveBeenCalled()
-        expect(created.type).toBe('algo25')
-        // The address is encoded from the seed key's persisted publicKey
-        // bytes by the chain's codec (base64 in the fake); with an empty
-        // Uint8Array seed this comes out as ''.
-        expect(created.address).toBe('')
-        // keyPairId is the deterministic ed25519 child id committed
-        // alongside the seed at `${seedKeyId}-ed25519`.
-        expect(created.keyPairId).toBe('WALLET1-ed25519')
-    })
-
     test('createHdWalletAccountForSeed derives directly from seedKeyId without consulting getKey or createHDWalletKey (regression: stale useMemo)', async () => {
         // The HD migration imports the seed in the same async tick, so
         // `getKey()` (bound to a stale `useKeystoreKeys` snapshot via
@@ -378,101 +292,84 @@ describe('useCreateAccount', () => {
         expect(created.keyPairId).toBe('IMPORTED_SEED-acc0-idx0-dt9')
     })
 
-    test('uses provided seed reference without consulting getKey or createAlgo25Key (regression: stale useMemo)', async () => {
-        // getKey is bound to the previous render's keystore snapshot via
-        // useMemo, so a key just minted in the same async handler isn't
-        // visible. The import flow passes the freshly-minted seed
-        // reference directly to bypass that.
-        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
-
-        const { result } = renderHook(() => useCreateAccount())
-
-        let created: any
-        await act(async () => {
-            created = await result.current.createAlgo25WalletAccount({
-                seed: {
-                    seedKeyId: 'IMPORTED_KEY',
-                    address: 'IMPORTED_ADDRESS',
-                },
-            })
-        })
-
-        expect(kmsMock.getKey).not.toHaveBeenCalled()
-        expect(kmsMock.createAlgo25Key).not.toHaveBeenCalled()
-        expect(created.type).toBe('algo25')
-        expect(created.address).toBe('IMPORTED_ADDRESS')
-        // keyPairId is the ed25519 child of the imported seed.
-        expect(created.keyPairId).toBe('IMPORTED_KEY-ed25519')
-    })
-
-    describe('createQuantumWalletAccount', () => {
-        test('creates a quantum account backed by a freshly minted KMS key', async () => {
-            uuidSpies.v7.mockImplementation(() => 'ACC1')
-
-            const { result } = renderHook(() => useCreateAccount())
-
-            let account: any
-            await act(async () => {
-                account = await result.current.createQuantumWalletAccount()
-            })
-
-            expect(kmsMock.createQuantumKey).toHaveBeenCalledTimes(1)
-            expect(kmsMock.createQuantumKey).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    chain: fakeAccountsChain().adapter.quantum,
-                }),
-            )
-            expect(account).toEqual({
+    describe('single-key accounts', () => {
+        const mintedAccount = (isNewSeed: boolean): MintedAccount => ({
+            account: {
                 id: 'ACC1',
-                address: 'QUANTUM_ADDRESS',
-                type: 'quantum',
-                keyPairId: 'QSEED1-quantum',
-            })
-            expect(useAccountsStore.getState().accounts).toHaveLength(1)
-            expect(useAccountsStore.getState().accounts[0].address).toBe(
-                'QUANTUM_ADDRESS',
-            )
+                address: 'ADDR1',
+                type: 'algo25',
+                keyPairId: 'SEED1-ed25519',
+            },
+            seedKeyId: 'SEED1',
+            isNewSeed,
         })
+        const createOp = () =>
+            vi.mocked(fakeAccountsChain().adapter.singleKeyAccounts!.create)
 
-        test('uses a provided seed reference without minting a new key', async () => {
-            uuidSpies.v7.mockImplementation(() => 'ACC1')
+        test('returns the adapter account, passing the keystore, kind, id and scope', async () => {
+            createOp().mockResolvedValue(mintedAccount(false))
 
             const { result } = renderHook(() => useCreateAccount())
 
             let account: any
             await act(async () => {
-                account = await result.current.createQuantumWalletAccount({
-                    seed: { seedKeyId: 'SEED42', address: 'ADDR42' },
+                account = await result.current.buildAlgo25WalletAccount({
+                    id: 'SEED1',
                 })
             })
 
-            expect(kmsMock.createQuantumKey).not.toHaveBeenCalled()
-            // keyPairId is the scheme-agnostic, canonically-derived quantum
-            // signing child id — creation always mints the canonical child.
-            expect(account.keyPairId).toBe('SEED42-quantum-pqk1')
-            expect(account.address).toBe('ADDR42')
-            expect(account.type).toBe('quantum')
-            expect(useAccountsStore.getState().accounts).toHaveLength(1)
+            expect(account).toEqual(mintedAccount(false).account)
+            expect(createOp()).toHaveBeenCalledWith(
+                kmsMock,
+                { kind: 'algo25', id: 'SEED1' },
+                MAINNET_SCOPE,
+            )
+            expect(useAccountsStore.getState().accounts).toHaveLength(0)
         })
 
-        test('fails closed on a chain without post-quantum accounts', async () => {
-            registerFakeAccountsChain({ quantum: undefined })
+        test('registers a rollback for a newly created seed only', async () => {
+            createOp()
+                .mockResolvedValueOnce(mintedAccount(true))
+                .mockResolvedValueOnce(mintedAccount(false))
 
             const { result } = renderHook(() => useCreateAccount())
 
             await act(async () => {
-                await expect(
-                    result.current.createQuantumWalletAccount(),
-                ).rejects.toBeInstanceOf(QuantumAccountsUnsupportedError)
+                await result.current.buildQuantumWalletAccount()
             })
-            expect(kmsMock.createQuantumKey).not.toHaveBeenCalled()
-            expect(useAccountsStore.getState().accounts).toHaveLength(0)
+            expect(
+                usePendingAccountCreationStore.getState().pendingRollback,
+            ).not.toBeNull()
+            await consumePendingAccountRollback()
+            expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('SEED1')
+
+            await act(async () => {
+                await result.current.buildQuantumWalletAccount()
+            })
+            expect(
+                usePendingAccountCreationStore.getState().pendingRollback,
+            ).toBeNull()
         })
 
-        test('propagates createQuantumKey failures and stores nothing', async () => {
-            kmsMock.createQuantumKey.mockRejectedValueOnce(
-                new Error('keystore unavailable'),
-            )
+        test('create variants persist the account and clear the pending rollback', async () => {
+            createOp().mockResolvedValue(mintedAccount(true))
+
+            const { result } = renderHook(() => useCreateAccount())
+
+            await act(async () => {
+                await result.current.createAlgo25WalletAccount({})
+            })
+
+            expect(useAccountsStore.getState().accounts).toEqual([
+                mintedAccount(true).account,
+            ])
+            expect(
+                usePendingAccountCreationStore.getState().pendingRollback,
+            ).toBeNull()
+        })
+
+        test('propagates adapter failures and stores nothing', async () => {
+            createOp().mockRejectedValue(new Error('keystore unavailable'))
 
             const { result } = renderHook(() => useCreateAccount())
 
@@ -480,6 +377,19 @@ describe('useCreateAccount', () => {
                 await expect(
                     result.current.createQuantumWalletAccount(),
                 ).rejects.toThrow('keystore unavailable')
+            })
+            expect(useAccountsStore.getState().accounts).toHaveLength(0)
+        })
+
+        test('fails closed on a chain without single-key accounts', async () => {
+            registerFakeAccountsChain({ singleKeyAccounts: undefined })
+
+            const { result } = renderHook(() => useCreateAccount())
+
+            await act(async () => {
+                await expect(
+                    result.current.createQuantumWalletAccount(),
+                ).rejects.toBeInstanceOf(SingleKeyAccountsUnsupportedError)
             })
             expect(useAccountsStore.getState().accounts).toHaveLength(0)
         })

@@ -190,15 +190,15 @@ describe('QRScannerView (web)', () => {
         })
 
         // Field scans (skipDeepLinkHandler: true) can't round-trip a value
-        // scanned in the tab back into the closed popup's input, so the
-        // hand-off button is dropped in favor of paste-only.
-        it('hides the "Scan with camera" button for a field scan (skipDeepLinkHandler)', () => {
+        // scanned in the tab back into the closed popup's input, so instead
+        // of scanning there the tab only grants the camera for the popup.
+        it('offers camera access instead of a tab scan for a field scan (skipDeepLinkHandler)', () => {
             renderScanner({ skipDeepLinkHandler: true })
 
             expect(screen.queryByTestId('qr-scan-with-camera')).toBeNull()
-            expect(
-                screen.getByText('qr_scanner.camera_unavailable'),
-            ).toBeTruthy()
+            fireEvent.click(screen.getByTestId('qr-allow-camera'))
+
+            expect(mockOpenExpandedTab).toHaveBeenCalledWith('camera-access')
         })
     })
 

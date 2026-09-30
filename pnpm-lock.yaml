@@ -2016,9 +2016,6 @@ importers:
 
   packages/backup:
     dependencies:
-      '@algorandfoundation/xhd-wallet-api':
-        specifier: 'catalog:'
-        version: 2.0.0-canary.1
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -3025,9 +3022,6 @@ importers:
 
   packages/kms:
     dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.4
         version: 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
@@ -3052,9 +3046,6 @@ importers:
       '@scure/bip39':
         specifier: 'catalog:'
         version: 2.2.0
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       react:
         specifier: 19.2.3
         version: 19.2.3

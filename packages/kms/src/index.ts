@@ -67,13 +67,11 @@ export {
 } from './constants'
 export {
     aclOf,
-    algo25AddressOf,
     createdAtOf,
     entropyChildIdOf,
     entropyChildMetadata,
     expiresAtOf,
     hexToBytes,
-    algo25SeedToAddress,
     isSeedKey,
     seedSchemeOf,
 } from './utils'

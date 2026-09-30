@@ -47,15 +47,6 @@ const installFakeChain = () => {
     })
 }
 
-vi.mock('@perawallet/wallet-core-kms', () => ({
-    hdDerivedKeyId: (
-        seedKeyId: string,
-        account: number,
-        keyIndex: number,
-        derivationType: number,
-    ) => `${seedKeyId}-acc${account}-idx${keyIndex}-dt${derivationType}`,
-}))
-
 const createMockGetPublicKey = (): GetPublicKey =>
     vi.fn(
         async (params: { account: number; keyIndex: number }) =>

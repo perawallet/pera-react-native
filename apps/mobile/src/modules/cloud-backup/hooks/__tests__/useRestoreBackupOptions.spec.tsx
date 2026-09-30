@@ -23,8 +23,10 @@ const {
     mockShowError,
     mockLoggerError,
     mockIsFocused,
+    mockHandoff,
     readBackupCredentials,
 } = vi.hoisted(() => ({
+    mockHandoff: vi.fn(),
     mockRequest: vi.fn(),
     mockShowError: vi.fn(),
     mockLoggerError: vi.fn(),
@@ -57,6 +59,11 @@ vi.mock('../../components/RestoreBackupSheet', () => ({
     RestoreBackupSheet: () => null,
 }))
 vi.mock('../../storage', () => ({ readBackupCredentials }))
+vi.mock('@hooks/useScanTabHandoff', () => ({
+    useScanTabHandoff: mockHandoff,
+}))
+
+const mockOpenScanTab = vi.fn()
 
 const KEY = {
     salt: 'q311Z4ReDNWpMVuH8XdvSw==',
@@ -71,6 +78,10 @@ const KEY = {
 beforeEach(() => {
     vi.clearAllMocks()
     mockIsFocused.mockReturnValue(true)
+    mockHandoff.mockReturnValue({
+        shouldHandOff: false,
+        openScanTab: mockOpenScanTab,
+    })
     readBackupCredentials.mockResolvedValue({ status: 'read', key: KEY })
 })
 
@@ -99,6 +110,17 @@ describe('useRestoreBackupOptions', () => {
 
         expect(await choose()).toEqual([route])
         expect(readBackupCredentials).not.toHaveBeenCalled()
+    })
+
+    test('hands the scan off to the expanded tab from the extension popup', async () => {
+        mockHandoff.mockReturnValue({
+            shouldHandOff: true,
+            openScanTab: mockOpenScanTab,
+        })
+        mockRequest.mockResolvedValueOnce('scan')
+
+        expect(await choose()).toBeNull()
+        expect(mockOpenScanTab).toHaveBeenCalledTimes(1)
     })
 
     test.each(['device', 'icloud', 'googleDrive'])(

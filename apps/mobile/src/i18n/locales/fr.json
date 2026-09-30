@@ -522,6 +522,12 @@
         "title": "Scanner un QR code",
         "camera_unavailable": "Appareil photo indisponible. Collez plutôt le code ci-dessous.",
         "scan_with_camera": "Ouvrir le scanner dans un onglet",
+        "allow_camera": "Autoriser l’accès à l’appareil photo",
+        "camera_access_title": "Accès à l’appareil photo",
+        "camera_access_requesting": "Autorisez Pera à utiliser votre appareil photo lorsque votre navigateur vous le demande.",
+        "camera_access_granted": "L’accès à l’appareil photo est activé. Fermez cet onglet et scannez à nouveau depuis l’extension.",
+        "camera_access_denied": "L’accès à l’appareil photo est bloqué. Autorisez l’appareil photo pour Pera dans les paramètres des sites de votre navigateur, puis réessayez.",
+        "camera_access_close": "Fermer l’onglet",
         "paste_label": "Ou collez le contenu d’un QR code",
         "paste_placeholder": "Collez une adresse ou un URI WalletConnect",
         "paste_submit": "Valider"

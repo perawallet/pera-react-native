@@ -22,7 +22,10 @@ import {
     KeyNotFoundError,
 } from '../../errors'
 import { SeedScheme } from '../../constants'
-import { mnemonicIndexToWord } from '../../crypto/mnemonic-indices'
+import {
+    mnemonicIndexToWord,
+    mnemonicWordsToIndices,
+} from '../../crypto/mnemonic-indices'
 import { getPQProvider } from '../../crypto/pq'
 import { FALCON_CHILD_KEY_TYPE } from '../../models'
 
@@ -89,8 +92,6 @@ const mockCreateHDWalletKey = vi.fn()
 vi.mock('../useHDWallet', () => ({
     useHDWallet: () => ({
         createHDWalletKey: (...args: any[]) => mockCreateHDWalletKey(...args),
-        generateDerivedKey: vi.fn(),
-        getDerivedPublicKey: vi.fn(),
         persistHDMasterKey: vi.fn(),
     }),
 }))
@@ -162,6 +163,14 @@ import { useKMS } from '../useKMS'
 // THROWAWAY TEST VECTOR — same as useQuantum.spec.ts / algo25-integration; NEVER fund it.
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
+
+// The stubbed algo25 codec above is bypassed here: fixtures need the real seed.
+const seedFromMnemonic = async (mnemonic: string): Promise<Uint8Array> => {
+    const { indicesToAlgo25Seed } = await vi.importActual<
+        typeof import('../../crypto/algo25-utils')
+    >('../../crypto/algo25-utils')
+    return indicesToAlgo25Seed(mnemonicWordsToIndices(mnemonic.split(' '))!)
+}
 
 const seedBip39Root = (id: string): Key => {
     const key: Key = {
@@ -914,7 +923,6 @@ describe('useKMS', () => {
         // the backup flow calls executeWithMnemonic. Uses the REAL seed→indices
         // derivation (not the top-of-file stub) to prove the end-to-end contract.
         it('executeWithMnemonic reconstructs the same 25 words a quantum seed was created from', async () => {
-            const { seedFromMnemonic } = await import('algosdk')
             const { algo25SeedToIndices: realAlgo25SeedToIndices } =
                 await vi.importActual<
                     typeof import('../../crypto/algo25-utils')
@@ -923,7 +931,7 @@ describe('useKMS', () => {
 
             // The quantum seed's private-key bytes ARE seedFromMnemonic(phrase),
             // exactly as useQuantum.createQuantumKey({ mnemonic }) persists them.
-            const seedBytes = seedFromMnemonic(TEST_MNEMONIC)
+            const seedBytes = await seedFromMnemonic(TEST_MNEMONIC)
             seedQuantumRoot('quantum-1')
             childOf('quantum-1-quantum', 'quantum-1', FALCON_CHILD_KEY_TYPE)
             mockKeyStoreExport.mockResolvedValue({
@@ -965,8 +973,7 @@ describe('useKMS', () => {
 
         describe('getQuantumPublicKey', () => {
             it('returns the committed Falcon public key, matching the real seed derivation', async () => {
-                const { seedFromMnemonic } = await import('algosdk')
-                const seed = seedFromMnemonic(TEST_MNEMONIC)
+                const seed = await seedFromMnemonic(TEST_MNEMONIC)
                 const { publicKey } = getPQProvider().generateKeypairFromSeed(
                     fakeQuantumChain.deriveKeygenSeed(seed),
                 )
@@ -1036,8 +1043,7 @@ describe('useKMS', () => {
 
     describe('getPQSigningInfo', () => {
         it('returns the scheme id and public key for a quantum child', async () => {
-            const { seedFromMnemonic } = await import('algosdk')
-            const seed = seedFromMnemonic(TEST_MNEMONIC)
+            const seed = await seedFromMnemonic(TEST_MNEMONIC)
             const { publicKey } = getPQProvider().generateKeypairFromSeed(
                 fakeQuantumChain.deriveKeygenSeed(seed),
             )

@@ -13,7 +13,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { seedFromMnemonic } from 'algosdk'
 
 const mockKeyStoreImport = vi.fn()
 const mockKeyStoreRemove = vi.fn()
@@ -49,14 +48,18 @@ import {
     PQ_DERIVATION_LEGACY,
 } from '../../models'
 import { SeedScheme } from '../../constants'
+import { indicesToAlgo25Seed } from '../../crypto/algo25-utils'
 import { mnemonicWordsToIndices } from '../../crypto/mnemonic-indices'
 import { getPQProvider } from '../../crypto/pq'
 import { fakeQuantumChain } from '../../__tests__/fakeQuantumChain'
 
-// THROWAWAY TEST VECTOR — same as algo25-integration.spec.ts; NEVER fund it.
+// THROWAWAY TEST VECTOR — published in source; NEVER fund it.
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 const TEST_MNEMONIC_INDICES = mnemonicWordsToIndices(TEST_MNEMONIC.split(' '))!
+
+const seedFromMnemonic = (mnemonic: string): Uint8Array =>
+    indicesToAlgo25Seed(mnemonicWordsToIndices(mnemonic.split(' '))!)
 
 const TEST_ENTROPY = seedFromMnemonic(TEST_MNEMONIC)
 

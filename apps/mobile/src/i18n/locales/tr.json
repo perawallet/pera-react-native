@@ -522,6 +522,12 @@
         "title": "QR kodu tara",
         "camera_unavailable": "Kamera kullanılamıyor. Bunun yerine kodu aşağıya yapıştır.",
         "scan_with_camera": "Kamera tarayıcısını sekmede aç",
+        "allow_camera": "Kamera erişimine izin ver",
+        "camera_access_title": "Kamera Erişimi",
+        "camera_access_requesting": "Tarayıcın sorduğunda Pera’nın kamerana erişmesine izin ver.",
+        "camera_access_granted": "Kamera erişimi açık. Bu sekmeyi kapat ve eklentiden yeniden tara.",
+        "camera_access_denied": "Kamera erişimi engellendi. Tarayıcının site ayarlarından Pera için kameraya izin ver, sonra yeniden dene.",
+        "camera_access_close": "Sekmeyi kapat",
         "paste_label": "Ya da bir QR içeriği yapıştır",
         "paste_placeholder": "Bir adres veya WalletConnect URI’si yapıştır",
         "paste_submit": "Gönder"

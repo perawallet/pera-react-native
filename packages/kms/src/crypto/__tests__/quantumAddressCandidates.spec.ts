@@ -11,14 +11,18 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
-import { seedFromMnemonic } from 'algosdk'
+import { indicesToAlgo25Seed } from '../algo25-utils'
+import { mnemonicWordsToIndices } from '../mnemonic-indices'
 import { quantumAddressCandidates } from '../quantumAddressCandidates'
 import { getPQProvider } from '../pq'
 import { fakeQuantumChain } from '../../__tests__/fakeQuantumChain'
 
-// THROWAWAY TEST VECTOR — same as algo25-integration.spec.ts; NEVER fund it.
+// THROWAWAY TEST VECTOR — published in source; NEVER fund it.
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
+
+const seedFromMnemonic = (mnemonic: string): Uint8Array =>
+    indicesToAlgo25Seed(mnemonicWordsToIndices(mnemonic.split(' '))!)
 
 const addressFor = (keygenSeed: Uint8Array): string =>
     fakeQuantumChain.addressFromPublicKey(

@@ -15,6 +15,7 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { fetchAlgorandAccountState } from './account-state'
 import { assertAlgorandBip44PathMatches } from './bip44'
 import { ALGORAND_HD_DERIVATION_TYPE } from './constants'
+import { hdDerivedKeyId } from './hd-derivation'
 import {
     algorandAccountExists,
     checkAlgorandActivity,
@@ -24,6 +25,7 @@ import {
 import { fetchAccountInformation, fetchAssetOptInRounds } from './information'
 import { algorandNetworkOf } from '../legacy-network'
 import { algorandQuantumDerivation } from './quantum'
+import { algorandSingleKeyAccounts } from './single-key-accounts'
 
 export const algorandAccountsAdapter: AccountsChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
@@ -39,8 +41,11 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     checkActivity: (addresses, scope) =>
         checkAlgorandActivity(addresses, algorandNetworkOf(scope)),
     createPublicKeyGetter: createXHDGetPublicKey,
+    hdKeyPairId: (seedKeyId, { account, keyIndex, derivationType }) =>
+        hdDerivedKeyId(seedKeyId, account, keyIndex, derivationType),
     assertHdPathMatches: assertAlgorandBip44PathMatches,
     quantum: algorandQuantumDerivation,
+    singleKeyAccounts: algorandSingleKeyAccounts,
     fetchRekeyedAddresses: (authAddress, scope) =>
         fetchAlgorandRekeyedAddresses(authAddress, algorandNetworkOf(scope)),
 }
