@@ -23,28 +23,14 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { Transaction } from 'algosdk'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
+import type {
+    AssignFeeToGroupDeps,
+    AssignFeeToGroupParams,
+    AssignMinimumFeesToGroupResult,
+    FeeAdjustment,
+} from '@perawallet/wallet-core-signing'
 
-import { validateTransactionGroupIntegrity } from '../../utils/validateTransactionGroupIntegrity'
-
-/**
- * Why a fee was raised. Today the only rule is the post-quantum surcharge for
- * quantum signers; future protocol rules (per-resource surcharges, a node
- * `simulate()`-derived requirement) add members here without
- * changing the record shape. The `quantum-minimum` value predates the switch
- * from a minimum to a surcharge and is kept for wire/log compatibility.
- */
-export type FeeAdjustmentReason = 'quantum-minimum'
-
-export type FeeAdjustment = {
-    /** Index into the FULL group array (groupContext space) */
-    index: number
-    /** µAlgo, as received from the dApp */
-    originalFee: bigint
-    /** µAlgo, after raising to the required minimum */
-    adjustedFee: bigint
-    /** Which rule required the raise */
-    reason: FeeAdjustmentReason
-}
+import { validateTransactionGroupIntegrity } from './validateTransactionGroupIntegrity'
 
 export type AssignMinimumFeesToGroupParams = {
     /** Full atomic payload as received (groupContext), NOT the signable subset */
@@ -62,13 +48,6 @@ export type AssignMinimumFeesToGroupParams = {
     pqMultiplier: bigint
 }
 
-export type AssignMinimumFeesToGroupResult = {
-    /** Same array reference as input when nothing was adjusted */
-    transactions: PeraTransaction[]
-    /** Empty when nothing was adjusted */
-    adjustments: FeeAdjustment[]
-}
-
 /** Effective authorizer for the signable slot at `subsetIndex`. */
 const resolveAuthorizer = (
     transactions: PeraTransaction[],
@@ -81,7 +60,7 @@ const resolveAuthorizer = (
 
 /**
  * Cheap local precheck: does any signable slot resolve to a quantum signer?
- * Lets callers (see `useMinimumFeeCalculator`) skip the suggested-params
+ * Lets {@link assignFeeToGroup} skip the suggested-params
  * fetch entirely for non-quantum groups — the fee rules below only ever act
  * on quantum signers today.
  */
@@ -242,4 +221,42 @@ export const assignMinimumFeesToGroup = ({
     }
 
     return { transactions: result, adjustments }
+}
+
+/**
+ * Assigns the required minimum fees to a group. The suggested minimum fee is
+ * fetched only when a quantum signer is present, so non-quantum groups add no
+ * network traffic and come back by reference.
+ */
+export const assignFeeToGroup = async (
+    { transactions, signableIndices, signerOverrides }: AssignFeeToGroupParams,
+    {
+        accounts,
+        fetchSuggestedMinFee,
+        configMinTxnFee,
+        pqMultiplier,
+    }: AssignFeeToGroupDeps,
+): Promise<AssignMinimumFeesToGroupResult> => {
+    const indices = signableIndices ?? transactions.map((_, index) => index)
+
+    if (
+        !groupHasQuantumSigner({
+            transactions,
+            signableIndices: indices,
+            signerOverrides,
+            accounts,
+        })
+    ) {
+        return { transactions, adjustments: [] }
+    }
+
+    return assignMinimumFeesToGroup({
+        transactions,
+        signableIndices: indices,
+        signerOverrides,
+        accounts,
+        suggestedMinFee: await fetchSuggestedMinFee(),
+        configMinTxnFee,
+        pqMultiplier,
+    })
 }

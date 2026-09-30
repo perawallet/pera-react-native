@@ -40,9 +40,14 @@ import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import {
     broadcasterChainAdapters,
+    plannerChainAdapters,
     reviewerChainAdapters,
 } from '@perawallet/wallet-core-signing'
-import { algorandBroadcasterAdapter, algorandReviewerAdapter } from '../signing'
+import {
+    algorandBroadcasterAdapter,
+    algorandPlannerAdapter,
+    algorandReviewerAdapter,
+} from '../signing'
 import { algorandCardAdapter } from '../card'
 import { algorandRampAdapter } from '../onramp'
 import { algorandMultisigAdapter } from '../multisig'
@@ -66,6 +71,7 @@ describe('registerChain', () => {
         multisigChainAdapters.reset()
         broadcasterChainAdapters.reset()
         reviewerChainAdapters.reset()
+        plannerChainAdapters.reset()
         addressCodecs.reset()
         keyDerivations.reset()
         accountsChainAdapters.reset()
@@ -183,6 +189,14 @@ describe('registerChain', () => {
 
         expect(multisigChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandMultisigAdapter,
+        )
+    })
+
+    it('registers the Algorand planner adapter', () => {
+        registerChain()
+
+        expect(plannerChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandPlannerAdapter,
         )
     })
 })

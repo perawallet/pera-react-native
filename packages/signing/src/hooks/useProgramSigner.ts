@@ -14,15 +14,10 @@ import { useCallback } from 'react'
 import { canSignProgram } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import {
-    AppError,
-    ErrorCategory,
-    concatBytes,
-} from '@perawallet/wallet-core-shared'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+import { plannerAdapterFor } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
-import { encodeDelegatedLsig } from '../utils/lsig'
-
-const PROGRAM_PREFIX = new TextEncoder().encode('Program')
 
 /** The account cannot produce a delegated LSig (hardware/watch/rekeyed). */
 export class ProgramSigningUnsupportedError extends AppError {
@@ -37,6 +32,7 @@ export class ProgramSigningUnsupportedError extends AppError {
 
 export const useProgramSigner = () => {
     const { signDataWithKey } = useKMS()
+    const { network } = useNetwork()
 
     /** ed25519 over `"Program" || program` with the account's own key. */
     const signProgram = useCallback(
@@ -55,11 +51,11 @@ export const useProgramSigner = () => {
             const [sig] = await signDataWithKey(
                 account.keyPairId,
                 SIGNING_KEY_DOMAIN,
-                [concatBytes(PROGRAM_PREFIX, program)],
+                [plannerAdapterFor(network).programSigningPayload(program)],
             )
             return sig
         },
-        [signDataWithKey],
+        [signDataWithKey, network],
     )
 
     /** Signs and msgpack-encodes the full delegated LogicSig payload. */
@@ -69,9 +65,14 @@ export const useProgramSigner = () => {
             program: Uint8Array,
         ): Promise<{ signedProgram: Uint8Array }> => {
             const sig = await signProgram(account, program)
-            return { signedProgram: encodeDelegatedLsig(program, sig) }
+            return {
+                signedProgram: plannerAdapterFor(network).encodeDelegatedLsig(
+                    program,
+                    sig,
+                ),
+            }
         },
-        [signProgram],
+        [signProgram, network],
     )
 
     return { signProgram, signDelegatedLsig }

@@ -14,57 +14,20 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Address, Transaction, TransactionType } from 'algosdk'
-import {
-    groupTransactions,
-    type PeraTransaction,
+import type {
+    PeraDisplayableTransaction,
+    PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'
 
 const mockSimulate = vi.fn()
-// Faithful to the real composer: it rejects any transaction that already
-// carries a group id (composer.addTransaction → "already in a group").
-const mockAddTransaction = vi.fn((txn?: { group?: unknown }) => {
-    if (txn?.group) {
-        throw new Error(
-            'Cannot add a transaction to the composer because it is already in a group',
-        )
-    }
-})
-const mockNewGroup = vi.fn(() => ({
-    addTransaction: mockAddTransaction,
-    simulate: mockSimulate,
-}))
-
-const SENDER = Address.zeroAddress()
-const RECEIVER = new Address(new Uint8Array(32).fill(7))
-
-const payment = (amount: bigint): Transaction =>
-    new Transaction({
-        type: TransactionType.pay,
-        sender: SENDER,
-        suggestedParams: {
-            fee: 1000n,
-            minFee: 1000n,
-            firstValid: 1000n,
-            lastValid: 2000n,
-            genesisHash: new Uint8Array(32),
-            genesisID: 'testnet-v1.0',
-        },
-        paymentParams: { receiver: RECEIVER, amount },
-    })
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-blockchain',
     )
-    return {
-        ...actual,
-        useAlgorandClient: () => ({ newGroup: mockNewGroup }),
-        useNetwork: () => ({ network: 'mainnet' }),
-        // Passthrough so flattenSimulatedInnerTransactions keeps every inner txn.
-        mapToDisplayableTransaction: (txn: unknown) => txn,
-    }
+    return { ...actual, useNetwork: () => ({ network: 'mainnet' }) }
 })
 
 const wrapper = ({ children }: { children: React.ReactNode }) => {
@@ -74,32 +37,17 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
     return React.createElement(QueryClientProvider, { client }, children)
 }
 
-// A simulate response carrying two inner txns under one group result.
-const responseWithInnerTxns = {
-    simulateResponse: {
-        txnGroups: [
-            {
-                txnResults: [
-                    {
-                        txnResult: {
-                            innerTxns: [
-                                { txn: { txn: { id: 'inner-1' } } },
-                                { txn: { txn: { id: 'inner-2' } } },
-                            ],
-                        },
-                    },
-                ],
-            },
-        ],
-    },
-}
-
 const groupTxs = [{ id: 'top-1' }] as unknown as PeraTransaction[]
+const inner = [
+    { id: 'inner-1' },
+    { id: 'inner-2' },
+] as unknown as PeraDisplayableTransaction[]
 
 describe('useGroupSimulationQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockSimulate.mockResolvedValue(responseWithInnerTxns)
+        mockSimulate.mockResolvedValue(inner)
+        registerFakePlannerAdapter({ simulateInnerTransactions: mockSimulate })
     })
 
     test('stays disabled (no simulation) when enabled is false', async () => {
@@ -133,7 +81,7 @@ describe('useGroupSimulationQuery', () => {
         expect(mockSimulate).not.toHaveBeenCalled()
     })
 
-    test('simulates and returns the flattened inner transactions', async () => {
+    test('simulates the group on the current network and returns the inner transactions', async () => {
         const { result } = renderHook(
             () =>
                 useGroupSimulationQuery({
@@ -146,44 +94,11 @@ describe('useGroupSimulationQuery', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(mockAddTransaction).toHaveBeenCalledTimes(1)
-        expect(mockSimulate).toHaveBeenCalledWith({
-            skipSignatures: true,
-            allowUnnamedResources: true,
-        })
-        const { data } = result.current
-        expect(data).toHaveLength(2)
+        expect(mockSimulate).toHaveBeenCalledWith(groupTxs, 'mainnet')
+        expect(result.current.data).toBe(inner)
     })
 
-    test('simulates dApp groups by stripping the existing group id', async () => {
-        // Real dApp interactions arrive already grouped — every txn carries a
-        // group id. The composer rejects grouped txns, so the hook must clone
-        // and clear the group before adding, or simulation never runs and the
-        // receive side is lost.
-        const grouped = groupTransactions([payment(1n), payment(2n)])
-        expect(grouped[0].group).toBeDefined()
-
-        const { result } = renderHook(
-            () =>
-                useGroupSimulationQuery({
-                    requestId: 'req-1',
-                    groupTxs: grouped as unknown as PeraTransaction[],
-                    enabled: true,
-                }),
-            { wrapper },
-        )
-
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-        // Every transaction handed to the composer must be ungrouped.
-        for (const call of mockAddTransaction.mock.calls) {
-            expect(call[0]?.group).toBeUndefined()
-        }
-        const { data } = result.current
-        expect(data).toHaveLength(2)
-    })
-
-    test('surfaces simulation failure as an error result', async () => {
+    test('surfaces simulation failure as an error result without retrying', async () => {
         mockSimulate.mockRejectedValue(new Error('simulate failed'))
 
         const { result } = renderHook(
@@ -197,5 +112,7 @@ describe('useGroupSimulationQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(mockSimulate).toHaveBeenCalledTimes(1)
+        expect(result.current.data).toEqual([])
     })
 })

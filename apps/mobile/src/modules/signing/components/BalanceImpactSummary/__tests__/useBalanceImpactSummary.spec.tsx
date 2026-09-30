@@ -20,6 +20,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useImpactTransactions } from '@perawallet/wallet-core-signing'
+import { registerAlgorandPlannerAdapter } from '@test-utils/plannerChainAdapter'
 import { useBalanceImpactSummary } from '../useBalanceImpactSummary'
 
 // Keep computeBalanceImpact real; only stub the data-source hook.
@@ -140,6 +141,7 @@ const mockTransactions = (
 }
 
 beforeEach(() => {
+    registerAlgorandPlannerAdapter()
     vi.mocked(useAssetsQuery).mockReturnValue({
         data: new Map([
             ['100', NFT],

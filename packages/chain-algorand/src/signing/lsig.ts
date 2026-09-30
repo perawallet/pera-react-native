@@ -15,7 +15,14 @@ import {
     AppError,
     ErrorCategory,
     ErrorSeverity,
+    concatBytes,
 } from '@perawallet/wallet-core-shared'
+
+const PROGRAM_PREFIX = new TextEncoder().encode('Program')
+
+/** The bytes an ed25519 delegated-LSig signature must cover. */
+export const programSigningPayload = (program: Uint8Array): Uint8Array =>
+    concatBytes(PROGRAM_PREFIX, program)
 
 /**
  * Thrown when an assembled delegated LogicSig fails local signature

@@ -10,16 +10,12 @@
  limitations under the License
  */
 
-export {
-    assignMinimumFeesToGroup,
-    groupHasQuantumSigner,
-} from './assignMinimumFeesToGroup'
-export type {
-    AssignMinimumFeesToGroupParams,
-    AssignMinimumFeesToGroupResult,
-    FeeAdjustment,
-    FeeAdjustmentReason,
-} from './assignMinimumFeesToGroup'
+import { plannerChainAdapters } from '@perawallet/wallet-core-signing'
+import { algorandPlannerAdapter } from '@perawallet/wallet-core-chain-algorand/signing'
 
-export { resolveMinFeeForSender } from './minFeeResolver'
-export type { ResolveMinFeeForSenderParams } from './minFeeResolver'
+// Unit specs skip the app bootstrap, so the real balance-impact and fee
+// helpers have no planner unless a spec registers one.
+export const registerAlgorandPlannerAdapter = (): void => {
+    plannerChainAdapters.reset()
+    plannerChainAdapters.register(algorandPlannerAdapter)
+}

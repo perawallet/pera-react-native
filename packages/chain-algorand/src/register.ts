@@ -30,9 +30,14 @@ import { algorandLedgerAppDriver } from './ledger/driver'
 import { algorandSwapAdapter } from './swaps'
 import {
     broadcasterChainAdapters,
+    plannerChainAdapters,
     reviewerChainAdapters,
 } from '@perawallet/wallet-core-signing'
-import { algorandBroadcasterAdapter, algorandReviewerAdapter } from './signing'
+import {
+    algorandBroadcasterAdapter,
+    algorandPlannerAdapter,
+    algorandReviewerAdapter,
+} from './signing'
 import { algorandAssetsAdapter } from './assets'
 import { algorandNameServiceAdapter } from './nfd'
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
@@ -66,4 +71,5 @@ export const registerChain = (): void => {
     multisigChainAdapters.register(algorandMultisigAdapter)
     broadcasterChainAdapters.register(algorandBroadcasterAdapter)
     reviewerChainAdapters.register(algorandReviewerAdapter)
+    plannerChainAdapters.register(algorandPlannerAdapter)
 }

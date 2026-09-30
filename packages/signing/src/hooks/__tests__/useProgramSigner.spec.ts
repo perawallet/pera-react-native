@@ -12,8 +12,8 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { LogicSig } from 'algosdk'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import {
     useProgramSigner,
     ProgramSigningUnsupportedError,
@@ -44,13 +44,24 @@ const hdAccount = {
 const PROGRAM = new Uint8Array([0x04, 0x81, 0x01])
 const SIG = new Uint8Array(64).fill(7)
 
+const PAYLOAD = new Uint8Array([9, 9, 9])
+const ENCODED = new Uint8Array([1, 2, 3])
+const programSigningPayload = vi.fn((_program: Uint8Array) => PAYLOAD)
+const encodeDelegatedLsig = vi.fn(
+    (_program: Uint8Array, _sig: Uint8Array) => ENCODED,
+)
+
 describe('useProgramSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSignDataWithKey.mockResolvedValue([SIG])
+        registerFakePlannerAdapter({
+            programSigningPayload,
+            encodeDelegatedLsig,
+        })
     })
 
-    test('signs "Program"-prefixed bytes with the account key and domain', async () => {
+    test('signs the planner payload with the account key and domain', async () => {
         const { result } = renderHook(() => useProgramSigner())
 
         await act(async () => {
@@ -62,13 +73,11 @@ describe('useProgramSigner', () => {
         expect(childId).toBe('key-hd-child')
         expect(domain).toBe('pera.accounts')
 
-        const signedBytes = items[0] as Uint8Array
-        const prefix = new TextEncoder().encode('Program')
-        expect([...signedBytes.slice(0, prefix.length)]).toEqual([...prefix])
-        expect([...signedBytes.slice(prefix.length)]).toEqual([...PROGRAM])
+        expect(programSigningPayload).toHaveBeenCalledWith(PROGRAM)
+        expect(items).toEqual([PAYLOAD])
     })
 
-    test('signDelegatedLsig returns an algosdk-decodable delegated LSig', async () => {
+    test('signDelegatedLsig encodes the KMS signature through the planner', async () => {
         const { result } = renderHook(() => useProgramSigner())
 
         let signedProgram: Uint8Array | undefined
@@ -79,9 +88,8 @@ describe('useProgramSigner', () => {
             ))
         })
 
-        const decoded = LogicSig.fromByte(signedProgram!)
-        expect([...decoded.logic]).toEqual([...PROGRAM])
-        expect([...(decoded.sig ?? [])]).toEqual([...SIG])
+        expect(encodeDelegatedLsig).toHaveBeenCalledWith(PROGRAM, SIG)
+        expect(signedProgram).toBe(ENCODED)
     })
 
     test('rejects watch accounts with the typed error', async () => {

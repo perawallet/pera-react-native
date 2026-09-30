@@ -23,13 +23,13 @@ import type {
 } from '../machine/context'
 import type { hardwareSigningMachine } from '../machine/children/hardwareSigningMachine'
 import type {
+    FeeAdjustment,
     PipelineStage,
     SigningPipelineEvent,
     SignRequest,
     TransactionWarning,
 } from '../models'
 import type { RequestStructure, TransactionListItem } from '../chain-adapter'
-import type { FeeAdjustment } from '../pipeline/sources'
 import type { parseArc60ForDisplay } from '../utils/parseArc60ForDisplay'
 
 /**

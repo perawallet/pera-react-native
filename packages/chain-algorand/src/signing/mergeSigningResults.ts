@@ -11,7 +11,7 @@
  */
 
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
-import type { SigningResult } from '../pipeline/types'
+import type { SigningResult } from '@perawallet/wallet-core-signing'
 
 /**
  * Merges multiple signing results (one per group) into a single SigningResult

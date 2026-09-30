@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { Address, computeGroupID, Transaction } from 'algosdk'
 import {
     AccountTypes,
@@ -24,13 +24,13 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { bytesEqual, encodeToBase64 } from '@perawallet/wallet-core-shared'
 
+import { makeTestAddress, makeTestPaymentTx } from './transactions'
+import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
+import { validateTransactionGroupIntegrity } from '../validateTransactionGroupIntegrity'
 import {
-    makeTestAddress,
-    makeTestPaymentTx,
-} from '../../../test-utils/transactions'
-import { validateTransactionGroupIntegrity } from '../../../utils/validateTransactionGroupIntegrity'
-import { InvalidSignableDataError } from '../../errors'
-import { assignMinimumFeesToGroup } from '../assignMinimumFeesToGroup'
+    assignFeeToGroup,
+    assignMinimumFeesToGroup,
+} from '../assignMinimumFeesToGroup'
 
 const quantumAddress = makeTestAddress(1)
 const algoAddress = makeTestAddress(2)
@@ -487,5 +487,67 @@ describe('assignMinimumFeesToGroup', () => {
             },
         ])
         expect(result.transactions[2].fee).toBe(3500n)
+    })
+})
+
+describe('assignFeeToGroup', () => {
+    const deps = (accounts: WalletAccount[]) => ({
+        accounts,
+        fetchSuggestedMinFee: vi.fn(async () => 1000n),
+        configMinTxnFee: 1000n,
+        pqMultiplier: 3n,
+    })
+
+    test('returns the same array and fetches nothing for a non-quantum group', async () => {
+        const transactions = [makePayment(algoAddress, 1000n)]
+        const planDeps = deps([])
+
+        const result = await assignFeeToGroup({ transactions }, planDeps)
+
+        expect(result.transactions).toBe(transactions)
+        expect(result.adjustments).toEqual([])
+        expect(planDeps.fetchSuggestedMinFee).not.toHaveBeenCalled()
+    })
+
+    test('raises a quantum signer fee using the fetched suggested minimum', async () => {
+        const transactions = [makePayment(quantumAddress, 1000n)]
+        const planDeps = deps([quantum()])
+        planDeps.fetchSuggestedMinFee.mockResolvedValue(2000n)
+
+        const result = await assignFeeToGroup({ transactions }, planDeps)
+
+        // max(suggested 2000, config 1000) x 3
+        expect(result.transactions[0].fee).toBe(6000n)
+        expect(planDeps.fetchSuggestedMinFee).toHaveBeenCalledTimes(1)
+    })
+
+    test('defaults signableIndices to every slot', async () => {
+        const transactions = [
+            makePayment(algoAddress, 1000n),
+            makePayment(quantumAddress, 1000n),
+        ]
+
+        const result = await assignFeeToGroup(
+            { transactions },
+            deps([quantum()]),
+        )
+
+        expect(result.adjustments.map(a => a.index)).toEqual([1])
+    })
+
+    test('leaves a quantum slot outside explicit signableIndices untouched', async () => {
+        const transactions = [
+            makePayment(algoAddress, 1000n),
+            makePayment(quantumAddress, 1000n),
+        ]
+        const planDeps = deps([quantum()])
+
+        const result = await assignFeeToGroup(
+            { transactions, signableIndices: [0] },
+            planDeps,
+        )
+
+        expect(result.transactions).toBe(transactions)
+        expect(planDeps.fetchSuggestedMinFee).not.toHaveBeenCalled()
     })
 })

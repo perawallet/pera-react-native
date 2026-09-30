@@ -22,6 +22,7 @@ import {
     encodeDelegatedLsig,
     encodeDelegatedLsigAccount,
     LsigSignatureVerificationError,
+    programSigningPayload,
 } from '../lsig'
 
 // The delegated-LogicSig signature is raw ed25519 over `"Program" || program`
@@ -108,5 +109,18 @@ describe('LsigSignatureVerificationError', () => {
             retryable: false,
         })
         expect(error.metadata.messageKey).toBeUndefined()
+    })
+})
+
+describe('programSigningPayload', () => {
+    it('prefixes the program with "Program", with no MX domain prefix', () => {
+        const program = new Uint8Array([0x04, 0x81, 0x01])
+
+        const payload = programSigningPayload(program)
+
+        expect([...payload]).toEqual([
+            ...new TextEncoder().encode('Program'),
+            ...program,
+        ])
     })
 })
