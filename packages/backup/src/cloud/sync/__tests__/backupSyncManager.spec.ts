@@ -629,6 +629,43 @@ describe('BackupSyncManager', () => {
         mgr.stop()
     })
 
+    it('pulls a change announced mid-sync once that sync finishes', async () => {
+        const held = holdNextSync()
+        const mgr = new BackupSyncManager(makeDeps())
+        const started = mgr.start()
+
+        await mgr.handleSocketEvent({
+            kind: 'itemsUpdated',
+            fromSeq: 1,
+            toSeq: 2,
+        })
+        expect(mockPullBackupDeltas).not.toHaveBeenCalled()
+
+        held.release()
+        await started
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(mockPullBackupDeltas).toHaveBeenCalledTimes(1)
+        mgr.stop()
+    })
+
+    it('runs the sync a restart owes once a run the stop cut off lets go', async () => {
+        const held = holdNextSync()
+        const mgr = new BackupSyncManager(makeDeps())
+        const background = mgr.syncNow()
+
+        mgr.stop()
+        await mgr.start()
+        expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+
+        held.release()
+        await background
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(mockSyncBackup).toHaveBeenCalledTimes(2)
+        mgr.stop()
+    })
+
     it('handleSocketEvent backupDeleted stops syncing, deletes on-device keys, resets stores, and notifies', async () => {
         const onBackupDeleted = vi.fn()
         const mgr = new BackupSyncManager({ ...makeDeps(), onBackupDeleted })

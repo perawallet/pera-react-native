@@ -108,6 +108,8 @@ export type BackupSyncManagerDeps = {
 export class BackupSyncManager {
     private running = false
     private inFlight: Nullable<Promise<unknown>> = null
+    private isPullQueued = false
+    private isSyncQueued = false
     private periodic: Nullable<ReturnType<typeof setInterval>> = null
     private socket: Nullable<BackupWebSocketClient> = null
     private unwatchAccounts: Nullable<() => void> = null
@@ -141,6 +143,7 @@ export class BackupSyncManager {
                 this.inFlight = null
                 this.pendingLocalEdits = []
                 this.state.setIsSyncing(false)
+                this.runQueued()
             }
         })()
         this.inFlight = run
@@ -168,6 +171,19 @@ export class BackupSyncManager {
         )
         if (this.inFlight) this.pendingLocalEdits.push(edit)
         return true
+    }
+
+    /** A full sync pulls too, so it supersedes a queued pull. */
+    private runQueued(): void {
+        if (!this.running) return
+        if (this.isSyncQueued) {
+            this.isSyncQueued = false
+            this.isPullQueued = false
+            void this.syncNow()
+        } else if (this.isPullQueued) {
+            this.isPullQueued = false
+            void this.runPull()
+        }
     }
 
     private async waitUntilIdle(): Promise<void> {
@@ -504,7 +520,13 @@ export class BackupSyncManager {
         this.unwatchSettings?.()
         this.watchLocalStores()
         const epoch = this.stopEpoch
-        await this.syncNow()
+        // A run the preceding stop() cut off can still hold the slot; skipping
+        // here would leave anything it staged for the periodic tick.
+        if (this.isSyncing()) {
+            this.isSyncQueued = true
+        } else {
+            await this.syncNow()
+        }
         // Stale once a stop() lands during that await, even if a newer start()
         // followed: installing here too would leak a socket and an interval.
         if (this.stopEpoch !== epoch) return
@@ -518,6 +540,8 @@ export class BackupSyncManager {
     stop(): void {
         this.running = false
         this.stopEpoch += 1
+        this.isPullQueued = false
+        this.isSyncQueued = false
         if (this.periodic != null) {
             clearInterval(this.periodic)
             this.periodic = null
@@ -614,7 +638,13 @@ export class BackupSyncManager {
     }
 
     private async runPull(): Promise<void> {
-        if (this.isSyncing() || this.deps.isLocked()) return
+        if (this.deps.isLocked()) return
+        // The running sync may have fetched its deltas before this change
+        // landed; dropping the pull would leave it for the periodic tick.
+        if (this.isSyncing()) {
+            this.isPullQueued = true
+            return
+        }
         const ctx = this.context()
         if (!ctx) return
         await this.hold(async () => {
