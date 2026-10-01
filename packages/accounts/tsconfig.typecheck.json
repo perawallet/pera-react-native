@@ -3,9 +3,7 @@
   "compilerOptions": {
     "noEmit": true,
     "declaration": false,
-    "emitDeclarationOnly": false,
-    // Type tests import package sources across workspace roots.
-    "rootDir": "../.."
+    "emitDeclarationOnly": false
   },
   "include": [
     "src/**/*.test-d.ts"

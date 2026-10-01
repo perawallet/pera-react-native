@@ -45,13 +45,14 @@ export const useAccountInformationQuery = (
     const query = useQuery({
         queryKey: getAccountInformationQueryKey(address, network),
         queryFn: async (): Promise<AccountInformation> => {
+            const scope = scopeForLegacyNetwork(network)
             const balance = await getAccountBalance({
                 accountAddress: address,
-                scope: scopeForLegacyNetwork(network),
+                scope,
             })
             const holdings = await getAccountHoldings({
                 accountAddress: address,
-                scope: scopeForLegacyNetwork(network),
+                scope,
             })
 
             return {

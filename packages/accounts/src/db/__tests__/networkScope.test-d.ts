@@ -91,11 +91,11 @@ describe('accounts repositories take a ChainScope', () => {
         expectTypeOf<string>().not.toExtend<ChainScope>()
         // @ts-expect-error a network name is not a scope
         void getAccountBalance({ accountAddress: 'A', scope: 'mainnet' })
-        // @ts-expect-error the network parameter is gone
+        // @ts-expect-error a network key is not accepted
         void getAccountBalance({ accountAddress: 'A', network: 'mainnet' })
         // @ts-expect-error a network name is not a scope
         void getAllHeldAssetIdsForNetwork({ scope: 'mainnet' })
-        // @ts-expect-error the network parameter is gone
+        // @ts-expect-error a network key is not accepted
         void getAllHeldAssetIdsForNetwork({ network: 'mainnet' })
     })
 

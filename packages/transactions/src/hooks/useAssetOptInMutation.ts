@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
 import {
     fetchAccountInformation,
@@ -116,10 +115,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     assetId: assetIdString,
                     scope,
                 })
-                await fetchAndPersistAssets(
-                    [assetIdString],
-                    scopeForLegacyNetwork(network),
-                )
+                await fetchAndPersistAssets([assetIdString], scope)
 
                 return { txIds, sender }
             },
