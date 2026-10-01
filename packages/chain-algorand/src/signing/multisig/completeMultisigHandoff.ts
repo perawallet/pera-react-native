@@ -11,59 +11,12 @@
  */
 
 import { logger } from '@perawallet/wallet-core-shared'
-import type {
-    HandoffErrorReason,
-    TerminalHandoffOutcome,
-} from './classifyHandoffPoll'
-import { SubmissionError } from './errors'
-
-/**
- * Side-effecting collaborators a multisig-handoff completion needs. Injected so
- * the orchestration stays a pure function of its inputs — unit-testable without
- * React, algod, or the multisig API — and so each consumer (swap today, future
- * submit-type accounts) supplies only its own submission + status semantics.
- */
-export type MultisigHandoffCompletionDeps = {
-    /**
-     * Submit the assembled composite-multisig bytes to the chain and return the
-     * resulting transaction ids. The consumer owns how the assembled signatures
-     * are interleaved with any pre-signed slots and grouped for submission;
-     * a throw here is treated as a terminal submission failure.
-     */
-    submit: (assembledBytes: Uint8Array[]) => Promise<string[]>
-    /**
-     * Durably record the group's tx ids the moment they're known — when
-     * `submit` resolves (before any other post-submit side effect), or from an
-     * `unknown-outcome` throw's deterministic ids so the retained handoff is
-     * crash-safe. The consumer persists them so a crash between submission and
-     * cleanup can't re-submit on relaunch (see `alreadySubmittedTxIds`).
-     * Synchronous by design: a local store write, not a network call.
-     * Best-effort.
-     */
-    recordSubmitted?: (txIds: string[]) => void
-    /** Best-effort: tell the backend the wallet submitted, so it won't broadcast. */
-    markConfirmed: () => Promise<void>
-    /**
-     * Best-effort: cancel the still-live sign-request (a proposer decline) on a
-     * terminal failure, so a pending-signatures sheet / inbox go terminal
-     * instead of lingering. May legitimately fail once threshold is met.
-     */
-    decline: () => Promise<void>
-    /**
-     * Drop the handoff from its registry once terminally resolved. Not called
-     * on an `unknown-outcome` submit — the handoff is retained for
-     * reconciliation.
-     */
-    removeHandoff: () => void
-    /** Surface a terminal failure to the user (e.g. a localized toast). */
-    reportError: (error: unknown) => void
-    /** Record a successful submission (with the resulting tx ids). Best-effort. */
-    onSubmitted: (txIds: string[]) => Promise<void>
-    /** Record a clean soft-reject (user declined / request expired). Best-effort. */
-    onSoftRejected: (reason: 'declined' | 'expired') => Promise<void>
-    /** Record a terminal failure. Best-effort. */
-    onFailed: () => Promise<void>
-}
+import {
+    SubmissionError,
+    type CompleteMultisigHandoffArgs,
+    type HandoffErrorReason,
+    type MultisigHandoffCompletionDeps,
+} from '@perawallet/wallet-core-signing'
 
 /** Fallback when a backend `failed` carries no display reason of its own. */
 const FALLBACK_ERROR_MESSAGE = 'Multisig sign request could not be completed'
@@ -97,19 +50,7 @@ export const completeMultisigHandoff = async ({
     outcome,
     deps,
     alreadySubmittedTxIds,
-}: {
-    outcome: TerminalHandoffOutcome
-    deps: MultisigHandoffCompletionDeps
-    /**
-     * Tx ids persisted by `recordSubmitted` in a previous session. When set,
-     * the transactions are already on chain: never submit again (algod would
-     * reject the duplicate and the failure path would flip a landed swap to
-     * "failed"), and ignore whatever the poll now says — a post-crash
-     * `expired`/`failed` status just means mark-confirmed never made it.
-     * Only the best-effort post-submit tail is replayed.
-     */
-    alreadySubmittedTxIds?: string[]
-}): Promise<void> => {
+}: CompleteMultisigHandoffArgs): Promise<void> => {
     if (alreadySubmittedTxIds) {
         await runBestEffort(
             () => deps.onSubmitted(alreadySubmittedTxIds),

@@ -146,6 +146,8 @@
       "files": [
         "packages/signing/src/pipeline/**",
         "packages/signing/src/machine/**",
+        "packages/chain-algorand/src/signing/local-key/**",
+        "packages/chain-algorand/src/signing/multisig/**",
         "packages/signing/src/hooks/useSignAndSubmitGroup.ts",
         "packages/signing/src/hooks/useSigningRequest.ts",
         "packages/signing/src/hooks/useSigningPipeline.ts"
@@ -181,6 +183,7 @@
       "files": [
         "packages/kms/src/**",
         "packages/signing/src/**",
+        "packages/chain-algorand/src/signing/local-key/**",
         "packages/passkeys/src/**",
         "packages/backup/src/**",
         "extensions/keystore-chrome/src/**",

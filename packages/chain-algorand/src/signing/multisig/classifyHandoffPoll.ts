@@ -15,76 +15,19 @@ import {
     multisigAdapterFor,
     type ParticipantResponse,
 } from '@perawallet/wallet-core-multisig'
-import {
-    logger,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
-import { buildWalletConnectSignResult } from '../utils/buildWalletConnectSignResult'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     walletConnectHandoffs,
+    type HandoffAssemblyContext,
+    type HandoffErrorReason,
+    type HandoffPeerDelivery,
+    type HandoffPollDetail,
+    type HandoffPollOutcome,
     type PendingWalletConnectHandoff,
-} from './walletConnectHandoffs'
-
-/**
- * Mirrors a subset of multisig's `HandoffPollDetail`, redeclared structurally to
- * keep the type dependency one-way (multisig -> signing).
- */
-export type HandoffPollDetail = {
-    id?: string
-    status: string
-    fail_reason_display: string | null
-    transaction_lists: Array<{
-        raw_transactions: string[]
-        responses: Array<{
-            address: string
-            response: string
-            signatures?: (string | null)[] | null
-        }>
-    }>
-}
-
-/** Built by the resolver hook so these functions stay plain and unit-testable. */
-export type ResolverMessages = {
-    declined: string
-    expired: string
-    failed: string
-    noTransactions: string
-    deliveryFailed: string
-    assemblyFailed: (reason: string) => string
-}
-
-/** Why a handoff poll ended in a terminal failure (non-fatal to the app). */
-export type HandoffErrorReason =
-    | { kind: 'no-transactions' }
-    | { kind: 'assembly-failed'; detail: string }
-    | { kind: 'backend-failed'; displayReason: string | null }
-    | { kind: 'session-disconnected' }
-
-/** Every variant but `keep-polling` is terminal, delivered exactly once. */
-export type HandoffPollOutcome =
-    | { kind: 'keep-polling' }
-    | { kind: 'ready'; assembledBytes: Uint8Array[] }
-    | { kind: 'soft-reject'; reason: 'declined' | 'expired' }
-    | { kind: 'error'; reason: HandoffErrorReason }
-
-/** Terminal outcomes — everything `classifyHandoffPoll` returns but `keep-polling`. */
-export type TerminalHandoffOutcome = Exclude<
-    HandoffPollOutcome,
-    { kind: 'keep-polling' }
->
-
-/**
- * Narrower than {@link PendingWalletConnectHandoff} so non-WC consumers can
- * reuse the classification logic without fabricating WC-only fields.
- */
-export type HandoffAssemblyContext = {
-    /** Picks the chain whose multisig adapter assembles the envelopes. */
-    network: Network
-    multisigAddress: string
-    msigMetadata: { version: number; threshold: number; addresses: string[] }
-    expectedRawTransactionsBase64: string[]
-}
+    type ResolveHandoffOutcomeArgs,
+    type ResolverMessages,
+} from '@perawallet/wallet-core-signing'
+import { buildWalletConnectSignResult } from './buildWalletConnectSignResult'
 
 /**
  * `keep-polling` covers non-terminal statuses AND a `ready`/`confirmed` request
@@ -229,60 +172,6 @@ export const errorReasonToMessage = (
             return messages.deliveryFailed
         }
     }
-}
-
-/**
- * How the resolver answers the WalletConnect peer. Injected from the app layer
- * so this pipeline module carries no WalletConnect dependency, and keyed by the
- * serializable {@link PendingWalletConnectHandoff.clientId} / `payloadId` so it
- * works for a rehydrated (post-kill) handoff that has no in-memory closures.
- * All three are best-effort: a peer whose session is gone (WC v1 keeps no
- * pending request across a kill) simply no-ops.
- */
-export type HandoffPeerDelivery = {
-    /** `approveRequest` with the assembled result array. May throw (dead session). */
-    deliverResult: (
-        clientId: string,
-        payloadId: number,
-        result: Nullable<string>[],
-    ) => Promise<void>
-    /** Clean soft-reject (decline / expired) — no connection-error banner. */
-    deliverSoftReject: (
-        clientId: string,
-        payloadId: number,
-        error: Error,
-    ) => Promise<void>
-    /** Terminal error reject, raising the connection-error banner. */
-    deliverError: (
-        clientId: string,
-        payloadId: number,
-        error: Error,
-    ) => Promise<void>
-}
-
-type ResolveHandoffOutcomeArgs = {
-    outcome: TerminalHandoffOutcome
-    handoff: PendingWalletConnectHandoff
-    messages: ResolverMessages
-    delivery: HandoffPeerDelivery
-    /** Best-effort backend notification; a rejection is logged, not surfaced. */
-    markConfirmed: (input: {
-        network: Network
-        deviceId: string
-        signRequestIds: string[]
-    }) => Promise<void>
-    /**
-     * Best-effort cancel of the proposer's own backend sign request, called on
-     * terminal failures (`error`, including a failed delivery of assembled
-     * bytes, and `soft-reject`/`expired`). Nothing else terminalizes the
-     * backend record when the dApp is gone, and the pending inbox reads
-     * backend status — without this the request sits at pending/submitting
-     * forever. NOT called on a delivered `ready` (success) or on
-     * `soft-reject`/`declined` (a participant decline is already terminal on
-     * the backend). Injected so this pipeline module stays free of the
-     * multisig API; a rejection is logged, not surfaced.
-     */
-    cancelRequest?: () => Promise<void>
 }
 
 /**

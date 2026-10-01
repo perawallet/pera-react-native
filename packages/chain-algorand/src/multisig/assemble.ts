@@ -186,7 +186,7 @@ export const assembleSignedMultisigTransactions = async (
 
     const signedList: Uint8Array[] = []
     // Spent against VERIFY_BATCH_SIZE and reset on each yield. Mirrors
-    // `SIGN_BATCH_SIZE` + `deferToNextCycle` in `useLocalKeyTransactionSigner` /
+    // `SIGN_BATCH_SIZE` + `deferToNextCycle` in `signTransactionsWithLocalKey` /
     // `useQuantumTransactionSigner`, but counted in verifies because that — not
     // the transaction — is the unit of synchronous work here.
     let verifiesSinceYield = 0

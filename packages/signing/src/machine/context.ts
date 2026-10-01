@@ -25,7 +25,7 @@ import type {
     LocalSigningFunction,
     LocalArbitrarySigningFunction,
     LocalArc60SigningFunction,
-} from '../pipeline/signing/createLocalKeyStrategy'
+} from '../chain-adapter'
 import type { EncodeTransactionFunction } from '../pipeline/signing/createHardwareStrategy'
 import type { SignRequest } from '../models'
 

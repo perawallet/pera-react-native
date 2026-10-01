@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { createTransportSelector } from '../getTransport'
 import {
     algodBackedTransport,
@@ -22,6 +22,8 @@ import type {
     SignedTransactionData,
     SourceMetadata,
 } from '../../types'
+import type { DataTransport } from '../../types'
+import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetworkStore: {
@@ -68,6 +70,17 @@ const stubResult: SigningResult = {
 }
 
 describe('createTransportSelector', () => {
+    const proposeTransport: DataTransport = { send: vi.fn() }
+    const cosignTransport: DataTransport = { send: vi.fn() }
+    let planner: ReturnType<typeof registerFakePlannerAdapter>
+
+    beforeEach(() => {
+        planner = registerFakePlannerAdapter({
+            createMultisigProposeTransport: vi.fn(() => proposeTransport),
+            createMultisigCosignTransport: vi.fn(() => cosignTransport),
+        })
+    })
+
     test('non-multisig walletconnect source returns WC transport', async () => {
         const proposeSignRequest = vi.fn()
         const selector = createTransportSelector({
@@ -155,7 +168,7 @@ describe('createTransportSelector', () => {
         ).toThrow('addSignatures')
     })
 
-    test('multisig-cosign uses cosign transport when addSignatures provided', () => {
+    test('multisig-cosign uses the planner cosign transport when addSignatures provided', () => {
         const addSignatures = vi.fn()
         const selector = createTransportSelector({
             ...baseOptions(),
@@ -165,7 +178,11 @@ describe('createTransportSelector', () => {
             { type: 'multisig-cosign' } as SourceMetadata,
             algo25Account,
         )
-        expect(transport.send).toBeInstanceOf(Function)
+        expect(transport).toBe(cosignTransport)
+        expect(planner.createMultisigCosignTransport).toHaveBeenCalledWith(
+            addSignatures,
+            'testnet',
+        )
     })
 
     test('multisig account + local source throws without proposeSignRequest', () => {
@@ -179,29 +196,35 @@ describe('createTransportSelector', () => {
         ).toThrow('proposeSignRequest')
     })
 
-    test('multisig account + local source uses propose transport when configured', () => {
+    test('multisig account + local source uses the planner propose transport when configured', () => {
         const proposeSignRequest = vi.fn()
-        const selector = createTransportSelector({
+        const createDraftSignRequest = vi.fn()
+        const options = {
             ...baseOptions(),
             proposeSignRequest,
-        })
+            createDraftSignRequest,
+        }
+        const selector = createTransportSelector(options)
         const transport = selector(
             { type: 'local' } as SourceMetadata,
             multisigAccount,
         )
-        expect(transport.send).toBeInstanceOf(Function)
+        expect(transport).toBe(proposeTransport)
+        expect(planner.createMultisigProposeTransport).toHaveBeenCalledWith(
+            proposeSignRequest,
+            'testnet',
+            options.getMsigMetadata,
+            options.getDeviceId,
+            createDraftSignRequest,
+        )
     })
 
     test.each(['walletconnect', 'webview', 'deeplink'] as const)(
-        'multisig account + %s source uses propose transport (sync handoff)',
-        async sourceType => {
-            const proposeSignRequest = vi.fn().mockResolvedValue({
-                signRequestId: 'mp-1',
-                status: 'pending',
-            })
+        'multisig account + %s source uses the propose transport (sync handoff)',
+        sourceType => {
             const selector = createTransportSelector({
                 ...baseOptions(),
-                proposeSignRequest,
+                proposeSignRequest: vi.fn(),
             })
 
             const transport = selector(
@@ -209,18 +232,7 @@ describe('createTransportSelector', () => {
                 multisigAccount,
             )
 
-            const result = await transport.send(
-                stubResult,
-                { type: sourceType } as SourceMetadata,
-                'MSIG',
-            )
-
-            expect(proposeSignRequest).toHaveBeenCalledTimes(1)
-            expect(result).toMatchObject({
-                type: 'proposed',
-                signRequestId: 'mp-1',
-                sourceType,
-            })
+            expect(transport).toBe(proposeTransport)
         },
     )
 

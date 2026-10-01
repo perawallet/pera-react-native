@@ -28,10 +28,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 import {
-    completeMultisigHandoff,
+    SubmissionError,
     type MultisigHandoffCompletionDeps,
-} from '../completeMultisigHandoff'
-import { SubmissionError } from '../errors'
+} from '@perawallet/wallet-core-signing'
+import { completeMultisigHandoff } from '../completeMultisigHandoff'
 
 const ASSEMBLED = new Uint8Array([1, 2, 3])
 

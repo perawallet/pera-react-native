@@ -19,7 +19,8 @@ import {
     useDraftSignRequestStore,
 } from '@perawallet/wallet-core-multisig'
 import { useMultisigTransportAdapters } from '../useMultisigTransportAdapters'
-import { draftProposeContexts } from '../../pipeline/draftProposeContexts'
+import type { DraftProposeContext } from '../../chain-adapter'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { walletConnectHandoffs } from '../../pipeline/walletConnectHandoffs'
 import type { SigningResult } from '../../pipeline/types'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
@@ -530,10 +531,19 @@ describe('useMultisigTransportAdapters', () => {
                 proposeType,
             })
 
+        const draftProposeContexts = new Map<string, DraftProposeContext>()
+        let takeDraftProposeContext: ReturnType<typeof vi.fn>
+
         beforeEach(() => {
             useDraftSignRequestStore.getState().resetState()
             walletConnectHandoffs.__resetForTests()
-            draftProposeContexts.__resetForTests()
+            draftProposeContexts.clear()
+            takeDraftProposeContext = vi.fn((draftLocalId: string) => {
+                const context = draftProposeContexts.get(draftLocalId)
+                draftProposeContexts.delete(draftLocalId)
+                return context
+            })
+            registerFakePlannerAdapter({ takeDraftProposeContext })
         })
 
         test('registers the sync handoff under the real id and fires onProposed', async () => {
@@ -608,6 +618,8 @@ describe('useMultisigTransportAdapters', () => {
                 rawTransactionsBase64: ['cmF3MQ=='],
             })
             // Consumed: a later cosign on the real id must not re-register.
+            expect(takeDraftProposeContext).toHaveBeenCalledTimes(1)
+            expect(takeDraftProposeContext).toHaveBeenCalledWith(draftId)
             expect(draftProposeContexts.get(draftId)).toBeUndefined()
         })
 

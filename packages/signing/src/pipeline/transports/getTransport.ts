@@ -20,16 +20,13 @@ import { broadcasterChainAdapters } from '../../broadcaster'
 import { createWalletConnectTransport } from './createWalletConnectTransport'
 import { createCallbackTransport } from './createCallbackTransport'
 import {
-    createMultisigProposeTransport,
+    plannerAdapterFor,
+    type AddSignaturesFn,
     type CreateDraftSignRequestFn,
     type GetDeviceIdFn,
     type GetMsigMetadataFn,
     type ProposeSignRequestFn,
-} from './createMultisigProposeTransport'
-import {
-    createMultisigCosignTransport,
-    type AddSignaturesFn,
-} from './createMultisigCosignTransport'
+} from '../../chain-adapter'
 
 /**
  * The multisig functions are optional: omitting them makes a multisig route
@@ -74,7 +71,9 @@ export const createTransportSelector = (
                     'Multisig co-sign transport requires addSignatures',
                 )
             }
-            return createMultisigCosignTransport(
+            return plannerAdapterFor(
+                options.network,
+            ).createMultisigCosignTransport(
                 options.addSignatures,
                 options.network,
             )
@@ -103,7 +102,9 @@ export const createTransportSelector = (
                     'Multisig propose transport requires getDeviceId',
                 )
             }
-            return createMultisigProposeTransport(
+            return plannerAdapterFor(
+                options.network,
+            ).createMultisigProposeTransport(
                 options.proposeSignRequest,
                 options.network,
                 options.getMsigMetadata,

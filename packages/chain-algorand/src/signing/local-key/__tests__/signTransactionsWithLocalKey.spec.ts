@@ -17,10 +17,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
 import {
     SIGN_BATCH_SIZE,
     signTransactionsWithLocalKey,
-    type LocalKeySigningDeps,
 } from '../signTransactionsWithLocalKey'
 
 const SENDER = 'B3FCOSKVDPADAVJ6LXZKAMXDC4DFNLPOINGM2ZDSAKEBVG4LJVRTPJ22QY'
@@ -157,6 +157,54 @@ describe('signTransactionsWithLocalKey', () => {
                 ...algo25Account(),
                 type: AccountTypes.watch,
             } as WalletAccount),
+        ).rejects.toBeTruthy()
+    })
+
+    test('signs with the key of the account it is given', async () => {
+        const signPayloads = vi.fn(async (_keyPairId, payloads: Uint8Array[]) =>
+            payloads.map(() => new Uint8Array([9])),
+        )
+
+        await signTransactionsWithLocalKey(
+            deps({ signPayloads }),
+            [txn(0)],
+            [0],
+            { ...algo25Account(), keyPairId: 'key-for-this-account' },
+        )
+
+        expect(signPayloads).toHaveBeenCalledWith('key-for-this-account', [
+            new Uint8Array([1]),
+        ])
+    })
+
+    test('pairs each signature with its own transaction across batches', async () => {
+        const group = Array.from({ length: SIGN_BATCH_SIZE + 3 }, (_, i) =>
+            txn(i),
+        )
+        const encodeTransaction = (t: PeraTransaction) =>
+            new Uint8Array([(t as unknown as { id: number }).id])
+        const signPayloads = vi.fn(async (_keyPairId, payloads: Uint8Array[]) =>
+            payloads.map(payload => new Uint8Array([payload[0] + 100])),
+        )
+
+        const result = await signTransactionsWithLocalKey(
+            deps({ signPayloads, encodeTransaction }),
+            group,
+            group.map((_, index) => index),
+            algo25Account(),
+        )
+
+        expect(result.map(stx => stx.sig?.[0])).toEqual(
+            group.map((_, index) => index + 100),
+        )
+    })
+
+    test('rejects a hardware-wallet account, which signs through the pipeline', async () => {
+        await expect(
+            signTransactionsWithLocalKey(deps(), [txn(0)], [0], {
+                ...algo25Account(),
+                type: AccountTypes.hardware,
+            } as unknown as WalletAccount),
         ).rejects.toBeTruthy()
     })
 })

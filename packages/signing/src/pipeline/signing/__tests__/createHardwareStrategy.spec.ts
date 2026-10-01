@@ -42,6 +42,7 @@ vi.mock('@perawallet/wallet-core-ledger', async () => {
 })
 
 import { createHardwareStrategy } from '../createHardwareStrategy'
+import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
 import type { EncodeTransactionFunction } from '../createHardwareStrategy'
 import type { AnalyzedSignableGroup } from '../../types'
 import type {
@@ -322,7 +323,8 @@ describe('createHardwareStrategy', () => {
             expect(mockTransport.signTransaction).toHaveBeenCalledTimes(1)
         })
 
-        it('sets authAddress when signer differs from sender', async () => {
+        it('assembles each signed slot with the hardware account as the signer', async () => {
+            const planner = registerFakePlannerAdapter()
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
@@ -332,28 +334,29 @@ describe('createHardwareStrategy', () => {
             const group = makeGroup(txns, [0], SIGNER_ADDRESS)
             const account = makeLedgerAccount()
 
-            const result = await strategy.sign(group, account)
+            await strategy.sign(group, account)
 
-            if (result.signedData.type === 'transactions') {
-                expect(result.signedData.signed[0].sgnr).toBeDefined()
-            }
+            expect(planner.assembleSignedTransaction).toHaveBeenCalledWith(
+                txns[0],
+                { sig: MOCK_SIGNATURE, signerAddress: account.address },
+            )
         })
 
-        it('does not set authAddress when signer matches sender', async () => {
+        it('assembles slots outside indicesToSign without a signature', async () => {
+            const planner = registerFakePlannerAdapter()
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
             })
-            const txns = [mockTransaction(SIGNER_ADDRESS)]
-            const group = makeGroup(txns, [0])
-            const account = makeLedgerAccount()
+            const txns = [mockTransaction(), mockTransaction()]
+            const group = makeGroup(txns, [1])
 
-            const result = await strategy.sign(group, account)
+            await strategy.sign(group, makeLedgerAccount())
 
-            if (result.signedData.type === 'transactions') {
-                expect(result.signedData.signed[0].sgnr).toBeUndefined()
-            }
+            expect(planner.assembleSignedTransaction).toHaveBeenCalledWith(
+                txns[0],
+            )
         })
 
         it('calls disconnect in finally block even on error', async () => {

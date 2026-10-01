@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isMultisigUnsignable } from '@perawallet/wallet-core-accounts'
-import type { SignRequest } from '../../models'
+import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { isSignRequestMultisigUnsignable } from '../isSignRequestMultisigUnsignable'
 
 // Only the account-capability predicate is mocked; the request-type guard and

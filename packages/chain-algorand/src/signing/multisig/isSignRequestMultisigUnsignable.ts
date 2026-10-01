@@ -14,7 +14,10 @@ import {
     isMultisigUnsignable,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isTransactionRequest, type SignRequest } from '../models'
+import {
+    isTransactionRequest,
+    type SignRequest,
+} from '@perawallet/wallet-core-signing'
 
 /**
  * True iff `request` is a transaction sign request in which ANY transaction's

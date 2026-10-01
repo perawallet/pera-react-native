@@ -10,17 +10,34 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { Address } from 'algosdk'
 import { Decimal } from 'decimal.js'
 import { groupTransactions } from '@perawallet/wallet-core-blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
+import type {
+    PeraDisplayableTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-blockchain'
+import {
+    InvalidSignableDataError,
+    type SigningResult,
+    type SourceMetadata,
+} from '@perawallet/wallet-core-signing'
+
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useNetworkStore: {
+        getState: () => ({ network: 'testnet' }),
+        subscribe: () => () => {},
+    },
+}))
+
 import { algorandPlannerAdapter } from '../adapter'
+import { draftProposeContexts } from '../multisig/draftProposeContexts'
 import { makeTestAddress, makeTestPaymentTx } from './transactions'
 
 const senderA = makeTestAddress(1)
 const senderB = makeTestAddress(2)
-
 describe('algorandPlannerAdapter', () => {
     test('reviewGroupFees reports the total fee and no warning for a cheap group', () => {
         const txs = [
@@ -50,5 +67,71 @@ describe('algorandPlannerAdapter', () => {
         expect(() =>
             algorandPlannerAdapter.validateGroup(subset, { isCosigner: false }),
         ).toThrow(InvalidSignableDataError)
+    })
+})
+
+const SENDER = 'B3FCOSKVDPADAVJ6LXZKAMXDC4DFNLPOINGM2ZDSAKEBVG4LJVRTPJ22QY'
+const AUTH = 'SMYOGL34R6IPDMI6TGHYDDWIGH6Z3EDGTNDKLWYVHPGDTW5D5XAYGKY25U'
+
+const txn = { sender: Address.fromString(SENDER) } as unknown as PeraTransaction
+const sig = new Uint8Array([1, 2, 3])
+
+describe('algorandPlannerAdapter.assembleSignedTransaction', () => {
+    test('returns an unsigned envelope when there is no signature', () => {
+        const signed = algorandPlannerAdapter.assembleSignedTransaction(txn)
+
+        expect(signed.txn).toBe(txn)
+        expect(signed.sig).toBeUndefined()
+        expect(signed.sgnr).toBeUndefined()
+    })
+
+    test('leaves sgnr unset when the signer is the sender', () => {
+        const signed = algorandPlannerAdapter.assembleSignedTransaction(txn, {
+            sig,
+            signerAddress: SENDER,
+        })
+
+        expect(signed.sig).toEqual(sig)
+        expect(signed.sgnr).toBeUndefined()
+    })
+
+    test('names the signer in sgnr when it is not the sender (rekey)', () => {
+        const signed = algorandPlannerAdapter.assembleSignedTransaction(txn, {
+            sig,
+            signerAddress: AUTH,
+        })
+
+        expect(signed.sig).toEqual(sig)
+        expect(signed.sgnr?.toString()).toBe(AUTH)
+    })
+})
+
+describe('algorandPlannerAdapter.takeDraftProposeContext', () => {
+    beforeEach(() => {
+        draftProposeContexts.__resetForTests()
+    })
+
+    test('returns what the propose transport stashed for a hardware-only proposer, exactly once', async () => {
+        const source: SourceMetadata = { type: 'local' }
+        const deferred: SigningResult = {
+            signedData: { type: 'transactions', signed: [] },
+            signers: [],
+        }
+        const transport = algorandPlannerAdapter.createMultisigProposeTransport(
+            vi.fn(),
+            'testnet',
+            () => undefined,
+            () => undefined,
+            () => 'draft-1',
+        )
+
+        await transport.send(deferred, source, 'MSIG')
+
+        expect(
+            algorandPlannerAdapter.takeDraftProposeContext('draft-1'),
+        ).toEqual({ source, msigMetadata: undefined, deviceId: undefined })
+        expect(
+            algorandPlannerAdapter.takeDraftProposeContext('draft-1'),
+        ).toBeUndefined()
     })
 })

@@ -12,13 +12,15 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    walletConnectHandoffs,
-    type PendingWalletConnectHandoff,
-} from '../walletConnectHandoffs'
-import {
     multisigChainAdapters,
     type SignRequestResponse,
 } from '@perawallet/wallet-core-multisig'
+import {
+    walletConnectHandoffs,
+    type HandoffPeerDelivery,
+    type PendingWalletConnectHandoff,
+    type ResolverMessages,
+} from '@perawallet/wallet-core-signing'
 
 const { assembleMock, loggerWarnMock } = vi.hoisted(() => ({
     assembleMock: vi.fn(),
@@ -43,8 +45,6 @@ import {
     classifyHandoffPoll,
     errorReasonToMessage,
     resolveHandoffOutcome,
-    type HandoffPeerDelivery,
-    type ResolverMessages,
 } from '../classifyHandoffPoll'
 
 const SIGN_REQUEST_ID = 'sr-1'

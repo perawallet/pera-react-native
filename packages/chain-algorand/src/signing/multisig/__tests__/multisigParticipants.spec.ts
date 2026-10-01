@@ -37,8 +37,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 import {
     getLocalParticipants,
     getProposeParticipants,
-    canMeetThresholdLocally,
-} from '../utils'
+} from '../multisigParticipants'
 
 const makeMultisig = (threshold: number, addresses: string[]): WalletAccount =>
     ({
@@ -237,62 +236,5 @@ describe('getProposeParticipants', () => {
         ])
 
         expect(participants).toEqual([accountB, accountA])
-    })
-})
-
-describe('canMeetThresholdLocally', () => {
-    test('returns false when account is not multisig', () => {
-        mocks.isMultisigAccount.mockReturnValue(false)
-        expect(canMeetThresholdLocally(accountA, [accountA])).toBe(false)
-    })
-
-    test('returns true when local participants >= threshold', () => {
-        mocks.isMultisigAccount.mockReturnValue(true)
-        const multisig = makeMultisig(2, ['A', 'B'])
-
-        expect(canMeetThresholdLocally(multisig, [accountA, accountB])).toBe(
-            true,
-        )
-    })
-
-    test('returns false when local participants < threshold', () => {
-        mocks.isMultisigAccount.mockReturnValue(true)
-        const multisig = makeMultisig(3, ['A', 'B'])
-
-        expect(canMeetThresholdLocally(multisig, [accountA, accountB])).toBe(
-            false,
-        )
-    })
-
-    test('resolves a rekey hop — source rekeyed to a multisig answers via the auth multisig', () => {
-        mocks.isMultisigAccount.mockImplementation(
-            (acc: WalletAccount) => acc.type === 'multisig',
-        )
-        const multisig = makeMultisig(2, ['A', 'B'])
-        const rekeyedSource = {
-            type: 'algo25',
-            address: 'SRC',
-            keyPairId: 'k',
-            rekeyAddress: 'MSIG',
-        } as unknown as WalletAccount
-
-        expect(
-            canMeetThresholdLocally(rekeyedSource, [
-                rekeyedSource,
-                multisig,
-                accountA,
-                accountB,
-            ]),
-        ).toBe(true)
-    })
-
-    test('returns false when rekey target is missing locally', () => {
-        const stranded = {
-            type: 'algo25',
-            address: 'SRC',
-            keyPairId: 'k',
-            rekeyAddress: 'MISSING',
-        } as unknown as WalletAccount
-        expect(canMeetThresholdLocally(stranded, [stranded])).toBe(false)
     })
 })

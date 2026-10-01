@@ -11,86 +11,24 @@
  */
 
 import { toError, type Network } from '@perawallet/wallet-core-shared'
-import {
-    useNetworkStore,
-    type PeraSignedTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
-import type {
-    DataTransport,
-    SigningResult,
-    SourceMetadata,
-    TransportResult,
-    SignRequestStatus,
-} from '../types'
-import { isExternalCallbackSource } from '../types'
-import { NetworkChangedError, TransportError } from '../errors'
-import { draftProposeContexts } from '../draftProposeContexts'
-import { walletConnectHandoffs } from '../walletConnectHandoffs'
-
-/**
- * The transport supplies the propose `type` — sync for handoffs, async for
- * in-app — so the backend picks the right post-threshold behaviour.
- */
-export type ProposeSignRequestFn = (params: {
-    multisigAddress: string
-    signedData: SigningResult['signedData']
-    signers: SigningResult['signers']
-    type: MultisigProposeMode
-}) => Promise<{
-    signRequestId: string
-    status: SignRequestStatus
-    /**
-     * Pinned on the handoff so the resolver can refuse poll responses whose
-     * bytes differ from what the user reviewed.
-     */
-    rawTransactionsBase64: string[]
-    /**
-     * Proposing participant's address. Pinned on the handoff because the poll
-     * response declares it optional and some deployments echo null, leaving
-     * the resolver unable to cancel an orphaned request.
-     */
-    proposerAddress?: string
-}>
-
-/** Multisig metadata needed by the resolver listener to build subsigs. */
-export type MsigMetadata = {
-    version: number
-    threshold: number
-    addresses: string[]
-}
-
-export type GetMsigMetadataFn = (
-    multisigAddress: string,
-) => MsigMetadata | undefined
-
-/** Injected so this package doesn't depend on the app's device-id source. */
-export type GetDeviceIdFn = () => string | undefined
-
-/**
- * Everything a later per-row Sign tap needs to bootstrap the real propose from
- * one participant's signature.
- */
-export type CreateDraftSignRequestInput = {
-    multisigAddress: string
-    /**
-     * Unsigned: `.txn` is populated, `sig`/`msig` absent. Typed as signed only
-     * because it comes straight from `SigningResult`. Only `.txn` is read, to
-     * encode the unprefixed msgpack bytes the propose API expects.
-     */
-    signedTransactions: PeraSignedTransaction[]
-    proposeType: MultisigProposeMode
-    source: SourceMetadata
-}
-
-/**
- * Returns a synthetic `draft-`-prefixed id. Injected so this package doesn't
- * depend on the mobile draft store. Absent, the transport throws on empty
- * signers, preserving behaviour for callers that haven't opted in.
- */
-export type CreateDraftSignRequestFn = (
-    input: CreateDraftSignRequestInput,
-) => string
+import {
+    isExternalCallbackSource,
+    NetworkChangedError,
+    TransportError,
+    walletConnectHandoffs,
+    type CreateDraftSignRequestFn,
+    type DataTransport,
+    type GetDeviceIdFn,
+    type GetMsigMetadataFn,
+    type MsigMetadata,
+    type ProposeSignRequestFn,
+    type SigningResult,
+    type SourceMetadata,
+    type TransportResult,
+} from '@perawallet/wallet-core-signing'
+import { draftProposeContexts } from './draftProposeContexts'
 
 /**
  * Two flows:

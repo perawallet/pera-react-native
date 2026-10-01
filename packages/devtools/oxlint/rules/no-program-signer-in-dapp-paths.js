@@ -14,6 +14,8 @@
 export const DAPP_SIGNING_PATHS = [
     'packages/signing/src/pipeline',
     'packages/signing/src/machine',
+    'packages/chain-algorand/src/signing/local-key',
+    'packages/chain-algorand/src/signing/multisig',
     'packages/signing/src/hooks/useSignAndSubmitGroup.ts',
     'packages/signing/src/hooks/useSigningRequest.ts',
     'packages/signing/src/hooks/useSigningPipeline.ts',

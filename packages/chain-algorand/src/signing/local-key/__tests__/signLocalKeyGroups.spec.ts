@@ -11,10 +11,11 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { createActor, toPromise } from 'xstate'
-import { localKeySignerActor } from '../localKeySignerActor'
-import type { LocalKeySignerActorInput } from '../localKeySignerActor'
-import type { AnalyzedSignableGroup } from '../../../../pipeline/types'
+import type {
+    AnalyzedSignableGroup,
+    LocalKeySignerInput,
+} from '@perawallet/wallet-core-signing'
+import { signLocalKeyGroups } from '../signLocalKeyGroups'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const MOCK_ADDRESS =
@@ -48,24 +49,23 @@ const mockGroup: AnalyzedSignableGroup = {
 const mockSignedTxn = { txn: {}, sig: new Uint8Array([1, 2, 3]) } as never
 
 const buildInput = (
-    overrides: Partial<LocalKeySignerActorInput> = {},
-): LocalKeySignerActorInput => ({
+    overrides: Partial<LocalKeySignerInput> = {},
+): LocalKeySignerInput => ({
     groups: [mockGroup],
     allAccounts: [mockAlgo25Account],
     signTransactions: vi.fn().mockResolvedValue([mockSignedTxn]),
     signArbitraryData: vi.fn(),
     signArc60: vi.fn(),
+    network: 'mainnet',
     ...overrides,
 })
 
-describe('localKeySignerActor', () => {
+describe('signLocalKeyGroups', () => {
     it('returns a SigningResult per group with signed transactions', async () => {
         const signTransactions = vi.fn().mockResolvedValue([mockSignedTxn])
         const input = buildInput({ signTransactions })
 
-        const actor = createActor(localKeySignerActor, { input })
-        actor.start()
-        const results = await toPromise(actor)
+        const results = await signLocalKeyGroups(input)
 
         expect(results).toHaveLength(1)
         const result = results[0]
@@ -90,10 +90,7 @@ describe('localKeySignerActor', () => {
             .mockRejectedValue(new Error('KMS error'))
         const input = buildInput({ signTransactions })
 
-        const actor = createActor(localKeySignerActor, { input })
-        actor.start()
-
-        await expect(toPromise(actor)).rejects.toThrow('KMS error')
+        await expect(signLocalKeyGroups(input)).rejects.toThrow('KMS error')
     })
 
     it('rejects when account has no signing keys', async () => {
@@ -116,10 +113,7 @@ describe('localKeySignerActor', () => {
             signTransactions,
         })
 
-        const actor = createActor(localKeySignerActor, { input })
-        actor.start()
-
-        await expect(toPromise(actor)).rejects.toThrow()
+        await expect(signLocalKeyGroups(input)).rejects.toThrow()
         expect(signTransactions).not.toHaveBeenCalled()
     })
 
@@ -130,10 +124,7 @@ describe('localKeySignerActor', () => {
             signTransactions,
         })
 
-        const actor = createActor(localKeySignerActor, { input })
-        actor.start()
-
-        await expect(toPromise(actor)).rejects.toThrow()
+        await expect(signLocalKeyGroups(input)).rejects.toThrow()
         expect(signTransactions).not.toHaveBeenCalled()
     })
 
@@ -179,9 +170,7 @@ describe('localKeySignerActor', () => {
                 signTransactions,
             })
 
-            const actor = createActor(localKeySignerActor, { input })
-            actor.start()
-            const results = await toPromise(actor)
+            const results = await signLocalKeyGroups(input)
 
             expect(signTransactions).toHaveBeenCalledTimes(1)
             const [, , accountUsed] = signTransactions.mock.calls[0]
@@ -197,9 +186,7 @@ describe('localKeySignerActor', () => {
                 signTransactions,
             })
 
-            const actor = createActor(localKeySignerActor, { input })
-            actor.start()
-            const results = await toPromise(actor)
+            const results = await signLocalKeyGroups(input)
 
             expect(signTransactions).toHaveBeenCalledTimes(1)
             const [, , accountUsed] = signTransactions.mock.calls[0]

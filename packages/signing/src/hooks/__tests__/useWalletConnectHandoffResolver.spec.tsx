@@ -36,24 +36,10 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
     }),
 }))
 
-// Stub the pure classifier + delivery functions so this suite verifies only
-// the poll → classify → resolve wiring. Their own behavior is covered by
-// classifyHandoffPoll.spec.ts.
-vi.mock('../../pipeline/classifyHandoffPoll', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('../../pipeline/classifyHandoffPoll')
-        >()
-    return {
-        ...actual,
-        classifyHandoffPoll: mocks.classifyHandoffPoll,
-        resolveHandoffOutcome: mocks.resolveHandoffOutcome,
-    }
-})
-
 import { useWalletConnectHandoffResolver } from '../useWalletConnectHandoffResolver'
 import { useWalletConnectHandoffsStore } from '../../store/walletConnectHandoffsStore'
-import type { ResolverMessages } from '../../pipeline/classifyHandoffPoll'
+import type { ResolverMessages } from '../../chain-adapter'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import type { PendingWalletConnectHandoff } from '../../pipeline/walletConnectHandoffs'
 
 const messages: ResolverMessages = {
@@ -66,7 +52,7 @@ const messages: ResolverMessages = {
         `multisig.sync_sign.errors.assembly_failed:${reason}`,
 }
 
-// Injected peer delivery — this suite stubs `resolveHandoffOutcome`, so these
+// Injected peer delivery; this suite stubs `resolveHandoffOutcome`, so these
 // are pass-through no-ops that only satisfy the hook's required arg.
 const delivery = {
     deliverResult: vi.fn().mockResolvedValue(undefined),
@@ -112,6 +98,12 @@ describe('useWalletConnectHandoffResolver', () => {
         mocks.getSignRequestsWithSignatures.mockResolvedValue([{ id: 'sr-1' }])
         mocks.classifyHandoffPoll.mockReturnValue({ kind: 'keep-polling' })
         mocks.resolveHandoffOutcome.mockResolvedValue(undefined)
+        // Stubs the planner's classifier and delivery so this suite verifies
+        // only the poll -> classify -> resolve wiring.
+        registerFakePlannerAdapter({
+            classifyHandoffPoll: mocks.classifyHandoffPoll,
+            resolveHandoffOutcome: mocks.resolveHandoffOutcome,
+        })
     })
 
     afterEach(() => {

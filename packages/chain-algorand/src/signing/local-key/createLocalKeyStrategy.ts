@@ -17,7 +17,6 @@ import {
     isHDWalletAccount,
     isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     AppError,
     encodeToBase64,
@@ -26,49 +25,26 @@ import {
     logger,
     toError,
 } from '@perawallet/wallet-core-shared'
-import type {
-    SigningStrategy,
-    AnalyzedSignableGroup,
-    SigningResult,
-    SigningCallbacks,
-    SignerInfo,
-} from '../types'
-import { CannotSignError, SIGNING_ERROR_KEYS, SigningError } from '../errors'
-import { signArbitraryDataCase, signArc60Case } from './standardDataSigning'
-
-// Re-exported for backward compatibility with the many call sites that
-// import these from `./createLocalKeyStrategy` — the types now live in
-// `./standardDataSigning`.
-export type {
-    LocalArbitrarySigningFunction,
-    LocalArc60SigningFunction,
-} from './standardDataSigning'
-import type {
-    LocalArbitrarySigningFunction,
-    LocalArc60SigningFunction,
-} from './standardDataSigning'
-
-/**
- * Signing function type that matches useLocalKeyTransactionSigner's signTransactions.
- */
-export type LocalSigningFunction = (
-    txnGroup: PeraSignedTransaction['txn'][],
-    indexesToSign: number[],
-    account: WalletAccount,
-) => Promise<PeraSignedTransaction[]>
-
-export type LocalKeyStrategyOptions = {
-    signTransactions: LocalSigningFunction
-    signArbitraryData: LocalArbitrarySigningFunction
-    signArc60: LocalArc60SigningFunction
-}
+import {
+    CannotSignError,
+    SIGNING_ERROR_KEYS,
+    SigningError,
+    signArbitraryDataCase,
+    signArc60Case,
+    type AnalyzedSignableGroup,
+    type LocalKeyStrategyOptions,
+    type SignerInfo,
+    type SigningCallbacks,
+    type SigningResult,
+    type SigningStrategy,
+} from '@perawallet/wallet-core-signing'
 
 /**
  * Creates a signing strategy for accounts whose signing key lives on this
  * device: Algo25, HD wallet, and quantum (post-quantum) accounts.
  *
  * All three share one path. The signature scheme is resolved inside
- * `useLocalKeyTransactionSigner` from the key itself, so this strategy does
+ * `signTransactionsWithLocalKey` from the key itself, so this strategy does
  * not branch on account type beyond validating that the key is local.
  */
 export const createLocalKeyStrategy = (

@@ -21,8 +21,11 @@ import {
     isMultisigAccount,
     isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
-import { SignedTransaction } from 'algosdk'
-import type { AnalyzedSignableGroup, SigningResult } from '../types'
+import type {
+    AnalyzedSignableGroup,
+    SigningResult,
+} from '@perawallet/wallet-core-signing'
+import { assembleSignedTransaction } from '../local-key/signTransactionsWithLocalKey'
 
 /**
  * Ordered by position in `participantAddresses`, NOT wallet order: `signers[0]`
@@ -86,12 +89,12 @@ export const getProposeParticipants = (
 }
 
 /**
- * True when the user holds only hardware participants. `multisigSignerActor`
+ * True when the user holds only hardware participants. `signMultisigGroups`
  * then emits a synthetic deferred SigningResult instead of running the
  * strategy, which would fire parallel Ledger prompts during Send and fail —
  * one Ledger can't serve multiple connections at once.
  *
- * Resolves a single rekey hop, mirroring `canMeetThresholdLocally`.
+ * Resolves a single rekey hop.
  */
 export const shouldDeferPropose = (
     account: WalletAccount,
@@ -124,8 +127,8 @@ export const buildDeferredProposeSigningResult = (
             type: 'transactions',
             // The transport in deferred mode reads `stx.txn` only — no sig
             // or msig is needed because nothing is actually signed yet.
-            signed: group.data.transactions.map(
-                txn => new SignedTransaction({ txn }),
+            signed: group.data.transactions.map(txn =>
+                assembleSignedTransaction(txn),
             ),
         },
         signers: [],
@@ -134,13 +137,3 @@ export const buildDeferredProposeSigningResult = (
 }
 
 /** Resolves a single rekey hop. */
-export const canMeetThresholdLocally = (
-    account: WalletAccount,
-    allAccounts: WalletAccount[],
-): boolean => {
-    const target = getAuthAccount(account, allAccounts)
-    if (!target || !isMultisigAccount(target)) return false
-
-    const localParticipants = getLocalParticipants(target, allAccounts)
-    return localParticipants.length >= target.multisigDetails.threshold
-}

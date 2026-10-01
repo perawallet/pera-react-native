@@ -24,7 +24,6 @@ import type {
     PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { Address } from '@perawallet/wallet-core-blockchain'
-import { SignedTransaction } from 'algosdk'
 import { encodeToBase64, withTimeout } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
@@ -44,6 +43,7 @@ import {
     MIN_ARBITRARY_SIGN_APP_VERSION,
     isAppVersionAtLeast,
 } from '@perawallet/wallet-core-ledger'
+import { legacyPlannerAdapter } from '../../chain-adapter'
 import { validateArc60AuthRequest } from '../../utils/arc60'
 import {
     ledgerTimeoutReason,
@@ -125,7 +125,7 @@ const signTransactions = async (
         const txn = transactions[index]
 
         if (!indicesToSign.includes(index)) {
-            signed.push(new SignedTransaction({ txn }))
+            signed.push(legacyPlannerAdapter().assembleSignedTransaction(txn))
             continue
         }
 
@@ -150,17 +150,10 @@ const signTransactions = async (
             ledgerTimeoutReason('Sign Ledger transaction'),
         )
 
-        const senderAddress = txn.sender.toString()
-        const authAddress =
-            hwAccount.address !== senderAddress
-                ? Address.fromString(hwAccount.address)
-                : undefined
-
         signed.push(
-            new SignedTransaction({
-                txn,
+            legacyPlannerAdapter().assembleSignedTransaction(txn, {
                 sig: signature,
-                sgnr: authAddress,
+                signerAddress: hwAccount.address,
             }),
         )
     }
