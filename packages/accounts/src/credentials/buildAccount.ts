@@ -21,6 +21,7 @@ import {
     type Algo25Account,
     type HardwareWalletAccount,
     type HDWalletAccount,
+    type LocalCredential,
     type MultiSigAccount,
     type QuantumAccount,
     type WalletAccount,
@@ -63,29 +64,29 @@ type LegacyFields =
     | Pick<MultiSigAccount, 'type' | 'multisigDetails'>
     | Pick<WatchAccount, 'type'>
 
+const localLegacyFieldsOf = (credential: LocalCredential): LegacyFields => {
+    if (credential.provenance === 'bip39') {
+        return {
+            type: AccountTypes.hdWallet,
+            keyPairId: credential.keyPairId,
+            hdWalletDetails: { ...credential.hd },
+        }
+    }
+    return {
+        type:
+            credential.provenance === 'quantum'
+                ? AccountTypes.quantum
+                : AccountTypes.algo25,
+        keyPairId: credential.keyPairId,
+    }
+}
+
 const legacyFieldsOf = (credential: AccountCredential): LegacyFields => {
     switch (credential.kind) {
-        case 'local':
-            switch (credential.provenance) {
-                case 'bip39':
-                    return {
-                        type: AccountTypes.hdWallet,
-                        keyPairId: credential.keyPairId,
-                        hdWalletDetails: { ...credential.hd },
-                    }
-                case 'quantum':
-                    return {
-                        type: AccountTypes.quantum,
-                        keyPairId: credential.keyPairId,
-                    }
-                case 'algo25':
-                    return {
-                        type: AccountTypes.algo25,
-                        keyPairId: credential.keyPairId,
-                    }
-            }
-            break
-        case 'hardware':
+        case 'local': {
+            return localLegacyFieldsOf(credential)
+        }
+        case 'hardware': {
             return {
                 type: AccountTypes.hardware,
                 hardwareDetails: {
@@ -93,7 +94,8 @@ const legacyFieldsOf = (credential: AccountCredential): LegacyFields => {
                     accountIndex: credential.accountIndex,
                 },
             }
-        case 'multisig':
+        }
+        case 'multisig': {
             return {
                 type: AccountTypes.multisig,
                 multisigDetails: {
@@ -102,8 +104,10 @@ const legacyFieldsOf = (credential: AccountCredential): LegacyFields => {
                     version: credential.version,
                 },
             }
-        case 'watch':
+        }
+        case 'watch': {
             return { type: AccountTypes.watch }
+        }
     }
 }
 

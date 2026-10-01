@@ -27,7 +27,7 @@ export const credentialsFromLegacy = (
 ): AccountCredential[] | undefined => {
     switch (account.type) {
         case AccountTypes.algo25:
-        case AccountTypes.quantum:
+        case AccountTypes.quantum: {
             if (!account.keyPairId) return undefined
             return [
                 {
@@ -36,6 +36,7 @@ export const credentialsFromLegacy = (
                     provenance: account.type,
                 },
             ]
+        }
         case AccountTypes.hdWallet: {
             if (!account.keyPairId || !account.hdWalletDetails) return undefined
             const {
@@ -87,10 +88,12 @@ export const credentialsFromLegacy = (
                 },
             ]
         }
-        case AccountTypes.watch:
+        case AccountTypes.watch: {
             return [{ kind: 'watch' }]
-        default:
+        }
+        default: {
             return undefined
+        }
     }
 }
 
