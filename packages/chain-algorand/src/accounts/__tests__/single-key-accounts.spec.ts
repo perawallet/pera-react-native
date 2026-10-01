@@ -125,6 +125,13 @@ describe('algorandSingleKeyAccounts', () => {
                     networkId: 'mainnet',
                 }),
                 keyPairId: algo25SignKeyId('SEED1'),
+                credentials: [
+                    {
+                        kind: 'local',
+                        keyPairId: algo25SignKeyId('SEED1'),
+                        provenance: 'algo25',
+                    },
+                ],
             })
         })
 
@@ -173,6 +180,13 @@ describe('algorandSingleKeyAccounts', () => {
                 type: 'quantum',
                 address: CANONICAL_ADDRESS,
                 keyPairId: 'QSEED1-quantum-pqk1',
+                credentials: [
+                    {
+                        kind: 'local',
+                        keyPairId: 'QSEED1-quantum-pqk1',
+                        provenance: 'quantum',
+                    },
+                ],
             })
         })
 
@@ -212,6 +226,13 @@ describe('algorandSingleKeyAccounts', () => {
             expect(account).toMatchObject({
                 type: 'algo25',
                 keyPairId: algo25SignKeyId('SEED1'),
+                credentials: [
+                    {
+                        kind: 'local',
+                        keyPairId: algo25SignKeyId('SEED1'),
+                        provenance: 'algo25',
+                    },
+                ],
             })
             expect(save).toHaveBeenCalledWith(
                 expect.objectContaining({ seedKeyId: 'SEED1' }),
@@ -224,6 +245,13 @@ describe('algorandSingleKeyAccounts', () => {
             expect(accounts).toHaveLength(1)
             expect(accounts[0].address).toBe(CANONICAL_ADDRESS)
             expect(accounts[0].keyPairId).toBe('QSEED1-quantum-pqk1')
+            expect(accounts[0].credentials).toEqual([
+                {
+                    kind: 'local',
+                    keyPairId: 'QSEED1-quantum-pqk1',
+                    provenance: 'quantum',
+                },
+            ])
             expect(keystore.createQuantumKey).toHaveBeenCalledWith({
                 chain: algorandQuantumDerivation,
                 mnemonicIndices: MNEMONIC_INDICES,
