@@ -221,6 +221,7 @@ describe('LedgerErrorPreset settings shortcut', () => {
         ['bluetooth_disabled', 'bluetooth'],
         ['bluetooth_permission', 'app_settings'],
         ['location_services_disabled', 'location'],
+        ['device_picker_unavailable', 'open_in_tab'],
     ] as const)('offers the %s kind a %s shortcut', (kind, actionKind) => {
         const preset = getLedgerErrorPresetByKind(kind, t)
         expect(preset.action?.kind).toBe(actionKind)
@@ -251,6 +252,15 @@ describe('LedgerErrorPreset kinds added for the connection taxonomy', () => {
         expect(preset.body).toBe('ledger.errors.device_not_found')
         expect(preset.isRetryable).toBe(true)
         expect(preset.isTroubleshootable).toBe(true)
+    })
+
+    it('device_picker_unavailable is not retryable, since retrying in place fails the same way', () => {
+        const preset = getLedgerErrorPresetByKind(
+            'device_picker_unavailable',
+            t,
+        )
+        expect(preset.isRetryable).toBe(false)
+        expect(preset.isTroubleshootable).toBe(false)
     })
 
     it('device_busy is retryable but not troubleshootable — its copy is the remedy', () => {

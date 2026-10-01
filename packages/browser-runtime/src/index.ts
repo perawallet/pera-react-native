@@ -30,6 +30,11 @@ export {
     type ExpandedFlow,
 } from './navigation'
 export {
+    TAB_RESUME_SESSION_KEY,
+    putTabResumeIntent,
+    takeTabResumeIntent,
+} from './tab-resume'
+export {
     INSTALL_KEY_DB_NAME,
     clearInstallKey,
     clearEnrolmentMarker,

@@ -47,6 +47,20 @@ describe('useExpandedFlowNavigation', () => {
         expect(navigate).toHaveBeenCalledTimes(1)
     })
 
+    it('hands the resume flow to onResume instead of navigating', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('resume')
+        const navigate = vi.fn()
+        const onResume = vi.fn()
+        const { result } = renderHook(() =>
+            useExpandedFlowNavigation(navigate, onResume),
+        )
+
+        result.current()
+
+        expect(onResume).toHaveBeenCalledOnce()
+        expect(navigate).not.toHaveBeenCalled()
+    })
+
     it('navigates to ScanQR when the flow is scan', () => {
         consumeInitialExpandedFlowMock.mockReturnValue('scan')
         const navigate = vi.fn()

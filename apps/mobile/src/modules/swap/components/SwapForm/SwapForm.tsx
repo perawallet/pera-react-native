@@ -17,11 +17,15 @@ import { SwapPairHistoryWidget } from '../SwapPairHistoryWidget'
 import { SwapProviderRow } from '../SwapProviderRow'
 import { SwapTopPairs } from '../SwapTopPairs'
 import { SwapFormControls } from './SwapFormControls'
-import { useSwapForm } from './useSwapForm'
+import { useSwapForm, type SwapFormInitialPayAmount } from './useSwapForm'
 import { useSwapLocalCurrency } from '../../hooks'
 import { useStyles } from './styles'
 
-export const SwapForm = () => {
+export type SwapFormProps = {
+    initialPayAmount?: SwapFormInitialPayAmount
+}
+
+export const SwapForm = ({ initialPayAmount }: SwapFormProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
@@ -46,7 +50,7 @@ export const SwapForm = () => {
         handleOpenConfig,
         handleOpenProvider,
         handleOpenConfirm,
-    } = useSwapForm()
+    } = useSwapForm(initialPayAmount)
 
     const { localCurrencySymbol, fiatToAsset, assetToFiat } =
         useSwapLocalCurrency(payAssetId)

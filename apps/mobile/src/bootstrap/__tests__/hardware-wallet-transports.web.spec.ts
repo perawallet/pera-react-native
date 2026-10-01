@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
-import { createHardwareWalletRegistry } from '@perawallet/wallet-extension-hardware-wallet'
+import { describe, test, expect, vi, afterEach } from 'vitest'
+import {
+    createHardwareWalletRegistry,
+    ledgerAppDriverRegistry,
+} from '@perawallet/wallet-extension-hardware-wallet'
+import { LedgerDevicePickerUnavailableError } from '@perawallet/wallet-core-ledger'
 
 // The real Web Bluetooth / WebHID extensions run here; only the browser
 // transport libraries beneath them are stubbed.
@@ -34,7 +38,15 @@ vi.mock('@ledgerhq/hw-transport-webhid', () => ({
 
 import { registerHardwareWalletTransports } from '../hardware-wallet-transports.web'
 
+const setSurface = (surface: string | undefined) => {
+    ;(globalThis as { __PERA_SURFACE__?: string }).__PERA_SURFACE__ = surface
+}
+
 describe('registerHardwareWalletTransports (web)', () => {
+    afterEach(() => {
+        setSurface(undefined)
+    })
+
     test('registers a BLE and a USB Ledger transport into the given registry', () => {
         const registry = createHardwareWalletRegistry()
 
@@ -46,5 +58,17 @@ describe('registerHardwareWalletTransports (web)', () => {
         expect(typeof registry.getProvider('ledger', 'usb')?.scan).toBe(
             'function',
         )
+    })
+
+    test('refuses a Bluetooth connect that needs a picker from the toolbar popup', async () => {
+        setSurface('popup')
+        ledgerAppDriverRegistry.reset()
+        ledgerAppDriverRegistry.register({ chainId: 'test', open: vi.fn() })
+        const registry = createHardwareWalletRegistry()
+        registerHardwareWalletTransports(registry)
+
+        await expect(
+            registry.getProvider('ledger', 'ble')?.connect('paired-elsewhere'),
+        ).rejects.toBeInstanceOf(LedgerDevicePickerUnavailableError)
     })
 })

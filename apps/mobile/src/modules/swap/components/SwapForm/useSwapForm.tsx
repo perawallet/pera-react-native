@@ -30,6 +30,7 @@ import {
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
 import {
+    ALGO_ASSET_ID,
     isDecimalEqual,
     uint64IdToNumber,
     type Nullable,
@@ -37,6 +38,10 @@ import {
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import {
+    clearTabResumeIntent,
+    registerTabResumeIntent,
+} from '@utils/tabResumeIntent'
 import { useSwapQuotes } from '../../hooks/useSwapQuotes'
 import { SwapAssetSelectionContent } from '../SwapAssetSelectionContent'
 import { SwapConfigurationContent } from '../SwapConfigurationContent'
@@ -74,7 +79,19 @@ type UseSwapFormResult = {
     handleOpenConfirm: () => void
 }
 
-export const useSwapForm = (): UseSwapFormResult => {
+/**
+ * A swap a browser tab resumes from the extension popup, where it was already
+ * on its confirmation: the amount (display units) to restore once the pay
+ * asset settles, after which the form reopens the confirmation.
+ */
+export type SwapFormInitialPayAmount = {
+    assetId: string
+    amount: string
+}
+
+export const useSwapForm = (
+    initialPayAmount?: SwapFormInitialPayAmount,
+): UseSwapFormResult => {
     const {
         fromAsset,
         toAsset,
@@ -211,6 +228,19 @@ export const useSwapForm = (): UseSwapFormResult => {
         resetAmounts()
     }, [fromAsset, resetAmounts])
 
+    // Must follow the reset above: the route's pay asset lands in the store
+    // after mount, and that change clears the amounts, so a resumed amount is
+    // applied only once the store holds its asset.
+    const pendingPayAmountRef = useRef(initialPayAmount)
+    const shouldReopenConfirmRef = useRef(false)
+    useEffect(() => {
+        const pending = pendingPayAmountRef.current
+        if (!pending || fromAsset !== pending.assetId) return
+        pendingPayAmountRef.current = undefined
+        shouldReopenConfirmRef.current = true
+        setPayAmount(new Decimal(pending.amount))
+    }, [fromAsset])
+
     // Leaving the tab must clear the form: the screen stays mounted, so without
     // this the next visit opens on the previous session's amounts.
     useFocusEffect(
@@ -254,6 +284,8 @@ export const useSwapForm = (): UseSwapFormResult => {
 
     const handlePayAmountChange = useCallback(
         (amount: Nullable<Decimal>) => {
+            // Editing takes over from a resume: no confirmation over a change.
+            shouldReopenConfirmRef.current = false
             setPayAmount(amount)
             if (!isDecimalEqual(amount, quotedAmount)) {
                 resetQuotes()
@@ -427,15 +459,31 @@ export const useSwapForm = (): UseSwapFormResult => {
         if (!selectedQuote) return
 
         trackEvent(SwapEvent.ConfirmSwapButton)
-        const result = await requestBottomSheet<SwapConfirmationResult>({
-            contents: <SwapConfirmationContent quote={selectedQuote} />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: false,
-                enableCloseOnBackdropPress: false,
-                autoCreateContainer: false,
-            },
-        })
+        // Signing runs while this sheet is open; a Bluetooth Ledger in the
+        // extension popup can't sign, and this lets its tab reopen the swap.
+        if (selectedAccount && payAmount) {
+            registerTabResumeIntent({
+                flow: 'swap',
+                accountAddress: selectedAccount.address,
+                assetInId: fromAsset ?? ALGO_ASSET_ID,
+                assetOutId: toAsset,
+                payAmount: payAmount.toString(),
+            })
+        }
+        let result: SwapConfirmationResult | undefined
+        try {
+            result = await requestBottomSheet<SwapConfirmationResult>({
+                contents: <SwapConfirmationContent quote={selectedQuote} />,
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: false,
+                    enableCloseOnBackdropPress: false,
+                    autoCreateContainer: false,
+                },
+            })
+        } finally {
+            clearTabResumeIntent()
+        }
         if (!result || result.kind === 'cancelled') return
         if (result.kind === 'stale-quote') {
             // The quote outlived its TTL (e.g. the app sat offline between
@@ -491,7 +539,21 @@ export const useSwapForm = (): UseSwapFormResult => {
         refreshQuotes,
         t,
         resetAmounts,
+        selectedAccount,
+        payAmount,
+        fromAsset,
+        toAsset,
     ])
+
+    // The resumed swap's confirmation, on the tab's own fresh quote: the
+    // popup's quote may have expired. Waits for the balance too, since
+    // `canSwap` reads an unsettled balance as sufficient.
+    useEffect(() => {
+        if (!shouldReopenConfirmRef.current) return
+        if (!canSwap || !isPayBalanceFetched) return
+        shouldReopenConfirmRef.current = false
+        void handleOpenConfirm()
+    }, [canSwap, isPayBalanceFetched, handleOpenConfirm])
 
     const handleOpenConfig = useCallback(async () => {
         const result = await requestBottomSheet<SwapConfigurationResult>({

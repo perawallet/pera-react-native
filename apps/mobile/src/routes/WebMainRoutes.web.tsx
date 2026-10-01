@@ -61,6 +61,7 @@ import { navigationRef } from './navigationRef'
 import { createAppStackNavigator } from './createAppStackNavigator'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation.web'
+import { useTabResume } from './useTabResume.web'
 import { routeCapabilities } from '@routes/capabilities'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import type { RootStackParamList } from './types'
@@ -93,9 +94,12 @@ export const WebMainRoutes = ({
     useNotificationReceivedListener()
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
 
-    const handleReady = useExpandedFlowNavigation((screen, params) => {
+    const handleResume = useTabResume((screen, params) => {
         navigationRef.navigate(screen, params)
     })
+    const handleReady = useExpandedFlowNavigation((screen, params) => {
+        navigationRef.navigate(screen, params)
+    }, handleResume)
     const handleLedgerTabExit = useLedgerHandoffTabExit()
 
     return (

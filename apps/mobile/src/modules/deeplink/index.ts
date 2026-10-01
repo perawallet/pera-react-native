@@ -27,4 +27,5 @@ export {
     pushScreen,
 } from './core'
 export { useDeepLink } from './hooks/useDeepLink'
+export { useSendFundsDeeplink } from './handlers/useSendFundsDeeplink'
 export { useDeeplinkListener } from './hooks/useDeeplinkListener'

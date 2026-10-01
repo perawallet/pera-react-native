@@ -72,6 +72,12 @@ const ROWS: Record<string, Row> = {
         message: 'No Ledger device could be reached',
         metadata: meta(MEDIUM, true, expected),
     },
+    LedgerDevicePickerUnavailableError: {
+        ErrorClass: ledgerErrors.LedgerDevicePickerUnavailableError,
+        args: [],
+        message: 'This window cannot show the browser device picker',
+        metadata: meta(MEDIUM, false, expected),
+    },
     LedgerDeviceBusyError: {
         ErrorClass: ledgerErrors.LedgerDeviceBusyError,
         args: [],

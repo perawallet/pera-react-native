@@ -44,8 +44,16 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-const { mockRequestBottomSheet } = vi.hoisted(() => ({
-    mockRequestBottomSheet: vi.fn(),
+const { mockRequestBottomSheet, mockRegisterTabResume, mockClearTabResume } =
+    vi.hoisted(() => ({
+        mockRequestBottomSheet: vi.fn(),
+        mockRegisterTabResume: vi.fn(),
+        mockClearTabResume: vi.fn(),
+    }))
+
+vi.mock('@utils/tabResumeIntent', () => ({
+    registerTabResumeIntent: mockRegisterTabResume,
+    clearTabResumeIntent: mockClearTabResume,
 }))
 
 let mockFromAsset = '0'
@@ -190,6 +198,7 @@ vi.mock('../../SwapProviderContent', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    ALGO_ASSET_ID: '0',
     ALGO_ASSET_NAME: 'ALGO',
     isAlgoAssetName: (value: string) => value === 'ALGO',
     isDecimalEqual: (a: Nullable<Decimal>, b: Nullable<Decimal>) => {
@@ -328,6 +337,79 @@ describe('useSwapForm', () => {
 
         expect(result.current.payAmount).toBeNull()
         expect(result.current.receiveAmount).toBeNull()
+    })
+
+    it('restores a resumed amount only once the store holds its pay asset', () => {
+        // In a fresh tab the route's pay asset lands after mount, and that
+        // change resets the amounts, so applying earlier would be wiped.
+        const { result, rerender } = renderHook(() =>
+            useSwapForm({ assetId: '123', amount: '2.5' }),
+        )
+        expect(result.current.payAmount).toBeNull()
+
+        mockFromAsset = '123'
+        rerender()
+
+        expect(result.current.payAmount).toEqual(new Decimal('2.5'))
+    })
+
+    it('applies a resumed amount once, not again on a later return to its asset', () => {
+        mockFromAsset = '123'
+        const { result, rerender } = renderHook(() =>
+            useSwapForm({ assetId: '123', amount: '2.5' }),
+        )
+        expect(result.current.payAmount).toEqual(new Decimal('2.5'))
+
+        mockFromAsset = '0'
+        rerender()
+        mockFromAsset = '123'
+        rerender()
+
+        expect(result.current.payAmount).toBeNull()
+    })
+
+    describe('resumed from the extension popup', () => {
+        const QUOTE = {
+            provider: 'tinyman',
+            amountOut: new Decimal('7000000'),
+            assetIn: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+            assetOut: { assetId: '31566704', unitName: 'USDC', decimals: 6 },
+        }
+
+        beforeEach(() => {
+            mockCreateQuotes.mockResolvedValue([QUOTE])
+            mockRequestBottomSheet.mockResolvedValue({ kind: 'cancelled' })
+        })
+
+        it('reopens the confirmation once, on a fresh quote', async () => {
+            const { result } = renderHook(() =>
+                useSwapForm({ assetId: '0', amount: '5' }),
+            )
+            await act(async () => {})
+
+            expect(result.current.selectedQuote).not.toBeNull()
+            expect(mockRequestBottomSheet).toHaveBeenCalledOnce()
+        })
+
+        it('waits for the pay balance before reopening the confirmation', async () => {
+            mockIsPayBalanceFetched = false
+            renderHook(() => useSwapForm({ assetId: '0', amount: '5' }))
+            await act(async () => {})
+
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        })
+
+        it('leaves the confirmation closed once the user edits the amount', async () => {
+            const { result } = renderHook(() =>
+                useSwapForm({ assetId: '0', amount: '5' }),
+            )
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(3))
+            })
+            await act(async () => {})
+
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        })
     })
 
     it('handleSwapDirection carries the amounts across the pair change', async () => {
@@ -668,6 +750,27 @@ describe('useSwapForm', () => {
                 'resolved.title',
                 'body text',
             )
+        })
+
+        it('registers the swap to resume in a tab only while the confirm sheet is open', async () => {
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockImplementationOnce(async () => {
+                expect(mockRegisterTabResume).toHaveBeenCalledWith({
+                    flow: 'swap',
+                    accountAddress: 'TESTADDRESS123',
+                    assetInId: '0',
+                    assetOutId: '31566704',
+                    payAmount: '5',
+                })
+                expect(mockClearTabResume).not.toHaveBeenCalled()
+                return { kind: 'cancelled' }
+            })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockClearTabResume).toHaveBeenCalledOnce()
         })
 
         it('falls back to the default title when the confirmation result carries none', async () => {

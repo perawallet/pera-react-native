@@ -23,6 +23,7 @@ import {
     getLedgerErrorPresetByKind,
     type LedgerErrorPreset,
 } from '@modules/ledger'
+import { canConnectOpenBrowserPicker } from '../../utils/browserDevicePicker'
 
 type HardwareSigningStatus =
     | 'idle'
@@ -57,6 +58,8 @@ export type UseLedgerSigningContentResult = {
     totalTxs: number | null
     operation: HardwareSigningOperation
     error: LedgerErrorPreset | null
+    /** True when connecting may raise the browser's device picker (web). */
+    isBrowserPickerExpected: boolean
     onCancel: () => void
     onRetry: () => void
     isTroubleshootingVisible: boolean
@@ -79,6 +82,10 @@ export type UseLedgerSigningContentResult = {
  * back and strands the user on the calling screen forever. And a retry the user
  * asked for must remain cancellable while it reconnects, which a hidden sheet
  * cannot be.
+ *
+ * On web the first attempt shows the sheet too: connecting can open the
+ * browser's device picker, and one that appears with nothing on screen to
+ * explain it reads as an error and gets dismissed.
  *
  * Every terminal error renders in this sheet, including connection-class
  * ones. Auto-opening the troubleshooting sheet instead (the previous
@@ -163,13 +170,18 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
     const hasRetried = (hardware?.context.retryCount ?? 0) > 0
 
     return {
-        isVisible: isActive && (status !== 'searching' || hasRetried),
+        isVisible:
+            isActive &&
+            (status !== 'searching' ||
+                hasRetried ||
+                canConnectOpenBrowserPicker),
         status,
         deviceName,
         currentTx,
         totalTxs,
         operation,
         error,
+        isBrowserPickerExpected: canConnectOpenBrowserPicker,
         onCancel,
         onRetry,
         isTroubleshootingVisible: manualTroubleshootingOpen,

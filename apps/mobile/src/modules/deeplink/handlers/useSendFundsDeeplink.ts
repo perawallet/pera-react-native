@@ -32,6 +32,8 @@ export type SendFundsDeeplinkPrefill = {
      */
     amountBaseUnits?: string
     note?: string
+    /** Advance past the amount step to confirmation, for an already-confirmed send. */
+    shouldContinueToConfirm?: boolean
 }
 
 export type SendFundsDeeplinkHandler = (
@@ -47,7 +49,14 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
     const { requestByType } = useBottomSheetStore()
 
     return useCallback(
-        ({ assetId, destination, amount, amountBaseUnits, note }) => {
+        ({
+            assetId,
+            destination,
+            amount,
+            amountBaseUnits,
+            note,
+            shouldContinueToConfirm,
+        }) => {
             const sendFundsStore = useSendFundsStore.getState()
             // Reset stale prefill from a previous deeplink so a partial
             // prefill (e.g. address-only) doesn't inherit an old amount.
@@ -61,6 +70,9 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
             if (amount) sendFundsStore.setAmount(amount)
             if (amountBaseUnits) {
                 sendFundsStore.setPendingAmountBaseUnits(amountBaseUnits)
+            }
+            if (shouldContinueToConfirm) {
+                sendFundsStore.setShouldContinueToConfirm(true)
             }
 
             // Same modal the in-app Send button opens (see useAccountOverview).

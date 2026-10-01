@@ -35,15 +35,21 @@ export const LedgerSigningContent = () => {
         totalTxs,
         operation,
         error,
+        isBrowserPickerExpected,
         onCancel,
         onRetry,
         onOpenTroubleshooting,
     } = useLedgerSigningContent()
 
-    // Only reachable after a retry — the driver keeps the sheet closed during
-    // the first attempt's silent scan, so this never renders on a cold start.
+    // Native only reaches this after a retry: the driver keeps the sheet closed
+    // during the first attempt's silent scan. Web shows it from the start.
     if (status === 'searching') {
-        return <LedgerReconnectingContent onCancel={onCancel} />
+        return (
+            <LedgerReconnectingContent
+                isBrowserPickerExpected={isBrowserPickerExpected}
+                onCancel={onCancel}
+            />
+        )
     }
 
     if (status === 'awaitingApproval' || status === 'signing') {

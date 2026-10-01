@@ -3575,6 +3575,7 @@
         "connecting": {
             "title": "Ledger bağlantısı",
             "subtitle": "Ledger’ın bağlanması bekleniyor.",
+            "browser_picker_subtitle": "Ledger’ın bağlanması bekleniyor. Tarayıcın sorarsa Ledger cihazını seç.",
             "cancel": "İptal"
         },
         "instructions": {
@@ -3736,10 +3737,13 @@
             "provider_unavailable": "Hardware wallet bağlantı servisi kullanılamıyor. Pera’yı yeniden başlat ve tekrar dene.",
             "device_not_found_title": "Ledger bulunamadı",
             "device_not_found": "Ledger bulunamadı. Ledger cihazının açık ve yakında olduğundan emin ol, sonra tekrar dene.",
+            "device_picker_unavailable_title": "Bir tarayıcı sekmesinde devam et",
+            "device_picker_unavailable": "Tarayıcın bu pencerede Ledger cihazını seçmeni isteyemiyor. Pera’yı bir tarayıcı sekmesinde aç ve orada tekrar dene.",
             "device_busy_title": "Ledger meşgul",
             "device_busy": "Ledger meşgul. Ledger cihazındaki mevcut işlemi tamamla ve tekrar dene.",
             "action_enable_bluetooth": "Bluetooth’u aç",
             "action_open_settings": "Ayarları aç",
+            "action_open_in_tab": "Sekmede aç",
             "action_open_location_settings": "Konum ayarlarını aç"
         },
         "troubleshooting": {

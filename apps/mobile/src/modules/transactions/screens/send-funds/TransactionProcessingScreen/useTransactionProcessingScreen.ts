@@ -36,6 +36,10 @@ import { bottomSheetNotifier } from '@components/core'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { trackEvent, TransactionsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
+import {
+    clearTabResumeIntent,
+    registerTabResumeIntent,
+} from '@utils/tabResumeIntent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 
 export type UseTransactionProcessingScreenResult = {
@@ -126,6 +130,26 @@ export const useTransactionProcessingScreen =
                 arc59Summary,
             } as SendTransactionParams
 
+            // A Bluetooth Ledger in the extension popup can't sign; this lets
+            // the tab it opens reopen the send. Closing an account is left out:
+            // it should be a deliberate fresh start.
+            if (
+                selectedAccount &&
+                selectedAssetId &&
+                destination &&
+                amount &&
+                !isCloseAccount
+            ) {
+                registerTabResumeIntent({
+                    flow: 'send',
+                    accountAddress: selectedAccount.address,
+                    assetId: selectedAssetId,
+                    destination,
+                    amount: amount.toString(),
+                    note: note || undefined,
+                })
+            }
+
             execute({
                 params: sendParams,
             })
@@ -153,6 +177,7 @@ export const useTransactionProcessingScreen =
                     })
                     navigation.goBack()
                 })
+                .finally(clearTabResumeIntent)
 
             return () => subscription.remove()
             // Mount-only: this effect must submit exactly once. Do not add

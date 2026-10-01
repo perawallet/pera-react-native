@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-export type SwapScreenParams = {
-    assetInId?: string
-    assetOutId?: string
-    /** Pay-asset display units, for a swap a browser tab resumes from the popup. */
-    payAmount?: string
-}
+// A signing window that never scanned can't reopen the paired device by id
+// (Web Bluetooth's getDevices() is still behind a Chrome flag), so connecting
+// asks the browser to show its device picker again.
+export const canConnectOpenBrowserPicker = true

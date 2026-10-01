@@ -10,9 +10,13 @@
  limitations under the License
  */
 
-export type SwapScreenParams = {
-    assetInId?: string
-    assetOutId?: string
-    /** Pay-asset display units, for a swap a browser tab resumes from the popup. */
-    payAmount?: string
-}
+import type { TabResumeIntent } from './tabResumeIntentTypes'
+
+export type { TabResumeIntent }
+
+// Native no-op: there's no popup to escape. See the `.web.ts` twin.
+export const registerTabResumeIntent = (_intent: TabResumeIntent): void => {}
+
+export const clearTabResumeIntent = (): void => {}
+
+export const peekTabResumeIntent = (): TabResumeIntent | null => null

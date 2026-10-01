@@ -33,7 +33,7 @@ export const SwapScreen = () => {
     const { pushWebView } = useWebView()
     const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
     const { request: requestBottomSheet } = useBottomSheet()
-    useSwapScreen()
+    const { initialPayAmount } = useSwapScreen()
 
     const hasShownIntroRef = useRef(false)
     useEffect(() => {
@@ -94,7 +94,7 @@ export const SwapScreen = () => {
                 </PWView>
 
                 <PWView style={styles.formWrapper}>
-                    <SwapForm />
+                    <SwapForm initialPayAmount={initialPayAmount} />
                 </PWView>
             </PWView>
         </AccountDrawerPager>

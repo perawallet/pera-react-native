@@ -33,6 +33,7 @@ export {
     LedgerDeviceBusyError,
     LedgerDeviceLockedError,
     LedgerDeviceNotFoundError,
+    LedgerDevicePickerUnavailableError,
     LedgerDisconnectedError,
     LedgerLocationServicesDisabledError,
     LedgerNetworkError,

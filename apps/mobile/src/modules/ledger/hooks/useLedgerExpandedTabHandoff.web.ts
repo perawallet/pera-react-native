@@ -14,7 +14,9 @@ import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import {
     closeCurrentTab,
     openExpandedTab,
+    putTabResumeIntent,
 } from '@perawallet/wallet-core-browser-runtime'
+import { peekTabResumeIntent } from '@utils/tabResumeIntent'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { UseLedgerExpandedTabHandoffResult } from './useLedgerExpandedTabHandoff'
 import { isLedgerHandoffTab } from './useLedgerHandoffTabExit.web'
@@ -34,6 +36,19 @@ export const useLedgerExpandedTabHandoff =
             openExpandedTab(
                 transportType === 'usb' ? 'ledger-usb' : 'ledger-ble',
             ),
+        openWalletInTab: async () => {
+            // Read before the first await: the caller closes the error sheet
+            // right after, and the flow clears its intent as signing settles.
+            const intent = peekTabResumeIntent()
+            if (!intent) {
+                await openExpandedTab()
+                return
+            }
+            // Written before the tab opens: Chrome closes the popup as soon as
+            // the tab takes focus.
+            await putTabResumeIntent({ ...intent, createdAt: Date.now() })
+            await openExpandedTab('resume')
+        },
         isHandoffTab: isLedgerHandoffTab(),
         closeHandoffTab: closeCurrentTab,
     })

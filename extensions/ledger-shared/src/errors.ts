@@ -128,6 +128,24 @@ export class LedgerDeviceNotFoundError extends LedgerError {
 }
 
 /**
+ * Reaching the device needs the browser's device picker, and this window can't
+ * host one: Chrome cancels a chooser opened from the extension's toolbar popup.
+ * Retrying in place fails the same way, so the remedy is a tab.
+ */
+export class LedgerDevicePickerUnavailableError extends LedgerError {
+    constructor(originalError?: Error) {
+        super({
+            name: 'LedgerDevicePickerUnavailableError',
+            message: 'This window cannot show the browser device picker',
+            severity: MEDIUM,
+            retryable: false,
+            expected: true,
+            originalError,
+        })
+    }
+}
+
+/**
  * An APDU exchange is still in flight on the transport (`TransportRaceCondition`)
  * or the device is mid-prompt from another host. Retrying after the current
  * on-device action completes is the only remediation.
@@ -450,6 +468,12 @@ const LIB_ERROR_FACTORY_BY_NAME: Record<string, (error: Error) => AppError> = {
     TransportRaceCondition: error => new LedgerDeviceBusyError(error),
     UnresponsiveDeviceError: error =>
         new LedgerTimeoutError('device communication', error),
+    // Browser device pickers: a cancelled or empty Web Bluetooth chooser
+    // rejects with DOMException `NotFoundError`, a cancelled WebHID one with
+    // `TransportOpenUserCancelled`. No device was chosen, so "not found" is the
+    // honest reading; the generic connection copy blames Bluetooth being off.
+    NotFoundError: error => new LedgerDeviceNotFoundError(error),
+    TransportOpenUserCancelled: error => new LedgerDeviceNotFoundError(error),
 }
 
 /** Maps a raw transport/SDK error to a typed Ledger error. */

@@ -3598,6 +3598,7 @@
         "connecting": {
             "title": "Conexão com o Ledger",
             "subtitle": "Aguardando a conexão do Ledger.",
+            "browser_picker_subtitle": "Aguardando a conexão do Ledger. Se o navegador pedir, selecione seu dispositivo Ledger.",
             "cancel": "Cancelar"
         },
         "instructions": {
@@ -3764,10 +3765,13 @@
             "provider_unavailable": "O serviço de conexão com hardware wallet está indisponível. Reinicie a Pera e tente novamente.",
             "device_not_found_title": "Ledger não encontrado",
             "device_not_found": "Ledger não encontrado. Verifique se o seu dispositivo Ledger está ligado e por perto e tente novamente.",
+            "device_picker_unavailable_title": "Continue em uma aba do navegador",
+            "device_picker_unavailable": "O seu navegador não consegue pedir que você selecione o seu dispositivo Ledger nesta janela. Abra a Pera em uma aba do navegador e tente novamente por lá.",
             "device_busy_title": "O Ledger está ocupado",
             "device_busy": "O Ledger está ocupado. Conclua a ação atual no seu Ledger e tente novamente.",
             "action_enable_bluetooth": "Ativar o Bluetooth",
             "action_open_settings": "Abrir configurações",
+            "action_open_in_tab": "Abrir em uma aba",
             "action_open_location_settings": "Abrir configurações de localização"
         },
         "troubleshooting": {
