@@ -219,4 +219,39 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
         expect(error).not.toHaveBeenCalled()
         expect(approve).not.toHaveBeenCalled()
     })
+
+    it('Given a WC request whose sender is rekeyed to an auth account the wallet does not hold, then the review shows the auth-missing explanation instead of the confirm control', async () => {
+        const rekeyedSender: WalletAccount = {
+            id: 'rekeyed-sender',
+            type: AccountTypes.watch,
+            address: REKEYED_SENDER_ADDRESS,
+            rekeyAddress: AUTH_ADDRESS,
+            name: 'Rekeyed sender',
+        }
+        useAccountsStore.getState().setAccounts([rekeyedSender])
+
+        const { request } = buildTransactionSignRequest({
+            sourceType: 'walletconnect',
+            txs: [
+                buildPaymentTransaction({
+                    sender: REKEYED_SENDER_ADDRESS,
+                    receiver: AUTH_ADDRESS,
+                }),
+            ],
+        })
+
+        renderSignReview(request)
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByText(
+                        'signing.cannot_sign.rekeyed_auth_missing_body',
+                    ),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        expect(screen.queryByTestId('signing-confirm-slide')).toBeNull()
+    })
 })

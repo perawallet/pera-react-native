@@ -28,10 +28,7 @@ import type {
     SignRequest,
     TransactionWarning,
 } from '../models'
-import type {
-    RequestStructure,
-    TransactionListItem,
-} from '../utils/classification'
+import type { RequestStructure, TransactionListItem } from '../chain-adapter'
 import type { FeeAdjustment } from '../pipeline/sources'
 import type { parseArc60ForDisplay } from '../utils/parseArc60ForDisplay'
 

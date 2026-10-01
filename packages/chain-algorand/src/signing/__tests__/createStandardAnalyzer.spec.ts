@@ -13,15 +13,15 @@
 import { describe, test, expect, vi } from 'vitest'
 import { Address, Transaction } from 'algosdk'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
-import { GenesisHashMismatchError } from '../../errors'
+import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'
 import {
     makeTestAddress,
     makeTestPaymentTx,
     makeTestAssetTransferTx,
-} from '../../../test-utils/transactions'
+} from './transactions'
 
 const assertTransactionsMatchNetworkMock = vi.fn()
-vi.mock('../../../utils/assertTransactionsMatchNetwork', () => ({
+vi.mock('../assertTransactionsMatchNetwork', () => ({
     assertTransactionsMatchNetwork: (...args: unknown[]) =>
         assertTransactionsMatchNetworkMock(...args),
 }))
@@ -42,8 +42,12 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
 })
 
 import { createStandardAnalyzer } from '../createStandardAnalyzer'
-import { AnalysisError, TransactionRoundTripError } from '../../errors'
-import type { AnalysisContext, SignableGroup } from '../../types'
+import {
+    AnalysisError,
+    TransactionRoundTripError,
+    type AnalysisContext,
+    type SignableGroup,
+} from '@perawallet/wallet-core-signing'
 
 const ACCOUNT_A = 'ACCOUNT_A'
 const ACCOUNT_B = 'ACCOUNT_B'

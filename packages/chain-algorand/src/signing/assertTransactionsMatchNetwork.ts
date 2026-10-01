@@ -13,7 +13,7 @@
 import { encodeToBase64, type Network } from '@perawallet/wallet-core-shared'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 
-import { GenesisHashMismatchError } from '../pipeline/errors'
+import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'
 
 /**
  * Asserts that every transaction's `genesisHash` matches the active network's

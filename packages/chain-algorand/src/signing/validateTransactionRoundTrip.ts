@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { bytesEqual, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 
-import { TransactionRoundTripError } from '../pipeline/errors'
+import { TransactionRoundTripError } from '@perawallet/wallet-core-signing'
 
 /**
  * Re-encodes each decoded transaction and compares the result to the

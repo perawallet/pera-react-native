@@ -12,6 +12,7 @@
 
 import React, { useMemo } from 'react'
 import { PWText, PWView } from '@components/core'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeArbitraryDataForDisplay,
     type ArbitraryDataSignRequest,
@@ -48,7 +49,7 @@ export const ArbitraryDataSigningDetailsView = ({
     // user reviews the actual signed bytes. Memoized: `data` is unbounded
     // dApp input.
     const signedContent = useMemo(
-        () => decodeArbitraryDataForDisplay(dataMessage.data),
+        () => decodeArbitraryDataForDisplay(LEGACY_CHAIN_ID, dataMessage.data),
         [dataMessage.data],
     )
 

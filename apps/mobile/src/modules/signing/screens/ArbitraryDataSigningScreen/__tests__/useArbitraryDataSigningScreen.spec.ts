@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
 import { useArbitraryDataSigningScreen } from '../useArbitraryDataSigningScreen'
 
 const mockNavigate = vi.fn()
@@ -65,6 +66,7 @@ const buildRequest = (sourceType: string) => ({
 
 describe('useArbitraryDataSigningScreen', () => {
     beforeEach(() => {
+        registerAlgorandReviewerAdapter()
         vi.clearAllMocks()
         mockPipeline.currentRequest = buildRequest('walletconnect')
         mockPipeline.isLoading = false

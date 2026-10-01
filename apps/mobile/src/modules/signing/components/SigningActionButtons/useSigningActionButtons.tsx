@@ -16,6 +16,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { toAlgodError } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getRekeyedUnsignableReason,
     isExternalCallbackSource,
@@ -150,6 +151,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             }
         }
         const rekeyedReason = getRekeyedUnsignableReason(
+            LEGACY_CHAIN_ID,
             currentRequest,
             allAccounts,
         )
@@ -194,7 +196,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                 isExternalCallbackSource(currentRequest.sourceType)
             ) {
                 const decision = await confirmQuantumDappUsage(
-                    resolveAllSignerAddresses(currentRequest),
+                    resolveAllSignerAddresses(LEGACY_CHAIN_ID, currentRequest),
                 )
                 if (decision === 'cancel') {
                     if (walletConnectTxPayload) {

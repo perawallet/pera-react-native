@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataMessage,
@@ -83,7 +84,7 @@ export const useArbitraryDataSigningScreen =
                 // backstop in SigningActionButtons never runs for this request.
                 if (request && isExternalCallbackSource(request.sourceType)) {
                     const decision = await confirmQuantumDappUsage(
-                        resolveAllSignerAddresses(request),
+                        resolveAllSignerAddresses(LEGACY_CHAIN_ID, request),
                     )
                     if (decision === 'cancel') {
                         pipeline.fail()

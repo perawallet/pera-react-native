@@ -18,6 +18,8 @@ export {
 } from './constants'
 
 export {
+    isArbitraryDataRequest,
+    isArc60Request,
     isTransactionRequest,
     type ArbitraryDataSignRequest,
     type Arc60SignRequest,
@@ -67,7 +69,6 @@ export { useSigningPipeline } from './hooks/useSigningPipeline'
 export { useSigningRequest } from './hooks/useSigningRequest'
 export { useWalletConnectHandoffResolver } from './hooks/useWalletConnectHandoffResolver'
 
-export { decodeArbitraryDataForDisplay } from './utils/arbitraryDataDisplay'
 export {
     LEGACY_DATA_MAX_ITEM_CHARS,
     LEGACY_DATA_MAX_REQUEST_CHARS,
@@ -82,40 +83,50 @@ export {
     parseArc60WireRequest,
 } from './utils/arc60-wire'
 export { ARC60_SCOPE_AUTH } from './utils/arc60'
-export { assertTransactionsMatchNetwork } from './utils/assertTransactionsMatchNetwork'
 export { computeBalanceImpact } from './utils/balanceImpact'
-export type {
-    GroupTransactionItem,
-    SingleTransactionItem,
-    TransactionListItem,
-} from './utils/classification'
 export { classifyLedgerErrorKind } from './utils/classifyLedgerErrorKind'
-export {
-    getRekeyedUnsignableReason,
-    resolveAllSignerAddresses,
-} from './utils/getRekeyedUnsignableReason'
 export { isSignRequestMultisigUnsignable } from './utils/isSignRequestMultisigUnsignable'
 export { encodeDelegatedLsigAccount } from './utils/lsig'
 export type { Arc60ParsedPayload } from './utils/parseArc60ForDisplay'
 export { buildSiwaAuthRequest, type Siwa } from './utils/siwa'
-export { aggregateTransactionWarnings } from './utils/warnings'
+export {
+    aggregateTransactionWarnings,
+    decodeArbitraryDataForDisplay,
+    getRekeyedUnsignableReason,
+    resolveAllSignerAddresses,
+    reviewerChainAdapters,
+    type ArbitraryDataDisplay,
+    type GroupTransactionItem,
+    type DelegatedUnsignableReason,
+    type RequestStructure,
+    type ReviewerChainAdapter,
+    type SingleTransactionItem,
+    type TransactionListItem,
+} from './chain-adapter'
 
 export {
     isExternalCallbackSource,
     isInteractiveSource,
+    type AlgorandTransactionSummary,
+    type AnalysisContext,
+    type AnalysisWarning,
     type Arc60Metadata,
     type Arc60SignableData,
     type Arc60StdSigData,
+    type DataAnalyzer,
     type RejectReason,
     type DataTransport,
     type SigningResult,
     type SourceMetadata,
+    type SignableAnalysis,
+    type SignableGroup,
     type SourceType,
     type TransportResult,
 } from './pipeline/types'
 export { signingEventBus } from './pipeline/signingEventBus'
 export type { SigningLifecycleEvent } from './pipeline/signingEvents'
 export {
+    AnalysisError,
     CannotSignError,
     FeeAdjustmentDeliveryError,
     GenesisHashMismatchError,
@@ -124,6 +135,7 @@ export {
     SigningError,
     SourceError,
     SubmissionError,
+    TransactionRoundTripError,
     TransportError,
     UserCancelledError,
     isFeeAdjustmentDeliveryError,

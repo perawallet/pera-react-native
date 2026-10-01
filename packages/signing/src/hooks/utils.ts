@@ -23,7 +23,7 @@ import type {
     SigningPipelineEvent,
     TransactionWarning,
 } from '../models'
-import type { TransactionListItem } from '../utils/classification'
+import type { TransactionListItem } from '../chain-adapter'
 import type { FeeAdjustment } from '../pipeline/sources'
 import type { MachineSnapshot } from './types'
 

@@ -14,6 +14,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AppError, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { CardEvent } from '@analytics'
+import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
 import { useArc60SigningScreen } from '../useArc60SigningScreen'
 
 const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
@@ -88,6 +89,7 @@ vi.mock('@hooks/useAlgodErrorMessage', () => ({
 
 describe('useArc60SigningScreen', () => {
     beforeEach(() => {
+        registerAlgorandReviewerAdapter()
         vi.clearAllMocks()
         mockPipeline.currentRequest = {
             id: 'req-1',

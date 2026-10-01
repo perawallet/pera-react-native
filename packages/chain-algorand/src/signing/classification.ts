@@ -12,29 +12,12 @@
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-
-export type RequestStructure = 'single' | 'list'
-
-export type SingleTransactionItem = {
-    type: 'transaction'
-    transaction: PeraDisplayableTransaction
-    /** Index into the originating groupContext array. */
-    groupIndex: number
-    /**
-     * True when this txn isn't in the wallet's signable subset — shown in the
-     * UI for atomic-group completeness only. Defaults to false when no
-     * `signableIndices` set is supplied (e.g. internal flows).
-     */
-    isExternal: boolean
-}
-
-export type GroupTransactionItem = {
-    type: 'group'
-    transactions: SingleTransactionItem[]
-    groupIndex: number
-}
-
-export type TransactionListItem = SingleTransactionItem | GroupTransactionItem
+import type {
+    GroupTransactionItem,
+    RequestStructure,
+    SingleTransactionItem,
+    TransactionListItem,
+} from '@perawallet/wallet-core-signing'
 
 export const createTransactionListItems = (
     transactions: PeraDisplayableTransaction[],

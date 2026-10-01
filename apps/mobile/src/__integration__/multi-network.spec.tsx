@@ -48,10 +48,8 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { fetchTransactionHistory } from '@perawallet/wallet-core-transactions'
 import { fetchAssets } from '@perawallet/wallet-core-chain-algorand/assets'
-import {
-    assertTransactionsMatchNetwork,
-    GenesisHashMismatchError,
-} from '@perawallet/wallet-core-signing'
+import { assertTransactionsMatchNetwork } from '@perawallet/wallet-core-chain-algorand/signing'
+import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'
 
 import { server } from '@test-utils/msw-server'
 

@@ -11,10 +11,7 @@
  */
 
 import { bytesToHex, decodeFromBase64 } from '@perawallet/wallet-core-shared'
-
-export type ArbitraryDataDisplay =
-    | { kind: 'text'; text: string }
-    | { kind: 'hex'; hex: string }
+import type { ArbitraryDataDisplay } from '@perawallet/wallet-core-signing'
 
 // Zero-width characters hide content; bidi controls (U+202E and friends) can
 // visually reorder text so the user reads something different from the bytes

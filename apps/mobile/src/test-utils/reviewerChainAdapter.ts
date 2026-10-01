@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import type { SignableAnalysis } from '../types'
+import { reviewerChainAdapters } from '@perawallet/wallet-core-signing'
+import { algorandReviewerAdapter } from '@perawallet/wallet-core-chain-algorand/signing'
 
-export const EMPTY_SIGNABLE_ANALYSIS: SignableAnalysis = {
-    totalFees: 0n,
-    transactionSummaries: [],
-    warnings: [],
-    signableAddresses: [],
-    riskLevel: 'low',
+// Unit specs skip the app bootstrap, so the real reviewer functions have no
+// adapter unless a spec registers one.
+export const registerAlgorandReviewerAdapter = (): void => {
+    reviewerChainAdapters.reset()
+    reviewerChainAdapters.register(algorandReviewerAdapter)
 }
