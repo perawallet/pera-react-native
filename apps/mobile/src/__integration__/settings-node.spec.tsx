@@ -38,8 +38,12 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 const SAME_ADDRESS_ACCOUNT: WalletAccount = {
     id: 'multi-network',
@@ -117,7 +121,7 @@ describe('Flow: Settings → Network selection', () => {
         // hook reads".
         await upsertAccountBalance({
             accountAddress: SAME_ADDRESS_ACCOUNT.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             algoBalance: new Decimal(100_000_000), // 100 ALGO mainnet
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,
@@ -128,7 +132,7 @@ describe('Flow: Settings → Network selection', () => {
         })
         await upsertAccountBalance({
             accountAddress: SAME_ADDRESS_ACCOUNT.address,
-            network: 'testnet',
+            scope: TESTNET_SCOPE,
             algoBalance: new Decimal(7_000_000), // 7 ALGO testnet
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,
@@ -144,13 +148,13 @@ describe('Flow: Settings → Network selection', () => {
         await insertAssetHolding({
             accountAddress: SAME_ADDRESS_ACCOUNT.address,
             assetId: '0',
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '100000000', // 100 ALGO
         })
         await insertAssetHolding({
             accountAddress: SAME_ADDRESS_ACCOUNT.address,
             assetId: '0',
-            network: 'testnet',
+            scope: TESTNET_SCOPE,
             amount: '7000000', // 7 ALGO
         })
 

@@ -55,6 +55,7 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {
@@ -63,6 +64,8 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
@@ -161,12 +164,12 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         await insertAssetHolding({
             accountAddress: sender.address,
             assetId: USDC_TEST_ASSET_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '10000000',
         })
         await upsertAccountBalance({
             accountAddress: sender.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
@@ -241,12 +244,12 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         await insertAssetHolding({
             accountAddress: address,
             assetId: USDC_TEST_ASSET_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '10000000',
         })
         await upsertAccountBalance({
             accountAddress: address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
@@ -381,19 +384,19 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         await insertAssetHolding({
             accountAddress: sender.address,
             assetId: '0',
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '5000000',
         })
         await insertAssetHolding({
             accountAddress: sender.address,
             assetId: USDC_TEST_ASSET_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '10000000',
             isFrozen: true,
         })
         await upsertAccountBalance({
             accountAddress: sender.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,

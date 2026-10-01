@@ -34,6 +34,12 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import {
+    scopeForLegacyNetwork,
+    type LegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+
+const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 const NETWORK = 'mainnet' as const
 
@@ -59,10 +65,13 @@ const ACCOUNT_B: WalletAccount = {
     },
 }
 
-const seedUnfunded = async (address: string, network: string = NETWORK) => {
+const seedUnfunded = async (
+    address: string,
+    network: LegacyNetwork = NETWORK,
+) => {
     await upsertAccountBalance({
         accountAddress: address,
-        network,
+        scope: scopeForLegacyNetwork(network),
         algoBalance: new Decimal(0),
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,
@@ -74,7 +83,7 @@ const seedUnfunded = async (address: string, network: string = NETWORK) => {
     await insertAssetHolding({
         accountAddress: address,
         assetId: '0',
-        network,
+        scope: scopeForLegacyNetwork(network),
         amount: '0',
     })
 }
@@ -115,7 +124,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
         await act(async () => {
             await refreshAccountHoldings({
                 accountAddress: ACCOUNT_B.address,
-                network: NETWORK,
+                scope: scopeForLegacyNetwork(NETWORK),
                 holdings: [
                     {
                         assetId: '0',
@@ -137,7 +146,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
         await seedUnfunded(ACCOUNT_B.address, 'testnet')
         await refreshAccountHoldings({
             accountAddress: ACCOUNT_B.address,
-            network: 'testnet',
+            scope: TESTNET_SCOPE,
             holdings: [
                 {
                     assetId: '0',

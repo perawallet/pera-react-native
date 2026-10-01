@@ -65,6 +65,7 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { RekeyToStandardSelectTargetScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSelectTargetScreen'
 import { RekeyToStandardConfirmScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardConfirmScreen'
 import { RekeyToStandardSuccessScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSuccessScreen'
@@ -85,6 +86,8 @@ import {
     disableQuantumFlag,
     enableQuantumFlag,
 } from './__fixtures__/quantum'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 // The production rekey screens navigate via `navigate('RekeyToStandard', {
 // screen, params })`. The flat test navigator can't resolve nested routes, so
@@ -172,7 +175,7 @@ const seedRekeyInAccounts = async (): Promise<{
 
     await upsertAccountBalance({
         accountAddress: source.address,
-        network: 'mainnet',
+        scope: MAINNET_SCOPE,
         algoBalance: new Decimal(5_000_000),
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,
@@ -212,7 +215,7 @@ const seedRekeyOutAccounts = async (): Promise<{
 
     await upsertAccountBalance({
         accountAddress: quantumSource.address,
-        network: 'mainnet',
+        scope: MAINNET_SCOPE,
         algoBalance: new Decimal(5_000_000),
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,

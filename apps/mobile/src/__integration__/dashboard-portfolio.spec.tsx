@@ -44,6 +44,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
@@ -113,7 +114,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         // sync service writes after fetching from algod).
         await upsertAccountBalance({
             accountAddress: ACCOUNT_A.address,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             algoBalance: new Decimal(10_000_000), // 10 ALGO
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
@@ -124,7 +125,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         })
         await upsertAccountBalance({
             accountAddress: ACCOUNT_B.address,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             algoBalance: new Decimal(4_000_000), // 4 ALGO
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
@@ -141,13 +142,13 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         await insertAssetHolding({
             accountAddress: ACCOUNT_A.address,
             assetId: '0',
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             amount: '10000000', // 10 ALGO
         })
         await insertAssetHolding({
             accountAddress: ACCOUNT_B.address,
             assetId: '0',
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             amount: '4000000', // 4 ALGO
         })
 
@@ -156,13 +157,13 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         await insertAssetHolding({
             accountAddress: ACCOUNT_A.address,
             assetId: USDC_ASSET.assetId,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             amount: '50000000', // 50 USDC
         })
         await insertAssetHolding({
             accountAddress: ACCOUNT_B.address,
             assetId: USDC_ASSET.assetId,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             amount: '20000000', // 20 USDC
         })
 

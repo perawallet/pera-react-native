@@ -54,6 +54,7 @@ import {
 import { useCollectiblePreferencesStore } from '@perawallet/wallet-core-assets'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAccountNfts'
 
 import {
@@ -67,6 +68,8 @@ import {
     USDC_TEST_ASSET_ID,
 } from './__fixtures__/assets'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const HOLDER: WalletAccount = {
     id: 'gallery-holder',
@@ -104,7 +107,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
 
         await upsertAccountBalance({
             accountAddress: HOLDER.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 2,
             totalCreatedAssets: 0,
@@ -120,13 +123,13 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
         await insertAssetHolding({
             accountAddress: HOLDER.address,
             assetId: NFT_TEST_ASSET_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '1',
         })
         await insertAssetHolding({
             accountAddress: HOLDER.address,
             assetId: USDC_TEST_ASSET_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '50000000',
         })
     })
@@ -168,7 +171,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
         await insertAssetHolding({
             accountAddress: HOLDER.address,
             assetId: NFT_TEST_ASSET_2_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '1',
         })
 
@@ -227,7 +230,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
             await insertAssetHolding({
                 accountAddress: HOLDER.address,
                 assetId,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 amount: '1',
             })
         }

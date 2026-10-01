@@ -53,12 +53,15 @@ import {
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
 
 import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const ACCOUNT: WalletAccount = {
     id: 'observer-1',
@@ -164,7 +167,7 @@ describe('Flow: View transactions → tap into details', () => {
         // anchor its query against.
         await upsertAccountBalance({
             accountAddress: ACCOUNT.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,

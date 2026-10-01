@@ -58,6 +58,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -65,6 +66,8 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 // Test host that mirrors what AddAssetView does for the "approve
 // opt-in" step: open the confirmation sheet via `requestBottomSheet`
@@ -395,12 +398,12 @@ describe('Flow: Opt out of an asset', () => {
         await insertAssetHolding({
             accountAddress: sender.address,
             assetId: USDC_TEST_ASSET_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '0',
         })
         await upsertAccountBalance({
             accountAddress: sender.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
@@ -444,7 +447,7 @@ describe('Flow: Opt out of an asset', () => {
         // (this is what the mutation removes on success).
         const before = await getAccountHoldings({
             accountAddress: sender.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         expect(before.some(h => h.assetId === USDC_TEST_ASSET_ID)).toBe(true)
 
@@ -485,7 +488,7 @@ describe('Flow: Opt out of an asset', () => {
 
         const after = await getAccountHoldings({
             accountAddress: sender.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         expect(after.some(h => h.assetId === USDC_TEST_ASSET_ID)).toBe(false)
     })
