@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useFinishCameraTab } from '@hooks/useFinishCameraTab'
 import type { PostCreateReturnTarget } from '@modules/onboarding/routes/types'
 import { useIsOnboarding } from './useOnboardingStore'
 
@@ -34,6 +35,7 @@ type UseExitAccountFlowResult = {
 export const useExitAccountFlow = (): UseExitAccountFlowResult => {
     const navigation = useAppNavigation()
     const { isOnboarding, setIsOnboarding } = useIsOnboarding()
+    const { finishCameraTab } = useFinishCameraTab()
 
     const exitAccountFlow = useCallback(
         (returnTo?: PostCreateReturnTarget) => {
@@ -50,8 +52,9 @@ export const useExitAccountFlow = (): UseExitAccountFlowResult => {
                     routes: [{ name: 'TabBar', params: { screen: 'Home' } }],
                 })
             }
+            finishCameraTab()
         },
-        [isOnboarding, setIsOnboarding, navigation],
+        [isOnboarding, setIsOnboarding, navigation, finishCameraTab],
     )
 
     return { exitAccountFlow }

@@ -530,7 +530,14 @@
         "camera_access_close": "Sekmeyi kapat",
         "paste_label": "Ya da bir QR içeriği yapıştır",
         "paste_placeholder": "Bir adres veya WalletConnect URI’si yapıştır",
-        "paste_submit": "Gönder"
+        "paste_submit": "Gönder",
+        "invalid_code": "Pera bu QR kodunu kullanamıyor. Başka bir kod dene.",
+        "try_again": "Tekrar dene"
+    },
+    "camera_tab": {
+        "account_imported_title": "Hesap içe aktarıldı",
+        "backup_restored_title": "Yedekleme geri yüklendi",
+        "body": "Bu sekmeyi kapatıp eklentiye dönebilirsin."
     },
     "paste_link": {
         "title": "Bağlantı yapıştır",

@@ -24,6 +24,12 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
+const mockFinishCameraTab = vi.fn()
+
+vi.mock('@hooks/useFinishCameraTab', () => ({
+    useFinishCameraTab: () => ({ finishCameraTab: mockFinishCameraTab }),
+}))
+
 const mockSetIsOnboarding = vi.fn()
 let mockIsOnboarding = false
 
@@ -54,6 +60,17 @@ describe('useExitAccountFlow', () => {
             routes: [{ name: 'TabBar', params: { screen: 'Home' } }],
         })
         expect(mockSetIsOnboarding).not.toHaveBeenCalled()
+    })
+
+    it('finishes a camera tab after the normal exit', () => {
+        const { result } = renderHook(() => useExitAccountFlow())
+
+        act(() => {
+            result.current.exitAccountFlow()
+        })
+
+        expect(mockReset).toHaveBeenCalled()
+        expect(mockFinishCameraTab).toHaveBeenCalledTimes(1)
     })
 
     it('sets isOnboarding to false when in onboarding flow', () => {

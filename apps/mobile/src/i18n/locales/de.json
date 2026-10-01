@@ -530,7 +530,14 @@
         "camera_access_close": "Tab schließen",
         "paste_label": "Oder QR-Inhalt einfügen",
         "paste_placeholder": "Adresse oder WalletConnect-URI einfügen",
-        "paste_submit": "Absenden"
+        "paste_submit": "Absenden",
+        "invalid_code": "Pera kann diesen QR-Code nicht verwenden. Versuche es mit einem anderen.",
+        "try_again": "Erneut versuchen"
+    },
+    "camera_tab": {
+        "account_imported_title": "Konto importiert",
+        "backup_restored_title": "Backup wiederhergestellt",
+        "body": "Du kannst diesen Tab schließen und zur Erweiterung zurückkehren."
     },
     "chart": {
         "one_day": {

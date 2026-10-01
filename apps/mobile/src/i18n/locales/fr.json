@@ -530,7 +530,14 @@
         "camera_access_close": "Fermer l’onglet",
         "paste_label": "Ou collez le contenu d’un QR code",
         "paste_placeholder": "Collez une adresse ou un URI WalletConnect",
-        "paste_submit": "Valider"
+        "paste_submit": "Valider",
+        "invalid_code": "Pera ne peut pas utiliser ce code QR. Essayez-en un autre.",
+        "try_again": "Réessayer"
+    },
+    "camera_tab": {
+        "account_imported_title": "Compte importé",
+        "backup_restored_title": "Sauvegarde restaurée",
+        "body": "Vous pouvez fermer cet onglet et revenir à l’extension."
     },
     "paste_link": {
         "title": "Coller un lien",

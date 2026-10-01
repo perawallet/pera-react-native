@@ -40,6 +40,10 @@ import {
 import { OnboardingStackNavigator } from '@modules/onboarding/routes'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
+import {
+    CameraTabResult,
+    useCameraTabResultStore,
+} from '@components/CameraTabResult'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { PWButton, PWText, PWView } from '@components/core'
@@ -130,6 +134,16 @@ const ShellRouter = (): React.JSX.Element => {
         },
     )
     const handleLedgerTabExit = useLedgerHandoffTabExit()
+    const cameraTabResult = useCameraTabResultStore(state => state.result)
+
+    // Replaces the wallet UI rather than overlaying it, so a finished camera
+    // tab can't be used as a second wallet next to the popup.
+    if (
+        cameraTabResult &&
+        (shellState === 'main' || shellState === 'onboarding')
+    ) {
+        return <CameraTabResult />
+    }
 
     switch (shellState) {
         case 'resolving': {

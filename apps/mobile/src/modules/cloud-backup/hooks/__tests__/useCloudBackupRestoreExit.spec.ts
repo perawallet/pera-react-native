@@ -13,10 +13,17 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-const { resetMock } = vi.hoisted(() => ({ resetMock: vi.fn() }))
+const { resetMock, finishCameraTabMock } = vi.hoisted(() => ({
+    resetMock: vi.fn(),
+    finishCameraTabMock: vi.fn(),
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ reset: resetMock }),
+}))
+
+vi.mock('@hooks/useFinishCameraTab', () => ({
+    useFinishCameraTab: () => ({ finishCameraTab: finishCameraTabMock }),
 }))
 
 import { useCloudBackupRestoreExit } from '../useCloudBackupRestoreExit'
@@ -33,5 +40,6 @@ describe('useCloudBackupRestoreExit', () => {
             index: 0,
             routes: [{ name: 'CloudBackupOverview' }],
         })
+        expect(finishCameraTabMock).toHaveBeenCalledTimes(1)
     })
 })
