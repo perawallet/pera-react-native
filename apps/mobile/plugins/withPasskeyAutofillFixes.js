@@ -50,6 +50,14 @@ const { withProjectBuildGradle, withXcodeProject } = require('expo/config-plugin
  *        (the standard "Embed App Extensions" position, right after framework
  *        embedding).
  *
+ *   5. [iOS] The extension target is not in the Podfile, so it gets no Pods
+ *      xcconfig and no `PODS_ROOT`. With ccache on, React Native points every
+ *      target's compiler at `$(REACT_NATIVE_PATH)/scripts/xcode/ccache-clang.sh`,
+ *      and `REACT_NATIVE_PATH` is built from `${PODS_ROOT}`, so in the
+ *      extension it resolves to `/node_modules/…` and the compiler cannot be
+ *      spawned.
+ *      → Define `PODS_ROOT` on the extension's own build configurations.
+ *
  * MUST be registered AFTER the autofill plugin so it operates on the project
  * that plugin produced.
  * ============================================================================
@@ -107,6 +115,7 @@ function applyIosFixes(project) {
   addExtensionTargetDependency(project);
   dedupeSourcesBuildPhases(project);
   moveExtensionEmbedBeforeBundleScripts(project);
+  definePodsRootForExtension(project);
 }
 
 /** Quote any unquoted `$(...)` DEVELOPMENT_TEAM so the pbxproj parses. */
@@ -251,4 +260,28 @@ function dedupeSourcesBuildPhases(project) {
   }
 }
 
-module.exports = Object.assign(withPasskeyAutofillFixes, { applyIosFixes });
+/** Give the extension the `PODS_ROOT` its ccache compiler path is built from. */
+function definePodsRootForExtension(project) {
+  const nativeTargets = project.pbxNativeTargetSection();
+  const configurationLists = project.pbxXCConfigurationList();
+  const configurations = project.pbxXCBuildConfigurationSection();
+  for (const uuid of Object.keys(nativeTargets)) {
+    if (uuid.endsWith('_comment')) continue;
+    const target = nativeTargets[uuid];
+    if (!target || typeof target !== 'object') continue;
+    if (unquote(target.name) !== EXTENSION_TARGET_NAME) continue;
+
+    const list = configurationLists[target.buildConfigurationList];
+    for (const { value } of list?.buildConfigurations ?? []) {
+      const settings = configurations[value]?.buildSettings;
+      if (settings && !settings.PODS_ROOT) {
+        settings.PODS_ROOT = '"$(SRCROOT)/Pods"';
+      }
+    }
+  }
+}
+
+module.exports = Object.assign(withPasskeyAutofillFixes, {
+  applyIosFixes,
+  definePodsRootForExtension,
+});
