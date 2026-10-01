@@ -26,6 +26,7 @@ export const routeCapabilities: RouteCapabilities = {
     inAppWebView: true,
     fullScreenMediaViewer: true,
     qrScanner: true,
+    recoverAccountQr: true,
     ledgerUsb: isAndroid(),
     // Native keeps the camera; paste has no reason to exist there.
     deepLinkPaste: false,

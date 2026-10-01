@@ -25,7 +25,6 @@ export type OnboardingFlowScreen =
     | 'LedgerScan'
     | 'AsbImportBackup'
     | 'CloudBackupRestoreScan'
-    | 'ImportAccountOptions'
 
 /**
  * Parses the one-shot `?flow=` deep-link param the popup passed to
@@ -66,11 +65,6 @@ export const useExpandedFlowNavigation = (
                 screen: 'CloudBackupSettings',
                 params: { screen: 'CloudBackupRestoreScan' },
             })
-        } else if (flow === 'recover-qr') {
-            navigate('AddAccount', {
-                screen: 'ImportAccountOptions',
-                params: { isScannerOpen: true },
-            })
         } else if (flow === 'camera-access') {
             navigate('CameraAccess')
         }
@@ -98,8 +92,7 @@ export const useOnboardingExpandedFlowNavigation = (
             flow !== 'ledger-usb' &&
             flow !== 'ledger-ble' &&
             flow !== 'asb-import' &&
-            flow !== 'backup-restore-scan' &&
-            flow !== 'recover-qr'
+            flow !== 'backup-restore-scan'
         ) {
             return
         }
@@ -114,8 +107,6 @@ export const useOnboardingExpandedFlowNavigation = (
             navigate('AsbImportBackup')
         } else if (flow === 'backup-restore-scan') {
             navigate('CloudBackupRestoreScan')
-        } else if (flow === 'recover-qr') {
-            navigate('ImportAccountOptions', { isScannerOpen: true })
         } else {
             navigate('LedgerScan', {
                 transportType: flow === 'ledger-usb' ? 'usb' : 'ble',
