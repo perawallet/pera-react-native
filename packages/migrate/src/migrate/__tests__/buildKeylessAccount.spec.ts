@@ -81,6 +81,7 @@ describe('buildWatchAccount', () => {
             name: 'My Watcher',
             type: AccountTypes.watch,
             address: 'ADDR_WATCH',
+            credentials: [{ kind: 'watch' }],
         })
     })
 
@@ -148,6 +149,18 @@ describe('buildLedgerAccount', () => {
                 deviceName: 'Ledger Nano X',
                 accountIndex: 3,
             },
+            credentials: [
+                {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        transportType: 'ble',
+                        deviceId: 'BT-ADDR',
+                        deviceName: 'Ledger Nano X',
+                    },
+                    accountIndex: 3,
+                },
+            ],
         })
     })
 
@@ -230,6 +243,14 @@ describe('buildMultiSigAccount', () => {
                 addresses: ['P1', 'P2', 'P3'],
                 version: 1,
             },
+            credentials: [
+                {
+                    kind: 'multisig',
+                    threshold: 2,
+                    members: ['P1', 'P2', 'P3'],
+                    version: 1,
+                },
+            ],
         })
         expect(deriveAddress).not.toHaveBeenCalled()
     })
