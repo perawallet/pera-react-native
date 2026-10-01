@@ -18,8 +18,11 @@ import {
     getDatabase,
     type Database,
 } from '@perawallet/wallet-core-database'
-import { AssetsPeraSchema, PeraAssetType } from '@perawallet/wallet-core-assets'
-import { networkColumnValue } from './networkColumn'
+import {
+    AssetsPeraSchema,
+    PeraAssetType,
+    networkColumnValue,
+} from '@perawallet/wallet-core-assets'
 import { AccountAssetHoldingsSchema } from './schema'
 
 export type HoldingRow = {

@@ -19,6 +19,7 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset, PeraAssetType } from '../../models'
 import {
     upsertAssets,
@@ -31,6 +32,9 @@ import {
     getStaleOrMissingAssetIds,
     getStaleOrMissingPriceAssetIds,
 } from '../syncQueries'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 describe('asset sync queries', () => {
     let db: Database
@@ -69,7 +73,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: [],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
             })
             expect(result).toEqual([])
@@ -79,13 +83,13 @@ describe('asset sync queries', () => {
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '1' })],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1', '2', '3'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
             })
 
@@ -96,13 +100,13 @@ describe('asset sync queries', () => {
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '1' })],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
             })
 
@@ -113,7 +117,7 @@ describe('asset sync queries', () => {
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '1' })],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             // Use a negative ttl so any row is "older than" it — works without
@@ -121,7 +125,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: -1,
             })
 
@@ -132,13 +136,13 @@ describe('asset sync queries', () => {
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '1' })],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
                 ttlMs: 60_000,
             })
 
@@ -152,7 +156,7 @@ describe('asset sync queries', () => {
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '1' })],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             const candidates = Array.from(
                 { length: 40_000 },
@@ -162,7 +166,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: candidates,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
             })
 
@@ -205,7 +209,7 @@ describe('asset sync queries', () => {
                         },
                     }),
                 ),
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
         }
 
@@ -219,7 +223,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1', '2', '3'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ...recheck(-1),
             })
 
@@ -238,7 +242,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1', '2'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ...recheck(-1),
             })
 
@@ -260,7 +264,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1', '2'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ...recheck(-1),
             })
 
@@ -273,7 +277,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ...recheck(60_000),
             })
 
@@ -286,7 +290,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 // Negative window: the row's first sight is already outside it.
                 ...recheck(-1, -1),
             })
@@ -301,7 +305,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ...recheck(-1),
             })
 
@@ -338,7 +342,7 @@ describe('asset sync queries', () => {
                 const result = await getStaleOrMissingAssetIds({
                     db: upgrading.db,
                     assetIds: ['1'],
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                     ...recheck(-1),
                 })
 
@@ -347,7 +351,7 @@ describe('asset sync queries', () => {
                     await getAssetsByIds({
                         db: upgrading.db,
                         assetIds: ['1'],
-                        network: 'mainnet',
+                        scope: MAINNET_SCOPE,
                     }),
                 ).toHaveLength(1)
             } finally {
@@ -361,7 +365,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
             })
 
@@ -396,7 +400,7 @@ describe('asset sync queries', () => {
                         },
                     }),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
         }
 
@@ -414,7 +418,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
                 recheckArc19: { ttlMs: 60_000 },
             })
@@ -428,7 +432,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
                 recheckArc19: { ttlMs: 60_000 },
             })
@@ -444,7 +448,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1', '2'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
                 recheckArc19: { ttlMs: 60_000 },
             })
@@ -459,7 +463,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
                 recheckArc19: { ttlMs: 60_000 },
             })
@@ -474,7 +478,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
             })
 
@@ -491,7 +495,7 @@ describe('asset sync queries', () => {
             const rows = await getAssetsByIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(rows[0].url).toBe(ARC19_URL)
@@ -509,13 +513,13 @@ describe('asset sync queries', () => {
                         totalSupply: new Decimal(1),
                     }),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const rows = await getAssetsByIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(rows[0].url).toBe(ARC19_URL)
@@ -547,7 +551,7 @@ describe('asset sync queries', () => {
                         },
                     }),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
         }
 
@@ -560,7 +564,7 @@ describe('asset sync queries', () => {
             const result = await getCollectibleIdsMissingUrl({
                 db,
                 assetIds: ['1', '2', '3', '4'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toEqual(['1'])
@@ -573,7 +577,7 @@ describe('asset sync queries', () => {
             const result = await getCollectibleIdsMissingUrl({
                 db,
                 assetIds: ['2'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toEqual(['2'])
@@ -586,7 +590,7 @@ describe('asset sync queries', () => {
             const result = await getCollectibleIdsMissingUrl({
                 db,
                 assetIds: ['1', '2'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 limit: 1,
             })
 
@@ -599,7 +603,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: [],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
             })
             expect(result).toEqual([])
@@ -609,13 +613,13 @@ describe('asset sync queries', () => {
             await upsertAssetPrices({
                 db,
                 prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['1', '2'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
             })
 
@@ -626,13 +630,13 @@ describe('asset sync queries', () => {
             await upsertAssetPrices({
                 db,
                 prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
             })
 
@@ -643,7 +647,7 @@ describe('asset sync queries', () => {
             await upsertAssetPrices({
                 db,
                 prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             // Negative ttl makes any row "older than" it — see the
@@ -651,7 +655,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: -1,
             })
 
@@ -662,13 +666,13 @@ describe('asset sync queries', () => {
             await upsertAssetPrices({
                 db,
                 prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['1'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
                 ttlMs: 60_000,
             })
 
@@ -681,12 +685,12 @@ describe('asset sync queries', () => {
             await upsertAssetPrices({
                 db,
                 prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await recordPriceMisses({
                 db,
                 assetIds: ['2'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             const candidates = Array.from(
                 { length: 40_000 },
@@ -696,7 +700,7 @@ describe('asset sync queries', () => {
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: candidates,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
                 missRetryMs: 60_000,
             })

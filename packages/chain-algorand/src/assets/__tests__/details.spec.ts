@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-config'
 
 const mocks = vi.hoisted(() => ({
@@ -155,10 +156,10 @@ describe('fetchAssetFromApis', () => {
         await fetchAssetFromApis('10458941', Networks.testnet)
 
         expect(mocks.upsertNodeAssets).toHaveBeenCalledTimes(1)
-        const { items, network } = mocks.upsertNodeAssets.mock.calls[0][0]
+        const { items, scope } = mocks.upsertNodeAssets.mock.calls[0][0]
         expect(items).toHaveLength(1)
         expect(items[0].assetId).toBe('10458941')
-        expect(network).toBe(Networks.testnet)
+        expect(scope).toEqual(scopeForLegacyNetwork(Networks.testnet))
     })
 
     it('does not persist a merge built only from defaults (every lane failed)', async () => {

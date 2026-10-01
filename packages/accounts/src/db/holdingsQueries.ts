@@ -20,6 +20,7 @@ import {
     PeraAssetType,
     isNativeAssetId,
     nativeAssetFor,
+    networkColumnValue,
     peraAssetFromColumns,
     type PeraAsset,
     type AssetSortMode,
@@ -29,7 +30,6 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { networkColumnValue } from './networkColumn'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
 import type { AccountHoldingsFilters } from './holdingsRepository'

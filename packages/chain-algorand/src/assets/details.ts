@@ -17,6 +17,7 @@ import {
     type AssetAuthorities,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     logger,
@@ -107,7 +108,10 @@ export const fetchAssetFromApis = async (
     // endpoint failed offline) can't poison decimals in the DB.
     if (peraData || indexerData) {
         try {
-            await upsertNodeAssets({ items: [asset], network })
+            await upsertNodeAssets({
+                items: [asset],
+                scope: scopeForLegacyNetwork(network),
+            })
         } catch (error) {
             logger.warn('Asset detail persist failed', {
                 assetId,

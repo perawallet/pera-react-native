@@ -205,7 +205,7 @@ describe('useToggleAssetFavoriteMutation', () => {
         await waitFor(() => {
             expect(updateAssetPeraMetadata).toHaveBeenCalledWith({
                 assetId: '123',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 updates: { isFavorited: true },
             })
         })
@@ -329,12 +329,12 @@ describe('useToggleAssetFavoriteMutation', () => {
 
         expect(updateAssetPeraMetadata).toHaveBeenNthCalledWith(1, {
             assetId: '123',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             updates: { isFavorited: true },
         })
         expect(updateAssetPeraMetadata).toHaveBeenNthCalledWith(2, {
             assetId: '123',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             updates: { isFavorited: false },
         })
     })

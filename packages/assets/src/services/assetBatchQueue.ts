@@ -29,9 +29,10 @@ export const assetBatchQueue = new BatchQueue<
     Nullable<PeraAsset>,
     Network
 >(async (assetIds, network) => {
-    await fetchAndPersistAssets(assetIds, scopeForLegacyNetwork(network))
+    const scope = scopeForLegacyNetwork(network)
+    await fetchAndPersistAssets(assetIds, scope)
 
-    const assets = await getAssetsByIds({ assetIds, network })
+    const assets = await getAssetsByIds({ assetIds, scope })
     const map = new Map<string, Nullable<PeraAsset>>()
     for (const asset of assets) {
         map.set(asset.assetId, asset)

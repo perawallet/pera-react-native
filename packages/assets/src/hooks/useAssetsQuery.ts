@@ -70,7 +70,7 @@ export const useAssetsQuery = (
             if (fetchMissing) {
                 await fetchAndPersistAssets(stableIds, scope)
             }
-            return getAssetsByIds({ assetIds: stableIds, network })
+            return getAssetsByIds({ assetIds: stableIds, scope })
         },
     })
 

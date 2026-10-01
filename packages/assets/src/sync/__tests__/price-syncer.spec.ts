@@ -27,7 +27,10 @@ vi.mock('../../db', () => ({
 }))
 
 import { Decimal } from 'decimal.js'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    ChainAdapterNotRegisteredError,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { assetsChainAdapters } from '../../chain-adapter'
 import {
     fakeAssetsAdapter,
@@ -36,6 +39,7 @@ import {
 import { fetchAndPersistPrices } from '../price-syncer'
 
 const mainnetScope = { chainId: 'algorand', networkId: 'mainnet' }
+const testnetScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const priced = (assetId: string, usdPrice: string) => ({
     assetId,
@@ -110,7 +114,7 @@ describe('fetchAndPersistPrices', () => {
         expect(getStaleOrMissingPriceAssetIdsMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 assetIds: ['777'],
-                network: 'testnet',
+                scope: testnetScope,
                 missRetryMs: expect.any(Number),
             }),
         )
@@ -124,7 +128,7 @@ describe('fetchAndPersistPrices', () => {
 
         expect(recordPriceMissesMock).toHaveBeenCalledWith({
             assetIds: ['777'],
-            network: 'testnet',
+            scope: testnetScope,
         })
         const upserted = upsertAssetPricesMock.mock.calls.flatMap(
             c => c[0]?.prices ?? [],
@@ -142,7 +146,7 @@ describe('fetchAndPersistPrices', () => {
 
         expect(clearPriceMissesMock).toHaveBeenCalledWith({
             assetIds: ['555'],
-            network: 'testnet',
+            scope: testnetScope,
         })
     })
 
@@ -296,7 +300,7 @@ describe('fetchAndPersistPrices', () => {
             ])
 
             const networks = getStaleOrMissingPriceAssetIdsMock.mock.calls.map(
-                call => call[0].network as string,
+                call => (call[0].scope as ChainScope).networkId,
             )
             expect(networks.filter(n => n === 'mainnet').length).toBe(2)
             expect(networks.filter(n => n === 'testnet').length).toBe(2)

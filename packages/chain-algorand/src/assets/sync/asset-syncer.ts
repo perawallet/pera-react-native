@@ -23,6 +23,7 @@ import {
     getCollectibleIdsMissingUrl,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import {
     ARC19_COLLECTIBLE_RECHECK_TTL_MS,
@@ -59,7 +60,7 @@ const persistFromPeraBackend = async (
 ): Promise<void> => {
     const response = await fetchAssets(batch, network, deviceId)
     const assets = response.results.map(transformAssetResponse)
-    await upsertAssets({ items: assets, network })
+    await upsertAssets({ items: assets, scope: scopeForLegacyNetwork(network) })
 }
 
 /**
@@ -91,7 +92,7 @@ const persistChainIntrinsics = async (
         }
     }
 
-    await upsertNodeAssets({ items, network })
+    await upsertNodeAssets({ items, scope: scopeForLegacyNetwork(network) })
 }
 
 // Bounds one url-backfill pass. Urls are immutable on-chain, so each
@@ -112,7 +113,7 @@ async function backfillCollectibleUrls(
 ): Promise<void> {
     const missing = await getCollectibleIdsMissingUrl({
         assetIds,
-        network,
+        scope: scopeForLegacyNetwork(network),
         limit: COLLECTIBLE_URL_BACKFILL_MAX_PER_PASS,
     })
     if (missing.length === 0) return
@@ -136,7 +137,7 @@ async function backfillCollectibleUrls(
     }
 
     if (items.length > 0) {
-        await upsertNodeAssets({ items, network })
+        await upsertNodeAssets({ items, scope: scopeForLegacyNetwork(network) })
     }
 }
 
@@ -161,7 +162,7 @@ export async function fetchAndPersistAssets(
 
     const toFetch = await getStaleOrMissingAssetIds({
         assetIds: nonAlgoIds,
-        network,
+        scope: scopeForLegacyNetwork(network),
         ttlMs: ASSET_CACHE_TTL_MS,
         recheckUnclassified: {
             ttlMs: ASSET_RECLASSIFY_TTL_MS,

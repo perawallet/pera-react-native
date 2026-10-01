@@ -79,13 +79,11 @@ export const useToggleAssetFavoriteMutation = ({
         mutationFn: toggleAssetFavorite,
         throwOnError: false,
         onMutate: async variables => {
-            const queryKey = getAssetDetailsQueryKey(
-                variables.assetID,
-                scopeForLegacyNetwork(variables.network),
-            )
+            const scope = scopeForLegacyNetwork(variables.network)
+            const queryKey = getAssetDetailsQueryKey(variables.assetID, scope)
             const remoteQueryKey = getRemoteAssetDetailsQueryKey(
                 variables.assetID,
-                scopeForLegacyNetwork(variables.network),
+                scope,
             )
             await queryClient.cancelQueries({ queryKey })
             await queryClient.cancelQueries({ queryKey: remoteQueryKey })
@@ -99,7 +97,7 @@ export const useToggleAssetFavoriteMutation = ({
 
             await updateAssetPeraMetadata({
                 assetId: variables.assetID,
-                network: variables.network,
+                scope,
                 updates: { isFavorited: variables.enabled },
             })
 
@@ -133,28 +131,23 @@ export const useToggleAssetFavoriteMutation = ({
         },
         onError: async (error, variables, context) => {
             if (context) {
+                const scope = scopeForLegacyNetwork(variables.network)
                 await updateAssetPeraMetadata({
                     assetId: variables.assetID,
-                    network: variables.network,
+                    scope,
                     updates: {
                         isFavorited: context.previousIsFavorited,
                     },
                 })
                 if (context.previousData) {
                     queryClient.setQueryData(
-                        getAssetDetailsQueryKey(
-                            variables.assetID,
-                            scopeForLegacyNetwork(variables.network),
-                        ),
+                        getAssetDetailsQueryKey(variables.assetID, scope),
                         context.previousData,
                     )
                 }
                 if (context.previousRemoteData) {
                     queryClient.setQueryData(
-                        getRemoteAssetDetailsQueryKey(
-                            variables.assetID,
-                            scopeForLegacyNetwork(variables.network),
-                        ),
+                        getRemoteAssetDetailsQueryKey(variables.assetID, scope),
                         context.previousRemoteData,
                     )
                 }

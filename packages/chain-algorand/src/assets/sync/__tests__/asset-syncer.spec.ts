@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const fetchAssetsMock = vi.hoisted(() => vi.fn())
 const transformAssetResponseMock = vi.hoisted(() => vi.fn(a => a))
@@ -197,7 +198,7 @@ describe('fetchAndPersistAssets', () => {
                     url: 'template-ipfs://{ipfscid:1:raw:reserve:sha2-256}',
                 }),
             ],
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
     })
 
@@ -215,7 +216,7 @@ describe('fetchAndPersistAssets', () => {
 
         expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
             items: [expect.objectContaining({ assetId: '7', url: '' })],
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
     })
 
@@ -244,7 +245,7 @@ describe('fetchAndPersistAssets', () => {
 
                 expect(upsertAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 6 }],
-                    network,
+                    scope: scopeForLegacyNetwork(network),
                 })
                 expect(fetchIndexerAssetDetailsMock).not.toHaveBeenCalled()
                 expect(upsertNodeAssetsMock).not.toHaveBeenCalled()
@@ -276,7 +277,7 @@ describe('fetchAndPersistAssets', () => {
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 0, name: 'MYTOKEN' }],
-                    network,
+                    scope: scopeForLegacyNetwork(network),
                 })
                 // The whole-row writer must not run at all here — it would put
                 // the borrowed decimals straight into assets_node.
@@ -295,7 +296,7 @@ describe('fetchAndPersistAssets', () => {
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [],
-                    network,
+                    scope: scopeForLegacyNetwork(network),
                 })
                 expect(upsertAssetsMock).not.toHaveBeenCalled()
             })
@@ -311,7 +312,7 @@ describe('fetchAndPersistAssets', () => {
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 0 }],
-                    network,
+                    scope: scopeForLegacyNetwork(network),
                 })
             })
         },

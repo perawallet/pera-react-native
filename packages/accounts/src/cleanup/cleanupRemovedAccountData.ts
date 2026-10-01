@@ -17,14 +17,17 @@ import {
     logger,
     runAccountCleanups,
 } from '@perawallet/wallet-core-shared'
-import { deleteAssets, deleteAssetPrices } from '@perawallet/wallet-core-assets'
+import {
+    deleteAssets,
+    deleteAssetPrices,
+    scopeFromNetworkColumn,
+} from '@perawallet/wallet-core-assets'
 import {
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
     deleteAccountBalance,
     getAllHeldAssetIdsForNetwork,
 } from '../db'
-import { scopeFromNetworkColumn } from '../db/networkColumn'
 
 export type CleanupRemovedAccountDataParams = {
     db?: Database
@@ -90,8 +93,8 @@ export async function cleanupRemovedAccountData({
         )
         if (orphans.length === 0) continue
 
-        await deleteAssets({ db, assetIds: orphans, network })
-        await deleteAssetPrices({ db, assetIds: orphans, network })
+        await deleteAssets({ db, assetIds: orphans, scope })
+        await deleteAssetPrices({ db, assetIds: orphans, scope })
         prunedAssetIdsByNetwork[network] = orphans
     }
 

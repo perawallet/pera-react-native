@@ -83,7 +83,7 @@ describe('useAssetsQuery', () => {
 
             expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
                 assetIds: ['123'],
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             })
 
             expect(result.current.data.get('123')).toEqual(
@@ -209,7 +209,7 @@ describe('useAssetsQuery', () => {
             await waitFor(() =>
                 expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
                     assetIds: ['456'],
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                 }),
             )
         })
@@ -265,7 +265,7 @@ describe('useAssetsQuery', () => {
 
             expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
                 assetIds: ['123'],
-                network: 'testnet',
+                scope: scopeForLegacyNetwork('testnet'),
             })
         })
     })

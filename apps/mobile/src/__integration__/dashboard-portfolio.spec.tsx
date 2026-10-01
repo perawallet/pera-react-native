@@ -179,7 +179,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
                     usdPrice: new Decimal('1.00'),
                 },
             ],
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
 
         // Wrap in a fresh QueryClient so the queries can settle —

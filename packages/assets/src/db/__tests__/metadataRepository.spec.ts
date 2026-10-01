@@ -19,6 +19,7 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset } from '../../models'
 import {
     upsertAssets,
@@ -31,6 +32,9 @@ import {
     getAssetPricesByIds,
     deleteAssetPrices,
 } from '../pricesRepository'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 describe('asset metadata repository', () => {
     let db: Database
@@ -78,13 +82,13 @@ describe('asset metadata repository', () => {
             await upsertAssets({
                 db,
                 items: [makeAsset()],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['31566704'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(1)
@@ -99,18 +103,18 @@ describe('asset metadata repository', () => {
             await upsertAssets({
                 db,
                 items: [makeAsset({ name: 'Old Name' })],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await upsertAssets({
                 db,
                 items: [makeAsset({ name: 'New Name' })],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['31566704'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(1)
@@ -121,7 +125,7 @@ describe('asset metadata repository', () => {
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['999999'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(0)
@@ -132,11 +136,19 @@ describe('asset metadata repository', () => {
             // a refetch bumping it would keep an asset "newly seen" forever.
             vi.useFakeTimers()
             vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
-            await upsertAssets({ db, items: [makeAsset()], network: 'mainnet' })
+            await upsertAssets({
+                db,
+                items: [makeAsset()],
+                scope: MAINNET_SCOPE,
+            })
             const first = await readTimestamps('31566704')
 
             vi.setSystemTime(new Date('2026-01-02T00:00:00Z'))
-            await upsertAssets({ db, items: [makeAsset()], network: 'mainnet' })
+            await upsertAssets({
+                db,
+                items: [makeAsset()],
+                scope: MAINNET_SCOPE,
+            })
             const second = await readTimestamps('31566704')
 
             expect(second.firstSeenAt).toBe(first.firstSeenAt)
@@ -147,7 +159,7 @@ describe('asset metadata repository', () => {
             const result = await getAssetsByIds({
                 db,
                 assetIds: [],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(0)
@@ -157,23 +169,23 @@ describe('asset metadata repository', () => {
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '100' })],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '100', name: 'Testnet Asset' })],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             const mainnet = await getAssetsByIds({
                 db,
                 assetIds: ['100'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             const testnet = await getAssetsByIds({
                 db,
                 assetIds: ['100'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             expect(mainnet).toHaveLength(1)
@@ -193,12 +205,12 @@ describe('asset metadata repository', () => {
                 },
             })
 
-            await upsertAssets({ db, items: [asset], network: 'mainnet' })
+            await upsertAssets({ db, items: [asset], scope: MAINNET_SCOPE })
 
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['31566704'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result[0].peraMetadata?.isFavorited).toBe(true)
@@ -212,24 +224,24 @@ describe('asset metadata repository', () => {
                 makeAsset({ assetId: '3', name: 'Asset 3' }),
             ]
 
-            await upsertAssets({ db, items, network: 'mainnet' })
+            await upsertAssets({ db, items, scope: MAINNET_SCOPE })
 
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['1', '2', '3'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(3)
         })
 
         it('does nothing for empty items', async () => {
-            await upsertAssets({ db, items: [], network: 'mainnet' })
+            await upsertAssets({ db, items: [], scope: MAINNET_SCOPE })
 
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['31566704'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(0)
@@ -251,20 +263,20 @@ describe('asset metadata repository', () => {
                         },
                     }),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await updateAssetPeraMetadata({
                 db,
                 assetId: '31566704',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 updates: { isFavorited: true },
             })
 
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['31566704'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result[0].peraMetadata?.isFavorited).toBe(true)
@@ -285,20 +297,20 @@ describe('asset metadata repository', () => {
                         },
                     }),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await updateAssetPeraMetadata({
                 db,
                 assetId: '31566704',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 updates: { isPriceAlertEnabled: true },
             })
 
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['31566704'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result[0].peraMetadata?.isFavorited).toBe(true)
@@ -309,14 +321,14 @@ describe('asset metadata repository', () => {
             await updateAssetPeraMetadata({
                 db,
                 assetId: '999999',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 updates: { isFavorited: true },
             })
 
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['999999'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(0)
@@ -338,14 +350,14 @@ describe('asset metadata repository', () => {
                         },
                     }),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             // User toggles favorite and price alert
             await updateAssetPeraMetadata({
                 db,
                 assetId: '31566704',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 updates: { isFavorited: true, isPriceAlertEnabled: true },
             })
 
@@ -363,13 +375,13 @@ describe('asset metadata repository', () => {
                         },
                     }),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['31566704'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             // Null incoming values keep the existing local state
@@ -391,12 +403,12 @@ describe('asset metadata repository', () => {
                         },
                     }),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await updateAssetPeraMetadata({
                 db,
                 assetId: '31566704',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 updates: { isFavorited: true, isPriceAlertEnabled: true },
             })
 
@@ -414,13 +426,13 @@ describe('asset metadata repository', () => {
                         },
                     }),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAssetsByIds({
                 db,
                 assetIds: ['31566704'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             // Non-null incoming values win over the stale local toggle values
@@ -437,15 +449,15 @@ describe('asset metadata repository', () => {
                     makeAsset({ assetId: '100' }),
                     makeAsset({ assetId: '200' }),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
-            await deleteAssets({ db, assetIds: ['100'], network: 'mainnet' })
+            await deleteAssets({ db, assetIds: ['100'], scope: MAINNET_SCOPE })
 
             const remaining = await getAssetsByIds({
                 db,
                 assetIds: ['100', '200'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(remaining.map(a => a.assetId)).toEqual(['200'])
         })
@@ -454,25 +466,25 @@ describe('asset metadata repository', () => {
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '100' })],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '100' })],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
-            await deleteAssets({ db, assetIds: ['100'], network: 'mainnet' })
+            await deleteAssets({ db, assetIds: ['100'], scope: MAINNET_SCOPE })
 
             const mainnet = await getAssetsByIds({
                 db,
                 assetIds: ['100'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             const testnet = await getAssetsByIds({
                 db,
                 assetIds: ['100'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
             expect(mainnet).toHaveLength(0)
             expect(testnet).toHaveLength(1)
@@ -482,15 +494,15 @@ describe('asset metadata repository', () => {
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '100' })],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
-            await deleteAssets({ db, assetIds: [], network: 'mainnet' })
+            await deleteAssets({ db, assetIds: [], scope: MAINNET_SCOPE })
 
             const remaining = await getAssetsByIds({
                 db,
                 assetIds: ['100'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(remaining).toHaveLength(1)
         })
@@ -502,19 +514,19 @@ describe('asset metadata repository', () => {
                     { assetId: '100', usdPrice: new Decimal('1.5') },
                     { assetId: '200', usdPrice: new Decimal('2.5') },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await deleteAssetPrices({
                 db,
                 assetIds: ['100'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const remaining = await getAssetPricesByIds({
                 db,
                 assetIds: ['100', '200'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(remaining.map(p => p.assetId)).toEqual(['200'])
         })

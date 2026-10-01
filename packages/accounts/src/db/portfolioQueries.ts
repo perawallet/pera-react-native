@@ -17,9 +17,9 @@ import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
     AssetsNodeSchema,
     AssetPricesSchema,
+    networkColumnValue,
 } from '@perawallet/wallet-core-assets'
 import { ALGO_ASSET_ID, type Nullable } from '@perawallet/wallet-core-shared'
-import { networkColumnValue } from './networkColumn'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
 
