@@ -63,7 +63,8 @@ export const usePinEditView = ({
     const { t } = useLanguage()
     const { savePin, verifyPin, resetFailedAttempts, isLockedOut } =
         usePinCode()
-    const { checkBiometricsEnabled, unlockWithBiometrics } = useBiometrics()
+    const { isEnabled: isBiometricsEnabled, unlockWithBiometrics } =
+        useBiometrics()
     const { showError } = useErrorToast()
 
     const [currentMode, setCurrentMode] = useState<PinEntryMode>(mode)
@@ -90,22 +91,35 @@ export const usePinEditView = ({
         }
     }, [currentMode, t, titleOverride, confirmTitle])
 
-    // Auto-prompt biometrics when entering a verification step. The user's
-    // security settings drive which factor is used: if biometrics is enabled,
-    // we prompt automatically; on cancel/failure, the user falls back to PIN.
-    // Tracked per-mode so re-entering verify after a cancelled prompt doesn't
-    // immediately re-fire, but switching from change_old → setup → ... does.
+    // Auto-prompt biometrics when entering a verification step; on
+    // cancel/failure, the user falls back to PIN. Tracked per-mode so
+    // re-entering verify after a cancelled prompt doesn't immediately re-fire,
+    // but switching from change_old → setup → ... does.
     //
+    // Gated on the store flag, not a fresh reconcile: unlockWithBiometrics runs
+    // its own, so a second one here only doubles the wait on the shared Expo
+    // queue. The flag also keeps a disabled user out of unlock's pending-rearm
+    // recovery, which this sheet must not start.
     const lastPromptedModeRef = useRef<Nullable<PinEntryMode>>(null)
 
+    // A transient reconcile can clear the flag and the sheet's own mount
+    // reconcile set it again, so the effect re-runs on that first false→true
+    // flip. Latched so a mid-prompt flicker can't run the cleanup and drop an
+    // in-flight success.
+    const [hasSeenBiometricsEnabled, setHasSeenBiometricsEnabled] =
+        useState(isBiometricsEnabled)
+    if (isBiometricsEnabled && !hasSeenBiometricsEnabled) {
+        setHasSeenBiometricsEnabled(true)
+    }
+
     // The prompt's collaborators are read through a ref so the effect depends
-    // only on `currentMode`. Otherwise an unrelated re-render (e.g. the host
-    // bottom sheet finishing its open animation) — which changes the inline
-    // `onSuccess` identity — would run the effect cleanup mid-prompt, drop the
-    // in-flight biometric success, and force the user onto the PIN pad after
-    // already passing biometrics.
+    // only on `currentMode` and the latch above. Otherwise an unrelated
+    // re-render (e.g. the host bottom sheet finishing its open animation) —
+    // which changes the inline `onSuccess` identity — would run the effect
+    // cleanup mid-prompt, drop the in-flight biometric success, and force the
+    // user onto the PIN pad after already passing biometrics.
     const promptRef = useRef({
-        checkBiometricsEnabled,
+        isBiometricsEnabled,
         unlockWithBiometrics,
         resetFailedAttempts,
         onSuccess,
@@ -113,7 +127,7 @@ export const usePinEditView = ({
         showError,
     })
     promptRef.current = {
-        checkBiometricsEnabled,
+        isBiometricsEnabled,
         unlockWithBiometrics,
         resetFailedAttempts,
         onSuccess,
@@ -127,13 +141,12 @@ export const usePinEditView = ({
             return
         }
         if (lastPromptedModeRef.current === currentMode) return
+        if (!promptRef.current.isBiometricsEnabled) return
         lastPromptedModeRef.current = currentMode
 
         let cancelled = false
         try {
             void (async () => {
-                const enabled = await promptRef.current.checkBiometricsEnabled()
-                if (cancelled || !enabled) return
                 const outcome = await promptRef.current.unlockWithBiometrics({
                     title: promptRef.current.t(
                         'security.biometric.unlock_prompt_title',
@@ -157,7 +170,7 @@ export const usePinEditView = ({
         return () => {
             cancelled = true
         }
-    }, [currentMode])
+    }, [currentMode, hasSeenBiometricsEnabled])
 
     const handlePinComplete = useCallback(
         async (pin: string) => {

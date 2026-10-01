@@ -82,7 +82,8 @@ const hydrateLockoutState = (
     kms: HydrationKms,
 ): Promise<Nullable<LockoutState>> => {
     hydration ??= (async () => {
-        await migratePinRecordToV3(kms)
+        const { lockout } = await migratePinRecordToV3(kms)
+        if (lockout) return lockout
         return kms.withSecret(PIN_RECORD_KEY_ID, bytes => {
             const record = parsePinRecord(bytes)
             return record

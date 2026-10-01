@@ -471,6 +471,34 @@ describe('usePinCode', () => {
             expect(mockSetFailedAttempts).toHaveBeenCalledWith(3)
             expect(mockSetLockoutEndTime).toHaveBeenCalledWith(987654321)
         })
+        // The migration's version check carries the counters out; a second
+        // read would queue ahead of the biometric prompt's own reads.
+        const pinReads = kmsMocks.withSecret.mock.calls.filter(
+            ([id]) => id === PIN_RECORD_KEY_ID,
+        )
+        expect(pinReads).toHaveLength(1)
+    }, 30_000)
+
+    test('hydrates the counters of a v2 record from the migrated record', async () => {
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+        const base = await createPinRecord('123456')
+        kmsMocks.pinBytes = new TextEncoder().encode(
+            JSON.stringify({
+                version: 2,
+                salt: base.salt,
+                hash: base.hash,
+                failedAttempts: 3,
+                lockoutEndTime: 987_654_321,
+            }),
+        )
+
+        renderHook(() => usePinCode())
+
+        await waitFor(() => {
+            expect(mockSetFailedAttempts).toHaveBeenCalledWith(3)
+            expect(mockSetLockoutEndTime).toHaveBeenCalledWith(987_654_321)
+        })
+        expect(parsePinRecord(kmsMocks.pinBytes!)).not.toBeNull()
     }, 30_000)
 
     test('concurrent mounts share one record read instead of one each', async () => {
@@ -493,8 +521,7 @@ describe('usePinCode', () => {
         const pinReads = kmsMocks.withSecret.mock.calls.filter(
             ([id]) => id === PIN_RECORD_KEY_ID,
         )
-        // One for the v3 migration's version check, one for the hydration.
-        expect(pinReads).toHaveLength(2)
+        expect(pinReads).toHaveLength(1)
     }, 30_000)
 
     test('a mount after hydration settles reads the record afresh', async () => {

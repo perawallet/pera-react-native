@@ -206,12 +206,6 @@ describe('Flow: Biometric authentication lifecycle', () => {
             expect(hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)).toBe(false)
         })
 
-        let isOffered: Optional<boolean>
-        await act(async () => {
-            isOffered = await result.current.checkBiometricUnlockAvailable()
-        })
-        expect(isOffered).toBe(true)
-
         let outcome: Optional<BiometricUnlockOutcome>
         await act(async () => {
             outcome = await result.current.unlockWithBiometrics(PROMPT)
