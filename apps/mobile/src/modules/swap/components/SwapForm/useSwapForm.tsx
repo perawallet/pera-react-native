@@ -40,6 +40,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     clearTabResumeIntent,
+    completeTabResume,
     registerTabResumeIntent,
 } from '@utils/tabResumeIntent'
 import { useSwapQuotes } from '../../hooks/useSwapQuotes'
@@ -521,13 +522,13 @@ export const useSwapForm = (
         const fromUnit = selectedQuote.assetIn.unitName ?? ''
         const toUnit = selectedQuote.assetOut.unitName ?? ''
 
-        successToast(
-            t('swap.execution.success_title'),
-            t('swap.execution.success_body', {
-                fromAsset: fromUnit,
-                toAsset: toUnit,
-            }),
-        )
+        const successTitle = t('swap.execution.success_title')
+        const successBody = t('swap.execution.success_body', {
+            fromAsset: fromUnit,
+            toAsset: toUnit,
+        })
+        successToast(successTitle, successBody)
+        completeTabResume({ title: successTitle, body: successBody })
         resetAmounts()
     }, [
         selectedQuote,

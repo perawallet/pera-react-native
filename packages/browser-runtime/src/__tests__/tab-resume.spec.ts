@@ -16,9 +16,14 @@ import {
     type ChromeFake,
 } from '@perawallet/wallet-extension-platform-chrome/test-utils'
 import {
+    TAB_RESUME_DONE_SCOPE,
+    TAB_RESUME_RESULT_SESSION_KEY,
     TAB_RESUME_SESSION_KEY,
+    finishTabResume,
+    isTabResumeDoneMessage,
     putTabResumeIntent,
     takeTabResumeIntent,
+    takeTabResumeResult,
 } from '../tab-resume'
 
 describe('tab resume intent', () => {
@@ -44,5 +49,41 @@ describe('tab resume intent', () => {
         await takeTabResumeIntent()
 
         expect(await takeTabResumeIntent()).toBeNull()
+    })
+
+    it('stores the popup toast before asking the worker to close the tab', async () => {
+        const received: { message: unknown; hasResult: boolean }[] = []
+        fake.chrome.runtime.onMessage.addListener(
+            (message, _sender, sendResponse) => {
+                received.push({
+                    message,
+                    hasResult: fake.sessionData.has(
+                        TAB_RESUME_RESULT_SESSION_KEY,
+                    ),
+                })
+                sendResponse({ ok: true })
+                return false
+            },
+        )
+
+        await finishTabResume({ title: 'Swap Complete', body: 'done' })
+
+        expect(received).toEqual([
+            { message: { scope: TAB_RESUME_DONE_SCOPE }, hasResult: true },
+        ])
+        expect(await takeTabResumeResult()).toEqual({
+            title: 'Swap Complete',
+            body: 'done',
+            createdAt: expect.any(Number),
+        })
+        expect(await takeTabResumeResult()).toBeNull()
+    })
+
+    it('recognises only its own done message', () => {
+        expect(isTabResumeDoneMessage({ scope: TAB_RESUME_DONE_SCOPE })).toBe(
+            true,
+        )
+        expect(isTabResumeDoneMessage({ scope: 'other' })).toBe(false)
+        expect(isTabResumeDoneMessage(null)).toBe(false)
     })
 })

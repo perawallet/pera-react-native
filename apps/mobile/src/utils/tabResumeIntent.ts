@@ -10,9 +10,34 @@
  limitations under the License
  */
 
-import type { TabResumeIntent } from './tabResumeIntentTypes'
+/**
+ * What a flow needs to reopen in a browser tab when the toolbar popup can't
+ * finish it (a Bluetooth Ledger can only be reached from a tab). Amounts are
+ * display-unit strings: the record crosses `chrome.storage.session`, and
+ * `Decimal` doesn't survive JSON.
+ */
+export type TabResumeIntent =
+    | {
+          flow: 'swap'
+          accountAddress: string
+          assetInId: string
+          assetOutId: string
+          payAmount: string
+      }
+    | {
+          flow: 'send'
+          accountAddress: string
+          assetId: string
+          destination: string
+          amount: string
+          note?: string
+      }
 
-export type { TabResumeIntent }
+/** The success toast the popup shows once a resumed flow's tab closes. */
+export type TabResumeResult = {
+    title: string
+    body: string
+}
 
 // Native no-op: there's no popup to escape. See the `.web.ts` twin.
 export const registerTabResumeIntent = (_intent: TabResumeIntent): void => {}
@@ -20,3 +45,5 @@ export const registerTabResumeIntent = (_intent: TabResumeIntent): void => {}
 export const clearTabResumeIntent = (): void => {}
 
 export const peekTabResumeIntent = (): TabResumeIntent | null => null
+
+export const completeTabResume = (_result: TabResumeResult): void => {}

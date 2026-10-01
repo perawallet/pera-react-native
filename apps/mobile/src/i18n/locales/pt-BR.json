@@ -3598,7 +3598,6 @@
         "connecting": {
             "title": "Conexão com o Ledger",
             "subtitle": "Aguardando a conexão do Ledger.",
-            "browser_picker_subtitle": "Aguardando a conexão do Ledger. Se o navegador pedir, selecione seu dispositivo Ledger.",
             "cancel": "Cancelar"
         },
         "instructions": {

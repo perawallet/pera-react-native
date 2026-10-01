@@ -10,9 +10,21 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { consumedFlow, mockFinishTabResume } = vi.hoisted(() => ({
+    consumedFlow: { current: null as string | null },
+    mockFinishTabResume: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
+    getConsumedExpandedFlow: () => consumedFlow.current,
+    finishTabResume: mockFinishTabResume,
+}))
+
 import {
     clearTabResumeIntent,
+    completeTabResume,
     peekTabResumeIntent,
     registerTabResumeIntent,
 } from '../tabResumeIntent.web'
@@ -28,6 +40,9 @@ const SWAP_INTENT = {
 describe('tabResumeIntent (web)', () => {
     beforeEach(() => {
         clearTabResumeIntent()
+        consumedFlow.current = null
+        mockFinishTabResume.mockReset()
+        mockFinishTabResume.mockResolvedValue(undefined)
     })
 
     it('holds the intent of the flow that is signing', () => {
@@ -42,5 +57,26 @@ describe('tabResumeIntent (web)', () => {
         clearTabResumeIntent()
 
         expect(peekTabResumeIntent()).toBeNull()
+    })
+
+    it('hands a finished flow back to the popup only from a resume tab', () => {
+        const result = { title: 'Swap Complete', body: 'done' }
+
+        completeTabResume(result)
+        expect(mockFinishTabResume).not.toHaveBeenCalled()
+
+        consumedFlow.current = 'resume'
+        completeTabResume(result)
+        expect(mockFinishTabResume).toHaveBeenCalledWith(result)
+    })
+
+    it('stays quiet when the worker refuses, leaving the tab on its own toast', async () => {
+        consumedFlow.current = 'resume'
+        mockFinishTabResume.mockRejectedValue(new Error('port closed'))
+
+        expect(() =>
+            completeTabResume({ title: 'Swap Complete', body: 'done' }),
+        ).not.toThrow()
+        await new Promise(resolve => setTimeout(resolve, 0))
     })
 })

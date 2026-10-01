@@ -14,7 +14,6 @@ import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type LedgerReconnectingContentProps = {
-    isBrowserPickerExpected?: boolean
     onCancel: () => void
 }
 
@@ -30,7 +29,6 @@ export type LedgerReconnectingContentProps = {
  * owns the layout, and this only binds copy and the cancel action.
  */
 export const LedgerReconnectingContent = ({
-    isBrowserPickerExpected = false,
     onCancel,
 }: LedgerReconnectingContentProps) => {
     const { t } = useLanguage()
@@ -38,11 +36,7 @@ export const LedgerReconnectingContent = ({
     return (
         <ConfirmActionContent
             title={t('ledger.connecting.title')}
-            message={t(
-                isBrowserPickerExpected
-                    ? 'ledger.connecting.browser_picker_subtitle'
-                    : 'ledger.connecting.subtitle',
-            )}
+            message={t('ledger.connecting.subtitle')}
             confirmLabel={t('ledger.signing.cancel')}
             confirmVariant='secondary'
             onConfirm={onCancel}

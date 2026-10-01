@@ -3575,7 +3575,6 @@
         "connecting": {
             "title": "Ledger bağlantısı",
             "subtitle": "Ledger’ın bağlanması bekleniyor.",
-            "browser_picker_subtitle": "Ledger’ın bağlanması bekleniyor. Tarayıcın sorarsa Ledger cihazını seç.",
             "cancel": "İptal"
         },
         "instructions": {

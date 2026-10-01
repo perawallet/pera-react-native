@@ -16,16 +16,31 @@ import { Decimal } from 'decimal.js'
 
 const {
     mockTakeTabResumeIntent,
+    mockTakeTabResumeResult,
     mockSetSelectedAccountAddress,
     mockOpenSendFunds,
+    mockSuccessToast,
+    surfaceState,
 } = vi.hoisted(() => ({
     mockTakeTabResumeIntent: vi.fn(),
+    mockTakeTabResumeResult: vi.fn(),
     mockSetSelectedAccountAddress: vi.fn(),
     mockOpenSendFunds: vi.fn(),
+    mockSuccessToast: vi.fn(),
+    surfaceState: { current: 'popup' as string },
 }))
 
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     takeTabResumeIntent: () => mockTakeTabResumeIntent(),
+    takeTabResumeResult: () => mockTakeTabResumeResult(),
+}))
+
+vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+    getSurface: () => surfaceState.current,
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ successToast: mockSuccessToast }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -39,7 +54,12 @@ vi.mock('@modules/deeplink', () => ({
     useSendFundsDeeplink: () => mockOpenSendFunds,
 }))
 
-import { TAB_RESUME_MAX_AGE_MS, useTabResume } from '../useTabResume.web'
+import {
+    TAB_RESUME_MAX_AGE_MS,
+    TAB_RESUME_RESULT_MAX_AGE_MS,
+    useTabResume,
+    useTabResumeResultToast,
+} from '../useTabResume.web'
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 
@@ -151,5 +171,51 @@ describe('useTabResume (web)', () => {
         expect(navigate).not.toHaveBeenCalled()
         expect(mockOpenSendFunds).not.toHaveBeenCalled()
         expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+    })
+})
+
+describe('useTabResumeResultToast (web)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        surfaceState.current = 'popup'
+    })
+
+    it("shows the finished flow's success toast in the reopened popup", async () => {
+        mockTakeTabResumeResult.mockResolvedValue({
+            title: 'Swap Complete',
+            body: 'ALGO to USDC swap successfully completed',
+            createdAt: Date.now(),
+        })
+
+        renderHook(() => useTabResumeResultToast())
+
+        await waitFor(() =>
+            expect(mockSuccessToast).toHaveBeenCalledWith(
+                'Swap Complete',
+                'ALGO to USDC swap successfully completed',
+            ),
+        )
+    })
+
+    it('leaves the result alone outside the toolbar popup', async () => {
+        surfaceState.current = 'expanded'
+
+        renderHook(() => useTabResumeResultToast())
+        await flush()
+
+        expect(mockTakeTabResumeResult).not.toHaveBeenCalled()
+    })
+
+    it('drops a result from a popup the browser never reopened', async () => {
+        mockTakeTabResumeResult.mockResolvedValue({
+            title: 'Swap Complete',
+            body: 'done',
+            createdAt: Date.now() - TAB_RESUME_RESULT_MAX_AGE_MS - 1,
+        })
+
+        renderHook(() => useTabResumeResultToast())
+        await flush()
+
+        expect(mockSuccessToast).not.toHaveBeenCalled()
     })
 })

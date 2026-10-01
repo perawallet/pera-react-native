@@ -44,16 +44,22 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-const { mockRequestBottomSheet, mockRegisterTabResume, mockClearTabResume } =
-    vi.hoisted(() => ({
-        mockRequestBottomSheet: vi.fn(),
-        mockRegisterTabResume: vi.fn(),
-        mockClearTabResume: vi.fn(),
-    }))
+const {
+    mockRequestBottomSheet,
+    mockRegisterTabResume,
+    mockClearTabResume,
+    mockCompleteTabResume,
+} = vi.hoisted(() => ({
+    mockRequestBottomSheet: vi.fn(),
+    mockRegisterTabResume: vi.fn(),
+    mockClearTabResume: vi.fn(),
+    mockCompleteTabResume: vi.fn(),
+}))
 
 vi.mock('@utils/tabResumeIntent', () => ({
     registerTabResumeIntent: mockRegisterTabResume,
     clearTabResumeIntent: mockClearTabResume,
+    completeTabResume: mockCompleteTabResume,
 }))
 
 let mockFromAsset = '0'
@@ -771,6 +777,34 @@ describe('useSwapForm', () => {
             })
 
             expect(mockClearTabResume).toHaveBeenCalledOnce()
+        })
+
+        it('hands a successful swap back to the popup with its toast copy', async () => {
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'success' })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockCompleteTabResume).toHaveBeenCalledWith({
+                title: 'swap.execution.success_title',
+                body: 'swap.execution.success_body',
+            })
+        })
+
+        it('does not hand back a swap that failed', async () => {
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                kind: 'error',
+                message: 'body text',
+            })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockCompleteTabResume).not.toHaveBeenCalled()
         })
 
         it('falls back to the default title when the confirmation result carries none', async () => {

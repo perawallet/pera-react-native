@@ -10,20 +10,29 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { Decimal } from 'decimal.js'
-import { takeTabResumeIntent } from '@perawallet/wallet-core-browser-runtime'
+import {
+    takeTabResumeIntent,
+    takeTabResumeResult,
+} from '@perawallet/wallet-core-browser-runtime'
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useSendFundsDeeplink } from '@modules/deeplink'
+import { useToast } from '@hooks/useToast'
 import type { TabResumeIntent } from '@utils/tabResumeIntent'
 
 // Long enough to read the error and tap "Open in Tab"; short enough that a
 // tab opened much later doesn't resurrect an old payment.
 export const TAB_RESUME_MAX_AGE_MS = 5 * 60 * 1000
+
+// The popup reopens right after the tab closes; anything older is from a popup
+// the browser failed to open, and a toast for it later would be confusing.
+export const TAB_RESUME_RESULT_MAX_AGE_MS = 60 * 1000
 
 type StoredIntent = TabResumeIntent & { createdAt: number }
 
@@ -106,4 +115,34 @@ export const useTabResume = (
             })
         })()
     }, [accounts, setSelectedAccountAddress, navigate, openSendFunds])
+}
+
+/**
+ * In the toolbar popup the service worker reopened after a resumed flow's tab
+ * closed, shows that flow's success toast, so finishing in the tab doesn't
+ * end with no confirmation.
+ */
+export const useTabResumeResultToast = (): void => {
+    const { successToast } = useToast()
+
+    useEffect(() => {
+        if (getSurface() !== 'popup') return
+        void takeTabResumeResult()
+            .then(value => {
+                const result = value as Partial<
+                    Record<'title' | 'body' | 'createdAt', unknown>
+                > | null
+                if (
+                    !result ||
+                    typeof result.title !== 'string' ||
+                    typeof result.body !== 'string' ||
+                    typeof result.createdAt !== 'number' ||
+                    Date.now() - result.createdAt > TAB_RESUME_RESULT_MAX_AGE_MS
+                ) {
+                    return
+                }
+                successToast(result.title, result.body)
+            })
+            .catch(() => undefined)
+    }, [successToast])
 }

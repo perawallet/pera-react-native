@@ -41,12 +41,14 @@ const {
     mockOnFinished,
     mockRegisterTabResume,
     mockClearTabResume,
+    mockCompleteTabResume,
     sendFundsState,
 } = vi.hoisted(() => ({
     mockExecute: vi.fn(),
     mockOnFinished: vi.fn(),
     mockRegisterTabResume: vi.fn(),
     mockClearTabResume: vi.fn(),
+    mockCompleteTabResume: vi.fn(),
     sendFundsState: {
         amount: undefined as unknown,
         note: undefined as string | undefined,
@@ -57,7 +59,10 @@ const {
 vi.mock('@utils/tabResumeIntent', () => ({
     registerTabResumeIntent: mockRegisterTabResume,
     clearTabResumeIntent: mockClearTabResume,
+    completeTabResume: mockCompleteTabResume,
 }))
+
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useTransactionSendFlow: () => ({
@@ -187,6 +192,21 @@ describe('useTransactionProcessingScreen', () => {
         })
         await new Promise(resolve => setTimeout(resolve, 0))
         expect(mockClearTabResume).toHaveBeenCalledOnce()
+    })
+
+    it('hands a sent transaction back to the popup with its success copy', async () => {
+        mockExecute.mockResolvedValueOnce('TXID')
+
+        renderHook(() => useTransactionProcessingScreen())
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(mockReplace).toHaveBeenCalledWith('TransactionSuccess', {
+            transactionId: 'TXID',
+        })
+        expect(mockCompleteTabResume).toHaveBeenCalledWith({
+            title: 'send_funds.success.title',
+            body: 'send_funds.success.subtitle',
+        })
     })
 
     it('does not offer to resume closing an account', () => {

@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-import type { TabResumeIntent } from './tabResumeIntentTypes'
-
-export type { TabResumeIntent }
+import {
+    finishTabResume,
+    getConsumedExpandedFlow,
+} from '@perawallet/wallet-core-browser-runtime'
+import type { TabResumeIntent, TabResumeResult } from './tabResumeIntent'
 
 // Memory-only and per page: set while a flow is signing, so "Open in Tab" on a
 // signing error knows what to reopen. Flows clear it once signing settles, or
@@ -28,3 +30,11 @@ export const clearTabResumeIntent = (): void => {
 }
 
 export const peekTabResumeIntent = (): TabResumeIntent | null => current
+
+// The tab only existed to finish the popup's flow: once it succeeds, the
+// service worker closes it and reopens the popup, which shows `result`.
+export const completeTabResume = (result: TabResumeResult): void => {
+    if (getConsumedExpandedFlow() !== 'resume') return
+    // Refused or unreachable worker: the tab stays open on its own success toast.
+    void finishTabResume(result).catch(() => undefined)
+}

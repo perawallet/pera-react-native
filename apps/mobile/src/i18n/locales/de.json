@@ -3567,7 +3567,6 @@
         "connecting": {
             "title": "Ledger-Verbindung",
             "subtitle": "Warten auf Ledger-Verbindung.",
-            "browser_picker_subtitle": "Warten auf Ledger-Verbindung. Wenn dein Browser danach fragt, wähle dein Ledger-Gerät aus.",
             "cancel": "Abbrechen"
         },
         "instructions": {

@@ -36,8 +36,10 @@ import { bottomSheetNotifier } from '@components/core'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { trackEvent, TransactionsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     clearTabResumeIntent,
+    completeTabResume,
     registerTabResumeIntent,
 } from '@utils/tabResumeIntent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -74,6 +76,7 @@ export const useTransactionProcessingScreen =
             return assets.get(selectedAssetId)
         }, [selectedAssetId, assets])
         const selectedAccount = useSelectedAccount()
+        const { t } = useLanguage()
         const allAccounts = useAllAccounts()
         const { showError } = useErrorToast()
         const { invalidate: invalidateAccountBalances } =
@@ -164,6 +167,10 @@ export const useTransactionProcessingScreen =
                     invalidateAccountBalances()
                     navigation.replace('TransactionSuccess', {
                         transactionId: txId,
+                    })
+                    completeTabResume({
+                        title: t('send_funds.success.title'),
+                        body: t('send_funds.success.subtitle'),
                     })
                 })
                 .catch(error => {

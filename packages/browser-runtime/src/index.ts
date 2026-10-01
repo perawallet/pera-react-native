@@ -30,9 +30,14 @@ export {
     type ExpandedFlow,
 } from './navigation'
 export {
+    TAB_RESUME_DONE_SCOPE,
+    TAB_RESUME_RESULT_SESSION_KEY,
     TAB_RESUME_SESSION_KEY,
+    finishTabResume,
+    isTabResumeDoneMessage,
     putTabResumeIntent,
     takeTabResumeIntent,
+    takeTabResumeResult,
 } from './tab-resume'
 export {
     INSTALL_KEY_DB_NAME,

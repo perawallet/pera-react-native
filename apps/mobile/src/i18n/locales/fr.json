@@ -3575,7 +3575,6 @@
         "connecting": {
             "title": "Connexion Ledger",
             "subtitle": "En attente de la connexion du Ledger.",
-            "browser_picker_subtitle": "En attente de la connexion du Ledger. Si votre navigateur vous le demande, sélectionnez votre appareil Ledger.",
             "cancel": "Annuler"
         },
         "instructions": {

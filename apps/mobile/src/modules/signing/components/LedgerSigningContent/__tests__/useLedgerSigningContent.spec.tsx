@@ -21,15 +21,6 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useLedgerSigningContent } from '../useLedgerSigningContent'
 
-const browserPickerState = vi.hoisted(() => ({ canOpen: false }))
-
-// vitest doesn't resolve `.web.ts` twins; drive the flag directly instead.
-vi.mock('../../../utils/browserDevicePicker', () => ({
-    get canConnectOpenBrowserPicker() {
-        return browserPickerState.canOpen
-    },
-}))
-
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
@@ -105,7 +96,6 @@ const mockPipeline = (overrides: PipelineMockOverrides = {}) => {
 describe('useLedgerSigningContent', () => {
     beforeEach(() => {
         useHardwareSigningStore.getState().resetState()
-        browserPickerState.canOpen = false
         vi.mocked(useSigningRequest).mockReturnValue({
             currentRequest: undefined,
             pendingSignRequests: [],
@@ -128,28 +118,6 @@ describe('useLedgerSigningContent', () => {
         const { result } = renderHook(() => useLedgerSigningContent())
         expect(result.current.isVisible).toBe(false)
         expect(result.current.status).toBe('searching')
-    })
-
-    it('shows the first connect attempt on web, where a browser picker may open', () => {
-        browserPickerState.canOpen = true
-        mockPipeline({
-            snapshot: buildChildSnapshot({ value: { active: 'searching' } }),
-        })
-
-        const { result } = renderHook(() => useLedgerSigningContent())
-
-        expect(result.current.isVisible).toBe(true)
-        expect(result.current.isBrowserPickerExpected).toBe(true)
-    })
-
-    it('does not expect a browser picker on native', () => {
-        mockPipeline({
-            snapshot: buildChildSnapshot({ value: { active: 'searching' } }),
-        })
-
-        const { result } = renderHook(() => useLedgerSigningContent())
-
-        expect(result.current.isBrowserPickerExpected).toBe(false)
     })
 
     it('stays visible while a retry reconnects', () => {
