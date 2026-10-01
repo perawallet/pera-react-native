@@ -27,10 +27,7 @@ import {
     HardwareWalletError,
     SigningError,
 } from '../pipeline/errors'
-import {
-    validateCosignSubsetIntegrity,
-    validateTransactionGroupIntegrity,
-} from '../utils/validateTransactionGroupIntegrity'
+import { plannerAdapterFor } from '../chain-adapter'
 import { resolveSigningAccount } from './utils/resolveSigningAccount'
 import type {
     GroupSignerTypeMap,
@@ -228,6 +225,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
 const buildSignableGroups = (
     request: SignRequest,
     allAccounts: WalletAccount[],
+    network: SigningMachineInput['network'],
 ): SignableGroup[] => {
     const source = buildSourceMetadata(request)
 
@@ -241,11 +239,10 @@ const buildSignableGroups = (
         // skips the recompute; contiguity is still enforced, and full-group
         // integrity is verified on the submitter and by algod.
         const txsToValidate = request.groupContext ?? request.txs
-        if (request.sourceType === 'multisig-cosign') {
-            validateCosignSubsetIntegrity(txsToValidate)
-        } else {
-            validateTransactionGroupIntegrity(txsToValidate)
-        }
+        const planner = plannerAdapterFor(network)
+        planner.validateGroup(txsToValidate, {
+            isCosigner: request.sourceType === 'multisig-cosign',
+        })
 
         const knownAddresses = new Set(allAccounts.map(a => a.address))
         const rawBytes = request.rawTransactionsBase64
@@ -351,7 +348,11 @@ export const resolveInitialContext = (
 ): SigningMachineContext => {
     const { request, allAccounts } = input
 
-    const signableGroups = buildSignableGroups(request, allAccounts)
+    const signableGroups = buildSignableGroups(
+        request,
+        allAccounts,
+        input.network,
+    )
 
     if (signableGroups.length === 0) {
         throw new CannotSignError(

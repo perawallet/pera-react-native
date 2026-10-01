@@ -42,14 +42,13 @@ vi.mock('@perawallet/wallet-core-config', async () => {
 //
 // The LSig delegation signer IS consumed via the barrel, so stubbing it is both
 // valid and necessary — its junk bytes would otherwise fail
-// `encodeDelegatedLsigAccount`'s signature check, which is stubbed too.
+// `encodeProgramAccount`'s signature check, which is stubbed too.
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
     useProgramSigner: () => ({
         signProgram: vi.fn(async () => new Uint8Array([8, 8, 8])),
-        signDelegatedLsig: vi.fn(),
     }),
-    encodeDelegatedLsigAccount: () => new Uint8Array([9, 9, 9]),
+    encodeProgramAccount: () => new Uint8Array([9, 9, 9]),
 }))
 
 // __DEV__ is false in the test env, so the kill-switch would default off (and

@@ -10,22 +10,33 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
+    DuplicateChainAdapterError,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     aggregateTransactionWarnings,
     classifyRequestStructure,
+    computeBalanceImpact,
     createTransactionListItems,
     decodeArbitraryDataForDisplay,
+    encodeProgramAccount,
     getRekeyedUnsignableReason,
+    legacyPlannerAdapter,
+    plannerAdapterFor,
+    plannerChainAdapters,
     resolveAllSignerAddresses,
+    resolveMinFeeForSender,
     reviewerAdapterFor,
     reviewerChainAdapters,
     type ReviewerChainAdapter,
 } from '../chain-adapter'
+import {
+    fakePlannerAdapter,
+    registerFakePlannerAdapter,
+} from './fakePlannerAdapter'
 import { registerFakeReviewerAdapter } from './fakeReviewerAdapter'
 
 type WrapperName =
@@ -96,6 +107,76 @@ describe('reviewer chain adapter registry', () => {
 
         expect(() => reviewerAdapterFor('mainnet')).toThrow(
             ChainAdapterNotRegisteredError,
+        )
+    })
+})
+
+describe('planner chain adapters', () => {
+    beforeEach(() => {
+        plannerChainAdapters.reset()
+    })
+
+    it('resolves the registered adapter for a legacy network', () => {
+        const adapter = registerFakePlannerAdapter()
+
+        expect(plannerAdapterFor('mainnet')).toBe(adapter)
+        expect(plannerAdapterFor('testnet')).toBe(adapter)
+        expect(legacyPlannerAdapter()).toBe(adapter)
+    })
+
+    it('throws ChainAdapterNotRegisteredError when no planner is registered', () => {
+        expect(() => plannerAdapterFor('mainnet')).toThrow(
+            ChainAdapterNotRegisteredError,
+        )
+        expect(() => legacyPlannerAdapter()).toThrow(
+            'No planner adapter is registered for chain "algorand"',
+        )
+    })
+
+    it('refuses a second adapter for the same chain', () => {
+        registerFakePlannerAdapter()
+
+        expect(() =>
+            plannerChainAdapters.register(fakePlannerAdapter()),
+        ).toThrow(DuplicateChainAdapterError)
+    })
+
+    it('delegates the network-less exports to the registered adapter', () => {
+        const impact = {
+            deltas: [],
+            totalFeeMicroAlgos: 7n,
+            hasCloseRemainder: false,
+            closedAssetIds: [],
+            createdAssets: [],
+        }
+        const adapter = registerFakePlannerAdapter({
+            minFeeForSender: vi.fn(() => 4000n),
+            computeBalanceImpact: vi.fn(() => impact),
+            encodeProgramAccount: vi.fn(() => new Uint8Array([5])),
+        })
+        const feeParams = {
+            senderAddress: 'A',
+            accounts: [],
+            suggestedMinFee: 1000n,
+            configMinTxnFee: 1000n,
+            pqMultiplier: 3n,
+        }
+        const signable = new Set(['A'])
+        const program = new Uint8Array([1])
+        const sig = new Uint8Array([2])
+
+        expect(resolveMinFeeForSender(feeParams)).toBe(4000n)
+        expect(computeBalanceImpact([], signable)).toBe(impact)
+        expect(encodeProgramAccount(program, sig, 'A')).toEqual(
+            new Uint8Array([5]),
+        )
+
+        expect(adapter.minFeeForSender).toHaveBeenCalledWith(feeParams)
+        expect(adapter.computeBalanceImpact).toHaveBeenCalledWith([], signable)
+        expect(adapter.encodeProgramAccount).toHaveBeenCalledWith(
+            program,
+            sig,
+            'A',
         )
     })
 })

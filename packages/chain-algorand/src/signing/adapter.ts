@@ -10,18 +10,34 @@
  limitations under the License
  */
 
-import type { ReviewerChainAdapter } from '@perawallet/wallet-core-signing'
+import { resolveArc0001SignTxnRequest } from '@perawallet/wallet-core-blockchain'
+import type {
+    PlannerChainAdapter,
+    ReviewerChainAdapter,
+} from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { decodeArbitraryDataForDisplay } from './arbitraryDataDisplay'
+import { assignFeeToGroup } from './assignMinimumFeesToGroup'
+import { computeBalanceImpact } from './balanceImpact'
 import {
     classifyRequestStructure,
     createTransactionListItems,
 } from './classification'
 import { createStandardAnalyzer } from './createStandardAnalyzer'
+import { enqueueArc0001SignRequest } from './enqueueArc0001SignRequest'
+import { calculateTotalFee, detectHighGroupFee } from './fees'
 import {
     getRekeyedUnsignableReason,
     resolveAllSignerAddresses,
 } from './getRekeyedUnsignableReason'
+import { encodeDelegatedLsigAccount, programSigningPayload } from './lsig'
+import { mergeSigningResults } from './mergeSigningResults'
+import { resolveMinFeeForSender } from './minFeeResolver'
+import { simulateInnerTransactions } from './simulateImpact'
+import {
+    validateCosignSubsetIntegrity,
+    validateTransactionGroupIntegrity,
+} from './validateTransactionGroupIntegrity'
 import { aggregateTransactionWarnings } from './warnings'
 
 export const algorandReviewerAdapter: ReviewerChainAdapter = {
@@ -33,4 +49,27 @@ export const algorandReviewerAdapter: ReviewerChainAdapter = {
     resolveAllSignerAddresses,
     getRekeyedUnsignableReason,
     decodeArbitraryDataForDisplay,
+}
+
+export const algorandPlannerAdapter: PlannerChainAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
+    resolveDappRequest: resolveArc0001SignTxnRequest,
+    enqueueDappRequest: enqueueArc0001SignRequest,
+    minFeeForSender: resolveMinFeeForSender,
+    assignGroupFees: assignFeeToGroup,
+    reviewGroupFees: (transactions, signableAddresses) => ({
+        totalFee: calculateTotalFee(transactions, signableAddresses),
+        highFeeWarning: detectHighGroupFee(transactions, signableAddresses),
+    }),
+    computeBalanceImpact,
+    needsSimulation: transactions =>
+        transactions.some(tx => tx.txType === 'appl'),
+    simulateGroup: simulateInnerTransactions,
+    programPayload: programSigningPayload,
+    encodeProgramAccount: encodeDelegatedLsigAccount,
+    validateGroup: (transactions, { isCosigner }) =>
+        isCosigner
+            ? validateCosignSubsetIntegrity(transactions)
+            : validateTransactionGroupIntegrity(transactions),
+    mergeSigningResults,
 }

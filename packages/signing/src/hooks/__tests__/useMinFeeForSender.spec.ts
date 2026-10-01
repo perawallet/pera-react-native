@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useMinFeeForSender } from '../useMinFeeForSender'
 
 const mockUseAllAccounts = vi.fn()
@@ -43,23 +40,8 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     }
 })
 
-const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: 'q1',
-        address: 'QADDR',
-        type: AccountTypes.quantum,
-        keyPairId: 'kp-quantum',
-        ...overrides,
-    }) as WalletAccount
-
-const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: 'a1',
-        address: 'AADDR',
-        type: AccountTypes.algo25,
-        keyPairId: 'kp-algo25',
-        ...overrides,
-    }) as WalletAccount
+const accounts = [{ id: 'q1', address: 'QADDR' }]
+const resolveMinFee = vi.fn(() => 3000n)
 
 describe('useMinFeeForSender', () => {
     beforeEach(() => {
@@ -72,24 +54,22 @@ describe('useMinFeeForSender', () => {
             minTxnFee: 1000n,
             pqMultiplier: 3n,
         })
-        mockUseAllAccounts.mockReturnValue([])
+        mockUseAllAccounts.mockReturnValue(accounts)
+        resolveMinFee.mockClear()
+        registerFakePlannerAdapter({ minFeeForSender: resolveMinFee })
     })
 
-    it('resolves the multiplied fee for a quantum sender', () => {
-        mockUseAllAccounts.mockReturnValue([quantum()])
-
+    it('hands the sender, wallet accounts, suggested fee and fee config to the resolver', () => {
         const { result } = renderHook(() => useMinFeeForSender('QADDR'))
 
+        expect(resolveMinFee).toHaveBeenCalledWith({
+            senderAddress: 'QADDR',
+            accounts,
+            suggestedMinFee: 1000n,
+            configMinTxnFee: 1000n,
+            pqMultiplier: 3n,
+        })
         expect(result.current.minFee).toBe(3000n)
-        expect(result.current.isPending).toBe(false)
-    })
-
-    it('resolves the base fee for an algo25 sender (regression)', () => {
-        mockUseAllAccounts.mockReturnValue([algo25()])
-
-        const { result } = renderHook(() => useMinFeeForSender('AADDR'))
-
-        expect(result.current.minFee).toBe(1000n)
         expect(result.current.isPending).toBe(false)
     })
 
@@ -98,8 +78,6 @@ describe('useMinFeeForSender', () => {
             data: undefined,
             isPending: true,
         })
-        mockUseAllAccounts.mockReturnValue([quantum()])
-
         const { result } = renderHook(() => useMinFeeForSender('QADDR'))
 
         expect(result.current.minFee).toBeUndefined()
@@ -107,8 +85,6 @@ describe('useMinFeeForSender', () => {
     })
 
     it('returns undefined minFee when senderAddress is undefined', () => {
-        mockUseAllAccounts.mockReturnValue([quantum()])
-
         const { result } = renderHook(() => useMinFeeForSender(undefined))
 
         expect(result.current.minFee).toBeUndefined()

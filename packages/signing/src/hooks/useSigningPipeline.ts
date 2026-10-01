@@ -25,8 +25,8 @@ import {
     aggregateTransactionWarnings,
     classifyRequestStructure,
     createTransactionListItems,
+    legacyPlannerAdapter,
 } from '../chain-adapter'
-import { calculateTotalFee, detectHighGroupFee } from '../utils/fees'
 import type {
     SigningConfiguration,
     SigningPipeline,
@@ -91,7 +91,12 @@ const computeDisplayData = (
 
     const userAccountAddresses = new Set(accounts.map(a => a.address))
 
-    const totalFee = calculateTotalFee(allTransactions, signableAddresses)
+    // The cache this feeds is keyed by request alone, so it has no network to
+    // resolve a chain from.
+    const { totalFee, highFeeWarning } = legacyPlannerAdapter().reviewGroupFees(
+        allTransactions,
+        signableAddresses,
+    )
 
     // Gate warnings on the authorizing entity, not the raw sender: a dApp
     // can set a foreign `sender` it never imported while signing with an
@@ -118,13 +123,9 @@ const computeDisplayData = (
         authorizerByIndex,
     )
 
-    // High fee is a group-level concern ("what's being signed"), so it
-    // lives here rather than in the per-transaction aggregator that the
+    // High fee is a group-level concern ("what's being signed"), so it is
+    // added here rather than in the per-transaction aggregator that the
     // transaction-history view also consumes.
-    const highFeeWarning = detectHighGroupFee(
-        allTransactions,
-        signableAddresses,
-    )
     const warnings = highFeeWarning
         ? [...addressWarnings, highFeeWarning]
         : addressWarnings

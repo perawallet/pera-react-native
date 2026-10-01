@@ -18,7 +18,7 @@ import type {
     TransportResult,
 } from '../../../pipeline/types'
 import type { TransportFactory } from '../../context'
-import { mergeSigningResults } from '../../../utils/mergeSigningResults'
+import { legacyPlannerAdapter } from '../../../chain-adapter'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 
 export type TransportActorInput = {
@@ -75,7 +75,8 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         )
 
         const transport = createTransport(source, authAccount)
-        const merged = mergeSigningResults(signingResults)
+        const merged =
+            legacyPlannerAdapter().mergeSigningResults(signingResults)
 
         return transport.send(merged, source, authAccount.address)
     },

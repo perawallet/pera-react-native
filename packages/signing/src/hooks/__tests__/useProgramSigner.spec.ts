@@ -12,8 +12,8 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { LogicSig } from 'algosdk'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import {
     useProgramSigner,
     ProgramSigningUnsupportedError,
@@ -44,13 +44,17 @@ const hdAccount = {
 const PROGRAM = new Uint8Array([0x04, 0x81, 0x01])
 const SIG = new Uint8Array(64).fill(7)
 
+const PAYLOAD = new Uint8Array([9, 9, 9])
+const programPayload = vi.fn((_program: Uint8Array) => PAYLOAD)
+
 describe('useProgramSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSignDataWithKey.mockResolvedValue([SIG])
+        registerFakePlannerAdapter({ programPayload })
     })
 
-    test('signs "Program"-prefixed bytes with the account key and domain', async () => {
+    test('signs the planner payload with the account key and domain', async () => {
         const { result } = renderHook(() => useProgramSigner())
 
         await act(async () => {
@@ -62,26 +66,8 @@ describe('useProgramSigner', () => {
         expect(childId).toBe('key-hd-child')
         expect(domain).toBe('pera.accounts')
 
-        const signedBytes = items[0] as Uint8Array
-        const prefix = new TextEncoder().encode('Program')
-        expect([...signedBytes.slice(0, prefix.length)]).toEqual([...prefix])
-        expect([...signedBytes.slice(prefix.length)]).toEqual([...PROGRAM])
-    })
-
-    test('signDelegatedLsig returns an algosdk-decodable delegated LSig', async () => {
-        const { result } = renderHook(() => useProgramSigner())
-
-        let signedProgram: Uint8Array | undefined
-        await act(async () => {
-            ;({ signedProgram } = await result.current.signDelegatedLsig(
-                hdAccount,
-                PROGRAM,
-            ))
-        })
-
-        const decoded = LogicSig.fromByte(signedProgram!)
-        expect([...decoded.logic]).toEqual([...PROGRAM])
-        expect([...(decoded.sig ?? [])]).toEqual([...SIG])
+        expect(programPayload).toHaveBeenCalledWith(PROGRAM)
+        expect(items).toEqual([PAYLOAD])
     })
 
     test('rejects watch accounts with the typed error', async () => {
@@ -135,7 +121,7 @@ describe('useProgramSigner', () => {
 
         await expect(
             act(async () => {
-                await result.current.signDelegatedLsig(hwAccount, PROGRAM)
+                await result.current.signProgram(hwAccount, PROGRAM)
             }),
         ).rejects.toThrow(ProgramSigningUnsupportedError)
         expect(mockSignDataWithKey).not.toHaveBeenCalled()

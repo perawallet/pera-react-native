@@ -12,36 +12,12 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
-    decodeTransaction,
-    encodeTransactionRaw,
-    useAlgorandClient,
     useNetwork,
     type PeraDisplayableTransaction,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { flattenSimulatedInnerTransactions } from '../utils/simulateImpact'
-
 import type { Nullable } from '@perawallet/wallet-core-shared'
-
-/**
- * Clone a transaction with its group id cleared.
- *
- * dApp interactions (swaps, NFT purchases) arrive as an atomic group — every
- * transaction already carries a group id — but `composer.addTransaction` throws
- * on any transaction that is "already in a group". Without stripping it, the
- * simulation throws for every grouped request, the inner transactions are never
- * surfaced, and the balance impact shows only the spend side.
- *
- * We clone via the canonical encode/decode round-trip (never mutating the real
- * signing payload) and drop the group, letting the composer re-group the set
- * itself. The regrouped order matches the input, so the simulated execution —
- * and the inner transactions it produces — is equivalent.
- */
-const ungroupForSimulation = (tx: PeraTransaction): PeraTransaction => {
-    const clone = decodeTransaction(encodeTransactionRaw(tx))
-    delete clone.group
-    return clone
-}
+import { plannerAdapterFor } from '../chain-adapter'
 
 type UseGroupSimulationQueryParams = {
     /** Identifies the request for caching; the query is disabled without it. */
@@ -62,21 +38,16 @@ export type UseGroupSimulationQueryResult = {
 }
 
 /**
- * Runs an unsigned algod simulation of a transaction group and returns its
- * flattened inner transactions.
- *
- * App calls (swaps, lending, ASA factories, …) move funds through inner txns
- * the raw signing group never reveals; simulating surfaces them so balance
- * impact can account for dApp interactions. Best-effort: `retry: false` and a
- * caller-handled error mean a failure simply yields no inner txns rather than
- * blocking the flow.
+ * Runs an unsigned simulation of a transaction group and returns its flattened
+ * inner transactions, which the raw signing group never reveals.
+ * Best-effort: `retry: false` and a caller-handled error mean a failure
+ * simply yields no inner txns rather than blocking the flow.
  */
 export const useGroupSimulationQuery = ({
     requestId,
     groupTxs,
     enabled = true,
 }: UseGroupSimulationQueryParams): UseGroupSimulationQueryResult => {
-    const algorand = useAlgorandClient()
     const { network } = useNetwork()
 
     const query = useQuery({
@@ -84,25 +55,8 @@ export const useGroupSimulationQuery = ({
         enabled: enabled && !!requestId && !!groupTxs?.length,
         staleTime: Infinity,
         retry: false,
-        queryFn: async () => {
-            const composer = algorand.newGroup()
-            for (const tx of groupTxs ?? []) {
-                composer.addTransaction(
-                    tx.group ? ungroupForSimulation(tx) : tx,
-                )
-            }
-            const { simulateResponse } = await composer.simulate({
-                skipSignatures: true,
-                allowUnnamedResources: true,
-            })
-            // Structurally compatible with the flattener's minimal view; cast
-            // keeps us off the SDK's concrete model types.
-            return flattenSimulatedInnerTransactions(
-                simulateResponse as Parameters<
-                    typeof flattenSimulatedInnerTransactions
-                >[0],
-            )
-        },
+        queryFn: () =>
+            plannerAdapterFor(network).simulateGroup(groupTxs ?? [], network),
     })
 
     return {

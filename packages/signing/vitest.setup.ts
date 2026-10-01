@@ -12,6 +12,7 @@
 
 import { beforeEach, vi } from 'vitest'
 import { registerFakeBroadcaster } from './src/__tests__/fakeBroadcaster'
+import { registerFakePlannerAdapter } from './src/__tests__/fakePlannerAdapter'
 import { registerFakeReviewerAdapter } from './src/__tests__/fakeReviewerAdapter'
 
 const store = new Map<string, string>()
@@ -49,7 +50,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
+// The machine and hooks resolve the chain through the planner registry.
 beforeEach(() => {
     registerFakeBroadcaster()
     registerFakeReviewerAdapter()
+    registerFakePlannerAdapter()
 })

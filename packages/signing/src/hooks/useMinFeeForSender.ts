@@ -16,7 +16,7 @@ import {
     useMinimumFeeConfig,
     useSuggestedParametersQuery,
 } from '@perawallet/wallet-core-blockchain'
-import { resolveMinFeeForSender } from '../pipeline/sources/minFeeResolver'
+import { resolveMinFeeForSender } from '../chain-adapter'
 
 type UseMinFeeForSenderResult = {
     /** PQ-aware minimum fee in µAlgo for a txn sent by `senderAddress`; undefined while suggested params load */

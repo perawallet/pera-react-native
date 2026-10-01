@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useSigningPipeline } from '../useSigningPipeline'
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'
 import { useImpactTransactions } from '../useImpactTransactions'
@@ -56,6 +57,10 @@ describe('useImpactTransactions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSimulation()
+        registerFakePlannerAdapter({
+            needsSimulation: transactions =>
+                transactions.some(tx => tx.txType === 'appl'),
+        })
     })
 
     test('returns the top-level group untouched and disables simulation without an app call', () => {

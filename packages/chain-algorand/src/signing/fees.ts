@@ -13,7 +13,7 @@
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
-import type { TransactionWarning } from '../models'
+import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 
 export const calculateTotalFee = (
     transactions: PeraDisplayableTransaction[],

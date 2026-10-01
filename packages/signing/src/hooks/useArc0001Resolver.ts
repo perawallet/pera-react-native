@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    resolveArc0001SignTxnRequest,
+    useNetwork,
     type Arc0001ResolveResult,
     type Arc0001SignTxnsRequest,
 } from '@perawallet/wallet-core-blockchain'
@@ -21,6 +21,7 @@ import {
     useAllAccounts,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { plannerAdapterFor } from '../chain-adapter'
 
 export type Arc0001ResolverOptions = {
     authorizedAddresses?: Set<string>
@@ -32,9 +33,9 @@ export type UseArc0001ResolverResult = (
     options?: Arc0001ResolverOptions,
 ) => Arc0001ResolveResult
 
-// Binds `signableAddresses` from the wallet so transports can't forget
-// it. Non-React callers can use `resolveArc0001SignTxnRequest` directly.
+// Binds `signableAddresses` from the wallet so transports can't forget it.
 export const useArc0001Resolver = (): UseArc0001ResolverResult => {
+    const { network } = useNetwork()
     const signingAccounts = useSigningAccounts()
     const allAccounts = useAllAccounts()
     const signableAddresses = useMemo(
@@ -48,12 +49,12 @@ export const useArc0001Resolver = (): UseArc0001ResolverResult => {
     )
     return useCallback(
         (request, options = {}) =>
-            resolveArc0001SignTxnRequest(request, {
+            plannerAdapterFor(network).resolveDappRequest(request, {
                 signableAddresses,
                 multisigAddresses,
                 authorizedAddresses: options.authorizedAddresses,
                 maxTransactions: options.maxTransactions,
             }),
-        [signableAddresses, multisigAddresses],
+        [network, signableAddresses, multisigAddresses],
     )
 }

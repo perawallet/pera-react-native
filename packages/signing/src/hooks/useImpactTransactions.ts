@@ -11,8 +11,12 @@
  */
 
 import { useMemo } from 'react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import {
+    useNetwork,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
+import { plannerAdapterFor } from '../chain-adapter'
 import type { TransactionSignRequest } from '../models'
 import { useSigningPipeline } from './useSigningPipeline'
 import { useGroupSimulationQuery } from './useGroupSimulationQuery'
@@ -41,6 +45,7 @@ type UseImpactTransactionsResult = {
  * any failure falls back to the top-level group so the sheet never blocks on it.
  */
 export const useImpactTransactions = (): UseImpactTransactionsResult => {
+    const { network } = useNetwork()
     const { allTransactions, signableAddresses, currentRequest } =
         useSigningPipeline()
     const request = currentRequest as Optional<TransactionSignRequest>
@@ -49,8 +54,8 @@ export const useImpactTransactions = (): UseImpactTransactionsResult => {
     const groupTxs = request?.groupContext ?? request?.txs
 
     const hasAppCall = useMemo(
-        () => allTransactions.some(tx => tx.txType === 'appl'),
-        [allTransactions],
+        () => plannerAdapterFor(network).needsSimulation(allTransactions),
+        [network, allTransactions],
     )
 
     const simulation = useGroupSimulationQuery({

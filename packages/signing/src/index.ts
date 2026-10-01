@@ -13,6 +13,28 @@
 export const name = '@perawallet/wallet-core-signing'
 
 export {
+    computeBalanceImpact,
+    encodeProgramAccount,
+    plannerAdapterFor,
+    plannerChainAdapters,
+    resolveMinFeeForSender,
+    type AssignFeeToGroup,
+    type AssignFeeToGroupDeps,
+    type AssignFeeToGroupParams,
+    type AssignMinimumFeesToGroupResult,
+    type BalanceImpact,
+    type BalanceImpactCreatedAsset,
+    type BalanceImpactDelta,
+    type DappResolveContext,
+    type DappResolveResult,
+    type DappSignRequest,
+    type EnqueueDappRequestDeps,
+    type GroupFeeReview,
+    type PlannerChainAdapter,
+    type ResolveMinFeeForSenderParams,
+} from './chain-adapter'
+
+export {
     MAX_DATA_SIGN_REQUESTS,
     MAX_TRANSACTION_SIGN_REQUESTS,
 } from './constants'
@@ -23,6 +45,8 @@ export {
     isTransactionRequest,
     type ArbitraryDataSignRequest,
     type Arc60SignRequest,
+    type FeeAdjustment,
+    type FeeAdjustmentReason,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type SignRequest,
@@ -83,10 +107,9 @@ export {
     parseArc60WireRequest,
 } from './utils/arc60-wire'
 export { ARC60_SCOPE_AUTH } from './utils/arc60'
-export { computeBalanceImpact } from './utils/balanceImpact'
+export { buildWalletConnectSignResult } from './utils/buildWalletConnectSignResult'
 export { classifyLedgerErrorKind } from './utils/classifyLedgerErrorKind'
 export { isSignRequestMultisigUnsignable } from './utils/isSignRequestMultisigUnsignable'
-export { encodeDelegatedLsigAccount } from './utils/lsig'
 export type { Arc60ParsedPayload } from './utils/parseArc60ForDisplay'
 export { buildSiwaAuthRequest, type Siwa } from './utils/siwa'
 export {
@@ -128,8 +151,10 @@ export type { SigningLifecycleEvent } from './pipeline/signingEvents'
 export {
     AnalysisError,
     CannotSignError,
+    FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER,
     FeeAdjustmentDeliveryError,
     GenesisHashMismatchError,
+    InvalidSignableDataError,
     NetworkChangedError,
     NoLocalParticipantsError,
     SigningError,
@@ -140,7 +165,6 @@ export {
     UserCancelledError,
     isFeeAdjustmentDeliveryError,
 } from './pipeline/errors'
-export { resolveMinFeeForSender, type FeeAdjustment } from './pipeline/sources'
 export {
     classifyHandoffPoll,
     type HandoffPeerDelivery,

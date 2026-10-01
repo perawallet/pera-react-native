@@ -24,7 +24,7 @@ import {
     buildTransferTxs,
 } from '@perawallet/wallet-core-chain-algorand/transactions/builders'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
-import { resolveMinFeeForSender } from '@perawallet/wallet-core-signing/pipeline/sources/minFeeResolver'
+import { resolveMinFeeForSender } from '@perawallet/wallet-core-chain-algorand/signing/minFeeResolver'
 
 import {
     createAlgo25Account,

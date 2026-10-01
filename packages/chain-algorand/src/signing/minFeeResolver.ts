@@ -13,22 +13,9 @@
 import {
     getSignerFor,
     isQuantumAccount,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { calculateMinTxnFee } from '@perawallet/wallet-core-blockchain'
-
-export type ResolveMinFeeForSenderParams = {
-    /** Address of the transaction sender */
-    senderAddress: string
-    /** All wallet accounts, used to resolve the effective signer (auth account) */
-    accounts: WalletAccount[]
-    /** Network suggested minimum fee in µAlgo (algod suggestedParams.minFee) */
-    suggestedMinFee: bigint
-    /** Remote-config base minimum txn fee in µAlgo (useMinimumFeeConfig().minTxnFee) */
-    configMinTxnFee: bigint
-    /** Remote-config PQ fee multiplier (useMinimumFeeConfig().pqMultiplier) */
-    pqMultiplier: bigint
-}
+import type { ResolveMinFeeForSenderParams } from '@perawallet/wallet-core-signing'
 
 /**
  * Resolves the minimum fee in µAlgo a transaction sent by `senderAddress`

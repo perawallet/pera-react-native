@@ -21,7 +21,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    encodeDelegatedLsigAccount,
+    encodeProgramAccount,
     useProgramSigner,
     useSignAndSubmitGroup,
 } from '@perawallet/wallet-core-signing'
@@ -82,7 +82,7 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 // the same compile → sign → post the onboarding flow uses
                 // (useCreateEscrowCardMutation / useEscrowCardCreation).
                 const program = await compileAutoDrawProgram({ network })
-                const lsigBytes = encodeDelegatedLsigAccount(
+                const lsigBytes = encodeProgramAccount(
                     program,
                     await signProgram(account, program),
                     account.address,

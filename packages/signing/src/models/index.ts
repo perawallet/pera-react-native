@@ -25,7 +25,23 @@ import type {
     TransportResult,
 } from '../pipeline/types'
 import type { ResolvedSignerType } from '../machine/context'
-import type { FeeAdjustment } from '../pipeline/sources/assignMinimumFeesToGroup'
+
+/**
+ * Why a fee was raised. The `quantum-minimum` value predates the switch from a
+ * minimum to a surcharge and is kept for wire/log compatibility.
+ */
+export type FeeAdjustmentReason = 'quantum-minimum'
+
+export type FeeAdjustment = {
+    /** Index into the FULL group array (groupContext space) */
+    index: number
+    /** µAlgo, as received from the dApp */
+    originalFee: bigint
+    /** µAlgo, after raising to the required minimum */
+    adjustedFee: bigint
+    /** Which rule required the raise */
+    reason: FeeAdjustmentReason
+}
 
 export type SignRequestSource = {
     name?: string

@@ -54,7 +54,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 // platform-specific storage (react-native-mmkv) that can't load under
 // vitest/jsdom. resolveMinFeeForSender's own rekey-chain/PQ-multiplier
 // correctness is already exhaustively covered elsewhere (see
-// packages/signing/src/pipeline/sources/__tests__/minFeeResolver.spec.ts) —
+// packages/chain-algorand/src/signing/__tests__/minFeeResolver.spec.ts) —
 // these tests verify only that this hook wires the resolver's inputs
 // correctly and applies the override guard on its output.
 vi.mock('@perawallet/wallet-core-accounts', () => ({

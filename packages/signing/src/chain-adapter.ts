@@ -10,19 +10,35 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     createChainAdapterRegistry,
+    LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
-import type { SignRequest, TransactionWarning } from './models'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    Arc0001ResolveContext,
+    Arc0001ResolveResult,
+    Arc0001SignTxnsRequest,
+    PeraDisplayableTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-blockchain'
+import type { Network } from '@perawallet/wallet-core-config'
+import type { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    FeeAdjustment,
+    SignRequest,
+    TransactionSignRequest,
+    TransactionWarning,
+} from './models'
+import type { ExternalSignTxnTransport } from './hooks/useEnqueueArc0001SignRequest'
 import type {
     AnalysisContext,
     SignableAnalysis,
     SignableGroup,
+    SigningResult,
 } from './pipeline/types'
 
 export type RequestStructure = 'single' | 'list'
@@ -127,3 +143,205 @@ export const decodeArbitraryDataForDisplay: WithChain<
     ReviewerChainAdapter['decodeArbitraryDataForDisplay']
 > = (chainId, ...args) =>
     reviewerChainAdapters.get(chainId).decodeArbitraryDataForDisplay(...args)
+
+export type ResolveMinFeeForSenderParams = {
+    senderAddress: string
+    /** All wallet accounts, used to resolve the effective signer (auth account) */
+    accounts: WalletAccount[]
+    /** Network-suggested minimum fee in native base units */
+    suggestedMinFee: bigint
+    /** Remote-config base minimum txn fee in native base units */
+    configMinTxnFee: bigint
+    /** Remote-config quantum-signer fee multiplier */
+    pqMultiplier: bigint
+}
+
+export type AssignFeeToGroupParams = {
+    /** Full atomic payload (groupContext space), NOT just the signable subset */
+    transactions: PeraTransaction[]
+    /** Indices into `transactions` the wallet will sign; defaults to all */
+    signableIndices?: number[]
+    /** Subset-position → authorizer address (ARC-0001 `signers`) */
+    signerOverrides?: Map<number, string>
+}
+
+export type AssignMinimumFeesToGroupResult = {
+    /** Same array reference as input when nothing was adjusted */
+    transactions: PeraTransaction[]
+    /** Empty when nothing was adjusted */
+    adjustments: FeeAdjustment[]
+}
+
+export type AssignFeeToGroup = (
+    params: AssignFeeToGroupParams,
+) => Promise<AssignMinimumFeesToGroupResult>
+
+/** What the planner cannot read itself because it lives in React or a store. */
+export type AssignFeeToGroupDeps = {
+    /** Read at call time: a WalletConnect call can outlive the component that started it. */
+    accounts: WalletAccount[]
+    /** Network-suggested minimum fee in native base units; must resolve rather than throw. */
+    fetchSuggestedMinFee: () => Promise<bigint>
+    /** Remote-config base minimum txn fee in native base units */
+    configMinTxnFee: bigint
+    pqMultiplier: bigint
+}
+
+export type EnqueueDappRequestDeps = {
+    assignFeeToGroup: AssignFeeToGroup
+    addSignRequest: (request: SignRequest) => void
+    removeSignRequest: (request: SignRequest) => void
+}
+
+export type BalanceImpactDelta = {
+    /** Asset id; `'0'` denotes the native balance. */
+    assetId: string
+    /** Net change in base units. Positive = received, negative = spent. */
+    amount: bigint
+}
+
+export type BalanceImpactCreatedAsset = {
+    /**
+     * Row key. A minted asset has no id until the group is confirmed, so it
+     * can't be netted into {@link BalanceImpact.deltas} and is keyed by group
+     * position.
+     */
+    key: string
+    name?: string
+    unitName?: string
+    /** Total supply credited to the creator, in base units. */
+    total: bigint
+    decimals: number
+}
+
+export type BalanceImpact = {
+    /**
+     * Net per-asset movement across the whole group for the user's accounts.
+     * Assets whose movements cancel out (e.g. an internal transfer) are
+     * omitted. Order follows first-seen; the view layer sorts for display.
+     */
+    deltas: BalanceImpactDelta[]
+    /** Total fees (µAlgo) the user's accounts pay across the group. */
+    totalFeeMicroAlgos: bigint
+    /**
+     * A close-remainder that sweeps a user account's remaining balance is
+     * present. The real outflow then exceeds the explicit `amount`, so the UI
+     * must flag it rather than imply the delta is the full story.
+     */
+    hasCloseRemainder: boolean
+    /**
+     * Asset ids (`'0'` = ALGO) whose entire remaining balance is swept from a
+     * user account, so the UI must present the full balance, not the partial
+     * figure in `deltas`.
+     */
+    closedAssetIds: string[]
+    /**
+     * Assets minted by one of the user's accounts in this group. A mint moves no
+     * existing asset, so it produces no delta.
+     */
+    createdAssets: BalanceImpactCreatedAsset[]
+}
+
+export type DappSignRequest = Arc0001SignTxnsRequest
+export type DappResolveContext = Arc0001ResolveContext
+export type DappResolveResult = Arc0001ResolveResult
+
+export type GroupFeeReview = {
+    /** In display units of the native token. */
+    totalFee: Decimal
+    /** Set when the group's fees are out of proportion to what it does. */
+    highFeeWarning: Nullable<TransactionWarning>
+}
+
+/**
+ * The chain-specific legs of planning a signature request; registered by the
+ * chain package.
+ */
+export interface PlannerChainAdapter {
+    chainId: ChainId
+
+    /** Synchronous: callers depend on a thrown error surfacing in the same tick. */
+    resolveDappRequest(
+        request: DappSignRequest,
+        context: DappResolveContext,
+    ): DappResolveResult
+    enqueueDappRequest(
+        resolved: DappResolveResult,
+        transport: ExternalSignTxnTransport,
+        deps: EnqueueDappRequestDeps,
+    ): Promise<Nullable<TransactionSignRequest>>
+
+    minFeeForSender(params: ResolveMinFeeForSenderParams): bigint
+    /**
+     * Raises underfunded fees on the signable slots and returns the group
+     * unchanged, by reference, when nothing needs raising.
+     * @throws InvalidSignableDataError when a fee must be raised but the group is invalid as received.
+     */
+    assignGroupFees(
+        params: AssignFeeToGroupParams,
+        deps: AssignFeeToGroupDeps,
+    ): Promise<AssignMinimumFeesToGroupResult>
+    reviewGroupFees(
+        transactions: PeraDisplayableTransaction[],
+        signableAddresses: Set<string>,
+    ): GroupFeeReview
+
+    computeBalanceImpact(
+        transactions: PeraDisplayableTransaction[],
+        userAddresses: Set<string>,
+    ): BalanceImpact
+    /** Whether the group moves funds the top-level transactions don't reveal. */
+    needsSimulation(transactions: PeraDisplayableTransaction[]): boolean
+    /** The transactions a simulated run of `groupTxs` reveals beyond its top level. */
+    simulateGroup(
+        groupTxs: PeraTransaction[],
+        network: Network,
+    ): Promise<PeraDisplayableTransaction[]>
+
+    /** The bytes a program signature must cover. */
+    programPayload(program: Uint8Array): Uint8Array
+    /** @throws when the signature does not verify against `signerAddress`. */
+    encodeProgramAccount(
+        program: Uint8Array,
+        sig: Uint8Array,
+        signerAddress: string,
+    ): Uint8Array
+
+    /**
+     * Checks the FULL payload. A cosigner holds only a subset of the group,
+     * so `isCosigner` is the one sanctioned relaxation.
+     */
+    validateGroup(
+        transactions: PeraTransaction[],
+        options: { isCosigner: boolean },
+    ): void
+    mergeSigningResults(results: SigningResult[]): SigningResult
+}
+
+export const plannerChainAdapters =
+    createChainAdapterRegistry<PlannerChainAdapter>('planner')
+
+// Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
+export const plannerAdapterFor = (network: Network): PlannerChainAdapter =>
+    plannerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
+
+// For callers with no network in hand: every legacy network maps to this chain.
+export const legacyPlannerAdapter = (): PlannerChainAdapter =>
+    plannerChainAdapters.get(LEGACY_CHAIN_ID)
+
+export const resolveMinFeeForSender = (
+    params: ResolveMinFeeForSenderParams,
+): bigint => legacyPlannerAdapter().minFeeForSender(params)
+
+export const computeBalanceImpact = (
+    transactions: PeraDisplayableTransaction[],
+    userAddresses: Set<string>,
+): BalanceImpact =>
+    legacyPlannerAdapter().computeBalanceImpact(transactions, userAddresses)
+
+export const encodeProgramAccount = (
+    program: Uint8Array,
+    sig: Uint8Array,
+    signerAddress: string,
+): Uint8Array =>
+    legacyPlannerAdapter().encodeProgramAccount(program, sig, signerAddress)

@@ -11,60 +11,14 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type {
+    BalanceImpact,
+    BalanceImpactCreatedAsset,
+    BalanceImpactDelta,
+} from '@perawallet/wallet-core-signing'
 
 /** Asset id used for the native ALGO balance in {@link BalanceImpact} deltas. */
 export const ALGO_BALANCE_IMPACT_ASSET_ID = '0'
-
-export type BalanceImpactDelta = {
-    /** Asset id; `'0'` denotes the native ALGO balance. */
-    assetId: string
-    /** Net change in base units. Positive = received, negative = spent. */
-    amount: bigint
-}
-
-export type BalanceImpactCreatedAsset = {
-    /**
-     * Row key. A minted asset has no id until the group is confirmed (`acfg`
-     * carries `assetId: 0`, which is ALGO's id here), so it can't be netted
-     * into {@link BalanceImpact.deltas} and is keyed by group position.
-     */
-    key: string
-    name?: string
-    unitName?: string
-    /** Total supply credited to the creator, in base units. */
-    total: bigint
-    decimals: number
-}
-
-export type BalanceImpact = {
-    /**
-     * Net per-asset movement across the whole group for the user's accounts.
-     * Assets whose movements cancel out (e.g. an internal transfer) are
-     * omitted. Order follows first-seen; the view layer sorts for display.
-     */
-    deltas: BalanceImpactDelta[]
-    /** Total fees (µAlgo) the user's accounts pay across the group. */
-    totalFeeMicroAlgos: bigint
-    /**
-     * A close-remainder that sweeps a user account's remaining balance is
-     * present. The real outflow then exceeds the explicit `amount`, so the UI
-     * must flag it rather than imply the delta is the full story.
-     */
-    hasCloseRemainder: boolean
-    /**
-     * Asset ids (`'0'` = ALGO) whose entire remaining balance is swept from a
-     * user account by a close-remainder/close-to. The explicit `amount` in
-     * `deltas` understates the true outflow for these, so the UI must present
-     * them as the full balance rather than the partial figure.
-     */
-    closedAssetIds: string[]
-    /**
-     * Assets minted by one of the user's accounts in this group. A mint moves no
-     * existing asset, so it produces no delta — without this a mint group (e.g.
-     * a multi-mint) has no impact to show at all.
-     */
-    createdAssets: BalanceImpactCreatedAsset[]
-}
 
 const toBig = (value: bigint | number | undefined): bigint => {
     if (typeof value === 'bigint') return value

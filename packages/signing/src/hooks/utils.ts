@@ -19,12 +19,12 @@ import type {
     SigningMachineContext,
 } from '../machine/context'
 import type {
+    FeeAdjustment,
     PipelineStage,
     SigningPipelineEvent,
     TransactionWarning,
 } from '../models'
 import type { TransactionListItem } from '../chain-adapter'
-import type { FeeAdjustment } from '../pipeline/sources'
 import type { MachineSnapshot } from './types'
 
 export const EMPTY_TRANSACTIONS: PeraDisplayableTransaction[] = []

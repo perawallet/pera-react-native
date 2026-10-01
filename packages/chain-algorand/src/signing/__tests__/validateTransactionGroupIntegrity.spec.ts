@@ -13,16 +13,13 @@
 import { describe, test, expect } from 'vitest'
 import { Address, Transaction } from 'algosdk'
 import { groupTransactions } from '@perawallet/wallet-core-blockchain'
-import {
-    makeTestAddress,
-    makeTestPaymentTx,
-} from '../../test-utils/transactions'
+import { makeTestAddress, makeTestPaymentTx } from './transactions'
 
 import {
     validateCosignSubsetIntegrity,
     validateTransactionGroupIntegrity,
 } from '../validateTransactionGroupIntegrity'
-import { InvalidSignableDataError } from '../../pipeline/errors'
+import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 
 const senderA = makeTestAddress(1)
 const senderB = makeTestAddress(2)

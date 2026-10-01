@@ -10,11 +10,15 @@
  limitations under the License
  */
 
-import type {
-    PeraDisplayableTransaction,
-    PeraTransaction,
+import {
+    createWalletAlgorandClient,
+    decodeTransaction,
+    encodeTransactionRaw,
+    mapToDisplayableTransaction,
+    type PeraDisplayableTransaction,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { mapToDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { Network } from '@perawallet/wallet-core-config'
 
 // Minimal structural view of algosdk's SimulateResponse — only the inner-txn
 // path we walk. Structural typing keeps us decoupled from the SDK's model
@@ -66,4 +70,47 @@ export const flattenSimulatedInnerTransactions = (
     return inner
         .map(mapToDisplayableTransaction)
         .filter((tx): tx is PeraDisplayableTransaction => !!tx)
+}
+
+/**
+ * Clone a transaction with its group id cleared.
+ *
+ * dApp interactions (swaps, NFT purchases) arrive as an atomic group, but
+ * `composer.addTransaction` throws on any transaction that is "already in a
+ * group". Without stripping it, the simulation throws for every grouped
+ * request and the inner transactions are never surfaced.
+ *
+ * Cloned via the canonical encode/decode round-trip so the real signing
+ * payload is never mutated; the composer re-groups in the same order, so the
+ * simulated inner transactions are equivalent.
+ */
+export const ungroupForSimulation = (tx: PeraTransaction): PeraTransaction => {
+    const clone = decodeTransaction(encodeTransactionRaw(tx))
+    delete clone.group
+    return clone
+}
+
+/**
+ * Inner transactions of an unsigned algod simulation of `groupTxs`. Best
+ * effort: a caller that can live without them should catch the rejection.
+ */
+export const simulateInnerTransactions = async (
+    groupTxs: PeraTransaction[],
+    network: Network,
+): Promise<PeraDisplayableTransaction[]> => {
+    const composer = createWalletAlgorandClient(network).newGroup()
+    for (const tx of groupTxs) {
+        composer.addTransaction(tx.group ? ungroupForSimulation(tx) : tx)
+    }
+    const { simulateResponse } = await composer.simulate({
+        skipSignatures: true,
+        allowUnnamedResources: true,
+    })
+    // Structurally compatible with the flattener's minimal view; the cast
+    // keeps us off the SDK's concrete model types.
+    return flattenSimulatedInnerTransactions(
+        simulateResponse as Parameters<
+            typeof flattenSimulatedInnerTransactions
+        >[0],
+    )
 }

@@ -18,7 +18,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 
-import { InvalidSignableDataError } from '../pipeline/errors'
+import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 
 /**
  * Catches a dApp sending a stale group ID — e.g. a 5-tx group with one removed
@@ -29,7 +29,7 @@ import { InvalidSignableDataError } from '../pipeline/errors'
  * **Must be called over the FULL request payload, not the signable subset.** The
  * hash covers every transaction algod will see, so recomputing over a subset can
  * never match. External sources that pre-filter must preserve the original array
- * — see {@link TransactionSignRequest.groupContext}.
+ * — see `TransactionSignRequest.groupContext`.
  *
  * Throws `InvalidSignableDataError` (non-retryable) on any violation.
  */

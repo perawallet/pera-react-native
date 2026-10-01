@@ -12,7 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import { mergeSigningResults } from '../mergeSigningResults'
-import type { SigningResult } from '../../pipeline/types'
+import type { SigningResult } from '@perawallet/wallet-core-signing'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 
 const makeSigned = (id: string): PeraSignedTransaction =>
