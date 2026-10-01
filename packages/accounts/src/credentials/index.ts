@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export { credentialsFromLegacy, withCredentials } from './backfill'
+export { withCredentials } from './backfill'
 export {
     buildAccount,
     type AccountForCredential,

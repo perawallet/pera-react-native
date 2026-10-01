@@ -66,7 +66,7 @@ const {
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const { buildAccount } = await vi.importActual<
-        typeof import('@perawallet/wallet-core-accounts')
+        Pick<typeof import('@perawallet/wallet-core-accounts'), 'buildAccount'>
     >('@perawallet/wallet-core-accounts/build-account')
     const useAccountsStore = (selector?: (s: unknown) => unknown) => {
         const state = {

@@ -112,8 +112,8 @@ const legacyFieldsOf = (credential: AccountCredential): LegacyFields => {
 }
 
 /**
- * The one way to construct a {@link WalletAccount}: the legacy `type` and
- * details object are derived from the credential, so the two can't disagree.
+ * Builds a {@link WalletAccount} from its credential. The legacy `type` and
+ * details object are derived from it, so the two can't disagree.
  */
 export const buildAccount = <C extends AccountCredential>({
     id,

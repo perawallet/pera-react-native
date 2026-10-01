@@ -11,23 +11,14 @@
  */
 
 import type { SeedScheme } from '@perawallet/wallet-core-kms'
-import type {
-    HardwareWalletManufacturer,
-    LedgerTransportType,
-} from '@perawallet/wallet-core-hardware-wallet'
-import type { DerivationType } from './accounts'
+import type { HardwareWalletDetails, HDWalletDetails } from './accounts'
 
-export type HdPath = {
-    account: number
-    change: number
-    keyIndex: number
-    derivationType: DerivationType
-}
+export type HdPath = HDWalletDetails
 
 /**
  * A key held in this device's KMS under `keyPairId`. `provenance` is the seed
  * family that minted it, so `hd` exists exactly when the seed is BIP39. The
- * signature scheme is deliberately absent: it is read from the KMS entry at
+ * signature scheme is deliberately absent: it is resolved from the seed at
  * runtime (see `credentialScheme`) so a scheme change needs no data migration.
  */
 export type LocalCredential =
@@ -43,26 +34,19 @@ export type LocalCredential =
           hd: HdPath
       }
 
-export type HardwareRef = {
-    manufacturer: HardwareWalletManufacturer
-    /** Device identifier for reconnection (e.g. BLE device ID, USB descriptor id) */
-    deviceId: string
-    deviceName: string
-    transportType: LedgerTransportType
-}
+export type HardwareRef = Omit<HardwareWalletDetails, 'accountIndex'>
 
 export type HardwareCredential = {
     kind: 'hardware'
     device: HardwareRef
-    /** Sequential account index on the device (0, 1, 2...) */
-    accountIndex: number
+    accountIndex: HardwareWalletDetails['accountIndex']
 }
 
 export type MultisigCredential = {
     kind: 'multisig'
     threshold: number
     members: string[]
-    /** Algorand multisig version byte. Always 1 today. */
+    /** Algorand multisig version byte. */
     version: number
 }
 

@@ -136,11 +136,9 @@ export type BaseWalletAccount = {
      */
     rekeyAddressByNetwork?: Partial<Record<Network, string>>
     /**
-     * What custody this account has, independent of `type`. Written alongside
-     * `type` and its details object, which stay authoritative for every reader.
-     * Optional on the type only so hand-built literals keep compiling: the
-     * accounts store backfills it on hydration and on every `setAccounts`, so
-     * any account read from the store carries it.
+     * Custody, independent of `type`; `type` and its details stay authoritative.
+     * The store backfills it on every write, except on a record missing the
+     * details its `type` requires (e.g. a multisig without `multisigDetails`).
      */
     credentials?: AccountCredential[]
 }
