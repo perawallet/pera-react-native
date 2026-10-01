@@ -27,6 +27,10 @@ export type RouteCapabilities = {
      * opens in a browser tab, since a sheet can't fill the screen in a popup. */
     fullScreenMediaViewer: boolean
     qrScanner: boolean
+    /** Recovering an account from a passphrase QR: the import-options row and
+     * the passphrase screen's scan entry. Off on web, where the popup can't
+     * host a camera and few users still hold such codes. */
+    recoverAccountQr: boolean
     /** Ledger pairing over USB: Android OTG and WebHID. iOS has no USB HID route. */
     ledgerUsb: boolean
     /** Paste-a-deeplink entry point (web only), replacing qrScanner there: a camera

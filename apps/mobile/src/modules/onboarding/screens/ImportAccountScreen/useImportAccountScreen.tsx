@@ -33,7 +33,6 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useModalState } from '@hooks/useModalState'
-import { useScanTabHandoff } from '@hooks/useScanTabHandoff'
 import { useDeepLink, DeeplinkType } from '@modules/deeplink'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useMnemonicWordEntry } from '@modules/onboarding/hooks'
@@ -210,18 +209,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         }
     }, [updateWord, readText])
 
-    const { shouldHandOff, openScanTab } = useScanTabHandoff('recover-qr')
-
-    // The tab restarts on the options screen, whose scan fills this screen
-    // the same way once the QR resolves.
-    const handleScanQRCode = useCallback(() => {
-        if (shouldHandOff) {
-            void openScanTab()
-            return
-        }
-        openQRScanner()
-    }, [shouldHandOff, openScanTab, openQRScanner])
-
     const handleQRScannerSuccess = useCallback(
         (url: string) => {
             handleCloseQRScanner()
@@ -259,14 +246,14 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         if (result === 'paste') {
             await handlePastePassphrase()
         } else if (result === 'scan') {
-            handleScanQRCode()
+            openQRScanner()
         } else if (result === 'learn-more') {
             handleLearnMore()
         }
     }, [
         requestBottomSheet,
         handlePastePassphrase,
-        handleScanQRCode,
+        openQRScanner,
         handleLearnMore,
     ])
 

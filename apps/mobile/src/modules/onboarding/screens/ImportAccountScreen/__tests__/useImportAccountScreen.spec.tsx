@@ -155,14 +155,6 @@ const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
 }))
 
-const { mockHandoff } = vi.hoisted(() => ({
-    mockHandoff: { shouldHandOff: false, openScanTab: vi.fn() },
-}))
-
-vi.mock('@hooks/useScanTabHandoff', () => ({
-    useScanTabHandoff: () => mockHandoff,
-}))
-
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({
         request: mockRequestBottomSheet,
@@ -175,7 +167,6 @@ vi.mock('@modules/bottom-sheet', () => ({
 describe('useImportAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockHandoff.shouldHandOff = false
         // Re-establish the default route params so a per-test override (e.g.
         // prefilledMnemonic) can't leak into the next test.
         vi.mocked(useRoute).mockReturnValue({
@@ -325,24 +316,16 @@ describe('useImportAccountScreen', () => {
         expect(result.current.words[1]).toBe('')
     })
 
-    it.each([
-        [false, true, 0],
-        [true, false, 1],
-    ])(
-        'scanning from support options with hand-off %s opens the scanner: %s',
-        async (shouldHandOff, isScannerVisible, tabOpens) => {
-            mockHandoff.shouldHandOff = shouldHandOff
-            mockRequestBottomSheet.mockResolvedValueOnce('scan')
-            const { result } = renderHook(() => useImportAccountScreen())
+    it('opens the scanner when scan is picked from support options', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce('scan')
+        const { result } = renderHook(() => useImportAccountScreen())
 
-            await act(async () => {
-                result.current.handleOpenSupportOptions()
-            })
+        await act(async () => {
+            result.current.handleOpenSupportOptions()
+        })
 
-            expect(result.current.isQRScannerVisible).toBe(isScannerVisible)
-            expect(mockHandoff.openScanTab).toHaveBeenCalledTimes(tabOpens)
-        },
-    )
+        expect(result.current.isQRScannerVisible).toBe(true)
+    })
 
     it('shows error toast when handleQRScannerSuccess is called with invalid QR content', () => {
         const { result } = renderHook(() => useImportAccountScreen())

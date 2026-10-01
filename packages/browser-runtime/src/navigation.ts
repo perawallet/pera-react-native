@@ -17,7 +17,6 @@ export type ExpandedFlow =
     | 'ledger-ble'
     | 'asb-import'
     | 'backup-restore-scan'
-    | 'recover-qr'
     | 'camera-access'
 
 const FLOWS: readonly string[] = [
@@ -27,7 +26,6 @@ const FLOWS: readonly string[] = [
     'ledger-ble',
     'asb-import',
     'backup-restore-scan',
-    'recover-qr',
     'camera-access',
 ]
 

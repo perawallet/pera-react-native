@@ -11,7 +11,7 @@
  */
 
 /** Scanners the extension popup hands off to its expanded tab. */
-export type ScanTabFlow = 'backup-restore-scan' | 'recover-qr'
+export type ScanTabFlow = 'backup-restore-scan'
 
 export type UseScanTabHandoffResult = {
     /** Always false off-web: native has no popup surface to escape. */
