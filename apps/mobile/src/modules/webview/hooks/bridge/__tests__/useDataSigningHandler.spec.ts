@@ -17,10 +17,15 @@ import {
     canSignArc60,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
+import {
+    ChainAdapterNotRegisteredError,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type {
-    ArbitraryDataSignRequest,
-    AuthDataSignRequest,
+import {
+    isAuthDataWirePayload,
+    type ArbitraryDataSignRequest,
+    type AuthDataSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useDataSigningHandler } from '../useDataSigningHandler'
 import {
@@ -62,8 +67,9 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
         typeof import('../../../../../../../../packages/signing/src/utils/arbitrary-data-wire')
     >('../../../../../../../../packages/signing/src/utils/arbitrary-data-wire')
     return {
-        isAuthDataWirePayload: (_chainId: string, params: unknown) =>
+        isAuthDataWirePayload: vi.fn((_chainId: string, params: unknown) =>
             wire.isArc60WirePayload(params),
+        ),
         legacyArbitraryDataWireSchema: legacyWire.legacyArbitraryDataWireSchema,
         parseAuthDataWireRequest: vi.fn(
             (
@@ -335,6 +341,30 @@ describe('useDataSigningHandler', () => {
             expect(mockAddSignRequest).not.toHaveBeenCalled()
             const sent = injectedScript(webview)
             expect(sent).toContain('"id":"14-arc60-bad"')
+            expect(sent).toContain('"code":-32602')
+        })
+
+        it('answers the page when the chain has no message signer registered', () => {
+            vi.mocked(isAuthDataWirePayload).mockImplementationOnce(() => {
+                throw new ChainAdapterNotRegisteredError(
+                    'message-signer',
+                    LEGACY_CHAIN_ID,
+                )
+            })
+            const { webview, handle } = render()
+
+            handle(
+                bridgeMessage(
+                    '14-arc60-unregistered',
+                    'requestDataSigning',
+                    arc60Params,
+                ),
+                TRUSTED,
+            )
+
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            const sent = injectedScript(webview)
+            expect(sent).toContain('"id":"14-arc60-unregistered"')
             expect(sent).toContain('"code":-32602')
         })
     })

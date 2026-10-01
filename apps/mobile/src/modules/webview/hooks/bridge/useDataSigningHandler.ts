@@ -102,8 +102,11 @@ export const useDataSigningHandler = (
             // arrive on `requestDataSigning`; discriminate on the auth-data
             // signals before the legacy param check (which an auth-data
             // payload would also satisfy).
-            if (isAuthDataWirePayload(LEGACY_CHAIN_ID, message.params)) {
-                try {
+            // The discriminator resolves the chain's message signer and throws
+            // when none is registered, so it sits inside the try that answers
+            // the page.
+            try {
+                if (isAuthDataWirePayload(LEGACY_CHAIN_ID, message.params)) {
                     const { authData, metadata } = parseAuthDataWireRequest(
                         LEGACY_CHAIN_ID,
                         message.params,
@@ -128,14 +131,15 @@ export const useDataSigningHandler = (
                         authData,
                         metadata,
                     })
-                } catch (e) {
-                    sendErrorToWebview(
-                        message.id,
-                        JsonRpcErrorCode.InvalidParams,
-                        e as Error,
-                        webview,
-                    )
+                    return
                 }
+            } catch (e) {
+                sendErrorToWebview(
+                    message.id,
+                    JsonRpcErrorCode.InvalidParams,
+                    e as Error,
+                    webview,
+                )
                 return
             }
 
