@@ -3602,6 +3602,7 @@
             "retry": "Rechercher",
             "error": "La recherche a échoué. Assurez-vous que le Bluetooth est activé et réessayez.",
             "usb_error": "Aucun appareil Ledger détecté via USB. Vérifiez qu’il est branché et déverrouillé, puis réessayez.",
+            "web_ble_brave_error": "Brave désactive Web Bluetooth par défaut. Ouvrez brave://flags/#brave-web-bluetooth-api, choisissez « Enabled », relancez Brave et réessayez.",
             "location_services_disabled": "Activez la localisation dans les paramètres de votre appareil pour rechercher les appareils Ledger à proximité.",
             "open_location_settings": "Ouvrir les paramètres de localisation",
             "grant_permission": "Autoriser",

@@ -3602,6 +3602,7 @@
             "retry": "Tekrar tara",
             "error": "Tarama başarısız oldu. Bluetooth’un etkin olduğundan emin ol ve tekrar dene.",
             "usb_error": "USB üzerinden Ledger cihazı bulunamadı. Cihazın takılı ve kilidinin açık olduğundan emin ol, sonra tekrar dene.",
+            "web_ble_brave_error": "Brave, Web Bluetooth’u varsayılan olarak kapatır. brave://flags/#brave-web-bluetooth-api adresini aç, ayarı “Enabled” yap, Brave’i yeniden başlat ve tekrar dene.",
             "location_services_disabled": "Yakındaki Ledger cihazlarını aramak için cihaz ayarlarından Konum’u aç.",
             "open_location_settings": "Konum ayarlarını aç",
             "grant_permission": "İzin ver",

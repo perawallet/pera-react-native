@@ -3594,6 +3594,7 @@
             "retry": "Erneut scannen",
             "error": "Scan fehlgeschlagen. Stelle sicher, dass Bluetooth aktiviert ist, und versuche es erneut.",
             "usb_error": "Kein Ledger-Gerät über USB gefunden. Prüfe, ob es angeschlossen und entsperrt ist, und versuche es erneut.",
+            "web_ble_brave_error": "Brave deaktiviert Web Bluetooth standardmäßig. Öffne brave://flags/#brave-web-bluetooth-api, setze die Option auf „Enabled“, starte Brave neu und versuche es erneut.",
             "location_services_disabled": "Aktiviere den Standort in deinen Geräteeinstellungen, um nach nahegelegenen Ledger-Geräten zu suchen.",
             "open_location_settings": "Standorteinstellungen öffnen",
             "grant_permission": "Berechtigung erteilen",
