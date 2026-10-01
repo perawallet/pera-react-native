@@ -17,6 +17,7 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { buildAccount } from '../credentials'
 import {
     accountsAdapterFor,
     deriveHdAccount,
@@ -62,18 +63,21 @@ export const useCreateAccount = () => {
         })
         if (!derived.publicKey) throw new NoHDWalletError(seedKeyId)
 
-        return {
-            id: generateOrderedUniqueId(),
+        return buildAccount({
             address: derived.address,
-            type: AccountTypes.hdWallet,
-            hdWalletDetails: {
-                account,
-                change: 0,
-                keyIndex,
-                derivationType: accountsAdapterFor(network).hdDerivationType,
+            credential: {
+                kind: 'local',
+                keyPairId: derived.keyPairId,
+                provenance: 'bip39',
+                hd: {
+                    account,
+                    change: 0,
+                    keyIndex,
+                    derivationType:
+                        accountsAdapterFor(network).hdDerivationType,
+                },
             },
-            keyPairId: derived.keyPairId,
-        }
+        })
     }
 
     const buildHdWalletAccount = async ({

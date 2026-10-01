@@ -217,6 +217,14 @@ describe('useCreateAccount', () => {
         // seed at (account=1, keyIndex=0, derivationType=9).
         expect(created.keyPairId).toBe('EXISTING_WALLET-acc1-idx0-dt9')
         expect(created.hdWalletDetails.account).toBe(1)
+        expect(created.credentials).toEqual([
+            {
+                kind: 'local',
+                keyPairId: 'EXISTING_WALLET-acc1-idx0-dt9',
+                provenance: 'bip39',
+                hd: { account: 1, change: 0, keyIndex: 0, derivationType: 9 },
+            },
+        ])
     })
 
     test('throws error when key derivation fails', async () => {
