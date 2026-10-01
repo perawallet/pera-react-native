@@ -11,29 +11,40 @@
  */
 
 import type { SigningScheme } from '@perawallet/wallet-core-chain-contract'
-import { FALCON_CHILD_KEY_TYPE, SeedScheme } from '@perawallet/wallet-core-kms'
+import {
+    resolveSeedKeyFrom,
+    SeedScheme,
+    seedSchemeOf,
+} from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import type { SigningCredential } from '../models'
 
-type KeystoreEntry = { id: string; type: string }
+type KeystoreSnapshot = Parameters<typeof resolveSeedKeyFrom>[0]
+
+const loadedSeedScheme = (
+    keys: KeystoreSnapshot,
+    keyPairId: string,
+): SeedScheme | null => {
+    try {
+        return seedSchemeOf(resolveSeedKeyFrom(keys, keyPairId))
+    } catch {
+        return null
+    }
+}
 
 /**
- * The signature scheme a credential signs with. Never persisted: for a local
- * key it is the KMS entry's type. The keystore loads asynchronously after the
- * accounts store hydrates, so until the entry is present the seed provenance
- * stands in for it.
+ * The signature scheme a credential signs with. Never persisted. A local key
+ * follows its seed's committed scheme, the same oracle the kms signer uses, so
+ * the two can't disagree. The keystore loads after the accounts store hydrates;
+ * until then the credential's provenance stands in for the seed.
  */
 export const credentialScheme = (
     credential: SigningCredential,
-    keys: readonly KeystoreEntry[] = getKeystoreStore().state.keys,
+    keys: KeystoreSnapshot = getKeystoreStore().state.keys,
 ): SigningScheme => {
     if (credential.kind !== 'local') return 'ed25519'
 
-    const entryType = keys.find(k => k.id === credential.keyPairId)?.type
-    if (entryType === FALCON_CHILD_KEY_TYPE) return 'falcon-1024'
-    if (entryType !== undefined) return 'ed25519'
-
-    return credential.provenance === SeedScheme.Quantum
-        ? 'falcon-1024'
-        : 'ed25519'
+    const scheme =
+        loadedSeedScheme(keys, credential.keyPairId) ?? credential.provenance
+    return scheme === SeedScheme.Quantum ? 'falcon-1024' : 'ed25519'
 }

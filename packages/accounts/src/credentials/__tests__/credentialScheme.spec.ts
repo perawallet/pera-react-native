@@ -11,41 +11,67 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { FALCON_CHILD_KEY_TYPE } from '@perawallet/wallet-core-kms'
 import type { SigningCredential } from '../../models'
 import { credentialScheme } from '../credentialScheme'
+
+type Keys = NonNullable<Parameters<typeof credentialScheme>[1]>
 
 const local = (
     keyPairId: string,
     provenance: 'algo25' | 'quantum',
 ): SigningCredential => ({ kind: 'local', keyPairId, provenance })
 
+const seedWithChild = (
+    scheme: 'algo25' | 'quantum' | 'bip39',
+    childType: string,
+): Keys =>
+    [
+        { id: 'seed', type: 'seed', metadata: { scheme } },
+        { id: 'child', type: childType, metadata: { parentKeyId: 'seed' } },
+    ] as unknown as Keys
+
 describe('credentialScheme', () => {
-    test('reads ed25519 from the KMS entry of a local key', () => {
-        const keys = [{ id: 'k1', type: 'ed25519' }]
-
-        expect(credentialScheme(local('k1', 'algo25'), keys)).toBe('ed25519')
+    test('resolves ed25519 for a key under an algo25 seed', () => {
+        expect(
+            credentialScheme(
+                local('child', 'algo25'),
+                seedWithChild('algo25', 'ed25519'),
+            ),
+        ).toBe('ed25519')
     })
 
-    test('reads falcon-1024 from the KMS entry of a local key', () => {
-        const keys = [{ id: 'k1', type: FALCON_CHILD_KEY_TYPE }]
-
-        expect(credentialScheme(local('k1', 'quantum'), keys)).toBe(
-            'falcon-1024',
-        )
+    test('resolves falcon-1024 for a key under a quantum seed', () => {
+        expect(
+            credentialScheme(
+                local('child', 'quantum'),
+                seedWithChild('quantum', 'falcon-1024'),
+            ),
+        ).toBe('falcon-1024')
     })
 
-    test('prefers the KMS entry over the provenance', () => {
-        const keys = [{ id: 'k1', type: 'ed25519' }]
+    test("follows the seed's scheme when the child entry carries a legacy type", () => {
+        expect(
+            credentialScheme(
+                local('child', 'quantum'),
+                seedWithChild('quantum', 'falcon1024'),
+            ),
+        ).toBe('falcon-1024')
+    })
 
-        expect(credentialScheme(local('k1', 'quantum'), keys)).toBe('ed25519')
+    test('follows the seed over the provenance when they disagree', () => {
+        expect(
+            credentialScheme(
+                local('child', 'quantum'),
+                seedWithChild('algo25', 'ed25519'),
+            ),
+        ).toBe('ed25519')
     })
 
     test.each([
         ['quantum', 'falcon-1024'],
         ['algo25', 'ed25519'],
     ] as const)(
-        'falls back to the %s provenance while the KMS entry is not loaded',
+        'falls back to the %s provenance while the keystore is not loaded',
         (provenance, expected) => {
             expect(credentialScheme(local('missing', provenance), [])).toBe(
                 expected,
@@ -53,7 +79,7 @@ describe('credentialScheme', () => {
         },
     )
 
-    test('falls back to ed25519 for a bip39 key whose KMS entry is not loaded', () => {
+    test('falls back to ed25519 for a bip39 key whose keystore entry is not loaded', () => {
         expect(
             credentialScheme(
                 {
