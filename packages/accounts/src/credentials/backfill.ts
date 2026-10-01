@@ -10,46 +10,47 @@
  limitations under the License
  */
 
-import { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
     AccountTypes,
     type AccountCredential,
     type WalletAccount,
 } from '../models'
 
+/**
+ * The credentials a legacy account's `type` and details object describe, or
+ * `undefined` when the persisted record lacks what its type requires. This runs
+ * on hydration, where a throw would leave the store empty and the next write
+ * would persist that, so a malformed record is left alone instead.
+ */
 export const credentialsFromLegacy = (
     account: WalletAccount,
-): AccountCredential[] => {
+): AccountCredential[] | undefined => {
     switch (account.type) {
         case AccountTypes.algo25:
-            return [
-                {
-                    kind: 'local',
-                    keyPairId: account.keyPairId,
-                    provenance: SeedScheme.Algo25,
-                },
-            ]
         case AccountTypes.quantum:
+            if (!account.keyPairId) return undefined
             return [
                 {
                     kind: 'local',
                     keyPairId: account.keyPairId,
-                    provenance: SeedScheme.Quantum,
+                    provenance: account.type,
                 },
             ]
         case AccountTypes.hdWallet: {
+            if (!account.keyPairId || !account.hdWalletDetails) return undefined
             const { account: index, change, keyIndex, derivationType } =
                 account.hdWalletDetails
             return [
                 {
                     kind: 'local',
                     keyPairId: account.keyPairId,
-                    provenance: SeedScheme.Bip39,
+                    provenance: 'bip39',
                     hd: { account: index, change, keyIndex, derivationType },
                 },
             ]
         }
         case AccountTypes.hardware: {
+            if (!account.hardwareDetails) return undefined
             const {
                 manufacturer,
                 deviceId,
@@ -71,6 +72,7 @@ export const credentialsFromLegacy = (
             ]
         }
         case AccountTypes.multisig: {
+            if (!account.multisigDetails) return undefined
             const { threshold, addresses, version } = account.multisigDetails
             return [
                 {
@@ -83,11 +85,14 @@ export const credentialsFromLegacy = (
         }
         case AccountTypes.watch:
             return [{ kind: 'watch' }]
+        default:
+            return undefined
     }
 }
 
 /** Idempotent: an account that already carries credentials is returned as-is. */
-export const withCredentials = <T extends WalletAccount>(account: T): T =>
-    account.credentials
-        ? account
-        : { ...account, credentials: credentialsFromLegacy(account) }
+export const withCredentials = <T extends WalletAccount>(account: T): T => {
+    if (account.credentials) return account
+    const credentials = credentialsFromLegacy(account)
+    return credentials ? { ...account, credentials } : account
+}

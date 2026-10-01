@@ -12,7 +12,6 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
     ACCOUNT_TYPE_RANK,
     AccountTypes,
@@ -22,7 +21,6 @@ import {
     type HardwareWalletDetails,
     type LaunchAccountMode,
     type WalletAccount,
-    type WatchAccount,
 } from '../models'
 import {
     logger,
@@ -32,8 +30,39 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { buildAccount, withCredentials } from '../credentials'
 
 const STORE_NAME = 'accounts-store'
+const STORE_VERSION = 1
+
+type PersistedAccountsState = Pick<
+    AccountsState,
+    | 'accounts'
+    | 'selectedAccountAddress'
+    | 'sortMode'
+    | 'manualAccountOrder'
+    | 'launchAccountMode'
+    | 'launchAccountAddress'
+>
+
+/**
+ * v0 accounts have no `credentials`; they are backfilled from `type` and the
+ * details object. `withCredentials` skips accounts that already carry them, so
+ * re-running this over migrated state is a no-op.
+ */
+export const migrateAccountsState = (
+    persistedState: unknown,
+    version: number,
+): PersistedAccountsState => {
+    const state = persistedState as PersistedAccountsState
+    if (version < 1) {
+        return {
+            ...state,
+            accounts: (state.accounts ?? []).map(withCredentials),
+        }
+    }
+    return state
+}
 
 /**
  * Collapse repeated addresses, the higher-precedence account type winning (see
@@ -80,6 +109,11 @@ const resolveDuplicateAccounts = (
     return resolved
 }
 
+// For writes that change `type` or its details: the old credentials describe
+// the account as it was, so they're dropped before the backfill.
+const rebuildCredentials = (account: WalletAccount): WalletAccount =>
+    withCredentials({ ...account, credentials: undefined })
+
 const initialState = {
     accounts: [] as WalletAccount[],
     selectedAccountAddress: null as Nullable<string>,
@@ -118,7 +152,9 @@ export const useAccountsStore: UseBoundStore<
                 // first. Callers that need to surface duplicates to the user
                 // (batch import) still throw DuplicateAccountError before
                 // reaching here; this is the structural safety net.
-                accounts = resolveDuplicateAccounts(accounts)
+                accounts = resolveDuplicateAccounts(accounts).map(
+                    withCredentials,
+                )
 
                 const currentSelected = get().selectedAccountAddress
                 const currentManualOrder = get().manualAccountOrder
@@ -270,17 +306,18 @@ export const useAccountsStore: UseBoundStore<
                 const activeNetwork = get().activeRekeyNetwork
                 const isActiveNetwork =
                     activeNetwork === null || activeNetwork === network
-                const watchAccounts: WatchAccount[] = addresses
+                const watchAccounts = addresses
                     .filter(addr => !currentAddresses.has(addr))
-                    .map(address => ({
-                        id: generateOrderedUniqueId(),
-                        address,
-                        type: AccountTypes.watch,
-                        ...(isActiveNetwork
-                            ? { rekeyAddress: sourceAddress }
-                            : {}),
-                        rekeyAddressByNetwork: { [network]: sourceAddress },
-                    }))
+                    .map(address =>
+                        buildAccount({
+                            address,
+                            credential: { kind: 'watch' },
+                            ...(isActiveNetwork
+                                ? { rekeyAddress: sourceAddress }
+                                : {}),
+                            rekeyAddressByNetwork: { [network]: sourceAddress },
+                        }),
+                    )
 
                 if (watchAccounts.length === 0) return 0
 
@@ -297,12 +334,13 @@ export const useAccountsStore: UseBoundStore<
                 const current = accounts[idx]
                 if (current.type !== AccountTypes.watch) return false
 
-                const next = [...accounts]
-                next[idx] = {
+                const upgraded: WalletAccount = {
                     ...current,
                     type: AccountTypes.hardware,
                     hardwareDetails,
                 }
+                const next = [...accounts]
+                next[idx] = rebuildCredentials(upgraded)
                 set({ accounts: next })
                 return true
             },
@@ -333,8 +371,9 @@ export const useAccountsStore: UseBoundStore<
                 )
                 if (unchanged) return false
 
+                const rebound: WalletAccount = { ...current, hardwareDetails }
                 const next = [...accounts]
-                next[idx] = { ...current, hardwareDetails }
+                next[idx] = rebuildCredentials(rebound)
                 set({ accounts: next })
                 return true
             },
@@ -343,7 +382,9 @@ export const useAccountsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            partialize: state => ({
+            version: STORE_VERSION,
+            migrate: migrateAccountsState,
+            partialize: (state): PersistedAccountsState => ({
                 accounts: state.accounts,
                 selectedAccountAddress: state.selectedAccountAddress,
                 sortMode: state.sortMode,

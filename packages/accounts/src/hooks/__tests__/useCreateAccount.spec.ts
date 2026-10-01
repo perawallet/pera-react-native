@@ -14,6 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCreateAccount } from '../useCreateAccount'
 import { useAccountsStore } from '../../store'
+import { withCredentials } from '../../credentials'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import { SingleKeyAccountsUnsupportedError } from '../../errors'
 import type { MintedAccount } from '../../chain-adapter'
@@ -361,7 +362,7 @@ describe('useCreateAccount', () => {
             })
 
             expect(useAccountsStore.getState().accounts).toEqual([
-                mintedAccount(true).account,
+                withCredentials(mintedAccount(true).account),
             ])
             expect(
                 usePendingAccountCreationStore.getState().pendingRollback,

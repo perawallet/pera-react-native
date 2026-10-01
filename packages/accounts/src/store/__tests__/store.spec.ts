@@ -14,6 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { act } from '@testing-library/react'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../../models'
+import { withCredentials } from '../../credentials'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -89,7 +90,9 @@ describe('services/accounts/store', () => {
         }
 
         useAccountsStore.getState().setAccounts([a1, a2])
-        expect(useAccountsStore.getState().accounts).toEqual([a1, a2])
+        expect(useAccountsStore.getState().accounts).toEqual(
+            [a1, a2].map(withCredentials),
+        )
 
         const a3: WalletAccount = {
             id: '3',
@@ -99,7 +102,9 @@ describe('services/accounts/store', () => {
             canSign: true,
         }
         useAccountsStore.getState().setAccounts([a1, a3])
-        expect(useAccountsStore.getState().accounts).toEqual([a1, a3])
+        expect(useAccountsStore.getState().accounts).toEqual(
+            [a1, a3].map(withCredentials),
+        )
     })
 
     describe('setAccounts duplicate resolution', () => {
@@ -128,7 +133,7 @@ describe('services/accounts/store', () => {
 
             const { accounts } = useAccountsStore.getState()
             expect(accounts).toHaveLength(1)
-            expect(accounts[0]).toEqual(hardwareDupe)
+            expect(accounts[0]).toEqual(withCredentials(hardwareDupe))
         })
 
         test('keeps the higher-precedence type when the watch entry comes last', () => {
@@ -136,7 +141,7 @@ describe('services/accounts/store', () => {
 
             const { accounts } = useAccountsStore.getState()
             expect(accounts).toHaveLength(1)
-            expect(accounts[0]).toEqual(hardwareDupe)
+            expect(accounts[0]).toEqual(withCredentials(hardwareDupe))
         })
 
         test('places the surviving entry at the first occurrence position', () => {
@@ -165,7 +170,7 @@ describe('services/accounts/store', () => {
                 'DUPE-ADDR',
                 'LAST-ADDR',
             ])
-            expect(accounts[1]).toEqual(hardwareDupe)
+            expect(accounts[1]).toEqual(withCredentials(hardwareDupe))
         })
 
         test('keeps the first occurrence when both entries rank equally', () => {
@@ -217,7 +222,9 @@ describe('services/accounts/store', () => {
 
             useAccountsStore.getState().setAccounts(accountsIn)
 
-            expect(useAccountsStore.getState().accounts).toEqual(accountsIn)
+            expect(useAccountsStore.getState().accounts).toEqual(
+                accountsIn.map(withCredentials),
+            )
         })
     })
 
@@ -240,11 +247,15 @@ describe('services/accounts/store', () => {
         useAccountsStore.getState().setAccounts([a1, a2])
 
         // Test default selection (index 0)
-        expect(useAccountsStore.getState().getSelectedAccount()).toEqual(a1)
+        expect(useAccountsStore.getState().getSelectedAccount()).toEqual(
+            withCredentials(a1),
+        )
 
         // Test selecting index 1
         useAccountsStore.getState().setSelectedAccountAddress(a2.address)
-        expect(useAccountsStore.getState().getSelectedAccount()).toEqual(a2)
+        expect(useAccountsStore.getState().getSelectedAccount()).toEqual(
+            withCredentials(a2),
+        )
 
         // Test null address
         useAccountsStore.getState().setSelectedAccountAddress(null)
@@ -682,6 +693,7 @@ describe('services/accounts/store', () => {
                 rekeyAddress: 'AUTH',
                 rekeyAddressByNetwork: { mainnet: 'AUTH' },
                 hardwareDetails,
+                credentials: [expect.objectContaining({ kind: 'hardware' })],
             })
         })
 
@@ -928,7 +940,7 @@ describe('services/accounts/store', () => {
             await module.useAccountsStore.persist.rehydrate()
 
             const state = module.useAccountsStore.getState()
-            expect(state.accounts).toEqual([alice, bob])
+            expect(state.accounts).toEqual([alice, bob].map(withCredentials))
             expect(state.selectedAccountAddress).toBe('BOB-ADDR')
             expect(state.sortMode).toBe('alphabeticalAsc')
             expect(state.manualAccountOrder).toEqual(['BOB-ADDR', 'ALICE-ADDR'])
@@ -949,6 +961,180 @@ describe('services/accounts/store', () => {
 
             expect(useAccountsStore.getState().selectedAccountAddress).toBe(
                 'ALICE-ADDR',
+            )
+        })
+    })
+
+    describe('credentials', () => {
+        const legacyAccounts: WalletAccount[] = [
+            {
+                id: 'a',
+                type: 'algo25',
+                address: 'ALGO25-ADDR',
+                keyPairId: 'seed-ed25519',
+            },
+            {
+                id: 'h',
+                type: 'hdWallet',
+                address: 'HD-ADDR',
+                keyPairId: 'seed-acc0-idx0-dt9',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+            { id: 'w', type: 'watch', address: 'WATCH-ADDR' },
+        ]
+        const v0State = {
+            accounts: legacyAccounts,
+            selectedAccountAddress: 'HD-ADDR',
+            sortMode: 'alphabeticalAsc',
+            manualAccountOrder: ['HD-ADDR', 'ALGO25-ADDR', 'WATCH-ADDR'],
+            launchAccountMode: 'specific',
+            launchAccountAddress: 'HD-ADDR',
+        }
+
+        test('migrating a v0 state backfills every account and keeps the other fields', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            const migrated = migrateAccountsState(
+                structuredClone(v0State),
+                0,
+            )
+
+            expect(migrated).toEqual({
+                ...v0State,
+                accounts: legacyAccounts.map(withCredentials),
+            })
+        })
+
+        test('migrating an already-migrated state changes nothing', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const once = migrateAccountsState(structuredClone(v0State), 0)
+
+            expect(migrateAccountsState(structuredClone(once), 0)).toEqual(
+                once,
+            )
+        })
+
+        test('hydrating a v0 payload twice yields identical state', async () => {
+            getProvider().keyValueStorage.setItem(
+                'accounts-store',
+                JSON.stringify({ state: v0State, version: 0 }),
+            )
+
+            vi.resetModules()
+            const first = (await import('../store')).useAccountsStore
+            await first.persist.rehydrate()
+            const firstState = first.getState()
+            // Persist the hydrated (migrated) state, as any write would.
+            first.getState().setManualAccountOrder(firstState.manualAccountOrder)
+
+            vi.resetModules()
+            const second = (await import('../store')).useAccountsStore
+            await second.persist.rehydrate()
+
+            expect(firstState.accounts).toEqual(
+                legacyAccounts.map(withCredentials),
+            )
+            expect(second.getState().accounts).toEqual(firstState.accounts)
+            expect(second.getState().selectedAccountAddress).toBe('HD-ADDR')
+            expect(second.getState().manualAccountOrder).toEqual(
+                v0State.manualAccountOrder,
+            )
+        })
+
+        test('setAccounts backfills an account written without credentials', () => {
+            useAccountsStore.getState().setAccounts([legacyAccounts[0]])
+
+            expect(useAccountsStore.getState().accounts[0].credentials).toEqual(
+                [
+                    {
+                        kind: 'local',
+                        keyPairId: 'seed-ed25519',
+                        provenance: 'algo25',
+                    },
+                ],
+            )
+        })
+
+        test('addRekeyedWatchAccounts writes a watch credential', () => {
+            useAccountsStore.getState().setAccounts([])
+
+            useAccountsStore
+                .getState()
+                .addRekeyedWatchAccounts('SRC', ['R1'], 'mainnet')
+
+            expect(useAccountsStore.getState().accounts[0].credentials).toEqual(
+                [{ kind: 'watch' }],
+            )
+        })
+
+        test('upgrading a watch account replaces its watch credential with a hardware one', () => {
+            useAccountsStore
+                .getState()
+                .setAccounts([{ id: 'w', type: 'watch', address: 'WATCHED' }])
+
+            useAccountsStore.getState().upgradeWatchAccountToHardware('WATCHED', {
+                manufacturer: 'ledger',
+                deviceId: 'dev-1',
+                deviceName: 'Nano X',
+                accountIndex: 3,
+                transportType: 'ble',
+            })
+
+            expect(useAccountsStore.getState().accounts[0].credentials).toEqual(
+                [
+                    {
+                        kind: 'hardware',
+                        device: {
+                            manufacturer: 'ledger',
+                            deviceId: 'dev-1',
+                            deviceName: 'Nano X',
+                            transportType: 'ble',
+                        },
+                        accountIndex: 3,
+                    },
+                ],
+            )
+        })
+
+        test('re-binding hardware details updates the hardware credential', () => {
+            const details = {
+                manufacturer: 'ledger' as const,
+                deviceId: 'old-device',
+                deviceName: 'Nano X',
+                accountIndex: 0,
+                transportType: 'ble' as const,
+            }
+            useAccountsStore.getState().setAccounts([
+                {
+                    id: 'hw',
+                    type: 'hardware',
+                    address: 'HW',
+                    hardwareDetails: details,
+                },
+            ])
+
+            useAccountsStore
+                .getState()
+                .updateHardwareDetails('HW', { ...details, deviceId: 'new' })
+
+            expect(useAccountsStore.getState().accounts[0].credentials).toEqual(
+                [
+                    {
+                        kind: 'hardware',
+                        device: {
+                            manufacturer: 'ledger',
+                            deviceId: 'new',
+                            deviceName: 'Nano X',
+                            transportType: 'ble',
+                        },
+                        accountIndex: 0,
+                    },
+                ],
             )
         })
     })

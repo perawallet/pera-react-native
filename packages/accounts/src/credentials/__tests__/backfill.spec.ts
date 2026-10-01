@@ -153,6 +153,25 @@ describe('withCredentials', () => {
         },
     )
 
+    test.each([
+        ['an hdWallet without derivation details', { type: 'hdWallet' }],
+        ['a hardware account without device details', { type: 'hardware' }],
+        ['a multisig account without participants', { type: 'multisig' }],
+        ['an algo25 account without a key id', { type: 'algo25' }],
+        ['an account of an unknown type', { type: 'card' }],
+    ])(
+        'leaves %s without credentials instead of throwing',
+        (_label, shape) => {
+            const account = {
+                id: 'x',
+                address: 'ADDR',
+                ...shape,
+            } as unknown as WalletAccount
+
+            expect(withCredentials(account)).toBe(account)
+        },
+    )
+
     test('returns an account that already has credentials unchanged', () => {
         const account: WalletAccount = {
             id: 'w',

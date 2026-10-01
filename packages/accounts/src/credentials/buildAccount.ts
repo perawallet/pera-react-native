@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { SeedScheme } from '@perawallet/wallet-core-kms'
+import type { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
     generateOrderedUniqueId,
     type Network,
@@ -68,18 +68,18 @@ const legacyFieldsOf = (credential: AccountCredential): LegacyFields => {
     switch (credential.kind) {
         case 'local':
             switch (credential.provenance) {
-                case SeedScheme.Bip39:
+                case 'bip39':
                     return {
                         type: AccountTypes.hdWallet,
                         keyPairId: credential.keyPairId,
                         hdWalletDetails: { ...credential.hd },
                     }
-                case SeedScheme.Quantum:
+                case 'quantum':
                     return {
                         type: AccountTypes.quantum,
                         keyPairId: credential.keyPairId,
                     }
-                case SeedScheme.Algo25:
+                case 'algo25':
                     return {
                         type: AccountTypes.algo25,
                         keyPairId: credential.keyPairId,
