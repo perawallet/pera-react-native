@@ -38,8 +38,12 @@ export const credentialsFromLegacy = (
             ]
         case AccountTypes.hdWallet: {
             if (!account.keyPairId || !account.hdWalletDetails) return undefined
-            const { account: index, change, keyIndex, derivationType } =
-                account.hdWalletDetails
+            const {
+                account: index,
+                change,
+                keyIndex,
+                derivationType,
+            } = account.hdWalletDetails
             return [
                 {
                     kind: 'local',

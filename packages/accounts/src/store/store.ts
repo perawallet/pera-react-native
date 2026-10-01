@@ -152,9 +152,8 @@ export const useAccountsStore: UseBoundStore<
                 // first. Callers that need to surface duplicates to the user
                 // (batch import) still throw DuplicateAccountError before
                 // reaching here; this is the structural safety net.
-                accounts = resolveDuplicateAccounts(accounts).map(
-                    withCredentials,
-                )
+                accounts =
+                    resolveDuplicateAccounts(accounts).map(withCredentials)
 
                 const currentSelected = get().selectedAccountAddress
                 const currentManualOrder = get().manualAccountOrder

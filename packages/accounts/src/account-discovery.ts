@@ -230,13 +230,12 @@ export async function discoverRekeyedAccounts({
     const tasks = accountAddresses.map(async address => {
         const rekeyedAddresses = await fetchRekeyedAddresses(address, network)
 
-        return rekeyedAddresses.map(
-            (rekeyedAddress): WalletAccount =>
-                buildAccount({
-                    address: rekeyedAddress,
-                    credential: { kind: 'watch' },
-                    rekeyAddress: address,
-                }),
+        return rekeyedAddresses.map((rekeyedAddress): WalletAccount =>
+            buildAccount({
+                address: rekeyedAddress,
+                credential: { kind: 'watch' },
+                rekeyAddress: address,
+            }),
         )
     })
 

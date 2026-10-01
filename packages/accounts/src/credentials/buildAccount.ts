@@ -27,17 +27,16 @@ import {
     type WatchAccount,
 } from '../models'
 
-export type BuildAccountInput<
-    C extends AccountCredential = AccountCredential,
-> = {
-    /** Defaults to a fresh ordered unique id. */
-    id?: string
-    name?: string
-    address: string
-    credential: C
-    rekeyAddress?: string
-    rekeyAddressByNetwork?: Partial<Record<Network, string>>
-}
+export type BuildAccountInput<C extends AccountCredential = AccountCredential> =
+    {
+        /** Defaults to a fresh ordered unique id. */
+        id?: string
+        name?: string
+        address: string
+        credential: C
+        rekeyAddress?: string
+        rekeyAddressByNetwork?: Partial<Record<Network, string>>
+    }
 
 /** The legacy account variant a credential maps onto. */
 export type AccountForCredential<C extends AccountCredential> = C extends {

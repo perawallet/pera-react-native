@@ -1000,10 +1000,7 @@ describe('services/accounts/store', () => {
         test('migrating a v0 state backfills every account and keeps the other fields', async () => {
             const { migrateAccountsState } = await import('../store')
 
-            const migrated = migrateAccountsState(
-                structuredClone(v0State),
-                0,
-            )
+            const migrated = migrateAccountsState(structuredClone(v0State), 0)
 
             expect(migrated).toEqual({
                 ...v0State,
@@ -1015,9 +1012,7 @@ describe('services/accounts/store', () => {
             const { migrateAccountsState } = await import('../store')
             const once = migrateAccountsState(structuredClone(v0State), 0)
 
-            expect(migrateAccountsState(structuredClone(once), 0)).toEqual(
-                once,
-            )
+            expect(migrateAccountsState(structuredClone(once), 0)).toEqual(once)
         })
 
         test('hydrating a v0 payload twice yields identical state', async () => {
@@ -1031,7 +1026,9 @@ describe('services/accounts/store', () => {
             await first.persist.rehydrate()
             const firstState = first.getState()
             // Persist the hydrated (migrated) state, as any write would.
-            first.getState().setManualAccountOrder(firstState.manualAccountOrder)
+            first
+                .getState()
+                .setManualAccountOrder(firstState.manualAccountOrder)
 
             vi.resetModules()
             const second = (await import('../store')).useAccountsStore
@@ -1095,13 +1092,15 @@ describe('services/accounts/store', () => {
                 .getState()
                 .setAccounts([{ id: 'w', type: 'watch', address: 'WATCHED' }])
 
-            useAccountsStore.getState().upgradeWatchAccountToHardware('WATCHED', {
-                manufacturer: 'ledger',
-                deviceId: 'dev-1',
-                deviceName: 'Nano X',
-                accountIndex: 3,
-                transportType: 'ble',
-            })
+            useAccountsStore
+                .getState()
+                .upgradeWatchAccountToHardware('WATCHED', {
+                    manufacturer: 'ledger',
+                    deviceId: 'dev-1',
+                    deviceName: 'Nano X',
+                    accountIndex: 3,
+                    transportType: 'ble',
+                })
 
             expect(useAccountsStore.getState().accounts[0].credentials).toEqual(
                 [
