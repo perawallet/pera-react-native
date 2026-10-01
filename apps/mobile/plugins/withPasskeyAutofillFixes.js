@@ -11,7 +11,11 @@
  */
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { withProjectBuildGradle, withXcodeProject } = require('expo/config-plugins');
+const {
+  withBaseMod,
+  withProjectBuildGradle,
+  withXcodeProject,
+} = require('expo/config-plugins');
 
 /**
  * @type {import('expo/config-plugins').ConfigPlugin}
@@ -56,7 +60,9 @@ const { withProjectBuildGradle, withXcodeProject } = require('expo/config-plugin
  *      and `REACT_NATIVE_PATH` is built from `${PODS_ROOT}`, so in the
  *      extension it resolves to `/node_modules/…` and the compiler cannot be
  *      spawned.
- *      → Define `PODS_ROOT` on the extension's own build configurations.
+ *      → Define `PODS_ROOT` on the extension's own build configurations,
+ *        after the autofill plugin has added the target (see
+ *        `withXcodeProjectAfterEarlierPlugins`).
  *
  * MUST be registered AFTER the autofill plugin so it operates on the project
  * that plugin produced.
@@ -77,8 +83,28 @@ const withPasskeyAutofillFixes = (config) => {
     return config;
   });
 
+  config = withXcodeProjectAfterEarlierPlugins(
+    config,
+    definePodsRootForExtension,
+  );
+
   return config;
 };
+
+// Expo runs a later-registered plugin's xcodeproj mod before an earlier one's,
+// so a plain withXcodeProject here sees the project before the autofill plugin
+// has added its extension target. This lets the rest of the chain run first.
+const withXcodeProjectAfterEarlierPlugins = (config, applyFix) =>
+  withBaseMod(config, {
+    platform: 'ios',
+    mod: 'xcodeproj',
+    isProvider: false,
+    async action({ modRequest: { nextMod, ...modRequest }, ...config }) {
+      const results = await nextMod({ ...config, modRequest });
+      applyFix(results.modResults);
+      return results;
+    },
+  });
 
 // --- [Android] DP256 vendored Maven repo -----------------------------------
 
@@ -115,7 +141,6 @@ function applyIosFixes(project) {
   addExtensionTargetDependency(project);
   dedupeSourcesBuildPhases(project);
   moveExtensionEmbedBeforeBundleScripts(project);
-  definePodsRootForExtension(project);
 }
 
 /** Quote any unquoted `$(...)` DEVELOPMENT_TEAM so the pbxproj parses. */
@@ -284,4 +309,5 @@ function definePodsRootForExtension(project) {
 module.exports = Object.assign(withPasskeyAutofillFixes, {
   applyIosFixes,
   definePodsRootForExtension,
+  withXcodeProjectAfterEarlierPlugins,
 });
