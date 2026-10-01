@@ -11,41 +11,41 @@
  */
 
 import {
-    AccountTypes,
+    buildAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 
-export const buildWatchAccount = (account: LegacyAccount): WalletAccount => ({
-    id: generateOrderedUniqueId(),
-    name: account.name || undefined,
-    type: AccountTypes.watch,
-    address: account.address,
-    // Only the mirror — deliberately NOT rekeyAddressByNetwork: rekeys are per-network on-chain
-    // and the legacy value's network is ambiguous; the syncer's updateAccountRekeyAddress
-    // writes the authoritative per-network map on first tick, per the field's documented contract.
-    ...(account.authAddress ? { rekeyAddress: account.authAddress } : {}),
-})
+export const buildWatchAccount = (account: LegacyAccount): WalletAccount =>
+    buildAccount({
+        name: account.name || undefined,
+        address: account.address,
+        provenance: { kind: 'watch' },
+        // Only the mirror — deliberately NOT rekeyAddressByNetwork: rekeys are per-network on-chain
+        // and the legacy value's network is ambiguous; the syncer's updateAccountRekeyAddress
+        // writes the authoritative per-network map on first tick, per the field's documented contract.
+        ...(account.authAddress ? { rekeyAddress: account.authAddress } : {}),
+    })
 
 export const buildLedgerAccount = (account: LegacyAccount): WalletAccount => {
     if (!account.ledger)
         throw new Error('Ledger account missing ledger details')
-    return {
-        id: generateOrderedUniqueId(),
+    return buildAccount({
         name: account.name || undefined,
-        type: AccountTypes.hardware,
         address: account.address,
-        hardwareDetails: {
-            manufacturer: 'ledger',
-            transportType: 'ble',
-            deviceId: account.ledger.bluetoothAddress,
-            deviceName: account.ledger.bluetoothName ?? '',
+        provenance: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                transportType: 'ble',
+                deviceId: account.ledger.bluetoothAddress,
+                deviceName: account.ledger.bluetoothName ?? '',
+            },
             accountIndex: account.ledger.positionInLedger,
         },
-    }
+    })
 }
 
 export const buildMultiSigAccount = (account: LegacyAccount): WalletAccount => {
@@ -59,17 +59,16 @@ export const buildMultiSigAccount = (account: LegacyAccount): WalletAccount => {
     const resolvedThreshold =
         threshold ??
         deriveMultisigThreshold(account.address, version, participants)
-    return {
-        id: generateOrderedUniqueId(),
+    return buildAccount({
         name: account.name || undefined,
-        type: AccountTypes.multisig,
         address: account.address,
-        multisigDetails: {
+        provenance: {
+            kind: 'multisig',
             threshold: resolvedThreshold,
-            addresses: participants,
+            members: participants,
             version: version,
         },
-    }
+    })
 }
 
 const deriveMultisigThreshold = (

@@ -15,6 +15,7 @@ import { renderHook, act } from '@test-utils/render'
 import {
     AccountTypes,
     useAccountsStore,
+    withCustody,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -313,7 +314,7 @@ describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
         })
 
         expect(mockSetAccounts).toHaveBeenCalledWith([
-            concurrent,
+            withCustody(concurrent),
             sampleDiscovered[0],
         ])
     })

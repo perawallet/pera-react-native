@@ -12,13 +12,17 @@
 
 import {
     AccountTypes,
+    buildAccount,
     DuplicateAccountError,
     type AccountKeystore,
     type MintedAccount,
     type SingleKeyAccountOps,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     algo25SignKeyId,
     indicesToAlgo25Seed,
@@ -64,12 +68,18 @@ const createAlgo25 = async (
 
     try {
         return {
-            account: {
-                id: generateOrderedUniqueId(),
+            account: buildAccount({
                 address: ed25519Address(publicKey, scope),
-                type: AccountTypes.algo25,
-                keyPairId: algo25SignKeyId(seedKeyId),
-            },
+                provenance: {
+                    kind: 'local',
+                    seed: 'algo25',
+                },
+                credentials: {
+                    [LEGACY_CHAIN_ID]: {
+                        keyPairId: algo25SignKeyId(seedKeyId),
+                    },
+                },
+            }),
             seedKeyId,
             isNewSeed,
         }
@@ -94,12 +104,16 @@ const createQuantum = async (
     })
     try {
         return {
-            account: {
-                id: generateOrderedUniqueId(),
+            account: buildAccount({
                 address: result.address,
-                type: AccountTypes.quantum,
-                keyPairId: result.signKeyId,
-            },
+                provenance: {
+                    kind: 'local',
+                    seed: 'quantum',
+                },
+                credentials: {
+                    [LEGACY_CHAIN_ID]: { keyPairId: result.signKeyId },
+                },
+            }),
             seedKeyId: result.seedKey.id,
             isNewSeed: true,
         }
@@ -179,18 +193,24 @@ const importQuantum = async (
             reuseSeedId: seedKeyId,
         })
         const minted: MintedAccount = {
-            account: {
-                id: generateOrderedUniqueId(),
+            account: buildAccount({
                 address: result.address,
-                type: AccountTypes.quantum,
-                keyPairId:
-                    candidate.derivation === PQ_DERIVATION_CANONICAL
-                        ? quantumSignKeyId(
-                              result.seedKey.id,
-                              PQ_DERIVATION_CANONICAL,
-                          )
-                        : result.signKeyId,
-            },
+                provenance: {
+                    kind: 'local',
+                    seed: 'quantum',
+                },
+                credentials: {
+                    [LEGACY_CHAIN_ID]: {
+                        keyPairId:
+                            candidate.derivation === PQ_DERIVATION_CANONICAL
+                                ? quantumSignKeyId(
+                                      result.seedKey.id,
+                                      PQ_DERIVATION_CANONICAL,
+                                  )
+                                : result.signKeyId,
+                    },
+                },
+            }),
             seedKeyId: result.seedKey.id,
             isNewSeed: seedKeyId === undefined,
         }
@@ -211,12 +231,16 @@ const importAlgo25 = async (
         mnemonicIndices,
     })
     const minted: MintedAccount = {
-        account: {
-            id: generateOrderedUniqueId(),
+        account: buildAccount({
             address: ed25519Address(publicKey, scope),
-            type: AccountTypes.algo25,
-            keyPairId: algo25SignKeyId(seedKey.id),
-        },
+            provenance: {
+                kind: 'local',
+                seed: 'algo25',
+            },
+            credentials: {
+                [LEGACY_CHAIN_ID]: { keyPairId: algo25SignKeyId(seedKey.id) },
+            },
+        }),
         seedKeyId: seedKey.id,
         isNewSeed: true,
     }

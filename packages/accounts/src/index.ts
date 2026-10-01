@@ -18,6 +18,7 @@ import './store/network-rekey-sync'
 
 export * from './constants'
 export * from './models'
+export * from './credentials'
 export * from './hooks'
 export * from './errors'
 export * from './utils'

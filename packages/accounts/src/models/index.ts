@@ -23,6 +23,7 @@ import type {
 } from '@perawallet/wallet-core-shared'
 
 export * from './accounts'
+export * from './credentials'
 export * from './balances'
 export * from './ledger-account-preview'
 export * from './ledger-selectable-account'

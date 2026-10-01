@@ -11,17 +11,17 @@
  */
 
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    AccountTypes,
-    type DerivationType,
-    type HDWalletAccount,
-    type WalletAccount,
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import type {
+    DerivationType,
+    HDWalletAccount,
+    WalletAccount,
 } from './models/accounts'
-import {
-    generateOrderedUniqueId,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { buildAccount } from './credentials'
 import {
     accountsAdapterFor,
     addressCodecFor,
@@ -86,22 +86,28 @@ async function scanAccountKeys({
             })
             const address = codec.fromPublicKey(addressBytes, deriveOpts)
 
-            const accountData: HDWalletAccount = {
-                id: generateOrderedUniqueId(),
+            const accountData = buildAccount({
                 address,
-                type: AccountTypes.hdWallet,
-                keyPairId: adapter.hdKeyPairId(walletKeyId, {
-                    account: accountIdx,
-                    keyIndex: currentKeyIdx,
-                    derivationType,
-                }),
-                hdWalletDetails: {
-                    account: accountIdx,
-                    change: 0,
-                    keyIndex: currentKeyIdx,
-                    derivationType,
+                provenance: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: {
+                        account: accountIdx,
+                        change: 0,
+                        keyIndex: currentKeyIdx,
+                        derivationType,
+                    },
                 },
-            }
+                credentials: {
+                    [LEGACY_CHAIN_ID]: {
+                        keyPairId: adapter.hdKeyPairId(walletKeyId, {
+                            account: accountIdx,
+                            keyIndex: currentKeyIdx,
+                            derivationType,
+                        }),
+                    },
+                },
+            })
 
             if (accountIdx === 0 && currentKeyIdx === 0) {
                 zeroAccount = accountData
@@ -231,12 +237,13 @@ export async function discoverRekeyedAccounts({
     const tasks = accountAddresses.map(async address => {
         const rekeyedAddresses = await fetchRekeyedAddresses(address, network)
 
-        return rekeyedAddresses.map((rekeyedAddress): WalletAccount => ({
-            id: generateOrderedUniqueId(),
-            address: rekeyedAddress,
-            type: AccountTypes.watch,
-            rekeyAddress: address,
-        }))
+        return rekeyedAddresses.map((rekeyedAddress): WalletAccount =>
+            buildAccount({
+                address: rekeyedAddress,
+                provenance: { kind: 'watch' },
+                rekeyAddress: address,
+            }),
+        )
     })
 
     const results = await Promise.all(tasks)

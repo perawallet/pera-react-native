@@ -15,6 +15,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import {
     AccountTypes,
     useAccountsStore,
+    withCustody,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -625,7 +626,9 @@ describe('useLedgerVerifyScreen', () => {
             })
 
             expect(mockSheetRequest).not.toHaveBeenCalled()
-            expect(useAccountsStore.getState().accounts).toEqual([untouched])
+            expect(useAccountsStore.getState().accounts).toEqual([
+                withCustody(untouched),
+            ])
             expect(mockSetConfetti).not.toHaveBeenCalled()
             expect(mockExit).toHaveBeenCalledTimes(1)
         })

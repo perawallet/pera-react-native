@@ -26,6 +26,7 @@ import {
     AccountTypes,
     canSignWith,
     useAccountsStore,
+    withCustody,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -161,7 +162,7 @@ describe('Flow: Ledger import upgrades a watch account', () => {
         await waitFor(
             () => {
                 const accounts = useAccountsStore.getState().accounts
-                expect(accounts).toEqual([WATCH_ACCOUNT])
+                expect(accounts).toEqual([withCustody(WATCH_ACCOUNT)])
                 expect(
                     screen.getByTestId('ledger_verify_add_accounts_button'),
                 ).toBeTruthy()

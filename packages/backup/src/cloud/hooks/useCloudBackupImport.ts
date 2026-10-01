@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    AccountTypes,
+    buildAccount,
     deriveHdAccount,
     DuplicateAccountError,
     useAccountsStore,
@@ -91,29 +91,29 @@ const buildHardwareAccount = (
     payload: HardwareAddressPayload,
 ): HardwareWalletAccount => {
     assertValidAddress(payload.address)
-    return {
-        id: generateOrderedUniqueId(),
+    return buildAccount({
         address: payload.address,
-        type: AccountTypes.hardware,
-        hardwareDetails: {
-            manufacturer: payload.manufacturer,
-            deviceId: payload.deviceId,
-            deviceName: payload.deviceName,
+        provenance: {
+            kind: 'hardware',
+            device: {
+                manufacturer: payload.manufacturer,
+                deviceId: payload.deviceId,
+                deviceName: payload.deviceName,
+                transportType: payload.transportType,
+            },
             accountIndex: payload.accountIndex,
-            transportType: payload.transportType,
         },
         ...nameField(payload.customName),
-    }
+    })
 }
 
 const buildWatchAccount = (payload: WatchAddressPayload): WatchAccount => {
     assertValidAddress(payload.address)
-    return {
-        id: generateOrderedUniqueId(),
+    return buildAccount({
         address: payload.address,
-        type: AccountTypes.watch,
+        provenance: { kind: 'watch' },
         ...nameField(payload.customName),
-    }
+    })
 }
 
 const buildMultisigAccount = (
@@ -130,17 +130,16 @@ const buildMultisigAccount = (
             `Multisig address mismatch: derived ${derived} != backup ${payload.address}`,
         )
     }
-    return {
-        id: generateOrderedUniqueId(),
+    return buildAccount({
         address: payload.address,
-        type: AccountTypes.multisig,
-        multisigDetails: {
+        provenance: {
+            kind: 'multisig',
             threshold: payload.threshold,
-            addresses: payload.participantAddresses,
+            members: payload.participantAddresses,
             version: payload.version,
         },
         ...nameField(payload.customName),
-    }
+    })
 }
 
 const buildHdWalletAccount = async (
@@ -159,20 +158,24 @@ const buildHdWalletAccount = async (
             `hdWallet address mismatch: derived ${derived.address} != backup ${payload.address}`,
         )
     }
-    return {
-        id: generateOrderedUniqueId(),
+    return buildAccount({
         address: payload.address,
-        type: AccountTypes.hdWallet,
-        hdWalletDetails: {
-            account: payload.account,
-            change: payload.change,
-            keyIndex: payload.keyIndex,
-            derivationType:
-                payload.derivationType as HDWalletAccount['hdWalletDetails']['derivationType'],
+        provenance: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: {
+                account: payload.account,
+                change: payload.change,
+                keyIndex: payload.keyIndex,
+                derivationType:
+                    payload.derivationType as HDWalletAccount['hdWalletDetails']['derivationType'],
+            },
         },
-        keyPairId: derived.keyPairId,
+        credentials: {
+            [LEGACY_CHAIN_ID]: { keyPairId: derived.keyPairId },
+        },
         ...nameField(payload.customName),
-    }
+    })
 }
 
 /**

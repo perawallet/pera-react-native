@@ -64,7 +64,10 @@ const {
     }
 })
 
-vi.mock('@perawallet/wallet-core-accounts', () => {
+vi.mock('@perawallet/wallet-core-accounts', async () => {
+    const { buildAccount } = await vi.importActual<
+        Pick<typeof import('@perawallet/wallet-core-accounts'), 'buildAccount'>
+    >('@perawallet/wallet-core-accounts/build-account')
     const useAccountsStore = (selector?: (s: unknown) => unknown) => {
         const state = {
             accounts: storeState.accounts,
@@ -83,6 +86,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             watch: 'watch',
             quantum: 'quantum',
         },
+        buildAccount,
         DuplicateAccountError,
         deriveHdAccount: deriveHdAccountMock,
         useAccountsStore,
@@ -121,7 +125,10 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 }))
 
 let idCounter = 0
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     generateOrderedUniqueId: () => `id-${idCounter++}`,
     logger: { warn: vi.fn() },
 }))
@@ -329,7 +336,12 @@ describe('useCloudBackupImport', () => {
         expect(setAccountsMock).toHaveBeenCalledTimes(1)
         const appended = setAccountsMock.mock.calls[0][0]
         expect(appended).toContainEqual(
-            expect.objectContaining({ address: 'WATCH_ADDR', type: 'watch' }),
+            expect.objectContaining({
+                address: 'WATCH_ADDR',
+                type: 'watch',
+                provenance: { kind: 'watch' },
+                credentials: {},
+            }),
         )
         expect(summary.imported).toBe(1)
     })
@@ -367,6 +379,58 @@ describe('useCloudBackupImport', () => {
                     accountIndex: 3,
                     transportType: 'ble',
                 },
+                provenance: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'DE:AD:BE:EF',
+                        deviceName: 'Ledger Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 3,
+                },
+                credentials: {},
+            }),
+        )
+        expect(summary.imported).toBe(1)
+    })
+
+    test('rebuilds a multisig account from its participants', async () => {
+        deriveMultisigAddressMock.mockReturnValue('MSIG_ADDR')
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            {
+                address: 'MSIG_ADDR',
+                addressPayload: {
+                    type: 'multisig',
+                    address: 'MSIG_ADDR',
+                    participantAddresses: ['A', 'B'],
+                    threshold: 2,
+                    version: 1,
+                    customName: null,
+                },
+                secretsPayload: null,
+            },
+        ])
+
+        const appended = setAccountsMock.mock.calls[0][0]
+        expect(appended).toContainEqual(
+            expect.objectContaining({
+                address: 'MSIG_ADDR',
+                type: 'multisig',
+                multisigDetails: {
+                    threshold: 2,
+                    addresses: ['A', 'B'],
+                    version: 1,
+                },
+                provenance: {
+                    kind: 'multisig',
+                    threshold: 2,
+                    members: ['A', 'B'],
+                    version: 1,
+                },
+                credentials: {},
             }),
         )
         expect(summary.imported).toBe(1)
@@ -501,6 +565,19 @@ describe('useCloudBackupImport', () => {
                 address: 'HD_KEY_ADDR',
                 type: 'hdWallet',
                 name: 'HD One',
+                provenance: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: {
+                        account: 0,
+                        change: 0,
+                        keyIndex: 1,
+                        derivationType: 9,
+                    },
+                },
+                credentials: {
+                    algorand: { keyPairId: expect.any(String) },
+                },
             }),
         )
     })

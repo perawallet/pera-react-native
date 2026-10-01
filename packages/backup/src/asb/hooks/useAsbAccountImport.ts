@@ -12,14 +12,12 @@
 
 import { useCallback } from 'react'
 import {
-    AccountTypes,
+    buildAccount,
     DuplicateAccountError,
     useAccountsStore,
     type WalletAccount,
-    type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useImportAlgo25FromSeed } from '../../shared'
 import { AsbAccountKind, type AsbBackupAccount } from '../models'
 
@@ -66,7 +64,6 @@ export const useAsbAccountImport = (): UseAsbAccountImportResult => {
             }
 
             // Watch path: no KMS interaction, just append to the store.
-            // Mirror useWatchAccountScreen's hand-built WatchAccount shape.
             // Read from the live store rather than a hook-snapshot — the
             // caller imports accounts in a loop and we must see writes from
             // the previous iteration.
@@ -81,12 +78,11 @@ export const useAsbAccountImport = (): UseAsbAccountImportResult => {
                 throw new DuplicateAccountError(account.address)
             }
 
-            const newWatch: WatchAccount = {
-                id: generateOrderedUniqueId(),
+            const newWatch = buildAccount({
                 address: account.address,
-                type: AccountTypes.watch,
+                provenance: { kind: 'watch' },
                 ...(account.name ? { name: account.name } : {}),
-            }
+            })
 
             setAccounts([...currentAccounts, newWatch])
             return newWatch

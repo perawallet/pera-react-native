@@ -14,6 +14,7 @@ import { renderHook } from '@testing-library/react'
 import { describe, expect, it, beforeEach } from 'vitest'
 import { useAccountsRekeyedTo } from '../useAccountsRekeyedTo'
 import { useAccountsStore } from '../../store'
+import { withCustody } from '../../credentials'
 import type { WalletAccount } from '../../models'
 
 const setAccounts = (accounts: WalletAccount[]) =>
@@ -51,7 +52,7 @@ describe('useAccountsRekeyedTo', () => {
         setAccounts([rekeyed, target])
 
         const { result } = renderHook(() => useAccountsRekeyedTo('PQ'))
-        expect(result.current).toEqual([rekeyed])
+        expect(result.current).toEqual([withCustody(rekeyed)])
     })
 
     it('returns an empty list when nothing is rekeyed to the address', () => {

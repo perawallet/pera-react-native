@@ -14,6 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCreateAccount } from '../useCreateAccount'
 import { useAccountsStore } from '../../store'
+import { withCustody } from '../../credentials'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import { SingleKeyAccountsUnsupportedError } from '../../errors'
 import type { MintedAccount } from '../../chain-adapter'
@@ -216,6 +217,14 @@ describe('useCreateAccount', () => {
         // seed at (account=1, keyIndex=0, derivationType=9).
         expect(created.keyPairId).toBe('EXISTING_WALLET-acc1-idx0-dt9')
         expect(created.hdWalletDetails.account).toBe(1)
+        expect(created.provenance).toEqual({
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 1, change: 0, keyIndex: 0, derivationType: 9 },
+        })
+        expect(created.credentials).toEqual({
+            algorand: { keyPairId: 'EXISTING_WALLET-acc1-idx0-dt9' },
+        })
     })
 
     test('throws error when key derivation fails', async () => {
@@ -361,7 +370,7 @@ describe('useCreateAccount', () => {
             })
 
             expect(useAccountsStore.getState().accounts).toEqual([
-                mintedAccount(true).account,
+                withCustody(mintedAccount(true).account),
             ])
             expect(
                 usePendingAccountCreationStore.getState().pendingRollback,
