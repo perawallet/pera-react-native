@@ -10,9 +10,6 @@
  limitations under the License
  */
 
-export type SwapScreenParams = {
-    assetInId?: string
-    assetOutId?: string
-    /** Pay-asset display units, for a swap a browser tab resumes from the popup. */
-    payAmount?: string
-}
+// Brave spoofs Chrome's user agent; `navigator.brave` is the only reliable tell.
+export const isBraveBrowser =
+    typeof navigator !== 'undefined' && 'brave' in navigator

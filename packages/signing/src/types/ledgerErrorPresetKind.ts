@@ -34,6 +34,7 @@ export type LedgerErrorPresetKind =
     | 'app_outdated'
     | 'device_locked'
     | 'device_not_found'
+    | 'device_picker_unavailable'
     | 'device_busy'
     | 'usb_no_device'
     | 'usb_multiple_devices'

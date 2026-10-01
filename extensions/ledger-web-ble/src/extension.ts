@@ -11,7 +11,10 @@
  */
 
 import type { HardwareWalletRegistry } from '@perawallet/wallet-extension-hardware-wallet'
-import { LedgerWebBleService } from './LedgerWebBleService'
+import {
+    LedgerWebBleService,
+    type LedgerWebBleServiceOptions,
+} from './LedgerWebBleService'
 
 /**
  * wallet-provider Extension that registers the Web Bluetooth Ledger hardware
@@ -22,10 +25,13 @@ import { LedgerWebBleService } from './LedgerWebBleService'
  * Run it after `WithHardwareWalletExtension`, which provides the
  * `hardwareWalletRegistry` on the provider instance.
  */
-export const WithLedgerWebBleExtension = (provider: {
-    hardwareWalletRegistry: HardwareWalletRegistry
-}) => {
-    const service = new LedgerWebBleService()
+export const WithLedgerWebBleExtension = (
+    provider: {
+        hardwareWalletRegistry: HardwareWalletRegistry
+    },
+    options?: LedgerWebBleServiceOptions,
+) => {
+    const service = new LedgerWebBleService(options)
     provider.hardwareWalletRegistry.register(service.createTransportProvider())
     return {}
 }

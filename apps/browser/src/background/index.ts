@@ -44,6 +44,7 @@ import {
     installIntegrityEnrolment,
 } from './integrity-enrol'
 import { ensureOffscreenDocument } from './offscreen'
+import { installTabResumeRoute } from './tab-resume'
 import { installPushHandlers } from './push'
 
 // Offscreen documents have no chrome.storage; the SW serves it over runtime
@@ -144,5 +145,6 @@ passkeyRouter.listen()
 installConnectionsApprovalRouter({ approvals })
 installConnectionsHeartbeat({})
 installConnectModalPairRoute({})
+installTabResumeRoute({})
 installDappPageRequestRoute({})
 installDappHostResponseRoute({})

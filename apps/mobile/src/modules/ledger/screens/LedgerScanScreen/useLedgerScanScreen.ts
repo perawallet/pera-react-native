@@ -34,6 +34,7 @@ import {
     useLedgerExpandedTabHandoff,
 } from '../../hooks'
 import { sanitizeDeviceName } from '../../utils'
+import { isBraveBrowser } from '../../utils/braveBrowser'
 import { isScanGestureRequired } from '../../utils/scanGesture'
 
 /**
@@ -93,6 +94,13 @@ type UseLedgerScanScreenResult = {
      * flow instead of a scan that can only time out.
      */
     isBleUnsupported: boolean
+    /**
+     * True when a Bluetooth scan failed in Brave. Brave keeps the Web
+     * Bluetooth API but ships it switched off behind a flag, so the picker is
+     * rejected before it opens and "make sure Bluetooth is enabled" is wrong
+     * advice for a user whose Bluetooth is on.
+     */
+    isBraveBluetoothScanError: boolean
     /**
      * True on web until the user taps "Search for Ledger" at least once.
      * WebHID/Web Bluetooth's device-picker prompt (`requestDevice()`) is only
@@ -379,6 +387,9 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
 
     const isScanTimeout = error instanceof LedgerScanTimeoutError
 
+    const isBraveBluetoothScanError =
+        isBraveBrowser && !isUsbOnly && error !== null && !isScanTimeout
+
     const needsManualStart =
         isScanGestureRequired &&
         !hasStartedOnWeb &&
@@ -397,6 +408,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         isScanTimeout,
         isUsbOnly,
         isBleUnsupported,
+        isBraveBluetoothScanError,
         needsManualStart,
         isPopupSurface,
         handleDevicePress,

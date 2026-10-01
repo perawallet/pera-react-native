@@ -36,13 +36,19 @@ export type OnboardingFlowScreen =
  * `requestDevice()` picker doesn't reliably show from the 360x600 popup —
  * the popup hands off to this expanded tab already knowing which transport
  * the user picked.
+ *
+ * `resume` hands a flow the popup couldn't finish to `onResume`, which reads
+ * what to reopen from session storage.
  */
 export const useExpandedFlowNavigation = (
     navigate: (screen: ExpandedFlowScreen, params?: object) => void,
+    onResume?: () => void,
 ): (() => void) =>
     useCallback((): void => {
         const flow = consumeInitialExpandedFlow()
-        if (flow === 'add-account') {
+        if (flow === 'resume') {
+            onResume?.()
+        } else if (flow === 'add-account') {
             navigate('AddAccount')
         } else if (flow === 'scan') {
             navigate('ScanQR')
@@ -68,7 +74,7 @@ export const useExpandedFlowNavigation = (
         } else if (flow === 'camera-access') {
             navigate('CameraAccess')
         }
-    }, [navigate])
+    }, [navigate, onResume])
 
 /**
  * Onboarding-stack counterpart of `useExpandedFlowNavigation`, for a hand-off

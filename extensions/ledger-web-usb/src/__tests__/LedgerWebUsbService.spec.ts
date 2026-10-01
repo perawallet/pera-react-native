@@ -48,6 +48,7 @@ import {
     type HardwareWalletTransport,
     type LedgerAppDriver,
 } from '@perawallet/wallet-extension-hardware-wallet'
+import { LedgerDevicePickerUnavailableError } from '@perawallet/wallet-extension-ledger-shared'
 import { LedgerWebUsbService } from '../LedgerWebUsbService'
 
 const openedTransport: HardwareWalletTransport = {
@@ -234,6 +235,31 @@ describe('LedgerWebUsbService', () => {
 
         expect(transportRequestMock).toHaveBeenCalled()
         expect(transportOpenMock).not.toHaveBeenCalled()
+    })
+
+    test('connect refuses the request() fallback in a window that cannot host a picker', async () => {
+        const provider = new LedgerWebUsbService({
+            canShowDevicePicker: () => false,
+        }).createTransportProvider()
+        transportListMock.mockResolvedValue([NANO_S_PLUS_DEVICE])
+
+        await expect(provider.connect('9999:9999')).rejects.toBeInstanceOf(
+            LedgerDevicePickerUnavailableError,
+        )
+        expect(transportRequestMock).not.toHaveBeenCalled()
+    })
+
+    test('connect still opens an already-permitted device when no picker can be shown', async () => {
+        const provider = new LedgerWebUsbService({
+            canShowDevicePicker: () => false,
+        }).createTransportProvider()
+        transportListMock.mockResolvedValue([NANO_S_PLUS_DEVICE])
+
+        await provider.connect(
+            `${NANO_S_PLUS_DEVICE.vendorId}:${NANO_S_PLUS_DEVICE.productId}`,
+        )
+
+        expect(transportOpenMock).toHaveBeenCalledWith(NANO_S_PLUS_DEVICE)
     })
 
     test('connect still falls back to request() when list() is unavailable', async () => {

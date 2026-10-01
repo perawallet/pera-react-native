@@ -19,8 +19,17 @@ import type {
 import TransportWebHID from '@ledgerhq/hw-transport-webhid'
 import {
     classifyLedgerError,
+    LedgerDevicePickerUnavailableError,
     resolveUsbDeviceModel,
 } from '@perawallet/wallet-extension-ledger-shared'
+
+export type LedgerWebUsbServiceOptions = {
+    /**
+     * False in a window that can't host the browser's device picker (the
+     * extension's toolbar popup). Defaults to true.
+     */
+    canShowDevicePicker?: () => boolean
+}
 
 /**
  * WebHID's HIDDevice exposes no stable per-device id (unlike the RN HID
@@ -44,8 +53,11 @@ export class LedgerWebUsbService implements HardwareWalletService {
     // interface only passes a string id.
     private readonly devicesByKey = new Map<string, HIDDevice>()
 
+    constructor(private readonly options: LedgerWebUsbServiceOptions = {}) {}
+
     createTransportProvider(): HardwareWalletTransportProvider {
         const { manufacturer, devicesByKey } = this
+        const { canShowDevicePicker = () => true } = this.options
         return {
             manufacturer,
             transportType: 'usb',
@@ -103,6 +115,11 @@ export class LedgerWebUsbService implements HardwareWalletService {
                         // No navigator.hid at all — let the request() path
                         // below produce the real, classified error.
                     }
+                }
+                // Only the request() fallback needs a picker; a device this
+                // origin was already granted opens without one.
+                if (!cached && !canShowDevicePicker()) {
+                    throw new LedgerDevicePickerUnavailableError()
                 }
                 try {
                     let hidTransport: TransportWebHID

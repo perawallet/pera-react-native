@@ -113,12 +113,15 @@ vi.mock('@hooks/useLanguage', () => ({
 const mockSetAmount = vi.fn()
 const mockSetNote = vi.fn()
 const mockSetIsCloseAccount = vi.fn()
+const mockSetShouldContinueToConfirm = vi.fn()
 const mockSendFundsState = {
     selectedAssetId: '0',
     canSelectAsset: true,
-    amount: undefined,
+    amount: undefined as Decimal | undefined,
     note: undefined,
     destination: undefined as string | undefined,
+    shouldContinueToConfirm: false,
+    setShouldContinueToConfirm: mockSetShouldContinueToConfirm,
     setSelectedAssetId: vi.fn(),
     setCanSelectAsset: vi.fn(),
     setAmount: mockSetAmount,
@@ -142,6 +145,8 @@ describe('useInputScreen', () => {
         mockSendFundsState.selectedAssetId = '0'
         mockSendFundsState.note = undefined
         mockSendFundsState.destination = undefined
+        mockSendFundsState.amount = undefined
+        mockSendFundsState.shouldContinueToConfirm = false
         ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
         ;(useSelectedAccount as Mock).mockReturnValue({
             address: 'test-addr',
@@ -432,6 +437,37 @@ describe('useInputScreen', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
         expect(mockNavigate).not.toHaveBeenCalledWith('SelectDestination')
+    })
+
+    it('continues a resumed send to confirmation on its own once balances load', async () => {
+        mockSendFundsState.amount = new Decimal('5')
+        mockSendFundsState.destination = 'RECEIVERADDR'
+        mockSendFundsState.shouldContinueToConfirm = true
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: { amount: 100_000_000n, minBalance: 0n },
+        })
+
+        renderHook(() => useInputScreen())
+        await act(async () => {})
+
+        expect(mockSetShouldContinueToConfirm).toHaveBeenCalledWith(false)
+        expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
+    })
+
+    it('holds a resumed send until the balances it checks against are loaded', async () => {
+        mockSendFundsState.amount = new Decimal('5')
+        mockSendFundsState.destination = 'RECEIVERADDR'
+        mockSendFundsState.shouldContinueToConfirm = true
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: undefined,
+        })
+
+        renderHook(() => useInputScreen())
+        await act(async () => {})
+
+        expect(mockSetShouldContinueToConfirm).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockShowToast).not.toHaveBeenCalled()
     })
 
     it('setMax sets value to full account balance', () => {

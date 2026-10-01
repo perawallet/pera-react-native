@@ -15,6 +15,7 @@ import { isAndroid } from '@utils/platform'
 import type { LedgerErrorActionKind } from '../utils/ledgerErrorPresets'
 import { useBlePermissions } from './useBlePermissions'
 import { useBluetoothState } from './useBluetoothState'
+import { useLedgerExpandedTabHandoff } from './useLedgerExpandedTabHandoff'
 
 type UseLedgerErrorActionResult = {
     runAction: (kind: LedgerErrorActionKind) => void
@@ -38,9 +39,14 @@ type UseLedgerErrorActionResult = {
 export const useLedgerErrorAction = (): UseLedgerErrorActionResult => {
     const { requestEnable } = useBluetoothState()
     const { openSettings, openLocationSettings } = useBlePermissions()
+    const { openWalletInTab } = useLedgerExpandedTabHandoff()
 
     const runAction = useCallback(
         (kind: LedgerErrorActionKind) => {
+            if (kind === 'open_in_tab') {
+                void openWalletInTab()
+                return
+            }
             if (kind === 'location') {
                 void openLocationSettings()
                 return
@@ -57,7 +63,7 @@ export const useLedgerErrorAction = (): UseLedgerErrorActionResult => {
                 if (!isPrompted) void openSettings()
             })
         },
-        [requestEnable, openSettings, openLocationSettings],
+        [requestEnable, openSettings, openLocationSettings, openWalletInTab],
     )
 
     return { runAction }

@@ -52,9 +52,11 @@ export const useInputScreen = () => {
         amount,
         pendingAmountBaseUnits,
         destination,
+        shouldContinueToConfirm,
         setAmount,
         setPendingAmountBaseUnits,
         setIsCloseAccount,
+        setShouldContinueToConfirm,
     } = useSendFunds()
     const {
         resolveDestination,
@@ -423,6 +425,31 @@ export const useInputScreen = () => {
         requestRekeyedMinBalanceConfirm,
         confirmCloseAccount,
         continuePastMbr,
+    ])
+
+    // Next checks the amount against these balances; pressing it before they
+    // load would reject a valid amount as exceeding a zero balance.
+    const canCheckAmount =
+        !!asset &&
+        !!accountInformation &&
+        minFee !== undefined &&
+        (isAlgoAssetId(selectedAssetId) ||
+            (!!selectedAccount &&
+                !!accountBalances?.get(selectedAccount.address)))
+
+    // A resumed send (see `shouldContinueToConfirm`) runs the user's own Next,
+    // so every check a real tap makes still applies on the way to confirm.
+    useEffect(() => {
+        if (!shouldContinueToConfirm || !canCheckAmount || !isDestinationReady)
+            return
+        setShouldContinueToConfirm(false)
+        void handleNext()
+    }, [
+        shouldContinueToConfirm,
+        canCheckAmount,
+        isDestinationReady,
+        setShouldContinueToConfirm,
+        handleNext,
     ])
 
     const isCollectibleAsset = useMemo(

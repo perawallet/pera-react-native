@@ -26,6 +26,7 @@ import {
     LedgerDeviceBusyError,
     LedgerDeviceLockedError,
     LedgerDeviceNotFoundError,
+    LedgerDevicePickerUnavailableError,
     LedgerDisconnectedError,
     LedgerLocationServicesDisabledError,
     LedgerNetworkError,
@@ -173,6 +174,8 @@ describe('classifyLedgerError with @ledgerhq/errors typed errors', () => {
         ['TransportRaceCondition', LedgerDeviceBusyError],
         ['UnresponsiveDeviceError', LedgerTimeoutError],
         ['LockedDeviceError', LedgerDeviceLockedError],
+        ['NotFoundError', LedgerDeviceNotFoundError],
+        ['TransportOpenUserCancelled', LedgerDeviceNotFoundError],
     ] as const)('maps %s to the matching typed error', (name, expected) => {
         expect(classifyLedgerError(createNamedError(name))).toBeInstanceOf(
             expected,
@@ -275,6 +278,10 @@ describe('expected-error classification', () => {
     // until someone decides whether it is our defect or the environment's.
     const EXPECTED: Array<[string, AppError]> = [
         ['LedgerDeviceNotFoundError', new LedgerDeviceNotFoundError()],
+        [
+            'LedgerDevicePickerUnavailableError',
+            new LedgerDevicePickerUnavailableError(),
+        ],
         ['LedgerDeviceBusyError', new LedgerDeviceBusyError()],
         ['LedgerDeviceLockedError', new LedgerDeviceLockedError()],
         ['LedgerAppNotOpenError', new LedgerAppNotOpenError()],

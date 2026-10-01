@@ -3602,6 +3602,7 @@
             "retry": "Scan Again",
             "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
             "usb_error": "No Ledger device found over USB. Check that it's plugged in, unlocked, and try again.",
+            "web_ble_brave_error": "Brave turns off Web Bluetooth by default. Open brave://flags/#brave-web-bluetooth-api, set it to Enabled, relaunch Brave and try again.",
             "location_services_disabled": "Turn on Location in your device settings to search for nearby Ledger devices.",
             "open_location_settings": "Open Location Settings",
             "grant_permission": "Grant Permission",
@@ -3735,11 +3736,14 @@
             "provider_unavailable": "The hardware wallet connection service is unavailable. Restart Pera and try again.",
             "device_not_found_title": "Ledger not found",
             "device_not_found": "Ledger not found. Make sure your Ledger device is powered on and nearby, then try again.",
+            "device_picker_unavailable_title": "Continue in a browser tab",
+            "device_picker_unavailable": "Your browser can't ask you to select your Ledger device from this window. Open Pera in a browser tab and try again there.",
             "device_busy_title": "Ledger is busy",
             "device_busy": "Ledger is busy. Finish the current action on your Ledger and try again.",
             "action_enable_bluetooth": "Enable Bluetooth",
             "action_open_settings": "Open Settings",
-            "action_open_location_settings": "Open Location Settings"
+            "action_open_location_settings": "Open Location Settings",
+            "action_open_in_tab": "Open in Tab"
         },
         "troubleshooting": {
             "title": "Having Ledger connection issues?",

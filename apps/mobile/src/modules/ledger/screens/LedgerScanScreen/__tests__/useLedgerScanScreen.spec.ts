@@ -29,6 +29,7 @@ const {
     connectionState,
     platformState,
     expandedTabHandoffState,
+    browserState,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockPush: vi.fn(),
@@ -61,6 +62,7 @@ const {
     },
     platformState: { os: 'android' as 'android' | 'ios' | 'web' },
     expandedTabHandoffState: { isPopupSurface: false },
+    browserState: { isBrave: false },
 }))
 
 vi.mock('react-native', () => ({
@@ -75,6 +77,12 @@ vi.mock('react-native', () => ({
 vi.mock('../../../utils/scanGesture', () => ({
     get isScanGestureRequired() {
         return platformState.os === 'web'
+    },
+}))
+
+vi.mock('../../../utils/braveBrowser', () => ({
+    get isBraveBrowser() {
+        return browserState.isBrave
     },
 }))
 
@@ -163,6 +171,7 @@ describe('useLedgerScanScreen', () => {
         platformState.os = 'android'
         routeParams.current = {}
         expandedTabHandoffState.isPopupSurface = false
+        browserState.isBrave = false
         mockOpenLedgerExpandedTab.mockReset()
         mockRequestPermissions.mockResolvedValue(true)
         mockOpenSettings.mockResolvedValue(undefined)
@@ -630,6 +639,56 @@ describe('useLedgerScanScreen', () => {
             expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
                 transportType: 'usb',
             })
+        })
+    })
+
+    describe('Brave: Web Bluetooth switched off behind a flag', () => {
+        beforeEach(() => {
+            platformState.os = 'web'
+            browserState.isBrave = true
+            routeParams.current = { transportType: 'ble' }
+        })
+
+        it('flags a failed Bluetooth scan so the screen can point to the flag', () => {
+            connectionState.error = new LedgerConnectionError('picker rejected')
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBraveBluetoothScanError).toBe(true)
+        })
+
+        it('does not flag before any scan has failed', () => {
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBraveBluetoothScanError).toBe(false)
+        })
+
+        it('does not flag a scan timeout, which has its own state', () => {
+            connectionState.error = new LedgerScanTimeoutError(
+                'no device found',
+            )
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBraveBluetoothScanError).toBe(false)
+        })
+
+        it('does not flag a failed USB-only scan', () => {
+            routeParams.current = { transportType: 'usb' }
+            connectionState.error = new LedgerConnectionError('no hid device')
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBraveBluetoothScanError).toBe(false)
+        })
+
+        it('does not flag outside Brave', () => {
+            browserState.isBrave = false
+            connectionState.error = new LedgerConnectionError('picker rejected')
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBraveBluetoothScanError).toBe(false)
         })
     })
 

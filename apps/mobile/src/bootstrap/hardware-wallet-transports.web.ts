@@ -13,10 +13,21 @@
 import type { HardwareWalletRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { WithLedgerWebBleExtension } from '@perawallet/wallet-extension-ledger-web-ble'
 import { WithLedgerWebUsbExtension } from '@perawallet/wallet-extension-ledger-web-usb'
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+
+// Chrome cancels a device picker opened from the toolbar popup, the same reason
+// Ledger pairing hands off to a tab.
+const canShowDevicePicker = () => getSurface() !== 'popup'
 
 export const registerHardwareWalletTransports = (
     hardwareWalletRegistry: HardwareWalletRegistry,
 ): void => {
-    WithLedgerWebBleExtension({ hardwareWalletRegistry })
-    WithLedgerWebUsbExtension({ hardwareWalletRegistry })
+    WithLedgerWebBleExtension(
+        { hardwareWalletRegistry },
+        { canShowDevicePicker },
+    )
+    WithLedgerWebUsbExtension(
+        { hardwareWalletRegistry },
+        { canShowDevicePicker },
+    )
 }

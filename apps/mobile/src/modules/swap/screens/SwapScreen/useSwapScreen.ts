@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useSwaps } from '@perawallet/wallet-core-swaps'
 import {
@@ -22,9 +22,14 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { SwapScreenParams } from '@modules/swap/routes/types'
 import { useSeedSwapRouteAssets } from './useSeedSwapRouteAssets'
+import type { SwapFormInitialPayAmount } from '@modules/swap/components/SwapForm/useSwapForm'
 import { resolveSwapRouteAssets } from './resolveSwapRouteAssets'
 
-export const useSwapScreen = () => {
+export type UseSwapScreenResult = {
+    initialPayAmount: SwapFormInitialPayAmount | undefined
+}
+
+export const useSwapScreen = (): UseSwapScreenResult => {
     const route =
         useRoute<RouteProp<{ Swap: Optional<SwapScreenParams> }, 'Swap'>>()
     const { network } = useNetwork()
@@ -55,4 +60,15 @@ export const useSwapScreen = () => {
         setFromAsset(assetInId)
         setToAsset(assetOutId)
     }, [assetInId, assetOutId, setFromAsset, setToAsset])
+
+    const payAmount = route.params?.payAmount
+    const initialPayAmount = useMemo(
+        () =>
+            payAmount && assetInId
+                ? { assetId: assetInId, amount: payAmount }
+                : undefined,
+        [payAmount, assetInId],
+    )
+
+    return { initialPayAmount }
 }
