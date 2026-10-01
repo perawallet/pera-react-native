@@ -41,7 +41,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 // native-shaped (true) and web-shaped (false) route capability maps without
 // re-mocking.
 const { mockCapabilities } = vi.hoisted(() => ({
-    mockCapabilities: { inAppWebView: true, fullScreenMediaViewer: true },
+    mockCapabilities: { inAppWebView: true },
 }))
 
 vi.mock('@routes/capabilities', () => ({
@@ -224,10 +224,7 @@ describe('useCollectibleDetail', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        Object.assign(mockCapabilities, {
-            inAppWebView: true,
-            fullScreenMediaViewer: true,
-        })
+        Object.assign(mockCapabilities, { inAppWebView: true })
         mockGetImageBase64.mockResolvedValue('base64data')
         mockSaveImageToDevice.mockResolvedValue(undefined)
         mockUseSelectedAccount.mockReturnValue(mockAccount)
@@ -806,56 +803,6 @@ describe('useCollectibleDetail', () => {
             result.current.handleFullScreenPress(0)
 
             expect(mockRequestBottomSheet).not.toHaveBeenCalled()
-        })
-
-        describe('without the full-screen media viewer (web)', () => {
-            it('opens the raw media URL in a new tab instead of a bottom sheet', () => {
-                mockCapabilities.fullScreenMediaViewer = false
-                mockUseSingleAssetDetailsQuery.mockReturnValue({
-                    data: makeAssetWithMedia([
-                        {
-                            type: 'image',
-                            downloadUrl: 'https://example.com/full.png',
-                            extension: 'png',
-                        },
-                    ]),
-                    isPending: false,
-                })
-
-                const { result } = renderHook(() =>
-                    useCollectibleDetail('12345'),
-                )
-
-                result.current.handleFullScreenPress(0)
-
-                expect(mockOpenURL).toHaveBeenCalledWith(
-                    'https://example.com/full.png',
-                )
-                expect(mockRequestBottomSheet).not.toHaveBeenCalled()
-            })
-
-            it('refuses creator-supplied media that is not absolute https', () => {
-                mockCapabilities.fullScreenMediaViewer = false
-                mockUseSingleAssetDetailsQuery.mockReturnValue({
-                    data: makeAssetWithMedia([
-                        {
-                            type: 'image',
-                            downloadUrl: '//evil.example/full.png',
-                            extension: 'png',
-                        },
-                    ]),
-                    isPending: false,
-                })
-
-                const { result } = renderHook(() =>
-                    useCollectibleDetail('12345'),
-                )
-
-                result.current.handleFullScreenPress(0)
-
-                expect(mockOpenURL).not.toHaveBeenCalled()
-                expect(mockRequestBottomSheet).not.toHaveBeenCalled()
-            })
         })
     })
 })

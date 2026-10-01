@@ -23,9 +23,6 @@ export type RouteCapabilities = {
     giftCards: boolean
     /** In-app webview screens (help center, terms links). Off ⇒ Linking.openURL. */
     inAppWebView: boolean
-    /** Collectible media in a full-screen bottom sheet. Off ⇒ the raw media
-     * opens in a browser tab, since a sheet can't fill the screen in a popup. */
-    fullScreenMediaViewer: boolean
     qrScanner: boolean
     /** Ledger pairing over USB: Android OTG and WebHID. iOS has no USB HID route. */
     ledgerUsb: boolean

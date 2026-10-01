@@ -91,8 +91,6 @@ describe('route capabilities', () => {
             // The unified Connections settings screen supersedes the
             // separate WalletConnect menu entry on web.
             connectionsSettings: true,
-            // A sheet can't fill the popup; collectible media opens in a tab.
-            fullScreenMediaViewer: false,
             ledgerUsb: true,
         })
     })

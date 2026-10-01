@@ -24,7 +24,6 @@ export const routeCapabilities: RouteCapabilities = {
     peraCard: true,
     giftCards: true,
     inAppWebView: true,
-    fullScreenMediaViewer: true,
     qrScanner: true,
     ledgerUsb: isAndroid(),
     // Native keeps the camera; paste has no reason to exist there.
