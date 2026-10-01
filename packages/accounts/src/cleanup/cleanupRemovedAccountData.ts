@@ -22,6 +22,7 @@ import {
     deleteAccountBalance,
     getAllHeldAssetIdsForNetwork,
 } from '../db'
+import { scopeFromNetworkColumn } from '../db/networkColumn'
 
 export type CleanupRemovedAccountDataParams = {
     db?: Database
@@ -62,7 +63,10 @@ export async function cleanupRemovedAccountData({
 
     for (const [network, hadIds] of hadByNetwork) {
         const remaining = new Set(
-            await getAllHeldAssetIdsForNetwork({ db, network }),
+            await getAllHeldAssetIdsForNetwork({
+                db,
+                scope: scopeFromNetworkColumn(network),
+            }),
         )
         // ALGO is a holding row like any ASA, so it looks orphaned once the
         // last account holding it is gone — but its metadata is a local

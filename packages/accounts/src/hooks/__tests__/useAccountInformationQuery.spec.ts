@@ -97,11 +97,11 @@ describe('useAccountInformationQuery', () => {
 
         expect(mockGetAccountBalance).toHaveBeenCalledWith({
             accountAddress: mockAddress,
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
         })
         expect(mockGetAccountHoldings).toHaveBeenCalledWith({
             accountAddress: mockAddress,
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
         })
     })
 

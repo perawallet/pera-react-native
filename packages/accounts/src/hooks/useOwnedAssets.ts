@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -46,7 +47,10 @@ export const useOwnedAssets = (
 
     const { data: ownedAssetIds = [], isLoading: isIdsLoading } = useQuery({
         queryKey: getOwnedAssetIdsQueryKey(network),
-        queryFn: () => getAllHeldAssetIdsForNetwork({ network }),
+        queryFn: () =>
+            getAllHeldAssetIdsForNetwork({
+                scope: scopeForLegacyNetwork(network),
+            }),
         enabled,
         staleTime: OWNED_ASSET_IDS_STALE_TIME_MS,
     })

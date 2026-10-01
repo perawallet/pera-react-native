@@ -25,6 +25,7 @@ import {
     PeraAssetType,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     refreshAccountHoldings,
     insertAssetHolding,
@@ -34,6 +35,8 @@ import {
     getAccountCollectiblesLite,
     assetFromHoldingLiteRow,
 } from '../holdingsQueries'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('account holdings queries', () => {
     let db: Database
@@ -93,7 +96,7 @@ describe('account holdings queries', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: [
                     { assetId: '2', amount: new Decimal(1) },
                     { assetId: '10', amount: new Decimal(1) },
@@ -117,7 +120,7 @@ describe('account holdings queries', () => {
             const rows = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(rows.map(r => r.assetId).sort()).toEqual(['10', '2', '30'])
@@ -127,7 +130,7 @@ describe('account holdings queries', () => {
             const rows = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 includeOptedInOnly: false,
             })
 
@@ -138,7 +141,7 @@ describe('account holdings queries', () => {
             const rows = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 sortMode: 'titleAsc',
             })
 
@@ -150,7 +153,7 @@ describe('account holdings queries', () => {
             const rows = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 sortMode: 'titleAsc',
             })
 
@@ -165,7 +168,7 @@ describe('account holdings queries', () => {
             const rows = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 sortMode: 'titleDesc',
             })
 
@@ -182,7 +185,7 @@ describe('account holdings queries', () => {
             const rows = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 sortMode: 'newestFirst',
             })
 
@@ -201,7 +204,7 @@ describe('account holdings queries', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: huge.map(assetId => ({
                     assetId,
                     amount: new Decimal(1),
@@ -218,7 +221,7 @@ describe('account holdings queries', () => {
             const rows = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR2',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 sortMode: 'oldestFirst',
             })
 
@@ -229,7 +232,7 @@ describe('account holdings queries', () => {
             const rows = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 sortMode: 'oldestFirst',
             })
 
@@ -240,19 +243,19 @@ describe('account holdings queries', () => {
             const byTitle = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 search: 'cherry',
             })
             const byCollection = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 search: 'Stone',
             })
             const byName = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 search: 'Asset Banana',
             })
 
@@ -267,13 +270,13 @@ describe('account holdings queries', () => {
             const byFullId = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 search: '30',
             })
             const byPartialId = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 search: '1',
             })
 
@@ -286,14 +289,14 @@ describe('account holdings queries', () => {
                 db,
                 accountAddress: 'ADDR1',
                 assetId: '999',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 amount: '1',
             })
 
             const rows = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(rows.map(r => r.assetId)).not.toContain('999')
@@ -327,7 +330,7 @@ describe('account holdings queries', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: [
                     { assetId: '0', amount: new Decimal(5_000_000) },
                     { assetId: '100', amount: new Decimal(2_000_000) },
@@ -363,7 +366,7 @@ describe('account holdings queries', () => {
             const rows = await getAccountHoldingsPage({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 limit: 100,
                 offset: 0,
                 ...params,
@@ -394,7 +397,7 @@ describe('account holdings queries', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: [
                     { assetId: '0', amount: new Decimal(5_000_000) },
                     { assetId: '100', amount: new Decimal(2_000_000) },
@@ -456,7 +459,7 @@ describe('account holdings queries', () => {
             const rows = await getAccountHoldingsPage({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 sortMode: 'balanceDesc',
                 limit: 100,
                 offset: 0,

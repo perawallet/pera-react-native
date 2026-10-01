@@ -62,7 +62,7 @@ export const useEnsureAccountEnriched = (address?: string): void => {
                 // list from churning/re-pinning repeatedly mid-load.
                 const holdings = await getAccountHoldings({
                     accountAddress: address,
-                    network,
+                    scope: scopeForLegacyNetwork(network),
                 })
                 const ids = holdings.map(h => h.assetId)
                 if (ids.length === 0) return

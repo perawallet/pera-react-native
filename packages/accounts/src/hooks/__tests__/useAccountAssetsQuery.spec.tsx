@@ -140,7 +140,7 @@ describe('useAccountAssetsQuery', () => {
         expect(mockGetAccountHoldingsLite).toHaveBeenCalledWith(
             expect.objectContaining({
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 sortMode: 'alphabeticalAsc',
                 search: 'algo',
                 hideZeroBalance: true,

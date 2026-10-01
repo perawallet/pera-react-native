@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     ALGO_ASSET_ID,
     type Network,
@@ -58,7 +59,7 @@ export const readAccountSummary = async (address: string, network: Network) => {
     await ensureAccountFetched(address, network)
     return getAccountPortfolioTotals({
         accountAddress: address,
-        network,
+        scope: scopeForLegacyNetwork(network),
     })
 }
 

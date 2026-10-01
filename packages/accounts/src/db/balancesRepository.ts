@@ -12,8 +12,10 @@
 
 import { eq, and } from 'drizzle-orm'
 import type { Decimal } from 'decimal.js'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { networkColumnValue } from './networkColumn'
 import { AccountBalancesSchema } from './schema'
 
 export type AccountBalanceRow = {
@@ -30,7 +32,7 @@ export type AccountBalanceRow = {
 type UpsertAccountBalanceParams = {
     db?: Database
     accountAddress: string
-    network: string
+    scope: ChainScope
     algoBalance: Decimal
     totalAssetsOptedIn: number
     totalCreatedAssets: number
@@ -43,7 +45,7 @@ type UpsertAccountBalanceParams = {
 export async function upsertAccountBalance({
     db = getDatabase(),
     accountAddress,
-    network,
+    scope,
     algoBalance,
     totalAssetsOptedIn,
     totalCreatedAssets,
@@ -52,6 +54,7 @@ export async function upsertAccountBalance({
     status,
     authAddress,
 }: UpsertAccountBalanceParams): Promise<void> {
+    const network = networkColumnValue(scope)
     const now = Date.now()
 
     await db
@@ -90,14 +93,15 @@ export async function upsertAccountBalance({
 type GetAccountBalanceParams = {
     db?: Database
     accountAddress: string
-    network: string
+    scope: ChainScope
 }
 
 export async function getAccountBalance({
     db = getDatabase(),
     accountAddress,
-    network,
+    scope,
 }: GetAccountBalanceParams): Promise<Optional<AccountBalanceRow>> {
+    const network = networkColumnValue(scope)
     const rows = await db
         .select({
             accountAddress: AccountBalancesSchema.accountAddress,

@@ -79,7 +79,7 @@ export async function ensureAccountFetched(
 ): Promise<void> {
     const balance = await getAccountBalance({
         accountAddress: address,
-        network,
+        scope: scopeForLegacyNetwork(network),
     })
     if (balance) return
     try {
@@ -118,7 +118,7 @@ export async function syncAndEnrichNewAccount(
 
         const holdings = await getAccountHoldings({
             accountAddress: address,
-            network,
+            scope: scopeForLegacyNetwork(network),
         })
         const assetIds = holdings.map(h => h.assetId)
         if (assetIds.length === 0) return
@@ -149,7 +149,8 @@ async function doFetchAndPersistAccount(
     // The prior balance row both tells the chain how large the account was at
     // its last sync (which can decide its read strategy) and feeds the
     // changed-account diff below.
-    const prior = await getAccountBalance({ accountAddress: address, network })
+    const scope = scopeForLegacyNetwork(network)
+    const prior = await getAccountBalance({ accountAddress: address, scope })
     const priorResourceCount = prior
         ? prior.totalAssetsOptedIn +
           prior.totalCreatedAssets +
@@ -167,11 +168,9 @@ async function doFetchAndPersistAccount(
         authAddress,
         holdings,
         observedRound,
-    } = await accountsAdapterFor(network).fetchAccountState(
-        address,
-        scopeForLegacyNetwork(network),
-        { priorResourceCount },
-    )
+    } = await accountsAdapterFor(network).fetchAccountState(address, scope, {
+        priorResourceCount,
+    })
 
     // Diff against the persisted balance row so the sync service can tell
     // whether the account changed at all this tick. ASA amount changes are
@@ -189,7 +188,7 @@ async function doFetchAndPersistAccount(
 
     await upsertAccountBalance({
         accountAddress: address,
-        network,
+        scope,
         algoBalance,
         totalAssetsOptedIn,
         totalCreatedAssets,
@@ -206,7 +205,7 @@ async function doFetchAndPersistAccount(
     const holdingsChanged = await refreshAccountHoldings({
         accountAddress: address,
         holdings,
-        network,
+        scope,
     })
 
     return {

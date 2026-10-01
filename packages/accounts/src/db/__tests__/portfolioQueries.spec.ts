@@ -24,11 +24,15 @@ import {
     PeraAssetType,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { refreshAccountHoldings } from '../holdingsRepository'
 import {
     getAccountPortfolioTotals,
     getAccountFundedNetworks,
 } from '../portfolioQueries'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 describe('account portfolio queries', () => {
     let db: Database
@@ -72,7 +76,7 @@ describe('account portfolio queries', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: [
                     { assetId: '0', amount: new Decimal(5_000_000) },
                     { assetId: '100', amount: new Decimal(2_000_000) },
@@ -106,7 +110,7 @@ describe('account portfolio queries', () => {
             const totals = await getAccountPortfolioTotals({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(totals.holdingsCount).toBe(4)
             // ALGO: 5_000_000 microalgos → 5 ALGO (no price needed).
@@ -122,7 +126,7 @@ describe('account portfolio queries', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: [
                     { assetId: '0', amount: new Decimal(5_000_000) },
                     { assetId: '100', amount: new Decimal(2_000_000) },
@@ -135,7 +139,7 @@ describe('account portfolio queries', () => {
             const totals = await getAccountPortfolioTotals({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(totals.missingMetadataCount).toBe(1)
         })
@@ -148,7 +152,7 @@ describe('account portfolio queries', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: [
                     { assetId: '0', amount: new Decimal(5_000_000) },
                     { assetId: '100', amount: new Decimal(2_000_000) },
@@ -166,7 +170,7 @@ describe('account portfolio queries', () => {
             const totals = await getAccountPortfolioTotals({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             // Unchanged from the fully-enriched case: '999' drops out until
             // its metadata lands (and missingMetadataCount flags the gap).
@@ -180,13 +184,13 @@ describe('account portfolio queries', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: [{ assetId: '0', amount: 0n }],
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
                 holdings: [{ assetId: '0', amount: 5_000_000n }],
             })
 
@@ -202,7 +206,7 @@ describe('account portfolio queries', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: [
                     { assetId: '0', amount: 0n },
                     { assetId: '100', amount: 9_000_000n },
@@ -211,7 +215,7 @@ describe('account portfolio queries', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: [{ assetId: '0', amount: 1n }],
             })
 

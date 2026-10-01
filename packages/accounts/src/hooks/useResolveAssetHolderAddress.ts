@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getAssetHolderAddresses } from '../db'
@@ -52,7 +53,11 @@ export const useResolveAssetHolderAddress = (): ResolveAssetHolderAddress => {
         async (assetId: string) => {
             const holders = await queryClient.ensureQueryData({
                 queryKey: getAssetHoldersQueryKey(assetId, network),
-                queryFn: () => getAssetHolderAddresses({ assetId, network }),
+                queryFn: () =>
+                    getAssetHolderAddresses({
+                        assetId,
+                        scope: scopeForLegacyNetwork(network),
+                    }),
                 staleTime: ASSET_HOLDERS_STALE_TIME_MS,
             })
 

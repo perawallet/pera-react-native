@@ -85,7 +85,7 @@ describe('fetchAndPersistAccount', () => {
         )
         expect(mockUpsertAccountBalance).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             algoBalance: new Decimal('1.5'),
             totalAssetsOptedIn: 2,
             totalCreatedAssets: 1,
@@ -96,7 +96,7 @@ describe('fetchAndPersistAccount', () => {
         })
         expect(mockRefreshAccountHoldings).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             holdings: snapshot().holdings,
         })
         expect(updateRekey).toHaveBeenCalledWith(

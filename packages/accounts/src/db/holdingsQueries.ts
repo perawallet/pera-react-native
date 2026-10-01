@@ -24,8 +24,12 @@ import {
     type PeraAsset,
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { networkColumnValue } from './networkColumn'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
 import type { AccountHoldingsFilters } from './holdingsRepository'
@@ -46,7 +50,7 @@ export type AccountHoldingsPageRow = {
 export type GetAccountHoldingsPageParams = {
     db?: Database
     accountAddress: string
-    network: string
+    scope: ChainScope
     /** Sort order applied in SQL. Defaults to balanceDesc. */
     sortMode?: AssetSortMode
     /** Case-insensitive substring match against name / unit name. */
@@ -65,7 +69,7 @@ export type GetAccountHoldingsPageParams = {
 async function queryHoldingRows({
     db = getDatabase(),
     accountAddress,
-    network,
+    scope,
     sortMode = 'balanceDesc',
     search,
     hideZeroBalance,
@@ -75,6 +79,7 @@ async function queryHoldingRows({
     limit,
     offset,
 }: GetAccountHoldingsPageParams) {
+    const network = networkColumnValue(scope)
     const conditions = [
         eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
         eq(AccountAssetHoldingsSchema.network, network),
@@ -323,7 +328,7 @@ export type AccountCollectibleLiteRow = AssetColumnsLite & {
 export type GetAccountCollectiblesLiteParams = {
     db?: Database
     accountAddress: string
-    network: string
+    scope: ChainScope
     /** Omit to order by asset id descending, for callers that re-sort. */
     sortMode?: CollectibleSqlSortMode
     /** Case-insensitive substring match against title / name / collection / asset id. */
@@ -343,11 +348,12 @@ export type GetAccountCollectiblesLiteParams = {
 export async function getAccountCollectiblesLite({
     db = getDatabase(),
     accountAddress,
-    network,
+    scope,
     sortMode,
     search,
     includeOptedInOnly = true,
 }: GetAccountCollectiblesLiteParams): Promise<AccountCollectibleLiteRow[]> {
+    const network = networkColumnValue(scope)
     // Built here, not at module scope: a top-level `sql` template dereferences
     // the imported schema at import time, which breaks every consumer that
     // mocks the assets package.

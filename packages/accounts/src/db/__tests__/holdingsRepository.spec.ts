@@ -24,6 +24,10 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     refreshAccountHoldings,
     getAccountHoldings,
     isAssetFrozen,
@@ -41,6 +45,9 @@ import {
     getAccountBalance,
     deleteAccountBalance,
 } from '../balancesRepository'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 describe('account holdings repository', () => {
     let db: Database
@@ -66,13 +73,13 @@ describe('account holdings repository', () => {
                     { assetId: '100', amount: 5000n },
                     { assetId: '200', amount: 300n },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(2)
@@ -87,20 +94,20 @@ describe('account holdings repository', () => {
                     { assetId: '100', amount: 5000n },
                     { assetId: '200', amount: 300n },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '300', amount: 999n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(1)
@@ -113,13 +120,13 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 5000n, isFrozen: true }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const page = await getAccountHoldingsPage({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(page[0].isFrozen).toBe(true)
 
@@ -128,14 +135,14 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 5000n, isFrozen: false }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(changed).toBe(true)
 
             const after = await getAccountHoldingsPage({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(after[0].isFrozen).toBe(false)
         })
@@ -145,20 +152,20 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 5000n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(0)
@@ -169,47 +176,47 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 10n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
                 holdings: [{ assetId: '200', amount: 20n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '300', amount: 30n }],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             expect(
                 await getAccountHoldings({
                     db,
                     accountAddress: 'ADDR1',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).toHaveLength(1)
             expect(
                 await getAccountHoldings({
                     db,
                     accountAddress: 'ADDR2',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).toHaveLength(1)
             expect(
                 await getAccountHoldings({
                     db,
                     accountAddress: 'ADDR1',
-                    network: 'testnet',
+                    scope: TESTNET_SCOPE,
                 }),
             ).toHaveLength(1)
             expect(
                 await getAccountHoldings({
                     db,
                     accountAddress: 'ADDR2',
-                    network: 'testnet',
+                    scope: TESTNET_SCOPE,
                 }),
             ).toHaveLength(0)
         })
@@ -218,7 +225,7 @@ describe('account holdings repository', () => {
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'UNKNOWN',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(0)
@@ -231,7 +238,7 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: new Decimal(10) }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(changed).toBe(true)
         })
@@ -245,14 +252,14 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const changed = await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(changed).toBe(false)
         })
@@ -265,7 +272,7 @@ describe('account holdings repository', () => {
                     { assetId: '100', amount: new Decimal(10) },
                     { assetId: '200', amount: new Decimal(20) },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const changed = await refreshAccountHoldings({
@@ -275,14 +282,14 @@ describe('account holdings repository', () => {
                     { assetId: '100', amount: new Decimal(10) },
                     { assetId: '200', amount: new Decimal(999) },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(changed).toBe(true)
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             const byId = new Map(result.map(r => [r.assetId, r.amount]))
             expect(byId.get('100')).toEqual(new Decimal(10))
@@ -297,21 +304,21 @@ describe('account holdings repository', () => {
                     { assetId: '100', amount: new Decimal(10) },
                     { assetId: '200', amount: new Decimal(20) },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const changed = await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: new Decimal(10) }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(changed).toBe(true)
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(result.map(r => r.assetId)).toEqual(['100'])
         })
@@ -326,14 +333,14 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(changed).toBe(true)
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(result).toHaveLength(450)
         })
@@ -346,14 +353,14 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const changed = await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             expect(changed).toBe(false)
         })
@@ -395,7 +402,7 @@ describe('account holdings repository', () => {
                     { assetId: '400', amount: new Decimal(0) },
                     { assetId: '500', amount: new Decimal(0) },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await upsertAssets({
                 db,
@@ -413,7 +420,7 @@ describe('account holdings repository', () => {
             const rows = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ...filters,
             })
             return rows.map(r => r.assetId).sort()
@@ -480,13 +487,13 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 assetId: '100',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(1)
@@ -499,20 +506,20 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 500n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await insertAssetHolding({
                 db,
                 accountAddress: 'ADDR1',
                 assetId: '100',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(1)
@@ -524,20 +531,20 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 10n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await insertAssetHolding({
                 db,
                 accountAddress: 'ADDR1',
                 assetId: '200',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(2)
@@ -549,13 +556,13 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 assetId: '100',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result[0].isFrozen).toBe(false)
@@ -567,7 +574,7 @@ describe('account holdings repository', () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 holdings: [
                     { assetId: '100', amount: new Decimal(1), isFrozen: true },
                     { assetId: '200', amount: new Decimal(2), isFrozen: false },
@@ -583,7 +590,7 @@ describe('account holdings repository', () => {
                     db,
                     accountAddress: 'ADDR1',
                     assetId: '100',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).resolves.toBe(true)
         })
@@ -596,7 +603,7 @@ describe('account holdings repository', () => {
                     db,
                     accountAddress: 'ADDR1',
                     assetId: '200',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).resolves.toBe(false)
         })
@@ -609,7 +616,7 @@ describe('account holdings repository', () => {
                     db,
                     accountAddress: 'ADDR1',
                     assetId: '999',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).resolves.toBe(false)
         })
@@ -622,7 +629,7 @@ describe('account holdings repository', () => {
                     db,
                     accountAddress: 'ADDR2',
                     assetId: '100',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).resolves.toBe(false)
             await expect(
@@ -630,7 +637,7 @@ describe('account holdings repository', () => {
                     db,
                     accountAddress: 'ADDR1',
                     assetId: '100',
-                    network: 'testnet',
+                    scope: TESTNET_SCOPE,
                 }),
             ).resolves.toBe(false)
         })
@@ -642,14 +649,14 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 assetId: '100',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 amount: new Decimal(250),
             })
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(1)
@@ -662,21 +669,21 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 500n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await addToAssetHolding({
                 db,
                 accountAddress: 'ADDR1',
                 assetId: '100',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 amount: new Decimal(250),
             })
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(1)
@@ -688,32 +695,32 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 10n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
                 holdings: [{ assetId: '100', amount: 20n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await addToAssetHolding({
                 db,
                 accountAddress: 'ADDR1',
                 assetId: '100',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 amount: new Decimal(5),
             })
 
             const addr1 = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             const addr2 = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(addr1[0].amount).toEqual(new Decimal(15))
@@ -731,20 +738,20 @@ describe('account holdings repository', () => {
                     { assetId: '200', amount: 0n },
                     { assetId: '300', amount: 0n },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await deleteAssetHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 assetIds: ['100', '200'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(1)
@@ -756,34 +763,34 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 0n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
                 holdings: [{ assetId: '100', amount: 0n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await deleteAssetHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 assetIds: ['100'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(
                 await getAccountHoldings({
                     db,
                     accountAddress: 'ADDR1',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).toHaveLength(0)
             expect(
                 await getAccountHoldings({
                     db,
                     accountAddress: 'ADDR2',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).toHaveLength(1)
         })
@@ -793,34 +800,34 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 0n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 0n }],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             await deleteAssetHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 assetIds: ['100'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(
                 await getAccountHoldings({
                     db,
                     accountAddress: 'ADDR1',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).toHaveLength(0)
             expect(
                 await getAccountHoldings({
                     db,
                     accountAddress: 'ADDR1',
-                    network: 'testnet',
+                    scope: TESTNET_SCOPE,
                 }),
             ).toHaveLength(1)
         })
@@ -830,31 +837,31 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 0n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await deleteAssetHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 assetIds: [],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(
                 await getAccountHoldings({
                     db,
                     accountAddress: 'ADDR1',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).toHaveLength(1)
         })
     })
 
     describe('per-account cleanup helpers', () => {
-        const balanceArgs = (accountAddress: string, network: string) => ({
+        const balanceArgs = (accountAddress: string, scope: ChainScope) => ({
             db,
             accountAddress,
-            network,
+            scope,
             algoBalance: new Decimal('1'),
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,
@@ -872,19 +879,19 @@ describe('account holdings repository', () => {
                     { assetId: '100', amount: 5n },
                     { assetId: '200', amount: 0n },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '300', amount: 7n }],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
                 holdings: [{ assetId: '999', amount: 1n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const held = await getHeldAssetIdsByAccount({
@@ -910,19 +917,19 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 5n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '300', amount: 7n }],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
                 holdings: [{ assetId: '100', amount: 9n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await deleteAllAssetHoldingsForAccount({
@@ -941,9 +948,9 @@ describe('account holdings repository', () => {
         })
 
         it('deleteAccountBalance removes the account balance row(s)', async () => {
-            await upsertAccountBalance(balanceArgs('ADDR1', 'mainnet'))
-            await upsertAccountBalance(balanceArgs('ADDR1', 'testnet'))
-            await upsertAccountBalance(balanceArgs('ADDR2', 'mainnet'))
+            await upsertAccountBalance(balanceArgs('ADDR1', MAINNET_SCOPE))
+            await upsertAccountBalance(balanceArgs('ADDR1', TESTNET_SCOPE))
+            await upsertAccountBalance(balanceArgs('ADDR2', MAINNET_SCOPE))
 
             await deleteAccountBalance({ db, accountAddress: 'ADDR1' })
 
@@ -951,21 +958,21 @@ describe('account holdings repository', () => {
                 await getAccountBalance({
                     db,
                     accountAddress: 'ADDR1',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).toBeUndefined()
             expect(
                 await getAccountBalance({
                     db,
                     accountAddress: 'ADDR1',
-                    network: 'testnet',
+                    scope: TESTNET_SCOPE,
                 }),
             ).toBeUndefined()
             expect(
                 await getAccountBalance({
                     db,
                     accountAddress: 'ADDR2',
-                    network: 'mainnet',
+                    scope: MAINNET_SCOPE,
                 }),
             ).toBeDefined()
         })
@@ -980,7 +987,7 @@ describe('account holdings repository', () => {
                     { assetId: '100', amount: 10n },
                     { assetId: '200', amount: 20n },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
@@ -989,12 +996,12 @@ describe('account holdings repository', () => {
                     { assetId: '200', amount: 30n },
                     { assetId: '300', amount: 40n },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAllHeldAssetIdsForNetwork({
                 db,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result.sort()).toEqual(['100', '200', '300'])
@@ -1009,12 +1016,12 @@ describe('account holdings repository', () => {
                     { assetId: '100', amount: 1n },
                     { assetId: '200', amount: 1n },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAllHeldAssetIdsForNetwork({
                 db,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toEqual(['100', '200', '300'])
@@ -1027,25 +1034,25 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR_OPTED_IN',
                 holdings: [{ assetId: '500', amount: 0n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR_OWNER',
                 holdings: [{ assetId: '500', amount: 1n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR_OTHER_NETWORK',
                 holdings: [{ assetId: '500', amount: 1n }],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             const result = await getAssetHolderAddresses({
                 db,
                 assetId: '500',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toEqual(['ADDR_OWNER', 'ADDR_OPTED_IN'])
@@ -1056,19 +1063,19 @@ describe('account holdings repository', () => {
                 db,
                 accountAddress: 'ADDR_B',
                 holdings: [{ assetId: '500', amount: 1n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR_A',
                 holdings: [{ assetId: '500', amount: 1n }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAssetHolderAddresses({
                 db,
                 assetId: '500',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toEqual(['ADDR_A', 'ADDR_B'])
@@ -1078,7 +1085,7 @@ describe('account holdings repository', () => {
             const result = await getAssetHolderAddresses({
                 db,
                 assetId: '500',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toEqual([])

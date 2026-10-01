@@ -73,7 +73,7 @@ describe('useAccountCollectiblesQuery', () => {
         expect(mockGetAccountCollectiblesLite).toHaveBeenCalledWith(
             expect.objectContaining({
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 sortMode: 'titleAsc',
             }),
         )

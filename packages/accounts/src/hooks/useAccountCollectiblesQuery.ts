@@ -11,6 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     getAccountCollectiblesLite,
@@ -96,7 +97,7 @@ export const useAccountCollectiblesQuery = (
             await ensureAccountFetched(address as string, network)
             return getAccountCollectiblesLite({
                 accountAddress: address as string,
-                network,
+                scope: scopeForLegacyNetwork(network),
                 sortMode,
                 search,
                 includeOptedInOnly,
