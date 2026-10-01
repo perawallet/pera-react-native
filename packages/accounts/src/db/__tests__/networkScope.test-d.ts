@@ -87,6 +87,8 @@ describe('accounts repositories take a ChainScope', () => {
     })
 
     it('rejects a bare network string', () => {
+        expectTypeOf<'mainnet'>().not.toExtend<ChainScope>()
+        expectTypeOf<string>().not.toExtend<ChainScope>()
         // @ts-expect-error a network name is not a scope
         void getAccountBalance({ accountAddress: 'A', scope: 'mainnet' })
         // @ts-expect-error the network parameter is gone
