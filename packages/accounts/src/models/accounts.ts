@@ -15,6 +15,7 @@ import type {
     LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
 import type { Network } from '@perawallet/wallet-core-shared'
+import type { AccountCredential } from './credentials'
 
 export const DerivationTypes = {
     Khovratovich: 32,
@@ -134,6 +135,14 @@ export type BaseWalletAccount = {
      * a sync tick writes the map (self-healing, seconds).
      */
     rekeyAddressByNetwork?: Partial<Record<Network, string>>
+    /**
+     * What custody this account has, independent of `type`. Written alongside
+     * `type` and its details object, which stay authoritative for every reader.
+     * Optional on the type only so hand-built literals keep compiling: the
+     * accounts store backfills it on hydration and on every `setAccounts`, so
+     * any account read from the store carries it.
+     */
+    credentials?: AccountCredential[]
 }
 
 export type Algo25Account = BaseWalletAccount & {
