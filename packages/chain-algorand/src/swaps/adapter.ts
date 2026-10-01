@@ -19,10 +19,10 @@ import {
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
-import { submitRawSignedTransactionGroup } from '@perawallet/wallet-core-signing'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../legacy-network'
+import { submitRawSignedTransactionGroup } from '../signing'
 import { executeAlgorandSwap } from './executeSwap'
 
 // Swap groups arrive fully built from the backend, so the client only reads

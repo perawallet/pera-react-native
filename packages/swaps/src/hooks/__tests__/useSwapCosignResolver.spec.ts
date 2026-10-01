@@ -372,10 +372,11 @@ describe('swaps/useSwapCosignResolver', () => {
         render()
 
         expect(mocks.setSubmissionSettledHandler).toHaveBeenCalledWith(
+            'algorand',
             'cosign',
             expect.any(Function),
         )
-        const handler = mocks.setSubmissionSettledHandler.mock.calls[0][1]
+        const handler = mocks.setSubmissionSettledHandler.mock.calls[0][2]
 
         await handler(['txid-1'], 'mainnet', 'confirmed')
 
@@ -404,7 +405,7 @@ describe('swaps/useSwapCosignResolver', () => {
 
         render()
 
-        const handler = mocks.setSubmissionSettledHandler.mock.calls[0][1]
+        const handler = mocks.setSubmissionSettledHandler.mock.calls[0][2]
         await handler(['txid-1'], 'mainnet', 'failed')
 
         expect(mocks.updateSwapStatus).toHaveBeenCalledWith({
@@ -425,6 +426,7 @@ describe('swaps/useSwapCosignResolver', () => {
         view.unmount()
 
         expect(mocks.setSubmissionSettledHandler).toHaveBeenLastCalledWith(
+            'algorand',
             'cosign',
             null,
         )

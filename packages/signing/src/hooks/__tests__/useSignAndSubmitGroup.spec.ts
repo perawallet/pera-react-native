@@ -22,6 +22,7 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionSignRequest } from '../../models'
+import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
 
 const mockAddSignRequest = vi.fn()
 const mockSubmitAndAutoRefresh = vi.fn()
@@ -43,11 +44,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         signed.filter(tx => tx !== null),
 }))
 
-vi.mock('../../pipeline/submission/submitAndAutoRefresh', () => ({
-    submitAndAutoRefresh: (...args: unknown[]) =>
-        mockSubmitAndAutoRefresh(...args),
-}))
-
 const fakeTxn = {
     sender: { toString: () => 'A' },
 } as unknown as PeraTransaction
@@ -55,6 +51,9 @@ const fakeTxn = {
 describe('useSignAndSubmitGroup', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerFakeBroadcaster({
+            submitAndAutoRefresh: mockSubmitAndAutoRefresh,
+        })
     })
 
     it('resolves with the algod txIds after the pipeline approves', async () => {

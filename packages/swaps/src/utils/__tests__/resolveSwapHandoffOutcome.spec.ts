@@ -229,7 +229,7 @@ describe('resolveSwapHandoffOutcome', () => {
         })
         vi.mocked(deriveSubmissionAttemptFromBytes)
             .mockReset()
-            .mockImplementation((bytes: readonly Uint8Array[]) =>
+            .mockImplementation((_chainId, bytes: readonly Uint8Array[]) =>
                 bytes[0] === a
                     ? { txIds: ['id-a'], lastValid: 20 }
                     : { txIds: ['id-b'], lastValid: 40 },

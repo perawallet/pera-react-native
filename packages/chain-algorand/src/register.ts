@@ -28,6 +28,8 @@ import { algorandHistoryAdapter, algorandSendFlowAdapter } from './transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { algorandLedgerAppDriver } from './ledger/driver'
 import { algorandSwapAdapter } from './swaps'
+import { broadcasterChainAdapters } from '@perawallet/wallet-core-signing'
+import { algorandBroadcasterAdapter } from './signing'
 import { algorandAssetsAdapter } from './assets'
 import { algorandNameServiceAdapter } from './nfd'
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
@@ -59,4 +61,5 @@ export const registerChain = (): void => {
     cardChainAdapters.register(algorandCardAdapter)
     rampChainAdapters.register(algorandRampAdapter)
     multisigChainAdapters.register(algorandMultisigAdapter)
+    broadcasterChainAdapters.register(algorandBroadcasterAdapter)
 }

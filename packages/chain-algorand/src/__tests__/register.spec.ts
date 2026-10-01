@@ -38,6 +38,8 @@ import { algorandNameServiceAdapter } from '../nfd'
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
+import { broadcasterChainAdapters } from '@perawallet/wallet-core-signing'
+import { algorandBroadcasterAdapter } from '../signing'
 import { algorandCardAdapter } from '../card'
 import { algorandRampAdapter } from '../onramp'
 import { algorandMultisigAdapter } from '../multisig'
@@ -59,6 +61,7 @@ describe('registerChain', () => {
         cardChainAdapters.reset()
         rampChainAdapters.reset()
         multisigChainAdapters.reset()
+        broadcasterChainAdapters.reset()
         addressCodecs.reset()
         keyDerivations.reset()
         accountsChainAdapters.reset()
@@ -113,6 +116,14 @@ describe('registerChain', () => {
 
         expect(historyChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandHistoryAdapter,
+        )
+    })
+
+    it('registers the Algorand broadcaster adapter', () => {
+        registerChain()
+
+        expect(broadcasterChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandBroadcasterAdapter,
         )
     })
 

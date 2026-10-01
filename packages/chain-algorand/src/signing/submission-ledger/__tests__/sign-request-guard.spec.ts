@@ -12,8 +12,10 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
+    Address,
     computeGroupID,
     Transaction,
+    TransactionType,
     type Transaction as AlgoTransaction,
 } from 'algosdk'
 import {
@@ -22,13 +24,33 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import {
-    makeTestAddress,
-    makeTestPaymentTx,
-} from '../../test-utils/transactions'
 import { deriveRequestGroupTxIds, isRequestGroupAlreadySubmitted } from '..'
-import { recordSubmissionAttempt, resolveSubmissionAttempt } from '../../db'
-import type { SignRequest } from '../../models'
+import {
+    recordSubmissionAttempt,
+    resolveSubmissionAttempt,
+    type SignRequest,
+} from '@perawallet/wallet-core-signing'
+
+const makeTestAddress = (fill: number): Address =>
+    new Address(new Uint8Array(32).fill(fill))
+
+const makeTestPaymentTx = (
+    sender: Address,
+    { receiver }: { receiver: Address },
+): Transaction =>
+    new Transaction({
+        type: TransactionType.pay,
+        sender,
+        paymentParams: { receiver, amount: 0n },
+        suggestedParams: {
+            fee: 1000n,
+            minFee: 1000n,
+            firstValid: 1000n,
+            lastValid: 2000n,
+            genesisID: 'mainnet-v1.0',
+            genesisHash: new Uint8Array(32).fill(0xab),
+        },
+    })
 
 // Reproduces the pipeline's submit-time derivation: group copies of the
 // ungrouped originals, then read the txids.

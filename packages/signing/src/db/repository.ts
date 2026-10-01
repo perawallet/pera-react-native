@@ -30,7 +30,7 @@ import {
     type SubmissionAttempt,
     type SubmissionFlow,
     type SubmissionStatus,
-} from '../ledger/types'
+} from './types'
 
 type SubmissionAttemptRow = typeof SubmissionAttemptsSchema.$inferSelect
 

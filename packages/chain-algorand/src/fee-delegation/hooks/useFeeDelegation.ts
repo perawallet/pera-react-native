@@ -21,10 +21,8 @@ import type {
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    submitAndAutoRefresh,
-    useSigningRequest,
-} from '@perawallet/wallet-core-signing'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import { submitAndAutoRefresh } from '../../signing/submission/submitAndAutoRefresh'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import { canCallIntegrityGuardedRoute } from '@perawallet/wallet-core-app-integrity'
 import {

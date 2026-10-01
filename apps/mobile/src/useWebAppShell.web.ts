@@ -32,6 +32,7 @@ import {
     getSyncService,
     initializeSyncService,
 } from '@perawallet/wallet-core-background'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
@@ -141,7 +142,8 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             initializeSyncService({
                 queryClient,
                 stores: createSyncStorePorts(),
-                registerCompletionHandler: setOnConfirmedHandler,
+                registerCompletionHandler: handler =>
+                    setOnConfirmedHandler(LEGACY_CHAIN_ID, handler),
             })
             setIsBootstrapped(true)
         }

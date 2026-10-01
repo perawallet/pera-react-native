@@ -35,7 +35,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     decodeSignedTransaction: vi.fn(),
     encodeSignedTransactions: mocks.encodeSignedTransactions,
 }))
-vi.mock('@perawallet/wallet-core-signing', () => ({
+vi.mock('../../signing', () => ({
     submitRawSignedTransactionGroup: mocks.submitRawSignedTransactionGroup,
 }))
 

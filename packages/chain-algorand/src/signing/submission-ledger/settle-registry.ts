@@ -10,19 +10,10 @@
  limitations under the License
  */
 
-import type { SubmissionFlow } from './types'
-
-/**
- * Invoked when the reconciler terminally settles an open attempt of a
- * registered flow — e.g. the cosign flow replays its post-submit tail on
- * confirmation, or fails + declines the retained handoff on a definitive
- * failure. Best-effort by contract: a throw is logged, never propagated.
- */
-export type SubmissionSettledHandler = (
-    txIds: string[],
-    network: string,
-    status: 'confirmed' | 'failed',
-) => void | Promise<void>
+import type {
+    SubmissionFlow,
+    SubmissionSettledHandler,
+} from '@perawallet/wallet-core-signing'
 
 const handlers = new Map<SubmissionFlow, SubmissionSettledHandler>()
 

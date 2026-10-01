@@ -11,11 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import {
-    compactSignedResults,
-    useAlgorandClient,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+import { compactSignedResults } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
@@ -27,7 +24,7 @@ import {
     generateOrderedUniqueId,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { submitAndAutoRefresh } from '../pipeline/submission/submitAndAutoRefresh'
+import { submitAndAutoRefresh } from '../broadcaster'
 import type { TransactionSignRequest } from '../models'
 import { useSigningRequest } from './useSigningRequest'
 
@@ -78,8 +75,6 @@ export type SignAndSubmitGroupResult = {
  */
 export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
     const { addSignRequest } = useSigningRequest()
-    const algokit = useAlgorandClient()
-    const { encodeSignedTransactions } = useTransactionEncoder()
 
     const submit = useCallback(
         ({
@@ -107,8 +102,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                             // present — the null guard is defensive only.
                             const signedTxns = compactSignedResults(signed)
                             const txIds = await submitAndAutoRefresh(
-                                algokit,
-                                encodeSignedTransactions,
+                                LEGACY_CHAIN_ID,
                                 signedTxns,
                                 { flow: 'sign-and-submit' },
                             )
@@ -138,7 +132,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                 addSignRequest(request)
             })
         },
-        [addSignRequest, algokit, encodeSignedTransactions],
+        [addSignRequest],
     )
 
     return { submit }

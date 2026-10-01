@@ -114,10 +114,6 @@ vi.mock('../../store', async importOriginal => {
             mockWasRestoredFromStorage(...args),
     }
 })
-vi.mock('../../ledger', () => ({
-    isRequestGroupAlreadySubmitted: (...args: unknown[]) =>
-        mockIsRequestGroupAlreadySubmitted(...args),
-}))
 
 // Imports (must follow vi.mock calls)
 
@@ -131,6 +127,7 @@ import { signingEventBus } from '../../pipeline/signingEventBus'
 import { createSigningMachine } from '../../machine/createSigningMachine'
 import { flushQueue } from '../../test-utils/queue'
 import type { SignRequest, TransactionSignRequest } from '../../models'
+import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
 
 type MockActor = {
     id: string
@@ -220,6 +217,9 @@ const makeTxRequest = (
 describe('useSigningActorLifecycle', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerFakeBroadcaster({
+            isRequestGroupAlreadySubmitted: mockIsRequestGroupAlreadySubmitted,
+        })
         mockIsRequestGroupAlreadySubmitted.mockResolvedValue(false)
         mockWasRestoredFromStorage.mockReturnValue(false)
         useSigningStore.getState().resetState()

@@ -12,14 +12,11 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { DataTransport, SourceMetadata } from '../types'
 import { isExternalCallbackSource } from '../types'
-import {
-    createAlgodTransport,
-    type AlgokitClientInterface,
-} from './createAlgodTransport'
+import { broadcasterChainAdapters } from '../../broadcaster'
 import { createWalletConnectTransport } from './createWalletConnectTransport'
 import { createCallbackTransport } from './createCallbackTransport'
 import {
@@ -39,10 +36,6 @@ import {
  * throw at selection time, rather than forcing every caller to pass stubs.
  */
 export interface CreateTransportSelectorOptions {
-    /** AlgorandClient for direct submission */
-    algokit: AlgokitClientInterface
-    /** Function to encode signed transactions */
-    encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
     /**
      * Captured at actor creation and re-checked at send time, so a mid-flow
      * network switch can't deliver signatures intended for another chain.
@@ -140,11 +133,9 @@ export const createTransportSelector = (
             return createCallbackTransport()
         }
 
-        // Everything else goes directly to algod
-        return createAlgodTransport(
-            options.algokit,
-            options.encodeSignedTransactions,
-            options.network,
-        )
+        // Everything else is submitted by the chain's broadcaster.
+        return broadcasterChainAdapters
+            .get(LEGACY_CHAIN_ID)
+            .createSubmitTransport(options.network)
     }
 }

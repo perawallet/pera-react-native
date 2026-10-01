@@ -444,8 +444,11 @@ describe('useWebAppShell', () => {
             registerCompletionHandler: unknown
         }
         expect(initArgs.queryClient).toBeDefined()
-        expect(initArgs.registerCompletionHandler).toBe(
-            mocks.setOnConfirmedHandler,
+        const handler = vi.fn()
+        ;(initArgs.registerCompletionHandler as (h: unknown) => void)(handler)
+        expect(mocks.setOnConfirmedHandler).toHaveBeenCalledWith(
+            'algorand',
+            handler,
         )
     })
 

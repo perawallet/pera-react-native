@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
-
-export type OnConfirmedHandler = (
-    affectedAddresses: string[],
-    network: Network,
-) => void | Promise<void>
+import type { OnConfirmedHandler } from '@perawallet/wallet-core-signing'
 
 let registered: OnConfirmedHandler | null = null
 

@@ -25,8 +25,8 @@ import {
 import {
     getOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS,
-    submitAndAutoRefresh,
 } from '@perawallet/wallet-core-signing'
+import { submitAndAutoRefresh } from '../signing/submission/submitAndAutoRefresh'
 import {
     ALGO_ASSET_ID,
     encodeToBase64,

@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
+import { registerFakeBroadcaster } from './src/__tests__/fakeBroadcaster'
 
 const store = new Map<string, string>()
 
@@ -46,3 +47,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         },
     }),
 }))
+
+beforeEach(() => {
+    registerFakeBroadcaster()
+})

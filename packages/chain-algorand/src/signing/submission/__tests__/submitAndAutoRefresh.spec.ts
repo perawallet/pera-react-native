@@ -27,7 +27,7 @@ import {
     getOpenSubmissionAttempts,
     getSubmissionAttemptsByTxIds,
     SubmissionAttemptsSchema,
-} from '../../../db'
+} from '@perawallet/wallet-core-signing'
 import {
     AccountTypes,
     useAccountsStore,

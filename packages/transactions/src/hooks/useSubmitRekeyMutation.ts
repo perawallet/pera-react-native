@@ -12,14 +12,15 @@
 
 import { useMutation } from '@tanstack/react-query'
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
-    useAlgorandClient,
     useFetchSuggestedMinFee,
     useMinimumFeeConfig,
     useNetworkStore,
-    useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
     getOpenSubmissionAttemptsForIntent,
@@ -84,9 +85,7 @@ export type UseSubmitRekeyMutationResult = {
 export const useSubmitRekeyMutation = ({
     signingMetadata,
 }: UseSubmitRekeyMutationOptions): UseSubmitRekeyMutationResult => {
-    const algokit = useAlgorandClient()
     const { addSignRequest } = useSigningRequest()
-    const { encodeSignedTransactions } = useTransactionEncoder()
     const accounts = useAllAccounts()
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
     const fetchSuggestedMinFee = useFetchSuggestedMinFee()
@@ -161,16 +160,11 @@ export const useSubmitRekeyMutation = ({
             )
 
             try {
-                return await submitAndAutoRefresh(
-                    algokit,
-                    encodeSignedTransactions,
-                    signed,
-                    {
-                        flow: 'rekey',
-                        intentKey: { kind: 'rekey', address: sourceAddress },
-                        sender: sourceAddress,
-                    },
-                )
+                return await submitAndAutoRefresh(LEGACY_CHAIN_ID, signed, {
+                    flow: 'rekey',
+                    intentKey: { kind: 'rekey', address: sourceAddress },
+                    sender: sourceAddress,
+                })
             } catch (error) {
                 throw new RekeyError('submission_failed', error)
             }

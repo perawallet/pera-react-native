@@ -21,13 +21,12 @@ import {
     getOpenSubmissionAttempts,
     pruneResolvedSubmissionAttempts,
     resolveSubmissionAttempt,
-} from '../db/repository'
-import { getSubmissionSettledHandler } from './settle-registry'
-import {
     STALE_OPEN_ATTEMPT_MS,
+    type ReconcileSummary,
     type SubmissionAttempt,
     type SubmissionFlow,
-} from './types'
+} from '@perawallet/wallet-core-signing'
+import { getSubmissionSettledHandler } from './settle-registry'
 
 /** Bounded per pass — survivors keep matching and retry on the next tick. */
 const DEFAULT_PASS_LIMIT = 20
@@ -39,13 +38,6 @@ const DEFAULT_PASS_LIMIT = 20
  */
 const defaultProbeClient = (network: Network): SubmissionProbeClient =>
     getAlgorandClient(network) as unknown as SubmissionProbeClient
-
-export type ReconcileSummary = {
-    /** Rows this pass examined, whether or not they settled. */
-    probed: number
-    confirmed: number
-    failed: number
-}
 
 /**
  * Client surface the reconciler probes. Structured so unit tests can inject

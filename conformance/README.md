@@ -57,7 +57,7 @@ specifier and any deep import hit `src`, never `dist`. That is not where the
 problem is.
 
 `src/suites/submission/chokepoint.spec.ts` imports `submitAndAutoRefreshCore`
-from `@perawallet/wallet-core-signing`, and that file also imports the full
+from `@perawallet/wallet-core-chain-algorand`'s signing module, and that file also imports the full
 `@perawallet/wallet-core-blockchain` barrel (for real `toAlgodError`
 classification logic the suite exercises). The barrel itself resolves fine, but
 its own source has non-aliased dependencies one level out:
