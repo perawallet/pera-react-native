@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { withMod } from 'expo/config-plugins'
+import { type ExportedConfig, withMod } from 'expo/config-plugins'
 import { describe, expect, it } from 'vitest'
 import {
     definePodsRootForExtension,
@@ -89,27 +89,29 @@ describe('withXcodeProjectAfterEarlierPlugins', () => {
     // A plain withXcodeProject registered after the autofill plugin would run
     // first and never see the extension target that plugin adds.
     it('sees the changes of a plugin registered before it', async () => {
-        let config = { mods: null } as never
-        config = withMod(config, {
+        type Project = { targets: string[] }
+        let config: ExportedConfig = { name: 'test', slug: 'test', mods: null }
+        config = withMod<Project>(config, {
             platform: 'ios',
             mod: 'xcodeproj',
             action: c => {
-                ;(c.modResults as { targets: string[] }).targets.push(
-                    'PasskeyAutofillCredentialProvider',
-                )
+                c.modResults.targets.push('PasskeyAutofillCredentialProvider')
                 return c
             },
         })
         const seen: string[][] = []
-        config = withXcodeProjectAfterEarlierPlugins(config, project => {
-            seen.push([...(project as { targets: string[] }).targets])
-        })
+        config = withXcodeProjectAfterEarlierPlugins(
+            config,
+            (project: Project) => {
+                seen.push([...project.targets])
+            },
+        )
 
-        const mods = (config as { mods: { ios: { xcodeproj: Function } } }).mods
-        await mods.ios.xcodeproj({
+        await config.mods?.ios?.xcodeproj?.({
+            ...config,
             modRequest: { nextMod: (c: unknown) => c },
             modResults: { targets: [] },
-        })
+        } as never)
 
         expect(seen).toEqual([['PasskeyAutofillCredentialProvider']])
     })
