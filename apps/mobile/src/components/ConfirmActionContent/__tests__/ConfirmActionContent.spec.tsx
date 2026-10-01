@@ -115,6 +115,27 @@ describe('ConfirmActionContent', () => {
         await expect(promise).resolves.toBeUndefined()
     })
 
+    it('does not resolve any action while one is pending', async () => {
+        const promise = useBottomSheetStore
+            .getState()
+            .request<boolean | string>({ id: 'sheet-1', contents: null })
+        render(
+            <BottomSheetIdContext.Provider value='sheet-1'>
+                <ConfirmActionContent
+                    {...baseProps}
+                    tertiaryLabel='Keep'
+                    tertiaryValue='keep'
+                    pendingAction='confirm'
+                />
+            </BottomSheetIdContext.Provider>,
+        )
+
+        fireEvent.click(screen.getByText('Keep'))
+
+        useBottomSheetStore.getState().remove('sheet-1')
+        await expect(promise).resolves.toBeUndefined()
+    })
+
     it('renders the source image instead of the vector icon when iconUrl is set', () => {
         render(
             <BottomSheetIdContext.Provider value='sheet-1'>

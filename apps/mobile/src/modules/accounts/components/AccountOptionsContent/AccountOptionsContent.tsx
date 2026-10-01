@@ -101,6 +101,7 @@ export const AccountOptionsContent = ({
         handleConfirmRemove,
         handleDeleteFromBackup,
         handleKeepInBackup,
+        pendingBackupChoice,
         handleCancelRemove,
     } = useAccountOptions({ account, onClose: dismiss, onShowAddress })
 
@@ -164,6 +165,7 @@ export const AccountOptionsContent = ({
                     declineLabel={t('cloud_backup.accounts.keep_action')}
                     onConfirm={() => void handleDeleteFromBackup()}
                     onDecline={() => void handleKeepInBackup()}
+                    pendingChoice={pendingBackupChoice}
                 />
             </PWBottomSheetView>
         )

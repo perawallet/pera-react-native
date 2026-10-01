@@ -19,7 +19,8 @@ const {
     destroyBackupMock,
     deleteBackupKeysMock,
     getBackupSyncManagerMock,
-    stopMock,
+    suspendMock,
+    resumeMock,
     resetCloudBackupMock,
     resetSyncStateMock,
     resetSyncActivityMock,
@@ -29,7 +30,8 @@ const {
     destroyBackupMock: vi.fn(),
     deleteBackupKeysMock: vi.fn(),
     getBackupSyncManagerMock: vi.fn(),
-    stopMock: vi.fn(),
+    suspendMock: vi.fn(),
+    resumeMock: vi.fn(),
     resetCloudBackupMock: vi.fn(),
     resetSyncStateMock: vi.fn(),
     resetSyncActivityMock: vi.fn(),
@@ -95,7 +97,9 @@ const createWrapper = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    getBackupSyncManagerMock.mockReturnValue({ stop: stopMock })
+    getBackupSyncManagerMock.mockReturnValue({ suspend: suspendMock })
+    resumeMock.mockResolvedValue(undefined)
+    suspendMock.mockResolvedValue(resumeMock)
     deleteBackupKeysMock.mockResolvedValue(undefined)
     backupIdMock.value = 'did:pera:ADDR'
     deviceIdMock.value = 'dev-1'
@@ -119,7 +123,6 @@ describe('useRemoveCloudBackupMutation', () => {
             'did:pera:ADDR',
             'dev-1',
         )
-        expect(stopMock).toHaveBeenCalled()
         expect(deleteBackupKeysMock).toHaveBeenCalled()
         expect(resetCloudBackupMock).toHaveBeenCalled()
         expect(resetSyncStateMock).toHaveBeenCalled()
@@ -140,10 +143,34 @@ describe('useRemoveCloudBackupMutation', () => {
         await waitFor(() => expect(onError).toHaveBeenCalled())
         // The keys are the only way back to a backup the server still holds.
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
-        expect(stopMock).not.toHaveBeenCalled()
         expect(resetCloudBackupMock).not.toHaveBeenCalled()
         expect(resetSyncStateMock).not.toHaveBeenCalled()
         expect(resetSyncActivityMock).not.toHaveBeenCalled()
+        await waitFor(() => expect(resumeMock).toHaveBeenCalled())
+    })
+
+    test("lets this device's in-flight sync land before destroying", async () => {
+        const order: string[] = []
+        suspendMock.mockImplementation(async () => {
+            order.push('suspended')
+            return resumeMock
+        })
+        destroyBackupMock.mockImplementation(async () => {
+            order.push('destroy')
+            return { backup_id: 'did:pera:ADDR' }
+        })
+        const onSuccess = vi.fn()
+
+        const { result } = renderHook(
+            () => useRemoveCloudBackupMutation({ onSuccess }),
+            { wrapper: createWrapper() },
+        )
+
+        act(() => result.current.mutate())
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+        expect(order).toEqual(['suspended', 'destroy'])
+        expect(resumeMock).not.toHaveBeenCalled()
     })
 
     test('rejects without a request when no backup is configured', async () => {

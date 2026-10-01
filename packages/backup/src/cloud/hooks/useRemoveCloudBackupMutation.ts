@@ -27,11 +27,22 @@ const warn = (message: string, error: unknown): void => {
     })
 }
 
-const stopSyncManager = (): void => {
+/** The destroy queues behind the server's per-backup write lock, which this
+ *  device's own sync would otherwise keep taking. */
+const suspendSyncManager = async (): Promise<() => void> => {
     try {
-        getBackupSyncManager().stop()
+        const resume = await getBackupSyncManager().suspend()
+        return () => {
+            resume().catch(error =>
+                warn(
+                    'useRemoveCloudBackupMutation: failed to resume sync',
+                    error,
+                ),
+            )
+        }
     } catch (error) {
         warn('useRemoveCloudBackupMutation: failed to stop sync manager', error)
+        return () => {}
     }
 }
 
@@ -61,9 +72,14 @@ export const useRemoveCloudBackupMutation = (
                 )
             }
 
-            await destroyBackup(network, backupId, deviceId)
+            const resumeSync = await suspendSyncManager()
+            try {
+                await destroyBackup(network, backupId, deviceId)
+            } catch (error) {
+                resumeSync()
+                throw error
+            }
 
-            stopSyncManager()
             await deleteBackupKeys()
             resetCloudBackup()
             resetSyncState()

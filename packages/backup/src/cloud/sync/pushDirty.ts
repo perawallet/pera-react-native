@@ -33,8 +33,13 @@ import {
 } from '../models'
 import { canonicalJson } from './canonicalize'
 import { settingsDocumentToPayload } from './settingsDocument'
-import { BackupSyncAbortedError } from './types'
+import { BackupPushIncompleteError, BackupSyncAbortedError } from './types'
 import type { LocalItem } from './types'
+
+/** The server writes a batch item by item under the backup's write lock, so an
+ *  unbounded batch holds it past the client timeout and blocks every other
+ *  write, the backup delete included. */
+const UPSERT_BATCH_SIZE = 25
 
 export type PushDirtyDeps = {
     network: Network
@@ -53,8 +58,9 @@ export type PushDirtyDeps = {
         deviceId: DeviceId,
         key: BackupItemKey,
     ) => Promise<DeleteItemResponse>
-    /** Checked before each delete, which stops further deletes, and before the
-     *  upload, which drops it even when the stop lands during the last delete. */
+    /** Checked before each delete, which stops further deletes, and before
+     *  each upload batch, which drops it even when the stop lands during the
+     *  last delete. */
     isAborted: () => boolean
 }
 
@@ -100,7 +106,12 @@ export const pushDirty = async ({
     deps: PushDirtyDeps
 }): Promise<SyncState> => {
     const items: Record<string, SyncItemState> = { ...state.items }
-    let lastSyncedSeq = state.lastSyncedSeq
+    const ownSeqs: number[] = []
+    const settled = (): SyncState => ({
+        ...state,
+        items,
+        lastSyncedSeq: advanceOverOwnWrites(state.lastSyncedSeq, ownSeqs),
+    })
     const localByKey = new Map(localItems.map(i => [i.key, i]))
 
     // 1. Process pending-delete keys first.
@@ -114,7 +125,7 @@ export const pushDirty = async ({
                 deps.deviceId,
                 key,
             )
-            lastSyncedSeq = Math.max(lastSyncedSeq, res.seq)
+            ownSeqs.push(res.seq)
             // Tombstone rather than drop: if another device backs this account
             // up again, the returning delta must read as "the user removed
             // this here" and go to review, not as a brand-new item to import.
@@ -161,19 +172,46 @@ export const pushDirty = async ({
         })
         .filter((e): e is NonNullable<typeof e> => e !== null)
 
-    if (entries.length === 0) return { ...state, items, lastSyncedSeq }
+    for (let i = 0; i < entries.length; i += UPSERT_BATCH_SIZE) {
+        if (deps.isAborted()) throw new BackupSyncAbortedError()
+        let response: BatchUpsertResponse
+        try {
+            response = await deps.batchUpsertItems(
+                deps.network,
+                deps.backupId,
+                deps.deviceId,
+                {
+                    device_id: deps.deviceId,
+                    items: entries.slice(i, i + UPSERT_BATCH_SIZE),
+                },
+            )
+        } catch (error) {
+            throw new BackupPushIncompleteError(settled(), error)
+        }
+        ownSeqs.push(...applyUpsertResults(items, response))
+    }
 
-    if (deps.isAborted()) throw new BackupSyncAbortedError()
-    const response = await deps.batchUpsertItems(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-        {
-            device_id: deps.deviceId,
-            items: entries,
-        },
-    )
+    return settled()
+}
 
+/** The cursor moves over our own writes only while they follow on from it. A
+ *  gap is another device's write landing between our requests, and the next
+ *  delta fetch has to start before it or that write is never pulled. */
+const advanceOverOwnWrites = (cursor: number, ownSeqs: number[]): number => {
+    let next = cursor
+    for (const seq of [...ownSeqs].sort((a, b) => a - b)) {
+        if (seq === next + 1) next = seq
+        else if (seq > next + 1) break
+    }
+    return next
+}
+
+/** Mutates `items` in place. */
+const applyUpsertResults = (
+    items: Record<string, SyncItemState>,
+    response: BatchUpsertResponse,
+): number[] => {
+    const seqs: number[] = []
     for (const result of response.results) {
         const existing = items[result.key]
         if (!existing) continue
@@ -185,8 +223,7 @@ export const pushDirty = async ({
                 isDirty: false,
                 localUpdatedAt: null,
             }
-            if (result.seq != null)
-                lastSyncedSeq = Math.max(lastSyncedSeq, result.seq)
+            if (result.seq != null) seqs.push(result.seq)
         } else if (result.result === UpsertResult.VERSION_CONFLICT) {
             // Keep the item dirty and DELIBERATELY leave `lastRemoteHash` stale.
             // The next sync's applyDeltas compares the delta hash against this
@@ -202,6 +239,5 @@ export const pushDirty = async ({
             }
         }
     }
-
-    return { ...state, items, lastSyncedSeq }
+    return seqs
 }

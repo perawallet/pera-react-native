@@ -403,6 +403,10 @@ const createPeraClient = (backendUrl: string): KyInstance =>
         retry: peraRetryConfig,
     })
 
+// A backup write queues on the server's per-backup lock for up to 10s before
+// its own work starts, so ky's 10s default gives up on writes that would land.
+const BACKUP_REQUEST_TIMEOUT_MS = 60_000
+
 // Takes no network: the backup service is a single global endpoint, so every
 // network's BackendInstances holds an equivalent instance.
 const createBackupClient = (): KyInstance =>
@@ -413,6 +417,7 @@ const createBackupClient = (): KyInstance =>
         },
         prefix: config.backupBaseUrl,
         retry: peraRetryConfig,
+        timeout: BACKUP_REQUEST_TIMEOUT_MS,
     })
 
 const createTokenHeaderClient = (

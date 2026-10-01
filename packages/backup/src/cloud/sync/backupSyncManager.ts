@@ -62,7 +62,7 @@ import {
     type BackupSocketFactory,
     type BackupWebSocketEvent,
 } from './webSocketClient'
-import { BackupSyncAbortedError } from './types'
+import { BackupPushIncompleteError, BackupSyncAbortedError } from './types'
 import type {
     BackupActionOutcome,
     BackupSyncSources,
@@ -107,7 +107,7 @@ export type BackupSyncManagerDeps = {
 
 export class BackupSyncManager {
     private running = false
-    private syncInProgress = false
+    private inFlight: Nullable<Promise<unknown>> = null
     private periodic: Nullable<ReturnType<typeof setInterval>> = null
     private socket: Nullable<BackupWebSocketClient> = null
     private unwatchAccounts: Nullable<() => void> = null
@@ -126,12 +126,41 @@ export class BackupSyncManager {
     }
 
     isSyncing(): boolean {
-        return this.syncInProgress
+        return this.inFlight !== null
     }
 
-    private setSyncing(isSyncing: boolean): void {
-        this.syncInProgress = isSyncing
-        this.state.setIsSyncing(isSyncing)
+    private hold<T>(work: () => Promise<T>): Promise<T> {
+        this.state.setIsSyncing(true)
+        const run = (async () => {
+            try {
+                return await work()
+            } finally {
+                this.inFlight = null
+                this.state.setIsSyncing(false)
+            }
+        })()
+        this.inFlight = run
+        return run
+    }
+
+    private async waitUntilIdle(): Promise<void> {
+        while (this.inFlight) {
+            await this.inFlight.catch(() => undefined)
+        }
+    }
+
+    /** The checks and the claim share one continuation, or every waiter sees the
+     *  same free slot. Null when a stop or the app lock landed while waiting:
+     *  a queued action must not outlive the one or read keys under the other. */
+    private async holdWhenIdle<T>(
+        work: () => Promise<T>,
+    ): Promise<Nullable<T>> {
+        const epoch = this.stopEpoch
+        while (this.inFlight) {
+            await this.inFlight.catch(() => undefined)
+        }
+        if (this.stopEpoch !== epoch || this.deps.isLocked()) return null
+        return this.hold(work)
     }
 
     private context(): Nullable<{
@@ -188,15 +217,14 @@ export class BackupSyncManager {
 
     /** Runs one exclusive mutation of the sync state, so a review action and a
      *  background sync can't both write the whole state and lose the other's
-     *  edit. Returns false when a sync already holds the slot. */
+     *  edit. Waits out a running sync rather than refusing: a large backup's
+     *  first sync can run for a while, and a tap during it is not a failure. */
     private async withExclusiveState(
         run: (state: SyncState, deps: SyncEngineDeps) => Promise<SyncState>,
     ): Promise<boolean> {
-        if (this.syncInProgress) return false
-        const ctx = this.context()
-        if (!ctx) return false
-        this.setSyncing(true)
-        try {
+        const done = await this.holdWhenIdle(async () => {
+            const ctx = this.context()
+            if (!ctx) return false
             const state =
                 this.state.getSyncState() ?? createEmptySyncState(ctx.backupId)
             const next = await this.withEngineDeps(ctx, deps =>
@@ -205,9 +233,17 @@ export class BackupSyncManager {
             if (!next) return false
             this.state.setSyncState(next)
             return true
-        } finally {
-            this.setSyncing(false)
-        }
+        })
+        return done ?? false
+    }
+
+    /** A sync that timers or the socket started while this one staged would
+     *  make `syncNow` return early, before the staged item is pushed. */
+    private async syncWhenIdle(): Promise<void> {
+        await this.holdWhenIdle(async () => {
+            const ctx = this.context()
+            if (ctx) await this.runSync(ctx)
+        })
     }
 
     /** `syncNow` swallows transport failures, and a push the server rejects on
@@ -218,7 +254,7 @@ export class BackupSyncManager {
             markAccountForBackup(state, address),
         )
         if (!staged) return false
-        await this.syncNow()
+        await this.syncWhenIdle()
         return isAddressBackedUp(this.state.getSyncState(), address)
     }
 
@@ -278,7 +314,7 @@ export class BackupSyncManager {
             markContactForBackup(state, address),
         )
         if (!staged) return false
-        await this.syncNow()
+        await this.syncWhenIdle()
         return isContactBackedUp(this.state.getSyncState(), address)
     }
 
@@ -323,7 +359,7 @@ export class BackupSyncManager {
             markPasskeyForBackup(state, credentialId),
         )
         if (!staged) return false
-        await this.syncNow()
+        await this.syncWhenIdle()
         return isPasskeyBackedUp(this.state.getSyncState(), credentialId)
     }
 
@@ -414,7 +450,7 @@ export class BackupSyncManager {
         this.localChangeTimer = setTimeout(() => {
             this.localChangeTimer = null
             if (!this.running) return
-            if (this.syncInProgress) {
+            if (this.isSyncing()) {
                 this.scheduleLocalSync()
                 return
             }
@@ -477,6 +513,20 @@ export class BackupSyncManager {
         this.socket = null
     }
 
+    /** Stops and waits out the run under way, whose last request still holds
+     *  the server's write lock. The resume restarts only a manager that was
+     *  running and nothing has stopped since, so it never overrides the lifecycle. */
+    async suspend(): Promise<() => Promise<void>> {
+        const wasRunning = this.running
+        this.stop()
+        const epoch = this.stopEpoch
+        await this.waitUntilIdle()
+        return async () => {
+            if (!wasRunning || this.running || this.stopEpoch !== epoch) return
+            await this.start()
+        }
+    }
+
     /** The server deleted the backup: stop syncing and wipe all on-device backup
      *  state (config, sync state, and keys) so it returns to "not set up". No
      *  remote call is made — the backup is already gone server-side. */
@@ -493,13 +543,20 @@ export class BackupSyncManager {
     }
 
     async syncNow(): Promise<void> {
-        if (this.syncInProgress || this.deps.isLocked()) return
+        if (this.isSyncing() || this.deps.isLocked()) return
         const ctx = this.context()
         if (!ctx) {
             logger.warn('BackupSyncManager: sync skipped, no backup context')
             return
         }
-        this.setSyncing(true)
+        await this.hold(() => this.runSync(ctx))
+    }
+
+    private async runSync(ctx: {
+        network: Network
+        backupId: string
+        deviceId: string
+    }): Promise<void> {
         try {
             const state =
                 this.state.getSyncState() ?? createEmptySyncState(ctx.backupId)
@@ -523,33 +580,35 @@ export class BackupSyncManager {
             // failed, so the overview reports FAILED instead of falling back
             // to the never-synced badge.
             const s =
-                this.state.getSyncState() ?? createEmptySyncState(ctx.backupId)
+                error instanceof BackupPushIncompleteError
+                    ? error.state
+                    : (this.state.getSyncState() ??
+                      createEmptySyncState(ctx.backupId))
             this.state.setSyncState({ ...s, lastSyncResult: 'FAILED' })
-        } finally {
-            this.setSyncing(false)
         }
     }
 
     private async runPull(): Promise<void> {
-        if (this.syncInProgress || this.deps.isLocked()) return
+        if (this.isSyncing() || this.deps.isLocked()) return
         const ctx = this.context()
         if (!ctx) return
-        this.setSyncing(true)
-        try {
-            const state =
-                this.state.getSyncState() ?? createEmptySyncState(ctx.backupId)
-            const next = await this.withEngineDeps(ctx, deps =>
-                pullBackupDeltas(deps, state),
-            )
-            if (next) this.state.setSyncState(next)
-        } catch (error) {
-            if (error instanceof BackupSyncAbortedError) return
-            logger.warn('BackupSyncManager: pull failed', {
-                error: error instanceof Error ? error.message : String(error),
-            })
-        } finally {
-            this.setSyncing(false)
-        }
+        await this.hold(async () => {
+            try {
+                const state =
+                    this.state.getSyncState() ??
+                    createEmptySyncState(ctx.backupId)
+                const next = await this.withEngineDeps(ctx, deps =>
+                    pullBackupDeltas(deps, state),
+                )
+                if (next) this.state.setSyncState(next)
+            } catch (error) {
+                if (error instanceof BackupSyncAbortedError) return
+                logger.warn('BackupSyncManager: pull failed', {
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                })
+            }
+        })
     }
 
     private connectSocket(): void {

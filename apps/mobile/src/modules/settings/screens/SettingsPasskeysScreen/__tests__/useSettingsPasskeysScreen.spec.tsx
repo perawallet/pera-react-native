@@ -422,6 +422,31 @@ describe('useSettingsPasskeysScreen', () => {
             expect(mocks.removePasskey).not.toHaveBeenCalled()
         })
 
+        it('drops a second removal while the first choice is still being recorded', async () => {
+            mocks.isPasskeyBackedUp.mockReturnValue(true)
+            let release: (outcome: string) => void = () => {}
+            mocks.deletePasskeyFromBackup.mockImplementationOnce(
+                () =>
+                    new Promise<string>(resolve => {
+                        release = resolve
+                    }),
+            )
+            const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+            await act(async () => {
+                result.current.onRequestDelete(backedUpPasskey)
+            })
+            await act(async () => {
+                result.current.onRequestDelete(backedUpPasskey)
+            })
+            await act(async () => {
+                release('settled')
+            })
+
+            expect(mocks.deletePasskeyFromBackup).toHaveBeenCalledTimes(1)
+            expect(mocks.removePasskey).toHaveBeenCalledTimes(1)
+        })
+
         it('leaves the credential in place when the choice sheet is dismissed', async () => {
             mocks.isPasskeyBackedUp.mockReturnValue(true)
             mocks.requestSheet

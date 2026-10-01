@@ -23,11 +23,14 @@ import { DeleteFromBackupSheet } from '@modules/cloud-backup'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useSingleFlight } from '@hooks/useSingleFlight'
 
 /** Resolves to `true` when removal may proceed. Shared by the native and web
  *  screens: both reach the same Cloud Backup stack, so a credential removed on
  *  either has to land in one bucket or the other. A refused or dismissed choice
- *  would strand it in neither, so removal is abandoned rather than run anyway. */
+ *  would strand it in neither, so removal is abandoned rather than run anyway.
+ *  A request made while an earlier choice is still being recorded resolves
+ *  `false`, so one removal never runs twice. */
 export type RemoveFromBackupChoice = (passkey: Passkey) => Promise<boolean>
 
 export const useRemoveFromBackupChoice = (): RemoveFromBackupChoice => {
@@ -36,8 +39,9 @@ export const useRemoveFromBackupChoice = (): RemoveFromBackupChoice => {
     const { t } = useLanguage()
     const isCloudBackupEnabled = useIsCloudBackupEnabled()
     const syncState = useBackupSyncStateStore(state => state.syncState)
+    const { run } = useSingleFlight()
 
-    return useCallback(
+    const chooseOnce = useCallback(
         async (passkey: Passkey) => {
             // The backup keys on the raw keystore id, not the base64url `id`
             // WebAuthn uses.
@@ -89,5 +93,11 @@ export const useRemoveFromBackupChoice = (): RemoveFromBackupChoice => {
             return false
         },
         [isCloudBackupEnabled, syncState, request, showToast, t],
+    )
+
+    return useCallback(
+        async (passkey: Passkey) =>
+            (await run(() => chooseOnce(passkey))) ?? false,
+        [run, chooseOnce],
     )
 }
