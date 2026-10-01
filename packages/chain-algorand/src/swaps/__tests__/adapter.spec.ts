@@ -78,6 +78,7 @@ describe('algorandSwapAdapter', () => {
         expect(mocks.getAlgorandClient).toHaveBeenCalledWith(scope)
         expect(algorandContext).toEqual(
             expect.objectContaining({
+                scope,
                 network: 'testnet',
                 algorandClient: { target: scope },
                 assetMbr: 100_000n,
@@ -90,7 +91,6 @@ describe('algorandSwapAdapter', () => {
             }),
         )
         expect(algorandContext).not.toHaveProperty('assetOptInMinBalance')
-        expect(algorandContext).not.toHaveProperty('scope')
     })
 
     it('submits a co-signed group through algod for the scope it was given', async () => {

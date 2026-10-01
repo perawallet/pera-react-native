@@ -33,6 +33,7 @@ export const algorandSwapAdapter: SwapChainAdapter = {
     executeSwap: (params, { assetOptInMinBalance, scope, ...context }) =>
         executeAlgorandSwap(params, {
             ...context,
+            scope,
             network: algorandNetworkOf(scope),
             algorandClient: getAlgorandClient(scope),
             assetMbr: assetOptInMinBalance,

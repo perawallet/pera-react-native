@@ -121,7 +121,7 @@ describe('useAssetOptInMutation', () => {
         expect(mockInsertAssetHolding).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
             assetId: '12345',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
         expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['12345'], {
             chainId: 'algorand',

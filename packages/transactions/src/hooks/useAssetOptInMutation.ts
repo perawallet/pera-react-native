@@ -114,7 +114,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 await insertAssetHolding({
                     accountAddress: sender,
                     assetId: assetIdString,
-                    network,
+                    scope,
                 })
                 await fetchAndPersistAssets(
                     [assetIdString],

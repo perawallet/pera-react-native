@@ -128,7 +128,7 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
             await deleteAssetHoldings({
                 accountAddress: sender,
                 assetIds: paramsList.map(p => String(p.assetId)),
-                network,
+                scope,
             })
 
             return { txIds, sender }
