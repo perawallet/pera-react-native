@@ -11,35 +11,15 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    ArbitraryDataSignableData,
-    AuthDataSignableData,
-    SigningCallbacks,
-    SigningResult,
-} from '../types'
-import { CannotSignError } from '../errors'
-
-/**
- * Signing function type that matches useArbitraryDataSigner's signArbitraryData.
- * Shared by every strategy whose key material lives locally (Algo25, HD
- * Wallet, Quantum) — arbitrary-data signing has no strategy-specific
- * variance, only the underlying key operation differs.
- */
-export type LocalArbitrarySigningFunction = (
-    account: WalletAccount,
-    data: string | string[],
-) => Promise<Uint8Array[]>
-
-/**
- * Signing function type that matches useAuthDataSigner's signAuthData.
- * Shared by every strategy whose key material lives locally (Algo25, HD
- * Wallet, Quantum).
- */
-export type LocalAuthDataSigningFunction = (
-    account: WalletAccount,
-    authData: AuthDataSignableData['authData'],
-    metadata: AuthDataSignableData['metadata'],
-) => Promise<Uint8Array>
+import {
+    CannotSignError,
+    type ArbitraryDataSignableData,
+    type AuthDataSignableData,
+    type LocalArbitrarySigningFunction,
+    type LocalAuthDataSigningFunction,
+    type SigningCallbacks,
+    type SigningResult,
+} from '@perawallet/wallet-core-signing'
 
 /**
  * Handles an `arbitrary-data` signable group for any strategy backed by a
@@ -82,9 +62,9 @@ export const signArbitraryDataCase = async (
 }
 
 /**
- * Handles an `arc60` signable group for any strategy backed by a local-key
- * signing function. Domain / SIWA validation happens inside the injected
- * `signAuthData` (see `utils/arc60.ts`'s `validateArc60AuthRequest`) — this
+ * Handles an `auth-data` signable group for any strategy backed by a
+ * local-key signing function. Domain / SIWA validation happens inside the
+ * injected `signAuthData` (see `arc60.ts`'s `validateArc60AuthRequest`) — this
  * helper only wires the pipeline shapes.
  */
 export const signAuthDataCase = async (

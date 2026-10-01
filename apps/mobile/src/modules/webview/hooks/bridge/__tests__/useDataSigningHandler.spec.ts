@@ -49,21 +49,27 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 const mockAddSignRequest = vi.fn()
-// The ARC-60 discriminator is the real one: it decides the dApp-visible answers
+// The auth-data discriminator is the real one: it decides the dApp-visible answers
 // under test. Parsing is stubbed because the
 // global shared mock lacks its byte helpers; its own spec covers the shapes.
 vi.mock('@perawallet/wallet-core-signing', async () => {
     const wire = await vi.importActual<
-        typeof import('../../../../../../../../packages/signing/src/utils/arc60-wire')
-    >('../../../../../../../../packages/signing/src/utils/arc60-wire')
+        typeof import('../../../../../../../../packages/chain-algorand/src/signing/message/arc60-wire')
+    >(
+        '../../../../../../../../packages/chain-algorand/src/signing/message/arc60-wire',
+    )
     const legacyWire = await vi.importActual<
         typeof import('../../../../../../../../packages/signing/src/utils/arbitrary-data-wire')
     >('../../../../../../../../packages/signing/src/utils/arbitrary-data-wire')
     return {
-        isArc60WirePayload: wire.isArc60WirePayload,
+        isAuthDataWirePayload: (_chainId: string, params: unknown) =>
+            wire.isArc60WirePayload(params),
         legacyArbitraryDataWireSchema: legacyWire.legacyArbitraryDataWireSchema,
-        parseArc60WireRequest: vi.fn(
-            (params: { authenticatorData: string; metadata: unknown }) => {
+        parseAuthDataWireRequest: vi.fn(
+            (
+                _chainId: string,
+                params: { authenticatorData: string; metadata: unknown },
+            ) => {
                 if (params.authenticatorData.length < 44) {
                     throw new Error('authenticatorData: too short')
                 }

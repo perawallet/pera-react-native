@@ -14,7 +14,7 @@ import type { z } from 'zod'
 import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
     legacyArbitraryDataWireSchema,
-    parseArc60WireRequest,
+    parseAuthDataWireRequest,
     type AuthDataSignableData,
 } from '@perawallet/wallet-core-signing'
 import { dappRequestChainAdapters } from './dappRequest'
@@ -147,7 +147,8 @@ export const validateRawMessage = (
     // Shared with the in-app webview bridge so the two transports cannot drift.
     let payload: AuthDataSignableData
     try {
-        const { authData, metadata } = parseArc60WireRequest(
+        const { authData, metadata } = parseAuthDataWireRequest(
+            raw.chainId,
             rawOperation.params,
         )
         payload = { type: 'auth-data', authData, metadata }

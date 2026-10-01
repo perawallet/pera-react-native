@@ -35,7 +35,7 @@ export const useIsQuantumDataSigningBlocked = (
     if (!request) return false
 
     // Block on the request's `signer` field (authData.signer / data[].signer),
-    // not the SIWA account_address. Data signing uses the named signer's own
+    // not the sign-in message address. Data signing uses the named signer's own
     // key and never follows a rekey, so that is the only key in play: a request
     // naming a quantum account as `signer` is caught here. An ed25519 account
     // rekeyed to a quantum auth cannot do SIWA at all: naming itself is refused

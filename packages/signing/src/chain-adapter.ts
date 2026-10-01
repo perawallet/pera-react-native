@@ -40,12 +40,10 @@ import type {
 import type { ExternalSignTxnTransport } from './hooks/useEnqueueArc0001SignRequest'
 import type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 import type {
-    LocalArbitrarySigningFunction,
-    LocalAuthDataSigningFunction,
-} from './pipeline/signing/standardDataSigning'
-import type {
     AnalysisContext,
     AnalyzedSignableGroup,
+    AuthData,
+    AuthDataMetadata,
     DataTransport,
     SignableAnalysis,
     SignableGroup,
@@ -125,7 +123,7 @@ export const reviewerChainAdapters =
 export const reviewerAdapterFor = (network: Network): ReviewerChainAdapter =>
     reviewerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
 
-type WithChain<F extends (...args: never[]) => unknown> = (
+export type WithChain<F extends (...args: never[]) => unknown> = (
     chainId: ChainId,
     ...args: Parameters<F>
 ) => ReturnType<F>
@@ -302,7 +300,16 @@ export type LocalSigningFunction = (
     account: WalletAccount,
 ) => Promise<PeraSignedTransaction[]>
 
-export type { LocalArbitrarySigningFunction, LocalAuthDataSigningFunction }
+export type LocalArbitrarySigningFunction = (
+    account: WalletAccount,
+    data: string | string[],
+) => Promise<Uint8Array[]>
+
+export type LocalAuthDataSigningFunction = (
+    account: WalletAccount,
+    authData: AuthData,
+    metadata: AuthDataMetadata,
+) => Promise<Uint8Array>
 
 export type LocalKeyStrategyOptions = {
     signTransactions: LocalSigningFunction

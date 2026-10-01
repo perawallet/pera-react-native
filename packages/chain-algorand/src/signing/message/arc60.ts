@@ -23,7 +23,10 @@ import {
     Arc60MissingDomainError,
 } from './arc60-errors'
 import { parseSiwa } from './siwa'
-import type { AuthDataMetadata, AuthData } from '../pipeline/types'
+import type {
+    AuthData,
+    AuthDataMetadata,
+} from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 /**

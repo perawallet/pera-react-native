@@ -410,7 +410,7 @@ export const signingMachine = setup({
                                     context.allAccounts,
                                 ),
                                 // First group determines the operation kind
-                                // (cosign requests don't mix arc60 + tx). The
+                                // (cosign requests don't mix auth-data + tx). The
                                 // overlay reads this to pick context-aware copy.
                                 operation:
                                     groups[0]?.data.type === 'auth-data' ||

@@ -16,8 +16,7 @@ import type {
 } from '@perawallet/wallet-core-blockchain'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type {
-    AuthDataMetadata,
-    AuthData,
+    AuthDataPayload,
     RejectReason,
     SignableAnalysis,
     SignRequestTransportOptions,
@@ -140,13 +139,10 @@ export type ArbitraryDataSignRequest = {
     error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
-export type AuthDataSignRequest = {
-    authData: AuthData
-    /** Supplied by the dApp. */
-    metadata: AuthDataMetadata
+export type AuthDataSignRequest = AuthDataPayload & {
     /**
-     * Always invoked with a single-element array, so the `algo_signData`
-     * response shape stays consistent across legacy and ARC-60 modalities.
+     * Always invoked with a single-element array, so the response shape stays
+     * consistent with arbitrary-data signing.
      */
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
     reject?: (reason?: RejectReason) => Promise<void>

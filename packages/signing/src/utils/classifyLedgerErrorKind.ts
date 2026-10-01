@@ -46,7 +46,7 @@ import type { LedgerErrorPresetKind } from '../types/ledgerErrorPresetKind'
  * should drive the hardware-signing overlay/troubleshooting surface
  * (`true`) or fall through to the generic inline error view (`false`).
  *
- * Non-device failures — ARC-60 validation errors, generic JS errors, or a
+ * Non-device failures — auth-data validation errors, generic JS errors, or a
  * `SigningError` wrapping one — return `false` so they surface inline in the
  * sign-request sheet rather than masquerading as a connection problem.
  */

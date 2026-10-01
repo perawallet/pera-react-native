@@ -21,7 +21,7 @@ import type { TransactionSignRequest } from '../../models'
 import {
     makeTestAddress,
     makeTestPaymentTx,
-} from '../../test-utils/transactions'
+} from '../../__tests__/transactions'
 
 const PARTICIPANT = 'PARTICIPANT'
 const AUTH = 'AUTH'

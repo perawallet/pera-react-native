@@ -14,6 +14,7 @@ export { algorandBroadcasterAdapter } from './broadcaster'
 export { submitRawSignedTransactionGroup } from './submission'
 export {
     algorandLocalKeySignerAdapter,
+    algorandMessageSignerAdapter,
     algorandPlannerAdapter,
     algorandReviewerAdapter,
 } from './adapter'

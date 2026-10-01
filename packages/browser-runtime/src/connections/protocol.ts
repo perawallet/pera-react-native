@@ -50,10 +50,7 @@ type LegacySignDataPayload = Extract<SignDataPayload, readonly unknown[]>
 type Arc60SignDataPayload = Exclude<SignDataPayload, readonly unknown[]>
 
 type WireArc60SignDataPayload = Omit<Arc60SignDataPayload, 'authData'> & {
-    authData: Omit<
-        Arc60SignDataPayload['authData'],
-        'authenticatorData'
-    > & {
+    authData: Omit<Arc60SignDataPayload['authData'], 'authenticatorData'> & {
         /** base64 of `authenticatorData`. */
         authenticatorData: string
     }

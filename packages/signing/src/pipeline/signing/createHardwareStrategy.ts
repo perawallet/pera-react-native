@@ -43,8 +43,12 @@ import {
     MIN_ARBITRARY_SIGN_APP_VERSION,
     isAppVersionAtLeast,
 } from '@perawallet/wallet-core-ledger'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { legacyPlannerAdapter } from '../../chain-adapter'
-import { validateArc60AuthRequest } from '../../utils/arc60'
+import {
+    messageSignerFor,
+    type MessageSignerChainAdapter,
+} from '../../message-signer'
 import {
     ledgerTimeoutReason,
     throwIfAborted,
@@ -62,7 +66,7 @@ export type EncodeTransactionFunction = (tx: PeraTransaction) => Uint8Array
 export type HardwareStrategyOptions = {
     hardwareWalletRegistry?: HardwareWalletRegistry
     encodeTransaction: EncodeTransactionFunction
-    /** Read at ARC-60 sign time, for the SIWA signer / rekey cross-check. */
+    /** Read at auth-data sign time, for the signer / rekey cross-check. */
     getAllAccounts: () => WalletAccount[]
 }
 
@@ -166,7 +170,8 @@ type SignTransactionsOnHardwareWalletOptions = LedgerSessionOptions & {
     encodeTransaction: EncodeTransactionFunction
 }
 
-type SignArc60OnHardwareWalletOptions = LedgerSessionOptions & {
+type SignAuthDataOnHardwareWalletOptions = LedgerSessionOptions & {
+    messageSigner: MessageSignerChainAdapter
     getAllAccounts: () => WalletAccount[]
 }
 
@@ -194,14 +199,14 @@ const signTransactionsOnHardwareWallet = (
     )
 }
 
-/** Gates on minimum app version and host-side ARC-60 validation before signing. */
-const signArc60OnHardwareWallet = (
+/** Gates on minimum app version and host-side validation before signing. */
+const signAuthDataOnHardwareWallet = (
     hwAccount: HardwareWalletAccount,
     authData: AuthData,
     metadata: AuthDataMetadata,
-    options: SignArc60OnHardwareWalletOptions,
+    options: SignAuthDataOnHardwareWalletOptions,
 ): Promise<Uint8Array> => {
-    const { getAllAccounts, callbacks } = options
+    const { messageSigner, getAllAccounts, callbacks } = options
     const { accountIndex } = hwAccount.hardwareDetails
 
     return withLedgerSession(
@@ -219,7 +224,7 @@ const signArc60OnHardwareWallet = (
                 throw new LedgerAppOutdatedError()
             }
 
-            validateArc60AuthRequest(authData, metadata, getAllAccounts())
+            messageSigner.validateAuthData(authData, metadata, getAllAccounts())
 
             callbacks?.onSigningStart?.()
             callbacks?.onProgress?.(1, 1)
@@ -277,12 +282,19 @@ export const createHardwareStrategy = (
             }
 
             if (group.data.type === 'auth-data') {
-                const signature = await signArc60OnHardwareWallet(
+                // Resolved before any Ledger session so a chain with no
+                // message signer is refused without a device prompt.
+                const messageSigner = messageSignerFor(
+                    LEGACY_CHAIN_ID,
+                    account.address,
+                )
+                const signature = await signAuthDataOnHardwareWallet(
                     account,
                     group.data.authData,
                     group.data.metadata,
                     {
                         registry: hardwareWalletRegistry,
+                        messageSigner,
                         getAllAccounts,
                         callbacks,
                     },

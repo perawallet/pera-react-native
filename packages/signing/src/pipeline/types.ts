@@ -33,14 +33,14 @@ export interface ArbitraryDataSignableData {
 }
 
 /**
- * Per ARC-60, `data` is opaque to the signing primitive (decoded for user
- * review only). The wallet must verify
- * `authenticatorData[0:32] === sha256(utf8(domain))` before signing.
+ * `data` is opaque to the signing primitive (decoded for user review only).
+ * The chain's validator checks that `authenticatorData` binds `domain` before
+ * anything is signed.
  */
 export interface AuthData {
     /** Encoded payload — decoded for display, hashed for signing. */
     data: string
-    /** Algorand address / Ed25519 public key of the signer. */
+    /** Address / public key of the signer. */
     signer: string
     /** Origin requesting the signature (URL / DID / identifier). */
     domain: string
@@ -53,16 +53,20 @@ export interface AuthData {
 }
 
 export interface AuthDataMetadata {
-    /** ARC-60 scope; only `1` (AUTH) is defined today. */
+    /** Auth scope; only `1` (AUTH) is defined today. */
     scope: number
     /** Encoding of `data` (e.g. 'base64'). */
     encoding: string
 }
 
-export interface AuthDataSignableData {
-    type: 'auth-data'
+export type AuthDataPayload = {
     authData: AuthData
+    /** Supplied by the dApp. */
     metadata: AuthDataMetadata
+}
+
+export interface AuthDataSignableData extends AuthDataPayload {
+    type: 'auth-data'
 }
 
 export type SignableData =
@@ -107,7 +111,7 @@ export const isInteractiveSource = (
  * Sources whose signed result goes back to an out-of-app caller via
  * {@link SourceCallbacks} rather than to algod. A strict subset of
  * {@link INTERACTIVE_SOURCES} — excludes `multisig-cosign` (own transport) and
- * `arc60` / `gift-card`.
+ * `card` / `gift-card`.
  */
 export const EXTERNAL_CALLBACK_SOURCES = [
     'walletconnect',
@@ -156,7 +160,7 @@ export interface SourceMetadata {
      * Origin the platform itself observed (the in-app webview's loaded host).
      * Trusted for origin-binding checks because, unlike {@link peerMetadata},
      * it is not dApp-asserted. Unset for transports with no verifiable origin
-     * (e.g. WalletConnect). See {@link isArc60OriginMismatch}.
+     * (e.g. WalletConnect). See {@link isAuthDataOriginMismatch}.
      */
     verifiedOrigin?: string
 
@@ -201,7 +205,7 @@ export interface SourceCallbacks {
     error?: (error: Error) => Promise<void>
     /**
      * Delivers pre-encoded canonical msgpack SignedTransaction bytes, skipping
-     * algosdk's decode + re-encode round-trip. Required for the multisig
+     * the SDK decode + re-encode round-trip. Required for the multisig
      * sync-flow handoff: canonical-msgpack rules differ across SDKs, so
      * re-encoding can produce bytes whose signatures algod won't verify.
      * Length and order MUST match the original request.

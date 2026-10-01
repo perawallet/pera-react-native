@@ -11,7 +11,6 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { z } from 'zod'
 import {
     memoryStore,
     runHandlerContractTests,
@@ -88,25 +87,11 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 // Same stand-in as validation/__tests__/inboundRequestGate.spec.ts and
 // connection/__tests__/connectorRegistry.spec.ts: the signing barrel drags in
 // RN-only deps (react-native-mmkv) that don't resolve under jsdom, and the
-// handler reaches it through `../shared/schema`. Real limits and a faithful
-// ARC-60 wire shape, so the gate assertions still mean something.
+// handler reaches it through `../shared/schema`. Real limits, so the gate
+// assertions still mean something.
 vi.mock('@perawallet/wallet-core-signing', () => ({
     MAX_DATA_SIGN_REQUESTS: 1000,
     MAX_TRANSACTION_SIGN_REQUESTS: 1000,
-    ARC60_MAX_REQUEST_BYTES: 64 * 1024,
-    arc60WireSchema: z.object({
-        data: z.string(),
-        signer: z.string(),
-        domain: z.string(),
-        authenticatorData: z.string(),
-        requestId: z.string().optional(),
-        hdPath: z.string().optional(),
-        metadata: z.object({
-            scope: z.number().int(),
-            encoding: z.string(),
-        }),
-    }),
-    assertArc60RequestWithinLimits: vi.fn(),
 }))
 
 // This spec's import graph reaches the platform provider, whose native

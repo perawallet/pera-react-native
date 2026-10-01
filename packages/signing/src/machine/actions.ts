@@ -162,7 +162,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
                     })),
                 )
             } else if (result.signedData.type === 'auth-data') {
-                // ARC-60 produces a single signature; project the result
+                // Auth-data signing produces a single signature; project the result
                 // through the same `[{ signature, signer }]` shape so the
                 // callback consumer (WalletConnect bridge) doesn't need to
                 // branch on the modality.

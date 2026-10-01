@@ -105,7 +105,7 @@ describe('resolveSigningAccount', () => {
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('returns the keyless signer itself for arc60 even when its auth account holds a key', () => {
+    it('returns the keyless signer itself for auth-data even when its auth account holds a key', () => {
         // An ARC-60 signature verifies against `signer`'s own pubkey, so a
         // signature from the auth key would fail every verifier. The signer
         // is returned as-is and the leaf signer refuses it (no key).
@@ -118,7 +118,7 @@ describe('resolveSigningAccount', () => {
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('returns the rekeyed signer itself for arc60 when it holds its own key', () => {
+    it('returns the rekeyed signer itself for auth-data when it holds its own key', () => {
         const result = resolveSigningAccount(
             rekeyedSigner,
             localSource,
@@ -128,7 +128,7 @@ describe('resolveSigningAccount', () => {
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('never consults the rekey target for arc60, so a missing target does not throw', () => {
+    it('never consults the rekey target for auth-data, so a missing target does not throw', () => {
         const result = resolveSigningAccount(
             keylessRekeyedSigner,
             localSource,
@@ -138,7 +138,7 @@ describe('resolveSigningAccount', () => {
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('returns the signer itself for arc60 when not rekeyed', () => {
+    it('returns the signer itself for auth-data when not rekeyed', () => {
         const result = resolveSigningAccount(
             plainSigner,
             localSource,

@@ -32,7 +32,7 @@ const arbitraryDataRequest = {
     data: [],
 } as unknown as SignRequest
 
-const arc60Request = {
+const authDataRequest = {
     ...base,
     type: 'auth-data',
     authData: {},
@@ -43,7 +43,7 @@ describe('isTransactionRequest', () => {
     it('returns true only for a transactions request carrying `txs`', () => {
         expect(isTransactionRequest(transactionRequest)).toBe(true)
         expect(isTransactionRequest(arbitraryDataRequest)).toBe(false)
-        expect(isTransactionRequest(arc60Request)).toBe(false)
+        expect(isTransactionRequest(authDataRequest)).toBe(false)
     })
 
     it('returns false when type matches but the `txs` discriminant is absent', () => {
@@ -60,7 +60,7 @@ describe('isArbitraryDataRequest', () => {
     it('returns true only for an arbitrary-data request carrying `data`', () => {
         expect(isArbitraryDataRequest(arbitraryDataRequest)).toBe(true)
         expect(isArbitraryDataRequest(transactionRequest)).toBe(false)
-        expect(isArbitraryDataRequest(arc60Request)).toBe(false)
+        expect(isArbitraryDataRequest(authDataRequest)).toBe(false)
     })
 
     it('returns false when type matches but the `data` discriminant is absent', () => {
@@ -74,14 +74,17 @@ describe('isArbitraryDataRequest', () => {
 })
 
 describe('isAuthDataRequest', () => {
-    it('returns true only for an arc60 request carrying `authData`', () => {
-        expect(isAuthDataRequest(arc60Request)).toBe(true)
+    it('returns true only for an auth-data request carrying `authData`', () => {
+        expect(isAuthDataRequest(authDataRequest)).toBe(true)
         expect(isAuthDataRequest(transactionRequest)).toBe(false)
         expect(isAuthDataRequest(arbitraryDataRequest)).toBe(false)
     })
 
     it('returns false when type matches but the `authData` discriminant is absent', () => {
-        const malformed = { ...base, type: 'auth-data' } as unknown as SignRequest
+        const malformed = {
+            ...base,
+            type: 'auth-data',
+        } as unknown as SignRequest
 
         expect(isAuthDataRequest(malformed)).toBe(false)
     })

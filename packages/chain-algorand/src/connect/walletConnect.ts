@@ -17,12 +17,12 @@ import type {
     WalletOperationResult,
 } from '@perawallet/wallet-core-connections'
 import { encodeToBase64, type Nullable } from '@perawallet/wallet-core-shared'
+import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import {
     arc60WireSchema,
     assertArc60RequestWithinLimits as assertArc60WireRequestWithinLimits,
-} from '@perawallet/wallet-core-signing'
-import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
-import { ALGORAND_CHAIN_ID } from '../chain-id'
+} from '../signing/message/arc60-wire'
 
 /**
  * CAIP-2 chain ids, which only WalletConnect v2 speaks — v1 has no concept of

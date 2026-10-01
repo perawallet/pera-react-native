@@ -31,15 +31,27 @@ vi.mock('../../api/delegation', async () => ({
     fetchDelegationToken,
 }))
 
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    messageSignerChainAdapters,
+    type MessageSignerChainAdapter,
+} from '@perawallet/wallet-core-signing'
 import { useSignCardOwnershipMutation } from '../useSignCardOwnershipMutation'
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
 
-const signedPayload = (data: string): Record<string, unknown> =>
-    JSON.parse(new TextDecoder().decode(decodeFromBase64(data)))
+// The real sign-in payload is the chain's; its own specs cover it. Here the
+// builder is a spy so the test pins what the mutation asks it for.
+const buildSiwxAuthData = vi.fn()
+
+const registerFakeMessageSigner = () => {
+    messageSignerChainAdapters.reset()
+    messageSignerChainAdapters.register({
+        chainId: 'algorand',
+        buildSiwxAuthData,
+    } as unknown as MessageSignerChainAdapter)
+}
 
 describe('useSignCardOwnershipMutation', () => {
     beforeEach(() => {
@@ -52,9 +64,19 @@ describe('useSignCardOwnershipMutation', () => {
             token: 'ABC_tok',
             nonce: 'n0nce',
         })
+        buildSiwxAuthData.mockImplementation(({ address, domain }) => ({
+            authData: {
+                data: 'c2lnbi1pbg==',
+                signer: address,
+                domain,
+                authenticatorData: new Uint8Array(37).fill(3),
+            },
+            metadata: { scope: 1, encoding: 'base64' },
+        }))
+        registerFakeMessageSigner()
     })
 
-    it('builds and signs an ARC-60 SIWA request, base64-encoding the result', async () => {
+    it('signs the chain-built sign-in request, base64-encoding the result', async () => {
         const signAuthData = vi.fn(async () => new Uint8Array(64).fill(7))
         const { result } = renderHook(() => useSignCardOwnershipMutation(), {
             wrapper,
@@ -74,12 +96,12 @@ describe('useSignCardOwnershipMutation', () => {
             }),
             { scope: 1, encoding: 'base64' },
         )
-        expect(proof.signData.data).toEqual(expect.any(String))
+        expect(proof.signData.data).toBe('c2lnbi1pbg==')
         expect(proof.signData.authenticatorData).toEqual(expect.any(String))
         expect(proof.signature).toEqual(expect.any(String))
     })
 
-    it('fetches a delegation token first and embeds its nonce in the signed SIWA payload', async () => {
+    it('fetches a delegation token first and builds the sign-in request around its nonce', async () => {
         const signAuthData = vi.fn(async () => new Uint8Array(64).fill(7))
         const { result } = renderHook(() => useSignCardOwnershipMutation(), {
             wrapper,
@@ -93,7 +115,13 @@ describe('useSignCardOwnershipMutation', () => {
         expect(fetchDelegationToken).toHaveBeenCalledWith(
             expect.objectContaining({ network: 'testnet' }),
         )
-        expect(signedPayload(proof.signData.data).nonce).toBe('n0nce')
+        expect(buildSiwxAuthData).toHaveBeenCalledWith(
+            expect.objectContaining({
+                nonce: 'n0nce',
+                domain: 'perawallet.app',
+                address: 'FUNDINGADDR',
+            }),
+        )
         expect(proof.delegationToken).toBe('ABC_tok')
     })
 
@@ -105,7 +133,10 @@ describe('useSignCardOwnershipMutation', () => {
         })
 
         await expect(
-            result.current.mutateAsync({ address: 'FUNDINGADDR', signAuthData }),
+            result.current.mutateAsync({
+                address: 'FUNDINGADDR',
+                signAuthData,
+            }),
         ).rejects.toThrow('delegation down')
         expect(signAuthData).not.toHaveBeenCalled()
     })

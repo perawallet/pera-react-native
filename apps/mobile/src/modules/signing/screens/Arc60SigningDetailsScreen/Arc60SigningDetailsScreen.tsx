@@ -24,7 +24,8 @@ export const Arc60SigningDetailsScreen = () => {
     const request = currentRequest as Optional<AuthDataSignRequest>
 
     const account = useFindAccountByAddress(request?.authData.signer ?? '')
-    const parsed = resolved?.kind.type === 'auth-data' ? resolved.kind.parsed : null
+    const parsed =
+        resolved?.kind.type === 'auth-data' ? resolved.kind.parsed : null
 
     if (!request || !parsed) return null
 

@@ -12,7 +12,9 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { ARC60_MAX_REQUEST_BYTES } from '@perawallet/wallet-core-signing'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { parseAuthDataWireRequest } from '@perawallet/wallet-core-signing'
+import { ARC60_MAX_REQUEST_BYTES } from '../../../chain-algorand/src/signing/message/arc60-wire'
 import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
@@ -121,11 +123,11 @@ describe('validateRawMessage', () => {
         }
     })
 
-    it('discriminates ARC-60 from legacy arbitrary data without sniffing', () => {
+    it('discriminates auth data from legacy arbitrary data without sniffing', () => {
         // Replaces the previous heuristic
         // (`params.authenticatorData != null || params.metadata?.scope != null`)
         // over an `any`, which could accept a payload matching neither shape.
-        const arc60 = validateRawMessage(
+        const authData = validateRawMessage(
             request('sign-data', {
                 data: 'ZGF0YQ==',
                 signer: 'A'.repeat(58),
@@ -140,7 +142,7 @@ describe('validateRawMessage', () => {
             ]),
         )
 
-        expect(arc60.ok).toBe(true)
+        expect(authData.ok).toBe(true)
         expect(legacy.ok).toBe(true)
     })
 
@@ -177,15 +179,39 @@ describe('validateRawMessage', () => {
         }
     })
 
+    it('rejects an auth-data payload as invalid when no message signer is registered for the chain', () => {
+        vi.mocked(parseAuthDataWireRequest).mockImplementationOnce(() => {
+            throw new ChainAdapterNotRegisteredError(
+                'message signer',
+                'algorand',
+            )
+        })
+
+        const result = validateRawMessage(
+            request('sign-data', {
+                data: 'ZGF0YQ==',
+                signer: 'A'.repeat(58),
+                domain: 'perawallet.app',
+                authenticatorData: VALID_AUTH_DATA,
+                metadata: { scope: 1, encoding: 'base64' },
+            }),
+        )
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toMatchObject({ code: 'invalid-payload' })
+        }
+    })
+
     it('rejects a sign-data payload matching neither shape', () => {
         const result = validateRawMessage(request('sign-data', { nonsense: 1 }))
 
         expect(result.ok).toBe(false)
     })
 
-    it('reports the failing field path for a malformed ARC-60 payload', () => {
+    it('reports the failing field path for a malformed auth-data payload', () => {
         // Discriminating on the raw shape before parsing hits
-        // `arc60WireSchema` directly rather than a `z.union`, so the field
+        // the wire schema directly rather than a `z.union`, so the field
         // path survives.
         const result = validateRawMessage(
             request('sign-data', {
@@ -237,7 +263,7 @@ describe('validateRawMessage', () => {
         if (!result.ok) expect(result.error.message).toMatch(/data/)
     })
 
-    it('rejects an ARC-60 payload over the shared size cap', () => {
+    it('rejects an auth-data payload over the shared size cap', () => {
         const result = validateRawMessage(
             request('sign-data', {
                 data: 'A'.repeat(ARC60_MAX_REQUEST_BYTES + 1),

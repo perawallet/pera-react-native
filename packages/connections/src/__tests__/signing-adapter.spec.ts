@@ -63,10 +63,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // value (1000, `@perawallet/wallet-core-signing`'s `constants.ts`) is
     // exercised by that package's own tests.
     MAX_DATA_SIGN_REQUESTS: 2,
-    // `schema.ts` and `validate.ts` import these eagerly; only the
-    // sign-transactions path is driven from this file, so neither is used.
-    arc60WireSchema: { safeParse: vi.fn() },
-    parseArc60WireRequest: vi.fn(),
+    // `validate.ts` imports this eagerly; only the sign-transactions path is
+    // driven from this file, so it is unused.
+    parseAuthDataWireRequest: vi.fn(),
     // Mirrors the real predicate: the class name, or the marker the
     // WalletConnect rewrap keeps in the message.
     isFeeAdjustmentDeliveryError: (error: Error) =>
@@ -91,8 +90,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     // no rekey hop.
     canSignArbitraryData: (account: MockAccount) =>
         account.canSignData === true,
-    // Mirrors the real `canSignArc60`: account-local, because an ARC-60
-    // signature verifies against the signer's own key.
+    // Mirrors the real `canSignArc60`: account-local, because the signature
+    // verifies against the signer's own key.
     canSignArc60: (account: MockAccount) => account.canArc60 === true,
 }))
 

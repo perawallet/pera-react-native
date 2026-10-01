@@ -19,18 +19,21 @@ import { vi } from 'vitest'
 // for real instead of faked — a spec that needs more overrides this file with
 // its own `vi.mock`.
 vi.mock('@perawallet/wallet-core-signing', async () => {
-    const wire = await import('../signing/src/utils/arc60-wire')
+    const wire =
+        await import('../chain-algorand/src/signing/message/arc60-wire')
     const legacyWire = await import('../signing/src/utils/arbitrary-data-wire')
+    const constants = await import('../signing/src/constants')
     return {
         legacyArbitraryDataWireSchema: legacyWire.legacyArbitraryDataWireSchema,
-        ARC60_MAX_REQUEST_BYTES: wire.ARC60_MAX_REQUEST_BYTES,
-        arc60WireSchema: wire.arc60WireSchema,
-        assertArc60RequestWithinLimits: wire.assertArc60RequestWithinLimits,
-        parseArc60WireRequest: wire.parseArc60WireRequest,
-        // Mirror the signing package's constants.ts, which cannot be imported
-        // here: it pulls the KMS barrel, and that reaches react-native-mmkv too.
-        MAX_DATA_SIGN_REQUESTS: 1000,
-        MAX_TRANSACTION_SIGN_REQUESTS: 1000,
+        isAuthDataWirePayload: (_chainId: string, ...args: [unknown]) =>
+            wire.isArc60WirePayload(...args),
+        // A spy so a spec can make the chain's parser throw.
+        parseAuthDataWireRequest: vi.fn(
+            (_chainId: string, ...args: [unknown]) =>
+                wire.parseArc60WireRequest(...args),
+        ),
+        MAX_DATA_SIGN_REQUESTS: constants.MAX_DATA_SIGN_REQUESTS,
+        MAX_TRANSACTION_SIGN_REQUESTS: constants.MAX_TRANSACTION_SIGN_REQUESTS,
     }
 })
 

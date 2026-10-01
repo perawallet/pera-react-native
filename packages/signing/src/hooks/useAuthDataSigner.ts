@@ -11,135 +11,49 @@
  */
 
 import { useCallback } from 'react'
-import {
-    accountsAdapterFor,
-    canSignArbitraryData,
-    InvalidBip44PathError,
-    isAlgo25Account,
-    isHDWalletAccount,
-    isQuantumAccount,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import type { LocalAuthDataSigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
-import type { AuthDataMetadata, AuthData } from '../pipeline/types'
-import {
-    buildArc60AuthSigningPayload,
-    validateArc60AuthRequest,
-} from '../utils/arc60'
-import {
-    Arc60FailedHdPathError,
-    Arc60InvalidSignerError,
-} from '../utils/arc60-errors'
+import { messageSignerFor } from '../message-signer'
 
 export type UseAuthDataSignerResult = {
     /**
-     * Produces a single ARC-60 AUTH-scope signature for the given signer
-     * account. Throws spec-aligned errors (`Arc60*Error`) for every rejection
-     * path so the caller can surface a precise reason to the dApp.
+     * Produces a single auth-data signature for the given signer account.
+     * Rejects with the chain's own error for every refusal, so the caller can
+     * surface a precise reason to the dApp.
      */
-    signAuthData: (
-        account: WalletAccount,
-        authData: AuthData,
-        metadata: AuthDataMetadata,
-    ) => Promise<Uint8Array>
+    signAuthData: LocalAuthDataSigningFunction
 }
 
-// Local-key-only path (Algo25 / HDWallet via KMS). Ledger ARC-60 takes a
-// separate route: hardware signer-type dispatch → createHardwareStrategy →
-// signArc60OnHardwareWallet, so it never hits this hook.
+// Local-key-only path. A Ledger account takes the hardware strategy instead,
+// so it never reaches this hook. Sign requests carry no chain yet, so every
+// caller resolves the legacy one.
 export const useAuthDataSigner = (): UseAuthDataSignerResult => {
     const { signDataWithKey } = useKMS()
     const accounts = useAllAccounts()
-    const { network } = useNetwork()
 
-    const signAuthData = useCallback(
-        async (
-            account: WalletAccount,
-            authData: AuthData,
-            metadata: AuthDataMetadata,
-        ): Promise<Uint8Array> => {
-            // `account` is the account the dApp named as `signer`. Data
-            // signing never follows a rekey (see resolveSigningAccount), so a
-            // keyless rekeyed signer is refused here, the spec's
-            // ERROR_INVALID_SIGNER, rather than signed for by its auth account.
-            if (!canSignArbitraryData(account)) {
-                throw new Arc60InvalidSignerError(
-                    account.address,
-                    `account ${account.address} cannot sign ARC-60 payloads`,
-                )
-            }
-
-            // Shared host-side validation (scope / domain / SIWA / signer).
-            const { decodedData } = validateArc60AuthRequest(
+    const signAuthData = useCallback<LocalAuthDataSigningFunction>(
+        async (account, authData, metadata) =>
+            messageSignerFor(LEGACY_CHAIN_ID, account.address).signAuthData(
+                {
+                    signPayloads: (keyPairId, payloads) =>
+                        signDataWithKey(
+                            keyPairId,
+                            SIGNING_KEY_DOMAIN,
+                            payloads,
+                        ),
+                },
+                account,
                 authData,
                 metadata,
                 accounts,
-            )
-
-            const payload = buildArc60AuthSigningPayload(
-                decodedData,
-                authData.authenticatorData,
-            )
-
-            const { hdPath } = authData
-
-            if (isHDWalletAccount(account)) {
-                if (hdPath) {
-                    try {
-                        accountsAdapterFor(network).assertHdPathMatches(
-                            hdPath,
-                            account.hdWalletDetails,
-                        )
-                    } catch (caught) {
-                        if (caught instanceof InvalidBip44PathError) {
-                            // Project the generic accounts-package error into
-                            // the ARC-60 spec-aligned shape so the dApp gets
-                            // `ERROR_FAILED_HD_PATH` semantics.
-                            throw new Arc60FailedHdPathError(
-                                caught.hdPath,
-                                caught.message,
-                            )
-                        }
-                        throw caught
-                    }
-                }
-            } else if (isAlgo25Account(account) || isQuantumAccount(account)) {
-                // Neither Algo25 nor quantum accounts are BIP-44 derived, so
-                // an hdPath is meaningless for them and is rejected rather
-                // than ignored.
-                if (hdPath) {
-                    throw new Arc60FailedHdPathError(
-                        hdPath,
-                        `${account.type} accounts have no BIP44 derivation path`,
-                    )
-                }
-            } else {
-                // canSignArbitraryData ⇒ hasSigningKeys, which is true for
-                // Algo25, HDWallet and quantum; this branch is a defensive
-                // type-system fallback for any account type not yet handled
-                // above.
-                throw new Arc60InvalidSignerError(
-                    account.address,
-                    `unsupported account type ${account.type}`,
-                )
-            }
-
-            // ARC-60 payload is signed as-is — no MX prefix.
-            const [signature] = await signDataWithKey(
-                account.keyPairId,
-                SIGNING_KEY_DOMAIN,
-                [payload],
-            )
-            return signature
-        },
-        // `accounts` backs the rekey-signer cross-check in
-        // validateArc60AuthRequest; without it the callback would validate
-        // against the account list as of first render and fail open on a
-        // rekey revoked after mount.
-        [signDataWithKey, accounts, network],
+            ),
+        // `accounts` backs the signer's rekey cross-check; without it the
+        // callback would validate against the account list as of first render
+        // and fail open on a rekey revoked after mount.
+        [signDataWithKey, accounts],
     )
 
     return { signAuthData }

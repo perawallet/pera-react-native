@@ -20,12 +20,19 @@ import { vi } from 'vitest'
 // REAL one, narrowed to what the registry actually reaches: the point of the
 // specs is that the registry's validation behaves as the real code does, so a
 // hand-written fake would prove nothing.
-vi.mock('@perawallet/wallet-core-signing', async () => ({
-    ...(await import('../signing/src/pipeline/errors')),
-    ...(await import('../signing/src/utils/arc60-wire')),
-    ...(await import('../signing/src/utils/arbitrary-data-wire')),
-    ...(await import('../signing/src/constants')),
-}))
+vi.mock('@perawallet/wallet-core-signing', async () => {
+    const wire =
+        await import('../chain-algorand/src/signing/message/arc60-wire')
+    return {
+        ...(await import('../signing/src/pipeline/errors')),
+        ...(await import('../signing/src/utils/arbitrary-data-wire')),
+        ...(await import('../signing/src/constants')),
+        isAuthDataWirePayload: (_chainId: string, ...args: [unknown]) =>
+            wire.isArc60WirePayload(...args),
+        parseAuthDataWireRequest: (_chainId: string, ...args: [unknown]) =>
+            wire.parseArc60WireRequest(...args),
+    }
+})
 vi.mock(
     '@perawallet/wallet-core-blockchain',
     async () => await import('../blockchain/src/arc0001'),

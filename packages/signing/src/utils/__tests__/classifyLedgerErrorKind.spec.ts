@@ -125,7 +125,7 @@ describe('isLedgerError', () => {
     })
 
     it('returns false for a SigningError wrapping a non-device failure', () => {
-        // The hardware strategy wraps ARC-60 validation failures (and any
+        // The hardware strategy wraps auth-data validation failures (and any
         // other non-device error) in a SigningError before reaching onError.
         // Such a wrapper must NOT be treated as a device error, so the failure
         // surfaces inline rather than in the troubleshooting sheet.

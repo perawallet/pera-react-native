@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { SigningMachineContext } from '../machine/context'
 import {
     isArbitraryDataRequest,
@@ -17,7 +18,7 @@ import {
     isTransactionRequest,
 } from '../models'
 import { isInteractiveSource } from '../pipeline/types'
-import { parseArc60ForDisplay } from '../utils/parseArc60ForDisplay'
+import { messageSignerChainAdapters } from '../message-signer'
 import type {
     ResolvedSignRequest,
     ResolvedRequestKind,
@@ -64,10 +65,12 @@ const resolveKind = (context: SigningMachineContext): ResolvedRequestKind => {
     if (isAuthDataRequest(req)) {
         return {
             type: 'auth-data',
-            parsed: parseArc60ForDisplay(
-                req.authData.data,
-                req.metadata.encoding,
-            ),
+            parsed: messageSignerChainAdapters
+                .get(LEGACY_CHAIN_ID)
+                .parseAuthDataForDisplay(
+                    req.authData.data,
+                    req.metadata.encoding,
+                ),
         }
     }
 

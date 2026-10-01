@@ -13,7 +13,7 @@
 import {
     AnalysisError,
     GenesisHashMismatchError,
-    isArc60OriginMismatch,
+    isAuthDataOriginMismatch,
     TransactionRoundTripError,
     type AlgorandTransactionSummary,
     type AnalysisContext,
@@ -110,10 +110,10 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
 }
 
 /**
- * Creates analysis for non-transaction signable data (arbitrary data, Arc60).
+ * Creates analysis for non-transaction signable data (arbitrary data, auth data).
  *
  * There are no transaction details to summarise here, but ARC-60 carries one
- * analysable risk: the SIWA `domain` is self-asserted by the request, so a
+ * analysable risk: the sign-in `domain` is self-asserted by the request, so a
  * relayed/phishing request can bind to a domain the user trusts while actually
  * originating elsewhere. When the platform observed a trustworthy origin (the
  * webview host) and it doesn't match `domain`, flag it as a danger.
@@ -126,7 +126,7 @@ const createNonTransactionAnalysis = (
 
     if (
         group.data.type === 'auth-data' &&
-        isArc60OriginMismatch(
+        isAuthDataOriginMismatch(
             group.data.authData.domain,
             group.source.verifiedOrigin,
         )

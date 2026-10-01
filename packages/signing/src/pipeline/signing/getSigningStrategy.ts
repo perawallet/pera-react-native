@@ -44,7 +44,7 @@ export interface GetSigningStrategyOptions {
     /** Arbitrary-data signing function from useArbitraryDataSigner */
     signArbitraryData: LocalArbitrarySigningFunction
 
-    /** ARC-60 signing function from useAuthDataSigner */
+    /** Auth-data signing function from useAuthDataSigner */
     signAuthData: LocalAuthDataSigningFunction
 
     /** Get local participants for a multisig account */

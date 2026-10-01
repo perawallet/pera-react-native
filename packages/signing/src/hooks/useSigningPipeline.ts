@@ -419,7 +419,7 @@ export const useSigningPipeline = (
         // A retryable failure leaves the actor parked in `failed`, where
         // resolving the approval gate (signAndSendRequest) is a no-op — the
         // actor is no longer waiting on it. Re-attempting via the same
-        // control (e.g. the ARC-60 slide-to-confirm after "device locked" /
+        // control (e.g. the auth-data slide-to-confirm after "device locked" /
         // "app not open") must RETRY the actor so the device re-prompts,
         // rather than silently doing nothing.
         if (stage === 'failed' && isRetryableError(error)) {

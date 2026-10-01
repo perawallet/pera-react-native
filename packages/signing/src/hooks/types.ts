@@ -30,7 +30,7 @@ import type {
     TransactionWarning,
 } from '../models'
 import type { RequestStructure, TransactionListItem } from '../chain-adapter'
-import type { parseArc60ForDisplay } from '../utils/parseArc60ForDisplay'
+import type { ParsedAuthData } from '../message-signer'
 
 /**
  * Configuration passed to useSigningPipeline.
@@ -110,8 +110,6 @@ export type MachineSnapshot = {
     matches: (stateValue: string) => boolean
 }
 
-type Arc60ParsedForDisplay = ReturnType<typeof parseArc60ForDisplay>
-
 export type SourceKind =
     | 'local'
     | 'walletconnect'
@@ -119,7 +117,7 @@ export type SourceKind =
     | 'multisig-cosign'
     | 'deeplink'
     | 'gift-card'
-    | 'auth-data'
+    | 'card'
     | 'injected'
 
 export type TransportKind =
@@ -136,7 +134,7 @@ export type ResolvedRequestKind =
           hasMultiple: boolean
       }
     | { type: 'arbitrary-data'; isSingle: boolean }
-    | { type: 'auth-data'; parsed: Arc60ParsedForDisplay }
+    | { type: 'auth-data'; parsed: ParsedAuthData }
 
 export type HardwareChildSnapshot = SnapshotFrom<typeof hardwareSigningMachine>
 

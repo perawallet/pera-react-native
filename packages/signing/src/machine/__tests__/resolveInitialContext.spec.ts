@@ -17,7 +17,7 @@ import { groupTransactions } from '@perawallet/wallet-core-blockchain'
 import {
     makeTestAddress,
     makeTestPaymentTx,
-} from '../../test-utils/transactions'
+} from '../../__tests__/transactions'
 
 import { resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'
@@ -352,18 +352,18 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
     })
 })
 
-describe('resolveInitialContext — arc60 requests', () => {
+describe('resolveInitialContext — auth-data requests', () => {
     const authData = {
         data: 'e30=',
         signer: userAccount.address,
-        domain: 'arc60.io',
+        domain: 'example.io',
         authenticatorData: new Uint8Array(37),
     }
     const metadata = { scope: 1, encoding: 'base64' }
 
-    it('produces a single signable arc60 group keyed off authData.signer', () => {
+    it('produces a single signable auth-data group keyed off authData.signer', () => {
         const request: AuthDataSignRequest = {
-            id: 'req-arc60',
+            id: 'req-auth-data',
             type: 'auth-data',
             transport: 'callback',
             sourceType: 'walletconnect',
@@ -380,15 +380,15 @@ describe('resolveInitialContext — arc60 requests', () => {
     })
 
     it('wraps the approve callback to project the single signature into the [{signature,signer}] shape', async () => {
-        const arc60Approve = vi.fn(async () => undefined)
+        const authDataApprove = vi.fn(async () => undefined)
         const request: AuthDataSignRequest = {
-            id: 'req-arc60-cb',
+            id: 'req-auth-data-cb',
             type: 'auth-data',
             transport: 'callback',
             sourceType: 'walletconnect',
             authData,
             metadata,
-            approve: arc60Approve,
+            approve: authDataApprove,
         }
 
         const context = resolveInitialContext(baseInput(request))
@@ -400,7 +400,7 @@ describe('resolveInitialContext — arc60 requests', () => {
             signers: [{ address: userAccount.address }],
         } as never)
 
-        expect(arc60Approve).toHaveBeenCalledWith([
+        expect(authDataApprove).toHaveBeenCalledWith([
             { signature: sig, signer: userAccount.address },
         ])
     })

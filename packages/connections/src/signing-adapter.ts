@@ -247,7 +247,7 @@ const enqueueDataSignRequest = (
 /**
  * use-wallet v5 dApps set the ARC-60 signer to the connected account's auth
  * address, which is never in `authorizedAccounts` itself, so the rekey hop is
- * accepted here; the pipeline's SIWA validation re-checks the binding.
+ * accepted here; the pipeline's sign-in validation re-checks the binding.
  */
 const isArc60AuthorizedSigner = (
     signer: string,
@@ -261,8 +261,9 @@ const isArc60AuthorizedSigner = (
             authorizedAccounts.includes(account.address),
     )
 
-// ARC-60 deep validation (scope, domain binding, SIWA) is not repeated here;
-// the signing pipeline runs it for every ARC-60 request regardless of transport.
+// Auth-data deep validation (scope, domain binding, sign-in message) is not
+// repeated here; the signing pipeline runs it for every request regardless of
+// transport.
 const enqueueArc60Request = (
     message: RequestMessage,
     payload: AuthDataSignableData,

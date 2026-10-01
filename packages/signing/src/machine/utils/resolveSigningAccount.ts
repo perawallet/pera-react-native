@@ -23,14 +23,14 @@ import type { SignableData, SourceMetadata } from '../../pipeline/types'
  * - `multisig-cosign` source: the participant slot is bound to its ORIGINAL
  *   pubkey at multisig creation. Rekey indirection MUST NOT be followed —
  *   the participant signs with its own key.
- * - `arbitrary-data` / `arc60` data: the signature is verified off-chain
- *   against the requested signer's own pubkey (ARC-60 defines `signer` as the
+ * - `arbitrary-data` / `auth-data` data: the signature is verified off-chain
+ *   against the requested signer's own pubkey (the request's `signer` is the
  *   public key that signs and has no auth-addr concept), and both response
  *   shapes carry only the raw signature, so nothing could report that a
  *   different key signed. The rekey hop MUST NOT be followed; a signer that
  *   holds no key of its own is refused by the leaf signer. A dApp that wants
  *   a rekeyed account authenticated names the auth address as `signer` and
- *   the account as the SIWA `account_address`; `validateArc60AuthRequest`
+ *   the account in the sign-in message; the chain's `validateAuthData`
  *   enforces that shape and refuses a rekeyed account signing for itself.
  * - Transactions (any other shape): standard rekey rule — resolve the single
  *   rekey hop to the auth account, which holds the signing key. Rekey

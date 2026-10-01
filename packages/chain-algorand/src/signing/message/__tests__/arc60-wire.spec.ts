@@ -15,7 +15,6 @@ import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     ARC60_MAX_REQUEST_BYTES,
     assertArc60RequestWithinLimits,
-    isArc60OriginMismatch,
     isArc60WirePayload,
     parseArc60WireRequest,
 } from '../arc60-wire'
@@ -145,68 +144,5 @@ describe('parseArc60WireRequest', () => {
         })
 
         expect(authData.authenticatorData.length).toBe(37)
-    })
-})
-
-describe('isArc60OriginMismatch', () => {
-    it('returns false when no verified origin is available', () => {
-        expect(isArc60OriginMismatch('arc60.io', undefined)).toBe(false)
-        expect(isArc60OriginMismatch('arc60.io', '')).toBe(false)
-    })
-
-    it('returns false when the verified origin host matches the domain', () => {
-        expect(
-            isArc60OriginMismatch('arc60.io', 'https://arc60.io/sign-in'),
-        ).toBe(false)
-    })
-
-    it('matches case-insensitively and ignores path/scheme on the origin', () => {
-        expect(
-            isArc60OriginMismatch('ARC60.io', 'https://arc60.io/a/b?c=d'),
-        ).toBe(false)
-    })
-
-    it('matches when the domain itself carries a scheme', () => {
-        expect(
-            isArc60OriginMismatch('https://arc60.io', 'https://arc60.io/x'),
-        ).toBe(false)
-    })
-
-    it('returns true when the origin host differs from the domain', () => {
-        expect(
-            isArc60OriginMismatch(
-                'trusted-exchange.com',
-                'https://evil.example/phish',
-            ),
-        ).toBe(true)
-    })
-
-    it('treats a differing port as a mismatch', () => {
-        expect(
-            isArc60OriginMismatch('arc60.io:8080', 'https://arc60.io/x'),
-        ).toBe(true)
-    })
-
-    it('matches a bare host:port domain against the same-port origin', () => {
-        expect(
-            isArc60OriginMismatch('arc60.io:8080', 'https://arc60.io:8080/x'),
-        ).toBe(false)
-        expect(
-            isArc60OriginMismatch('localhost:3000', 'http://localhost:3000'),
-        ).toBe(false)
-    })
-
-    it('normalizes an explicit default port on either side', () => {
-        expect(
-            isArc60OriginMismatch('arc60.io:443', 'https://arc60.io/x'),
-        ).toBe(false)
-    })
-
-    it('treats a domain smuggling userinfo as a mismatch', () => {
-        // "trusted.com@evil.com" displays a trusted-looking string while its
-        // URL host is evil.com — must warn even when served from evil.com.
-        expect(
-            isArc60OriginMismatch('trusted.com@evil.com', 'https://evil.com'),
-        ).toBe(true)
     })
 })

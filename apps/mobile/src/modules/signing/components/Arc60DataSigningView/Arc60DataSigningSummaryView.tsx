@@ -12,8 +12,8 @@
 
 import { PWButton, PWText, PWView } from '@components/core'
 import type {
-    Arc60ParsedPayload,
     AuthDataSignRequest,
+    ParsedAuthData,
 } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -24,7 +24,7 @@ import { useStyles } from './Arc60DataSigningSummaryView.style'
 export type Arc60DataSigningSummaryViewProps = {
     request: AuthDataSignRequest
     account: Optional<WalletAccount>
-    parsed: Arc60ParsedPayload
+    parsed: ParsedAuthData
     onDetailsPress: () => void
 }
 
@@ -37,7 +37,7 @@ export const Arc60DataSigningSummaryView = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const siwa = parsed.type === 'siwa' ? parsed.siwa : undefined
+    const siwx = parsed.type === 'siwx' ? parsed.siwx : undefined
 
     return (
         <PWView style={styles.container}>
@@ -56,7 +56,7 @@ export const Arc60DataSigningSummaryView = ({
                         domain: request.authData.domain,
                     })}
                 </PWText>
-                {!!siwa?.statement && (
+                {!!siwx?.statement && (
                     <PWView style={styles.statementContainer}>
                         <PWText
                             variant='caption'
@@ -64,7 +64,7 @@ export const Arc60DataSigningSummaryView = ({
                         >
                             {t('signing.arc60_view.siwa_statement')}
                         </PWText>
-                        <PWText variant='body'>{siwa.statement}</PWText>
+                        <PWText variant='body'>{siwx.statement}</PWText>
                     </PWView>
                 )}
                 {!!account && (

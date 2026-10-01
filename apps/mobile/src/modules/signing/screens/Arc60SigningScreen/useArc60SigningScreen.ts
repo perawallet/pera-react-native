@@ -15,10 +15,10 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    type Arc60ParsedPayload,
     type AuthDataSignRequest,
+    type ParsedAuthData,
     type SigningLifecycleEvent,
-    isArc60OriginMismatch,
+    isAuthDataOriginMismatch,
     isExternalCallbackSource,
     resolveAllSignerAddresses,
     useLastSigningEvent,
@@ -42,7 +42,7 @@ type NavigationProp = StackNavigationProp<SigningStackParamList, 'Arc60Signing'>
 type UseArc60SigningScreenResult = {
     request: Nullable<AuthDataSignRequest>
     account: Optional<WalletAccount>
-    parsed: Nullable<Arc60ParsedPayload>
+    parsed: Nullable<ParsedAuthData>
     isPending: boolean
     canConfirm: boolean
     /** Localized copy for the pipeline's failure, resolved for direct display. */
@@ -137,9 +137,9 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
 
     const isPending = pipeline.isLoading || isApproving
     const canConfirm =
-        !isPending && !!account && parsed?.type === 'siwa' && !isQuantumBlocked
+        !isPending && !!account && parsed?.type === 'siwx' && !isQuantumBlocked
 
-    const hasOriginMismatch = isArc60OriginMismatch(
+    const hasOriginMismatch = isAuthDataOriginMismatch(
         request?.authData.domain ?? '',
         request?.verifiedOrigin,
     )

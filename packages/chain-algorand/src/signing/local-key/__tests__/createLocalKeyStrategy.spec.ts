@@ -356,8 +356,12 @@ describe('createLocalKeyStrategy', () => {
 
             expect(signAuthData).toHaveBeenCalledWith(
                 algo25Account,
-                group.data.type === 'auth-data' ? group.data.authData : undefined,
-                group.data.type === 'auth-data' ? group.data.metadata : undefined,
+                group.data.type === 'auth-data'
+                    ? group.data.authData
+                    : undefined,
+                group.data.type === 'auth-data'
+                    ? group.data.metadata
+                    : undefined,
             )
             expect(result.signedData.type).toBe('auth-data')
         })

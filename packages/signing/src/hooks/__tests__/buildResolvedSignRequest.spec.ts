@@ -100,9 +100,9 @@ describe('buildResolvedSignRequest', () => {
         })
     })
 
-    it('parses arc60 payload once and exposes it on kind', () => {
+    it('parses auth-data payload once and exposes it on kind', () => {
         const account = makeAccount('A123', 'algo25')
-        const arc60Request = {
+        const authDataRequest = {
             id: 'r1',
             type: 'auth-data',
             sourceType: 'card',
@@ -115,7 +115,7 @@ describe('buildResolvedSignRequest', () => {
             signerAddress: 'A123',
             allAccounts: [account],
             groupSignerTypes: new Map([['A123', 'localKey']]),
-            request: arc60Request,
+            request: authDataRequest,
             signableGroups: [{ signerAddress: 'A123' }],
         } as unknown as SigningMachineContext
 

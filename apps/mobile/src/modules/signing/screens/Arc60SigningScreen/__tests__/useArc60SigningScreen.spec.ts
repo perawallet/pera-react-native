@@ -53,7 +53,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
         ...actual,
         useSigningPipeline: () => mockPipeline,
         useLastSigningEvent: () => null,
-        isArc60OriginMismatch: () => false,
+        isAuthDataOriginMismatch: () => false,
     }
 })
 
@@ -136,7 +136,7 @@ describe('useArc60SigningScreen', () => {
         expect(result.current.errorMessage).toBe('errors.general.body')
     })
 
-    it('tracks card events only for card-originated (sourceType arc60) requests', async () => {
+    it('tracks card events only for card-originated (sourceType card) requests', async () => {
         mockPipeline.currentRequest = {
             id: 'req-1',
             type: 'auth-data',
@@ -200,7 +200,7 @@ describe('useArc60SigningScreen', () => {
         mockIsQuantumDataSigningBlocked.mockReturnValue(true)
         mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
         mockPipeline.resolved = {
-            kind: { type: 'auth-data', parsed: { type: 'siwa' } },
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
@@ -211,7 +211,7 @@ describe('useArc60SigningScreen', () => {
     it('allows confirmation of the same request when the signer is not quantum', () => {
         mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
         mockPipeline.resolved = {
-            kind: { type: 'auth-data', parsed: { type: 'siwa' } },
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 

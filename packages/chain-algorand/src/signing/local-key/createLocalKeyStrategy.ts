@@ -29,8 +29,6 @@ import {
     CannotSignError,
     SIGNING_ERROR_KEYS,
     SigningError,
-    signArbitraryDataCase,
-    signAuthDataCase,
     type AnalyzedSignableGroup,
     type LocalKeyStrategyOptions,
     type SignerInfo,
@@ -38,6 +36,10 @@ import {
     type SigningResult,
     type SigningStrategy,
 } from '@perawallet/wallet-core-signing'
+import {
+    signArbitraryDataCase,
+    signAuthDataCase,
+} from '../message/standardDataSigning'
 
 /**
  * Creates a signing strategy for accounts whose signing key lives on this

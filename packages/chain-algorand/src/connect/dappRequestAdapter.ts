@@ -23,9 +23,9 @@ import {
     type DappRequestChainAdapter,
     type DappSigningParamsResult,
 } from '@perawallet/wallet-core-connections'
-import { isArc60WirePayload } from '@perawallet/wallet-core-signing'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { isArc60WirePayload } from '../signing/message/arc60-wire'
 import { useAlgorandTransactionSigning } from './transactionSigning'
 import { algorandWalletConnectSupport } from './walletConnect'
 
