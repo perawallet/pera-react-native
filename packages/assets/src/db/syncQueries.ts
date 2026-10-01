@@ -25,15 +25,15 @@ import {
 } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { Decimal } from 'decimal.js'
-import type {
-    ChainScope,
-    ChainScopeKey,
+import {
+    networkColumnValue,
+    type ChainScope,
+    type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { PeraAssetType } from '../models'
 import { hasNftShape } from '../utils'
-import { networkColumnValue } from './networkColumn'
 import {
     AssetsNodeSchema,
     AssetsPeraSchema,

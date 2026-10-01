@@ -20,13 +20,13 @@ import {
     PeraAssetType,
     isNativeAssetId,
     nativeAssetFor,
-    networkColumnValue,
     peraAssetFromColumns,
     type PeraAsset,
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
 import {
     LEGACY_CHAIN_ID,
+    networkColumnValue,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'

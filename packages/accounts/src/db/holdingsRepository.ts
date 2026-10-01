@@ -12,17 +12,16 @@
 
 import { eq, and, inArray, notInArray, ne, or, isNull, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    networkColumnValue,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     forEachWriteChunk,
     getDatabase,
     type Database,
 } from '@perawallet/wallet-core-database'
-import {
-    AssetsPeraSchema,
-    PeraAssetType,
-    networkColumnValue,
-} from '@perawallet/wallet-core-assets'
+import { AssetsPeraSchema, PeraAssetType } from '@perawallet/wallet-core-assets'
 import { AccountAssetHoldingsSchema } from './schema'
 
 export type HoldingRow = {

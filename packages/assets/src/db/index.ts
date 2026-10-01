@@ -41,4 +41,3 @@ export {
     getCollectibleIdsMissingUrl,
 } from './syncQueries'
 export { seedNativeAssets } from './seed'
-export { networkColumnValue, scopeFromNetworkColumn } from './networkColumn'

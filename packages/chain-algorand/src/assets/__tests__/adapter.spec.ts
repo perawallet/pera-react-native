@@ -42,7 +42,10 @@ import { algorandAssetsAdapter } from '../adapter'
 import { ALGORAND_NATIVE_ASSET } from '../native-asset'
 
 const testnet: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
-const foreign = { chainId: 'other', networkId: 'mainnet' } as ChainScope
+const foreign = {
+    chainId: 'other',
+    networkId: 'mainnet',
+} as unknown as ChainScope
 
 describe('algorandAssetsAdapter', () => {
     beforeEach(() => {
@@ -58,17 +61,14 @@ describe('algorandAssetsAdapter', () => {
         )
     })
 
-    it('passes the scope network to the asset sources', async () => {
+    it('passes the scope, or its network, to the asset sources', async () => {
         await algorandAssetsAdapter.syncAssets(['1'], testnet)
         await algorandAssetsAdapter.fetchAsset('1', testnet)
         await algorandAssetsAdapter.fetchOnChainAsset('1', testnet)
         await algorandAssetsAdapter.fetchAssetAuthorities('1', testnet)
 
-        expect(mocks.fetchAndPersistAssets).toHaveBeenCalledWith(
-            ['1'],
-            'testnet',
-        )
-        expect(mocks.fetchAssetFromApis).toHaveBeenCalledWith('1', 'testnet')
+        expect(mocks.fetchAndPersistAssets).toHaveBeenCalledWith(['1'], testnet)
+        expect(mocks.fetchAssetFromApis).toHaveBeenCalledWith('1', testnet)
         expect(mocks.fetchOnChainAsset).toHaveBeenCalledWith('1', 'testnet')
         expect(mocks.fetchAssetAuthorities).toHaveBeenCalledWith('1', 'testnet')
     })
@@ -95,8 +95,8 @@ describe('algorandAssetsAdapter', () => {
 
     it('refuses a scope that is not an Algorand network', async () => {
         await expect(
-            algorandAssetsAdapter.syncAssets(['1'], foreign),
+            algorandAssetsAdapter.fetchOnChainAsset('1', foreign),
         ).rejects.toThrow('Not an Algorand scope')
-        expect(mocks.fetchAndPersistAssets).not.toHaveBeenCalled()
+        expect(mocks.fetchOnChainAsset).not.toHaveBeenCalled()
     })
 })

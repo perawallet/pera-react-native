@@ -12,9 +12,11 @@
 
 import { eq, and } from 'drizzle-orm'
 import type { Decimal } from 'decimal.js'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    networkColumnValue,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import { networkColumnValue } from '@perawallet/wallet-core-assets'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { AccountBalancesSchema } from './schema'
 

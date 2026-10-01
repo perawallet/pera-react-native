@@ -15,11 +15,12 @@ import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { decimalColumn } from '@perawallet/wallet-core-database'
 
+// Every `network` column here holds the bare legacy network until the
+// backfill: decode with scopeFromNetworkColumn.
 export const AssetsNodeSchema = sqliteTable(
     'assets_node',
     {
         assetId: decimalColumn('asset_id').notNull(),
-        // Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
         network: text('network').notNull().$type<ChainScopeKey>(),
         decimals: integer('decimals').notNull().default(0),
         creatorAddress: text('creator_address').notNull().default(''),
@@ -39,7 +40,6 @@ export const AssetsPeraSchema = sqliteTable(
     'assets_pera',
     {
         assetId: decimalColumn('asset_id').notNull(),
-        // Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
         network: text('network').notNull().$type<ChainScopeKey>(),
         verificationTier: text('verification_tier')
             .notNull()
@@ -69,7 +69,6 @@ export const AssetPricesSchema = sqliteTable(
     'asset_prices',
     {
         assetId: decimalColumn('asset_id').notNull(),
-        // Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
         network: text('network').notNull().$type<ChainScopeKey>(),
         usdPrice: decimalColumn('usd_price').notNull(),
         updatedAt: integer('updated_at').notNull(),
@@ -84,7 +83,6 @@ export const AssetPriceMissesSchema = sqliteTable(
     'asset_price_misses',
     {
         assetId: decimalColumn('asset_id').notNull(),
-        // Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
         network: text('network').notNull().$type<ChainScopeKey>(),
         attemptedAt: integer('attempted_at').notNull(),
     },

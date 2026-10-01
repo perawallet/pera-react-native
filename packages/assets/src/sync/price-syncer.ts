@@ -47,6 +47,8 @@ const PRICE_MISS_RETRY_MS = 10 * 60 * 1000
 // are targeted enrichments and stay independent.
 const WHOLE_WALLET_PASS_MIN_IDS = 256
 type InFlightPricePass = { ids: Set<string>; pass: Promise<void> }
+// Keyed by the network string, not a scope: a fresh scope object per call
+// would never hit the map, so concurrent passes would stop sharing.
 const inFlightWholeWalletPasses = new Map<Network, InFlightPricePass>()
 
 export function fetchAndPersistPrices(

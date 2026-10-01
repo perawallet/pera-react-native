@@ -12,7 +12,10 @@
 
 import { eq, and, inArray, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    networkColumnValue,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     forEachWriteChunk,
     getDatabase,
@@ -24,7 +27,6 @@ import {
     type PeraAsset,
     type PeraAssetMetadata,
 } from '../models'
-import { networkColumnValue } from './networkColumn'
 import { AssetsNodeSchema, AssetsPeraSchema } from './schema'
 
 // The held-assets list re-reads every row on each holdings/asset/price

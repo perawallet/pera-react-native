@@ -12,13 +12,15 @@
 
 import { eq, and, inArray, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    networkColumnValue,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     forEachWriteChunk,
     getDatabase,
     type Database,
 } from '@perawallet/wallet-core-database'
-import { networkColumnValue } from './networkColumn'
 import { AssetPricesSchema, AssetPriceMissesSchema } from './schema'
 
 export type AssetPriceRow = {

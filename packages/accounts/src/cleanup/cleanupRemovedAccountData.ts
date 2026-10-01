@@ -11,17 +11,16 @@
  */
 
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import { InvalidScopeKeyError } from '@perawallet/wallet-core-chain-contract'
+import {
+    InvalidScopeKeyError,
+    scopeFromNetworkColumn,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isAlgoAssetId,
     logger,
     runAccountCleanups,
 } from '@perawallet/wallet-core-shared'
-import {
-    deleteAssets,
-    deleteAssetPrices,
-    scopeFromNetworkColumn,
-} from '@perawallet/wallet-core-assets'
+import { deleteAssets, deleteAssetPrices } from '@perawallet/wallet-core-assets'
 import {
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,

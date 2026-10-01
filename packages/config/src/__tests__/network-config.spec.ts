@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import { LEGACY_NETWORKS } from '@perawallet/wallet-core-chain-contract'
 import { Networks, type Network } from '../models/network'
 import { config } from '../main'
 import {
@@ -352,5 +353,15 @@ describe('getNetworkConfig keeps its values and key order for every network', ()
 
         expect(actual).toStrictEqual(expected[network])
         expect(Object.keys(actual)).toEqual(Object.keys(expected[network]))
+    })
+})
+
+describe('Networks', () => {
+    // Stored network columns are decoded against LEGACY_NETWORKS, so a network
+    // missing there would make its existing rows unreadable.
+    test('lists the same networks as the chain contract', () => {
+        expect(Object.values(Networks).sort()).toEqual(
+            [...LEGACY_NETWORKS].sort(),
+        )
     })
 })

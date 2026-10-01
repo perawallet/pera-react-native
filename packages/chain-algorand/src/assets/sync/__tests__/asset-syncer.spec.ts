@@ -11,7 +11,10 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 const fetchAssetsMock = vi.hoisted(() => vi.fn())
 const transformAssetResponseMock = vi.hoisted(() => vi.fn(a => a))
@@ -58,6 +61,8 @@ import {
 } from '../../constants'
 import { fetchAndPersistAssets } from '../asset-syncer'
 
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+
 describe('fetchAndPersistAssets', () => {
     beforeEach(() => {
         fetchAssetsMock.mockReset()
@@ -81,7 +86,7 @@ describe('fetchAndPersistAssets', () => {
         deviceIdGetMock.mockReturnValue('555')
         fetchAssetsMock.mockResolvedValue({ results: [{ asset_id: 1 }] })
 
-        await fetchAndPersistAssets(['1', '2'], 'mainnet')
+        await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
 
         expect(fetchAssetsMock).toHaveBeenCalledWith(
             ['1', '2'],
@@ -94,7 +99,7 @@ describe('fetchAndPersistAssets', () => {
         deviceIdGetMock.mockReturnValue(null)
         fetchAssetsMock.mockResolvedValue({ results: [{ asset_id: 1 }] })
 
-        await fetchAndPersistAssets(['1', '2'], 'mainnet')
+        await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
 
         expect(fetchAssetsMock).toHaveBeenCalledWith(
             ['1', '2'],
@@ -104,7 +109,7 @@ describe('fetchAndPersistAssets', () => {
     })
 
     test('filters out ALGO and short-circuits when the remaining list is empty', async () => {
-        await fetchAndPersistAssets(['0'], 'mainnet')
+        await fetchAndPersistAssets(['0'], MAINNET_SCOPE)
 
         expect(fetchAssetsMock).not.toHaveBeenCalled()
         expect(upsertAssetsMock).not.toHaveBeenCalled()
@@ -114,7 +119,7 @@ describe('fetchAndPersistAssets', () => {
         const ids = Array.from({ length: 250 }, (_, i) => String(i + 1))
         fetchAssetsMock.mockResolvedValue({ results: [{ asset_id: 1 }] })
 
-        await fetchAndPersistAssets(ids, 'mainnet')
+        await fetchAndPersistAssets(ids, MAINNET_SCOPE)
 
         // 250 ids / 100 per batch = 3 batches
         expect(fetchAssetsMock).toHaveBeenCalledTimes(3)
@@ -127,14 +132,14 @@ describe('fetchAndPersistAssets', () => {
             .mockRejectedValueOnce(new Error('batch 2 failed'))
 
         await expect(
-            fetchAndPersistAssets(['1', '2'], 'mainnet'),
+            fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE),
         ).resolves.toBeUndefined()
     })
 
     test('short-circuits when all ids are already cached and fresh', async () => {
         getStaleOrMissingAssetIdsMock.mockResolvedValueOnce([])
 
-        await fetchAndPersistAssets(['1', '2', '3'], 'mainnet')
+        await fetchAndPersistAssets(['1', '2', '3'], MAINNET_SCOPE)
 
         expect(fetchAssetsMock).not.toHaveBeenCalled()
         expect(upsertAssetsMock).not.toHaveBeenCalled()
@@ -146,7 +151,7 @@ describe('fetchAndPersistAssets', () => {
         // after the backend's crawler classifies it.
         fetchAssetsMock.mockResolvedValue({ results: [] })
 
-        await fetchAndPersistAssets(['1'], 'mainnet')
+        await fetchAndPersistAssets(['1'], MAINNET_SCOPE)
 
         expect(getStaleOrMissingAssetIdsMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -164,7 +169,7 @@ describe('fetchAndPersistAssets', () => {
         // 7-day TTL keeps serving the pre-update media URL.
         fetchAssetsMock.mockResolvedValue({ results: [] })
 
-        await fetchAndPersistAssets(['1'], 'mainnet')
+        await fetchAndPersistAssets(['1'], MAINNET_SCOPE)
 
         expect(getStaleOrMissingAssetIdsMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -185,7 +190,7 @@ describe('fetchAndPersistAssets', () => {
             url: 'template-ipfs://{ipfscid:1:raw:reserve:sha2-256}',
         })
 
-        await fetchAndPersistAssets(['7'], 'mainnet')
+        await fetchAndPersistAssets(['7'], MAINNET_SCOPE)
 
         expect(fetchIndexerAssetDetailsMock).toHaveBeenCalledWith(
             '7',
@@ -198,7 +203,7 @@ describe('fetchAndPersistAssets', () => {
                     url: 'template-ipfs://{ipfscid:1:raw:reserve:sha2-256}',
                 }),
             ],
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: MAINNET_SCOPE,
         })
     })
 
@@ -212,11 +217,11 @@ describe('fetchAndPersistAssets', () => {
             decimals: 0,
         })
 
-        await fetchAndPersistAssets(['7'], 'mainnet')
+        await fetchAndPersistAssets(['7'], MAINNET_SCOPE)
 
         expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
             items: [expect.objectContaining({ assetId: '7', url: '' })],
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: MAINNET_SCOPE,
         })
     })
 
@@ -224,7 +229,7 @@ describe('fetchAndPersistAssets', () => {
         getStaleOrMissingAssetIdsMock.mockResolvedValueOnce(['2'])
         fetchAssetsMock.mockResolvedValue({ results: [{ asset_id: 2 }] })
 
-        await fetchAndPersistAssets(['1', '2'], 'mainnet')
+        await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
 
         expect(fetchAssetsMock).toHaveBeenCalledTimes(1)
         expect(fetchAssetsMock).toHaveBeenCalledWith(['2'], 'mainnet', null)
@@ -241,7 +246,10 @@ describe('fetchAndPersistAssets', () => {
                     results: [{ assetId: '1002', decimals: 6 }],
                 })
 
-                await fetchAndPersistAssets(['1002'], network)
+                await fetchAndPersistAssets(
+                    ['1002'],
+                    scopeForLegacyNetwork(network),
+                )
 
                 expect(upsertAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 6 }],
@@ -273,7 +281,10 @@ describe('fetchAndPersistAssets', () => {
                     name: 'MYTOKEN',
                 })
 
-                await fetchAndPersistAssets(['1002'], network)
+                await fetchAndPersistAssets(
+                    ['1002'],
+                    scopeForLegacyNetwork(network),
+                )
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 0, name: 'MYTOKEN' }],
@@ -292,7 +303,10 @@ describe('fetchAndPersistAssets', () => {
                     new Error('no such asset on this chain'),
                 )
 
-                await fetchAndPersistAssets(['1002'], network)
+                await fetchAndPersistAssets(
+                    ['1002'],
+                    scopeForLegacyNetwork(network),
+                )
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [],
@@ -308,7 +322,10 @@ describe('fetchAndPersistAssets', () => {
                     decimals: 0,
                 })
 
-                await fetchAndPersistAssets(['1002'], network)
+                await fetchAndPersistAssets(
+                    ['1002'],
+                    scopeForLegacyNetwork(network),
+                )
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 0 }],
@@ -325,7 +342,7 @@ describe('fetchAndPersistAssets', () => {
             params: { decimals: 3 },
         })
 
-        await fetchAndPersistAssets(['123'], 'betanet')
+        await fetchAndPersistAssets(['123'], scopeForLegacyNetwork('betanet'))
 
         expect(upsertNodeAssetsMock).toHaveBeenCalled()
         // The borrowed-opinion half is gone entirely: not attempted, not
@@ -333,5 +350,18 @@ describe('fetchAndPersistAssets', () => {
         expect(fetchAssetsMock).not.toHaveBeenCalled()
         expect(upsertPeraAssetsMock).not.toHaveBeenCalled()
         expect(upsertAssetsMock).not.toHaveBeenCalled()
+    })
+
+    test('refuses a scope that is not an Algorand network before touching the DB', async () => {
+        const foreign = {
+            chainId: 'other',
+            networkId: 'mainnet',
+        } as unknown as ChainScope
+
+        await expect(fetchAndPersistAssets(['1'], foreign)).rejects.toThrow(
+            'Not an Algorand scope',
+        )
+        expect(getStaleOrMissingAssetIdsMock).not.toHaveBeenCalled()
+        expect(fetchAssetsMock).not.toHaveBeenCalled()
     })
 })
