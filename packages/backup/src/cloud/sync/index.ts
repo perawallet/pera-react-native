@@ -46,6 +46,7 @@ export {
 } from './backupSyncManager'
 export type { BackupSyncManagerDeps } from './backupSyncManager'
 export { createBackupSyncStatePort } from './backupSyncStatePort'
+export { backupBusyItemKey } from './busyItems'
 export { createBackupSyncStoreSources } from './backupSyncStoreSources'
 export {
     applyBackupSettings,

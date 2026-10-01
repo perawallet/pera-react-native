@@ -37,12 +37,14 @@ describe('useBackupSyncActivityStore', () => {
         ).toBeUndefined()
     })
 
-    test('resetState clears the flag', () => {
+    test('resetState clears the flag and the busy items', () => {
         const { result } = renderHook(() => useBackupSyncActivityStore())
         act(() => result.current.setIsSyncing(true))
+        act(() => result.current.setBusyItems(['account:A']))
 
         act(() => result.current.resetState())
 
         expect(result.current.isSyncing).toBe(false)
+        expect(result.current.busyItems).toEqual([])
     })
 })

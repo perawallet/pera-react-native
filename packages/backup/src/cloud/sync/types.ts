@@ -252,6 +252,7 @@ export type BackupSyncStatePort = {
     getSyncState: () => Nullable<SyncState>
     setSyncState: (state: SyncState) => void
     setIsSyncing: (isSyncing: boolean) => void
+    setBusyItems: (busyItems: string[]) => void
     /** Wipes config, sync state and activity so the backup reads "not set up". */
     reset: () => void
 }

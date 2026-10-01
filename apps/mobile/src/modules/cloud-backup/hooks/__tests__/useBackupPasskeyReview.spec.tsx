@@ -20,6 +20,7 @@ const {
     passkeysMock,
     reviewMock,
     listPasskeysMock,
+    busyItemsMock,
     showToastMock,
     showErrorMock,
     reviewActionMock,
@@ -40,6 +41,7 @@ const {
         },
     },
     listPasskeysMock: vi.fn(async () => []),
+    busyItemsMock: { current: [] as string[] },
     showToastMock: vi.fn(),
     showErrorMock: vi.fn(),
     reviewActionMock: vi.fn(
@@ -53,12 +55,16 @@ const {
 
 // The mutation itself belongs to the package and is covered there. Standing
 // real react-query over a stub action keeps this file on what the hook still
-// owns: the buckets, the busy row and the toasts.
+// owns: the buckets, reading the busy rows and the toasts.
 vi.mock('@perawallet/wallet-core-backup', async () => {
     const { useMutation } = await import('@tanstack/react-query')
     return {
         deriveBackupPasskeyReview: () => reviewMock.current,
         useListPasskeyMetadataForBackup: () => listPasskeysMock,
+        backupBusyItemKey: (itemKind: string, id: string) =>
+            `${itemKind}:${id}`,
+        useBackupSyncActivityStore: (selector: (s: unknown) => unknown) =>
+            selector({ busyItems: busyItemsMock.current }),
         useBackupSyncStateStore: (selector: (s: unknown) => unknown) =>
             selector({ syncState: null }),
         useProvenPasskeysStore: (selector: (s: unknown) => unknown) =>
@@ -113,6 +119,7 @@ const renderReview = () =>
 
 beforeEach(() => {
     vi.clearAllMocks()
+    busyItemsMock.current = []
     passkeysMock.current = [
         { credentialId: 'cred-1', origin: 'https://one.example' },
         { credentialId: 'cred-2', origin: 'https://two.example' },
@@ -166,23 +173,27 @@ describe('useBackupPasskeyReview', () => {
         expect(kindMock.current).toBe('passkey')
     })
 
-    test('holds the row busy for the length of the action, then reports success', async () => {
+    test('reads a row as busy from the actions the manager published, so it survives a remount', () => {
+        busyItemsMock.current = ['passkey:cred-2', 'contact:OTHER']
+        const { result } = renderReview()
+
+        expect(result.current.isBusy('cred-2')).toBe(true)
+        expect(result.current.isBusy('OTHER')).toBe(false)
+    })
+
+    test('reports a settled action as a success', async () => {
         const { result } = renderReview()
 
         act(() => result.current.backUpPasskey('cred-2'))
 
         await waitFor(() =>
-            expect(result.current.busyCredentialId).toBe('cred-2'),
-        )
-        await waitFor(() =>
             expect(showToastMock).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'success' }),
             ),
         )
-        expect(result.current.busyCredentialId).toBeNull()
     })
 
-    test('reports a rejected action as an error and frees the row', async () => {
+    test('reports a rejected action as an error', async () => {
         reviewActionMock.mockRejectedValueOnce(new Error('unreadable'))
         const { result } = renderReview()
 
@@ -193,7 +204,6 @@ describe('useBackupPasskeyReview', () => {
                 expect.objectContaining({ type: 'error' }),
             ),
         )
-        expect(result.current.busyCredentialId).toBeNull()
     })
 
     test('sends an offline failure to the network copy, not the generic retry toast', async () => {
@@ -205,6 +215,5 @@ describe('useBackupPasskeyReview', () => {
         await waitFor(() => expect(showErrorMock).toHaveBeenCalledTimes(1))
         expect(showErrorMock.mock.calls[0][0]).toBeInstanceOf(NoConnectionError)
         expect(showToastMock).not.toHaveBeenCalled()
-        expect(result.current.busyCredentialId).toBeNull()
     })
 })

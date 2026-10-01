@@ -29,7 +29,7 @@ export const CloudBackupContactsScreen = () => {
         isBackedUp,
         notBackedUpCount,
         availableFromBackupCount,
-        busyAddress,
+        isBusy,
         onBackUp,
         onReview,
     } = useCloudBackupContacts()
@@ -94,7 +94,7 @@ export const CloudBackupContactsScreen = () => {
                                 <DeviceContactRow
                                     contact={contact}
                                     isBackedUp={isBackedUp(contact.address)}
-                                    isBusy={busyAddress === contact.address}
+                                    isBusy={isBusy(contact.address)}
                                     onBackUp={onBackUp}
                                 />
                             </Fragment>

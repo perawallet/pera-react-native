@@ -23,7 +23,7 @@ const { navigateMock, reviewMock } = vi.hoisted(() => ({
             notBackedUpContacts: [] as { address: string; name: string }[],
             availableFromBackup: [] as { address: string; name: string }[],
             isBackedUp: (_address: string) => false,
-            busyAddress: null as string | null,
+            isBusy: (_address: string) => false,
             backUpContact: vi.fn(),
             addFromBackup: vi.fn(),
             deleteFromBackup: vi.fn(),

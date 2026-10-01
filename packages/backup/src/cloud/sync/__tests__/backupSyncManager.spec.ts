@@ -28,6 +28,7 @@ const {
     mockDisconnect,
     mockSetSyncState,
     mockSetIsSyncing,
+    mockSetBusyItems,
     mockResetSyncActivity,
     mockResetCloudBackup,
     mockResetSyncState,
@@ -59,6 +60,7 @@ const {
     mockDisconnect: vi.fn(),
     mockSetSyncState: vi.fn(),
     mockSetIsSyncing: vi.fn(),
+    mockSetBusyItems: vi.fn(),
     mockResetSyncActivity: vi.fn(),
     mockResetCloudBackup: vi.fn(),
     mockResetSyncState: vi.fn(),
@@ -137,6 +139,7 @@ vi.mock('../../store', () => ({
     useBackupSyncActivityStore: {
         getState: () => ({
             setIsSyncing: mockSetIsSyncing,
+            setBusyItems: mockSetBusyItems,
             resetState: mockResetSyncActivity,
         }),
     },
@@ -710,6 +713,42 @@ describe('BackupSyncManager', () => {
             mgr.stop()
         })
 
+        it('publishes the account as busy while it waits, and clears it once settled', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 })
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+            const background = mgr.syncNow()
+
+            const backedUp = mgr.backUpAccount(ADDR)
+            expect(mockSetBusyItems).toHaveBeenLastCalledWith([
+                `account:${ADDR}`,
+            ])
+            held.release()
+            await background
+            await backedUp
+
+            expect(mockSetBusyItems).toHaveBeenLastCalledWith([])
+            mgr.stop()
+        })
+
+        it('runs a repeat request for an account already queued only once', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 })
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+            const background = mgr.syncNow()
+
+            const first = mgr.backUpAccount(ADDR)
+            const repeat = mgr.backUpAccount(ADDR)
+            held.release()
+            await background
+
+            expect(await first).toBe(true)
+            expect(await repeat).toBe(true)
+            // One background sync, then the single staged sync.
+            expect(mockSyncBackup).toHaveBeenCalledTimes(2)
+            mgr.stop()
+        })
+
         it('reports failure when the account is still unversioned after the sync', async () => {
             syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 0 })
             const mgr = new BackupSyncManager(makeDeps())
@@ -755,12 +794,16 @@ describe('BackupSyncManager', () => {
             const mgr = new BackupSyncManager(makeDeps())
             const running = mgr.syncNow()
 
-            const rows = [mgr.backUpAccount(ADDR), mgr.backUpAccount(ADDR)]
+            // Different items: a repeat of one action on one item shares its
+            // run, so it would not exercise two waiters.
+            const backedUp = mgr.backUpAccount(ADDR)
+            const added = mgr.addAccountFromBackup('OTHER-ADDR')
             await vi.advanceTimersByTimeAsync(0)
             held.release()
             await running
 
-            expect(await Promise.all(rows)).toEqual([true, true])
+            expect(await backedUp).toBe(true)
+            expect(await added).not.toBeNull()
             expect(maxActive).toBe(1)
             mgr.stop()
         })
@@ -823,6 +866,7 @@ describe('BackupSyncManager', () => {
                     stored = next
                 },
                 setIsSyncing: vi.fn(),
+                setBusyItems: vi.fn(),
                 reset: vi.fn(),
             }
         }
@@ -935,6 +979,7 @@ describe('BackupSyncManager', () => {
             getSyncState: () => null,
             setSyncState: vi.fn(),
             setIsSyncing: vi.fn(),
+            setBusyItems: vi.fn(),
             reset: vi.fn(),
         }
         const mgr = new BackupSyncManager({ ...makeDeps(), state })

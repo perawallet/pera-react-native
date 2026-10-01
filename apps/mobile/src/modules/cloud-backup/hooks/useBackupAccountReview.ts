@@ -10,14 +10,16 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     deriveBackupAccountReview,
+    backupBusyItemKey,
     useBackupReviewActionMutation,
+    useBackupSyncActivityStore,
     useBackupSyncStateStore,
     type BackupAccountReview,
     type BackupReviewAction,
@@ -33,7 +35,9 @@ export type UseBackupAccountReviewResult = {
     /** Accounts the backup holds that this device deleted. */
     availableFromBackup: BackupAccountReview['availableFromBackup']
     isBackedUp: (address: string) => boolean
-    busyAddress: string | null
+    /** True while a review action on this row is queued or running, even
+     *  one started before the screen was last opened. */
+    isBusy: (address: string) => boolean
     backUpAccount: (address: string) => void
     addFromBackup: (address: string) => void
     deleteFromBackup: (address: string) => void
@@ -61,7 +65,7 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
-    const [busyAddress, setBusyAddress] = useState<string | null>(null)
+    const busyItems = useBackupSyncActivityStore(state => state.busyItems)
     const accounts = useAccountsStore(state => state.accounts)
     const syncState = useBackupSyncStateStore(state => state.syncState)
 
@@ -76,7 +80,6 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     )
 
     const { mutate } = useBackupReviewActionMutation('account', {
-        onMutate: ({ id }) => setBusyAddress(id),
         onSuccess: (_result, { action }) => {
             showToast({
                 title: t(TOAST_KEY[action].success),
@@ -100,7 +103,6 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
                 type: 'error',
             })
         },
-        onSettled: () => setBusyAddress(null),
     })
 
     const backUpAccount = useCallback(
@@ -142,7 +144,11 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
             (address: string) => review.backedUp.has(address),
             [review.backedUp],
         ),
-        busyAddress,
+        isBusy: useCallback(
+            (address: string) =>
+                busyItems.includes(backupBusyItemKey('account', address)),
+            [busyItems],
+        ),
         backUpAccount,
         addFromBackup,
         deleteFromBackup,

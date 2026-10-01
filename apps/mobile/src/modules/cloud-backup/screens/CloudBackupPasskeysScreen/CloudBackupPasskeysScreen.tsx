@@ -31,7 +31,7 @@ export const CloudBackupPasskeysScreen = () => {
         hasUnsupportedPasskeys,
         notBackedUpCount,
         availableFromBackupCount,
-        busyCredentialId,
+        isBusy,
         onBackUp,
         onReview,
     } = useCloudBackupPasskeys()
@@ -111,10 +111,7 @@ export const CloudBackupPasskeysScreen = () => {
                                     isBackedUp={isBackedUp(
                                         passkey.credentialId,
                                     )}
-                                    isBusy={
-                                        busyCredentialId ===
-                                        passkey.credentialId
-                                    }
+                                    isBusy={isBusy(passkey.credentialId)}
                                     onBackUp={onBackUp}
                                 />
                             </Fragment>

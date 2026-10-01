@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     resolveBackupDeviceId: vi.fn(),
     setSyncState: vi.fn(),
     setIsSyncing: vi.fn(),
+    setBusyItems: vi.fn(),
     resetCloudBackup: vi.fn(),
     resetSyncState: vi.fn(),
     resetSyncActivity: vi.fn(),
@@ -41,6 +42,7 @@ vi.mock('../../store', () => ({
     useBackupSyncActivityStore: {
         getState: () => ({
             setIsSyncing: mocks.setIsSyncing,
+            setBusyItems: mocks.setBusyItems,
             resetState: mocks.resetSyncActivity,
         }),
     },
@@ -72,9 +74,11 @@ describe('createBackupSyncStatePort', () => {
 
         port.setSyncState(next)
         port.setIsSyncing(true)
+        port.setBusyItems(['account:A'])
 
         expect(mocks.setSyncState).toHaveBeenCalledWith(next)
         expect(mocks.setIsSyncing).toHaveBeenCalledWith(true)
+        expect(mocks.setBusyItems).toHaveBeenCalledWith(['account:A'])
     })
 
     it('reset wipes config, sync state and activity', () => {

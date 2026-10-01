@@ -19,6 +19,7 @@ import { useBackupAccountReview } from '../useBackupAccountReview'
 const {
     accountsMock,
     reviewMock,
+    busyItemsMock,
     showToastMock,
     showErrorMock,
     reviewActionMock,
@@ -36,6 +37,7 @@ const {
             }[],
         },
     },
+    busyItemsMock: { current: [] as string[] },
     showToastMock: vi.fn(),
     showErrorMock: vi.fn(),
     reviewActionMock: vi.fn(
@@ -54,11 +56,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 // The mutation itself belongs to the package and is covered there. Standing
 // real react-query over a stub action keeps this file on what the hook still
-// owns: the buckets, the busy row and the toasts.
+// owns: the buckets, reading the busy rows and the toasts.
 vi.mock('@perawallet/wallet-core-backup', async () => {
     const { useMutation } = await import('@tanstack/react-query')
     return {
         deriveBackupAccountReview: () => reviewMock.current,
+        backupBusyItemKey: (itemKind: string, id: string) =>
+            `${itemKind}:${id}`,
+        useBackupSyncActivityStore: (selector: (s: unknown) => unknown) =>
+            selector({ busyItems: busyItemsMock.current }),
         useBackupSyncStateStore: (selector: (s: unknown) => unknown) =>
             selector({ syncState: null }),
         useBackupReviewActionMutation: (
@@ -106,6 +112,7 @@ const renderReview = () =>
 
 beforeEach(() => {
     vi.clearAllMocks()
+    busyItemsMock.current = []
     accountsMock.current = [{ address: 'A' }, { address: 'B' }]
     reviewMock.current = {
         backedUp: new Set(['A']),
@@ -157,21 +164,27 @@ describe('useBackupAccountReview', () => {
         expect(kindMock.current).toBe('account')
     })
 
-    test('holds the row busy for the length of the action, then reports success', async () => {
+    test('reads a row as busy from the actions the manager published, so it survives a remount', () => {
+        busyItemsMock.current = ['account:B', 'contact:OTHER']
+        const { result } = renderReview()
+
+        expect(result.current.isBusy('B')).toBe(true)
+        expect(result.current.isBusy('OTHER')).toBe(false)
+    })
+
+    test('reports a settled action as a success', async () => {
         const { result } = renderReview()
 
         act(() => result.current.backUpAccount('B'))
 
-        await waitFor(() => expect(result.current.busyAddress).toBe('B'))
         await waitFor(() =>
             expect(showToastMock).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'success' }),
             ),
         )
-        expect(result.current.busyAddress).toBeNull()
     })
 
-    test('reports a rejected action as an error and frees the row', async () => {
+    test('reports a rejected action as an error', async () => {
         reviewActionMock.mockRejectedValueOnce(new Error('no parent seed'))
         const { result } = renderReview()
 
@@ -182,7 +195,6 @@ describe('useBackupAccountReview', () => {
                 expect.objectContaining({ type: 'error' }),
             ),
         )
-        expect(result.current.busyAddress).toBeNull()
     })
 
     test('sends an offline failure to the network copy, not the generic retry toast', async () => {
@@ -194,6 +206,5 @@ describe('useBackupAccountReview', () => {
         await waitFor(() => expect(showErrorMock).toHaveBeenCalledTimes(1))
         expect(showErrorMock.mock.calls[0][0]).toBeInstanceOf(NoConnectionError)
         expect(showToastMock).not.toHaveBeenCalled()
-        expect(result.current.busyAddress).toBeNull()
     })
 })

@@ -16,6 +16,7 @@ import {
     getBackupSyncManager,
     type BackupSyncManager,
 } from '../sync/backupSyncManager'
+import type { BackupReviewItemKind } from '../sync/busyItems'
 import type {
     BackupActionOutcome,
     ContactImportSummary,
@@ -27,7 +28,7 @@ import type {
  *  offers. */
 export type BackupReviewAction = 'backUp' | 'add' | 'delete'
 
-export type BackupReviewItemKind = 'account' | 'contact' | 'passkey'
+export type { BackupReviewItemKind }
 
 export type BackupReviewActionVariables = {
     action: BackupReviewAction
@@ -153,9 +154,9 @@ const runReviewAction = async (
 }
 
 /**
- * Runs one review-screen row action against the sync manager. The busy-row
- * state and the toasts are the caller's, supplied through `options`, so the
- * copy stays with the screen that owns it.
+ * Runs one review-screen row action against the sync manager. The toasts are
+ * the caller's, supplied through `options`, so the copy stays with the screen
+ * that owns it; busy rows come from the manager's published items.
  */
 export const useBackupReviewActionMutation = (
     kind: BackupReviewItemKind,

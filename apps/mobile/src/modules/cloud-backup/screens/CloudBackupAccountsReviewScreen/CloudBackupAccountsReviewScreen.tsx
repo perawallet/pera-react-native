@@ -29,7 +29,7 @@ export const CloudBackupAccountsReviewScreen = () => {
         availableFromBackup,
         notBackedUpAccounts,
         isExpanded,
-        busyAddress,
+        isBusy,
         onToggleExpanded,
         onAdd,
         onDelete,
@@ -87,9 +87,7 @@ export const CloudBackupAccountsReviewScreen = () => {
                                         <AvailableFromBackupRow
                                             address={entry.address}
                                             type={entry.type}
-                                            isBusy={
-                                                busyAddress === entry.address
-                                            }
+                                            isBusy={isBusy(entry.address)}
                                             onAdd={onAdd}
                                             onDelete={onDelete}
                                         />
@@ -117,7 +115,7 @@ export const CloudBackupAccountsReviewScreen = () => {
                                     {index > 0 && <ListItemDivider />}
                                     <NotBackedUpAccountRow
                                         account={account}
-                                        isBusy={busyAddress === account.address}
+                                        isBusy={isBusy(account.address)}
                                         onBackUp={onBackUp}
                                     />
                                 </Fragment>

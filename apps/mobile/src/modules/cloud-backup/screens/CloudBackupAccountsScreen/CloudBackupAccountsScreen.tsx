@@ -28,7 +28,7 @@ export const CloudBackupAccountsScreen = () => {
         isBackedUp,
         notBackedUpCount,
         availableFromBackupCount,
-        busyAddress,
+        isBusy,
         onBackUp,
         onReview,
     } = useCloudBackupAccounts()
@@ -80,7 +80,7 @@ export const CloudBackupAccountsScreen = () => {
                                 <DeviceAccountRow
                                     account={account}
                                     isBackedUp={isBackedUp(account.address)}
-                                    isBusy={busyAddress === account.address}
+                                    isBusy={isBusy(account.address)}
                                     onBackUp={onBackUp}
                                 />
                             </Fragment>

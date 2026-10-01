@@ -29,7 +29,7 @@ export const CloudBackupContactsReviewScreen = () => {
         availableFromBackup,
         notBackedUpContacts,
         isExpanded,
-        busyAddress,
+        isBusy,
         onToggleExpanded,
         onAdd,
         onDelete,
@@ -87,9 +87,7 @@ export const CloudBackupContactsReviewScreen = () => {
                                         <AvailableContactRow
                                             address={entry.address}
                                             name={entry.name}
-                                            isBusy={
-                                                busyAddress === entry.address
-                                            }
+                                            isBusy={isBusy(entry.address)}
                                             onAdd={onAdd}
                                             onDelete={onDelete}
                                         />
@@ -117,7 +115,7 @@ export const CloudBackupContactsReviewScreen = () => {
                                     {index > 0 && <ListItemDivider />}
                                     <NotBackedUpContactRow
                                         contact={contact}
-                                        isBusy={busyAddress === contact.address}
+                                        isBusy={isBusy(contact.address)}
                                         onBackUp={onBackUp}
                                     />
                                 </Fragment>

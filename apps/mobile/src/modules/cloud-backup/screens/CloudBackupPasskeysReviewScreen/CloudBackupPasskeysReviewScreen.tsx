@@ -30,7 +30,7 @@ export const CloudBackupPasskeysReviewScreen = () => {
         notBackedUpPasskeys,
         isLoading,
         isExpanded,
-        busyCredentialId,
+        isBusy,
         onToggleExpanded,
         onAdd,
         onDelete,
@@ -89,10 +89,7 @@ export const CloudBackupPasskeysReviewScreen = () => {
                                         <AvailablePasskeyRow
                                             credentialId={entry.credentialId}
                                             label={entry.label}
-                                            isBusy={
-                                                busyCredentialId ===
-                                                entry.credentialId
-                                            }
+                                            isBusy={isBusy(entry.credentialId)}
                                             onAdd={onAdd}
                                             onDelete={onDelete}
                                         />
@@ -120,10 +117,7 @@ export const CloudBackupPasskeysReviewScreen = () => {
                                     {index > 0 && <ListItemDivider />}
                                     <NotBackedUpPasskeyRow
                                         passkey={passkey}
-                                        isBusy={
-                                            busyCredentialId ===
-                                            passkey.credentialId
-                                        }
+                                        isBusy={isBusy(passkey.credentialId)}
                                         onBackUp={onBackUp}
                                     />
                                 </Fragment>
