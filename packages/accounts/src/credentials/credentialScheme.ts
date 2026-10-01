@@ -35,8 +35,8 @@ const loadedSeedScheme = (
 /**
  * The signature scheme a credential signs with. Never persisted. A local key
  * follows its seed's committed scheme, the same oracle the kms signer uses, so
- * the two can't disagree. The keystore loads after the accounts store hydrates;
- * until then the credential's provenance stands in for the seed.
+ * the two can't disagree. Until the keystore holds the seed, the credential's
+ * provenance stands in for it.
  */
 export const credentialScheme = (
     credential: SigningCredential,

@@ -39,42 +39,19 @@ export const credentialsFromLegacy = (
         }
         case AccountTypes.hdWallet: {
             if (!account.keyPairId || !account.hdWalletDetails) return undefined
-            const {
-                account: index,
-                change,
-                keyIndex,
-                derivationType,
-            } = account.hdWalletDetails
             return [
                 {
                     kind: 'local',
                     keyPairId: account.keyPairId,
                     provenance: 'bip39',
-                    hd: { account: index, change, keyIndex, derivationType },
+                    hd: { ...account.hdWalletDetails },
                 },
             ]
         }
         case AccountTypes.hardware: {
             if (!account.hardwareDetails) return undefined
-            const {
-                manufacturer,
-                deviceId,
-                deviceName,
-                transportType,
-                accountIndex,
-            } = account.hardwareDetails
-            return [
-                {
-                    kind: 'hardware',
-                    device: {
-                        manufacturer,
-                        deviceId,
-                        deviceName,
-                        transportType,
-                    },
-                    accountIndex,
-                },
-            ]
+            const { accountIndex, ...device } = account.hardwareDetails
+            return [{ kind: 'hardware', device, accountIndex }]
         }
         case AccountTypes.multisig: {
             if (!account.multisigDetails) return undefined

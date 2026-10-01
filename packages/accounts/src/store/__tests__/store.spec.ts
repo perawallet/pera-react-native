@@ -1025,10 +1025,6 @@ describe('services/accounts/store', () => {
             const first = (await import('../store')).useAccountsStore
             await first.persist.rehydrate()
             const firstState = first.getState()
-            // Persist the hydrated (migrated) state, as any write would.
-            first
-                .getState()
-                .setManualAccountOrder(firstState.manualAccountOrder)
 
             vi.resetModules()
             const second = (await import('../store')).useAccountsStore

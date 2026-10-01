@@ -17,7 +17,11 @@ import {
     type DerivationType,
     type WalletAccount,
 } from '../../models'
-import { credentialsFromLegacy, withCredentials } from '../backfill'
+import {
+    credentialsFromLegacy,
+    rebuildCredentials,
+    withCredentials,
+} from '../backfill'
 
 const hdAccount = (derivationType: DerivationType): WalletAccount => ({
     id: 'hd',
@@ -185,5 +189,47 @@ describe('withCredentials', () => {
             const once = withCredentials(account)
             expect(withCredentials(once)).toBe(once)
         }
+    })
+})
+
+describe('rebuildCredentials', () => {
+    test('replaces credentials that no longer match the details', () => {
+        const account: WalletAccount = {
+            id: 'w',
+            address: 'ADDR',
+            type: 'hardware',
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'new',
+                deviceName: 'Nano X',
+                accountIndex: 1,
+                transportType: 'ble',
+            },
+            credentials: [{ kind: 'watch' }],
+        }
+
+        expect(rebuildCredentials(account).credentials).toEqual([
+            {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'new',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 1,
+            },
+        ])
+    })
+
+    test('removes credentials when the details they need are missing', () => {
+        const account = {
+            id: 'm',
+            address: 'ADDR',
+            type: 'multisig',
+            credentials: [{ kind: 'watch' }],
+        } as unknown as WalletAccount
+
+        expect(rebuildCredentials(account)).not.toHaveProperty('credentials')
     })
 })
