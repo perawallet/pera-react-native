@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
     resetFailedAttempts: vi.fn(),
     isLockedOut: false,
     checkBiometricsEnabled: vi.fn(),
+    isBiometricsEnabled: true,
     unlockWithBiometrics: vi.fn(),
     showError: vi.fn(),
 }))
@@ -33,6 +34,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     }),
     useBiometrics: () => ({
         checkBiometricsEnabled: mocks.checkBiometricsEnabled,
+        isEnabled: mocks.isBiometricsEnabled,
         unlockWithBiometrics: mocks.unlockWithBiometrics,
     }),
 }))
@@ -56,10 +58,80 @@ describe('usePinEditView biometric auto-prompt (verify)', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.isLockedOut = false
+        mocks.isBiometricsEnabled = true
+    })
+
+    it('auto-prompts without waiting on a separate enabled check', async () => {
+        // Never resolves: a revert to awaiting a reconcile here would hang.
+        mocks.checkBiometricsEnabled.mockReturnValue(new Promise(() => {}))
+        mocks.unlockWithBiometrics.mockResolvedValue({ kind: 'ok' })
+
+        const onSuccess = vi.fn()
+        renderHook(() => usePinEditView({ mode: 'verify', onSuccess }))
+
+        await flush()
+
+        expect(onSuccess).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not prompt when biometrics are not enabled', async () => {
+        mocks.isBiometricsEnabled = false
+        mocks.checkBiometricsEnabled.mockResolvedValue(true)
+        mocks.unlockWithBiometrics.mockResolvedValue({ kind: 'ok' })
+
+        const onSuccess = vi.fn()
+        renderHook(() => usePinEditView({ mode: 'verify', onSuccess }))
+
+        await flush()
+
+        expect(onSuccess).not.toHaveBeenCalled()
+    })
+
+    it('prompts once the enabled flag turns true after the sheet opened', async () => {
+        mocks.isBiometricsEnabled = false
+        mocks.unlockWithBiometrics.mockResolvedValue({ kind: 'mismatch' })
+
+        const { rerender } = renderHook(() =>
+            usePinEditView({ mode: 'verify', onSuccess: vi.fn() }),
+        )
+        await flush()
+        expect(mocks.unlockWithBiometrics).not.toHaveBeenCalled()
+
+        mocks.isBiometricsEnabled = true
+        rerender()
+        await flush()
+
+        expect(mocks.unlockWithBiometrics).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps an in-flight success when the enabled flag flickers', async () => {
+        let resolveAuth: (value: BiometricUnlockOutcome) => void = () => {}
+        mocks.unlockWithBiometrics.mockReturnValue(
+            new Promise<BiometricUnlockOutcome>(resolve => {
+                resolveAuth = resolve
+            }),
+        )
+
+        const onSuccess = vi.fn()
+        const { rerender } = renderHook(() =>
+            usePinEditView({ mode: 'verify', onSuccess }),
+        )
+        await flush()
+
+        mocks.isBiometricsEnabled = false
+        rerender()
+        mocks.isBiometricsEnabled = true
+        rerender()
+        await act(async () => {
+            resolveAuth({ kind: 'ok' })
+            await Promise.resolve()
+        })
+
+        expect(mocks.unlockWithBiometrics).toHaveBeenCalledTimes(1)
+        expect(onSuccess).toHaveBeenCalledTimes(1)
     })
 
     it('completes on biometric success even when re-rendered mid-prompt', async () => {
-        mocks.checkBiometricsEnabled.mockResolvedValue(true)
         let resolveAuth: (value: BiometricUnlockOutcome) => void = () => {}
         mocks.unlockWithBiometrics.mockReturnValue(
             new Promise<BiometricUnlockOutcome>(resolve => {
@@ -76,7 +148,6 @@ describe('usePinEditView biometric auto-prompt (verify)', () => {
             { initialProps: { onSuccess: onSuccessA } },
         )
 
-        // Let checkBiometricsEnabled resolve and the prompt start.
         await flush()
         expect(mocks.unlockWithBiometrics).toHaveBeenCalledTimes(1)
 
@@ -94,20 +165,7 @@ describe('usePinEditView biometric auto-prompt (verify)', () => {
         expect(mocks.resetFailedAttempts).toHaveBeenCalledTimes(1)
     })
 
-    it('does not auto-prompt when biometrics is disabled', async () => {
-        mocks.checkBiometricsEnabled.mockResolvedValue(false)
-
-        const onSuccess = vi.fn()
-        renderHook(() => usePinEditView({ mode: 'verify', onSuccess }))
-
-        await flush()
-
-        expect(mocks.unlockWithBiometrics).not.toHaveBeenCalled()
-        expect(onSuccess).not.toHaveBeenCalled()
-    })
-
     it('does not call onSuccess when the token unwrap does not succeed', async () => {
-        mocks.checkBiometricsEnabled.mockResolvedValue(true)
         mocks.unlockWithBiometrics.mockResolvedValue({ kind: 'mismatch' })
 
         const onSuccess = vi.fn()
@@ -173,7 +231,7 @@ describe('usePinEditView titles', () => {
     })
 
     it('ignores the overrides in the verify modes', () => {
-        mocks.checkBiometricsEnabled.mockResolvedValue(false)
+        mocks.isBiometricsEnabled = false
 
         const { result } = renderHook(() =>
             usePinEditView({

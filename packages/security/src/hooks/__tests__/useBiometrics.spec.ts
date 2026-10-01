@@ -65,7 +65,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystore: () => keystoreMock,
 }))
 
-import { useBiometrics, type EnableBiometricsResult } from '../useBiometrics'
+import {
+    useBiometrics,
+    type BiometricUnlockOutcome,
+    type EnableBiometricsResult,
+} from '../useBiometrics'
 import {
     PIN_RECORD_KEY_ID,
     BIOMETRIC_BLOB_KEY_ID,
@@ -1175,7 +1179,7 @@ describe('useBiometrics', () => {
             )
         })
 
-        test('offers the recovery prompt to a caller that lands mid-sweep', async () => {
+        test('enters the recovery for an unlock that lands mid-sweep', async () => {
             let hasLegacy = true
             kmsMocks.hasSecret.mockImplementation(
                 (id: string) =>
@@ -1197,14 +1201,13 @@ describe('useBiometrics', () => {
                 expect(mockClearEnrollmentBinding).toHaveBeenCalled()
             })
 
-            let available: boolean | undefined
             await act(async () => {
-                const pending = result.current.checkBiometricUnlockAvailable()
+                const pending = result.current.unlockWithBiometrics(PROMPT)
                 setTimeout(releaseClear, 0)
-                available = await pending
+                await pending
             })
 
-            expect(available).toBe(true)
+            expect(mockBiometricsService.armBiometricBinding).toHaveBeenCalled()
         })
     })
 
@@ -1399,6 +1402,222 @@ describe('useBiometrics', () => {
             expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
         })
 
+        test('reads the record and the blob while the reconcile is still running', async () => {
+            const token = new Uint8Array([4, 2])
+            kmsMocks.withSecret.mockImplementation(
+                async (_id: string, handler: (b: Uint8Array) => unknown) =>
+                    handler(framed('ct')),
+            )
+            kmsMocks.getSecretMetadata.mockReturnValue({
+                biometricTokenHash: sha256Hex(token),
+            })
+            mockBiometricsService.unwrapBiometricToken.mockResolvedValue({
+                success: true,
+                token,
+            })
+            const { result } = await renderAndSettle()
+            kmsMocks.withSecret.mockClear()
+            mockCheckEnrollmentBinding.mockClear()
+            let releaseBinding: (binding: string) => void = () => undefined
+            mockCheckEnrollmentBinding.mockImplementationOnce(
+                () =>
+                    new Promise<string>(resolve => {
+                        releaseBinding = resolve
+                    }),
+            )
+
+            let pending: Promise<BiometricUnlockOutcome> | undefined
+            act(() => {
+                pending = result.current.unlockWithBiometrics(PROMPT)
+            })
+            await waitFor(() => {
+                expect(mockCheckEnrollmentBinding).toHaveBeenCalled()
+            })
+
+            expect(kmsMocks.withSecret).toHaveBeenCalledWith(
+                PIN_RECORD_KEY_ID,
+                expect.any(Function),
+            )
+            expect(kmsMocks.withSecret).toHaveBeenCalledWith(
+                BIOMETRIC_BLOB_KEY_ID,
+                expect.any(Function),
+            )
+            expect(
+                mockBiometricsService.unwrapBiometricToken,
+            ).not.toHaveBeenCalled()
+
+            releaseBinding('valid')
+            const outcome = await act(() => pending!)
+            expect(outcome).toEqual({ kind: 'ok' })
+        })
+
+        const unlockWithStoreLockoutDuringReconcile = async (
+            storeLockoutEndTime: number,
+        ) => {
+            const token = new Uint8Array([4, 2])
+            kmsMocks.withSecret.mockImplementation(
+                async (_id: string, handler: (b: Uint8Array) => unknown) =>
+                    handler(framed('ct')),
+            )
+            kmsMocks.getSecretMetadata.mockReturnValue({
+                biometricTokenHash: sha256Hex(token),
+            })
+            mockBiometricsService.unwrapBiometricToken.mockResolvedValue({
+                success: true,
+                token,
+            })
+            const { result } = await renderAndSettle()
+            mockCheckEnrollmentBinding.mockClear()
+            let releaseBinding: (binding: string) => void = () => undefined
+            mockCheckEnrollmentBinding.mockImplementationOnce(
+                () =>
+                    new Promise<string>(resolve => {
+                        releaseBinding = resolve
+                    }),
+            )
+
+            let pending: Promise<BiometricUnlockOutcome> | undefined
+            act(() => {
+                pending = result.current.unlockWithBiometrics(PROMPT)
+            })
+            await waitFor(() => {
+                expect(mockCheckEnrollmentBinding).toHaveBeenCalled()
+            })
+            // A wrong PIN on the live pad lands after the early record read.
+            useSecurityStore.getState().setLockoutEndTime(storeLockoutEndTime)
+
+            releaseBinding('valid')
+            return act(() => pending!)
+        }
+
+        test('refuses when a lockout lands in the store while the reconcile runs', async () => {
+            const lockoutEndTime = Date.now() + 60_000
+
+            const outcome =
+                await unlockWithStoreLockoutDuringReconcile(lockoutEndTime)
+
+            expect(outcome).toEqual({ kind: 'locked', lockoutEndTime })
+            expect(
+                mockBiometricsService.unwrapBiometricToken,
+            ).not.toHaveBeenCalled()
+        })
+
+        test('an expired store lockout does not block the unlock', async () => {
+            const outcome = await unlockWithStoreLockoutDuringReconcile(
+                Date.now() - 1000,
+            )
+
+            expect(outcome).toEqual({ kind: 'ok' })
+            expect(
+                mockBiometricsService.unwrapBiometricToken,
+            ).toHaveBeenCalledTimes(1)
+        })
+
+        test('ignores what the reads returned when the reconcile says no', async () => {
+            const lockoutEndTime = Date.now() + 60_000
+            kmsMocks.withSecret.mockImplementation(
+                async (id: string, handler: (b: Uint8Array) => unknown) =>
+                    id === PIN_RECORD_KEY_ID
+                        ? handler(
+                              serializePinRecord({
+                                  version: PIN_RECORD_VERSION,
+                                  salt: '00'.repeat(16),
+                                  hash: '00'.repeat(32),
+                                  duressSalt: '00'.repeat(16),
+                                  duressHash: '00'.repeat(32),
+                                  duressEnabled: 0,
+                                  failedAttempts: 5,
+                                  lockoutEndTime,
+                              }),
+                          )
+                        : handler(framed('ct')),
+            )
+            mockBiometricsService.checkEnrollmentBinding.mockResolvedValue(
+                'unavailable',
+            )
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.unlockWithBiometrics(PROMPT),
+            )
+
+            expect(outcome).toEqual({ kind: 'failed', reason: 'unavailable' })
+            expect(
+                mockBiometricsService.unwrapBiometricToken,
+            ).not.toHaveBeenCalled()
+        })
+
+        test('a read abandoned by a failed reconcile rejects without surfacing', async () => {
+            kmsMocks.withSecret.mockRejectedValue(new Error('keychain'))
+            mockBiometricsService.checkEnrollmentBinding.mockResolvedValue(
+                'unavailable',
+            )
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.unlockWithBiometrics(PROMPT),
+            )
+            await act(async () => {
+                await new Promise(resolve => setTimeout(resolve, 0))
+            })
+
+            expect(outcome).toEqual({ kind: 'failed', reason: 'unavailable' })
+        })
+
+        test('fails closed when a read it consumes rejects', async () => {
+            kmsMocks.withSecret.mockRejectedValue(new Error('keychain'))
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.unlockWithBiometrics(PROMPT),
+            )
+
+            expect(outcome).toEqual({ kind: 'failed', reason: 'unknown' })
+            expect(
+                mockBiometricsService.unwrapBiometricToken,
+            ).not.toHaveBeenCalled()
+        })
+
+        test('starts no keystore reads when there is no blob', async () => {
+            kmsMocks.hasSecret.mockReturnValue(false)
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.unlockWithBiometrics(PROMPT),
+            )
+
+            expect(outcome).toEqual({ kind: 'failed', reason: 'unavailable' })
+            expect(kmsMocks.withSecret).not.toHaveBeenCalled()
+        })
+
+        test('still reads when the blob lands after the pre-check', async () => {
+            const token = new Uint8Array([4, 2])
+            let blobChecks = 0
+            kmsMocks.hasSecret.mockImplementation((id: string) => {
+                if (id !== BIOMETRIC_BLOB_KEY_ID) return false
+                blobChecks += 1
+                return blobChecks > 1
+            })
+            kmsMocks.withSecret.mockImplementation(
+                async (_id: string, handler: (b: Uint8Array) => unknown) =>
+                    handler(framed('ct')),
+            )
+            kmsMocks.getSecretMetadata.mockReturnValue({
+                biometricTokenHash: sha256Hex(token),
+            })
+            mockBiometricsService.unwrapBiometricToken.mockResolvedValue({
+                success: true,
+                token,
+            })
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.unlockWithBiometrics(PROMPT),
+            )
+
+            expect(outcome).toEqual({ kind: 'ok' })
+        })
+
         test('preserves the opt-in when the ceremony is cancelled', async () => {
             kmsMocks.withSecret.mockImplementation(
                 async (_id: string, handler: (b: Uint8Array) => unknown) =>
@@ -1585,17 +1804,6 @@ describe('useBiometrics', () => {
             )
         })
 
-        test('offers the prompt while the re-arm is pending and no blob exists', async () => {
-            const { result } = await renderAndSettle()
-
-            const available = await act(() =>
-                result.current.checkBiometricUnlockAvailable(),
-            )
-
-            expect(available).toBe(true)
-            expect(result.current.isEnabled).toBe(false)
-        })
-
         test('arms, confirms with a ceremony and unlocks, finishing the migration', async () => {
             const { result } = await renderAndSettle()
 
@@ -1679,18 +1887,14 @@ describe('useBiometrics', () => {
             ).not.toHaveBeenCalled()
         })
 
-        test('is not offered without the pending flag', async () => {
+        test('is not entered without the pending flag', async () => {
             useSecurityStore.getState().setBiometricRearmPending(false)
             const { result } = await renderAndSettle()
 
-            const available = await act(() =>
-                result.current.checkBiometricUnlockAvailable(),
-            )
             const outcome = await act(() =>
                 result.current.unlockWithBiometrics(PROMPT),
             )
 
-            expect(available).toBe(false)
             expect(outcome).toEqual({ kind: 'failed', reason: 'unavailable' })
             expect(
                 mockBiometricsService.armBiometricBinding,

@@ -69,11 +69,6 @@ type UseBiometricsResult = {
      * and on nothing else, so a returned false does not imply the blob is gone.
      */
     checkBiometricsEnabled: () => Promise<boolean>
-    /**
-     * Whether the lock screen should offer a biometric prompt: enabled, or a
-     * swept pre-binding opt-in that `unlockWithBiometrics` can still recover.
-     */
-    checkBiometricUnlockAvailable: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
     enableBiometrics: (
         prompt: BiometricsAuthenticatePrompt,
@@ -441,12 +436,6 @@ export const useBiometrics = (): UseBiometricsResult => {
         [hasSecret],
     )
 
-    const checkBiometricUnlockAvailable =
-        useCallback(async (): Promise<boolean> => {
-            if (await checkBiometricsEnabled()) return true
-            return isPendingRearmRecoverable()
-        }, [checkBiometricsEnabled, isPendingRearmRecoverable])
-
     // Users upgraded from a pre-binding build lose biometrics until their next
     // PIN entry, which strands anyone who has forgotten the PIN. This lets the
     // ceremony stand in for the PIN: arm, then unwrap as `enableBiometrics`
@@ -514,18 +503,43 @@ export const useBiometrics = (): UseBiometricsResult => {
         async (
             prompt: BiometricsAuthenticatePrompt,
         ): Promise<BiometricUnlockOutcome> => {
+            // Wrapped so a failed keystore read (null) is distinguishable from
+            // bytes that came back but did not decode; only the latter says
+            // anything about the blob.
+            const startReads = () => {
+                const reads = {
+                    lockoutEndTime: readLockoutEndTime(),
+                    blobRead: withSecret(BIOMETRIC_BLOB_KEY_ID, bytes => ({
+                        decoded: decodeBiometricBlob(bytes),
+                    })),
+                }
+                // Only for reads a failed reconcile abandons; an awaited one
+                // still throws.
+                reads.lockoutEndTime.catch(() => undefined)
+                reads.blobRead.catch(() => undefined)
+                return reads
+            }
             try {
+                // The keychain and the Expo queue are separate native lanes, so
+                // the reads run while the reconcile does. `hasSecret` needs the
+                // hydrated metadata; without a blob the reconcile fails anyway.
+                await getKeystore().ready.catch(() => undefined)
+                const earlyReads = hasSecret(BIOMETRIC_BLOB_KEY_ID)
+                    ? startReads()
+                    : null
+
                 if (!(await checkBiometricsEnabled())) {
                     if (isPendingRearmRecoverable()) {
                         return await recoverPendingRearm(prompt)
                     }
                     return { kind: 'failed', reason: 'unavailable' }
                 }
+                const reads = earlyReads ?? startReads()
 
                 // The store's lockout flag is not hydrated yet on a cold start;
                 // the record is the authority, and biometrics must not outrank
                 // a PIN lockout.
-                const lockoutEndTime = await readLockoutEndTime()
+                const lockoutEndTime = await reads.lockoutEndTime
                 if (lockoutEndTime !== null) {
                     return { kind: 'locked', lockoutEndTime }
                 }
@@ -533,21 +547,27 @@ export const useBiometrics = (): UseBiometricsResult => {
                 const expected = getSecretMetadata(BIOMETRIC_BLOB_KEY_ID)?.[
                     BIOMETRIC_TOKEN_HASH_METADATA_KEY
                 ]
-                // Wrapped so a failed keystore read (null) is distinguishable
-                // from bytes that came back but did not decode; only the
-                // latter says anything about the blob.
-                const blobRead = await withSecret(
-                    BIOMETRIC_BLOB_KEY_ID,
-                    bytes => ({
-                        decoded: decodeBiometricBlob(bytes),
-                    }),
-                )
+                const blobRead = await reads.blobRead
                 if (!blobRead) {
                     return { kind: 'failed', reason: 'unavailable' }
                 }
                 if (!blobRead.decoded || typeof expected !== 'string') {
                     await dropOptIn('rebind-required')
                     return { kind: 'mismatch' }
+                }
+
+                // A wrong PIN entered during the reconcile writes its lockout
+                // after the early record read; the store already has it.
+                const storeLockoutEndTime =
+                    useSecurityStore.getState().lockoutEndTime
+                if (
+                    storeLockoutEndTime !== null &&
+                    storeLockoutEndTime > Date.now()
+                ) {
+                    return {
+                        kind: 'locked',
+                        lockoutEndTime: storeLockoutEndTime,
+                    }
                 }
 
                 const released = await biometricsService.unwrapBiometricToken(
@@ -600,6 +620,7 @@ export const useBiometrics = (): UseBiometricsResult => {
             isPendingRearmRecoverable,
             recoverPendingRearm,
             readLockoutEndTime,
+            hasSecret,
             getSecretMetadata,
             withSecret,
             biometricsService,
@@ -614,7 +635,6 @@ export const useBiometrics = (): UseBiometricsResult => {
         disabledReason,
         acknowledgeBiometricsDisabled,
         checkBiometricsEnabled,
-        checkBiometricUnlockAvailable,
         checkBiometricsAvailable,
         enableBiometrics,
         disableBiometrics,

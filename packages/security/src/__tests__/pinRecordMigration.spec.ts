@@ -131,7 +131,11 @@ describe('migratePinRecordToV3', () => {
 
     test('leaves a v3 record untouched but still removes a stray legacy duress record', async () => {
         const v3 = await createPinRecord('123456')
-        const bytes = serializePinRecord(v3)
+        const bytes = serializePinRecord({
+            ...v3,
+            failedAttempts: 5,
+            lockoutEndTime: 42,
+        })
         store.set(PIN_RECORD_KEY_ID, bytes)
         store.set(
             LEGACY_DURESS_PIN_RECORD_KEY_ID,
@@ -140,7 +144,10 @@ describe('migratePinRecordToV3', () => {
 
         const result = await migratePinRecordToV3(kms())
 
-        expect(result).toEqual({ migrated: false })
+        expect(result).toEqual({
+            migrated: false,
+            lockout: { failedAttempts: 5, lockoutEndTime: 42 },
+        })
         expect(commitSecret).not.toHaveBeenCalled()
         expect(store.get(PIN_RECORD_KEY_ID)).toEqual(bytes)
         expect(store.has(LEGACY_DURESS_PIN_RECORD_KEY_ID)).toBe(false)
