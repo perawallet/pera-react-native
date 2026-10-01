@@ -32,12 +32,8 @@ const loadedSeedScheme = (
     }
 }
 
-/**
- * The signature scheme a credential signs with. Never persisted. A local key
- * follows its seed's committed scheme, the same oracle the kms signer uses, so
- * the two can't disagree. Until the keystore holds the seed, the credential's
- * provenance stands in for it.
- */
+// Follows the seed's scheme, the kms signer's oracle, so the two can't disagree;
+// provenance stands in until the keystore holds the seed.
 export const credentialScheme = (
     credential: SigningCredential,
     keys: KeystoreSnapshot = getKeystoreStore().state.keys,

@@ -15,12 +15,8 @@ import type { HardwareWalletDetails, HDWalletDetails } from './accounts'
 
 export type HdPath = HDWalletDetails
 
-/**
- * A key held in this device's KMS under `keyPairId`. `provenance` is the seed
- * family that minted it, so `hd` exists exactly when the seed is BIP39. The
- * signature scheme is deliberately absent: it is resolved from the seed at
- * runtime (see `credentialScheme`) so a scheme change needs no data migration.
- */
+// No signature scheme here: it's resolved from the seed at runtime
+// (`credentialScheme`), so changing schemes needs no data migration.
 export type LocalCredential =
     | {
           kind: 'local'
