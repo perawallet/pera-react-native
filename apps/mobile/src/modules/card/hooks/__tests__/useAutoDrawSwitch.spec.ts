@@ -49,7 +49,7 @@ const mockSubmit = vi.fn()
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
     useProgramSigner: () => ({ signProgram: mockSignProgram }),
-    encodeDelegatedLsigAccount: () => new Uint8Array([9, 9, 9]),
+    encodeProgramAccount: () => new Uint8Array([9, 9, 9]),
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
 }))
 

@@ -14,7 +14,7 @@ export const name = '@perawallet/wallet-core-signing'
 
 export {
     computeBalanceImpact,
-    encodeDelegatedLsigAccount,
+    encodeProgramAccount,
     plannerAdapterFor,
     plannerChainAdapters,
     resolveMinFeeForSender,

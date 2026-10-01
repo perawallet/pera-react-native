@@ -73,8 +73,8 @@ export const fakePlannerAdapter = (
     })),
     needsSimulation: vi.fn(() => false),
     simulateGroup: vi.fn(async () => []),
-    delegationPayload: vi.fn((program: Uint8Array) => program),
-    encodeDelegation: vi.fn((program: Uint8Array) => program),
+    programPayload: vi.fn((program: Uint8Array) => program),
+    encodeProgramAccount: vi.fn((program: Uint8Array) => program),
     validateGroup: vi.fn((transactions, { isCosigner }) => {
         if (!isCosigner) recomputeGroupIds(transactions)
     }),

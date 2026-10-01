@@ -170,7 +170,7 @@ export const canSignArc60 = (account: WalletAccount): boolean =>
  *   and will never sign a program. Unlike {@link canSignArc60}, which Ledger
  *   does satisfy.
  * - Multisig — permanent for a *delegated* LSig, which carries a single
- *   `sigkey`: `encodeDelegatedLsigAccount` emits one signature, so a threshold
+ *   `sigkey`: `encodeProgramAccount` emits one signature, so a threshold
  *   account can never be represented. Stated explicitly rather than relying on
  *   `hasSigningKeys`, because `keyPairId` is optional on `BaseWalletAccount`
  *   and a multisig account is only key-less by convention.

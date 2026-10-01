@@ -22,7 +22,7 @@ import {
     computeBalanceImpact,
     createTransactionListItems,
     decodeArbitraryDataForDisplay,
-    encodeDelegatedLsigAccount,
+    encodeProgramAccount,
     getRekeyedUnsignableReason,
     legacyPlannerAdapter,
     plannerAdapterFor,
@@ -152,7 +152,7 @@ describe('planner chain adapters', () => {
         const adapter = registerFakePlannerAdapter({
             minFeeForSender: vi.fn(() => 4000n),
             computeBalanceImpact: vi.fn(() => impact),
-            encodeDelegation: vi.fn(() => new Uint8Array([5])),
+            encodeProgramAccount: vi.fn(() => new Uint8Array([5])),
         })
         const feeParams = {
             senderAddress: 'A',
@@ -167,12 +167,16 @@ describe('planner chain adapters', () => {
 
         expect(resolveMinFeeForSender(feeParams)).toBe(4000n)
         expect(computeBalanceImpact([], signable)).toBe(impact)
-        expect(encodeDelegatedLsigAccount(program, sig, 'A')).toEqual(
+        expect(encodeProgramAccount(program, sig, 'A')).toEqual(
             new Uint8Array([5]),
         )
 
         expect(adapter.minFeeForSender).toHaveBeenCalledWith(feeParams)
         expect(adapter.computeBalanceImpact).toHaveBeenCalledWith([], signable)
-        expect(adapter.encodeDelegation).toHaveBeenCalledWith(program, sig, 'A')
+        expect(adapter.encodeProgramAccount).toHaveBeenCalledWith(
+            program,
+            sig,
+            'A',
+        )
     })
 })

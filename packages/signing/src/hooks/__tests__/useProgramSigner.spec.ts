@@ -45,13 +45,13 @@ const PROGRAM = new Uint8Array([0x04, 0x81, 0x01])
 const SIG = new Uint8Array(64).fill(7)
 
 const PAYLOAD = new Uint8Array([9, 9, 9])
-const delegationPayload = vi.fn((_program: Uint8Array) => PAYLOAD)
+const programPayload = vi.fn((_program: Uint8Array) => PAYLOAD)
 
 describe('useProgramSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSignDataWithKey.mockResolvedValue([SIG])
-        registerFakePlannerAdapter({ delegationPayload })
+        registerFakePlannerAdapter({ programPayload })
     })
 
     test('signs the planner payload with the account key and domain', async () => {
@@ -66,7 +66,7 @@ describe('useProgramSigner', () => {
         expect(childId).toBe('key-hd-child')
         expect(domain).toBe('pera.accounts')
 
-        expect(delegationPayload).toHaveBeenCalledWith(PROGRAM)
+        expect(programPayload).toHaveBeenCalledWith(PROGRAM)
         expect(items).toEqual([PAYLOAD])
     })
 

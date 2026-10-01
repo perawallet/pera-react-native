@@ -19,7 +19,7 @@ import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import { plannerAdapterFor } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 
-/** The account cannot produce a delegated LSig (hardware/watch/rekeyed). */
+/** The account cannot sign a program (hardware/watch/multisig/rekeyed). */
 export class ProgramSigningUnsupportedError extends AppError {
     constructor(address: string) {
         super(`Cannot sign a program with ${address}`, {
@@ -34,14 +34,14 @@ export const useProgramSigner = () => {
     const { signDataWithKey } = useKMS()
     const { network } = useNetwork()
 
-    /** Signs the delegation payload for `program` with the account's own key. */
+    /** Signs the program payload for `program` with the account's own key. */
     const signProgram = useCallback(
         async (
             account: WalletAccount,
             program: Uint8Array,
         ): Promise<Uint8Array> => {
-            // Delegated LSigs are verified against the sender's on-chain
-            // auth-addr: hardware/watch have no program-signing path, and a
+            // A program signature is verified against the sender's on-chain
+            // auth account: hardware/watch have no program-signing path, and a
             // rekeyed account's own key would be rejected at draw time
             // (signing via the auth account is deferred — see canSignProgram).
             // The keyPairId re-check only narrows the type.
@@ -51,7 +51,7 @@ export const useProgramSigner = () => {
             const [sig] = await signDataWithKey(
                 account.keyPairId,
                 SIGNING_KEY_DOMAIN,
-                [plannerAdapterFor(network).delegationPayload(program)],
+                [plannerAdapterFor(network).programPayload(program)],
             )
             return sig
         },

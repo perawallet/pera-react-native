@@ -65,8 +65,8 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
     needsSimulation: transactions =>
         transactions.some(tx => tx.txType === 'appl'),
     simulateGroup: simulateInnerTransactions,
-    delegationPayload: programSigningPayload,
-    encodeDelegation: encodeDelegatedLsigAccount,
+    programPayload: programSigningPayload,
+    encodeProgramAccount: encodeDelegatedLsigAccount,
     validateGroup: (transactions, { isCosigner }) =>
         isCosigner
             ? validateCosignSubsetIntegrity(transactions)

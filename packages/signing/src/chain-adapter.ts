@@ -298,10 +298,10 @@ export interface PlannerChainAdapter {
         network: Network,
     ): Promise<PeraDisplayableTransaction[]>
 
-    /** The bytes a delegation signature must cover. */
-    delegationPayload(program: Uint8Array): Uint8Array
+    /** The bytes a program signature must cover. */
+    programPayload(program: Uint8Array): Uint8Array
     /** @throws when the signature does not verify against `signerAddress`. */
-    encodeDelegation(
+    encodeProgramAccount(
         program: Uint8Array,
         sig: Uint8Array,
         signerAddress: string,
@@ -339,9 +339,9 @@ export const computeBalanceImpact = (
 ): BalanceImpact =>
     legacyPlannerAdapter().computeBalanceImpact(transactions, userAddresses)
 
-export const encodeDelegatedLsigAccount = (
+export const encodeProgramAccount = (
     program: Uint8Array,
     sig: Uint8Array,
     signerAddress: string,
 ): Uint8Array =>
-    legacyPlannerAdapter().encodeDelegation(program, sig, signerAddress)
+    legacyPlannerAdapter().encodeProgramAccount(program, sig, signerAddress)
