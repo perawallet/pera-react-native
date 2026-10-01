@@ -135,6 +135,42 @@ describe('useUpdateAccount', () => {
         ])
     })
 
+    it('re-derives credentials from the updated details instead of keeping stale ones', () => {
+        const device = {
+            manufacturer: 'ledger' as const,
+            deviceName: 'Nano X',
+            transportType: 'ble' as const,
+        }
+        mockAccounts.push({
+            address: 'LEDGER',
+            id: 'hw',
+            type: 'hardware',
+            hardwareDetails: { ...device, deviceId: 'old', accountIndex: 0 },
+            credentials: [
+                {
+                    kind: 'hardware',
+                    device: { ...device, deviceId: 'old' },
+                    accountIndex: 0,
+                },
+            ],
+        })
+        const { result } = renderHook(() => useUpdateAccount())
+
+        result.current({
+            ...mockAccounts[2],
+            hardwareDetails: { ...device, deviceId: 'new', accountIndex: 0 },
+        } as WalletAccount)
+
+        const written = mockSetAccounts.mock.calls[0][0] as WalletAccount[]
+        expect(written[2].credentials).toEqual([
+            {
+                kind: 'hardware',
+                device: { ...device, deviceId: 'new' },
+                accountIndex: 0,
+            },
+        ])
+    })
+
     it('updates account at correct index', () => {
         const { result } = renderHook(() => useUpdateAccount())
 

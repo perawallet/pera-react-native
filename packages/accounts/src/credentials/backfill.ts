@@ -103,3 +103,15 @@ export const withCredentials = <T extends WalletAccount>(account: T): T => {
     const credentials = credentialsFromLegacy(account)
     return credentials ? { ...account, credentials } : account
 }
+
+/**
+ * For writes that may change `type` or its details: credentials describing the
+ * account as it was are dropped and derived again.
+ */
+export const rebuildCredentials = <T extends WalletAccount>(account: T): T => {
+    const credentials = credentialsFromLegacy(account)
+    if (credentials) return { ...account, credentials }
+    const rest = { ...account }
+    delete rest.credentials
+    return rest
+}

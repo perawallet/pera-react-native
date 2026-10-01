@@ -31,6 +31,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { buildAccount, withCredentials } from '../credentials'
+import { rebuildCredentials } from '../credentials/backfill'
 
 const STORE_NAME = 'accounts-store'
 const STORE_VERSION = 1
@@ -108,11 +109,6 @@ const resolveDuplicateAccounts = (
 
     return resolved
 }
-
-// For writes that change `type` or its details: the old credentials describe
-// the account as it was, so they're dropped before the backfill.
-const rebuildCredentials = (account: WalletAccount): WalletAccount =>
-    withCredentials({ ...account, credentials: undefined })
 
 const initialState = {
     accounts: [] as WalletAccount[],
