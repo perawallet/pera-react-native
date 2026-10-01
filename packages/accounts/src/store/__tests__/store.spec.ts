@@ -15,6 +15,7 @@ import { act } from '@testing-library/react'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../../models'
 import { withCredentials } from '../../credentials'
+import { buildTestAccount } from '../../__tests__/accountFactory'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -1058,6 +1059,23 @@ describe('services/accounts/store', () => {
                     },
                 ],
             )
+        })
+
+        test('setAccounts keeps the credentials an account was built with', () => {
+            const accounts = (
+                [
+                    'algo25',
+                    'quantum',
+                    'hdWallet',
+                    'hardware',
+                    'multisig',
+                    'watch',
+                ] as const
+            ).map(type => buildTestAccount(type))
+
+            useAccountsStore.getState().setAccounts(accounts)
+
+            expect(useAccountsStore.getState().accounts).toEqual(accounts)
         })
 
         test('addRekeyedWatchAccounts writes a watch credential', () => {
