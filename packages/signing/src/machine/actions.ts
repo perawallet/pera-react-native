@@ -40,7 +40,7 @@ import type { SignRequest } from '../models'
 import {
     isTransactionRequest,
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
 } from '../models'
 
 /**
@@ -144,7 +144,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
             }
         }
     } else if (
-        (isArbitraryDataRequest(request) || isArc60Request(request)) &&
+        (isArbitraryDataRequest(request) || isAuthDataRequest(request)) &&
         request.approve
     ) {
         const dataApprove = request.approve
@@ -161,7 +161,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
                         signer,
                     })),
                 )
-            } else if (result.signedData.type === 'arc60') {
+            } else if (result.signedData.type === 'auth-data') {
                 // ARC-60 produces a single signature; project the result
                 // through the same `[{ signature, signer }]` shape so the
                 // callback consumer (WalletConnect bridge) doesn't need to
@@ -307,16 +307,16 @@ const buildSignableGroups = (
         ]
     }
 
-    if (isArc60Request(request)) {
+    if (isAuthDataRequest(request)) {
         return [
             {
                 data: {
-                    type: 'arc60',
-                    stdSigData: request.stdSigData,
+                    type: 'auth-data',
+                    authData: request.authData,
                     metadata: request.metadata,
                 },
                 source,
-                signerAddress: request.stdSigData.signer,
+                signerAddress: request.authData.signer,
             },
         ]
     }
@@ -331,7 +331,7 @@ const buildSignableGroups = (
 const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signTransactions: input.signTransactions,
     signArbitraryData: input.signArbitraryData,
-    signArc60: input.signArc60,
+    signAuthData: input.signAuthData,
     createTransport: input.createTransport,
     network: input.network,
     encodeTransaction: input.encodeTransaction,

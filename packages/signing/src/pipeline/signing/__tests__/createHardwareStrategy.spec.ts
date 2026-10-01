@@ -855,8 +855,8 @@ describe('createHardwareStrategy', () => {
 
     const makeArc60Group = (): AnalyzedSignableGroup => ({
         data: {
-            type: 'arc60',
-            stdSigData: {
+            type: 'auth-data',
+            authData: {
                 data: ARC60_DATA_BASE64,
                 signer: SIGNER_ADDRESS,
                 domain: ARC60_DOMAIN,
@@ -918,7 +918,7 @@ describe('createHardwareStrategy', () => {
                 }),
             )
             expect(result).toEqual({
-                signedData: { type: 'arc60', signature: arc60Signature },
+                signedData: { type: 'auth-data', signature: arc60Signature },
                 signers: [{ address: SIGNER_ADDRESS }],
                 originalIndices: [0],
             })
@@ -978,8 +978,8 @@ describe('createHardwareStrategy', () => {
             const group: AnalyzedSignableGroup = {
                 ...makeArc60Group(),
                 data: {
-                    type: 'arc60',
-                    stdSigData: {
+                    type: 'auth-data',
+                    authData: {
                         data: ARC60_DATA_BASE64,
                         signer: SIGNER_ADDRESS,
                         domain: ARC60_DOMAIN,

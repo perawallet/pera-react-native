@@ -48,7 +48,7 @@ export const resolveSigningAccount = (
     allAccounts: WalletAccount[],
 ): WalletAccount => {
     if (source.type === 'multisig-cosign') return signerAccount
-    if (dataType === 'arbitrary-data' || dataType === 'arc60') {
+    if (dataType === 'arbitrary-data' || dataType === 'auth-data') {
         return signerAccount
     }
     return resolveAuthAccount(signerAccount, allAccounts, LEGACY_CHAIN_ID)

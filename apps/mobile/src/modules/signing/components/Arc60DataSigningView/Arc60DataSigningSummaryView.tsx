@@ -13,7 +13,7 @@
 import { PWButton, PWText, PWView } from '@components/core'
 import type {
     Arc60ParsedPayload,
-    Arc60SignRequest,
+    AuthDataSignRequest,
 } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -22,7 +22,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './Arc60DataSigningSummaryView.style'
 
 export type Arc60DataSigningSummaryViewProps = {
-    request: Arc60SignRequest
+    request: AuthDataSignRequest
     account: Optional<WalletAccount>
     parsed: Arc60ParsedPayload
     onDetailsPress: () => void
@@ -53,7 +53,7 @@ export const Arc60DataSigningSummaryView = ({
                     style={styles.description}
                 >
                     {t('signing.arc60_view.description', {
-                        domain: request.stdSigData.domain,
+                        domain: request.authData.domain,
                     })}
                 </PWText>
                 {!!siwa?.statement && (

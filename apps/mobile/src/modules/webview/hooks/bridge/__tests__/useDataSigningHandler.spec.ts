@@ -20,7 +20,7 @@ import {
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type {
     ArbitraryDataSignRequest,
-    Arc60SignRequest,
+    AuthDataSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useDataSigningHandler } from '../useDataSigningHandler'
 import {
@@ -68,7 +68,7 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
                     throw new Error('authenticatorData: too short')
                 }
                 return {
-                    stdSigData: {
+                    authData: {
                         ...params,
                         authenticatorData: new Uint8Array([1, 2, 3]),
                     },
@@ -277,9 +277,9 @@ describe('useDataSigningHandler', () => {
                 },
             )
 
-            const request = lastSignRequest<Arc60SignRequest>()
+            const request = lastSignRequest<AuthDataSignRequest>()
             expect(request).toMatchObject({
-                type: 'arc60',
+                type: 'auth-data',
                 sourceType: 'webview',
                 transportId: '14-arc60',
                 // The verified origin, not dApp-asserted metadata, is what
@@ -288,8 +288,8 @@ describe('useDataSigningHandler', () => {
                 verifiedOrigin: 'https://per-message.example/',
                 metadata: arc60Params.metadata,
             })
-            expect(request.stdSigData.signer).toBe('addr1')
-            expect(request.stdSigData.authenticatorData).toBeInstanceOf(
+            expect(request.authData.signer).toBe('addr1')
+            expect(request.authData.authenticatorData).toBeInstanceOf(
                 Uint8Array,
             )
         })

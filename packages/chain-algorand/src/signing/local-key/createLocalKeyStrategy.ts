@@ -30,7 +30,7 @@ import {
     SIGNING_ERROR_KEYS,
     SigningError,
     signArbitraryDataCase,
-    signArc60Case,
+    signAuthDataCase,
     type AnalyzedSignableGroup,
     type LocalKeyStrategyOptions,
     type SignerInfo,
@@ -50,7 +50,7 @@ import {
 export const createLocalKeyStrategy = (
     options: LocalKeyStrategyOptions,
 ): SigningStrategy => {
-    const { signTransactions, signArbitraryData, signArc60 } = options
+    const { signTransactions, signArbitraryData, signAuthData } = options
 
     return {
         canSign: (account: WalletAccount): boolean => hasSigningKeys(account),
@@ -128,12 +128,12 @@ export const createLocalKeyStrategy = (
                         )
                     }
 
-                    case 'arc60': {
-                        return await signArc60Case(
+                    case 'auth-data': {
+                        return await signAuthDataCase(
                             group.data,
                             group.originalIndices,
                             account,
-                            signArc60,
+                            signAuthData,
                             callbacks,
                         )
                     }

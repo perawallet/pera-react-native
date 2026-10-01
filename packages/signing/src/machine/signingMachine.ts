@@ -365,7 +365,7 @@ export const signingMachine = setup({
                             allAccounts: context.allAccounts,
                             signTransactions: context.deps.signTransactions,
                             signArbitraryData: context.deps.signArbitraryData,
-                            signArc60: context.deps.signArc60,
+                            signAuthData: context.deps.signAuthData,
                             network: context.deps.network,
                         }),
                         onDone: {
@@ -413,7 +413,7 @@ export const signingMachine = setup({
                                 // (cosign requests don't mix arc60 + tx). The
                                 // overlay reads this to pick context-aware copy.
                                 operation:
-                                    groups[0]?.data.type === 'arc60' ||
+                                    groups[0]?.data.type === 'auth-data' ||
                                     groups[0]?.data.type === 'arbitrary-data'
                                         ? ('data' as const)
                                         : ('transaction' as const),
@@ -477,7 +477,7 @@ export const signingMachine = setup({
                             allAccounts: context.allAccounts,
                             signTransactions: context.deps.signTransactions,
                             signArbitraryData: context.deps.signArbitraryData,
-                            signArc60: context.deps.signArc60,
+                            signAuthData: context.deps.signAuthData,
                             encodeTransaction: context.deps.encodeTransaction,
                             hardwareWalletRegistry:
                                 context.deps.hardwareWalletRegistry,

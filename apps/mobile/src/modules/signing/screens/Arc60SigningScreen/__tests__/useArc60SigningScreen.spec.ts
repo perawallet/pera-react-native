@@ -93,8 +93,8 @@ describe('useArc60SigningScreen', () => {
         vi.clearAllMocks()
         mockPipeline.currentRequest = {
             id: 'req-1',
-            type: 'arc60',
-            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+            type: 'auth-data',
+            authData: { signer: 'ADDR', domain: 'example.com' },
         }
         mockPipeline.resolved = null
         mockPipeline.isLoading = false
@@ -139,9 +139,9 @@ describe('useArc60SigningScreen', () => {
     it('tracks card events only for card-originated (sourceType arc60) requests', async () => {
         mockPipeline.currentRequest = {
             id: 'req-1',
-            type: 'arc60',
-            sourceType: 'arc60',
-            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+            type: 'auth-data',
+            sourceType: 'card',
+            authData: { signer: 'ADDR', domain: 'example.com' },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
@@ -161,9 +161,9 @@ describe('useArc60SigningScreen', () => {
     it('does not track card events for dApp-originated requests', async () => {
         mockPipeline.currentRequest = {
             id: 'req-1',
-            type: 'arc60',
+            type: 'auth-data',
             sourceType: 'walletconnect',
-            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+            authData: { signer: 'ADDR', domain: 'example.com' },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
@@ -181,9 +181,9 @@ describe('useArc60SigningScreen', () => {
         mockConfirmQuantumDappUsage.mockResolvedValue('cancel')
         mockPipeline.currentRequest = {
             id: 'req-1',
-            type: 'arc60',
+            type: 'auth-data',
             sourceType: 'walletconnect',
-            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+            authData: { signer: 'ADDR', domain: 'example.com' },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
@@ -200,7 +200,7 @@ describe('useArc60SigningScreen', () => {
         mockIsQuantumDataSigningBlocked.mockReturnValue(true)
         mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
         mockPipeline.resolved = {
-            kind: { type: 'arc60', parsed: { type: 'siwa' } },
+            kind: { type: 'auth-data', parsed: { type: 'siwa' } },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
@@ -211,7 +211,7 @@ describe('useArc60SigningScreen', () => {
     it('allows confirmation of the same request when the signer is not quantum', () => {
         mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
         mockPipeline.resolved = {
-            kind: { type: 'arc60', parsed: { type: 'siwa' } },
+            kind: { type: 'auth-data', parsed: { type: 'siwa' } },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
@@ -234,9 +234,9 @@ describe('useArc60SigningScreen', () => {
     it('does not consult the quantum dApp warning for first-party card requests', async () => {
         mockPipeline.currentRequest = {
             id: 'req-1',
-            type: 'arc60',
-            sourceType: 'arc60',
-            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+            type: 'auth-data',
+            sourceType: 'card',
+            authData: { signer: 'ADDR', domain: 'example.com' },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 

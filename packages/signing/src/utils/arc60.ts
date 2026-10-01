@@ -23,7 +23,7 @@ import {
     Arc60MissingDomainError,
 } from './arc60-errors'
 import { parseSiwa } from './siwa'
-import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
+import type { AuthDataMetadata, AuthData } from '../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 /**
@@ -131,17 +131,17 @@ export const parseArc60Timestamp = (
  * the `hdPath` — that is account-type specific and stays with the caller.
  */
 export const validateArc60AuthRequest = (
-    stdSigData: Arc60StdSigData,
-    metadata: Arc60Metadata,
+    authData: AuthData,
+    metadata: AuthDataMetadata,
     accounts: WalletAccount[],
 ): { decodedData: Uint8Array } => {
     if (metadata.scope !== ARC60_SCOPE_AUTH) {
         throw new Arc60InvalidScopeError(metadata.scope)
     }
 
-    verifyAuthenticatorDomain(stdSigData.domain, stdSigData.authenticatorData)
+    verifyAuthenticatorDomain(authData.domain, authData.authenticatorData)
 
-    const decodedData = decodeArc60Data(stdSigData.data, metadata.encoding)
+    const decodedData = decodeArc60Data(authData.data, metadata.encoding)
 
     let jsonString: string
     try {
@@ -172,9 +172,9 @@ export const validateArc60AuthRequest = (
         )
     }
 
-    if (siwa.domain !== stdSigData.domain) {
+    if (siwa.domain !== authData.domain) {
         throw new Arc60BadJsonError(
-            `SIWA domain "${siwa.domain}" does not match request domain "${stdSigData.domain}"`,
+            `SIWA domain "${siwa.domain}" does not match request domain "${authData.domain}"`,
         )
     }
     // SIWA proves control of `account_address`, and on chain that control is
@@ -183,11 +183,11 @@ export const validateArc60AuthRequest = (
     // wallet only checks the result: an account that is not rekeyed signs for
     // itself; a rekeyed one must be signed for by its auth address, never by
     // its own (revoked) key.
-    if (siwa.account_address === stdSigData.signer) {
-        const named = accounts.find(a => a.address === stdSigData.signer)
+    if (siwa.account_address === authData.signer) {
+        const named = accounts.find(a => a.address === authData.signer)
         if (named?.rekeyAddress) {
             throw new Arc60InvalidSignerError(
-                stdSigData.signer,
+                authData.signer,
                 `"${siwa.account_address}" is rekeyed to "${named.rekeyAddress}" on the active network; the SIWA signer must be that auth address`,
             )
         }
@@ -195,11 +195,11 @@ export const validateArc60AuthRequest = (
         !accounts.find(
             a =>
                 a.address === siwa.account_address &&
-                a.rekeyAddress === stdSigData.signer,
+                a.rekeyAddress === authData.signer,
         )
     ) {
         throw new Arc60InvalidSignerError(
-            stdSigData.signer,
+            authData.signer,
             `SIWA signer is not a valid signer for "${siwa.account_address}"`,
         )
     }

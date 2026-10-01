@@ -15,8 +15,8 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     ARC60_SCOPE_AUTH,
     buildSiwaAuthRequest,
-    type Arc60Metadata,
-    type Arc60StdSigData,
+    type AuthDataMetadata,
+    type AuthData,
 } from '@perawallet/wallet-core-signing'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { fetchDelegationToken } from '../api/delegation'
@@ -37,9 +37,9 @@ export type SignCardOwnershipVariables = {
      * package stays signing-agnostic — the mobile layer supplies the actual
      * local-key or hardware signer.
      */
-    signArc60: (
-        stdSigData: Arc60StdSigData,
-        metadata: Arc60Metadata,
+    signAuthData: (
+        authData: AuthData,
+        metadata: AuthDataMetadata,
     ) => Promise<Uint8Array>
 }
 
@@ -74,7 +74,7 @@ export const useSignCardOwnershipMutation =
             Error,
             SignCardOwnershipVariables
         >({
-            mutationFn: async ({ address, signArc60 }) => {
+            mutationFn: async ({ address, signAuthData }) => {
                 // Baanx binds the proof to this token: its nonce has to be
                 // inside the payload the user signs, so it is fetched first.
                 const { token, nonce } = await fetchDelegationToken({ network })
@@ -85,13 +85,13 @@ export const useSignCardOwnershipMutation =
                     nonce,
                     statement: CARD_SIWA_STATEMENT,
                 })
-                const stdSigData: Arc60StdSigData = {
+                const authData: AuthData = {
                     data,
                     signer: address,
                     domain: CARD_SIWA_DOMAIN,
                     authenticatorData,
                 }
-                const signature = await signArc60(stdSigData, {
+                const signature = await signAuthData(authData, {
                     scope: ARC60_SCOPE_AUTH,
                     encoding: 'base64',
                 })

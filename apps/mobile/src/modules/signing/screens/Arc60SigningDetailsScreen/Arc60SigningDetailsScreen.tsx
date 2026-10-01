@@ -12,7 +12,7 @@
 
 import { PWScreen } from '@components/core'
 import {
-    type Arc60SignRequest,
+    type AuthDataSignRequest,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
@@ -21,10 +21,10 @@ import { Arc60DataSigningDetailsView } from '@modules/signing/components/Arc60Da
 
 export const Arc60SigningDetailsScreen = () => {
     const { currentRequest, resolved } = useSigningPipeline()
-    const request = currentRequest as Optional<Arc60SignRequest>
+    const request = currentRequest as Optional<AuthDataSignRequest>
 
-    const account = useFindAccountByAddress(request?.stdSigData.signer ?? '')
-    const parsed = resolved?.kind.type === 'arc60' ? resolved.kind.parsed : null
+    const account = useFindAccountByAddress(request?.authData.signer ?? '')
+    const parsed = resolved?.kind.type === 'auth-data' ? resolved.kind.parsed : null
 
     if (!request || !parsed) return null
 

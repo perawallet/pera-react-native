@@ -41,7 +41,7 @@ import type { ExternalSignTxnTransport } from './hooks/useEnqueueArc0001SignRequ
 import type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 import type {
     LocalArbitrarySigningFunction,
-    LocalArc60SigningFunction,
+    LocalAuthDataSigningFunction,
 } from './pipeline/signing/standardDataSigning'
 import type {
     AnalysisContext,
@@ -302,12 +302,12 @@ export type LocalSigningFunction = (
     account: WalletAccount,
 ) => Promise<PeraSignedTransaction[]>
 
-export type { LocalArbitrarySigningFunction, LocalArc60SigningFunction }
+export type { LocalArbitrarySigningFunction, LocalAuthDataSigningFunction }
 
 export type LocalKeyStrategyOptions = {
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
-    signArc60: LocalArc60SigningFunction
+    signAuthData: LocalAuthDataSigningFunction
 }
 
 export type LocalKeySignerInput = {
@@ -315,7 +315,7 @@ export type LocalKeySignerInput = {
     allAccounts: WalletAccount[]
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
-    signArc60: LocalArc60SigningFunction
+    signAuthData: LocalAuthDataSigningFunction
     network: Network
 }
 

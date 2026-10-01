@@ -135,7 +135,7 @@ const buildInput = (
         .fn()
         .mockResolvedValue([{ txn: {}, sig: new Uint8Array([1, 2, 3]) }]),
     signArbitraryData: vi.fn(),
-    signArc60: vi.fn(),
+    signAuthData: vi.fn(),
     encodeTransaction: vi.fn(),
     network: 'mainnet',
     ...overrides,

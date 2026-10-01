@@ -34,7 +34,7 @@ export const useIsQuantumDataSigningBlocked = (
     const accounts = useAllAccounts()
     if (!request) return false
 
-    // Block on the request's `signer` field (stdSigData.signer / data[].signer),
+    // Block on the request's `signer` field (authData.signer / data[].signer),
     // not the SIWA account_address. Data signing uses the named signer's own
     // key and never follows a rekey, so that is the only key in play: a request
     // naming a quantum account as `signer` is caught here. An ed25519 account

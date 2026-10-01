@@ -27,7 +27,7 @@ import {
     plannerAdapterFor,
     type LocalSigningFunction,
     type LocalArbitrarySigningFunction,
-    type LocalArc60SigningFunction,
+    type LocalAuthDataSigningFunction,
 } from '../../chain-adapter'
 import {
     createHardwareStrategy,
@@ -44,8 +44,8 @@ export interface GetSigningStrategyOptions {
     /** Arbitrary-data signing function from useArbitraryDataSigner */
     signArbitraryData: LocalArbitrarySigningFunction
 
-    /** ARC-60 signing function from useLocalKeyArc60Signer */
-    signArc60: LocalArc60SigningFunction
+    /** ARC-60 signing function from useAuthDataSigner */
+    signAuthData: LocalAuthDataSigningFunction
 
     /** Get local participants for a multisig account */
     getLocalParticipants: (
@@ -81,7 +81,7 @@ export const createSigningStrategySelector = (
     ).createStrategy({
         signTransactions: options.signTransactions,
         signArbitraryData: options.signArbitraryData,
-        signArc60: options.signArc60,
+        signAuthData: options.signAuthData,
     })
     const hardwareStrategy = createHardwareStrategy({
         hardwareWalletRegistry: options.hardwareWalletRegistry,

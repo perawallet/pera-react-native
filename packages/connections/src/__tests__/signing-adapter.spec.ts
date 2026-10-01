@@ -20,7 +20,7 @@ import {
     logger,
 } from '@perawallet/wallet-core-shared'
 import type {
-    Arc60SignableData,
+    AuthDataSignableData,
     ExternalSignTxnTransport,
     PeraArbitraryDataMessage,
     SignRequest,
@@ -133,7 +133,7 @@ const PEER = {
 }
 
 const signDataMessage = (
-    payload: Arc60SignableData | PeraArbitraryDataMessage[],
+    payload: AuthDataSignableData | PeraArbitraryDataMessage[],
     authorizedAccounts: string[] = ['AAAA'],
     sourceType: SourceType = 'walletconnect',
 ) => ({
@@ -760,8 +760,8 @@ describe('useConnectionSigningAdapter', () => {
             send(
                 signDataMessage(
                     {
-                        type: 'arc60',
-                        stdSigData: {
+                        type: 'auth-data',
+                        authData: {
                             data: 'ZGF0YQ==',
                             signer: PRIMARY_SIGNER,
                             domain: 'example.com',
@@ -803,7 +803,7 @@ describe('useConnectionSigningAdapter', () => {
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
 
-            const stdSigData = {
+            const authData = {
                 data: 'ZGF0YQ==',
                 signer: PRIMARY_SIGNER,
                 domain: 'example.com',
@@ -812,15 +812,15 @@ describe('useConnectionSigningAdapter', () => {
             const metadata = { scope: 1, encoding: 'base64' }
 
             send(
-                signDataMessage({ type: 'arc60', stdSigData, metadata }, [
+                signDataMessage({ type: 'auth-data', authData, metadata }, [
                     PRIMARY_SIGNER,
                 ]),
             )
 
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    type: 'arc60',
-                    stdSigData,
+                    type: 'auth-data',
+                    authData,
                     metadata,
                     // The connection's peer identity, stamped as the
                     // anti-spoofing dApp identity shown on the signing sheet.
@@ -837,8 +837,8 @@ describe('useConnectionSigningAdapter', () => {
             send(
                 signDataMessage(
                     {
-                        type: 'arc60',
-                        stdSigData: {
+                        type: 'auth-data',
+                        authData: {
                             data: 'ZGF0YQ==',
                             signer: PRIMARY_SIGNER,
                             domain: 'example.com',
@@ -864,8 +864,8 @@ describe('useConnectionSigningAdapter', () => {
             send({
                 ...signDataMessage(
                     {
-                        type: 'arc60',
-                        stdSigData: {
+                        type: 'auth-data',
+                        authData: {
                             data: 'ZGF0YQ==',
                             signer: PRIMARY_SIGNER,
                             domain: 'example.com',
@@ -881,7 +881,7 @@ describe('useConnectionSigningAdapter', () => {
 
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    type: 'arc60',
+                    type: 'auth-data',
                     verifiedOrigin: 'https://evil.example',
                 }),
             )
@@ -1010,8 +1010,8 @@ describe('useConnectionSigningAdapter', () => {
 
             const message = signDataMessage(
                 {
-                    type: 'arc60',
-                    stdSigData: {
+                    type: 'auth-data',
+                    authData: {
                         data: 'ZGF0YQ==',
                         signer: PRIMARY_SIGNER,
                         domain: 'example.com',
@@ -1045,8 +1045,8 @@ describe('useConnectionSigningAdapter', () => {
             send(
                 signDataMessage(
                     {
-                        type: 'arc60',
-                        stdSigData: {
+                        type: 'auth-data',
+                        authData: {
                             data: 'ZGF0YQ==',
                             signer: PRIMARY_SIGNER,
                             domain: 'example.com',
@@ -1059,7 +1059,7 @@ describe('useConnectionSigningAdapter', () => {
             )
 
             expect(mockAddSignRequest).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'arc60' }),
+                expect.objectContaining({ type: 'auth-data' }),
             )
         })
 
@@ -1080,8 +1080,8 @@ describe('useConnectionSigningAdapter', () => {
 
             const message = signDataMessage(
                 {
-                    type: 'arc60',
-                    stdSigData: {
+                    type: 'auth-data',
+                    authData: {
                         data: 'ZGF0YQ==',
                         signer: PRIMARY_SIGNER,
                         domain: 'example.com',

@@ -21,7 +21,7 @@ import {
     type AccountsChainAdapter,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useLocalKeyArc60Signer } from '../useLocalKeyArc60Signer'
+import { useAuthDataSigner } from '../useAuthDataSigner'
 import { ARC60_SCOPE_AUTH } from '../../utils/arc60'
 import {
     Arc60BadJsonError,
@@ -30,7 +30,7 @@ import {
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
 } from '../../utils/arc60-errors'
-import type { Arc60Metadata, Arc60StdSigData } from '../../pipeline/types'
+import type { AuthDataMetadata, AuthData } from '../../pipeline/types'
 
 const mockSignDataWithKey = vi.fn()
 // Stable reference across renders — production's `signDataWithKey` is an
@@ -131,18 +131,18 @@ const buildSiwa = (overrides: Record<string, unknown> = {}): string =>
     })!
 
 const samplePayload = new TextEncoder().encode(buildSiwa())
-const validStdSigData: Arc60StdSigData = {
+const validStdSigData: AuthData = {
     data: encodeToBase64(samplePayload),
     signer: 'HD_ADDR',
     domain,
     authenticatorData: validAuthData,
 }
-const validMetadata: Arc60Metadata = {
+const validMetadata: AuthDataMetadata = {
     scope: ARC60_SCOPE_AUTH,
     encoding: 'base64',
 }
 
-describe('useLocalKeyArc60Signer', () => {
+describe('useAuthDataSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         registerPathCheck()
@@ -151,10 +151,10 @@ describe('useLocalKeyArc60Signer', () => {
     })
 
     test('rejects unsupported scope', async () => {
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(hdAccount, validStdSigData, {
+                await result.current.signAuthData(hdAccount, validStdSigData, {
                     scope: 99,
                     encoding: 'base64',
                 })
@@ -163,10 +163,10 @@ describe('useLocalKeyArc60Signer', () => {
     })
 
     test('rejects hardware wallet accounts', async () => {
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     hardwareAccount,
                     validStdSigData,
                     validMetadata,
@@ -178,10 +178,10 @@ describe('useLocalKeyArc60Signer', () => {
     test('rejects when authenticatorData rpIdHash mismatches', async () => {
         const tampered = new Uint8Array(validAuthData)
         tampered[0] ^= 0xff
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     hdAccount,
                     { ...validStdSigData, authenticatorData: tampered },
                     validMetadata,
@@ -194,10 +194,10 @@ describe('useLocalKeyArc60Signer', () => {
         const sigBytes = new Uint8Array([1, 2, 3])
         mockSignDataWithKey.mockResolvedValue([sigBytes])
 
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         let signature: Optional<Uint8Array>
         await act(async () => {
-            signature = await result.current.signArc60(
+            signature = await result.current.signAuthData(
                 hdAccount,
                 validStdSigData,
                 validMetadata,
@@ -215,10 +215,10 @@ describe('useLocalKeyArc60Signer', () => {
     })
 
     test('rejects when hdPath does not match the signer derivation', async () => {
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     hdAccount,
                     {
                         ...validStdSigData,
@@ -232,10 +232,10 @@ describe('useLocalKeyArc60Signer', () => {
 
     test('accepts a matching hdPath', async () => {
         mockSignDataWithKey.mockResolvedValue([new Uint8Array([1])])
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     hdAccount,
                     { ...validStdSigData, hdPath: MATCHING_HD_PATH },
                     validMetadata,
@@ -248,10 +248,10 @@ describe('useLocalKeyArc60Signer', () => {
         const algo25Siwa = new TextEncoder().encode(
             buildSiwa({ account_address: 'ALGO25_ADDR' }),
         )
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     algo25Account,
                     {
                         ...validStdSigData,
@@ -271,9 +271,9 @@ describe('useLocalKeyArc60Signer', () => {
             buildSiwa({ account_address: 'ALGO25_ADDR' }),
         )
 
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await act(async () => {
-            await result.current.signArc60(
+            await result.current.signAuthData(
                 algo25Account,
                 {
                     ...validStdSigData,
@@ -296,10 +296,10 @@ describe('useLocalKeyArc60Signer', () => {
         const mismatched = new TextEncoder().encode(
             buildSiwa({ domain: 'evil.io' }),
         )
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     hdAccount,
                     { ...validStdSigData, data: encodeToBase64(mismatched) },
                     validMetadata,
@@ -312,10 +312,10 @@ describe('useLocalKeyArc60Signer', () => {
         const mismatched = new TextEncoder().encode(
             buildSiwa({ account_address: 'OTHER_ADDR' }),
         )
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     hdAccount,
                     { ...validStdSigData, data: encodeToBase64(mismatched) },
                     validMetadata,
@@ -326,10 +326,10 @@ describe('useLocalKeyArc60Signer', () => {
 
     test('rejects when payload is not canonical SIWA JSON', async () => {
         const nonSiwa = new TextEncoder().encode('{"not":"siwa"}')
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     hdAccount,
                     { ...validStdSigData, data: encodeToBase64(nonSiwa) },
                     validMetadata,
@@ -352,10 +352,10 @@ describe('useLocalKeyArc60Signer', () => {
             buildSiwa({ account_address: 'ORIG_ADDR' }),
         )
 
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     original,
                     {
                         ...validStdSigData,
@@ -380,10 +380,10 @@ describe('useLocalKeyArc60Signer', () => {
             buildSiwa({ account_address: 'WATCH_ADDR' }),
         )
 
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     watchSource,
                     {
                         ...validStdSigData,
@@ -402,10 +402,10 @@ describe('useLocalKeyArc60Signer', () => {
             buildSiwa({ account_address: 'QUANTUM_ADDR' }),
         )
 
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         let signature: Optional<Uint8Array>
         await act(async () => {
-            signature = await result.current.signArc60(
+            signature = await result.current.signAuthData(
                 quantumAccount,
                 {
                     ...validStdSigData,
@@ -425,10 +425,10 @@ describe('useLocalKeyArc60Signer', () => {
         const quantumSiwa = new TextEncoder().encode(
             buildSiwa({ account_address: 'QUANTUM_ADDR' }),
         )
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     quantumAccount,
                     {
                         ...validStdSigData,
@@ -452,10 +452,10 @@ describe('useLocalKeyArc60Signer', () => {
             buildSiwa({ account_address: 'LED_ADDR' }),
         )
 
-        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        const { result } = renderHook(() => useAuthDataSigner())
         await expect(
             act(async () => {
-                await result.current.signArc60(
+                await result.current.signAuthData(
                     ledger,
                     {
                         ...validStdSigData,
@@ -480,18 +480,18 @@ describe('useLocalKeyArc60Signer', () => {
         const origSiwa = new TextEncoder().encode(
             buildSiwa({ account_address: 'ORIG_ADDR' }),
         )
-        const sigData: Arc60StdSigData = {
+        const sigData: AuthData = {
             ...validStdSigData,
             data: encodeToBase64(origSiwa),
             signer: 'AUTH_ADDR',
         }
 
         mockAccounts = [rekeyed]
-        const { result, rerender } = renderHook(() => useLocalKeyArc60Signer())
+        const { result, rerender } = renderHook(() => useAuthDataSigner())
 
         // Rekey is current — the cross-check passes and the account signs.
         await act(async () => {
-            await result.current.signArc60(rekeyed, sigData, validMetadata)
+            await result.current.signAuthData(rekeyed, sigData, validMetadata)
         })
         expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)
 
@@ -502,7 +502,7 @@ describe('useLocalKeyArc60Signer', () => {
 
         await expect(
             act(async () => {
-                await result.current.signArc60(rekeyed, sigData, validMetadata)
+                await result.current.signAuthData(rekeyed, sigData, validMetadata)
             }),
         ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
         expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)

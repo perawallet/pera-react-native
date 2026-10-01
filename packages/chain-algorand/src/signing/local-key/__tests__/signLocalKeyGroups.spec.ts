@@ -56,7 +56,7 @@ const buildInput = (
     allAccounts: [mockAlgo25Account],
     signTransactions: vi.fn().mockResolvedValue([mockSignedTxn]),
     signArbitraryData: vi.fn(),
-    signArc60: vi.fn(),
+    signAuthData: vi.fn(),
     network: 'mainnet',
     ...overrides,
 })

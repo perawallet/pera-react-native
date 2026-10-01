@@ -119,7 +119,7 @@ export type SourceKind =
     | 'multisig-cosign'
     | 'deeplink'
     | 'gift-card'
-    | 'arc60'
+    | 'auth-data'
     | 'injected'
 
 export type TransportKind =
@@ -136,7 +136,7 @@ export type ResolvedRequestKind =
           hasMultiple: boolean
       }
     | { type: 'arbitrary-data'; isSingle: boolean }
-    | { type: 'arc60'; parsed: Arc60ParsedForDisplay }
+    | { type: 'auth-data'; parsed: Arc60ParsedForDisplay }
 
 export type HardwareChildSnapshot = SnapshotFrom<typeof hardwareSigningMachine>
 

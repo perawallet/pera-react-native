@@ -13,7 +13,7 @@
 import { PWText, PWView } from '@components/core'
 import type {
     Arc60ParsedPayload,
-    Arc60SignRequest,
+    AuthDataSignRequest,
     Siwa,
 } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -24,7 +24,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './Arc60DataSigningDetailsView.style'
 
 export type Arc60DataSigningDetailsViewProps = {
-    request: Arc60SignRequest
+    request: AuthDataSignRequest
     account: Optional<WalletAccount>
     parsed: Arc60ParsedPayload
 }
@@ -90,14 +90,14 @@ export const Arc60DataSigningDetailsView = ({
             </PWView>
             <PWView style={styles.section}>
                 <KeyValueRow title={t('signing.arc60_view.domain')}>
-                    <PWText>{request.stdSigData.domain}</PWText>
+                    <PWText>{request.authData.domain}</PWText>
                 </KeyValueRow>
                 <KeyValueRow title={t('signing.arc60_view.scope')}>
                     <PWText>{t('signing.arc60_view.scope_auth')}</PWText>
                 </KeyValueRow>
-                {!!request.stdSigData.requestId && (
+                {!!request.authData.requestId && (
                     <KeyValueRow title={t('signing.arc60_view.request_id')}>
-                        <PWText>{request.stdSigData.requestId}</PWText>
+                        <PWText>{request.authData.requestId}</PWText>
                     </KeyValueRow>
                 )}
                 {!!account && (

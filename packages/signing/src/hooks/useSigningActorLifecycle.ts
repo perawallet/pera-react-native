@@ -22,7 +22,7 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
-import { useLocalKeyArc60Signer } from './useLocalKeyArc60Signer'
+import { useAuthDataSigner } from './useAuthDataSigner'
 import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
 import { useSigningStore, wasRestoredFromStorage } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
@@ -153,7 +153,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
 
     const { signTransactions } = useLocalKeyTransactionSigner()
     const { signArbitraryData } = useArbitraryDataSigner()
-    const { signArc60 } = useLocalKeyArc60Signer()
+    const { signAuthData } = useAuthDataSigner()
     const { encodeTransactionRaw } = useTransactionEncoder()
     const { network } = useNetwork()
     const allAccounts = useAllAccounts()
@@ -174,7 +174,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             return {
                 signTransactions,
                 signArbitraryData,
-                signArc60,
+                signAuthData,
                 createTransport: createTransportSelector({
                     network,
                     proposeSignRequest,
@@ -193,7 +193,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         [
             signTransactions,
             signArbitraryData,
-            signArc60,
+            signAuthData,
             encodeTransactionRaw,
             network,
             proposeSignRequest,

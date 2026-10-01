@@ -69,7 +69,7 @@ const request = (
 
 // 32 bytes [0..31], base64-encoded — a realistic ARC-60 `authenticatorData`.
 // Its first 32 decoded bytes must be `sha256(domain)` per ARC-60 / the
-// `Arc60StdSigData` doc, so a valid payload can never be shorter than this.
+// `AuthData` doc, so a valid payload can never be shorter than this.
 const VALID_AUTH_DATA = 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8='
 const VALID_AUTH_DATA_BYTES = Uint8Array.from({ length: 32 }, (_, i) => i)
 
@@ -144,7 +144,7 @@ describe('validateRawMessage', () => {
         expect(legacy.ok).toBe(true)
     })
 
-    it('builds the real Arc60SignableData wrapper, decoding authenticatorData', () => {
+    it('builds the real AuthDataSignableData wrapper, decoding authenticatorData', () => {
         const result = validateRawMessage(
             request('sign-data', {
                 data: 'ZGF0YQ==',
@@ -162,8 +162,8 @@ describe('validateRawMessage', () => {
             expect(result.message.operation).toEqual({
                 type: 'sign-data',
                 payload: {
-                    type: 'arc60',
-                    stdSigData: {
+                    type: 'auth-data',
+                    authData: {
                         data: 'ZGF0YQ==',
                         signer: 'A'.repeat(58),
                         domain: 'perawallet.app',

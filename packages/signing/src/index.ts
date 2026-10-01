@@ -49,7 +49,7 @@ export {
     type HandoffPollDetail,
     type HandoffPollOutcome,
     type LocalArbitrarySigningFunction,
-    type LocalArc60SigningFunction,
+    type LocalAuthDataSigningFunction,
     type LocalKeySignerChainAdapter,
     type LocalKeySignerInput,
     type LocalKeySigningDeps,
@@ -74,10 +74,10 @@ export {
 
 export {
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
     isTransactionRequest,
     type ArbitraryDataSignRequest,
-    type Arc60SignRequest,
+    type AuthDataSignRequest,
     type FeeAdjustment,
     type FeeAdjustmentReason,
     type PeraArbitraryDataMessage,
@@ -164,9 +164,9 @@ export {
     type AlgorandTransactionSummary,
     type AnalysisContext,
     type AnalysisWarning,
-    type Arc60Metadata,
-    type Arc60SignableData,
-    type Arc60StdSigData,
+    type AuthDataMetadata,
+    type AuthDataSignableData,
+    type AuthData,
     type DataAnalyzer,
     type RejectReason,
     type DataTransport,
@@ -202,7 +202,7 @@ export { createSigningStrategySelector } from './pipeline/signing/getSigningStra
 export type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 export {
     signArbitraryDataCase,
-    signArc60Case,
+    signAuthDataCase,
 } from './pipeline/signing/standardDataSigning'
 export { SIGNING_ERROR_KEYS } from './pipeline/errors'
 export { resolveSigningAccount } from './machine/utils/resolveSigningAccount'

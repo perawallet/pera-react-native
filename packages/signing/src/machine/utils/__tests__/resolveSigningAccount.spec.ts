@@ -112,7 +112,7 @@ describe('resolveSigningAccount', () => {
         const result = resolveSigningAccount(
             keylessRekeyedSigner,
             localSource,
-            'arc60',
+            'auth-data',
             [keylessRekeyedSigner, authAccount],
         )
         expect(result.address).toBe(PARTICIPANT)
@@ -122,7 +122,7 @@ describe('resolveSigningAccount', () => {
         const result = resolveSigningAccount(
             rekeyedSigner,
             localSource,
-            'arc60',
+            'auth-data',
             [rekeyedSigner, authAccount],
         )
         expect(result.address).toBe(PARTICIPANT)
@@ -132,7 +132,7 @@ describe('resolveSigningAccount', () => {
         const result = resolveSigningAccount(
             keylessRekeyedSigner,
             localSource,
-            'arc60',
+            'auth-data',
             [keylessRekeyedSigner],
         )
         expect(result.address).toBe(PARTICIPANT)
@@ -142,7 +142,7 @@ describe('resolveSigningAccount', () => {
         const result = resolveSigningAccount(
             plainSigner,
             localSource,
-            'arc60',
+            'auth-data',
             [plainSigner],
         )
         expect(result.address).toBe(PARTICIPANT)

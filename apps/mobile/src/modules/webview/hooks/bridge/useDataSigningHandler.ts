@@ -103,11 +103,11 @@ export const useDataSigningHandler = (
             // payload would also satisfy).
             if (isArc60WirePayload(message.params)) {
                 try {
-                    const { stdSigData, metadata } = parseArc60WireRequest(
+                    const { authData, metadata } = parseArc60WireRequest(
                         message.params,
                     )
                     const account = allAccounts.find(
-                        a => a.address === stdSigData.signer,
+                        a => a.address === authData.signer,
                     )
                     if (!account || !canSignArc60(account)) {
                         sendInvalidSigner(message.id)
@@ -115,7 +115,7 @@ export const useDataSigningHandler = (
                     }
                     addSignRequest({
                         ...webviewDataSignRequestBase(message.id, webview),
-                        type: 'arc60',
+                        type: 'auth-data',
                         // The verified webview origin — NOT the dApp-asserted
                         // metadata — is what the analyzer checks the SIWA
                         // domain against.
@@ -123,7 +123,7 @@ export const useDataSigningHandler = (
                             ? { url: security.sourceUrl }
                             : undefined,
                         verifiedOrigin: security.sourceUrl ?? undefined,
-                        stdSigData,
+                        authData,
                         metadata,
                     })
                 } catch (e) {

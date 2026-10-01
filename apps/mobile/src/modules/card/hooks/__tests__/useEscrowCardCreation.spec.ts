@@ -79,8 +79,8 @@ const watchAccount: WalletAccount = {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockSignOwnershipAsync.mockImplementation(async ({ signArc60 }) => {
-        const signature = await signArc60('data', {
+    mockSignOwnershipAsync.mockImplementation(async ({ signAuthData }) => {
+        const signature = await signAuthData('data', {
             scope: 1,
             encoding: 'base64',
         })
@@ -117,7 +117,7 @@ describe('useEscrowCardCreation', () => {
         const proof = await result.current.signOwnership(ledgerAccount)
 
         expect(mockAddSignRequest).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'arc60', sourceType: 'arc60' }),
+            expect.objectContaining({ type: 'auth-data', sourceType: 'card' }),
         )
         expect(proof.signature).toBe('4,5,6')
     })
@@ -134,10 +134,10 @@ describe('useEscrowCardCreation', () => {
 
         expect(mockAddSignRequest).toHaveBeenCalledWith(
             expect.objectContaining({
-                type: 'arc60',
+                type: 'auth-data',
                 transport: 'callback',
-                sourceType: 'arc60',
-                stdSigData: 'data',
+                sourceType: 'card',
+                authData: 'data',
                 metadata: { scope: 1, encoding: 'base64' },
             }),
         )

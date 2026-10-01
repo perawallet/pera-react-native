@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 import {
     isTransactionRequest,
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
 } from '../guards'
 import type { SignRequest } from '../index'
 
@@ -34,8 +34,8 @@ const arbitraryDataRequest = {
 
 const arc60Request = {
     ...base,
-    type: 'arc60',
-    stdSigData: {},
+    type: 'auth-data',
+    authData: {},
     metadata: {},
 } as unknown as SignRequest
 
@@ -73,16 +73,16 @@ describe('isArbitraryDataRequest', () => {
     })
 })
 
-describe('isArc60Request', () => {
-    it('returns true only for an arc60 request carrying `stdSigData`', () => {
-        expect(isArc60Request(arc60Request)).toBe(true)
-        expect(isArc60Request(transactionRequest)).toBe(false)
-        expect(isArc60Request(arbitraryDataRequest)).toBe(false)
+describe('isAuthDataRequest', () => {
+    it('returns true only for an arc60 request carrying `authData`', () => {
+        expect(isAuthDataRequest(arc60Request)).toBe(true)
+        expect(isAuthDataRequest(transactionRequest)).toBe(false)
+        expect(isAuthDataRequest(arbitraryDataRequest)).toBe(false)
     })
 
-    it('returns false when type matches but the `stdSigData` discriminant is absent', () => {
-        const malformed = { ...base, type: 'arc60' } as unknown as SignRequest
+    it('returns false when type matches but the `authData` discriminant is absent', () => {
+        const malformed = { ...base, type: 'auth-data' } as unknown as SignRequest
 
-        expect(isArc60Request(malformed)).toBe(false)
+        expect(isAuthDataRequest(malformed)).toBe(false)
     })
 })

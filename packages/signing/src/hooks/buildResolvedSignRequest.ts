@@ -13,7 +13,7 @@
 import type { SigningMachineContext } from '../machine/context'
 import {
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
     isTransactionRequest,
 } from '../models'
 import { isInteractiveSource } from '../pipeline/types'
@@ -61,11 +61,11 @@ const resolveKind = (context: SigningMachineContext): ResolvedRequestKind => {
         }
     }
 
-    if (isArc60Request(req)) {
+    if (isAuthDataRequest(req)) {
         return {
-            type: 'arc60',
+            type: 'auth-data',
             parsed: parseArc60ForDisplay(
-                req.stdSigData.data,
+                req.authData.data,
                 req.metadata.encoding,
             ),
         }

@@ -42,9 +42,9 @@ vi.mock('../useArbitraryDataSigner', () => ({
     })),
 }))
 
-vi.mock('../useLocalKeyArc60Signer', () => ({
-    useLocalKeyArc60Signer: vi.fn(() => ({
-        signArc60: vi.fn(),
+vi.mock('../useAuthDataSigner', () => ({
+    useAuthDataSigner: vi.fn(() => ({
+        signAuthData: vi.fn(),
     })),
 }))
 

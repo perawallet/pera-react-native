@@ -37,7 +37,7 @@ export interface ArbitraryDataSignableData {
  * review only). The wallet must verify
  * `authenticatorData[0:32] === sha256(utf8(domain))` before signing.
  */
-export interface Arc60StdSigData {
+export interface AuthData {
     /** Encoded payload — decoded for display, hashed for signing. */
     data: string
     /** Algorand address / Ed25519 public key of the signer. */
@@ -52,23 +52,23 @@ export interface Arc60StdSigData {
     hdPath?: string
 }
 
-export interface Arc60Metadata {
+export interface AuthDataMetadata {
     /** ARC-60 scope; only `1` (AUTH) is defined today. */
     scope: number
     /** Encoding of `data` (e.g. 'base64'). */
     encoding: string
 }
 
-export interface Arc60SignableData {
-    type: 'arc60'
-    stdSigData: Arc60StdSigData
-    metadata: Arc60Metadata
+export interface AuthDataSignableData {
+    type: 'auth-data'
+    authData: AuthData
+    metadata: AuthDataMetadata
 }
 
 export type SignableData =
     | TransactionSignableData
     | ArbitraryDataSignableData
-    | Arc60SignableData
+    | AuthDataSignableData
 
 /** Shared by SourceMetadata (pipeline) and SignRequest (models). */
 export type SourceType =
@@ -77,7 +77,7 @@ export type SourceType =
     | 'webview'
     | 'deeplink'
     | 'multisig-cosign'
-    | 'arc60'
+    | 'card'
     | 'gift-card'
     | 'injected' // browser-extension window.pera provider
 
@@ -92,7 +92,7 @@ export const INTERACTIVE_SOURCES = [
     'webview',
     'deeplink',
     'multisig-cosign',
-    'arc60',
+    'card',
     'gift-card',
     'injected',
 ] as const satisfies readonly SourceType[]
@@ -350,15 +350,15 @@ export interface SignedArbitraryData {
     signatures: Uint8Array[]
 }
 
-export interface SignedArc60Data {
-    type: 'arc60'
+export interface SignedAuthData {
+    type: 'auth-data'
     signature: Uint8Array
 }
 
 export type SignedData =
     | SignedTransactionData
     | SignedArbitraryData
-    | SignedArc60Data
+    | SignedAuthData
 
 export interface SigningResult {
     signedData: SignedData

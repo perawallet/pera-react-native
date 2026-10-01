@@ -49,7 +49,7 @@ export const createMultisigStrategy = (
                 )
             }
 
-            if (group.data.type === 'arc60') {
+            if (group.data.type === 'auth-data') {
                 throw new SigningError(
                     'Multisig signing of ARC-60 requests is not supported',
                 )

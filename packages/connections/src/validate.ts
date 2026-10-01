@@ -15,7 +15,7 @@ import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
     legacyArbitraryDataWireSchema,
     parseArc60WireRequest,
-    type Arc60SignableData,
+    type AuthDataSignableData,
 } from '@perawallet/wallet-core-signing'
 import { dappRequestChainAdapters } from './dappRequest'
 import { ConnectionsError } from './errors'
@@ -145,12 +145,12 @@ export const validateRawMessage = (
     }
 
     // Shared with the in-app webview bridge so the two transports cannot drift.
-    let payload: Arc60SignableData
+    let payload: AuthDataSignableData
     try {
-        const { stdSigData, metadata } = parseArc60WireRequest(
+        const { authData, metadata } = parseArc60WireRequest(
             rawOperation.params,
         )
-        payload = { type: 'arc60', stdSigData, metadata }
+        payload = { type: 'auth-data', authData, metadata }
     } catch (error) {
         const original = toError(error)
         return {

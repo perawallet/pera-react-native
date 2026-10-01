@@ -13,7 +13,7 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     ArbitraryDataSignableData,
-    Arc60SignableData,
+    AuthDataSignableData,
     SigningCallbacks,
     SigningResult,
 } from '../types'
@@ -31,14 +31,14 @@ export type LocalArbitrarySigningFunction = (
 ) => Promise<Uint8Array[]>
 
 /**
- * Signing function type that matches useLocalKeyArc60Signer's signArc60.
+ * Signing function type that matches useAuthDataSigner's signAuthData.
  * Shared by every strategy whose key material lives locally (Algo25, HD
  * Wallet, Quantum).
  */
-export type LocalArc60SigningFunction = (
+export type LocalAuthDataSigningFunction = (
     account: WalletAccount,
-    stdSigData: Arc60SignableData['stdSigData'],
-    metadata: Arc60SignableData['metadata'],
+    authData: AuthDataSignableData['authData'],
+    metadata: AuthDataSignableData['metadata'],
 ) => Promise<Uint8Array>
 
 /**
@@ -84,22 +84,22 @@ export const signArbitraryDataCase = async (
 /**
  * Handles an `arc60` signable group for any strategy backed by a local-key
  * signing function. Domain / SIWA validation happens inside the injected
- * `signArc60` (see `utils/arc60.ts`'s `validateArc60AuthRequest`) — this
+ * `signAuthData` (see `utils/arc60.ts`'s `validateArc60AuthRequest`) — this
  * helper only wires the pipeline shapes.
  */
-export const signArc60Case = async (
-    data: Arc60SignableData,
+export const signAuthDataCase = async (
+    data: AuthDataSignableData,
     originalIndices: number[] | undefined,
     account: WalletAccount,
-    signArc60: LocalArc60SigningFunction,
+    signAuthData: LocalAuthDataSigningFunction,
     callbacks?: SigningCallbacks,
 ): Promise<SigningResult> => {
     callbacks?.onSigningStart?.()
-    const signature = await signArc60(account, data.stdSigData, data.metadata)
+    const signature = await signAuthData(account, data.authData, data.metadata)
     callbacks?.onSigningComplete?.()
 
     return {
-        signedData: { type: 'arc60', signature },
+        signedData: { type: 'auth-data', signature },
         signers: [{ address: account.address }],
         originalIndices,
     }

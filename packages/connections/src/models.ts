@@ -13,7 +13,7 @@
 import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
-    Arc60SignableData,
+    AuthDataSignableData,
     PeraArbitraryDataMessage,
     SourceType,
 } from '@perawallet/wallet-core-signing'
@@ -45,7 +45,7 @@ export type WalletOperation =
     | { type: 'sign-transactions'; group: readonly unknown[] }
     | {
           type: 'sign-data'
-          payload: Arc60SignableData | PeraArbitraryDataMessage[]
+          payload: AuthDataSignableData | PeraArbitraryDataMessage[]
       }
 
 /** Signing results, before the handler envelopes them for its wire. */

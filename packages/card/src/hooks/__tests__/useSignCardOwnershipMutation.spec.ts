@@ -55,17 +55,17 @@ describe('useSignCardOwnershipMutation', () => {
     })
 
     it('builds and signs an ARC-60 SIWA request, base64-encoding the result', async () => {
-        const signArc60 = vi.fn(async () => new Uint8Array(64).fill(7))
+        const signAuthData = vi.fn(async () => new Uint8Array(64).fill(7))
         const { result } = renderHook(() => useSignCardOwnershipMutation(), {
             wrapper,
         })
 
         const proof = await result.current.mutateAsync({
             address: 'FUNDINGADDR',
-            signArc60,
+            signAuthData,
         })
 
-        expect(signArc60).toHaveBeenCalledWith(
+        expect(signAuthData).toHaveBeenCalledWith(
             expect.objectContaining({
                 signer: 'FUNDINGADDR',
                 domain: 'perawallet.app',
@@ -80,14 +80,14 @@ describe('useSignCardOwnershipMutation', () => {
     })
 
     it('fetches a delegation token first and embeds its nonce in the signed SIWA payload', async () => {
-        const signArc60 = vi.fn(async () => new Uint8Array(64).fill(7))
+        const signAuthData = vi.fn(async () => new Uint8Array(64).fill(7))
         const { result } = renderHook(() => useSignCardOwnershipMutation(), {
             wrapper,
         })
 
         const proof = await result.current.mutateAsync({
             address: 'FUNDINGADDR',
-            signArc60,
+            signAuthData,
         })
 
         expect(fetchDelegationToken).toHaveBeenCalledWith(
@@ -99,14 +99,14 @@ describe('useSignCardOwnershipMutation', () => {
 
     it('does not sign when the token fetch fails', async () => {
         fetchDelegationToken.mockRejectedValue(new Error('delegation down'))
-        const signArc60 = vi.fn(async () => new Uint8Array(64).fill(7))
+        const signAuthData = vi.fn(async () => new Uint8Array(64).fill(7))
         const { result } = renderHook(() => useSignCardOwnershipMutation(), {
             wrapper,
         })
 
         await expect(
-            result.current.mutateAsync({ address: 'FUNDINGADDR', signArc60 }),
+            result.current.mutateAsync({ address: 'FUNDINGADDR', signAuthData }),
         ).rejects.toThrow('delegation down')
-        expect(signArc60).not.toHaveBeenCalled()
+        expect(signAuthData).not.toHaveBeenCalled()
     })
 })

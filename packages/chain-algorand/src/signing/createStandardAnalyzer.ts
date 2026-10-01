@@ -125,16 +125,16 @@ const createNonTransactionAnalysis = (
     const warnings: AnalysisWarning[] = []
 
     if (
-        group.data.type === 'arc60' &&
+        group.data.type === 'auth-data' &&
         isArc60OriginMismatch(
-            group.data.stdSigData.domain,
+            group.data.authData.domain,
             group.source.verifiedOrigin,
         )
     ) {
         warnings.push({
             type: 'suspicious',
             severity: 'danger',
-            message: `The sign-in domain "${group.data.stdSigData.domain}" does not match the site that requested it (${group.source.verifiedOrigin}).`,
+            message: `The sign-in domain "${group.data.authData.domain}" does not match the site that requested it (${group.source.verifiedOrigin}).`,
         })
     }
 

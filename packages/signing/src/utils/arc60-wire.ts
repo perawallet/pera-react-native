@@ -15,7 +15,7 @@ import {
     decodeFromBase64,
     utf8ByteLength,
 } from '@perawallet/wallet-core-shared'
-import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
+import type { AuthDataMetadata, AuthData } from '../pipeline/types'
 import { Arc60BadRequestError } from './arc60-errors'
 
 // Shared by every transport that accepts an ARC-60 request; re-declaring the
@@ -89,7 +89,7 @@ export const isArc60WirePayload = (params: unknown): boolean => {
  */
 export const parseArc60WireRequest = (
     rawParams: unknown,
-): { stdSigData: Arc60StdSigData; metadata: Arc60Metadata } => {
+): { authData: AuthData; metadata: AuthDataMetadata } => {
     assertArc60RequestWithinLimits(rawParams)
 
     const parsed = arc60WireSchema.safeParse(rawParams)
@@ -121,7 +121,7 @@ export const parseArc60WireRequest = (
     }
 
     return {
-        stdSigData: {
+        authData: {
             data,
             signer,
             domain,

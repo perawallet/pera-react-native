@@ -24,7 +24,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { SIGNING_KEY_DOMAIN } from '../constants'
-import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
+import type { AuthDataMetadata, AuthData } from '../pipeline/types'
 import {
     buildArc60AuthSigningPayload,
     validateArc60AuthRequest,
@@ -34,32 +34,32 @@ import {
     Arc60InvalidSignerError,
 } from '../utils/arc60-errors'
 
-export type UseLocalKeyArc60SignerResult = {
+export type UseAuthDataSignerResult = {
     /**
      * Produces a single ARC-60 AUTH-scope signature for the given signer
      * account. Throws spec-aligned errors (`Arc60*Error`) for every rejection
      * path so the caller can surface a precise reason to the dApp.
      */
-    signArc60: (
+    signAuthData: (
         account: WalletAccount,
-        stdSigData: Arc60StdSigData,
-        metadata: Arc60Metadata,
+        authData: AuthData,
+        metadata: AuthDataMetadata,
     ) => Promise<Uint8Array>
 }
 
 // Local-key-only path (Algo25 / HDWallet via KMS). Ledger ARC-60 takes a
 // separate route: hardware signer-type dispatch → createHardwareStrategy →
 // signArc60OnHardwareWallet, so it never hits this hook.
-export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
+export const useAuthDataSigner = (): UseAuthDataSignerResult => {
     const { signDataWithKey } = useKMS()
     const accounts = useAllAccounts()
     const { network } = useNetwork()
 
-    const signArc60 = useCallback(
+    const signAuthData = useCallback(
         async (
             account: WalletAccount,
-            stdSigData: Arc60StdSigData,
-            metadata: Arc60Metadata,
+            authData: AuthData,
+            metadata: AuthDataMetadata,
         ): Promise<Uint8Array> => {
             // `account` is the account the dApp named as `signer`. Data
             // signing never follows a rekey (see resolveSigningAccount), so a
@@ -74,17 +74,17 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
 
             // Shared host-side validation (scope / domain / SIWA / signer).
             const { decodedData } = validateArc60AuthRequest(
-                stdSigData,
+                authData,
                 metadata,
                 accounts,
             )
 
             const payload = buildArc60AuthSigningPayload(
                 decodedData,
-                stdSigData.authenticatorData,
+                authData.authenticatorData,
             )
 
-            const { hdPath } = stdSigData
+            const { hdPath } = authData
 
             if (isHDWalletAccount(account)) {
                 if (hdPath) {
@@ -142,5 +142,5 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
         [signDataWithKey, accounts, network],
     )
 
-    return { signArc60 }
+    return { signAuthData }
 }

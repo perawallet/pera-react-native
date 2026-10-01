@@ -74,12 +74,12 @@ describe('assertArc60RequestWithinLimits', () => {
 
 describe('parseArc60WireRequest', () => {
     it('parses a valid request and base64-decodes authenticatorData', () => {
-        const { stdSigData, metadata } = parseArc60WireRequest(validWireRequest)
+        const { authData, metadata } = parseArc60WireRequest(validWireRequest)
 
-        expect(stdSigData.signer).toBe('SIGNER_ADDRESS')
-        expect(stdSigData.domain).toBe('arc60.io')
-        expect(stdSigData.authenticatorData).toBeInstanceOf(Uint8Array)
-        expect(stdSigData.authenticatorData.length).toBe(37)
+        expect(authData.signer).toBe('SIGNER_ADDRESS')
+        expect(authData.domain).toBe('arc60.io')
+        expect(authData.authenticatorData).toBeInstanceOf(Uint8Array)
+        expect(authData.authenticatorData.length).toBe(37)
         expect(metadata).toEqual({ scope: 1, encoding: 'base64' })
     })
 
@@ -139,12 +139,12 @@ describe('parseArc60WireRequest', () => {
             .replace(/\//g, '_')
         expect(urlSafe).toMatch(/[-_]/)
 
-        const { stdSigData } = parseArc60WireRequest({
+        const { authData } = parseArc60WireRequest({
             ...validWireRequest,
             authenticatorData: urlSafe,
         })
 
-        expect(stdSigData.authenticatorData.length).toBe(37)
+        expect(authData.authenticatorData.length).toBe(37)
     })
 })
 

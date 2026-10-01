@@ -29,8 +29,8 @@ import type {
     SigningStrategy,
     AnalyzedSignableGroup,
     TransactionSignableData,
-    Arc60StdSigData,
-    Arc60Metadata,
+    AuthData,
+    AuthDataMetadata,
     SigningResult,
     SigningCallbacks,
     SignerInfo,
@@ -197,8 +197,8 @@ const signTransactionsOnHardwareWallet = (
 /** Gates on minimum app version and host-side ARC-60 validation before signing. */
 const signArc60OnHardwareWallet = (
     hwAccount: HardwareWalletAccount,
-    stdSigData: Arc60StdSigData,
-    metadata: Arc60Metadata,
+    authData: AuthData,
+    metadata: AuthDataMetadata,
     options: SignArc60OnHardwareWalletOptions,
 ): Promise<Uint8Array> => {
     const { getAllAccounts, callbacks } = options
@@ -219,7 +219,7 @@ const signArc60OnHardwareWallet = (
                 throw new LedgerAppOutdatedError()
             }
 
-            validateArc60AuthRequest(stdSigData, metadata, getAllAccounts())
+            validateArc60AuthRequest(authData, metadata, getAllAccounts())
 
             callbacks?.onSigningStart?.()
             callbacks?.onProgress?.(1, 1)
@@ -228,12 +228,12 @@ const signArc60OnHardwareWallet = (
                 guard.race(
                     transport.signData({
                         accountIndex,
-                        data: stdSigData.data,
+                        data: authData.data,
                         signerPublicKey: Address.fromString(hwAccount.address)
                             .publicKey,
-                        domain: stdSigData.domain,
-                        authenticatorData: stdSigData.authenticatorData,
-                        requestId: stdSigData.requestId,
+                        domain: authData.domain,
+                        authenticatorData: authData.authenticatorData,
+                        requestId: authData.requestId,
                         scope: metadata.scope,
                         encoding: metadata.encoding,
                     }),
@@ -276,10 +276,10 @@ export const createHardwareStrategy = (
                 )
             }
 
-            if (group.data.type === 'arc60') {
+            if (group.data.type === 'auth-data') {
                 const signature = await signArc60OnHardwareWallet(
                     account,
-                    group.data.stdSigData,
+                    group.data.authData,
                     group.data.metadata,
                     {
                         registry: hardwareWalletRegistry,
@@ -288,7 +288,7 @@ export const createHardwareStrategy = (
                     },
                 )
                 return {
-                    signedData: { type: 'arc60', signature },
+                    signedData: { type: 'auth-data', signature },
                     signers: [{ address: account.address }],
                     originalIndices: group.originalIndices,
                 }
