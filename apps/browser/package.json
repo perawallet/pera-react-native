@@ -35,6 +35,7 @@
     "firebase": "^12.17.1"
   },
   "devDependencies": {
+    "@noble/ciphers": "catalog:",
     "@noble/hashes": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@perawallet/walletconnect": "catalog:",
