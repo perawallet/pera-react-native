@@ -24,7 +24,6 @@ export const routeCapabilities: RouteCapabilities = {
     peraCard: true,
     giftCards: true,
     inAppWebView: true,
-    fullScreenMediaViewer: true,
     qrScanner: true,
     recoverAccountQr: true,
     ledgerUsb: isAndroid(),

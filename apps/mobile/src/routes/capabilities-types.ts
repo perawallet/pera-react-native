@@ -23,9 +23,6 @@ export type RouteCapabilities = {
     giftCards: boolean
     /** In-app webview screens (help center, terms links). Off ⇒ Linking.openURL. */
     inAppWebView: boolean
-    /** Collectible media in a full-screen bottom sheet. Off ⇒ the raw media
-     * opens in a browser tab, since a sheet can't fill the screen in a popup. */
-    fullScreenMediaViewer: boolean
     qrScanner: boolean
     /** Recovering an account from a passphrase QR: the import-options row and
      * the passphrase screen's scan entry. Off on web, where the popup can't

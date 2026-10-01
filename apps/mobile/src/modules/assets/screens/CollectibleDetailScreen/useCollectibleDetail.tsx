@@ -390,12 +390,6 @@ export const useCollectibleDetail = (
             const matchIndex = fullScreenMedia.findIndex(m => m.uri === uri)
             const targetIndex = matchIndex >= 0 ? matchIndex : 0
 
-            if (!routeCapabilities.fullScreenMediaViewer) {
-                const targetUri = fullScreenMedia[targetIndex]?.uri
-                if (targetUri) openValidatedBrowserUrl(targetUri)
-                return
-            }
-
             void requestBottomSheet({
                 contents: (
                     <FullScreenMediaViewer
