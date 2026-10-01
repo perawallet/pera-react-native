@@ -552,7 +552,7 @@ export type ResolveHandoffOutcomeArgs = {
 /**
  * Side-effecting collaborators a multisig-handoff completion needs. Injected so
  * the orchestration stays a pure function of its inputs, unit-testable without
- * React, algod, or the multisig API, and so each consumer supplies only its own
+ * React, the node, or the multisig API, and so each consumer supplies only its own
  * submission and status semantics.
  */
 export type MultisigHandoffCompletionDeps = {
@@ -602,7 +602,7 @@ export type CompleteMultisigHandoffArgs = {
     deps: MultisigHandoffCompletionDeps
     /**
      * Tx ids persisted by `recordSubmitted` in a previous session. When set,
-     * the transactions are already on chain: never submit again (algod would
+     * the transactions are already on chain: never submit again (the node would
      * reject the duplicate and the failure path would flip a landed swap to
      * "failed"), and ignore whatever the poll now says; a post-crash
      * `expired`/`failed` status just means mark-confirmed never made it.
@@ -677,8 +677,8 @@ export interface PlannerChainAdapter {
 
     /**
      * The signed-transaction envelope for `txn`. Unsigned when `signature` is
-     * absent; `sgnr` is set only when `signerAddress` differs from the sender
-     * (the rekey case), so the node can find the authorizing key.
+     * absent; the authorizing signer is recorded only when `signerAddress`
+     * differs from the sender, so the node can find the key that signed.
      */
     assembleSignedTransaction(
         txn: PeraTransaction,
