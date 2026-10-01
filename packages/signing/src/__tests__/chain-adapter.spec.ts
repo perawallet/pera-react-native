@@ -11,7 +11,10 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    ChainAdapterNotRegisteredError,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     aggregateTransactionWarnings,
     classifyRequestStructure,
@@ -58,7 +61,10 @@ const argsByWrapper: Record<WrapperName, unknown[]> = {
 
 const names = Object.keys(wrappers) as WrapperName[]
 const call = (name: WrapperName) =>
-    (wrappers[name] as (...a: unknown[]) => unknown)(...argsByWrapper[name])
+    (wrappers[name] as (...a: unknown[]) => unknown)(
+        LEGACY_CHAIN_ID,
+        ...argsByWrapper[name],
+    )
 
 describe('reviewer chain adapter registry', () => {
     it('resolves the registered adapter for a network', () => {

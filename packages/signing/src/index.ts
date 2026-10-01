@@ -97,7 +97,7 @@ export {
     reviewerChainAdapters,
     type ArbitraryDataDisplay,
     type GroupTransactionItem,
-    type RekeyedUnsignableReason,
+    type DelegatedUnsignableReason,
     type RequestStructure,
     type ReviewerChainAdapter,
     type SingleTransactionItem,

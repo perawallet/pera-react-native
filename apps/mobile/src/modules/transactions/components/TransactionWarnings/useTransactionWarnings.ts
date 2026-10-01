@@ -16,6 +16,7 @@ import {
     useAllAccounts,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     aggregateTransactionWarnings,
     type TransactionWarning,
@@ -54,6 +55,7 @@ export const useTransactionWarnings = (
     const warnings = useMemo(
         () =>
             aggregateTransactionWarnings(
+                LEGACY_CHAIN_ID,
                 [transaction],
                 userAccountAddresses,
                 signableAddresses,

@@ -18,7 +18,7 @@ import {
     isArbitraryDataRequest,
     isArc60Request,
     isTransactionRequest,
-    type RekeyedUnsignableReason,
+    type DelegatedUnsignableReason,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 
@@ -62,7 +62,7 @@ export const resolveAllSignerAddresses = (request: SignRequest): string[] => {
 export const getRekeyedUnsignableReason = (
     request: SignRequest,
     accounts: WalletAccount[],
-): RekeyedUnsignableReason | null => {
+): DelegatedUnsignableReason | null => {
     if (request.sourceType === 'multisig-cosign') return null
 
     const uniqueSigners = [...new Set(resolveAllSignerAddresses(request))]

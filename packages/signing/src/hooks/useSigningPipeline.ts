@@ -14,6 +14,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { AnyActorRef } from 'xstate'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { mapToDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     canSignWith,
     useAllAccounts,
@@ -77,7 +78,9 @@ const computeDisplayData = (
         txRequest.signableIndices ?? allTransactions.map((_, i) => i),
     )
 
+    // Sign requests carry no chain yet, so the review resolves the legacy chain.
     const listItems = createTransactionListItems(
+        LEGACY_CHAIN_ID,
         allTransactions,
         signableIndices,
     )
@@ -108,6 +111,7 @@ const computeDisplayData = (
     }
 
     const addressWarnings = aggregateTransactionWarnings(
+        LEGACY_CHAIN_ID,
         allTransactions,
         userAccountAddresses,
         signableAddresses,
@@ -130,7 +134,10 @@ const computeDisplayData = (
             warnings.findIndex(w => w.type === warning.type) === index,
     )
 
-    const requestStructure = classifyRequestStructure(listItems)
+    const requestStructure = classifyRequestStructure(
+        LEGACY_CHAIN_ID,
+        listItems,
+    )
 
     return {
         allTransactions,

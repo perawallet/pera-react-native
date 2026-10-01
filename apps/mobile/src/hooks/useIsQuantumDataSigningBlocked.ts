@@ -14,6 +14,7 @@ import {
     isQuantumAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     resolveAllSignerAddresses,
     type SignRequest,
@@ -40,7 +41,7 @@ export const useIsQuantumDataSigningBlocked = (
     // rekeyed to a quantum auth cannot do SIWA at all: naming itself is refused
     // by validateArc60AuthRequest (control moved to the auth), and naming the
     // quantum auth lands here.
-    return resolveAllSignerAddresses(request).some(address => {
+    return resolveAllSignerAddresses(LEGACY_CHAIN_ID, request).some(address => {
         const account = accounts.find(a => a.address === address)
         return !!account && isQuantumAccount(account)
     })

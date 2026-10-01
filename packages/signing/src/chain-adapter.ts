@@ -14,7 +14,6 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     createChainAdapterRegistry,
-    LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
@@ -49,7 +48,7 @@ export type GroupTransactionItem = {
 
 export type TransactionListItem = SingleTransactionItem | GroupTransactionItem
 
-export type RekeyedUnsignableReason = {
+export type DelegatedUnsignableReason = {
     kind: 'authMissing' | 'authIsWatch'
     senderAddress: string
     authAddress: string
@@ -82,7 +81,7 @@ export interface ReviewerChainAdapter {
     getRekeyedUnsignableReason(
         request: SignRequest,
         accounts: WalletAccount[],
-    ): RekeyedUnsignableReason | null
+    ): DelegatedUnsignableReason | null
     /** Never throws; anything that isn't cleanly printable comes back as hex. */
     decodeArbitraryDataForDisplay(data: string): ArbitraryDataDisplay
 }
@@ -94,25 +93,37 @@ export const reviewerChainAdapters =
 export const reviewerAdapterFor = (network: Network): ReviewerChainAdapter =>
     reviewerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
 
-// Sign requests and history rows carry no chain yet, so the wrappers resolve
-// the legacy chain.
-const legacyAdapter = (): ReviewerChainAdapter =>
-    reviewerChainAdapters.get(LEGACY_CHAIN_ID)
+type WithChain<F extends (...args: never[]) => unknown> = (
+    chainId: ChainId,
+    ...args: Parameters<F>
+) => ReturnType<F>
 
-export const createTransactionListItems: ReviewerChainAdapter['createTransactionListItems'] =
-    (...args) => legacyAdapter().createTransactionListItems(...args)
+export const createTransactionListItems: WithChain<
+    ReviewerChainAdapter['createTransactionListItems']
+> = (chainId, ...args) =>
+    reviewerChainAdapters.get(chainId).createTransactionListItems(...args)
 
-export const classifyRequestStructure: ReviewerChainAdapter['classifyRequestStructure'] =
-    (...args) => legacyAdapter().classifyRequestStructure(...args)
+export const classifyRequestStructure: WithChain<
+    ReviewerChainAdapter['classifyRequestStructure']
+> = (chainId, ...args) =>
+    reviewerChainAdapters.get(chainId).classifyRequestStructure(...args)
 
-export const aggregateTransactionWarnings: ReviewerChainAdapter['aggregateTransactionWarnings'] =
-    (...args) => legacyAdapter().aggregateTransactionWarnings(...args)
+export const aggregateTransactionWarnings: WithChain<
+    ReviewerChainAdapter['aggregateTransactionWarnings']
+> = (chainId, ...args) =>
+    reviewerChainAdapters.get(chainId).aggregateTransactionWarnings(...args)
 
-export const resolveAllSignerAddresses: ReviewerChainAdapter['resolveAllSignerAddresses'] =
-    (...args) => legacyAdapter().resolveAllSignerAddresses(...args)
+export const resolveAllSignerAddresses: WithChain<
+    ReviewerChainAdapter['resolveAllSignerAddresses']
+> = (chainId, ...args) =>
+    reviewerChainAdapters.get(chainId).resolveAllSignerAddresses(...args)
 
-export const getRekeyedUnsignableReason: ReviewerChainAdapter['getRekeyedUnsignableReason'] =
-    (...args) => legacyAdapter().getRekeyedUnsignableReason(...args)
+export const getRekeyedUnsignableReason: WithChain<
+    ReviewerChainAdapter['getRekeyedUnsignableReason']
+> = (chainId, ...args) =>
+    reviewerChainAdapters.get(chainId).getRekeyedUnsignableReason(...args)
 
-export const decodeArbitraryDataForDisplay: ReviewerChainAdapter['decodeArbitraryDataForDisplay'] =
-    (...args) => legacyAdapter().decodeArbitraryDataForDisplay(...args)
+export const decodeArbitraryDataForDisplay: WithChain<
+    ReviewerChainAdapter['decodeArbitraryDataForDisplay']
+> = (chainId, ...args) =>
+    reviewerChainAdapters.get(chainId).decodeArbitraryDataForDisplay(...args)
