@@ -84,12 +84,20 @@ export const useBackupPasskeyReview = (): UseBackupPasskeyReviewResult => {
     )
 
     const { mutate } = useBackupReviewActionMutation('passkey', {
-        onSuccess: (_result, { action }) => {
-            showToast({
-                title: t(TOAST_KEY[action].success),
-                body: '',
-                type: 'success',
-            })
+        onSuccess: (result, { action }) => {
+            showToast(
+                result === 'deferred'
+                    ? {
+                          title: t('cloud_backup.passkeys.back_up_deferred'),
+                          body: '',
+                          type: 'info',
+                      }
+                    : {
+                          title: t(TOAST_KEY[action].success),
+                          body: '',
+                          type: 'success',
+                      },
+            )
         },
         onError: (error, { action, id }) => {
             logger.warn('useBackupPasskeyReview: review action failed', {

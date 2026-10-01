@@ -80,12 +80,20 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     )
 
     const { mutate } = useBackupReviewActionMutation('account', {
-        onSuccess: (_result, { action }) => {
-            showToast({
-                title: t(TOAST_KEY[action].success),
-                body: '',
-                type: 'success',
-            })
+        onSuccess: (result, { action }) => {
+            showToast(
+                result === 'deferred'
+                    ? {
+                          title: t('cloud_backup.accounts.back_up_deferred'),
+                          body: '',
+                          type: 'info',
+                      }
+                    : {
+                          title: t(TOAST_KEY[action].success),
+                          body: '',
+                          type: 'success',
+                      },
+            )
         },
         onError: (error, { action, id }) => {
             logger.warn('useBackupAccountReview: review action failed', {

@@ -81,12 +81,20 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
     )
 
     const { mutate } = useBackupReviewActionMutation('contact', {
-        onSuccess: (_result, { action }) => {
-            showToast({
-                title: t(TOAST_KEY[action].success),
-                body: '',
-                type: 'success',
-            })
+        onSuccess: (result, { action }) => {
+            showToast(
+                result === 'deferred'
+                    ? {
+                          title: t('cloud_backup.contacts.back_up_deferred'),
+                          body: '',
+                          type: 'info',
+                      }
+                    : {
+                          title: t(TOAST_KEY[action].success),
+                          body: '',
+                          type: 'success',
+                      },
+            )
         },
         onError: (error, { action, id }) => {
             logger.warn('useBackupContactReview: review action failed', {

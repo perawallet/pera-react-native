@@ -41,7 +41,10 @@ const {
     showToastMock: vi.fn(),
     showErrorMock: vi.fn(),
     reviewActionMock: vi.fn(
-        async (_variables: { action: string; id: string }) => undefined,
+        async (_variables: {
+            action: string
+            id: string
+        }): Promise<string | undefined> => undefined,
     ),
     kindMock: { current: '' },
     // One class for both the mock factory below and the tests: `instanceof` is
@@ -182,6 +185,23 @@ describe('useBackupAccountReview', () => {
                 expect.objectContaining({ type: 'success' }),
             ),
         )
+    })
+
+    test('reports a back-up a lock cut off as finishing on the next sync, not as a success or failure', async () => {
+        reviewActionMock.mockResolvedValueOnce('deferred')
+        const { result } = renderReview()
+
+        act(() => result.current.backUpAccount('B'))
+
+        await waitFor(() =>
+            expect(showToastMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'cloud_backup.accounts.back_up_deferred',
+                    type: 'info',
+                }),
+            ),
+        )
+        expect(showToastMock).toHaveBeenCalledTimes(1)
     })
 
     test('reports a rejected action as an error', async () => {

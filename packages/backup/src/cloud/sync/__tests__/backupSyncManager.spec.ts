@@ -709,7 +709,7 @@ describe('BackupSyncManager', () => {
             syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 })
             const mgr = new BackupSyncManager(makeDeps())
 
-            expect(await mgr.backUpAccount(ADDR)).toBe(true)
+            expect(await mgr.backUpAccount(ADDR)).toBe('settled')
             mgr.stop()
         })
 
@@ -742,8 +742,8 @@ describe('BackupSyncManager', () => {
             held.release()
             await background
 
-            expect(await first).toBe(true)
-            expect(await repeat).toBe(true)
+            expect(await first).toBe('settled')
+            expect(await repeat).toBe('settled')
             // One background sync, then the single staged sync.
             expect(mockSyncBackup).toHaveBeenCalledTimes(2)
             mgr.stop()
@@ -753,7 +753,7 @@ describe('BackupSyncManager', () => {
             syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 0 })
             const mgr = new BackupSyncManager(makeDeps())
 
-            expect(await mgr.backUpAccount(ADDR)).toBe(false)
+            expect(await mgr.backUpAccount(ADDR)).toBe('failed')
             mgr.stop()
         })
 
@@ -770,7 +770,7 @@ describe('BackupSyncManager', () => {
             held.release()
             await running
 
-            expect(await backingUp).toBe(true)
+            expect(await backingUp).toBe('settled')
             expect(mockSyncBackup).toHaveBeenCalledTimes(2)
             mgr.stop()
         })
@@ -802,7 +802,7 @@ describe('BackupSyncManager', () => {
             held.release()
             await running
 
-            expect(await backedUp).toBe(true)
+            expect(await backedUp).toBe('settled')
             expect(await added).not.toBeNull()
             expect(maxActive).toBe(1)
             mgr.stop()
@@ -821,10 +821,23 @@ describe('BackupSyncManager', () => {
             held.release()
             await running
 
-            expect(await backingUp).toBe(false)
+            expect(await backingUp).toBe('refused')
             expect(mockWithBackupEncryptionKey).toHaveBeenCalledTimes(1)
             expect(mockSyncBackup).toHaveBeenCalledTimes(1)
             mgr.stop()
+        })
+
+        it('reports a back-up whose upload a stop cut off as deferred, not failed', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 0 })
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+
+            const backedUp = mgr.backUpAccount(ADDR)
+            await vi.waitFor(() => expect(held.deps).not.toBeNull())
+            mgr.stop()
+            held.release()
+
+            expect(await backedUp).toBe('deferred')
         })
 
         it('reports failure when the sync itself threw', async () => {
@@ -834,7 +847,7 @@ describe('BackupSyncManager', () => {
             mockSyncBackup.mockRejectedValue(new Error('network down'))
             const mgr = new BackupSyncManager(makeDeps())
 
-            expect(await mgr.backUpAccount(ADDR)).toBe(false)
+            expect(await mgr.backUpAccount(ADDR)).toBe('failed')
             mgr.stop()
         })
     })
@@ -880,7 +893,7 @@ describe('BackupSyncManager', () => {
                 }),
             })
 
-            expect(await mgr.backUpPasskey(CREDENTIAL_ID)).toBe(true)
+            expect(await mgr.backUpPasskey(CREDENTIAL_ID)).toBe('settled')
             mgr.stop()
         })
 
@@ -893,7 +906,7 @@ describe('BackupSyncManager', () => {
                 }),
             })
 
-            expect(await mgr.backUpPasskey(CREDENTIAL_ID)).toBe(false)
+            expect(await mgr.backUpPasskey(CREDENTIAL_ID)).toBe('failed')
             mgr.stop()
         })
     })

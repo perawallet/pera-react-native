@@ -67,6 +67,7 @@ export type {
 export { UnsupportedBackupAccountTypeError } from './types'
 export type {
     BackupActionOutcome,
+    BackupBackUpOutcome,
     BackupSyncSources,
     BackupSyncStatePort,
     SerializedItem,

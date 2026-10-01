@@ -66,6 +66,7 @@ import {
 import { BackupPushIncompleteError, BackupSyncAbortedError } from './types'
 import type {
     BackupActionOutcome,
+    BackupBackUpOutcome,
     BackupSyncSources,
     BackupSyncStatePort,
     ContactImportFn,
@@ -207,8 +208,12 @@ export class BackupSyncManager {
         while (this.inFlight) {
             await this.inFlight.catch(() => undefined)
         }
-        if (this.stopEpoch !== epoch || this.deps.isLocked()) return null
+        if (this.wasInterrupted(epoch)) return null
         return this.hold(work)
+    }
+
+    private wasInterrupted(epoch: number): boolean {
+        return this.stopEpoch !== epoch || this.deps.isLocked()
     }
 
     private context(): Nullable<{
@@ -325,14 +330,18 @@ export class BackupSyncManager {
     /** `syncNow` swallows transport failures, and a push the server rejects on
      *  version leaves knownVer at 0 inside a run that otherwise succeeded — so
      *  the state, not "it returned", says whether the account landed. */
-    backUpAccount(address: string): Promise<boolean> {
+    backUpAccount(address: string): Promise<BackupBackUpOutcome> {
         return this.trackAction('account', address, 'backUp', async () => {
+            const epoch = this.stopEpoch
             const staged = await this.withExclusiveState(async state =>
                 markAccountForBackup(state, address),
             )
-            if (!staged) return false
+            if (!staged) return 'refused'
             await this.syncWhenIdle()
-            return isAddressBackedUp(this.state.getSyncState(), address)
+            if (isAddressBackedUp(this.state.getSyncState(), address)) {
+                return 'settled'
+            }
+            return this.wasInterrupted(epoch) ? 'deferred' : 'failed'
         })
     }
 
@@ -391,14 +400,18 @@ export class BackupSyncManager {
         return this.applyLocalEdit(state => keepAccountInBackup(state, address))
     }
 
-    backUpContact(address: string): Promise<boolean> {
+    backUpContact(address: string): Promise<BackupBackUpOutcome> {
         return this.trackAction('contact', address, 'backUp', async () => {
+            const epoch = this.stopEpoch
             const staged = await this.withExclusiveState(async state =>
                 markContactForBackup(state, address),
             )
-            if (!staged) return false
+            if (!staged) return 'refused'
             await this.syncWhenIdle()
-            return isContactBackedUp(this.state.getSyncState(), address)
+            if (isContactBackedUp(this.state.getSyncState(), address)) {
+                return 'settled'
+            }
+            return this.wasInterrupted(epoch) ? 'deferred' : 'failed'
         })
     }
 
@@ -440,14 +453,18 @@ export class BackupSyncManager {
         )
     }
 
-    backUpPasskey(credentialId: string): Promise<boolean> {
+    backUpPasskey(credentialId: string): Promise<BackupBackUpOutcome> {
         return this.trackAction('passkey', credentialId, 'backUp', async () => {
+            const epoch = this.stopEpoch
             const staged = await this.withExclusiveState(async state =>
                 markPasskeyForBackup(state, credentialId),
             )
-            if (!staged) return false
+            if (!staged) return 'refused'
             await this.syncWhenIdle()
-            return isPasskeyBackedUp(this.state.getSyncState(), credentialId)
+            if (isPasskeyBackedUp(this.state.getSyncState(), credentialId)) {
+                return 'settled'
+            }
+            return this.wasInterrupted(epoch) ? 'deferred' : 'failed'
         })
     }
 
