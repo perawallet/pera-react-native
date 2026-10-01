@@ -31,12 +31,21 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    AccountAssetHoldingsSchema,
     refreshAccountHoldings,
     upsertAccountBalance,
     getAccountBalance,
     getHeldAssetIdsByAccount,
 } from '../../db'
 import { cleanupRemovedAccountData } from '../cleanupRemovedAccountData'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 const makeAsset = (assetId: string): PeraAsset => ({
     assetId,
@@ -50,11 +59,11 @@ const makeAsset = (assetId: string): PeraAsset => ({
 const balanceArgs = (
     db: Database,
     accountAddress: string,
-    network: string,
+    scope: ChainScope,
 ) => ({
     db,
     accountAddress,
-    network,
+    scope,
     algoBalance: new Decimal('1'),
     totalAssetsOptedIn: 0,
     totalCreatedAssets: 0,
@@ -89,14 +98,47 @@ describe('cleanupRemovedAccountData', () => {
         expect(handler).toHaveBeenCalledWith({ db, accountAddress: 'ADDR1' })
     })
 
+    it('finishes the cleanup when a stored network is not a known scope', async () => {
+        const handler = vi.fn().mockResolvedValue(undefined)
+        registerAccountCleanup(handler)
+        await upsertAssets({
+            db,
+            items: [makeAsset('100')],
+            network: 'mainnet',
+        })
+        await refreshAccountHoldings({
+            db,
+            accountAddress: 'ADDR1',
+            holdings: [{ assetId: '100', amount: 5n }],
+            scope: MAINNET_SCOPE,
+        })
+        await db
+            .insert(AccountAssetHoldingsSchema)
+            .values({
+                accountAddress: 'ADDR1',
+                assetId: new Decimal('200'),
+                network: 'devnet' as ChainScopeKey,
+                updatedAt: Date.now(),
+            })
+            .run()
+
+        const result = await cleanupRemovedAccountData({
+            db,
+            accountAddress: 'ADDR1',
+        })
+
+        expect(result.prunedAssetIdsByNetwork).toEqual({ mainnet: ['100'] })
+        expect(handler).toHaveBeenCalledWith({ db, accountAddress: 'ADDR1' })
+    })
+
     it('removes the account holdings and balance row', async () => {
         await refreshAccountHoldings({
             db,
             accountAddress: 'ADDR1',
             holdings: [{ assetId: '100', amount: 5n }],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
-        await upsertAccountBalance(balanceArgs(db, 'ADDR1', 'mainnet'))
+        await upsertAccountBalance(balanceArgs(db, 'ADDR1', MAINNET_SCOPE))
 
         await cleanupRemovedAccountData({ db, accountAddress: 'ADDR1' })
 
@@ -107,7 +149,7 @@ describe('cleanupRemovedAccountData', () => {
             await getAccountBalance({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             }),
         ).toBeUndefined()
     })
@@ -127,7 +169,7 @@ describe('cleanupRemovedAccountData', () => {
             db,
             accountAddress: 'ADDR1',
             holdings: [{ assetId: '100', amount: 5n }],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
 
         const result = await cleanupRemovedAccountData({
@@ -162,7 +204,7 @@ describe('cleanupRemovedAccountData', () => {
                 { assetId: '200', amount: 5n },
                 { assetId: '400', amount: 5n },
             ],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         await refreshAccountHoldings({
             db,
@@ -171,7 +213,7 @@ describe('cleanupRemovedAccountData', () => {
                 { assetId: '200', amount: 9n },
                 { assetId: '400', amount: 0n },
             ],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
 
         await cleanupRemovedAccountData({ db, accountAddress: 'ADDR1' })
@@ -202,13 +244,13 @@ describe('cleanupRemovedAccountData', () => {
             db,
             accountAddress: 'ADDR1',
             holdings: [{ assetId: '100', amount: 5n }],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         await refreshAccountHoldings({
             db,
             accountAddress: 'ADDR1',
             holdings: [{ assetId: '300', amount: 5n }],
-            network: 'testnet',
+            scope: TESTNET_SCOPE,
         })
 
         const result = await cleanupRemovedAccountData({
@@ -238,7 +280,7 @@ describe('cleanupRemovedAccountData', () => {
             db,
             accountAddress: 'ADDR1',
             holdings: [{ assetId: '0', amount: 5_000_000n }],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
 
         const result = await cleanupRemovedAccountData({

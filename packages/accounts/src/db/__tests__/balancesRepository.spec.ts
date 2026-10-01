@@ -18,7 +18,10 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { upsertAccountBalance, getAccountBalance } from '../balancesRepository'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 describe('account balances repository', () => {
     let db: Database
@@ -40,7 +43,7 @@ describe('account balances repository', () => {
             await upsertAccountBalance({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 algoBalance: 5000000n,
                 totalAssetsOptedIn: 3,
                 totalCreatedAssets: 1,
@@ -53,7 +56,7 @@ describe('account balances repository', () => {
             const result = await getAccountBalance({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toBeDefined()
@@ -67,7 +70,7 @@ describe('account balances repository', () => {
             await upsertAccountBalance({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 algoBalance: 5000000n,
                 totalAssetsOptedIn: 3,
                 totalCreatedAssets: 1,
@@ -80,7 +83,7 @@ describe('account balances repository', () => {
             await upsertAccountBalance({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 algoBalance: 9000000n,
                 totalAssetsOptedIn: 5,
                 totalCreatedAssets: 2,
@@ -93,7 +96,7 @@ describe('account balances repository', () => {
             const result = await getAccountBalance({
                 db,
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toBeDefined()
@@ -108,7 +111,7 @@ describe('account balances repository', () => {
             const result = await getAccountBalance({
                 db,
                 accountAddress: 'UNKNOWN',
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toBeUndefined()

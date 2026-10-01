@@ -64,6 +64,7 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { UndoRekeyConfirmScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeyConfirmScreen'
 import { UndoRekeySuccessScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeySuccessScreen'
 
@@ -73,6 +74,8 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 // The source is a rekeyed account; the held auth account does the signing.
 // integration tests don't load i18n, so `t()` returns the raw key — the
@@ -116,7 +119,7 @@ const seedRekeyedSource = async (): Promise<{
     // reads this balance row and disables the CTA without it.
     await upsertAccountBalance({
         accountAddress: source.address,
-        network: 'mainnet',
+        scope: MAINNET_SCOPE,
         algoBalance: new Decimal(5),
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,

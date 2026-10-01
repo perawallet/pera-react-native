@@ -544,7 +544,7 @@ describe('useTransactionSendFlow', () => {
         expect(mockAddToAssetHolding).toHaveBeenCalledWith({
             accountAddress: 'A',
             assetId: '99',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             amount: new Decimal(250),
         })
         expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['99'], {
@@ -744,7 +744,7 @@ describe('useTransactionSendFlow', () => {
             expect(mockIsAssetFrozen).toHaveBeenCalledWith({
                 accountAddress: 'A',
                 assetId: '99',
-                network: expect.any(String),
+                scope: { chainId: 'algorand', networkId: expect.any(String) },
             })
         })
 

@@ -60,7 +60,7 @@ import {
 
 export type AlgorandSwapExecutionContext = Omit<
     SwapExecutionContext,
-    'assetOptInMinBalance' | 'scope'
+    'assetOptInMinBalance'
 > & {
     network: Network
     algorandClient: ReturnType<typeof getAlgorandClient>
@@ -103,6 +103,7 @@ export const executeAlgorandSwap = async (
         isCancelled,
     }: ExecuteSwapParams,
     {
+        scope,
         network,
         algorandClient,
         assetMbr,
@@ -126,12 +127,12 @@ export const executeAlgorandSwap = async (
               isAssetFrozen({
                   accountAddress: account.address,
                   assetId: quote.assetIn.assetId,
-                  network,
+                  scope,
               }),
               isAssetFrozen({
                   accountAddress: account.address,
                   assetId: quote.assetOut.assetId,
-                  network,
+                  scope,
               }),
           ])
         : [false, false]

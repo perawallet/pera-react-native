@@ -11,8 +11,10 @@
  */
 
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
+import { InvalidScopeKeyError } from '@perawallet/wallet-core-chain-contract'
 import {
     isAlgoAssetId,
+    logger,
     runAccountCleanups,
 } from '@perawallet/wallet-core-shared'
 import { deleteAssets, deleteAssetPrices } from '@perawallet/wallet-core-assets'
@@ -22,6 +24,7 @@ import {
     deleteAccountBalance,
     getAllHeldAssetIdsForNetwork,
 } from '../db'
+import { scopeFromNetworkColumn } from '../db/networkColumn'
 
 export type CleanupRemovedAccountDataParams = {
     db?: Database
@@ -61,8 +64,20 @@ export async function cleanupRemovedAccountData({
     const prunedAssetIdsByNetwork: Record<string, string[]> = {}
 
     for (const [network, hadIds] of hadByNetwork) {
+        let scope
+        try {
+            scope = scopeFromNetworkColumn(network)
+        } catch (error) {
+            // The account's rows are already gone, so an unreadable network
+            // must not stop the other networks' pruning or the registered cleanups.
+            if (!(error instanceof InvalidScopeKeyError)) throw error
+            logger.warn('Skipping orphan pruning for an unknown network', {
+                network,
+            })
+            continue
+        }
         const remaining = new Set(
-            await getAllHeldAssetIdsForNetwork({ db, network }),
+            await getAllHeldAssetIdsForNetwork({ db, scope }),
         )
         // ALGO is a holding row like any ASA, so it looks orphaned once the
         // last account holding it is gone — but its metadata is a local

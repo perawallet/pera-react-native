@@ -1173,7 +1173,7 @@ describe('SyncService', () => {
             await service.refreshAccounts(['ADDR1'], 'mainnet')
 
             expect(getAllHeldAssetIdsForNetwork).toHaveBeenCalledWith({
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
             })
             expect(fetchAndPersistAssets).toHaveBeenCalledWith(['123', '456'], {
                 chainId: 'algorand',

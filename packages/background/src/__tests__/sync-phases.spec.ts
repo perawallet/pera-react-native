@@ -188,7 +188,7 @@ describe('sync phases', () => {
             )
 
             expect(mocks.getAllHeldAssetIdsForNetwork).toHaveBeenCalledWith({
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
             })
             expect(mocks.fetchAndPersistAssets).not.toHaveBeenCalled()
             expect(mocks.fetchAndPersistPrices).toHaveBeenCalledWith(

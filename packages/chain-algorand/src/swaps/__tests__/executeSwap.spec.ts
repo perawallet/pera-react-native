@@ -138,6 +138,7 @@ const SIGNING_SOURCE = {
 }
 
 const makeContext = (): AlgorandSwapExecutionContext => ({
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     network: 'mainnet',
     algorandClient: {
         client: {
@@ -516,7 +517,7 @@ describe('executeAlgorandSwap', () => {
         expect(mockIsAssetFrozen).toHaveBeenCalledWith({
             accountAddress: 'SENDER_ADDR',
             assetId: '0',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
         })
     })
 

@@ -65,6 +65,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { OptInConfirmationContent } from '@modules/assets'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAccountNfts'
@@ -81,6 +82,8 @@ import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 // Gallery + opt-in in one host so both share the provider tree's query
 // client, mirroring the production layout (gallery mounted while the
@@ -196,7 +199,7 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
 
         await upsertAccountBalance({
             accountAddress: sender.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 2,
             totalCreatedAssets: 0,
@@ -208,13 +211,13 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
         await insertAssetHolding({
             accountAddress: sender.address,
             assetId: NFT_TEST_ASSET_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '1',
         })
         await insertAssetHolding({
             accountAddress: sender.address,
             assetId: NFT_TEST_ASSET_2_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '1',
         })
 

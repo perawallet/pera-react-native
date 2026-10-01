@@ -13,6 +13,7 @@
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     isAlgoAssetId,
     logger,
@@ -45,19 +46,20 @@ type AccountDbSnapshot = {
 
 async function readAccountFromDb(
     address: string,
-    network: string,
+    network: Network,
     filters?: AccountHoldingsFilters,
 ): Promise<AccountDbSnapshot> {
+    const scope = scopeForLegacyNetwork(network)
     // If this account has no balance row yet the background sync either
     // hasn't run or silently failed. Pull directly from the chain before
     // reading so the UI recovers without waiting for the next poll cycle.
     const balance = await getAccountBalance({
         accountAddress: address,
-        network,
+        scope,
     })
     if (!balance) {
         try {
-            await fetchAndPersistAccount(address, network as Network)
+            await fetchAndPersistAccount(address, network)
         } catch (error) {
             logger.warn('On-demand account fetch failed', {
                 address,
@@ -75,7 +77,7 @@ async function readAccountFromDb(
     // holding row too (base units, 6 decimals), so it needs no special append.
     const holdings = await getAccountHoldingsPage({
         accountAddress: address,
-        network,
+        scope,
         ...filters,
     })
 

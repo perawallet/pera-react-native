@@ -48,6 +48,7 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { RekeyToLedgerIntroScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerIntroScreen'
 import { RekeyToLedgerSelectTargetScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerSelectTargetScreen'
 import { RekeyToLedgerConfirmScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerConfirmScreen'
@@ -59,6 +60,8 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const seedRekeyAccounts = async (): Promise<{
     source: WalletAccount
@@ -97,7 +100,7 @@ const seedRekeyAccounts = async (): Promise<{
 
     await upsertAccountBalance({
         accountAddress: source.address,
-        network: 'mainnet',
+        scope: MAINNET_SCOPE,
         algoBalance: new Decimal(5_000_000),
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,

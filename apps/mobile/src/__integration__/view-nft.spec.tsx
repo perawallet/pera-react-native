@@ -59,6 +59,7 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {
@@ -67,6 +68,8 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 // The detail screen passes `useDB: false`, so metadata comes from REST every
 // time — hence mocks for all three endpoints it merges, with minimal bodies
@@ -139,12 +142,12 @@ describe('Flow: View NFT collectible detail', () => {
         await insertAssetHolding({
             accountAddress: NFT_HOLDER_PLACEHOLDER.address,
             assetId: NFT_TEST_ASSET_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '1',
         })
         await upsertAccountBalance({
             accountAddress: NFT_HOLDER_PLACEHOLDER.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             algoBalance: new Decimal(5_000_000),
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
@@ -263,7 +266,7 @@ describe('Flow: View NFT collectible detail', () => {
         await insertAssetHolding({
             accountAddress: holder.address,
             assetId: NFT_TEST_ASSET_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '1',
         })
 

@@ -120,7 +120,7 @@ describe('useAssetOptOutMutation', () => {
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
             assetIds: ['12345'],
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
         // Scoped, not balances-only: the holdings delete must refresh every
         // staleTime-Infinity account read.
@@ -191,7 +191,7 @@ describe('useAssetOptOutMutation', () => {
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
             assetIds: ['12345', '67890'],
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
     })
@@ -300,7 +300,7 @@ describe('useAssetOptOutMutation', () => {
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
             assetIds: ['12345'],
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
     })
@@ -333,7 +333,7 @@ describe('useAssetOptOutMutation', () => {
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
             assetIds: ['12345', '67890'],
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
     })
 

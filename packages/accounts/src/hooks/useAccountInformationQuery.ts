@@ -11,6 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
 import {
     useNetwork,
@@ -44,13 +45,14 @@ export const useAccountInformationQuery = (
     const query = useQuery({
         queryKey: getAccountInformationQueryKey(address, network),
         queryFn: async (): Promise<AccountInformation> => {
+            const scope = scopeForLegacyNetwork(network)
             const balance = await getAccountBalance({
                 accountAddress: address,
-                network,
+                scope,
             })
             const holdings = await getAccountHoldings({
                 accountAddress: address,
-                network,
+                scope,
             })
 
             return {

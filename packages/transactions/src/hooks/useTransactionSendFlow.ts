@@ -237,7 +237,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             const frozen = await isAssetFrozen({
                 accountAddress: params.sender.address,
                 assetId: params.asset.assetId,
-                network,
+                scope: scopeForLegacyNetwork(network),
             })
 
             if (frozen) {
@@ -365,7 +365,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                         await addToAssetHolding({
                             accountAddress: params.sender.address,
                             assetId: String(params.asset.assetId),
-                            network,
+                            scope: scopeForLegacyNetwork(network),
                             amount: params.amount,
                         })
                         await fetchAndPersistAssets(

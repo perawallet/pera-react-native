@@ -56,10 +56,13 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAccountNfts'
 
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 // The asset as the backend describes it BEFORE its crawler has run: NFT
 // shaped, but not yet typed as a collectible.
@@ -159,7 +162,7 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
         await seedAlgoAsset('mainnet')
         await upsertAccountBalance({
             accountAddress: account.address,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             algoBalance: new Decimal(1_000_000),
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 1,
@@ -171,7 +174,7 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
         await insertAssetHolding({
             accountAddress: account.address,
             assetId: NFT_TEST_ASSET_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             amount: '1',
         })
 

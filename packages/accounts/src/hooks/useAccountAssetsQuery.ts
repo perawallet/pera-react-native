@@ -11,6 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { AssetSortMode } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
@@ -93,7 +94,7 @@ export const useAccountAssetsQuery = (
             await ensureAccountFetched(address as string, network)
             return getAccountHoldingsLite({
                 accountAddress: address as string,
-                network,
+                scope: scopeForLegacyNetwork(network),
                 ...filters,
                 sortMode,
                 search,

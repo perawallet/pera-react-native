@@ -151,7 +151,9 @@ export const syncAssetsPhase = async (
     phase: string,
 ): Promise<AssetPhaseResult> => {
     // Fetched and stored under the synced network so DB JOINs line up.
-    const assetIds = await getAllHeldAssetIdsForNetwork({ network })
+    const assetIds = await getAllHeldAssetIdsForNetwork({
+        scope: scopeForLegacyNetwork(network),
+    })
     const results = await Promise.allSettled(
         kinds.map(kind =>
             kind === 'assets'

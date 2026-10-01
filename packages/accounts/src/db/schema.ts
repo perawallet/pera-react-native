@@ -12,6 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { decimalColumn } from '@perawallet/wallet-core-database'
 
 export const AccountAssetHoldingsSchema = sqliteTable(
@@ -19,7 +20,8 @@ export const AccountAssetHoldingsSchema = sqliteTable(
     {
         accountAddress: text('account_address').notNull(),
         assetId: decimalColumn('asset_id').notNull(),
-        network: text('network').notNull(),
+        // Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
+        network: text('network').notNull().$type<ChainScopeKey>(),
         /** Asset amount in base units (smallest indivisible unit of the asset) */
         amount: decimalColumn('amount').notNull().default(new Decimal(0)),
         /** Holding-level freeze from algod — frozen assets can't be transferred. */
@@ -39,7 +41,8 @@ export const AccountBalancesSchema = sqliteTable(
     'account_balances',
     {
         accountAddress: text('account_address').notNull(),
-        network: text('network').notNull(),
+        // Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
+        network: text('network').notNull().$type<ChainScopeKey>(),
         /** ALGO balance in display units (ALGOs, not microAlgos) */
         algoBalance: decimalColumn('algo_balance')
             .notNull()

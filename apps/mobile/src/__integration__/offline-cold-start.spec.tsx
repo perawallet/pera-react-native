@@ -69,6 +69,7 @@ import {
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
 import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
 import { useNetworkStatusStore } from '@modules/network'
@@ -121,7 +122,7 @@ const wrapperWithClient = () => {
 const seedPreviouslySyncedAccount = async () => {
     await upsertAccountBalance({
         accountAddress: ACCOUNT.address,
-        network: NETWORK,
+        scope: scopeForLegacyNetwork(NETWORK),
         algoBalance: new Decimal(10_000_000), // 10 ALGO
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,
@@ -133,7 +134,7 @@ const seedPreviouslySyncedAccount = async () => {
     await insertAssetHolding({
         accountAddress: ACCOUNT.address,
         assetId: '0',
-        network: NETWORK,
+        scope: scopeForLegacyNetwork(NETWORK),
         amount: '10000000', // 10 ALGO in base units
     })
     await upsertAssetPrices({
@@ -250,7 +251,7 @@ describe('Flow: Cold start with no connectivity', () => {
         // the total unknown.
         await upsertAccountBalance({
             accountAddress: ACCOUNT.address,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             algoBalance: new Decimal(10_000_000), // 10 ALGO
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,
@@ -262,7 +263,7 @@ describe('Flow: Cold start with no connectivity', () => {
         await insertAssetHolding({
             accountAddress: ACCOUNT.address,
             assetId: '0',
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             amount: '10000000',
         })
 
@@ -342,7 +343,7 @@ describe('Flow: Cold start with no connectivity', () => {
         // Balance row only — no transactions were ever synced.
         await upsertAccountBalance({
             accountAddress: ACCOUNT.address,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             algoBalance: new Decimal(0),
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,

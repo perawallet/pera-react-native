@@ -284,7 +284,7 @@ describe('useAccountBalances', () => {
         expect(mockGetAccountHoldingsPage).toHaveBeenCalledWith(
             expect.objectContaining({
                 accountAddress: 'ADDR1',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 hideZeroBalance: true,
                 hideNfts: true,
                 hideOptedInNfts: false,
