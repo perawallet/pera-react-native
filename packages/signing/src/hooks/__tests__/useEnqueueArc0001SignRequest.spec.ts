@@ -42,7 +42,9 @@ describe('useEnqueueArc0001SignRequest', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        registerFakePlannerAdapter({ enqueueArc0001SignRequest })
+        registerFakePlannerAdapter({
+            enqueueDappRequest: enqueueArc0001SignRequest,
+        })
     })
 
     it('hands the planner the resolved group, the transport and the signing-request bindings', async () => {

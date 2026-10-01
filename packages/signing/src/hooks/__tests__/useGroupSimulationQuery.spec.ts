@@ -47,7 +47,7 @@ describe('useGroupSimulationQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSimulate.mockResolvedValue(inner)
-        registerFakePlannerAdapter({ simulateInnerTransactions: mockSimulate })
+        registerFakePlannerAdapter({ simulateGroup: mockSimulate })
     })
 
     test('stays disabled (no simulation) when enabled is false', async () => {

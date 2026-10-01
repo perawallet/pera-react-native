@@ -150,9 +150,9 @@ describe('planner chain adapters', () => {
             createdAssets: [],
         }
         const adapter = registerFakePlannerAdapter({
-            resolveMinFeeForSender: vi.fn(() => 4000n),
+            minFeeForSender: vi.fn(() => 4000n),
             computeBalanceImpact: vi.fn(() => impact),
-            encodeDelegatedLsigAccount: vi.fn(() => new Uint8Array([5])),
+            encodeDelegation: vi.fn(() => new Uint8Array([5])),
         })
         const feeParams = {
             senderAddress: 'A',
@@ -171,12 +171,8 @@ describe('planner chain adapters', () => {
             new Uint8Array([5]),
         )
 
-        expect(adapter.resolveMinFeeForSender).toHaveBeenCalledWith(feeParams)
+        expect(adapter.minFeeForSender).toHaveBeenCalledWith(feeParams)
         expect(adapter.computeBalanceImpact).toHaveBeenCalledWith([], signable)
-        expect(adapter.encodeDelegatedLsigAccount).toHaveBeenCalledWith(
-            program,
-            sig,
-            'A',
-        )
+        expect(adapter.encodeDelegation).toHaveBeenCalledWith(program, sig, 'A')
     })
 })

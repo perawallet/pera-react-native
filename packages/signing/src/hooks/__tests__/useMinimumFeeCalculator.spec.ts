@@ -66,7 +66,7 @@ describe('useMinimumFeeCalculator', () => {
             minTxnFee: 1000n,
             pqMultiplier: 3n,
         })
-        registerFakePlannerAdapter({ assignFeeToGroup })
+        registerFakePlannerAdapter({ assignGroupFees: assignFeeToGroup })
     })
 
     it('hands the planner the params, the fee config and a fee fetcher that never throws', async () => {

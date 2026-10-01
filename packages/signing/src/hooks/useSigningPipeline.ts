@@ -93,8 +93,7 @@ const computeDisplayData = (
 
     // The cache this feeds is keyed by request alone, so it has no network to
     // resolve a chain from.
-    const planner = legacyPlannerAdapter()
-    const totalFee = planner.calculateTotalFee(
+    const { totalFee, highFeeWarning } = legacyPlannerAdapter().reviewGroupFees(
         allTransactions,
         signableAddresses,
     )
@@ -124,13 +123,9 @@ const computeDisplayData = (
         authorizerByIndex,
     )
 
-    // High fee is a group-level concern ("what's being signed"), so it
-    // lives here rather than in the per-transaction aggregator that the
+    // High fee is a group-level concern ("what's being signed"), so it is
+    // added here rather than in the per-transaction aggregator that the
     // transaction-history view also consumes.
-    const highFeeWarning = planner.detectHighGroupFee(
-        allTransactions,
-        signableAddresses,
-    )
     const warnings = highFeeWarning
         ? [...addressWarnings, highFeeWarning]
         : addressWarnings

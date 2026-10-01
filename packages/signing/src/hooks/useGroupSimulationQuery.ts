@@ -56,10 +56,7 @@ export const useGroupSimulationQuery = ({
         staleTime: Infinity,
         retry: false,
         queryFn: () =>
-            plannerAdapterFor(network).simulateInnerTransactions(
-                groupTxs ?? [],
-                network,
-            ),
+            plannerAdapterFor(network).simulateGroup(groupTxs ?? [], network),
     })
 
     return {

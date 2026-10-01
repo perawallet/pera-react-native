@@ -27,7 +27,7 @@ import {
     buildWalletConnectSignResult,
     FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER,
     FeeAdjustmentDeliveryError,
-    type EnqueueArc0001SignRequestDeps,
+    type EnqueueDappRequestDeps,
     type ExternalSignTxnTransport,
     type FeeAdjustment,
     type RejectReason,
@@ -49,7 +49,7 @@ export const enqueueArc0001SignRequest = async (
         assignFeeToGroup,
         addSignRequest,
         removeSignRequest,
-    }: EnqueueArc0001SignRequestDeps,
+    }: EnqueueDappRequestDeps,
 ): Promise<Nullable<TransactionSignRequest>> => {
     const { allDecoded, toSign, signerOverrides } = resolved
     const totalLength = allDecoded.length

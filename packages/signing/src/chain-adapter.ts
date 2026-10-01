@@ -148,11 +148,11 @@ export type ResolveMinFeeForSenderParams = {
     senderAddress: string
     /** All wallet accounts, used to resolve the effective signer (auth account) */
     accounts: WalletAccount[]
-    /** Network suggested minimum fee in µAlgo (algod suggestedParams.minFee) */
+    /** Network-suggested minimum fee in native base units */
     suggestedMinFee: bigint
-    /** Remote-config base minimum txn fee in µAlgo */
+    /** Remote-config base minimum txn fee in native base units */
     configMinTxnFee: bigint
-    /** Remote-config PQ fee multiplier */
+    /** Remote-config quantum-signer fee multiplier */
     pqMultiplier: bigint
 }
 
@@ -180,21 +180,21 @@ export type AssignFeeToGroup = (
 export type AssignFeeToGroupDeps = {
     /** Read at call time: a WalletConnect call can outlive the component that started it. */
     accounts: WalletAccount[]
-    /** Network suggested minimum fee in µAlgo; must resolve rather than throw. */
+    /** Network-suggested minimum fee in native base units; must resolve rather than throw. */
     fetchSuggestedMinFee: () => Promise<bigint>
-    /** Remote-config base minimum txn fee in µAlgo */
+    /** Remote-config base minimum txn fee in native base units */
     configMinTxnFee: bigint
     pqMultiplier: bigint
 }
 
-export type EnqueueArc0001SignRequestDeps = {
+export type EnqueueDappRequestDeps = {
     assignFeeToGroup: AssignFeeToGroup
     addSignRequest: (request: SignRequest) => void
     removeSignRequest: (request: SignRequest) => void
 }
 
 export type BalanceImpactDelta = {
-    /** Asset id; `'0'` denotes the native ALGO balance. */
+    /** Asset id; `'0'` denotes the native balance. */
     assetId: string
     /** Net change in base units. Positive = received, negative = spent. */
     amount: bigint
@@ -242,43 +242,49 @@ export type BalanceImpact = {
     createdAssets: BalanceImpactCreatedAsset[]
 }
 
+export type DappSignRequest = Arc0001SignTxnsRequest
+export type DappResolveContext = Arc0001ResolveContext
+export type DappResolveResult = Arc0001ResolveResult
+
+export type GroupFeeReview = {
+    /** In display units of the native token. */
+    totalFee: Decimal
+    /** Set when the group's fees are out of proportion to what it does. */
+    highFeeWarning: Nullable<TransactionWarning>
+}
+
 /**
  * The chain-specific legs of planning a signature request; registered by the
- * chain package. Shaped after what the Algorand code needs today.
+ * chain package.
  */
 export interface PlannerChainAdapter {
     chainId: ChainId
 
     /** Synchronous: callers depend on a thrown error surfacing in the same tick. */
-    resolveArc0001SignTxnRequest(
-        request: Arc0001SignTxnsRequest,
-        context: Arc0001ResolveContext,
-    ): Arc0001ResolveResult
-    enqueueArc0001SignRequest(
-        resolved: Arc0001ResolveResult,
+    resolveDappRequest(
+        request: DappSignRequest,
+        context: DappResolveContext,
+    ): DappResolveResult
+    enqueueDappRequest(
+        resolved: DappResolveResult,
         transport: ExternalSignTxnTransport,
-        deps: EnqueueArc0001SignRequestDeps,
+        deps: EnqueueDappRequestDeps,
     ): Promise<Nullable<TransactionSignRequest>>
 
-    /** Minimum fee in µAlgo a transaction from `senderAddress` must carry. */
-    resolveMinFeeForSender(params: ResolveMinFeeForSenderParams): bigint
+    minFeeForSender(params: ResolveMinFeeForSenderParams): bigint
     /**
      * Raises underfunded fees on the signable slots and returns the group
      * unchanged, by reference, when nothing needs raising.
      * @throws InvalidSignableDataError when a fee must be raised but the group is invalid as received.
      */
-    assignFeeToGroup(
+    assignGroupFees(
         params: AssignFeeToGroupParams,
         deps: AssignFeeToGroupDeps,
     ): Promise<AssignMinimumFeesToGroupResult>
-    calculateTotalFee(
+    reviewGroupFees(
         transactions: PeraDisplayableTransaction[],
         signableAddresses: Set<string>,
-    ): Decimal
-    detectHighGroupFee(
-        transactions: PeraDisplayableTransaction[],
-        signableAddresses: Set<string>,
-    ): Nullable<TransactionWarning>
+    ): GroupFeeReview
 
     computeBalanceImpact(
         transactions: PeraDisplayableTransaction[],
@@ -286,26 +292,29 @@ export interface PlannerChainAdapter {
     ): BalanceImpact
     /** Whether the group moves funds the top-level transactions don't reveal. */
     needsSimulation(transactions: PeraDisplayableTransaction[]): boolean
-    /** Inner transactions of an unsigned simulation of `groupTxs`. */
-    simulateInnerTransactions(
+    /** The transactions a simulated run of `groupTxs` reveals beyond its top level. */
+    simulateGroup(
         groupTxs: PeraTransaction[],
         network: Network,
     ): Promise<PeraDisplayableTransaction[]>
 
-    /** The bytes a delegated logic-sig signature must cover. */
-    programSigningPayload(program: Uint8Array): Uint8Array
-    encodeDelegatedLsig(program: Uint8Array, sig: Uint8Array): Uint8Array
+    /** The bytes a delegation signature must cover. */
+    delegationPayload(program: Uint8Array): Uint8Array
     /** @throws when the signature does not verify against `signerAddress`. */
-    encodeDelegatedLsigAccount(
+    encodeDelegation(
         program: Uint8Array,
         sig: Uint8Array,
         signerAddress: string,
     ): Uint8Array
 
-    /** Checks the FULL payload, not the signable subset. */
-    validateTransactionGroupIntegrity(transactions: PeraTransaction[]): void
-    /** The only sanctioned relaxation: a co-signer holds just a subset of the group. */
-    validateCosignSubsetIntegrity(transactions: PeraTransaction[]): void
+    /**
+     * Checks the FULL payload. A cosigner holds only a subset of the group,
+     * so `isCosigner` is the one sanctioned relaxation.
+     */
+    validateGroup(
+        transactions: PeraTransaction[],
+        options: { isCosigner: boolean },
+    ): void
     mergeSigningResults(results: SigningResult[]): SigningResult
 }
 
@@ -322,7 +331,7 @@ export const legacyPlannerAdapter = (): PlannerChainAdapter =>
 
 export const resolveMinFeeForSender = (
     params: ResolveMinFeeForSenderParams,
-): bigint => legacyPlannerAdapter().resolveMinFeeForSender(params)
+): bigint => legacyPlannerAdapter().minFeeForSender(params)
 
 export const computeBalanceImpact = (
     transactions: PeraDisplayableTransaction[],
@@ -335,8 +344,4 @@ export const encodeDelegatedLsigAccount = (
     sig: Uint8Array,
     signerAddress: string,
 ): Uint8Array =>
-    legacyPlannerAdapter().encodeDelegatedLsigAccount(
-        program,
-        sig,
-        signerAddress,
-    )
+    legacyPlannerAdapter().encodeDelegation(program, sig, signerAddress)

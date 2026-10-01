@@ -44,7 +44,7 @@ export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
 
     const assignFeeToGroup = useCallback<AssignFeeToGroup>(
         params =>
-            plannerAdapterFor(network).assignFeeToGroup(params, {
+            plannerAdapterFor(network).assignGroupFees(params, {
                 // Read live store state at call time, not a value captured at
                 // render: WalletConnect can invoke this after the owning
                 // component has unmounted, holding a frozen closure over a

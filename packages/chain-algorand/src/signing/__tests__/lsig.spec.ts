@@ -19,7 +19,6 @@ import {
     decodeAddress,
 } from 'algosdk'
 import {
-    encodeDelegatedLsig,
     encodeDelegatedLsigAccount,
     LsigSignatureVerificationError,
     programSigningPayload,
@@ -31,20 +30,6 @@ import {
 // reference primitive.
 const signProgram = (program: Uint8Array, sk: Uint8Array): Uint8Array =>
     new LogicSig(program).signProgram(sk)
-
-describe('encodeDelegatedLsig', () => {
-    it('round-trips program and signature through algosdk msgpack', () => {
-        const program = new Uint8Array([0x04, 0x81, 0x01])
-        const sig = new Uint8Array(64).fill(42)
-
-        const encoded = encodeDelegatedLsig(program, sig)
-        const decoded = LogicSig.fromByte(encoded)
-
-        expect([...decoded.logic]).toEqual([...program])
-        expect([...(decoded.sig ?? [])]).toEqual([...sig])
-        expect(decoded.msig).toBeUndefined()
-    })
-})
 
 describe('encodeDelegatedLsigAccount', () => {
     // A valid, cheap program: `int 1`.

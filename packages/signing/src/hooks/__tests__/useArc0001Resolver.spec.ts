@@ -40,7 +40,7 @@ describe('useArc0001Resolver', () => {
     beforeEach(() => {
         mockAccounts.mockReturnValue([{ address: 'A' }, { address: 'MSIG1' }])
         resolve.mockClear()
-        registerFakePlannerAdapter({ resolveArc0001SignTxnRequest: resolve })
+        registerFakePlannerAdapter({ resolveDappRequest: resolve })
     })
 
     it('binds the wallet signing and multisig addresses into the planner call', () => {

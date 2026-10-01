@@ -53,17 +53,17 @@ export const fakePlannerAdapter = (
     overrides: Partial<PlannerChainAdapter> = {},
 ): PlannerChainAdapter => ({
     chainId: scopeForLegacyNetwork('mainnet').chainId,
-    resolveArc0001SignTxnRequest: vi.fn(
-        notStubbed('resolveArc0001SignTxnRequest'),
-    ),
-    enqueueArc0001SignRequest: vi.fn(notStubbed('enqueueArc0001SignRequest')),
-    resolveMinFeeForSender: vi.fn(() => 0n),
-    assignFeeToGroup: vi.fn(async ({ transactions }) => ({
+    resolveDappRequest: vi.fn(notStubbed('resolveDappRequest')),
+    enqueueDappRequest: vi.fn(notStubbed('enqueueDappRequest')),
+    minFeeForSender: vi.fn(() => 0n),
+    assignGroupFees: vi.fn(async ({ transactions }) => ({
         transactions,
         adjustments: [],
     })),
-    calculateTotalFee: vi.fn(() => new Decimal(0)),
-    detectHighGroupFee: vi.fn(() => null),
+    reviewGroupFees: vi.fn(() => ({
+        totalFee: new Decimal(0),
+        highFeeWarning: null,
+    })),
     computeBalanceImpact: vi.fn(() => ({
         deltas: [],
         totalFeeMicroAlgos: 0n,
@@ -72,12 +72,12 @@ export const fakePlannerAdapter = (
         createdAssets: [],
     })),
     needsSimulation: vi.fn(() => false),
-    simulateInnerTransactions: vi.fn(async () => []),
-    programSigningPayload: vi.fn((program: Uint8Array) => program),
-    encodeDelegatedLsig: vi.fn((program: Uint8Array) => program),
-    encodeDelegatedLsigAccount: vi.fn((program: Uint8Array) => program),
-    validateTransactionGroupIntegrity: vi.fn(recomputeGroupIds),
-    validateCosignSubsetIntegrity: vi.fn(),
+    simulateGroup: vi.fn(async () => []),
+    delegationPayload: vi.fn((program: Uint8Array) => program),
+    encodeDelegation: vi.fn((program: Uint8Array) => program),
+    validateGroup: vi.fn((transactions, { isCosigner }) => {
+        if (!isCosigner) recomputeGroupIds(transactions)
+    }),
     mergeSigningResults: vi.fn(results => results[0]),
     ...overrides,
 })

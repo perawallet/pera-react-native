@@ -47,7 +47,6 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
     useProgramSigner: () => ({
         signProgram: vi.fn(async () => new Uint8Array([8, 8, 8])),
-        signDelegatedLsig: vi.fn(),
     }),
     encodeDelegatedLsigAccount: () => new Uint8Array([9, 9, 9]),
 }))

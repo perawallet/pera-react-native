@@ -49,7 +49,7 @@ export const useArc0001Resolver = (): UseArc0001ResolverResult => {
     )
     return useCallback(
         (request, options = {}) =>
-            plannerAdapterFor(network).resolveArc0001SignTxnRequest(request, {
+            plannerAdapterFor(network).resolveDappRequest(request, {
                 signableAddresses,
                 multisigAddresses,
                 authorizedAddresses: options.authorizedAddresses,

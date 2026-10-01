@@ -30,7 +30,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER,
-    type EnqueueArc0001SignRequestDeps,
+    type EnqueueDappRequestDeps,
     type ExternalSignTxnTransport,
 } from '@perawallet/wallet-core-signing'
 
@@ -65,9 +65,7 @@ const bytesEqual = (a?: Uint8Array, b?: Uint8Array): boolean =>
 const decodeWire = (wire: string): Transaction =>
     decodeUnsignedTransaction(decodeFromBase64(wire))
 
-const makeDeps = (
-    accounts: WalletAccount[] = [],
-): EnqueueArc0001SignRequestDeps => ({
+const makeDeps = (accounts: WalletAccount[] = []): EnqueueDappRequestDeps => ({
     addSignRequest: mockAddSignRequest,
     removeSignRequest: mockRemoveSignRequest,
     assignFeeToGroup: params =>

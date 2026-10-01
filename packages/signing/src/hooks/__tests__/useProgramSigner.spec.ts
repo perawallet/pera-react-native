@@ -45,20 +45,13 @@ const PROGRAM = new Uint8Array([0x04, 0x81, 0x01])
 const SIG = new Uint8Array(64).fill(7)
 
 const PAYLOAD = new Uint8Array([9, 9, 9])
-const ENCODED = new Uint8Array([1, 2, 3])
-const programSigningPayload = vi.fn((_program: Uint8Array) => PAYLOAD)
-const encodeDelegatedLsig = vi.fn(
-    (_program: Uint8Array, _sig: Uint8Array) => ENCODED,
-)
+const delegationPayload = vi.fn((_program: Uint8Array) => PAYLOAD)
 
 describe('useProgramSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSignDataWithKey.mockResolvedValue([SIG])
-        registerFakePlannerAdapter({
-            programSigningPayload,
-            encodeDelegatedLsig,
-        })
+        registerFakePlannerAdapter({ delegationPayload })
     })
 
     test('signs the planner payload with the account key and domain', async () => {
@@ -73,23 +66,8 @@ describe('useProgramSigner', () => {
         expect(childId).toBe('key-hd-child')
         expect(domain).toBe('pera.accounts')
 
-        expect(programSigningPayload).toHaveBeenCalledWith(PROGRAM)
+        expect(delegationPayload).toHaveBeenCalledWith(PROGRAM)
         expect(items).toEqual([PAYLOAD])
-    })
-
-    test('signDelegatedLsig encodes the KMS signature through the planner', async () => {
-        const { result } = renderHook(() => useProgramSigner())
-
-        let signedProgram: Uint8Array | undefined
-        await act(async () => {
-            ;({ signedProgram } = await result.current.signDelegatedLsig(
-                hdAccount,
-                PROGRAM,
-            ))
-        })
-
-        expect(encodeDelegatedLsig).toHaveBeenCalledWith(PROGRAM, SIG)
-        expect(signedProgram).toBe(ENCODED)
     })
 
     test('rejects watch accounts with the typed error', async () => {
@@ -143,7 +121,7 @@ describe('useProgramSigner', () => {
 
         await expect(
             act(async () => {
-                await result.current.signDelegatedLsig(hwAccount, PROGRAM)
+                await result.current.signProgram(hwAccount, PROGRAM)
             }),
         ).rejects.toThrow(ProgramSigningUnsupportedError)
         expect(mockSignDataWithKey).not.toHaveBeenCalled()

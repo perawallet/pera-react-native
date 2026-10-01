@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { LogicSig, LogicSigAccount, decodeAddress } from 'algosdk'
+import { LogicSigAccount, decodeAddress } from 'algosdk'
 import {
     AppError,
     ErrorCategory,
@@ -44,25 +44,11 @@ export class LsigSignatureVerificationError extends AppError {
 }
 
 /**
- * Builds the msgpack-encoded delegated LogicSig from a program and an
- * externally produced ed25519 signature over `"Program" || program`.
- */
-export const encodeDelegatedLsig = (
-    program: Uint8Array,
-    sig: Uint8Array,
-): Uint8Array => {
-    const lsig = new LogicSig(program)
-    lsig.sig = sig
-    return lsig.toByte()
-}
-
-/**
  * Builds the msgpack-encoded delegated `LogicSigAccount` from a program, an
  * externally produced ed25519 signature over `"Program" || program`, and the
- * signer's address. Unlike {@link encodeDelegatedLsig}, this records the
- * signer's public key (`sigkey`) so the delegation can be verified without the
- * escrow address — the wire shape the card delegation registration expects
- * (`LogicSigAccount.toByte()`).
+ * signer's address. Records the signer's public key (`sigkey`) so the
+ * delegation can be verified without the escrow address — the wire shape the
+ * card delegation registration expects (`LogicSigAccount.toByte()`).
  *
  * Throws {@link LsigSignatureVerificationError} if the signature does not
  * verify against the signer's public key.

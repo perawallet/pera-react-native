@@ -34,7 +34,7 @@ export const useProgramSigner = () => {
     const { signDataWithKey } = useKMS()
     const { network } = useNetwork()
 
-    /** ed25519 over `"Program" || program` with the account's own key. */
+    /** Signs the delegation payload for `program` with the account's own key. */
     const signProgram = useCallback(
         async (
             account: WalletAccount,
@@ -51,29 +51,12 @@ export const useProgramSigner = () => {
             const [sig] = await signDataWithKey(
                 account.keyPairId,
                 SIGNING_KEY_DOMAIN,
-                [plannerAdapterFor(network).programSigningPayload(program)],
+                [plannerAdapterFor(network).delegationPayload(program)],
             )
             return sig
         },
         [signDataWithKey, network],
     )
 
-    /** Signs and msgpack-encodes the full delegated LogicSig payload. */
-    const signDelegatedLsig = useCallback(
-        async (
-            account: WalletAccount,
-            program: Uint8Array,
-        ): Promise<{ signedProgram: Uint8Array }> => {
-            const sig = await signProgram(account, program)
-            return {
-                signedProgram: plannerAdapterFor(network).encodeDelegatedLsig(
-                    program,
-                    sig,
-                ),
-            }
-        },
-        [signProgram, network],
-    )
-
-    return { signProgram, signDelegatedLsig }
+    return { signProgram }
 }

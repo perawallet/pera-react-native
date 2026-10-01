@@ -56,7 +56,7 @@ describe('useMinFeeForSender', () => {
         })
         mockUseAllAccounts.mockReturnValue(accounts)
         resolveMinFee.mockClear()
-        registerFakePlannerAdapter({ resolveMinFeeForSender: resolveMinFee })
+        registerFakePlannerAdapter({ minFeeForSender: resolveMinFee })
     })
 
     it('hands the sender, wallet accounts, suggested fee and fee config to the resolver', () => {

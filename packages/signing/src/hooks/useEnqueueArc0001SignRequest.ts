@@ -74,11 +74,11 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
 
     return useCallback(
         (resolved, transport) =>
-            plannerAdapterFor(network).enqueueArc0001SignRequest(
-                resolved,
-                transport,
-                { assignFeeToGroup, addSignRequest, removeSignRequest },
-            ),
+            plannerAdapterFor(network).enqueueDappRequest(resolved, transport, {
+                assignFeeToGroup,
+                addSignRequest,
+                removeSignRequest,
+            }),
         [network, addSignRequest, removeSignRequest, assignFeeToGroup],
     )
 }

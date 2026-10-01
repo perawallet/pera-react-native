@@ -25,7 +25,11 @@ export {
     type BalanceImpact,
     type BalanceImpactCreatedAsset,
     type BalanceImpactDelta,
-    type EnqueueArc0001SignRequestDeps,
+    type DappResolveContext,
+    type DappResolveResult,
+    type DappSignRequest,
+    type EnqueueDappRequestDeps,
+    type GroupFeeReview,
     type PlannerChainAdapter,
     type ResolveMinFeeForSenderParams,
 } from './chain-adapter'

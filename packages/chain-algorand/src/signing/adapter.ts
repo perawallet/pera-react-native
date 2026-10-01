@@ -30,11 +30,7 @@ import {
     getRekeyedUnsignableReason,
     resolveAllSignerAddresses,
 } from './getRekeyedUnsignableReason'
-import {
-    encodeDelegatedLsig,
-    encodeDelegatedLsigAccount,
-    programSigningPayload,
-} from './lsig'
+import { encodeDelegatedLsigAccount, programSigningPayload } from './lsig'
 import { mergeSigningResults } from './mergeSigningResults'
 import { resolveMinFeeForSender } from './minFeeResolver'
 import { simulateInnerTransactions } from './simulateImpact'
@@ -57,20 +53,23 @@ export const algorandReviewerAdapter: ReviewerChainAdapter = {
 
 export const algorandPlannerAdapter: PlannerChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    resolveArc0001SignTxnRequest,
-    enqueueArc0001SignRequest,
-    resolveMinFeeForSender,
-    assignFeeToGroup,
-    calculateTotalFee,
-    detectHighGroupFee,
+    resolveDappRequest: resolveArc0001SignTxnRequest,
+    enqueueDappRequest: enqueueArc0001SignRequest,
+    minFeeForSender: resolveMinFeeForSender,
+    assignGroupFees: assignFeeToGroup,
+    reviewGroupFees: (transactions, signableAddresses) => ({
+        totalFee: calculateTotalFee(transactions, signableAddresses),
+        highFeeWarning: detectHighGroupFee(transactions, signableAddresses),
+    }),
     computeBalanceImpact,
     needsSimulation: transactions =>
         transactions.some(tx => tx.txType === 'appl'),
-    simulateInnerTransactions,
-    programSigningPayload,
-    encodeDelegatedLsig,
-    encodeDelegatedLsigAccount,
-    validateTransactionGroupIntegrity,
-    validateCosignSubsetIntegrity,
+    simulateGroup: simulateInnerTransactions,
+    delegationPayload: programSigningPayload,
+    encodeDelegation: encodeDelegatedLsigAccount,
+    validateGroup: (transactions, { isCosigner }) =>
+        isCosigner
+            ? validateCosignSubsetIntegrity(transactions)
+            : validateTransactionGroupIntegrity(transactions),
     mergeSigningResults,
 }

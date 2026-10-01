@@ -240,11 +240,9 @@ const buildSignableGroups = (
         // integrity is verified on the submitter and by algod.
         const txsToValidate = request.groupContext ?? request.txs
         const planner = plannerAdapterFor(network)
-        if (request.sourceType === 'multisig-cosign') {
-            planner.validateCosignSubsetIntegrity(txsToValidate)
-        } else {
-            planner.validateTransactionGroupIntegrity(txsToValidate)
-        }
+        planner.validateGroup(txsToValidate, {
+            isCosigner: request.sourceType === 'multisig-cosign',
+        })
 
         const knownAddresses = new Set(allAccounts.map(a => a.address))
         const rawBytes = request.rawTransactionsBase64
