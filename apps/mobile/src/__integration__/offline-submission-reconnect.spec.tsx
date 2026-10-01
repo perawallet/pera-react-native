@@ -33,11 +33,8 @@ import {
 } from '@tanstack/react-query'
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import {
-    getAlgorandClient,
-    useNetworkStore,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import {
     mockAlgodAccountInformation,
     mockAlgodPendingTransaction,
@@ -164,19 +161,12 @@ describe('Flow: offline submission reconnect', () => {
         const { result: signer } = renderHook(() =>
             useLocalKeyTransactionSigner(),
         )
-        const { result: encoder } = renderHook(() => useTransactionEncoder())
         const signedTxns = await signer.current.signTransactions(
             [unsignedTxn],
             [0],
             account,
         )
-        const algokit = getAlgorandClient(NETWORK)
-
-        const txIds = await submitAndAutoRefresh(
-            algokit,
-            encoder.current.encodeSignedTransactions,
-            signedTxns,
-        )
+        const txIds = await submitAndAutoRefresh(LEGACY_CHAIN_ID, signedTxns)
         expect(txIds).toHaveLength(1)
         // The ledger row records the locally-derived txid, while algod's
         // mocked POST echoes its own fixed txId — assert against the former.
@@ -267,7 +257,7 @@ describe('Flow: offline submission reconnect', () => {
             }),
         )
 
-        const summary = await reconcileOpenSubmissions()
+        const summary = await reconcileOpenSubmissions(LEGACY_CHAIN_ID)
         expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
 
         await waitFor(async () => {

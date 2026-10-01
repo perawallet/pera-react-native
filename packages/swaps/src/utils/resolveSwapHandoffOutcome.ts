@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     completeMultisigHandoff,
@@ -187,7 +188,10 @@ export const resolveSwapHandoffOutcome = async ({
                         deps.decodeBase64,
                     )
                     if (groupBytes.length === 0) continue
-                    const derived = deriveSubmissionAttemptFromBytes(groupBytes)
+                    const derived = deriveSubmissionAttemptFromBytes(
+                        LEGACY_CHAIN_ID,
+                        groupBytes,
+                    )
                     let attemptId: string | null = null
                     if (derived.txIds.length > 0) {
                         attemptId = await deps.recordSubmissionAttempt({

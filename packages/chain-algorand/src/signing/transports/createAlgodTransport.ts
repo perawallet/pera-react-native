@@ -16,14 +16,16 @@ import {
     NetworkChangedError,
     SubmissionError,
     TransportError,
-    type AlgokitClientInterface,
     type DataTransport,
-    type EncodeSignedTransactionsFn,
     type SigningResult,
     type SourceMetadata,
     type TransportResult,
 } from '@perawallet/wallet-core-signing'
-import { submitAndAutoRefresh } from '../submission'
+import {
+    submitAndAutoRefresh,
+    type AlgokitClientInterface,
+    type EncodeSignedTransactionsFn,
+} from '../submission'
 
 /**
  * Creates a transport that submits transactions directly to algod.

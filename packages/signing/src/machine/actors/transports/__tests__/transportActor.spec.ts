@@ -31,6 +31,10 @@ import { transportActor, type TransportActorInput } from '../transportActor'
 import { createTransportSelector } from '../../../../pipeline/transports/getTransport'
 import type { SigningResult, SourceMetadata } from '../../../../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    algodBackedTransport,
+    registerFakeBroadcaster,
+} from '../../../../__tests__/fakeBroadcaster'
 
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -74,8 +78,6 @@ const makeInput = (
     signerAddress: MOCK_ADDRESS,
     allAccounts: [mockAlgo25Account],
     createTransport: createTransportSelector({
-        algokit: mockAlgokit,
-        encodeSignedTransactions: mockEncodeSignedTransactions,
         network: 'testnet',
     }),
     ...overrides,
@@ -84,6 +86,10 @@ const makeInput = (
 describe('transportActor', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerFakeBroadcaster({
+            createSubmitTransport: () =>
+                algodBackedTransport(mockAlgokit, mockEncodeSignedTransactions),
+        })
         mockAlgokit.client.algod.sendRawTransaction.mockReturnValue({
             do: mockSendRawDo,
         })
@@ -125,8 +131,6 @@ describe('transportActor', () => {
         }
         const input = makeInput(source, {
             createTransport: createTransportSelector({
-                algokit: mockAlgokit,
-                encodeSignedTransactions: mockEncodeSignedTransactions,
                 addSignatures: mockAddSignatures,
                 network: 'testnet',
             }),
@@ -212,8 +216,6 @@ describe('transportActor', () => {
                 signerAddress: J1_ADDRESS,
                 allAccounts: [jointSender, authAccount],
                 createTransport: createTransportSelector({
-                    algokit: mockAlgokit,
-                    encodeSignedTransactions: mockEncodeSignedTransactions,
                     network: 'testnet',
                     proposeSignRequest: proposeMock,
                     getMsigMetadata: () => undefined,
@@ -261,8 +263,6 @@ describe('transportActor', () => {
             {
                 allAccounts: [rekeyedSender, msigAuth],
                 createTransport: createTransportSelector({
-                    algokit: mockAlgokit,
-                    encodeSignedTransactions: mockEncodeSignedTransactions,
                     network: 'testnet',
                     proposeSignRequest: proposeMock,
                     getMsigMetadata: () => undefined,
@@ -297,8 +297,6 @@ describe('transportActor', () => {
         const input = makeInput(source, {
             allAccounts: [rekeyedParticipant],
             createTransport: createTransportSelector({
-                algokit: mockAlgokit,
-                encodeSignedTransactions: mockEncodeSignedTransactions,
                 addSignatures: mockAddSignatures,
                 network: 'testnet',
             }),

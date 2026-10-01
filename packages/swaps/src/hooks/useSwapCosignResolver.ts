@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
@@ -293,16 +296,20 @@ export const useSwapCosignResolver = ({
     )
 
     useEffect(() => {
-        setSubmissionSettledHandler('cosign', (txIds, network, status) =>
-            settleCosignAttempt(
-                useSwapHandoffStore.getState().handoffs,
-                txIds,
-                network,
-                status,
-                { markConfirmed, updateSwapStatus, removeHandoff },
-            ),
+        setSubmissionSettledHandler(
+            LEGACY_CHAIN_ID,
+            'cosign',
+            (txIds, network, status) =>
+                settleCosignAttempt(
+                    useSwapHandoffStore.getState().handoffs,
+                    txIds,
+                    network,
+                    status,
+                    { markConfirmed, updateSwapStatus, removeHandoff },
+                ),
         )
-        return () => setSubmissionSettledHandler('cosign', null)
+        return () =>
+            setSubmissionSettledHandler(LEGACY_CHAIN_ID, 'cosign', null)
     }, [markConfirmed, updateSwapStatus, removeHandoff])
 
     useHandoffResolver<

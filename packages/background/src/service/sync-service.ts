@@ -298,7 +298,7 @@ export class SyncService {
             // Settle open submission-attempt rows before the sync
             // phases. Piggybacks the tick's online gate and cadence — the pass
             // is bounded, a no-op when nothing is open, and never throws.
-            const reconcileSummary = await reconcileOpenSubmissions()
+            const reconcileSummary = await reconcileOpenSubmissions(chainId)
             if (reconcileSummary.confirmed + reconcileSummary.failed > 0) {
                 // A settled row changes the "pending — verifying" badge set and
                 // must drop the pending history entry (history queries are

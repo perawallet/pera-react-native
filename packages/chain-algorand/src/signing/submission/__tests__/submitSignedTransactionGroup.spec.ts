@@ -14,7 +14,7 @@ import { describe, it, expect, vi } from 'vitest'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { SubmissionError } from '@perawallet/wallet-core-signing'
 import { submitSignedTransactionGroup } from '../submitSignedTransactionGroup'
-import type { AlgokitClientInterface } from '@perawallet/wallet-core-signing'
+import type { AlgokitClientInterface } from '../types'
 
 const makeAlgokit = (response: unknown): AlgokitClientInterface => ({
     client: {

@@ -12,6 +12,10 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import { createTransportSelector } from '../getTransport'
+import {
+    algodBackedTransport,
+    registerFakeBroadcaster,
+} from '../../../__tests__/fakeBroadcaster'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     SigningResult,
@@ -50,10 +54,6 @@ const MSIG_METADATA = {
 }
 
 const baseOptions = () => ({
-    algokit: {
-        client: { algod: { sendRawTransaction: vi.fn() } },
-    },
-    encodeSignedTransactions: vi.fn(),
     network: 'testnet' as const,
     getMsigMetadata: () => MSIG_METADATA,
     getDeviceId: () => 'device-1',
@@ -122,13 +122,14 @@ describe('createTransportSelector', () => {
         const sendRawTransaction = vi.fn(() => ({
             do: async () => ({ txid: 'KEYREG-TXID' }),
         }))
-        const selector = createTransportSelector({
-            ...baseOptions(),
-            algokit: {
-                client: { algod: { sendRawTransaction } },
-            } as never,
-            encodeSignedTransactions: vi.fn(() => [new Uint8Array([0xa1])]),
+        registerFakeBroadcaster({
+            createSubmitTransport: () =>
+                algodBackedTransport(
+                    { client: { algod: { sendRawTransaction } } },
+                    () => [new Uint8Array([0xa1])],
+                ),
         })
+        const selector = createTransportSelector(baseOptions())
         const source = {
             type: 'deeplink',
             transport: 'algod',

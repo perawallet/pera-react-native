@@ -18,6 +18,11 @@ export {
     submitAndAutoRefreshCore,
     type SubmitAndAutoRefreshCoreInput,
 } from './submitAndAutoRefresh'
+export type {
+    AlgodClientInterface,
+    AlgokitClientInterface,
+    EncodeSignedTransactionsFn,
+} from './types'
 export { setOnConfirmedHandler } from './onConfirmedRegistry'
 export {
     classifySubmitFailure,

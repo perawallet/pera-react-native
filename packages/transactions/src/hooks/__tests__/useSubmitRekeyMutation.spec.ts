@@ -26,10 +26,8 @@ import {
 
 const mockBuildRekeyTx = vi.fn()
 const mockGetSuggestedParams = vi.fn()
-const mockAlgokit = {}
 
 const mockAddSignRequest = vi.fn()
-const mockEncodeSignedTransactions = vi.fn()
 const mockSubmitAndAutoRefresh = vi.fn()
 const mockUseAllAccounts = vi.fn()
 const mockUseMinimumFeeConfig = vi.fn()
@@ -38,10 +36,6 @@ const mockNetworkStoreGetState = vi.fn()
 const mockGetOpenSubmissionAttemptsForIntent = vi.fn()
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => mockAlgokit,
-    useTransactionEncoder: () => ({
-        encodeSignedTransactions: mockEncodeSignedTransactions,
-    }),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
     useFetchSuggestedMinFee: () => async () =>
         BigInt((await mockGetSuggestedParams()).minFee),
@@ -264,8 +258,7 @@ describe('useSubmitRekeyMutation', () => {
         expect(request.txs).toEqual([unsignedTxn])
         expect(request.sourceType).toBe('local')
         expect(mockSubmitAndAutoRefresh).toHaveBeenCalledWith(
-            mockAlgokit,
-            mockEncodeSignedTransactions,
+            'algorand',
             signedTxs,
             {
                 flow: 'rekey',

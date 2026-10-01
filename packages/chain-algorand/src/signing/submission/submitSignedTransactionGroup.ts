@@ -16,7 +16,7 @@ import { classifySubmitFailure } from './classifySubmitFailure'
 import type {
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,
-} from '@perawallet/wallet-core-signing'
+} from './types'
 
 /**
  * Encode, concatenate, and submit a single group of signed transactions to

@@ -17,29 +17,43 @@ import {
     broadcasterChainAdapters,
     type BroadcasterChainAdapter,
 } from '../broadcaster'
+import type { DataTransport } from '../pipeline/types'
 
-// Really calls algod and rethrows its error: the transport actor and keyreg
-// specs assert on both.
+// Really calls the given algod client and rethrows its error, for specs that
+// assert on the submit call and its failure.
+export const algodBackedTransport = (
+    algokit: {
+        client: {
+            algod: {
+                sendRawTransaction(raw: Uint8Array): { do(): Promise<unknown> }
+            }
+        }
+    },
+    encodeSignedTransactions: (signed: never) => Uint8Array[],
+): DataTransport => ({
+    send: async result => {
+        if (result.signedData.type !== 'transactions') {
+            throw new Error('fake broadcaster: transactions only')
+        }
+        const raw = concatBytes(
+            ...encodeSignedTransactions(result.signedData.signed as never),
+        )
+        const response = (await algokit.client.algod
+            .sendRawTransaction(raw)
+            .do()) as { txid?: string | string[] }
+        return {
+            type: 'submitted',
+            txIds: [response?.txid ?? []].flat(),
+        }
+    },
+})
+
 export const fakeBroadcasterAdapter = (
     overrides: Partial<BroadcasterChainAdapter> = {},
 ): BroadcasterChainAdapter => ({
     chainId: LEGACY_CHAIN_ID,
-    createSubmitTransport: vi.fn((algokit, encodeSignedTransactions) => ({
-        send: async result => {
-            if (result.signedData.type !== 'transactions') {
-                throw new Error('fake broadcaster: transactions only')
-            }
-            const raw = concatBytes(
-                ...encodeSignedTransactions(result.signedData.signed),
-            )
-            const response = (await algokit.client.algod
-                .sendRawTransaction(raw)
-                .do()) as { txid?: string | string[] }
-            return {
-                type: 'submitted',
-                txIds: [response?.txid ?? []].flat(),
-            }
-        },
+    createSubmitTransport: vi.fn(() => ({
+        send: async () => ({ type: 'submitted', txIds: [] }),
     })),
     submitAndAutoRefresh: vi.fn(async () => []),
     isRequestGroupAlreadySubmitted: vi.fn(async () => false),

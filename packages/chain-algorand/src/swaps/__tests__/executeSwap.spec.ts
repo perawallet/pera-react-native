@@ -54,7 +54,7 @@ const { mockValidate, mockComputeShortfall, mockGetOpenSubmissionAttempts } =
 // Re-implements the few lines of `submitAndAutoRefresh` this flow relies on
 // instead of importing the signing package, whose store graph the narrow
 // shared mock below can't satisfy.
-vi.mock('@perawallet/wallet-core-signing', () => ({
+vi.mock('../../signing/submission/submitAndAutoRefresh', () => ({
     submitAndAutoRefresh: async (
         _algokit: unknown,
         encodeSignedTransactions: (
@@ -83,6 +83,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         }
         return ids
     },
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
     getOpenSubmissionAttempts: mockGetOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))

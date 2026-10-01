@@ -10,6 +10,11 @@
  limitations under the License
  */
 
+import {
+    encodeSignedTransactions,
+    createWalletAlgorandClient,
+    useNetworkStore,
+} from '@perawallet/wallet-core-blockchain'
 import type { BroadcasterChainAdapter } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { createAlgodTransport } from './transports/createAlgodTransport'
@@ -23,8 +28,19 @@ import {
 
 export const algorandBroadcasterAdapter: BroadcasterChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    createSubmitTransport: createAlgodTransport,
-    submitAndAutoRefresh,
+    createSubmitTransport: network =>
+        createAlgodTransport(
+            createWalletAlgorandClient(network),
+            encodeSignedTransactions,
+            network,
+        ),
+    submitAndAutoRefresh: (signedTxns, options) =>
+        submitAndAutoRefresh(
+            createWalletAlgorandClient(useNetworkStore.getState().network),
+            encodeSignedTransactions,
+            signedTxns,
+            options,
+        ),
     isRequestGroupAlreadySubmitted,
     // The test-only params stay off the adapter.
     reconcileOpenSubmissions: () => reconcileOpenSubmissions(),

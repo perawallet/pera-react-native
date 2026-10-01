@@ -32,6 +32,7 @@ import {
     RemoteConfigKeys,
     useRemoteConfigStore,
 } from '@perawallet/wallet-core-remote-config'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -231,7 +232,8 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 initializeSyncService({
                     queryClient,
                     stores: createSyncStorePorts(),
-                    registerCompletionHandler: setOnConfirmedHandler,
+                    registerCompletionHandler: handler =>
+                        setOnConfirmedHandler(LEGACY_CHAIN_ID, handler),
                 })
 
                 updateQueryHeaders()

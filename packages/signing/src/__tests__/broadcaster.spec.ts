@@ -11,75 +11,53 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    ChainAdapterNotRegisteredError,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import * as signing from '../index'
 import {
     broadcasterChainAdapters,
-    createSubmitTransport,
     deriveSubmissionAttemptFromBytes,
-    isRequestGroupAlreadySubmitted,
     reconcileOpenSubmissions,
     setOnConfirmedHandler,
     setSubmissionSettledHandler,
     submitAndAutoRefresh,
 } from '../broadcaster'
-import type { SignRequest } from '../models'
 import { registerFakeBroadcaster } from './fakeBroadcaster'
 
-const algokit = { client: { algod: { sendRawTransaction: vi.fn() } } }
-const encode = vi.fn()
-const request = { id: 'req-1' } as unknown as SignRequest
-
 describe('broadcaster wrappers', () => {
-    it('forward their arguments to the registered adapter and return its result', async () => {
-        const transport = { send: vi.fn() }
+    it('forward their arguments to the adapter registered for the chain and return its result', async () => {
         const summary = { probed: 2, confirmed: 1, failed: 1 }
         const derived = { txIds: ['TX1'], lastValid: 7 }
         const handler = vi.fn()
         const adapter = registerFakeBroadcaster({
-            createSubmitTransport: vi.fn(() => transport),
             submitAndAutoRefresh: vi.fn(async () => ['TX1']),
-            isRequestGroupAlreadySubmitted: vi.fn(async () => true),
             reconcileOpenSubmissions: vi.fn(async () => summary),
             deriveSubmissionAttemptFromBytes: vi.fn(() => derived),
         })
         const bytes = [new Uint8Array([1])]
 
-        expect(createSubmitTransport(algokit, encode, 'testnet')).toBe(
-            transport,
-        )
-        expect(adapter.createSubmitTransport).toHaveBeenCalledWith(
-            algokit,
-            encode,
-            'testnet',
-        )
-
         await expect(
-            submitAndAutoRefresh(algokit, encode, [], { flow: 'swap' }),
+            submitAndAutoRefresh(LEGACY_CHAIN_ID, [], { flow: 'swap' }),
         ).resolves.toEqual(['TX1'])
-        expect(adapter.submitAndAutoRefresh).toHaveBeenCalledWith(
-            algokit,
-            encode,
-            [],
-            { flow: 'swap' },
-        )
+        expect(adapter.submitAndAutoRefresh).toHaveBeenCalledWith([], {
+            flow: 'swap',
+        })
 
-        await expect(isRequestGroupAlreadySubmitted(request)).resolves.toBe(
-            true,
+        await expect(reconcileOpenSubmissions(LEGACY_CHAIN_ID)).resolves.toBe(
+            summary,
         )
-        expect(adapter.isRequestGroupAlreadySubmitted).toHaveBeenCalledWith(
-            request,
+        expect(deriveSubmissionAttemptFromBytes(LEGACY_CHAIN_ID, bytes)).toBe(
+            derived,
         )
-
-        await expect(reconcileOpenSubmissions()).resolves.toBe(summary)
-        expect(deriveSubmissionAttemptFromBytes(bytes)).toBe(derived)
         expect(adapter.deriveSubmissionAttemptFromBytes).toHaveBeenCalledWith(
             bytes,
         )
 
-        setOnConfirmedHandler(handler)
+        setOnConfirmedHandler(LEGACY_CHAIN_ID, handler)
         expect(adapter.setOnConfirmedHandler).toHaveBeenCalledWith(handler)
-        setSubmissionSettledHandler('cosign', handler)
+        setSubmissionSettledHandler(LEGACY_CHAIN_ID, 'cosign', handler)
         expect(adapter.setSubmissionSettledHandler).toHaveBeenCalledWith(
             'cosign',
             handler,
@@ -89,31 +67,25 @@ describe('broadcaster wrappers', () => {
     it('throw ChainAdapterNotRegisteredError when no adapter is registered', async () => {
         broadcasterChainAdapters.reset()
 
-        expect(() => createSubmitTransport(algokit, encode, 'testnet')).toThrow(
-            ChainAdapterNotRegisteredError,
-        )
         await expect(
             Promise.resolve().then(() =>
-                submitAndAutoRefresh(algokit, encode, []),
+                submitAndAutoRefresh(LEGACY_CHAIN_ID, []),
             ),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             Promise.resolve().then(() =>
-                isRequestGroupAlreadySubmitted(request),
+                reconcileOpenSubmissions(LEGACY_CHAIN_ID),
             ),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
-        await expect(
-            Promise.resolve().then(() => reconcileOpenSubmissions()),
-        ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
-        expect(() => deriveSubmissionAttemptFromBytes([])).toThrow(
+        expect(() =>
+            deriveSubmissionAttemptFromBytes(LEGACY_CHAIN_ID, []),
+        ).toThrow(ChainAdapterNotRegisteredError)
+        expect(() => setOnConfirmedHandler(LEGACY_CHAIN_ID, null)).toThrow(
             ChainAdapterNotRegisteredError,
         )
-        expect(() => setOnConfirmedHandler(null)).toThrow(
-            ChainAdapterNotRegisteredError,
-        )
-        expect(() => setSubmissionSettledHandler('swap', null)).toThrow(
-            ChainAdapterNotRegisteredError,
-        )
+        expect(() =>
+            setSubmissionSettledHandler(LEGACY_CHAIN_ID, 'swap', null),
+        ).toThrow(ChainAdapterNotRegisteredError)
     })
 })
 

@@ -66,6 +66,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: addSignRequestMock }),
+}))
+
+vi.mock('../../../signing/submission/submitAndAutoRefresh', () => ({
     submitAndAutoRefresh: submitAndAutoRefreshMock,
 }))
 

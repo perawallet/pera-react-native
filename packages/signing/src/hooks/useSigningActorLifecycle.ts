@@ -14,10 +14,10 @@ import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { AnyActorRef, SnapshotFrom } from 'xstate'
 import { AppError, logger, type Optional } from '@perawallet/wallet-core-shared'
 import {
-    useAlgorandClient,
     useTransactionEncoder,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
@@ -33,7 +33,7 @@ import { getNextQueuedRequest } from '../pipeline/queue'
 import { approvalGate } from '../pipeline/approvalGate'
 import { signingEventBus } from '../pipeline/signingEventBus'
 import { isInteractiveSource } from '../pipeline/types'
-import { isRequestGroupAlreadySubmitted } from '../broadcaster'
+import { broadcasterChainAdapters } from '../broadcaster'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SignRequest } from '../models'
 
@@ -154,9 +154,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const { signTransactions } = useLocalKeyTransactionSigner()
     const { signArbitraryData } = useArbitraryDataSigner()
     const { signArc60 } = useLocalKeyArc60Signer()
-    const { encodeTransactionRaw, encodeSignedTransactions } =
-        useTransactionEncoder()
-    const algokit = useAlgorandClient()
+    const { encodeTransactionRaw } = useTransactionEncoder()
     const { network } = useNetwork()
     const allAccounts = useAllAccounts()
     const {
@@ -178,8 +176,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 signArbitraryData,
                 signArc60,
                 createTransport: createTransportSelector({
-                    algokit,
-                    encodeSignedTransactions,
                     network,
                     proposeSignRequest,
                     addSignatures,
@@ -199,14 +195,12 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             signArbitraryData,
             signArc60,
             encodeTransactionRaw,
-            encodeSignedTransactions,
             network,
             proposeSignRequest,
             addSignatures,
             getMsigMetadata,
             getDeviceId,
             createDraftSignRequest,
-            algokit,
             allAccounts,
         ],
     )
@@ -449,7 +443,11 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             // the group as submitted, drop the request instead of inviting a
             // re-sign/re-submit of bytes that may already be on chain.
             // Best-effort — on any ledger failure the request is re-presented.
-            if (await isRequestGroupAlreadySubmitted(next)) {
+            if (
+                await broadcasterChainAdapters
+                    .get(LEGACY_CHAIN_ID)
+                    .isRequestGroupAlreadySubmitted(next)
+            ) {
                 logger.info(
                     'Suppressed re-presented sign request: group already submitted',
                     { id: next.id },

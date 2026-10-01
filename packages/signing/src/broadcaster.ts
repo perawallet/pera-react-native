@@ -12,7 +12,6 @@
 
 import {
     createChainAdapterRegistry,
-    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
@@ -20,26 +19,6 @@ import type { Network } from '@perawallet/wallet-core-shared'
 import type { SignRequest } from './models'
 import type { DataTransport } from './pipeline/types'
 import type { IntentKey, SubmissionFlow } from './db/types'
-
-export type EncodeSignedTransactionsFn = (
-    txns: PeraSignedTransaction[],
-) => Uint8Array[]
-
-/**
- * Mirrors algosdk v9's fluent builder shape: `sendRawTransaction(...)` returns
- * a request builder whose `.do()` performs the network call.
- */
-export interface AlgodClientInterface {
-    sendRawTransaction(rawTxns: Uint8Array | Uint8Array[]): {
-        do(): Promise<unknown>
-    }
-}
-
-export interface AlgokitClientInterface {
-    client: {
-        algod: AlgodClientInterface
-    }
-}
 
 export type OnConfirmedHandler = (
     affectedAddresses: string[],
@@ -89,15 +68,9 @@ export interface BroadcasterChainAdapter {
      *   created; re-compared at send time so a mid-flow network switch aborts
      *   instead of submitting to the wrong chain.
      */
-    createSubmitTransport(
-        algokit: AlgokitClientInterface,
-        encodeSignedTransactions: EncodeSignedTransactionsFn,
-        capturedNetwork: Network,
-    ): DataTransport
+    createSubmitTransport(capturedNetwork: Network): DataTransport
     /** Resolves with the tx ids once the node accepts; confirmation is awaited in the background. */
     submitAndAutoRefresh(
-        algokit: AlgokitClientInterface,
-        encodeSignedTransactions: EncodeSignedTransactionsFn,
         signedTxns: PeraSignedTransaction[],
         options?: SubmitAndAutoRefreshOptions,
     ): Promise<string[]>
@@ -117,28 +90,34 @@ export interface BroadcasterChainAdapter {
 export const broadcasterChainAdapters =
     createChainAdapterRegistry<BroadcasterChainAdapter>('broadcaster')
 
-// None of these calls carries a chain, and every stored attempt belongs to the
-// legacy chain, so they all resolve through it.
-const legacyBroadcaster = (): BroadcasterChainAdapter =>
-    broadcasterChainAdapters.get(LEGACY_CHAIN_ID)
+export const submitAndAutoRefresh = (
+    chainId: ChainId,
+    ...args: Parameters<BroadcasterChainAdapter['submitAndAutoRefresh']>
+) => broadcasterChainAdapters.get(chainId).submitAndAutoRefresh(...args)
 
-export const createSubmitTransport: BroadcasterChainAdapter['createSubmitTransport'] =
-    (...args) => legacyBroadcaster().createSubmitTransport(...args)
+export const reconcileOpenSubmissions = (chainId: ChainId) =>
+    broadcasterChainAdapters.get(chainId).reconcileOpenSubmissions()
 
-export const submitAndAutoRefresh: BroadcasterChainAdapter['submitAndAutoRefresh'] =
-    (...args) => legacyBroadcaster().submitAndAutoRefresh(...args)
+export const deriveSubmissionAttemptFromBytes = (
+    chainId: ChainId,
+    ...args: Parameters<
+        BroadcasterChainAdapter['deriveSubmissionAttemptFromBytes']
+    >
+) =>
+    broadcasterChainAdapters
+        .get(chainId)
+        .deriveSubmissionAttemptFromBytes(...args)
 
-export const isRequestGroupAlreadySubmitted: BroadcasterChainAdapter['isRequestGroupAlreadySubmitted'] =
-    (...args) => legacyBroadcaster().isRequestGroupAlreadySubmitted(...args)
+export const setOnConfirmedHandler = (
+    chainId: ChainId,
+    handler: OnConfirmedHandler | null,
+) => broadcasterChainAdapters.get(chainId).setOnConfirmedHandler(handler)
 
-export const reconcileOpenSubmissions: BroadcasterChainAdapter['reconcileOpenSubmissions'] =
-    () => legacyBroadcaster().reconcileOpenSubmissions()
-
-export const deriveSubmissionAttemptFromBytes: BroadcasterChainAdapter['deriveSubmissionAttemptFromBytes'] =
-    (...args) => legacyBroadcaster().deriveSubmissionAttemptFromBytes(...args)
-
-export const setOnConfirmedHandler: BroadcasterChainAdapter['setOnConfirmedHandler'] =
-    (...args) => legacyBroadcaster().setOnConfirmedHandler(...args)
-
-export const setSubmissionSettledHandler: BroadcasterChainAdapter['setSubmissionSettledHandler'] =
-    (...args) => legacyBroadcaster().setSubmissionSettledHandler(...args)
+export const setSubmissionSettledHandler = (
+    chainId: ChainId,
+    flow: SubmissionFlow,
+    handler: SubmissionSettledHandler | null,
+) =>
+    broadcasterChainAdapters
+        .get(chainId)
+        .setSubmissionSettledHandler(flow, handler)
