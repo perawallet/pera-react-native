@@ -135,7 +135,7 @@ describe('useUpdateAccount', () => {
         ])
     })
 
-    it('re-derives credentials from the updated details instead of keeping stale ones', () => {
+    it('re-derives the provenance from the updated details instead of keeping a stale one', () => {
         const device = {
             manufacturer: 'ledger' as const,
             deviceName: 'Nano X',
@@ -146,13 +146,12 @@ describe('useUpdateAccount', () => {
             id: 'hw',
             type: 'hardware',
             hardwareDetails: { ...device, deviceId: 'old', accountIndex: 0 },
-            credentials: [
-                {
-                    kind: 'hardware',
-                    device: { ...device, deviceId: 'old' },
-                    accountIndex: 0,
-                },
-            ],
+            provenance: {
+                kind: 'hardware',
+                device: { ...device, deviceId: 'old' },
+                accountIndex: 0,
+            },
+            credentials: {},
         })
         const { result } = renderHook(() => useUpdateAccount())
 
@@ -162,13 +161,11 @@ describe('useUpdateAccount', () => {
         } as WalletAccount)
 
         const written = mockSetAccounts.mock.calls[0][0] as WalletAccount[]
-        expect(written[2].credentials).toEqual([
-            {
-                kind: 'hardware',
-                device: { ...device, deviceId: 'new' },
-                accountIndex: 0,
-            },
-        ])
+        expect(written[2].provenance).toEqual({
+            kind: 'hardware',
+            device: { ...device, deviceId: 'new' },
+            accountIndex: 0,
+        })
     })
 
     it('updates account at correct index', () => {

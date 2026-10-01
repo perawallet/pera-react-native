@@ -10,16 +10,23 @@
  limitations under the License
  */
 
-import type { SigningScheme } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainDescriptor,
+    SigningScheme,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     resolveSeedKeyFrom,
     SeedScheme,
     seedSchemeOf,
 } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
-import type { SigningCredential } from '../models'
+import type { WalletAccount } from '../models'
 
 type KeystoreSnapshot = Parameters<typeof resolveSeedKeyFrom>[0]
+
+export type SchemeChain = Pick<ChainDescriptor, 'id' | 'signing'> & {
+    protocol: Pick<ChainDescriptor['protocol'], 'supportsNativeMultisig'>
+}
 
 const loadedSeedScheme = (
     keys: KeystoreSnapshot,
@@ -32,15 +39,37 @@ const loadedSeedScheme = (
     }
 }
 
-// Follows the seed's scheme, the kms signer's oracle, so the two can't disagree;
-// provenance stands in until the keystore holds the seed.
+/**
+ * The scheme `account` signs with on `chain`, or `null` when it can't sign
+ * there. A chain lists its primary scheme first. A local key follows its seed,
+ * the kms signer's oracle; the provenance stands in until the keystore loads.
+ */
 export const credentialScheme = (
-    credential: SigningCredential,
+    account: WalletAccount,
+    chain: SchemeChain,
     keys: KeystoreSnapshot = getKeystoreStore().state.keys,
-): SigningScheme => {
-    if (credential.kind !== 'local') return 'ed25519'
+): SigningScheme | null => {
+    const primary = chain.signing.schemes[0] ?? null
+    const { provenance } = account
 
-    const scheme =
-        loadedSeedScheme(keys, credential.keyPairId) ?? credential.provenance
-    return scheme === SeedScheme.Quantum ? 'falcon-1024' : 'ed25519'
+    switch (provenance?.kind) {
+        case 'hardware': {
+            return primary
+        }
+        case 'multisig': {
+            return chain.protocol.supportsNativeMultisig ? primary : null
+        }
+        case 'local': {
+            const keyPairId = account.credentials?.[chain.id]?.keyPairId
+            if (!keyPairId) return null
+            const seed = loadedSeedScheme(keys, keyPairId) ?? provenance.seed
+            const scheme = seed === SeedScheme.Quantum ? 'falcon-1024' : primary
+            return scheme && chain.signing.schemes.includes(scheme)
+                ? scheme
+                : null
+        }
+        default: {
+            return null
+        }
+    }
 }

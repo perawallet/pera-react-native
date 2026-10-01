@@ -12,7 +12,7 @@
 
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
-import { rebuildCredentials } from '../credentials/backfill'
+import { rebuildCustody } from '../credentials/backfill'
 
 export const useUpdateAccount = () => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
@@ -21,7 +21,7 @@ export const useUpdateAccount = () => {
         // Read fresh copy of accounts to avoid stale captures.
         const currentAccounts = useAccountsStore.getState().accounts
         const updated = currentAccounts.map(a =>
-            a.address === account.address ? rebuildCredentials(account) : a,
+            a.address === account.address ? rebuildCustody(account) : a,
         )
         setAccounts(updated)
     }

@@ -15,7 +15,7 @@ import type {
     LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
 import type { Network } from '@perawallet/wallet-core-shared'
-import type { AccountCredential } from './credentials'
+import type { AccountCredentials, AccountProvenance } from './credentials'
 
 export const DerivationTypes = {
     Khovratovich: 32,
@@ -136,11 +136,13 @@ export type BaseWalletAccount = {
      */
     rekeyAddressByNetwork?: Partial<Record<Network, string>>
     /**
-     * Custody, independent of `type`; `type` and its details stay authoritative.
-     * The store backfills it on every write, except on a record missing the
-     * details its `type` requires (e.g. a multisig without `multisigDetails`).
+     * `type` and its details stay authoritative. The store backfills these two
+     * on every write, except on a record missing the details its `type`
+     * requires (e.g. a multisig without `multisigDetails`).
      */
-    credentials?: AccountCredential[]
+    provenance?: AccountProvenance
+    /** Keyed by chain; empty when no local key signs for the account. */
+    credentials?: AccountCredentials
 }
 
 export type Algo25Account = BaseWalletAccount & {

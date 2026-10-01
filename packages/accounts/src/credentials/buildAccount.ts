@@ -10,49 +10,59 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
     generateOrderedUniqueId,
     type Network,
 } from '@perawallet/wallet-core-shared'
+import { AccountError } from '../errors'
 import {
     AccountTypes,
-    type AccountCredential,
+    type AccountCredentials,
+    type AccountProvenance,
     type Algo25Account,
+    type ChainCredential,
     type HardwareWalletAccount,
     type HDWalletAccount,
-    type LocalCredential,
+    type LocalProvenance,
     type MultiSigAccount,
     type QuantumAccount,
     type WalletAccount,
     type WatchAccount,
 } from '../models'
 
-export type BuildAccountInput<C extends AccountCredential = AccountCredential> =
+// The legacy `keyPairId` is the Algorand key, so a local account must have one.
+type LocalCredentials = AccountCredentials &
+    Record<typeof LEGACY_CHAIN_ID, ChainCredential>
+
+export type BuildAccountInput<P extends AccountProvenance = AccountProvenance> =
     {
         /** Defaults to a fresh ordered unique id. */
         id?: string
         name?: string
         address: string
-        credential: C
+        provenance: P
         rekeyAddress?: string
         rekeyAddressByNetwork?: Partial<Record<Network, string>>
-    }
+    } & (P extends { kind: 'local' }
+        ? { credentials: LocalCredentials }
+        : { credentials?: AccountCredentials })
 
-/** The legacy account variant a credential maps onto. */
-export type AccountForCredential<C extends AccountCredential> = C extends {
+/** The legacy account variant a provenance maps onto. */
+export type AccountForProvenance<P extends AccountProvenance> = P extends {
     kind: 'hardware'
 }
     ? HardwareWalletAccount
-    : C extends { kind: 'multisig' }
+    : P extends { kind: 'multisig' }
       ? MultiSigAccount
-      : C extends { kind: 'watch' }
+      : P extends { kind: 'watch' }
         ? WatchAccount
-        : C extends { provenance: typeof SeedScheme.Bip39 }
+        : P extends { seed: typeof SeedScheme.Bip39 }
           ? HDWalletAccount
-          : C extends { provenance: typeof SeedScheme.Quantum }
+          : P extends { seed: typeof SeedScheme.Quantum }
             ? QuantumAccount
-            : C extends { provenance: typeof SeedScheme.Algo25 }
+            : P extends { seed: typeof SeedScheme.Algo25 }
               ? Algo25Account
               : WalletAccount
 
@@ -64,34 +74,46 @@ type LegacyFields =
     | Pick<MultiSigAccount, 'type' | 'multisigDetails'>
     | Pick<WatchAccount, 'type'>
 
-const localLegacyFieldsOf = (credential: LocalCredential): LegacyFields => {
-    if (credential.provenance === 'bip39') {
+const localLegacyFieldsOf = (
+    provenance: LocalProvenance,
+    credentials: AccountCredentials,
+): LegacyFields => {
+    const keyPairId = credentials[LEGACY_CHAIN_ID]?.keyPairId
+    if (!keyPairId) {
+        throw new AccountError(
+            'A local account needs a credential on the Algorand chain',
+        )
+    }
+    if (provenance.seed === 'bip39') {
         return {
             type: AccountTypes.hdWallet,
-            keyPairId: credential.keyPairId,
-            hdWalletDetails: { ...credential.hd },
+            keyPairId,
+            hdWalletDetails: { ...provenance.hd },
         }
     }
     return {
         type:
-            credential.provenance === 'quantum'
+            provenance.seed === 'quantum'
                 ? AccountTypes.quantum
                 : AccountTypes.algo25,
-        keyPairId: credential.keyPairId,
+        keyPairId,
     }
 }
 
-const legacyFieldsOf = (credential: AccountCredential): LegacyFields => {
-    switch (credential.kind) {
+const legacyFieldsOf = (
+    provenance: AccountProvenance,
+    credentials: AccountCredentials,
+): LegacyFields => {
+    switch (provenance.kind) {
         case 'local': {
-            return localLegacyFieldsOf(credential)
+            return localLegacyFieldsOf(provenance, credentials)
         }
         case 'hardware': {
             return {
                 type: AccountTypes.hardware,
                 hardwareDetails: {
-                    ...credential.device,
-                    accountIndex: credential.accountIndex,
+                    ...provenance.device,
+                    accountIndex: provenance.accountIndex,
                 },
             }
         }
@@ -99,9 +121,9 @@ const legacyFieldsOf = (credential: AccountCredential): LegacyFields => {
             return {
                 type: AccountTypes.multisig,
                 multisigDetails: {
-                    threshold: credential.threshold,
-                    addresses: [...credential.members],
-                    version: credential.version,
+                    threshold: provenance.threshold,
+                    addresses: [...provenance.members],
+                    version: provenance.version,
                 },
             }
         }
@@ -112,25 +134,32 @@ const legacyFieldsOf = (credential: AccountCredential): LegacyFields => {
 }
 
 /**
- * Builds a {@link WalletAccount} from its credential. The legacy `type` and
- * details object are derived from it, so the two can't disagree.
+ * Builds a {@link WalletAccount} from its provenance and credentials. The
+ * legacy `type` and details object are derived from them, so they can't
+ * disagree.
  */
-export const buildAccount = <C extends AccountCredential>({
-    id,
-    name,
-    address,
-    credential,
-    rekeyAddress,
-    rekeyAddressByNetwork,
-}: BuildAccountInput<C>): AccountForCredential<C> =>
-    ({
+export const buildAccount = <P extends AccountProvenance>(
+    input: BuildAccountInput<P>,
+): AccountForProvenance<P> => {
+    const {
+        id,
+        name,
+        address,
+        provenance,
+        rekeyAddress,
+        rekeyAddressByNetwork,
+    } = input
+    const credentials: AccountCredentials = input.credentials ?? {}
+    return {
         id: id ?? generateOrderedUniqueId(),
         ...(name !== undefined ? { name } : {}),
         address,
-        ...legacyFieldsOf(credential),
+        ...legacyFieldsOf(provenance, credentials),
         ...(rekeyAddress !== undefined ? { rekeyAddress } : {}),
         ...(rekeyAddressByNetwork !== undefined
             ? { rekeyAddressByNetwork }
             : {}),
-        credentials: [credential],
-    }) as AccountForCredential<C>
+        provenance,
+        credentials,
+    } as AccountForProvenance<P>
+}

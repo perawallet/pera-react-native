@@ -125,7 +125,10 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 }))
 
 let idCounter = 0
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     generateOrderedUniqueId: () => `id-${idCounter++}`,
     logger: { warn: vi.fn() },
 }))
@@ -336,7 +339,8 @@ describe('useCloudBackupImport', () => {
             expect.objectContaining({
                 address: 'WATCH_ADDR',
                 type: 'watch',
-                credentials: [{ kind: 'watch' }],
+                provenance: { kind: 'watch' },
+                credentials: {},
             }),
         )
         expect(summary.imported).toBe(1)
@@ -375,18 +379,17 @@ describe('useCloudBackupImport', () => {
                     accountIndex: 3,
                     transportType: 'ble',
                 },
-                credentials: [
-                    {
-                        kind: 'hardware',
-                        device: {
-                            manufacturer: 'ledger',
-                            deviceId: 'DE:AD:BE:EF',
-                            deviceName: 'Ledger Nano X',
-                            transportType: 'ble',
-                        },
-                        accountIndex: 3,
+                provenance: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'DE:AD:BE:EF',
+                        deviceName: 'Ledger Nano X',
+                        transportType: 'ble',
                     },
-                ],
+                    accountIndex: 3,
+                },
+                credentials: {},
             }),
         )
         expect(summary.imported).toBe(1)
@@ -421,14 +424,13 @@ describe('useCloudBackupImport', () => {
                     addresses: ['A', 'B'],
                     version: 1,
                 },
-                credentials: [
-                    {
-                        kind: 'multisig',
-                        threshold: 2,
-                        members: ['A', 'B'],
-                        version: 1,
-                    },
-                ],
+                provenance: {
+                    kind: 'multisig',
+                    threshold: 2,
+                    members: ['A', 'B'],
+                    version: 1,
+                },
+                credentials: {},
             }),
         )
         expect(summary.imported).toBe(1)
@@ -563,18 +565,19 @@ describe('useCloudBackupImport', () => {
                 address: 'HD_KEY_ADDR',
                 type: 'hdWallet',
                 name: 'HD One',
-                credentials: [
-                    expect.objectContaining({
-                        kind: 'local',
-                        provenance: 'bip39',
-                        hd: {
-                            account: 0,
-                            change: 0,
-                            keyIndex: 1,
-                            derivationType: 9,
-                        },
-                    }),
-                ],
+                provenance: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: {
+                        account: 0,
+                        change: 0,
+                        keyIndex: 1,
+                        derivationType: 9,
+                    },
+                },
+                credentials: {
+                    algorand: { keyPairId: expect.any(String) },
+                },
             }),
         )
     })

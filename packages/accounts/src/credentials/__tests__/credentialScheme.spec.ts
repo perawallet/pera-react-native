@@ -11,15 +11,38 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import type { SigningCredential } from '../../models'
-import { credentialScheme } from '../credentialScheme'
+import type { SigningScheme } from '@perawallet/wallet-core-chain-contract'
+import type { AccountProvenance, WalletAccount } from '../../models'
+import { credentialScheme, type SchemeChain } from '../credentialScheme'
 
-type Keys = NonNullable<Parameters<typeof credentialScheme>[1]>
+type Keys = NonNullable<Parameters<typeof credentialScheme>[2]>
 
-const local = (
-    keyPairId: string,
-    provenance: 'algo25' | 'quantum',
-): SigningCredential => ({ kind: 'local', keyPairId, provenance })
+const algorand: SchemeChain = {
+    id: 'algorand',
+    signing: { schemes: ['ed25519', 'falcon-1024'], derivationPaths: {} },
+    protocol: { supportsNativeMultisig: true },
+}
+
+const chainWith = (
+    schemes: SigningScheme[],
+    supportsNativeMultisig = true,
+): SchemeChain => ({
+    ...algorand,
+    signing: { schemes, derivationPaths: {} },
+    protocol: { supportsNativeMultisig },
+})
+
+const account = (
+    provenance: AccountProvenance,
+    keyPairId?: string,
+): WalletAccount =>
+    ({
+        id: 'a',
+        address: 'ADDR',
+        type: 'algo25',
+        provenance,
+        credentials: keyPairId ? { algorand: { keyPairId } } : {},
+    }) as WalletAccount
 
 const seedWithChild = (
     scheme: 'algo25' | 'quantum' | 'bip39',
@@ -30,11 +53,17 @@ const seedWithChild = (
         { id: 'child', type: childType, metadata: { parentKeyId: 'seed' } },
     ] as unknown as Keys
 
+const algo25 = (keyPairId?: string) =>
+    account({ kind: 'local', seed: 'algo25' }, keyPairId)
+const quantum = (keyPairId?: string) =>
+    account({ kind: 'local', seed: 'quantum' }, keyPairId)
+
 describe('credentialScheme', () => {
-    test('resolves ed25519 for a key under an algo25 seed', () => {
+    test("resolves the chain's primary scheme for a key under an algo25 seed", () => {
         expect(
             credentialScheme(
-                local('child', 'algo25'),
+                algo25('child'),
+                algorand,
                 seedWithChild('algo25', 'ed25519'),
             ),
         ).toBe('ed25519')
@@ -43,7 +72,8 @@ describe('credentialScheme', () => {
     test('resolves falcon-1024 for a key under a quantum seed', () => {
         expect(
             credentialScheme(
-                local('child', 'quantum'),
+                quantum('child'),
+                algorand,
                 seedWithChild('quantum', 'falcon-1024'),
             ),
         ).toBe('falcon-1024')
@@ -52,7 +82,8 @@ describe('credentialScheme', () => {
     test("follows the seed's scheme when the child entry carries a legacy type", () => {
         expect(
             credentialScheme(
-                local('child', 'quantum'),
+                quantum('child'),
+                algorand,
                 seedWithChild('quantum', 'falcon1024'),
             ),
         ).toBe('falcon-1024')
@@ -61,69 +92,77 @@ describe('credentialScheme', () => {
     test('follows the seed over the provenance when they disagree', () => {
         expect(
             credentialScheme(
-                local('child', 'quantum'),
+                quantum('child'),
+                algorand,
                 seedWithChild('algo25', 'ed25519'),
             ),
         ).toBe('ed25519')
     })
 
     test.each([
-        ['quantum', 'falcon-1024'],
-        ['algo25', 'ed25519'],
+        ['quantum', quantum, 'falcon-1024'],
+        ['algo25', algo25, 'ed25519'],
     ] as const)(
-        'falls back to the %s provenance while the keystore is not loaded',
-        (provenance, expected) => {
-            expect(credentialScheme(local('missing', provenance), [])).toBe(
+        'falls back to the %s seed while the keystore is not loaded',
+        (_seed, build, expected) => {
+            expect(credentialScheme(build('missing'), algorand, [])).toBe(
                 expected,
             )
         },
     )
 
-    test('falls back to ed25519 for a bip39 key whose keystore entry is not loaded', () => {
-        expect(
-            credentialScheme(
-                {
-                    kind: 'local',
-                    keyPairId: 'missing',
-                    provenance: 'bip39',
-                    hd: {
-                        account: 0,
-                        change: 0,
-                        keyIndex: 0,
-                        derivationType: 9,
-                    },
-                },
-                [],
-            ),
-        ).toBe('ed25519')
+    test('has no scheme on a chain the account holds no key for', () => {
+        expect(credentialScheme(algo25(), algorand, [])).toBeNull()
     })
 
-    test('resolves hardware and multisig credentials to ed25519', () => {
+    test('has no scheme when the chain does not support the seed scheme', () => {
+        expect(
+            credentialScheme(quantum('missing'), chainWith(['ed25519']), []),
+        ).toBeNull()
+    })
+
+    test("signs hardware accounts with the chain's primary scheme", () => {
+        const hardware = account({
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'd',
+                deviceName: 'n',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
+        })
+
+        expect(credentialScheme(hardware, algorand, [])).toBe('ed25519')
+        expect(credentialScheme(hardware, chainWith(['falcon-1024']), [])).toBe(
+            'falcon-1024',
+        )
+    })
+
+    test('signs multisig accounts only on chains with native multisig', () => {
+        const multisig = account({
+            kind: 'multisig',
+            threshold: 1,
+            members: ['P1'],
+            version: 1,
+        })
+
+        expect(credentialScheme(multisig, algorand, [])).toBe('ed25519')
+        expect(
+            credentialScheme(multisig, chainWith(['ed25519'], false), []),
+        ).toBeNull()
+    })
+
+    test('has no scheme for a watch account or one without a provenance', () => {
+        expect(
+            credentialScheme(account({ kind: 'watch' }), algorand, []),
+        ).toBeNull()
         expect(
             credentialScheme(
-                {
-                    kind: 'hardware',
-                    device: {
-                        manufacturer: 'ledger',
-                        deviceId: 'd',
-                        deviceName: 'n',
-                        transportType: 'ble',
-                    },
-                    accountIndex: 0,
-                },
+                { id: 'a', address: 'ADDR', type: 'watch' },
+                algorand,
                 [],
             ),
-        ).toBe('ed25519')
-        expect(
-            credentialScheme(
-                {
-                    kind: 'multisig',
-                    threshold: 1,
-                    members: ['P1'],
-                    version: 1,
-                },
-                [],
-            ),
-        ).toBe('ed25519')
+        ).toBeNull()
     })
 })

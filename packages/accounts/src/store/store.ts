@@ -30,8 +30,8 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { buildAccount, withCredentials } from '../credentials'
-import { rebuildCredentials } from '../credentials/backfill'
+import { buildAccount, withCustody } from '../credentials'
+import { rebuildCustody } from '../credentials/backfill'
 
 const STORE_NAME = 'accounts-store'
 const STORE_VERSION = 1
@@ -47,9 +47,9 @@ type PersistedAccountsState = Pick<
 >
 
 /**
- * v0 accounts have no `credentials`; they are backfilled from `type` and the
- * details object. `withCredentials` skips accounts that already carry them, so
- * re-running this over migrated state is a no-op.
+ * v0 accounts have no `provenance`/`credentials`; they are backfilled from
+ * `type` and the details object. `withCustody` skips accounts that already
+ * have a provenance, so re-running this over migrated state is a no-op.
  */
 export const migrateAccountsState = (
     persistedState: unknown,
@@ -59,7 +59,7 @@ export const migrateAccountsState = (
     if (version < 1) {
         return {
             ...state,
-            accounts: (state.accounts ?? []).map(withCredentials),
+            accounts: (state.accounts ?? []).map(withCustody),
         }
     }
     return state
@@ -148,8 +148,7 @@ export const useAccountsStore: UseBoundStore<
                 // first. Callers that need to surface duplicates to the user
                 // (batch import) still throw DuplicateAccountError before
                 // reaching here; this is the structural safety net.
-                accounts =
-                    resolveDuplicateAccounts(accounts).map(withCredentials)
+                accounts = resolveDuplicateAccounts(accounts).map(withCustody)
 
                 const currentSelected = get().selectedAccountAddress
                 const currentManualOrder = get().manualAccountOrder
@@ -306,7 +305,7 @@ export const useAccountsStore: UseBoundStore<
                     .map(address =>
                         buildAccount({
                             address,
-                            credential: { kind: 'watch' },
+                            provenance: { kind: 'watch' },
                             ...(isActiveNetwork
                                 ? { rekeyAddress: sourceAddress }
                                 : {}),
@@ -335,7 +334,7 @@ export const useAccountsStore: UseBoundStore<
                     hardwareDetails,
                 }
                 const next = [...accounts]
-                next[idx] = rebuildCredentials(upgraded)
+                next[idx] = rebuildCustody(upgraded)
                 set({ accounts: next })
                 return true
             },
@@ -368,7 +367,7 @@ export const useAccountsStore: UseBoundStore<
 
                 const rebound: WalletAccount = { ...current, hardwareDetails }
                 const next = [...accounts]
-                next[idx] = rebuildCredentials(rebound)
+                next[idx] = rebuildCustody(rebound)
                 set({ accounts: next })
                 return true
             },

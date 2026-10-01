@@ -10,35 +10,34 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { SeedScheme } from '@perawallet/wallet-core-kms'
 import type { HardwareWalletDetails, HDWalletDetails } from './accounts'
 
 export type HdPath = HDWalletDetails
 
-// No signature scheme here: it's resolved from the seed at runtime
-// (`credentialScheme`), so changing schemes needs no data migration.
-export type LocalCredential =
+// No signature scheme here: it depends on the chain and the seed, and is
+// resolved at runtime (`credentialScheme`), so it needs no data migration.
+export type LocalProvenance =
     | {
           kind: 'local'
-          keyPairId: string
-          provenance: typeof SeedScheme.Algo25 | typeof SeedScheme.Quantum
+          seed: typeof SeedScheme.Algo25 | typeof SeedScheme.Quantum
       }
     | {
           kind: 'local'
-          keyPairId: string
-          provenance: typeof SeedScheme.Bip39
+          seed: typeof SeedScheme.Bip39
           hd: HdPath
       }
 
 export type HardwareRef = Omit<HardwareWalletDetails, 'accountIndex'>
 
-export type HardwareCredential = {
+export type HardwareProvenance = {
     kind: 'hardware'
     device: HardwareRef
     accountIndex: HardwareWalletDetails['accountIndex']
 }
 
-export type MultisigCredential = {
+export type MultisigProvenance = {
     kind: 'multisig'
     threshold: number
     members: string[]
@@ -46,14 +45,20 @@ export type MultisigCredential = {
     version: number
 }
 
-export type WatchCredential = {
+export type WatchProvenance = {
     kind: 'watch'
 }
 
-export type AccountCredential =
-    | LocalCredential
-    | HardwareCredential
-    | MultisigCredential
-    | WatchCredential
+/** How an account is held. Cross-chain: the per-chain key lives in `credentials`. */
+export type AccountProvenance =
+    | LocalProvenance
+    | HardwareProvenance
+    | MultisigProvenance
+    | WatchProvenance
 
-export type SigningCredential = Exclude<AccountCredential, WatchCredential>
+/** The KMS key that signs for an account on one chain. */
+export type ChainCredential = {
+    keyPairId: string
+}
+
+export type AccountCredentials = Partial<Record<ChainId, ChainCredential>>

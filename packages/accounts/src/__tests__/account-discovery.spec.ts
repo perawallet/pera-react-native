@@ -163,7 +163,7 @@ describe('discoverAccounts', () => {
         expect(accounts[0].hdWalletDetails.keyIndex).toBe(0)
     })
 
-    it('stamps discovered accounts with a bip39 credential for their derivation path', async () => {
+    it('stamps discovered accounts with a bip39 provenance and their Algorand key', async () => {
         mockFetchAccountFastLookup.mockResolvedValue([
             { address: 'ADDRESS_0_0', accountExists: false },
         ])
@@ -176,14 +176,14 @@ describe('discoverAccounts', () => {
             keyIndexGapLimit: 2,
         })
 
-        expect(account.credentials).toEqual([
-            {
-                kind: 'local',
-                keyPairId: account.keyPairId,
-                provenance: 'bip39',
-                hd: { account: 0, change: 0, keyIndex: 0, derivationType },
-            },
-        ])
+        expect(account.provenance).toEqual({
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, change: 0, keyIndex: 0, derivationType },
+        })
+        expect(account.credentials).toEqual({
+            algorand: { keyPairId: account.keyPairId },
+        })
     })
 
     it('should use batch API for account activity checks', async () => {
@@ -230,7 +230,7 @@ describe('discoverRekeyedAccounts', () => {
         expect(accounts[0].address).toBe('REKEYED_FROM_EXPLICIT')
         expect(accounts[0].type).toBe('watch')
         expect(accounts[0].rekeyAddress).toBe('EXPLICIT_ADDRESS')
-        expect(accounts[0].credentials).toEqual([{ kind: 'watch' }])
+        expect(accounts[0].provenance).toEqual({ kind: 'watch' })
         expect(fetchRekeyedAddresses.mock.calls).toEqual([
             ['EXPLICIT_ADDRESS', TESTNET_SCOPE],
             ['OTHER_ADDRESS', TESTNET_SCOPE],

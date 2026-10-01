@@ -93,7 +93,7 @@ const buildHardwareAccount = (
     assertValidAddress(payload.address)
     return buildAccount({
         address: payload.address,
-        credential: {
+        provenance: {
             kind: 'hardware',
             device: {
                 manufacturer: payload.manufacturer,
@@ -111,7 +111,7 @@ const buildWatchAccount = (payload: WatchAddressPayload): WatchAccount => {
     assertValidAddress(payload.address)
     return buildAccount({
         address: payload.address,
-        credential: { kind: 'watch' },
+        provenance: { kind: 'watch' },
         ...nameField(payload.customName),
     })
 }
@@ -132,7 +132,7 @@ const buildMultisigAccount = (
     }
     return buildAccount({
         address: payload.address,
-        credential: {
+        provenance: {
             kind: 'multisig',
             threshold: payload.threshold,
             members: payload.participantAddresses,
@@ -160,10 +160,9 @@ const buildHdWalletAccount = async (
     }
     return buildAccount({
         address: payload.address,
-        credential: {
+        provenance: {
             kind: 'local',
-            keyPairId: derived.keyPairId,
-            provenance: 'bip39',
+            seed: 'bip39',
             hd: {
                 account: payload.account,
                 change: payload.change,
@@ -171,6 +170,9 @@ const buildHdWalletAccount = async (
                 derivationType:
                     payload.derivationType as HDWalletAccount['hdWalletDetails']['derivationType'],
             },
+        },
+        credentials: {
+            [LEGACY_CHAIN_ID]: { keyPairId: derived.keyPairId },
         },
         ...nameField(payload.customName),
     })

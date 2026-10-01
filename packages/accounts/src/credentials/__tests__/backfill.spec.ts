@@ -13,15 +13,17 @@
 import { describe, test, expect } from 'vitest'
 import {
     DerivationTypes,
-    type AccountCredential,
+    type AccountCredentials,
+    type AccountProvenance,
     type DerivationType,
     type WalletAccount,
 } from '../../models'
-import {
-    credentialsFromLegacy,
-    rebuildCredentials,
-    withCredentials,
-} from '../backfill'
+import { custodyFromLegacy, rebuildCustody, withCustody } from '../backfill'
+
+type Custody = {
+    provenance: AccountProvenance
+    credentials: AccountCredentials
+}
 
 const hdAccount = (derivationType: DerivationType): WalletAccount => ({
     id: 'hd',
@@ -31,7 +33,16 @@ const hdAccount = (derivationType: DerivationType): WalletAccount => ({
     hdWalletDetails: { account: 0, change: 0, keyIndex: 3, derivationType },
 })
 
-const legacyFixtures: Array<[string, WalletAccount, AccountCredential]> = [
+const hdCustody = (derivationType: DerivationType): Custody => ({
+    provenance: {
+        kind: 'local',
+        seed: 'bip39',
+        hd: { account: 0, change: 0, keyIndex: 3, derivationType },
+    },
+    credentials: { algorand: { keyPairId: 'seed-acc0-idx3-dt9' } },
+})
+
+const legacyFixtures: Array<[string, WalletAccount, Custody]> = [
     [
         'algo25',
         {
@@ -40,7 +51,10 @@ const legacyFixtures: Array<[string, WalletAccount, AccountCredential]> = [
             type: 'algo25',
             keyPairId: 'seed-ed25519',
         },
-        { kind: 'local', keyPairId: 'seed-ed25519', provenance: 'algo25' },
+        {
+            provenance: { kind: 'local', seed: 'algo25' },
+            credentials: { algorand: { keyPairId: 'seed-ed25519' } },
+        },
     ],
     [
         'quantum',
@@ -51,40 +65,19 @@ const legacyFixtures: Array<[string, WalletAccount, AccountCredential]> = [
             keyPairId: 'seed-quantum-pqk1',
         },
         {
-            kind: 'local',
-            keyPairId: 'seed-quantum-pqk1',
-            provenance: 'quantum',
+            provenance: { kind: 'local', seed: 'quantum' },
+            credentials: { algorand: { keyPairId: 'seed-quantum-pqk1' } },
         },
     ],
     [
         'hdWallet (Peikert)',
         hdAccount(DerivationTypes.Peikert),
-        {
-            kind: 'local',
-            keyPairId: 'seed-acc0-idx3-dt9',
-            provenance: 'bip39',
-            hd: {
-                account: 0,
-                change: 0,
-                keyIndex: 3,
-                derivationType: DerivationTypes.Peikert,
-            },
-        },
+        hdCustody(DerivationTypes.Peikert),
     ],
     [
         'hdWallet (Khovratovich)',
         hdAccount(DerivationTypes.Khovratovich),
-        {
-            kind: 'local',
-            keyPairId: 'seed-acc0-idx3-dt9',
-            provenance: 'bip39',
-            hd: {
-                account: 0,
-                change: 0,
-                keyIndex: 3,
-                derivationType: DerivationTypes.Khovratovich,
-            },
-        },
+        hdCustody(DerivationTypes.Khovratovich),
     ],
     [
         'hardware',
@@ -101,14 +94,17 @@ const legacyFixtures: Array<[string, WalletAccount, AccountCredential]> = [
             },
         },
         {
-            kind: 'hardware',
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'ble-1',
-                deviceName: 'Nano X',
-                transportType: 'ble',
+            provenance: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'ble-1',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
+                accountIndex: 2,
             },
-            accountIndex: 2,
+            credentials: {},
         },
     ],
     [
@@ -124,36 +120,36 @@ const legacyFixtures: Array<[string, WalletAccount, AccountCredential]> = [
             },
         },
         {
-            kind: 'multisig',
-            threshold: 2,
-            members: ['P1', 'P2', 'P3'],
-            version: 1,
+            provenance: {
+                kind: 'multisig',
+                threshold: 2,
+                members: ['P1', 'P2', 'P3'],
+                version: 1,
+            },
+            credentials: {},
         },
     ],
     [
         'watch',
         { id: 'w', address: 'WATCH-ADDR', type: 'watch' },
-        { kind: 'watch' },
+        { provenance: { kind: 'watch' }, credentials: {} },
     ],
 ]
 
-describe('credentialsFromLegacy', () => {
+describe('custodyFromLegacy', () => {
     test.each(legacyFixtures)(
-        'derives the credential of a legacy %s account',
+        'derives the provenance and Algorand credentials of a legacy %s account',
         (_label, account, expected) => {
-            expect(credentialsFromLegacy(account)).toEqual([expected])
+            expect(custodyFromLegacy(account)).toEqual(expected)
         },
     )
 })
 
-describe('withCredentials', () => {
+describe('withCustody', () => {
     test.each(legacyFixtures)(
-        'adds credentials to a legacy %s account and keeps every other field',
+        'adds custody to a legacy %s account and keeps every other field',
         (_label, account, expected) => {
-            expect(withCredentials(account)).toEqual({
-                ...account,
-                credentials: [expected],
-            })
+            expect(withCustody(account)).toEqual({ ...account, ...expected })
         },
     )
 
@@ -163,37 +159,38 @@ describe('withCredentials', () => {
         ['a multisig account without participants', { type: 'multisig' }],
         ['an algo25 account without a key id', { type: 'algo25' }],
         ['an account of an unknown type', { type: 'card' }],
-    ])('leaves %s without credentials instead of throwing', (_label, shape) => {
+    ])('leaves %s without custody instead of throwing', (_label, shape) => {
         const account = {
             id: 'x',
             address: 'ADDR',
             ...shape,
         } as unknown as WalletAccount
 
-        expect(withCredentials(account)).toBe(account)
+        expect(withCustody(account)).toBe(account)
     })
 
-    test('returns an account that already has credentials unchanged', () => {
+    test('returns an account that already has a provenance unchanged', () => {
         const account: WalletAccount = {
             id: 'w',
             address: 'WATCH-ADDR',
             type: 'watch',
-            credentials: [{ kind: 'watch' }],
+            provenance: { kind: 'watch' },
+            credentials: {},
         }
 
-        expect(withCredentials(account)).toBe(account)
+        expect(withCustody(account)).toBe(account)
     })
 
     test('is idempotent', () => {
         for (const [, account] of legacyFixtures) {
-            const once = withCredentials(account)
-            expect(withCredentials(once)).toBe(once)
+            const once = withCustody(account)
+            expect(withCustody(once)).toBe(once)
         }
     })
 })
 
-describe('rebuildCredentials', () => {
-    test('replaces credentials that no longer match the details', () => {
+describe('rebuildCustody', () => {
+    test('replaces custody that no longer matches the details', () => {
         const account: WalletAccount = {
             id: 'w',
             address: 'ADDR',
@@ -205,31 +202,34 @@ describe('rebuildCredentials', () => {
                 accountIndex: 1,
                 transportType: 'ble',
             },
-            credentials: [{ kind: 'watch' }],
+            provenance: { kind: 'watch' },
+            credentials: {},
         }
 
-        expect(rebuildCredentials(account).credentials).toEqual([
-            {
-                kind: 'hardware',
-                device: {
-                    manufacturer: 'ledger',
-                    deviceId: 'new',
-                    deviceName: 'Nano X',
-                    transportType: 'ble',
-                },
-                accountIndex: 1,
+        expect(rebuildCustody(account).provenance).toEqual({
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'new',
+                deviceName: 'Nano X',
+                transportType: 'ble',
             },
-        ])
+            accountIndex: 1,
+        })
     })
 
-    test('removes credentials when the details they need are missing', () => {
+    test('removes custody when the details it needs are missing', () => {
         const account = {
             id: 'm',
             address: 'ADDR',
             type: 'multisig',
-            credentials: [{ kind: 'watch' }],
+            provenance: { kind: 'watch' },
+            credentials: {},
         } as unknown as WalletAccount
 
-        expect(rebuildCredentials(account)).not.toHaveProperty('credentials')
+        const rebuilt = rebuildCustody(account)
+
+        expect(rebuilt).not.toHaveProperty('provenance')
+        expect(rebuilt).not.toHaveProperty('credentials')
     })
 })

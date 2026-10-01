@@ -11,175 +11,144 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { DerivationTypes, type AccountCredential } from '../../models'
-import { buildAccount } from '../buildAccount'
-import { credentialsFromLegacy } from '../backfill'
+import { DerivationTypes, type AccountProvenance } from '../../models'
+import { AccountError } from '../../errors'
+import { buildAccount, type BuildAccountInput } from '../buildAccount'
+import { custodyFromLegacy } from '../backfill'
 
-const credentials: Record<string, AccountCredential> = {
-    algo25: { kind: 'local', keyPairId: 'seed-ed25519', provenance: 'algo25' },
+const hdPath = {
+    account: 1,
+    change: 0,
+    keyIndex: 4,
+    derivationType: DerivationTypes.Peikert,
+}
+const device = {
+    manufacturer: 'ledger' as const,
+    deviceId: 'ble-1',
+    deviceName: 'Nano X',
+    transportType: 'ble' as const,
+}
+
+const inputs: Record<string, BuildAccountInput> = {
+    algo25: {
+        address: 'ADDR',
+        provenance: { kind: 'local', seed: 'algo25' },
+        credentials: { algorand: { keyPairId: 'seed-ed25519' } },
+    },
     quantum: {
-        kind: 'local',
-        keyPairId: 'seed-quantum-pqk1',
-        provenance: 'quantum',
+        address: 'ADDR',
+        provenance: { kind: 'local', seed: 'quantum' },
+        credentials: { algorand: { keyPairId: 'seed-quantum-pqk1' } },
     },
     hdWallet: {
-        kind: 'local',
-        keyPairId: 'seed-acc1-idx4-dt9',
-        provenance: 'bip39',
-        hd: {
-            account: 1,
-            change: 0,
-            keyIndex: 4,
-            derivationType: DerivationTypes.Peikert,
-        },
+        address: 'ADDR',
+        provenance: { kind: 'local', seed: 'bip39', hd: hdPath },
+        credentials: { algorand: { keyPairId: 'seed-acc1-idx4-dt9' } },
     },
     hardware: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'ble-1',
-            deviceName: 'Nano X',
-            transportType: 'ble',
-        },
-        accountIndex: 2,
+        address: 'ADDR',
+        provenance: { kind: 'hardware', device, accountIndex: 2 },
     },
     multisig: {
-        kind: 'multisig',
-        threshold: 2,
-        members: ['P1', 'P2'],
-        version: 1,
+        address: 'ADDR',
+        provenance: {
+            kind: 'multisig',
+            threshold: 2,
+            members: ['P1', 'P2'],
+            version: 1,
+        },
     },
-    watch: { kind: 'watch' },
+    watch: { address: 'ADDR', provenance: { kind: 'watch' } },
 }
 
 describe('buildAccount', () => {
-    test('builds a legacy algo25 account from a local algo25 credential', () => {
-        expect(
-            buildAccount({
-                id: 'id',
-                address: 'ADDR',
-                credential: credentials.algo25,
-            }),
-        ).toStrictEqual({
+    test('builds a legacy algo25 account keyed by its Algorand credential', () => {
+        expect(buildAccount({ id: 'id', ...inputs.algo25 })).toStrictEqual({
             id: 'id',
             address: 'ADDR',
             type: 'algo25',
             keyPairId: 'seed-ed25519',
-            credentials: [credentials.algo25],
+            provenance: { kind: 'local', seed: 'algo25' },
+            credentials: { algorand: { keyPairId: 'seed-ed25519' } },
         })
     })
 
-    test('builds a legacy quantum account from a local quantum credential', () => {
-        expect(
-            buildAccount({
-                id: 'id',
-                address: 'ADDR',
-                credential: credentials.quantum,
-            }),
-        ).toStrictEqual({
-            id: 'id',
-            address: 'ADDR',
+    test('builds a legacy quantum account from a quantum seed', () => {
+        expect(buildAccount({ id: 'id', ...inputs.quantum })).toMatchObject({
             type: 'quantum',
             keyPairId: 'seed-quantum-pqk1',
-            credentials: [credentials.quantum],
         })
     })
 
-    test('builds an hdWallet account with its derivation path from a bip39 credential', () => {
-        expect(
-            buildAccount({
-                id: 'id',
-                address: 'ADDR',
-                credential: credentials.hdWallet,
-            }),
-        ).toStrictEqual({
-            id: 'id',
-            address: 'ADDR',
+    test('builds an hdWallet account with its derivation path from a bip39 seed', () => {
+        expect(buildAccount({ id: 'id', ...inputs.hdWallet })).toMatchObject({
             type: 'hdWallet',
             keyPairId: 'seed-acc1-idx4-dt9',
-            hdWalletDetails: {
-                account: 1,
-                change: 0,
-                keyIndex: 4,
-                derivationType: DerivationTypes.Peikert,
-            },
-            credentials: [credentials.hdWallet],
+            hdWalletDetails: hdPath,
         })
     })
 
-    test('builds a hardware account with its device details', () => {
-        expect(
-            buildAccount({
-                id: 'id',
-                address: 'ADDR',
-                credential: credentials.hardware,
-            }),
-        ).toStrictEqual({
+    test('builds a hardware account with its device details and no credentials', () => {
+        expect(buildAccount({ id: 'id', ...inputs.hardware })).toStrictEqual({
             id: 'id',
             address: 'ADDR',
             type: 'hardware',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'ble-1',
-                deviceName: 'Nano X',
-                accountIndex: 2,
-                transportType: 'ble',
-            },
-            credentials: [credentials.hardware],
+            hardwareDetails: { ...device, accountIndex: 2 },
+            provenance: inputs.hardware.provenance,
+            credentials: {},
         })
     })
 
     test('builds a multisig account with its participants', () => {
-        expect(
-            buildAccount({
-                id: 'id',
-                address: 'ADDR',
-                credential: credentials.multisig,
-            }),
-        ).toStrictEqual({
-            id: 'id',
-            address: 'ADDR',
+        expect(buildAccount({ id: 'id', ...inputs.multisig })).toMatchObject({
             type: 'multisig',
             multisigDetails: {
                 threshold: 2,
                 addresses: ['P1', 'P2'],
                 version: 1,
             },
-            credentials: [credentials.multisig],
+            credentials: {},
         })
     })
 
     test('builds a watch account', () => {
-        expect(
-            buildAccount({
-                id: 'id',
-                address: 'ADDR',
-                credential: credentials.watch,
-            }),
-        ).toStrictEqual({
+        expect(buildAccount({ id: 'id', ...inputs.watch })).toStrictEqual({
             id: 'id',
             address: 'ADDR',
             type: 'watch',
-            credentials: [credentials.watch],
+            provenance: { kind: 'watch' },
+            credentials: {},
         })
     })
 
-    test.each(Object.entries(credentials))(
-        'round-trips a %s credential through the legacy fields',
-        (_kind, credential) => {
-            const account = buildAccount({ address: 'ADDR', credential })
+    test.each(Object.entries(inputs))(
+        'round-trips a %s provenance and its credentials through the legacy fields',
+        (_kind, input) => {
+            const account = buildAccount(input)
 
-            expect(credentialsFromLegacy(account)).toEqual([credential])
+            expect(custodyFromLegacy(account)).toEqual({
+                provenance: input.provenance,
+                credentials: input.credentials ?? {},
+            })
         },
     )
 
+    test('refuses a local provenance without an Algorand credential', () => {
+        const input = {
+            address: 'ADDR',
+            provenance: { kind: 'local', seed: 'algo25' },
+            credentials: {},
+        } as unknown as BuildAccountInput<AccountProvenance>
+
+        expect(() => buildAccount(input)).toThrow(AccountError)
+    })
+
     test('passes name and rekey state through', () => {
         const account = buildAccount({
-            address: 'ADDR',
+            ...inputs.watch,
             name: 'Savings',
             rekeyAddress: 'AUTH',
             rekeyAddressByNetwork: { mainnet: 'AUTH' },
-            credential: credentials.watch,
         })
 
         expect(account).toMatchObject({
@@ -190,14 +159,8 @@ describe('buildAccount', () => {
     })
 
     test('generates a distinct id when none is given', () => {
-        const first = buildAccount({
-            address: 'ADDR',
-            credential: credentials.watch,
-        })
-        const second = buildAccount({
-            address: 'ADDR',
-            credential: credentials.watch,
-        })
+        const first = buildAccount(inputs.watch)
+        const second = buildAccount(inputs.watch)
 
         expect(first.id).toEqual(expect.any(String))
         expect(first.id).not.toBe(second.id)

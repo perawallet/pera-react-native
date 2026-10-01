@@ -13,46 +13,53 @@
 import { buildAccount, type BuildAccountInput } from '../credentials'
 import {
     DerivationTypes,
-    type AccountCredential,
     type AccountType,
     type WalletAccount,
 } from '../models'
 
-const defaultCredentials: Record<AccountType, AccountCredential> = {
-    algo25: { kind: 'local', keyPairId: 'algo25-key', provenance: 'algo25' },
+const defaults: Record<AccountType, Omit<BuildAccountInput, 'address'>> = {
+    algo25: {
+        provenance: { kind: 'local', seed: 'algo25' },
+        credentials: { algorand: { keyPairId: 'algo25-key' } },
+    },
     quantum: {
-        kind: 'local',
-        keyPairId: 'quantum-key',
-        provenance: 'quantum',
+        provenance: { kind: 'local', seed: 'quantum' },
+        credentials: { algorand: { keyPairId: 'quantum-key' } },
     },
     hdWallet: {
-        kind: 'local',
-        keyPairId: 'hd-key',
-        provenance: 'bip39',
-        hd: {
-            account: 0,
-            change: 0,
-            keyIndex: 0,
-            derivationType: DerivationTypes.Peikert,
+        provenance: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: {
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: DerivationTypes.Peikert,
+            },
         },
+        credentials: { algorand: { keyPairId: 'hd-key' } },
     },
     hardware: {
-        kind: 'hardware',
-        device: {
-            manufacturer: 'ledger',
-            deviceId: 'device-1',
-            deviceName: 'Nano X',
-            transportType: 'ble',
+        provenance: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: 'device-1',
+                deviceName: 'Nano X',
+                transportType: 'ble',
+            },
+            accountIndex: 0,
         },
-        accountIndex: 0,
     },
     multisig: {
-        kind: 'multisig',
-        threshold: 1,
-        members: ['MEMBER-1', 'MEMBER-2'],
-        version: 1,
+        provenance: {
+            kind: 'multisig',
+            threshold: 1,
+            members: ['MEMBER-1', 'MEMBER-2'],
+            version: 1,
+        },
     },
-    watch: { kind: 'watch' },
+    watch: { provenance: { kind: 'watch' } },
 }
 
 /** A valid account of `type`, built the same way production code builds one. */
@@ -62,6 +69,6 @@ export const buildTestAccount = (
 ): WalletAccount =>
     buildAccount({
         address: `${type.toUpperCase()}-ADDR`,
-        credential: defaultCredentials[type],
+        ...defaults[type],
         ...overrides,
-    })
+    } as BuildAccountInput)

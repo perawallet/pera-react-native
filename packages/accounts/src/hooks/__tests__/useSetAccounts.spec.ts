@@ -14,7 +14,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSetAccounts } from '../useSetAccounts'
 import { useAccountsStore } from '../../store'
-import { withCredentials } from '../../credentials'
+import { withCustody } from '../../credentials'
 import type { WalletAccount } from '../../models'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -74,7 +74,7 @@ describe('useSetAccounts', () => {
         })
 
         expect(useAccountsStore.getState().accounts).toEqual(
-            accounts.map(withCredentials),
+            accounts.map(withCustody),
         )
     })
 })

@@ -80,7 +80,7 @@ export const useAsbAccountImport = (): UseAsbAccountImportResult => {
 
             const newWatch = buildAccount({
                 address: account.address,
-                credential: { kind: 'watch' },
+                provenance: { kind: 'watch' },
                 ...(account.name ? { name: account.name } : {}),
             })
 

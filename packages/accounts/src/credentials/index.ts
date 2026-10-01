@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-export { withCredentials } from './backfill'
+export { withCustody, type AccountCustody } from './backfill'
 export {
     buildAccount,
-    type AccountForCredential,
+    type AccountForProvenance,
     type BuildAccountInput,
 } from './buildAccount'
-export { credentialScheme } from './credentialScheme'
+export { credentialScheme, type SchemeChain } from './credentialScheme'

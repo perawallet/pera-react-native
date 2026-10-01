@@ -11,7 +11,10 @@
  */
 
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     DerivationType,
     HDWalletAccount,
@@ -85,19 +88,23 @@ async function scanAccountKeys({
 
             const accountData = buildAccount({
                 address,
-                credential: {
+                provenance: {
                     kind: 'local',
-                    keyPairId: adapter.hdKeyPairId(walletKeyId, {
-                        account: accountIdx,
-                        keyIndex: currentKeyIdx,
-                        derivationType,
-                    }),
-                    provenance: 'bip39',
+                    seed: 'bip39',
                     hd: {
                         account: accountIdx,
                         change: 0,
                         keyIndex: currentKeyIdx,
                         derivationType,
+                    },
+                },
+                credentials: {
+                    [LEGACY_CHAIN_ID]: {
+                        keyPairId: adapter.hdKeyPairId(walletKeyId, {
+                            account: accountIdx,
+                            keyIndex: currentKeyIdx,
+                            derivationType,
+                        }),
                     },
                 },
             })
@@ -233,7 +240,7 @@ export async function discoverRekeyedAccounts({
         return rekeyedAddresses.map((rekeyedAddress): WalletAccount =>
             buildAccount({
                 address: rekeyedAddress,
-                credential: { kind: 'watch' },
+                provenance: { kind: 'watch' },
                 rekeyAddress: address,
             }),
         )

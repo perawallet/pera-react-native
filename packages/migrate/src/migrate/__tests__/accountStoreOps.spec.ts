@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     AccountTypes,
     useAccountsStore,
-    withCredentials,
+    withCustody,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
@@ -78,7 +78,7 @@ describe('addKeylessAccountToStore', () => {
 
         expect(returned).toBe(account)
         expect(useAccountsStore.getState().accounts).toEqual([
-            withCredentials(account),
+            withCustody(account),
         ])
     })
 

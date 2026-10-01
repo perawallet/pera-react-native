@@ -22,7 +22,7 @@ export const buildWatchAccount = (account: LegacyAccount): WalletAccount =>
     buildAccount({
         name: account.name || undefined,
         address: account.address,
-        credential: { kind: 'watch' },
+        provenance: { kind: 'watch' },
         // Only the mirror — deliberately NOT rekeyAddressByNetwork: rekeys are per-network on-chain
         // and the legacy value's network is ambiguous; the syncer's updateAccountRekeyAddress
         // writes the authoritative per-network map on first tick, per the field's documented contract.
@@ -35,7 +35,7 @@ export const buildLedgerAccount = (account: LegacyAccount): WalletAccount => {
     return buildAccount({
         name: account.name || undefined,
         address: account.address,
-        credential: {
+        provenance: {
             kind: 'hardware',
             device: {
                 manufacturer: 'ledger',
@@ -62,7 +62,7 @@ export const buildMultiSigAccount = (account: LegacyAccount): WalletAccount => {
     return buildAccount({
         name: account.name || undefined,
         address: account.address,
-        credential: {
+        provenance: {
             kind: 'multisig',
             threshold: resolvedThreshold,
             members: participants,

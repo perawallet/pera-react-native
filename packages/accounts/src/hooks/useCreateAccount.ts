@@ -13,7 +13,10 @@
 import { useAccountsStore } from '../store'
 import { AccountTypes, type WalletAccount } from '../models'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
@@ -65,10 +68,9 @@ export const useCreateAccount = () => {
 
         return buildAccount({
             address: derived.address,
-            credential: {
+            provenance: {
                 kind: 'local',
-                keyPairId: derived.keyPairId,
-                provenance: 'bip39',
+                seed: 'bip39',
                 hd: {
                     account,
                     change: 0,
@@ -76,6 +78,9 @@ export const useCreateAccount = () => {
                     derivationType:
                         accountsAdapterFor(network).hdDerivationType,
                 },
+            },
+            credentials: {
+                [LEGACY_CHAIN_ID]: { keyPairId: derived.keyPairId },
             },
         })
     }
