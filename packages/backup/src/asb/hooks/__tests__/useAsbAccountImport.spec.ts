@@ -261,6 +261,7 @@ describe('useAsbAccountImport', () => {
         expect(returned).toMatchObject({
             address: VALID_ADDRESS_B,
             type: AccountTypes.watch,
+            credentials: [{ kind: 'watch' }],
         })
         // Watch accounts never touch KMS or the backup-complete signal.
         expect(mockMarkBackupComplete).not.toHaveBeenCalled()

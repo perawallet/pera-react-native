@@ -22,6 +22,12 @@ export default defineConfig({
             ),
             // Resolve to source, not dist: the browser dist externalizes
             // node `crypto`, which the mnemonic index codecs rely on.
+            // Test-only: lets specs that mock the accounts package wholesale
+            // still build accounts with the real constructor.
+            '@perawallet/wallet-core-accounts/build-account': path.resolve(
+                __dirname,
+                '../accounts/src/credentials/buildAccount.ts',
+            ),
             '@perawallet/wallet-core-kms/constants': path.resolve(
                 __dirname,
                 '../kms/src/constants.ts',
