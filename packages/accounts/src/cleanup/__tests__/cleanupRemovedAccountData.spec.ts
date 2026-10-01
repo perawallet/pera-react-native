@@ -33,8 +33,10 @@ import {
 import {
     scopeForLegacyNetwork,
     type ChainScope,
+    type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    AccountAssetHoldingsSchema,
     refreshAccountHoldings,
     upsertAccountBalance,
     getAccountBalance,
@@ -93,6 +95,39 @@ describe('cleanupRemovedAccountData', () => {
 
         await cleanupRemovedAccountData({ db, accountAddress: 'ADDR1' })
 
+        expect(handler).toHaveBeenCalledWith({ db, accountAddress: 'ADDR1' })
+    })
+
+    it('finishes the cleanup when a stored network is not a known scope', async () => {
+        const handler = vi.fn().mockResolvedValue(undefined)
+        registerAccountCleanup(handler)
+        await upsertAssets({
+            db,
+            items: [makeAsset('100')],
+            network: 'mainnet',
+        })
+        await refreshAccountHoldings({
+            db,
+            accountAddress: 'ADDR1',
+            holdings: [{ assetId: '100', amount: 5n }],
+            scope: MAINNET_SCOPE,
+        })
+        await db
+            .insert(AccountAssetHoldingsSchema)
+            .values({
+                accountAddress: 'ADDR1',
+                assetId: new Decimal('200'),
+                network: 'devnet' as ChainScopeKey,
+                updatedAt: Date.now(),
+            })
+            .run()
+
+        const result = await cleanupRemovedAccountData({
+            db,
+            accountAddress: 'ADDR1',
+        })
+
+        expect(result.prunedAssetIdsByNetwork).toEqual({ mainnet: ['100'] })
         expect(handler).toHaveBeenCalledWith({ db, accountAddress: 'ADDR1' })
     })
 
