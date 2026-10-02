@@ -22,8 +22,8 @@ export class DuplicateAddressError extends Error {
     readonly family: ChainFamily
     readonly address: string
 
-    constructor(family: ChainFamily, address: string) {
-        super(`A contact with ${family} address ${address} already exists`)
+    constructor({ family, address }: ContactRef) {
+        super(`A contact with address ${address} already exists`)
         this.name = 'DuplicateAddressError'
         this.family = family
         this.address = address
@@ -40,7 +40,7 @@ export class ContactNotFoundError extends Error {
     readonly address: string
 
     constructor({ family, address }: ContactRef) {
-        super(`No contact found at ${family} address ${address}`)
+        super(`No contact found at address ${address}`)
         this.name = 'ContactNotFoundError'
         this.family = family
         this.address = address

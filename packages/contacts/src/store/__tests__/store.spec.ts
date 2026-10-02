@@ -104,6 +104,20 @@ describe('ContactsStore', () => {
 
             expect(useContactsStore.getState().contacts).toHaveLength(2)
         })
+        test('refuses a contact without any address', async () => {
+            const { useContactsStore } = await import('../index')
+
+            let added: Optional<boolean>
+            act(() => {
+                added = useContactsStore.getState().addContact({
+                    name: 'Nowhere',
+                    addresses: { algorand: '' },
+                })
+            })
+
+            expect(added).toBe(false)
+            expect(useContactsStore.getState().contacts).toEqual([])
+        })
     })
 
     describe('editContact', () => {
@@ -211,6 +225,25 @@ describe('ContactsStore', () => {
             expect(
                 useContactsStore.getState().contacts[0]?.addresses.algorand,
             ).toBe('BOB456')
+        })
+
+        test('refuses to leave the row without any address', async () => {
+            const { useContactsStore } = await import('../index')
+            const alice = algorandContact('Alice', 'ALICE123')
+
+            let edited: Optional<boolean>
+            act(() => {
+                useContactsStore.getState().addContact(alice)
+                edited = useContactsStore
+                    .getState()
+                    .editContact(
+                        { family: 'algorand', address: 'ALICE123' },
+                        { name: 'Alice', addresses: { algorand: '' } },
+                    )
+            })
+
+            expect(edited).toBe(false)
+            expect(useContactsStore.getState().contacts).toEqual([alice])
         })
 
         test('throws ContactNotFoundError when the ref matches no existing row', async () => {

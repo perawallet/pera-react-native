@@ -314,7 +314,10 @@ describe('useEditContactForm', () => {
 
         it('blocks save and surfaces a form error when editContact throws DuplicateAddressError', () => {
             editContactMock.mockImplementation(() => {
-                throw new DuplicateAddressError('algorand', 'BOB999')
+                throw new DuplicateAddressError({
+                    family: 'algorand',
+                    address: 'BOB999',
+                })
             })
             formState.isValid = true
 

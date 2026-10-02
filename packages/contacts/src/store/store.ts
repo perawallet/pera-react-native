@@ -41,8 +41,13 @@ const initialState = {
 
 const addressEntries = (addresses: ContactAddresses) =>
     Object.entries(addresses).filter(
-        (entry): entry is [ChainFamily, string] => typeof entry[1] === 'string',
+        (entry): entry is [ChainFamily, string] =>
+            typeof entry[1] === 'string' && entry[1].length > 0,
     )
+
+// Nothing could ever find an address-less row again to edit or delete it.
+const holdsAnyAddress = (contact: Contact): boolean =>
+    addressEntries(contact.addresses).length > 0
 
 const findContactIndex = (contacts: Contact[], ref: ContactRef): number =>
     contacts.findIndex(c => c.addresses[ref.family] === ref.address)
@@ -56,7 +61,7 @@ const assertNoFamilyConflict = (
         const conflict = contacts.some(
             (c, idx) => idx !== skipIndex && c.addresses[family] === address,
         )
-        if (conflict) throw new DuplicateAddressError(family, address)
+        if (conflict) throw new DuplicateAddressError({ family, address })
     }
 }
 
@@ -92,12 +97,14 @@ export const useContactsStore: UseBoundStore<
             setSelectedContact: (contact: Nullable<Contact>) =>
                 set({ selectedContact: contact }),
             addContact: (contact: Contact) => {
+                if (!holdsAnyAddress(contact)) return false
                 const existing = get().contacts ?? []
                 assertNoFamilyConflict(existing, contact.addresses)
                 set({ contacts: [...existing, contact] })
                 return true
             },
             editContact: (previous: ContactRef, contact: Contact) => {
+                if (!holdsAnyAddress(contact)) return false
                 const existing = get().contacts ?? []
                 const idx = findContactIndex(existing, previous)
                 if (idx < 0) {

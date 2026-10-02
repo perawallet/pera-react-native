@@ -133,7 +133,10 @@ describe('useAddContactForm', () => {
 
     it('surfaces a duplicate-address error when addContact throws DuplicateAddressError', () => {
         addContactMock.mockImplementation(() => {
-            throw new DuplicateAddressError('algorand', 'ALICE123')
+            throw new DuplicateAddressError({
+                family: 'algorand',
+                address: 'ALICE123',
+            })
         })
         formState.isValid = true
 

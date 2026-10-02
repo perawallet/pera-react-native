@@ -39,13 +39,15 @@ export type ContactsState = BaseStoreState & {
     selectedContact: Nullable<Contact>
     setSelectedContact: (contact: Nullable<Contact>) => void
     /**
-     * Insert a new contact. Throws `DuplicateAddressError` if another
-     * contact already holds one of its addresses in the same family.
+     * Insert a new contact; returns false, adding nothing, when it holds no
+     * address. Throws `DuplicateAddressError` if another contact already
+     * holds one of its addresses in the same family.
      */
     addContact: (contact: Contact) => boolean
     /**
      * Replace the row `previous` identifies with `contact`, regardless of
-     * which fields changed. Throws `DuplicateAddressError` if another
+     * which fields changed; returns false, changing nothing, when `contact`
+     * holds no address. Throws `DuplicateAddressError` if another
      * contact holds one of `contact`'s addresses in the same family, and
      * `ContactNotFoundError` if no contact matches `previous`.
      */

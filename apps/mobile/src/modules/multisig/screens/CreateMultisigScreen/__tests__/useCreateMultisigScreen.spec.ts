@@ -374,7 +374,10 @@ describe('useCreateMultisigScreen', () => {
 
         it('swallows a duplicate-contact error', async () => {
             mockAddContact.mockImplementationOnce(() => {
-                throw new DuplicateAddressError('algorand', ADDR)
+                throw new DuplicateAddressError({
+                    family: 'algorand',
+                    address: ADDR,
+                })
             })
             mockRequestBottomSheet.mockResolvedValueOnce({ address: ADDR })
             const { result } = renderHook(() => useCreateMultisigScreen())

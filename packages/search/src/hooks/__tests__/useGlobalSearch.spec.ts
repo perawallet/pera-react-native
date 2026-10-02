@@ -504,7 +504,7 @@ describe('useGlobalSearch', () => {
         mockAllAccounts.mockReturnValue([alice])
         const aliceContact: Contact = {
             name: 'Alice Contact',
-            address: 'ALICECONTACTADDR',
+            addresses: { algorand: 'ALICECONTACTADDR' },
         }
         mockFindContacts.mockReturnValue([aliceContact])
         const aliceAsset = makeAsset('1', {

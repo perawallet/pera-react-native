@@ -78,7 +78,7 @@ export const ContactListScreen = () => {
     )
 
     const keyExtractor = useCallback(
-        (c: Contact) => c.addresses.algorand ?? c.name,
+        (c: Contact, index: number) => c.addresses.algorand ?? String(index),
         [],
     )
 
