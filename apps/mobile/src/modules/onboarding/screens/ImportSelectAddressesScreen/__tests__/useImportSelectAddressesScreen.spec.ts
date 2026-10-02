@@ -30,6 +30,7 @@ const {
     mockSetSelectedAccountAddress,
     mockDiscoverRekeyedAccounts,
     mockExitAccountFlow,
+    mockExitFailedAccountFlow,
     mockCommitImport,
     mockCancelImport,
     mockMarkBackupComplete,
@@ -43,6 +44,7 @@ const {
     mockSetSelectedAccountAddress: vi.fn(),
     mockDiscoverRekeyedAccounts: vi.fn(),
     mockExitAccountFlow: vi.fn(),
+    mockExitFailedAccountFlow: vi.fn(),
     mockCommitImport: vi.fn(),
     mockCancelImport: vi.fn(),
     mockMarkBackupComplete: vi.fn(),
@@ -67,7 +69,10 @@ vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ addListener: vi.fn(() => () => {}) }),
 }))
 vi.mock('../../../hooks', () => ({
-    useExitAccountFlow: () => ({ exitAccountFlow: mockExitAccountFlow }),
+    useExitAccountFlow: () => ({
+        exitAccountFlow: mockExitAccountFlow,
+        exitFailedAccountFlow: mockExitFailedAccountFlow,
+    }),
     // Mirrors the real useRekeyScanNotice: swallow discoverRekeyedAccounts
     // failures into the sentinel instead of letting them throw.
     useRekeyScanNotice: () => ({
@@ -362,7 +367,8 @@ describe('useImportSelectAddressesScreen - failure reporting', () => {
                 title: 'onboarding.import_account.failed_title',
             }),
         )
-        expect(mockExitAccountFlow).toHaveBeenCalled()
+        expect(mockExitFailedAccountFlow).toHaveBeenCalled()
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
     })
 
     test('does not report a failed import when a post-commit step throws', async () => {
@@ -381,5 +387,6 @@ describe('useImportSelectAddressesScreen - failure reporting', () => {
             }),
         )
         expect(mockExitAccountFlow).toHaveBeenCalled()
+        expect(mockExitFailedAccountFlow).not.toHaveBeenCalled()
     })
 })

@@ -19,7 +19,10 @@ import {
     useCameraTabResultStore,
     type CameraTabResultKind,
 } from '@components/CameraTabResult'
-import type { UseFinishCameraTabResult } from './useFinishCameraTab'
+import type {
+    CameraTabOutcome,
+    UseFinishCameraTabResult,
+} from './useFinishCameraTab'
 
 // A camera tab exists for one action, so the tab's flow, not the exit that
 // fired, decides the message. Once that action is done the tab must not stay
@@ -32,11 +35,15 @@ const RESULT_BY_FLOW: Partial<Record<ExpandedFlow, CameraTabResultKind>> = {
 export const useFinishCameraTab = (): UseFinishCameraTabResult => {
     const showResult = useCameraTabResultStore(state => state.showResult)
 
-    const finishCameraTab = useCallback(() => {
-        const flow = getConsumedExpandedFlow()
-        const result = flow ? RESULT_BY_FLOW[flow] : undefined
-        if (result) showResult(result)
-    }, [showResult])
+    const finishCameraTab = useCallback(
+        (outcome: CameraTabOutcome = 'succeeded') => {
+            const flow = getConsumedExpandedFlow()
+            const result = flow ? RESULT_BY_FLOW[flow] : undefined
+            if (!result) return
+            showResult(outcome === 'failed' ? 'import-failed' : result)
+        },
+        [showResult],
+    )
 
     return { finishCameraTab }
 }

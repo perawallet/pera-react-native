@@ -16,12 +16,14 @@ import { act, fireEvent, render, screen } from '@test-utils/render'
 import { useCameraTabResultStore } from '../useCameraTabResultStore'
 import { CameraTabResult } from '../CameraTabResult.web'
 
-const { mockCloseCurrentTab } = vi.hoisted(() => ({
+const { mockCloseCurrentTab, consumedFlow } = vi.hoisted(() => ({
     mockCloseCurrentTab: vi.fn(),
+    consumedFlow: { current: 'scan' as string | null },
 }))
 
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     closeCurrentTab: () => mockCloseCurrentTab(),
+    getConsumedExpandedFlow: () => consumedFlow.current,
 }))
 
 describe('CameraTabResult', () => {
@@ -56,5 +58,43 @@ describe('CameraTabResult', () => {
         fireEvent.click(screen.getByTestId('camera-tab-result-primary'))
 
         expect(mockCloseCurrentTab).toHaveBeenCalledTimes(1)
+    })
+
+    describe('after a failed import', () => {
+        beforeEach(() => {
+            act(() =>
+                useCameraTabResultStore.getState().showResult('import-failed'),
+            )
+        })
+
+        it('says the import failed', () => {
+            render(<CameraTabResult />)
+
+            expect(
+                screen.getByText('onboarding.import_account.failed_title'),
+            ).toBeTruthy()
+        })
+
+        it('retries by reloading the tab on its own flow', () => {
+            const replace = vi.fn()
+            vi.spyOn(window, 'location', 'get').mockReturnValue({
+                ...window.location,
+                replace,
+            })
+            render(<CameraTabResult />)
+
+            fireEvent.click(screen.getByTestId('camera-tab-result-primary'))
+
+            expect(replace).toHaveBeenCalledWith('expanded.html?flow=scan')
+            vi.restoreAllMocks()
+        })
+
+        it('cancels by closing the tab', () => {
+            render(<CameraTabResult />)
+
+            fireEvent.click(screen.getByTestId('camera-tab-result-secondary'))
+
+            expect(mockCloseCurrentTab).toHaveBeenCalledTimes(1)
+        })
     })
 })

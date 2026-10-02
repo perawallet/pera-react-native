@@ -15,9 +15,31 @@ import { PWResultView } from '@components/core'
 import { useCameraTabResult } from './useCameraTabResult.web'
 
 export const CameraTabResult = (): React.JSX.Element | null => {
-    const { title, body, closeLabel, handleClose } = useCameraTabResult()
+    const {
+        result,
+        title,
+        body,
+        closeLabel,
+        retryLabel,
+        cancelLabel,
+        handleClose,
+        handleRetry,
+    } = useCameraTabResult()
 
-    if (!title) return null
+    if (!result) return null
+
+    if (result === 'import-failed') {
+        return (
+            <PWResultView
+                variant='error'
+                title={title}
+                body={body}
+                primaryAction={{ label: retryLabel, onPress: handleRetry }}
+                secondaryAction={{ label: cancelLabel, onPress: handleClose }}
+                testID='camera-tab-result'
+            />
+        )
+    }
 
     return (
         <PWResultView

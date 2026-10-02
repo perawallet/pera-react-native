@@ -12,7 +12,10 @@
 
 import { create } from 'zustand'
 
-export type CameraTabResult = 'account-imported' | 'backup-restored'
+export type CameraTabResult =
+    | 'account-imported'
+    | 'backup-restored'
+    | 'import-failed'
 
 type CameraTabResultState = {
     result: CameraTabResult | null

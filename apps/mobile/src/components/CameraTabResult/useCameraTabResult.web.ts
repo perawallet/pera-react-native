@@ -11,23 +11,40 @@
  */
 
 import { useCallback } from 'react'
-import { closeCurrentTab } from '@perawallet/wallet-core-browser-runtime'
+import {
+    closeCurrentTab,
+    getConsumedExpandedFlow,
+} from '@perawallet/wallet-core-browser-runtime'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useCameraTabResultStore,
     type CameraTabResult,
 } from './useCameraTabResultStore'
 
-const TITLE_KEYS: Record<CameraTabResult, string> = {
-    'account-imported': 'camera_tab.account_imported_title',
-    'backup-restored': 'camera_tab.backup_restored_title',
+const COPY_KEYS: Record<CameraTabResult, { title: string; body: string }> = {
+    'account-imported': {
+        title: 'camera_tab.account_imported_title',
+        body: 'camera_tab.body',
+    },
+    'backup-restored': {
+        title: 'camera_tab.backup_restored_title',
+        body: 'camera_tab.body',
+    },
+    'import-failed': {
+        title: 'onboarding.import_account.failed_title',
+        body: 'onboarding.import_account.failed_body',
+    },
 }
 
 type UseCameraTabResultResult = {
-    title: string | null
+    result: CameraTabResult | null
+    title: string
     body: string
     closeLabel: string
+    retryLabel: string
+    cancelLabel: string
     handleClose: () => void
+    handleRetry: () => void
 }
 
 export const useCameraTabResult = (): UseCameraTabResultResult => {
@@ -38,10 +55,23 @@ export const useCameraTabResult = (): UseCameraTabResultResult => {
         void closeCurrentTab()
     }, [])
 
+    // Reloading this tab on its own flow restarts the scan from a clean shell;
+    // openExpandedTab would instead re-point whichever expanded tab it finds first.
+    const handleRetry = useCallback(() => {
+        const flow = getConsumedExpandedFlow()
+        window.location.replace(
+            flow ? `expanded.html?flow=${flow}` : 'expanded.html',
+        )
+    }, [])
+
     return {
-        title: result ? t(TITLE_KEYS[result]) : null,
-        body: t('camera_tab.body'),
+        result,
+        title: result ? t(COPY_KEYS[result].title) : '',
+        body: result ? t(COPY_KEYS[result].body) : '',
         closeLabel: t('qr_scanner.camera_access_close'),
+        retryLabel: t('qr_scanner.try_again'),
+        cancelLabel: t('common.cancel.label'),
         handleClose,
+        handleRetry,
     }
 }

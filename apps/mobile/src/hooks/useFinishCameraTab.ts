@@ -10,11 +10,13 @@
  limitations under the License
  */
 
+export type CameraTabOutcome = 'succeeded' | 'failed'
+
 export type UseFinishCameraTabResult = {
-    finishCameraTab: () => void
+    finishCameraTab: (outcome?: CameraTabOutcome) => void
 }
 
-const finishCameraTab = (): void => {}
+const finishCameraTab = (_outcome?: CameraTabOutcome): void => {}
 
 // Native no-op; see the `.web.ts` twin.
 export const useFinishCameraTab = (): UseFinishCameraTabResult => ({

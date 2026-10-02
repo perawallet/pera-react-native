@@ -70,7 +70,21 @@ describe('useExitAccountFlow', () => {
         })
 
         expect(mockReset).toHaveBeenCalled()
-        expect(mockFinishCameraTab).toHaveBeenCalledTimes(1)
+        expect(mockFinishCameraTab).toHaveBeenCalledWith()
+    })
+
+    it('exits the same way after a failed import but tells a camera tab it failed', () => {
+        const { result } = renderHook(() => useExitAccountFlow())
+
+        act(() => {
+            result.current.exitFailedAccountFlow()
+        })
+
+        expect(mockReset).toHaveBeenCalledWith({
+            index: 0,
+            routes: [{ name: 'TabBar', params: { screen: 'Home' } }],
+        })
+        expect(mockFinishCameraTab).toHaveBeenCalledWith('failed')
     })
 
     it('sets isOnboarding to false when in onboarding flow', () => {

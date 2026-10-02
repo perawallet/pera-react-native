@@ -46,6 +46,20 @@ describe('useFinishCameraTab (web)', () => {
         expect(useCameraTabResultStore.getState().result).toBe(expected)
     })
 
+    test.each([['scan'], ['backup-restore-scan']])(
+        'in a %s tab, reports a failed import as one',
+        flow => {
+            consumedFlow.current = flow
+            const { result } = renderHook(() => useFinishCameraTab())
+
+            act(() => result.current.finishCameraTab('failed'))
+
+            expect(useCameraTabResultStore.getState().result).toBe(
+                'import-failed',
+            )
+        },
+    )
+
     test.each([['ledger-usb'], ['camera-access'], [null]])(
         'leaves a %s surface on its normal exit',
         flow => {

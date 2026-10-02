@@ -72,7 +72,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const navigation = useAppNavigation()
     const reactNavigation = useNavigation()
 
-    const { exitAccountFlow } = useExitAccountFlow()
+    const { exitAccountFlow, exitFailedAccountFlow } = useExitAccountFlow()
     const { scanRekeyed } = useRekeyScanNotice()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { setAccounts } = useSetAccounts()
@@ -220,6 +220,8 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         title: t('onboarding.import_account.failed_title'),
                         body: t('onboarding.import_account.failed_body'),
                     })
+                    exitFailedAccountFlow()
+                    return
                 }
                 exitAccountFlow()
             } finally {
@@ -236,6 +238,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         markBackupComplete,
         scanRekeyed,
         exitAccountFlow,
+        exitFailedAccountFlow,
         navigation,
         setSelectedAccountAddress,
         setAccounts,
