@@ -46,6 +46,7 @@ export {
 } from './backupSyncManager'
 export type { BackupSyncManagerDeps } from './backupSyncManager'
 export { createBackupSyncStatePort } from './backupSyncStatePort'
+export { backupBusyItemKey } from './busyItems'
 export { createBackupSyncStoreSources } from './backupSyncStoreSources'
 export {
     applyBackupSettings,
@@ -66,6 +67,7 @@ export type {
 export { UnsupportedBackupAccountTypeError } from './types'
 export type {
     BackupActionOutcome,
+    BackupBackUpOutcome,
     BackupSyncSources,
     BackupSyncStatePort,
     SerializedItem,

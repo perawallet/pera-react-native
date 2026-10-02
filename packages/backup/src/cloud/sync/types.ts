@@ -73,6 +73,17 @@ export class BackupPushIncompleteError extends Error {
  */
 export type BackupActionOutcome = 'settled' | 'queued' | 'refused'
 
+/**
+ * How far a back-up got:
+ *
+ * - `settled` — the server holds it.
+ * - `deferred` — staged, but a stop or lock cut the upload off; the stage is
+ *   persisted, so the next sync sends it.
+ * - `failed` — staged and the upload ran, but the server does not hold it.
+ * - `refused` — nothing was staged.
+ */
+export type BackupBackUpOutcome = 'settled' | 'deferred' | 'failed' | 'refused'
+
 /** A single backup item ready to hash/encrypt. `payload` is the parsed object. */
 export type SerializedItem = {
     key: BackupItemKey
@@ -252,6 +263,7 @@ export type BackupSyncStatePort = {
     getSyncState: () => Nullable<SyncState>
     setSyncState: (state: SyncState) => void
     setIsSyncing: (isSyncing: boolean) => void
+    setBusyItems: (busyItems: string[]) => void
     /** Wipes config, sync state and activity so the backup reads "not set up". */
     reset: () => void
 }

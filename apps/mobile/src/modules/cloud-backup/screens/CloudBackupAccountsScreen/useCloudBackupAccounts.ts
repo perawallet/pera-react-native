@@ -26,7 +26,7 @@ type UseCloudBackupAccountsResult = {
     isBackedUp: (address: string) => boolean
     notBackedUpCount: number
     availableFromBackupCount: number
-    busyAddress: string | null
+    isBusy: (address: string) => boolean
     onBackUp: (address: string) => void
     onReview: () => void
 }
@@ -39,7 +39,7 @@ export const useCloudBackupAccounts = (): UseCloudBackupAccountsResult => {
         isBackedUp,
         notBackedUpAccounts,
         availableFromBackup,
-        busyAddress,
+        isBusy,
         backUpAccount,
     } = useBackupAccountReview()
 
@@ -61,7 +61,7 @@ export const useCloudBackupAccounts = (): UseCloudBackupAccountsResult => {
         isBackedUp,
         notBackedUpCount: notBackedUpAccounts.length,
         availableFromBackupCount: availableFromBackup.length,
-        busyAddress,
+        isBusy,
         onBackUp,
         onReview,
     }

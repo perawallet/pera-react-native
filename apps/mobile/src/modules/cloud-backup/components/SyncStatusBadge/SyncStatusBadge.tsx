@@ -13,8 +13,8 @@
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { getTestProps } from '@utils/test-id-helper'
-import { useSyncStatusBadgeStyles } from './styles'
-import type { SyncBadge } from './useCloudBackupOverview'
+import type { SyncBadge } from '../../hooks/useBackupSyncStatus'
+import { useStyles } from './styles'
 
 const STATUS_LABEL_KEY: Record<SyncBadge, string> = {
     success: 'cloud_backup.overview.status_success',
@@ -28,7 +28,7 @@ type SyncStatusBadgeProps = {
 
 export const SyncStatusBadge = ({ status }: SyncStatusBadgeProps) => {
     const { t } = useLanguage()
-    const styles = useSyncStatusBadgeStyles({ status })
+    const styles = useStyles({ status })
 
     return (
         <PWView

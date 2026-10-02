@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
     deriveBackupPasskeyReview,
+    backupBusyItemKey,
     useBackupReviewActionMutation,
+    useBackupSyncActivityStore,
     useBackupSyncStateStore,
     type BackupPasskey,
     type BackupPasskeyReview,
@@ -34,7 +36,9 @@ export type UseBackupPasskeyReviewResult = {
     availableFromBackup: BackupPasskeyReview['availableFromBackup']
     isBackedUp: (credentialId: string) => boolean
     isLoading: boolean
-    busyCredentialId: string | null
+    /** True while a review action on this row is queued or running, even
+     *  one started before the screen was last opened. */
+    isBusy: (credentialId: string) => boolean
     backUpPasskey: (credentialId: string) => void
     addFromBackup: (credentialId: string) => void
     deleteFromBackup: (credentialId: string) => void
@@ -62,9 +66,7 @@ export const useBackupPasskeyReview = (): UseBackupPasskeyReviewResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
-    const [busyCredentialId, setBusyCredentialId] = useState<string | null>(
-        null,
-    )
+    const busyItems = useBackupSyncActivityStore(state => state.busyItems)
     const { passkeys, isLoading } = useProvenPasskeysQuery()
     const syncState = useBackupSyncStateStore(state => state.syncState)
 
@@ -82,13 +84,20 @@ export const useBackupPasskeyReview = (): UseBackupPasskeyReviewResult => {
     )
 
     const { mutate } = useBackupReviewActionMutation('passkey', {
-        onMutate: ({ id }) => setBusyCredentialId(id),
-        onSuccess: (_result, { action }) => {
-            showToast({
-                title: t(TOAST_KEY[action].success),
-                body: '',
-                type: 'success',
-            })
+        onSuccess: (result, { action }) => {
+            showToast(
+                result === 'deferred'
+                    ? {
+                          title: t('cloud_backup.passkeys.back_up_deferred'),
+                          body: '',
+                          type: 'info',
+                      }
+                    : {
+                          title: t(TOAST_KEY[action].success),
+                          body: '',
+                          type: 'success',
+                      },
+            )
         },
         onError: (error, { action, id }) => {
             logger.warn('useBackupPasskeyReview: review action failed', {
@@ -106,7 +115,6 @@ export const useBackupPasskeyReview = (): UseBackupPasskeyReviewResult => {
                 type: 'error',
             })
         },
-        onSettled: () => setBusyCredentialId(null),
     })
 
     const notBackedUpIds = useMemo(
@@ -130,7 +138,11 @@ export const useBackupPasskeyReview = (): UseBackupPasskeyReviewResult => {
             [review.backedUp],
         ),
         isLoading,
-        busyCredentialId,
+        isBusy: useCallback(
+            (credentialId: string) =>
+                busyItems.includes(backupBusyItemKey('passkey', credentialId)),
+            [busyItems],
+        ),
         backUpPasskey: useCallback(
             (credentialId: string) =>
                 mutate({ action: 'backUp', id: credentialId }),

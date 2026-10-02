@@ -31,7 +31,7 @@ import type {
 
 const { managerMock } = vi.hoisted(() => ({
     managerMock: {
-        backUpAccount: vi.fn(async () => true),
+        backUpAccount: vi.fn(async (): Promise<string> => 'settled'),
         addAccountFromBackup: vi.fn(
             async (): Promise<ImportSummary | null> => ({
                 imported: 1,
@@ -42,7 +42,7 @@ const { managerMock } = vi.hoisted(() => ({
         deleteAccountFromBackup: vi.fn(
             async (): Promise<BackupActionOutcome> => 'settled',
         ),
-        backUpContact: vi.fn(async () => true),
+        backUpContact: vi.fn(async (): Promise<string> => 'settled'),
         addContactFromBackup: vi.fn(
             async (): Promise<ContactImportSummary | null> => ({
                 imported: 1,
@@ -52,7 +52,7 @@ const { managerMock } = vi.hoisted(() => ({
         deleteContactFromBackup: vi.fn(
             async (): Promise<BackupActionOutcome> => 'settled',
         ),
-        backUpPasskey: vi.fn(async (): Promise<boolean> => true),
+        backUpPasskey: vi.fn(async (): Promise<string> => 'settled'),
         addPasskeyFromBackup: vi.fn(
             async (): Promise<PasskeyImportSummary | null> => ({
                 imported: 1,
@@ -136,8 +136,18 @@ describe('useBackupReviewActionMutation', () => {
         expect(managerMock.backUpAccount).not.toHaveBeenCalled()
     })
 
+    test('resolves a back-up a lock or stop cut off as deferred, not as an error', async () => {
+        managerMock.backUpAccount.mockResolvedValueOnce('deferred')
+        const { result } = renderMutation('account')
+
+        act(() => result.current.mutate({ action: 'backUp', id: 'A' }))
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(result.current.data).toBe('deferred')
+    })
+
     test('fails when the backup did not reach the server', async () => {
-        managerMock.backUpAccount.mockResolvedValueOnce(false)
+        managerMock.backUpAccount.mockResolvedValueOnce('failed')
         const { result } = renderMutation('account')
 
         act(() => result.current.mutate({ action: 'backUp', id: 'A' }))
@@ -224,7 +234,7 @@ describe('useBackupReviewActionMutation', () => {
         act(() => result.current.mutate({ action: 'add', id: 'B' }))
 
         await waitFor(() => expect(result.current.isError).toBe(true))
-        expect(result.current.error?.message).toBe('Backup is busy syncing')
+        expect(result.current.error?.message).toBe('Backup is unavailable')
     })
 
     test('routes each passkey action to its manager method', async () => {

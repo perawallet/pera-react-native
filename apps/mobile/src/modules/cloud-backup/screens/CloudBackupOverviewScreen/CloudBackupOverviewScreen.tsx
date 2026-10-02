@@ -10,41 +10,17 @@
  limitations under the License
  */
 
-import {
-    PWLoadingOverlay,
-    PWScreen,
-    PWText,
-    PWView,
-    type IconName,
-    type PWIconVariant,
-} from '@components/core'
+import { PWLoadingOverlay, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { OverviewRow } from './OverviewRow'
-import { SyncStatusBadge } from './SyncStatusBadge'
-import {
-    useCloudBackupOverview,
-    type SyncBadge,
-} from './useCloudBackupOverview'
+import { BackupSyncStatusRow } from '../../components/BackupSyncStatusRow'
+import { OverviewRow } from '../../components/OverviewRow'
+import { useCloudBackupOverview } from './useCloudBackupOverview'
 import { useStyles } from './styles'
-
-const SYNC_ICON: Record<SyncBadge, { name: IconName; variant: PWIconVariant }> =
-    {
-        success: { name: 'cloud-check', variant: 'positive' },
-        failed: { name: 'cloud-x', variant: 'error' },
-        syncing: { name: 'cloud-check', variant: 'secondary' },
-    }
-
-const NEVER_SYNCED_ICON: { name: IconName; variant: PWIconVariant } = {
-    name: 'cloud-off',
-    variant: 'secondary',
-}
 
 export const CloudBackupOverviewScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
-        syncStatus,
-        lastSyncedLabel,
         credentialAddressLabel,
         accountsInSync,
         accountsNotBackedUp,
@@ -62,25 +38,11 @@ export const CloudBackupOverviewScreen = () => {
         isSavingCredentials,
     } = useCloudBackupOverview()
 
-    const syncIcon = syncStatus ? SYNC_ICON[syncStatus] : NEVER_SYNCED_ICON
-
     return (
         <>
             <PWScreen testID='cloud_backup_overview_screen'>
                 <PWView style={styles.container}>
-                    <OverviewRow
-                        variant='bordered'
-                        icon={syncIcon.name}
-                        iconVariant={syncIcon.variant}
-                        title={t('cloud_backup.overview.latest_sync')}
-                        subtitle={lastSyncedLabel}
-                        trailing={
-                            syncStatus ? (
-                                <SyncStatusBadge status={syncStatus} />
-                            ) : undefined
-                        }
-                        testID='cloud_backup_overview_latest_sync'
-                    />
+                    <BackupSyncStatusRow />
 
                     <PWView style={styles.section}>
                         <PWText
