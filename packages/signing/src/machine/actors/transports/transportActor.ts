@@ -64,7 +64,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         // to a multisig routes to the propose transport keyed on the AUTH's
         // template, not the sender's own type; algod would otherwise reject
         // with "should have been authorized by <auth>"), and no hop for cosign
-        // participants or off-chain data (`arbitrary-data`, `arc60`).
+        // participants or off-chain data (`arbitrary-data`, `auth-data`).
         // Non-rekeyed accounts self-resolve.
         const dataType = signingResults[0]?.signedData.type ?? 'transactions'
         const authAccount = resolveSigningAccount(

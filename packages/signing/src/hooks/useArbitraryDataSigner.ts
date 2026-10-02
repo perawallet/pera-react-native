@@ -10,48 +10,40 @@
  limitations under the License
  */
 
-import { canSignArbitraryData } from '@perawallet/wallet-core-accounts'
-import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { decodeFromBase64, concatBytes } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useKMS } from '@perawallet/wallet-core-kms'
+import type { LocalArbitrarySigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
+import { messageSignerFor } from '../message-signer'
 
-const MX_PREFIX = new TextEncoder().encode('MX')
+export type UseArbitraryDataSignerResult = {
+    signArbitraryData: LocalArbitrarySigningFunction
+}
 
-export const useArbitraryDataSigner = () => {
+// Sign requests carry no chain yet, so every caller resolves the legacy one.
+export const useArbitraryDataSigner = (): UseArbitraryDataSignerResult => {
     const { signDataWithKey } = useKMS()
 
-    const signArbitraryData = useCallback(
-        async (
-            account: WalletAccount,
-            data: string | string[],
-        ): Promise<Uint8Array[]> => {
-            // Sign with the requested account's own key. Rekey is NOT
-            // followed: the dApp verifies against this account's pubkey.
-            if (!canSignArbitraryData(account) || !account.keyPairId) {
-                return Promise.reject(
-                    new Error(
-                        `Cannot sign arbitrary data for ${account.address}`,
-                    ),
-                )
-            }
-
-            // Legacy algo_signData: dApps verify against `MX || data`.
-            const items = [data].flat()
-            const toSign = items.map(item =>
-                concatBytes(MX_PREFIX, decodeFromBase64(item)),
-            )
-            return signDataWithKey(
-                account.keyPairId,
-                SIGNING_KEY_DOMAIN,
-                toSign,
-            )
-        },
+    const signArbitraryData = useCallback<LocalArbitrarySigningFunction>(
+        async (account, data) =>
+            messageSignerFor(
+                LEGACY_CHAIN_ID,
+                account.address,
+            ).signArbitraryData(
+                {
+                    signPayloads: (keyPairId, payloads) =>
+                        signDataWithKey(
+                            keyPairId,
+                            SIGNING_KEY_DOMAIN,
+                            payloads,
+                        ),
+                },
+                account,
+                [data].flat(),
+            ),
         [signDataWithKey],
     )
 
-    return {
-        signArbitraryData,
-    }
+    return { signArbitraryData }
 }

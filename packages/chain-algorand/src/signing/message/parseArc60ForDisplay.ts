@@ -10,12 +10,10 @@
  limitations under the License
  */
 
+import type { ParsedAuthData } from '@perawallet/wallet-core-signing'
 import { decodeArc60Data } from './arc60'
-import { type Siwa, parseSiwa } from './siwa'
-
-export type Arc60ParsedPayload =
-    | { type: 'siwa'; siwa: Siwa }
-    | { type: 'error'; message: string }
+import { parseSiwa } from './siwa'
+import { toSiwxMessage } from './siwx'
 
 /**
  * Decodes and parses an ARC-60 payload for human review.
@@ -25,7 +23,7 @@ export type Arc60ParsedPayload =
 export const parseArc60ForDisplay = (
     data: string,
     encoding: string,
-): Arc60ParsedPayload => {
+): ParsedAuthData => {
     let bytes: Uint8Array
     try {
         bytes = decodeArc60Data(data, encoding)
@@ -48,7 +46,7 @@ export const parseArc60ForDisplay = (
         }
     }
     try {
-        return { type: 'siwa', siwa: parseSiwa(jsonString) }
+        return { type: 'siwx', siwx: toSiwxMessage(parseSiwa(jsonString)) }
     } catch (error) {
         return {
             type: 'error',

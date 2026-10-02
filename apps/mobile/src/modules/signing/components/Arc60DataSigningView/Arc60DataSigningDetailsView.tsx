@@ -12,9 +12,9 @@
 
 import { PWText, PWView } from '@components/core'
 import type {
-    Arc60ParsedPayload,
-    Arc60SignRequest,
-    Siwa,
+    AuthDataSignRequest,
+    ParsedAuthData,
+    SiwxMessage,
 } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -24,47 +24,47 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './Arc60DataSigningDetailsView.style'
 
 export type Arc60DataSigningDetailsViewProps = {
-    request: Arc60SignRequest
+    request: AuthDataSignRequest
     account: Optional<WalletAccount>
-    parsed: Arc60ParsedPayload
+    parsed: ParsedAuthData
 }
 
-type SiwaField = {
+type SiwxField = {
     label: string
     value: string
 }
 
-const buildSiwaFields = (
-    siwa: Siwa,
+const buildSiwxFields = (
+    siwx: SiwxMessage,
     t: (key: string) => string,
-): SiwaField[] => {
-    const fields: SiwaField[] = [
-        { label: t('signing.arc60_view.siwa_uri'), value: siwa.uri },
-        { label: t('signing.arc60_view.siwa_version'), value: siwa.version },
-        { label: t('signing.arc60_view.siwa_chain_id'), value: siwa.chain_id },
+): SiwxField[] => {
+    const fields: SiwxField[] = [
+        { label: t('signing.arc60_view.siwa_uri'), value: siwx.uri },
+        { label: t('signing.arc60_view.siwa_version'), value: siwx.version },
+        { label: t('signing.arc60_view.siwa_chain_id'), value: siwx.chainId },
     ]
-    if (siwa.nonce) {
+    if (siwx.nonce) {
         fields.push({
             label: t('signing.arc60_view.siwa_nonce'),
-            value: siwa.nonce,
+            value: siwx.nonce,
         })
     }
-    if (siwa['issued-at']) {
+    if (siwx.issuedAt) {
         fields.push({
             label: t('signing.arc60_view.siwa_issued_at'),
-            value: siwa['issued-at'],
+            value: siwx.issuedAt,
         })
     }
-    if (siwa['expiration-time']) {
+    if (siwx.expirationTime) {
         fields.push({
             label: t('signing.arc60_view.siwa_expiration'),
-            value: siwa['expiration-time'],
+            value: siwx.expirationTime,
         })
     }
-    if (siwa['not-before']) {
+    if (siwx.notBefore) {
         fields.push({
             label: t('signing.arc60_view.siwa_not_before'),
-            value: siwa['not-before'],
+            value: siwx.notBefore,
         })
     }
     return fields
@@ -78,7 +78,7 @@ export const Arc60DataSigningDetailsView = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const siwa = parsed.type === 'siwa' ? parsed.siwa : undefined
+    const siwx = parsed.type === 'siwx' ? parsed.siwx : undefined
     const parseError = parsed.type === 'error' ? parsed.message : undefined
 
     return (
@@ -90,14 +90,14 @@ export const Arc60DataSigningDetailsView = ({
             </PWView>
             <PWView style={styles.section}>
                 <KeyValueRow title={t('signing.arc60_view.domain')}>
-                    <PWText>{request.stdSigData.domain}</PWText>
+                    <PWText>{request.authData.domain}</PWText>
                 </KeyValueRow>
                 <KeyValueRow title={t('signing.arc60_view.scope')}>
                     <PWText>{t('signing.arc60_view.scope_auth')}</PWText>
                 </KeyValueRow>
-                {!!request.stdSigData.requestId && (
+                {!!request.authData.requestId && (
                     <KeyValueRow title={t('signing.arc60_view.request_id')}>
-                        <PWText>{request.stdSigData.requestId}</PWText>
+                        <PWText>{request.authData.requestId}</PWText>
                     </KeyValueRow>
                 )}
                 {!!account && (
@@ -109,16 +109,16 @@ export const Arc60DataSigningDetailsView = ({
                     </KeyValueRow>
                 )}
             </PWView>
-            {!!siwa && (
+            {!!siwx && (
                 <PWView style={styles.section}>
-                    {!!siwa.statement && (
+                    {!!siwx.statement && (
                         <KeyValueRow
                             title={t('signing.arc60_view.siwa_statement')}
                         >
-                            <PWText>{siwa.statement}</PWText>
+                            <PWText>{siwx.statement}</PWText>
                         </KeyValueRow>
                     )}
-                    {buildSiwaFields(siwa, t).map(field => (
+                    {buildSiwxFields(siwx, t).map(field => (
                         <KeyValueRow
                             key={field.label}
                             title={field.label}
@@ -126,12 +126,12 @@ export const Arc60DataSigningDetailsView = ({
                             <PWText>{field.value}</PWText>
                         </KeyValueRow>
                     ))}
-                    {!!siwa.resources?.length && (
+                    {!!siwx.resources?.length && (
                         <KeyValueRow
                             title={t('signing.arc60_view.siwa_resources')}
                         >
                             <PWView style={styles.resources}>
-                                {siwa.resources.map(resource => (
+                                {siwx.resources.map(resource => (
                                     <PWText key={resource}>{resource}</PWText>
                                 ))}
                             </PWView>

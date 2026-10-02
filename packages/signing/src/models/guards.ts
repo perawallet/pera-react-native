@@ -11,7 +11,7 @@
  */
 
 import type {
-    Arc60SignRequest,
+    AuthDataSignRequest,
     ArbitraryDataSignRequest,
     SignRequest,
     TransactionSignRequest,
@@ -27,7 +27,7 @@ export const isArbitraryDataRequest = (
 ): request is ArbitraryDataSignRequest =>
     request.type === 'arbitrary-data' && 'data' in request
 
-export const isArc60Request = (
+export const isAuthDataRequest = (
     request: SignRequest,
-): request is Arc60SignRequest =>
-    request.type === 'arc60' && 'stdSigData' in request
+): request is AuthDataSignRequest =>
+    request.type === 'auth-data' && 'authData' in request

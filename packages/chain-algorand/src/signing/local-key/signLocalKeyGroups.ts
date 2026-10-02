@@ -26,12 +26,12 @@ export const signLocalKeyGroups = async (
         allAccounts,
         signTransactions,
         signArbitraryData,
-        signArc60,
+        signAuthData,
     } = input
     const strategy = createLocalKeyStrategy({
         signTransactions,
         signArbitraryData,
-        signArc60,
+        signAuthData,
     })
 
     return signGroupsBySignerAccount(

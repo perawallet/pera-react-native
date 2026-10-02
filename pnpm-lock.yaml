@@ -2489,6 +2489,9 @@ importers:
       buffer:
         specifier: 'catalog:'
         version: 6.0.3
+      canonify:
+        specifier: ^2.1.1
+        version: 2.1.1
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -3885,9 +3888,6 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@noble/hashes':
-        specifier: 'catalog:'
-        version: 2.3.0
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../accounts
@@ -3930,12 +3930,6 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
-      canonify:
-        specifier: ^2.1.1
-        version: 2.1.1
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0

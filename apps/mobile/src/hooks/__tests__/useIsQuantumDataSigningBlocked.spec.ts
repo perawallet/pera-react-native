@@ -29,8 +29,8 @@ const REKEYED_TO_QUANTUM_ADDRESS = 'REKEYEDTOQUANTUMADDRESS'
 const buildArc60Request = (signer: string) =>
     ({
         id: 'req-1',
-        type: 'arc60',
-        stdSigData: { signer, domain: 'example.com' },
+        type: 'auth-data',
+        authData: { signer, domain: 'example.com' },
     }) as unknown as SignRequest
 
 const buildArbitraryDataRequest = (signers: string[]) =>

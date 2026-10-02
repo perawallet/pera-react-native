@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildResolvedSignRequest } from '../buildResolvedSignRequest'
 import type { SigningMachineContext } from '../../machine/context'
-import type { TransactionSignRequest, Arc60SignRequest } from '../../models'
+import type { TransactionSignRequest, AuthDataSignRequest } from '../../models'
 
 const makeAccount = (
     address: string,
@@ -100,29 +100,29 @@ describe('buildResolvedSignRequest', () => {
         })
     })
 
-    it('parses arc60 payload once and exposes it on kind', () => {
+    it('parses auth-data payload once and exposes it on kind', () => {
         const account = makeAccount('A123', 'algo25')
-        const arc60Request = {
+        const authDataRequest = {
             id: 'r1',
-            type: 'arc60',
-            sourceType: 'arc60',
+            type: 'auth-data',
+            sourceType: 'card',
             transport: 'callback',
-            stdSigData: { data: 'SGVsbG8=', signer: 'A123' },
+            authData: { data: 'SGVsbG8=', signer: 'A123' },
             metadata: { scope: 1, encoding: 'base64' },
-        } as unknown as Arc60SignRequest
+        } as unknown as AuthDataSignRequest
 
         const context = {
             signerAddress: 'A123',
             allAccounts: [account],
             groupSignerTypes: new Map([['A123', 'localKey']]),
-            request: arc60Request,
+            request: authDataRequest,
             signableGroups: [{ signerAddress: 'A123' }],
         } as unknown as SigningMachineContext
 
         const result = buildResolvedSignRequest(context)
 
-        expect(result!.kind.type).toBe('arc60')
-        if (result!.kind.type === 'arc60') {
+        expect(result!.kind.type).toBe('auth-data')
+        if (result!.kind.type === 'auth-data') {
             expect(result!.kind.parsed).toBeDefined()
         }
     })

@@ -35,10 +35,10 @@ describe('parseArc60ForDisplay', () => {
             'base64',
         )
 
-        expect(result.type).toBe('siwa')
-        if (result.type !== 'siwa') return
-        expect(result.siwa.domain).toBe('arc60.io')
-        expect(result.siwa.chain_id).toBe('algorand:mainnet')
+        expect(result.type).toBe('siwx')
+        if (result.type !== 'siwx') return
+        expect(result.siwx.domain).toBe('arc60.io')
+        expect(result.siwx.chainId).toBe('algorand:mainnet')
     })
 
     test('returns error when encoding is not supported', () => {

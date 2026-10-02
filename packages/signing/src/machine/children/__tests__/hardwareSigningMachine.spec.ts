@@ -497,7 +497,7 @@ describe('hardwareSigningMachine', () => {
                 type: 'NON_LEDGER_ERROR',
                 error: {
                     kind: 'connection_failed',
-                    cause: new Error('arc60 validation'),
+                    cause: new Error('auth-data validation'),
                 },
             })
             return () => {}

@@ -33,12 +33,14 @@ import { algorandSwapAdapter } from './swaps'
 import {
     broadcasterChainAdapters,
     localKeySignerChainAdapters,
+    messageSignerChainAdapters,
     plannerChainAdapters,
     reviewerChainAdapters,
 } from '@perawallet/wallet-core-signing'
 import {
     algorandBroadcasterAdapter,
     algorandLocalKeySignerAdapter,
+    algorandMessageSignerAdapter,
     algorandPlannerAdapter,
     algorandReviewerAdapter,
 } from './signing'
@@ -81,5 +83,6 @@ export const registerChain = (): void => {
     localKeySignerChainAdapters.register(algorandLocalKeySignerAdapter)
     backupChainAdapters.register(algorandBackupAdapter)
     migrationChainAdapters.register(algorandMigrationAdapter)
+    messageSignerChainAdapters.register(algorandMessageSignerAdapter)
     startNetworkRekeySync()
 }

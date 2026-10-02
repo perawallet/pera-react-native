@@ -43,12 +43,14 @@ import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import {
     broadcasterChainAdapters,
     localKeySignerChainAdapters,
+    messageSignerChainAdapters,
     plannerChainAdapters,
     reviewerChainAdapters,
 } from '@perawallet/wallet-core-signing'
 import {
     algorandBroadcasterAdapter,
     algorandLocalKeySignerAdapter,
+    algorandMessageSignerAdapter,
     algorandPlannerAdapter,
     algorandReviewerAdapter,
 } from '../signing'
@@ -83,6 +85,7 @@ describe('registerChain', () => {
         reviewerChainAdapters.reset()
         plannerChainAdapters.reset()
         localKeySignerChainAdapters.reset()
+        messageSignerChainAdapters.reset()
         addressCodecs.reset()
         keyDerivations.reset()
         accountsChainAdapters.reset()
@@ -235,6 +238,14 @@ describe('registerChain', () => {
         )
         expect(migrationChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandMigrationAdapter,
+        )
+    })
+
+    it('registers the Algorand message signer adapter', () => {
+        registerChain()
+
+        expect(messageSignerChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandMessageSignerAdapter,
         )
     })
 })

@@ -17,10 +17,15 @@ import {
     canSignArc60,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
+import {
+    ChainAdapterNotRegisteredError,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type {
-    ArbitraryDataSignRequest,
-    Arc60SignRequest,
+import {
+    isAuthDataWirePayload,
+    type ArbitraryDataSignRequest,
+    type AuthDataSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useDataSigningHandler } from '../useDataSigningHandler'
 import {
@@ -49,26 +54,33 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 const mockAddSignRequest = vi.fn()
-// The ARC-60 discriminator is the real one: it decides the dApp-visible answers
+// The auth-data discriminator is the real one: it decides the dApp-visible answers
 // under test. Parsing is stubbed because the
 // global shared mock lacks its byte helpers; its own spec covers the shapes.
 vi.mock('@perawallet/wallet-core-signing', async () => {
     const wire = await vi.importActual<
-        typeof import('../../../../../../../../packages/signing/src/utils/arc60-wire')
-    >('../../../../../../../../packages/signing/src/utils/arc60-wire')
+        typeof import('../../../../../../../../packages/chain-algorand/src/signing/message/arc60-wire')
+    >(
+        '../../../../../../../../packages/chain-algorand/src/signing/message/arc60-wire',
+    )
     const legacyWire = await vi.importActual<
         typeof import('../../../../../../../../packages/signing/src/utils/arbitrary-data-wire')
     >('../../../../../../../../packages/signing/src/utils/arbitrary-data-wire')
     return {
-        isArc60WirePayload: wire.isArc60WirePayload,
+        isAuthDataWirePayload: vi.fn((_chainId: string, params: unknown) =>
+            wire.isArc60WirePayload(params),
+        ),
         legacyArbitraryDataWireSchema: legacyWire.legacyArbitraryDataWireSchema,
-        parseArc60WireRequest: vi.fn(
-            (params: { authenticatorData: string; metadata: unknown }) => {
+        parseAuthDataWireRequest: vi.fn(
+            (
+                _chainId: string,
+                params: { authenticatorData: string; metadata: unknown },
+            ) => {
                 if (params.authenticatorData.length < 44) {
                     throw new Error('authenticatorData: too short')
                 }
                 return {
-                    stdSigData: {
+                    authData: {
                         ...params,
                         authenticatorData: new Uint8Array([1, 2, 3]),
                     },
@@ -277,9 +289,9 @@ describe('useDataSigningHandler', () => {
                 },
             )
 
-            const request = lastSignRequest<Arc60SignRequest>()
+            const request = lastSignRequest<AuthDataSignRequest>()
             expect(request).toMatchObject({
-                type: 'arc60',
+                type: 'auth-data',
                 sourceType: 'webview',
                 transportId: '14-arc60',
                 // The verified origin, not dApp-asserted metadata, is what
@@ -288,8 +300,8 @@ describe('useDataSigningHandler', () => {
                 verifiedOrigin: 'https://per-message.example/',
                 metadata: arc60Params.metadata,
             })
-            expect(request.stdSigData.signer).toBe('addr1')
-            expect(request.stdSigData.authenticatorData).toBeInstanceOf(
+            expect(request.authData.signer).toBe('addr1')
+            expect(request.authData.authenticatorData).toBeInstanceOf(
                 Uint8Array,
             )
         })
@@ -329,6 +341,30 @@ describe('useDataSigningHandler', () => {
             expect(mockAddSignRequest).not.toHaveBeenCalled()
             const sent = injectedScript(webview)
             expect(sent).toContain('"id":"14-arc60-bad"')
+            expect(sent).toContain('"code":-32602')
+        })
+
+        it('answers the page when the chain has no message signer registered', () => {
+            vi.mocked(isAuthDataWirePayload).mockImplementationOnce(() => {
+                throw new ChainAdapterNotRegisteredError(
+                    'message-signer',
+                    LEGACY_CHAIN_ID,
+                )
+            })
+            const { webview, handle } = render()
+
+            handle(
+                bridgeMessage(
+                    '14-arc60-unregistered',
+                    'requestDataSigning',
+                    arc60Params,
+                ),
+                TRUSTED,
+            )
+
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            const sent = injectedScript(webview)
+            expect(sent).toContain('"id":"14-arc60-unregistered"')
             expect(sent).toContain('"code":-32602')
         })
     })

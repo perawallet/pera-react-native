@@ -305,7 +305,7 @@ describe('startConnectionsHost', () => {
                 operation: {
                     type: 'sign-data',
                     payload: {
-                        stdSigData: {
+                        authData: {
                             authenticatorData: new Uint8Array([1, 2, 3]),
                         },
                     },
@@ -321,7 +321,7 @@ describe('startConnectionsHost', () => {
                 chainId: 'algorand',
                 operation: {
                     type: 'sign-data',
-                    payload: { stdSigData: { authenticatorData: 'AQID' } },
+                    payload: { authData: { authenticatorData: 'AQID' } },
                 },
                 authorizedAccounts: ['ADDR1'],
                 peer: { name: 'Dapp' },

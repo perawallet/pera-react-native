@@ -266,7 +266,7 @@ describe('hardwareSignActor', () => {
     })
 
     it('Non-Ledger plain Error → NON_LEDGER_ERROR (bypasses BLE-class gate)', async () => {
-        const plainError = new Error('arc60 validation failed')
+        const plainError = new Error('auth-data validation failed')
         mocks.sign.mockImplementation(
             async (_g, _a, callbacks: SigningCallbacks) => {
                 callbacks.onError?.(plainError)

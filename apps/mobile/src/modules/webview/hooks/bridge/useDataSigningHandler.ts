@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     canSignArbitraryData,
     canSignArc60,
@@ -26,9 +27,9 @@ import {
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type SignRequestSource,
-    isArc60WirePayload,
+    isAuthDataWirePayload,
     legacyArbitraryDataWireSchema,
-    parseArc60WireRequest,
+    parseAuthDataWireRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -41,7 +42,7 @@ import {
 import type { BridgeHandler } from './types'
 import { useRequiredParams } from './useRequiredParams'
 
-// ARC-60 and legacy arbitrary-data requests share one page answer.
+// Auth-data and legacy arbitrary-data requests share one page answer.
 const webviewDataSignRequestBase = (
     messageId: string,
     webview: Nullable<WebView>,
@@ -97,17 +98,21 @@ export const useDataSigningHandler = (
 
     return useCallback(
         (message, security) => {
-            // ARC-60 (`StdSigData` + `Metadata`) and the legacy arbitrary-data
-            // shape both arrive on `requestDataSigning`; discriminate on the
-            // ARC-60 signals before the legacy param check (which an ARC-60
+            // The auth-data shape and the legacy arbitrary-data shape both
+            // arrive on `requestDataSigning`; discriminate on the auth-data
+            // signals before the legacy param check (which an auth-data
             // payload would also satisfy).
-            if (isArc60WirePayload(message.params)) {
-                try {
-                    const { stdSigData, metadata } = parseArc60WireRequest(
+            // The discriminator resolves the chain's message signer and throws
+            // when none is registered, so it sits inside the try that answers
+            // the page.
+            try {
+                if (isAuthDataWirePayload(LEGACY_CHAIN_ID, message.params)) {
+                    const { authData, metadata } = parseAuthDataWireRequest(
+                        LEGACY_CHAIN_ID,
                         message.params,
                     )
                     const account = allAccounts.find(
-                        a => a.address === stdSigData.signer,
+                        a => a.address === authData.signer,
                     )
                     if (!account || !canSignArc60(account)) {
                         sendInvalidSigner(message.id)
@@ -115,25 +120,26 @@ export const useDataSigningHandler = (
                     }
                     addSignRequest({
                         ...webviewDataSignRequestBase(message.id, webview),
-                        type: 'arc60',
+                        type: 'auth-data',
                         // The verified webview origin — NOT the dApp-asserted
-                        // metadata — is what the analyzer checks the SIWA
+                        // metadata — is what the analyzer checks the sign-in
                         // domain against.
                         sourceMetadata: security.sourceUrl
                             ? { url: security.sourceUrl }
                             : undefined,
                         verifiedOrigin: security.sourceUrl ?? undefined,
-                        stdSigData,
+                        authData,
                         metadata,
                     })
-                } catch (e) {
-                    sendErrorToWebview(
-                        message.id,
-                        JsonRpcErrorCode.InvalidParams,
-                        e as Error,
-                        webview,
-                    )
+                    return
                 }
+            } catch (e) {
+                sendErrorToWebview(
+                    message.id,
+                    JsonRpcErrorCode.InvalidParams,
+                    e as Error,
+                    webview,
+                )
                 return
             }
 

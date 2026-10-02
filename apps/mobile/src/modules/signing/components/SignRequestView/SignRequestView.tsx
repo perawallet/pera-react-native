@@ -90,7 +90,7 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
     const isSupported =
         request.type === 'transactions' ||
         request.type === 'arbitrary-data' ||
-        request.type === 'arc60'
+        request.type === 'auth-data'
 
     if (!isSupported) {
         return (

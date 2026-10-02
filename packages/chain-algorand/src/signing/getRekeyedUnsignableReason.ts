@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
     isTransactionRequest,
     type DelegatedUnsignableReason,
     type SignRequest,
@@ -42,8 +42,8 @@ export const resolveAllSignerAddresses = (request: SignRequest): string[] => {
             .map(entry => entry.signer)
             .filter((address): address is string => !!address)
     }
-    if (isArc60Request(request)) {
-        const signer = request.stdSigData?.signer
+    if (isAuthDataRequest(request)) {
+        const signer = request.authData?.signer
         return signer ? [signer] : []
     }
     return []

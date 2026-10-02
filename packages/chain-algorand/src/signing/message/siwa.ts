@@ -138,9 +138,9 @@ export type BuildSiwaAuthRequestArgs = {
 export type SiwaAuthRequest = {
     /** The canonical SIWA payload, exposed for callers that need to log it. */
     payload: Siwa
-    /** base64(canonical JSON) — ready for `Arc60StdSigData.data`. */
+    /** base64(canonical JSON) — ready for `AuthData.data`. */
     data: string
-    /** sha256(domain) — ready for `Arc60StdSigData.authenticatorData`. */
+    /** sha256(domain) — ready for `AuthData.authenticatorData`. */
     authenticatorData: Uint8Array
 }
 

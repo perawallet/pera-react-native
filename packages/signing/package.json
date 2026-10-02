@@ -22,9 +22,7 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "algosdk": "catalog:",
     "@babel/runtime": "catalog:",
-    "@noble/hashes": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-ledger": "workspace:*",
@@ -39,7 +37,6 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@tanstack/react-query": "catalog:",
-    "canonify": "^2.1.1",
     "decimal.js": "catalog:",
     "drizzle-orm": "catalog:",
     "react": "catalog:",

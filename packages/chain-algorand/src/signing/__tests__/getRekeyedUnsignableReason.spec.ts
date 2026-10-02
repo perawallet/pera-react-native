@@ -128,8 +128,8 @@ describe('getRekeyedUnsignableReason', () => {
     it('covers the ARC-60 signer', () => {
         const request = {
             id: 'r1',
-            type: 'arc60',
-            stdSigData: { signer: REKEYED_EXTERNAL },
+            type: 'auth-data',
+            authData: { signer: REKEYED_EXTERNAL },
         } as unknown as SignRequest
         expect(getRekeyedUnsignableReason(request, accounts)).toEqual({
             kind: 'authMissing',

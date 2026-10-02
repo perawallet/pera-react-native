@@ -15,20 +15,21 @@ import { vi } from 'vitest'
 // The signing barrel transitively reaches react-native-mmkv (through its
 // store hooks), which has no loadable binding under vitest — the same wall
 // `packages/connections`' own vitest.setup.ts documents and routes around.
-// Only the ARC-60 wire pieces and the two size constants are needed here, so
-// they are re-exported for real; `useArc0001Resolver`/`useEnqueueArc0001SignRequest`
+// Only the auth-data wire pieces and the two size constants are needed here,
+// so they are re-exported for real; `useArc0001Resolver`/`useEnqueueArc0001SignRequest`
 // are stubbed because nothing in this package's specs calls the enqueue hook
 // this file registers — only its identity as a function reference matters.
 vi.mock('@perawallet/wallet-core-signing', async () => {
     const constants = await import('../../../signing/src/constants')
-    const wire = await import('../../../signing/src/utils/arc60-wire')
+    const wire =
+        await import('../../../chain-algorand/src/signing/message/arc60-wire')
     return {
         MAX_DATA_SIGN_REQUESTS: constants.MAX_DATA_SIGN_REQUESTS,
         MAX_TRANSACTION_SIGN_REQUESTS: constants.MAX_TRANSACTION_SIGN_REQUESTS,
-        ARC60_MAX_REQUEST_BYTES: wire.ARC60_MAX_REQUEST_BYTES,
-        arc60WireSchema: wire.arc60WireSchema,
-        assertArc60RequestWithinLimits: wire.assertArc60RequestWithinLimits,
-        parseArc60WireRequest: wire.parseArc60WireRequest,
+        isAuthDataWirePayload: (_chainId: string, ...args: [unknown]) =>
+            wire.isArc60WirePayload(...args),
+        parseAuthDataWireRequest: (_chainId: string, ...args: [unknown]) =>
+            wire.parseArc60WireRequest(...args),
         useArc0001Resolver: () => () => {
             throw new Error(
                 'useArc0001Resolver is stubbed in walletconnect specs; nothing here should call it',

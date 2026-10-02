@@ -24,7 +24,7 @@ import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wa
 import type {
     LocalSigningFunction,
     LocalArbitrarySigningFunction,
-    LocalArc60SigningFunction,
+    LocalAuthDataSigningFunction,
 } from '../chain-adapter'
 import type { EncodeTransactionFunction } from '../pipeline/signing/createHardwareStrategy'
 import type { SignRequest } from '../models'
@@ -52,7 +52,7 @@ export type TransportFactory = (
 export type SigningMachineDeps = {
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
-    signArc60: LocalArc60SigningFunction
+    signAuthData: LocalAuthDataSigningFunction
     createTransport: TransportFactory
     network: Network
     hardwareWalletRegistry?: HardwareWalletRegistry

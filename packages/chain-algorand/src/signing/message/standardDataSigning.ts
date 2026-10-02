@@ -11,35 +11,15 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    ArbitraryDataSignableData,
-    Arc60SignableData,
-    SigningCallbacks,
-    SigningResult,
-} from '../types'
-import { CannotSignError } from '../errors'
-
-/**
- * Signing function type that matches useArbitraryDataSigner's signArbitraryData.
- * Shared by every strategy whose key material lives locally (Algo25, HD
- * Wallet, Quantum) — arbitrary-data signing has no strategy-specific
- * variance, only the underlying key operation differs.
- */
-export type LocalArbitrarySigningFunction = (
-    account: WalletAccount,
-    data: string | string[],
-) => Promise<Uint8Array[]>
-
-/**
- * Signing function type that matches useLocalKeyArc60Signer's signArc60.
- * Shared by every strategy whose key material lives locally (Algo25, HD
- * Wallet, Quantum).
- */
-export type LocalArc60SigningFunction = (
-    account: WalletAccount,
-    stdSigData: Arc60SignableData['stdSigData'],
-    metadata: Arc60SignableData['metadata'],
-) => Promise<Uint8Array>
+import {
+    CannotSignError,
+    type ArbitraryDataSignableData,
+    type AuthDataSignableData,
+    type LocalArbitrarySigningFunction,
+    type LocalAuthDataSigningFunction,
+    type SigningCallbacks,
+    type SigningResult,
+} from '@perawallet/wallet-core-signing'
 
 /**
  * Handles an `arbitrary-data` signable group for any strategy backed by a
@@ -82,24 +62,24 @@ export const signArbitraryDataCase = async (
 }
 
 /**
- * Handles an `arc60` signable group for any strategy backed by a local-key
- * signing function. Domain / SIWA validation happens inside the injected
- * `signArc60` (see `utils/arc60.ts`'s `validateArc60AuthRequest`) — this
+ * Handles an `auth-data` signable group for any strategy backed by a
+ * local-key signing function. Domain / SIWA validation happens inside the
+ * injected `signAuthData` (see `arc60.ts`'s `validateArc60AuthRequest`) — this
  * helper only wires the pipeline shapes.
  */
-export const signArc60Case = async (
-    data: Arc60SignableData,
+export const signAuthDataCase = async (
+    data: AuthDataSignableData,
     originalIndices: number[] | undefined,
     account: WalletAccount,
-    signArc60: LocalArc60SigningFunction,
+    signAuthData: LocalAuthDataSigningFunction,
     callbacks?: SigningCallbacks,
 ): Promise<SigningResult> => {
     callbacks?.onSigningStart?.()
-    const signature = await signArc60(account, data.stdSigData, data.metadata)
+    const signature = await signAuthData(account, data.authData, data.metadata)
     callbacks?.onSigningComplete?.()
 
     return {
-        signedData: { type: 'arc60', signature },
+        signedData: { type: 'auth-data', signature },
         signers: [{ address: account.address }],
         originalIndices,
     }

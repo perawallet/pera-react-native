@@ -97,8 +97,8 @@ const makeArbitraryGroup = (): AnalyzedSignableGroup => ({
 
 const makeArc60Group = (): AnalyzedSignableGroup => ({
     data: {
-        type: 'arc60',
-        stdSigData: {
+        type: 'auth-data',
+        authData: {
             data: 'data',
             signer: 'ADDR',
             domain: 'example.com',
@@ -106,7 +106,7 @@ const makeArc60Group = (): AnalyzedSignableGroup => ({
         },
         metadata: { scope: 1, encoding: 'base64' },
     },
-    source: { type: 'arc60' },
+    source: { type: 'card' },
     signerAddress: 'ADDR',
     analysis: emptyAnalysis,
 })
@@ -114,7 +114,7 @@ const makeArc60Group = (): AnalyzedSignableGroup => ({
 describe('createLocalKeyStrategy', () => {
     let signTransactions: ReturnType<typeof vi.fn>
     let signArbitraryData: ReturnType<typeof vi.fn>
-    let signArc60: ReturnType<typeof vi.fn>
+    let signAuthData: ReturnType<typeof vi.fn>
     let errorSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
@@ -125,7 +125,7 @@ describe('createLocalKeyStrategy', () => {
                 { blob: new Uint8Array() },
             ])
         signArbitraryData = vi.fn().mockResolvedValue([new Uint8Array([1])])
-        signArc60 = vi.fn().mockResolvedValue(new Uint8Array([2]))
+        signAuthData = vi.fn().mockResolvedValue(new Uint8Array([2]))
         mocks.hasSigningKeys
             .mockReset()
             .mockImplementation(
@@ -160,7 +160,7 @@ describe('createLocalKeyStrategy', () => {
         createLocalKeyStrategy({
             signTransactions,
             signArbitraryData,
-            signArc60,
+            signAuthData,
         })
 
     describe('canSign', () => {
@@ -350,20 +350,24 @@ describe('createLocalKeyStrategy', () => {
     })
 
     describe('sign - arc60', () => {
-        test('delegates to signArc60 with stdSigData and metadata', async () => {
+        test('delegates to signAuthData with authData and metadata', async () => {
             const group = makeArc60Group()
             const result = await makeStrategy().sign(group, algo25Account)
 
-            expect(signArc60).toHaveBeenCalledWith(
+            expect(signAuthData).toHaveBeenCalledWith(
                 algo25Account,
-                group.data.type === 'arc60' ? group.data.stdSigData : undefined,
-                group.data.type === 'arc60' ? group.data.metadata : undefined,
+                group.data.type === 'auth-data'
+                    ? group.data.authData
+                    : undefined,
+                group.data.type === 'auth-data'
+                    ? group.data.metadata
+                    : undefined,
             )
-            expect(result.signedData.type).toBe('arc60')
+            expect(result.signedData.type).toBe('auth-data')
         })
 
         test('wraps errors in SigningError and calls onError', async () => {
-            signArc60.mockRejectedValue(new Error('arc60 fail'))
+            signAuthData.mockRejectedValue(new Error('arc60 fail'))
             const onError = vi.fn()
 
             await expect(
@@ -375,7 +379,7 @@ describe('createLocalKeyStrategy', () => {
         })
 
         test('wraps non-Error rejections', async () => {
-            signArc60.mockRejectedValue('bad')
+            signAuthData.mockRejectedValue('bad')
 
             await expect(
                 makeStrategy().sign(makeArc60Group(), algo25Account),

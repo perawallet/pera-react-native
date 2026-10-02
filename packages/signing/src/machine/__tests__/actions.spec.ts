@@ -21,7 +21,7 @@ import type { TransactionSignRequest } from '../../models'
 import {
     makeTestAddress,
     makeTestPaymentTx,
-} from '../../test-utils/transactions'
+} from '../../__tests__/transactions'
 
 const PARTICIPANT = 'PARTICIPANT'
 const AUTH = 'AUTH'
@@ -370,7 +370,7 @@ describe('quantum-signed transactions over the callback transport', () => {
             allAccounts: [userAccount],
             signTransactions: vi.fn(),
             signArbitraryData: vi.fn(),
-            signArc60: vi.fn(),
+            signAuthData: vi.fn(),
             createTransport: vi.fn(),
             network: 'mainnet' as never,
             encodeTransaction: vi.fn(),

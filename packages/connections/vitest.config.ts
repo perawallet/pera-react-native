@@ -58,6 +58,10 @@ export default defineConfig({
                 __dirname,
                 '../chain-shared/src/index.ts',
             ),
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
+            ),
             // Source rather than dist: both are imported for their runtime
             // values, not just types. The signing barrel is additionally
             // replaced wholesale in vitest.setup.ts — see the note there.

@@ -12,8 +12,8 @@
 
 import { PWButton, PWText, PWView } from '@components/core'
 import type {
-    Arc60ParsedPayload,
-    Arc60SignRequest,
+    AuthDataSignRequest,
+    ParsedAuthData,
 } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -22,9 +22,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './Arc60DataSigningSummaryView.style'
 
 export type Arc60DataSigningSummaryViewProps = {
-    request: Arc60SignRequest
+    request: AuthDataSignRequest
     account: Optional<WalletAccount>
-    parsed: Arc60ParsedPayload
+    parsed: ParsedAuthData
     onDetailsPress: () => void
 }
 
@@ -37,7 +37,7 @@ export const Arc60DataSigningSummaryView = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const siwa = parsed.type === 'siwa' ? parsed.siwa : undefined
+    const siwx = parsed.type === 'siwx' ? parsed.siwx : undefined
 
     return (
         <PWView style={styles.container}>
@@ -53,10 +53,10 @@ export const Arc60DataSigningSummaryView = ({
                     style={styles.description}
                 >
                     {t('signing.arc60_view.description', {
-                        domain: request.stdSigData.domain,
+                        domain: request.authData.domain,
                     })}
                 </PWText>
-                {!!siwa?.statement && (
+                {!!siwx?.statement && (
                     <PWView style={styles.statementContainer}>
                         <PWText
                             variant='caption'
@@ -64,7 +64,7 @@ export const Arc60DataSigningSummaryView = ({
                         >
                             {t('signing.arc60_view.siwa_statement')}
                         </PWText>
-                        <PWText variant='body'>{siwa.statement}</PWText>
+                        <PWText variant='body'>{siwx.statement}</PWText>
                     </PWView>
                 )}
                 {!!account && (

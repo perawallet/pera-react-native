@@ -58,7 +58,7 @@ export const signMultisigGroups = async (
         allAccounts,
         signTransactions,
         signArbitraryData,
-        signArc60,
+        signAuthData,
         encodeTransaction,
         hardwareWalletRegistry,
         signingCallbacks,
@@ -68,7 +68,7 @@ export const signMultisigGroups = async (
     const selectStrategy = createSigningStrategySelector({
         signTransactions,
         signArbitraryData,
-        signArc60,
+        signAuthData,
         encodeTransaction,
         hardwareWalletRegistry,
         getLocalParticipants: getProposeParticipants,

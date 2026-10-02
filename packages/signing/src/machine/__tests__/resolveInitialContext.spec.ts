@@ -17,13 +17,13 @@ import { groupTransactions } from '@perawallet/wallet-core-blockchain'
 import {
     makeTestAddress,
     makeTestPaymentTx,
-} from '../../test-utils/transactions'
+} from '../../__tests__/transactions'
 
 import { resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'
 import type {
     ArbitraryDataSignRequest,
-    Arc60SignRequest,
+    AuthDataSignRequest,
     SignRequest,
     TransactionSignRequest,
 } from '../../models'
@@ -53,7 +53,7 @@ const baseInput = (request: SignRequest): SigningMachineInput =>
         allAccounts: [userAccount],
         signTransactions: vi.fn(),
         signArbitraryData: vi.fn(),
-        signArc60: vi.fn(),
+        signAuthData: vi.fn(),
         createTransport: vi.fn(),
         network: 'mainnet' as never,
         encodeTransaction: vi.fn(),
@@ -352,43 +352,43 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
     })
 })
 
-describe('resolveInitialContext — arc60 requests', () => {
-    const stdSigData = {
+describe('resolveInitialContext — auth-data requests', () => {
+    const authData = {
         data: 'e30=',
         signer: userAccount.address,
-        domain: 'arc60.io',
+        domain: 'example.io',
         authenticatorData: new Uint8Array(37),
     }
     const metadata = { scope: 1, encoding: 'base64' }
 
-    it('produces a single signable arc60 group keyed off stdSigData.signer', () => {
-        const request: Arc60SignRequest = {
-            id: 'req-arc60',
-            type: 'arc60',
+    it('produces a single signable auth-data group keyed off authData.signer', () => {
+        const request: AuthDataSignRequest = {
+            id: 'req-auth-data',
+            type: 'auth-data',
             transport: 'callback',
             sourceType: 'walletconnect',
-            stdSigData,
+            authData,
             metadata,
         }
 
         const context = resolveInitialContext(baseInput(request))
         expect(context.signableGroups).toHaveLength(1)
-        expect(context.signableGroups![0].data.type).toBe('arc60')
+        expect(context.signableGroups![0].data.type).toBe('auth-data')
         expect(context.signableGroups![0].signerAddress).toBe(
             userAccount.address,
         )
     })
 
     it('wraps the approve callback to project the single signature into the [{signature,signer}] shape', async () => {
-        const arc60Approve = vi.fn(async () => undefined)
-        const request: Arc60SignRequest = {
-            id: 'req-arc60-cb',
-            type: 'arc60',
+        const authDataApprove = vi.fn(async () => undefined)
+        const request: AuthDataSignRequest = {
+            id: 'req-auth-data-cb',
+            type: 'auth-data',
             transport: 'callback',
             sourceType: 'walletconnect',
-            stdSigData,
+            authData,
             metadata,
-            approve: arc60Approve,
+            approve: authDataApprove,
         }
 
         const context = resolveInitialContext(baseInput(request))
@@ -396,11 +396,11 @@ describe('resolveInitialContext — arc60 requests', () => {
         const sig = new Uint8Array([7])
 
         await callbacks?.approve?.({
-            signedData: { type: 'arc60', signature: sig },
+            signedData: { type: 'auth-data', signature: sig },
             signers: [{ address: userAccount.address }],
         } as never)
 
-        expect(arc60Approve).toHaveBeenCalledWith([
+        expect(authDataApprove).toHaveBeenCalledWith([
             { signature: sig, signer: userAccount.address },
         ])
     })
@@ -428,7 +428,7 @@ describe('resolveInitialContext — hardware wallet registry requirement', () =>
             allAccounts: [hardwareAccount],
             signTransactions: vi.fn(),
             signArbitraryData: vi.fn(),
-            signArc60: vi.fn(),
+            signAuthData: vi.fn(),
             createTransport: vi.fn(),
             network: 'mainnet' as never,
             encodeTransaction: vi.fn(),

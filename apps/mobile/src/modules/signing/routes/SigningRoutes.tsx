@@ -44,7 +44,7 @@ const useInitialRouteConfig = (): InitialRouteConfig | null => {
         case 'arbitrary-data': {
             return { initialRoute: 'ArbitraryDataSigning' }
         }
-        case 'arc60': {
+        case 'auth-data': {
             return { initialRoute: 'Arc60Signing' }
         }
         case 'transactions': {

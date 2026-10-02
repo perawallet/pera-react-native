@@ -33,7 +33,7 @@ import { fireEvent, screen, waitFor, renderHook } from '@testing-library/react'
 import { Address, Transaction, TransactionType } from 'algosdk'
 import {
     useSigningRequest,
-    type Arc60SignRequest,
+    type AuthDataSignRequest,
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataSignResult,
     type SignRequest,
@@ -268,9 +268,9 @@ export const buildArc60SignRequest = ({
     /** SIWA `account_address`; defaults to `signer` (the un-rekeyed shape). */
     accountAddress?: string
     verifiedOrigin?: string
-    sourceType?: Arc60SignRequest['sourceType']
-    overrides?: Partial<Arc60SignRequest>
-} = {}): BuiltRequest<Arc60SignRequest> => {
+    sourceType?: AuthDataSignRequest['sourceType']
+    overrides?: Partial<AuthDataSignRequest>
+} = {}): BuiltRequest<AuthDataSignRequest> => {
     const spies = makeCallbackSpies()
 
     // Keys inserted in lexicographic order so JSON.stringify yields the RFC-8785
@@ -293,19 +293,19 @@ export const buildArc60SignRequest = ({
     const authenticatorData = new Uint8Array(37)
     authenticatorData.set(rpIdHash.subarray(0, 32), 0)
 
-    const request: Arc60SignRequest = {
+    const request: AuthDataSignRequest = {
         id: `review-arc60-${Math.round(Math.random() * 1e9)}`,
-        type: 'arc60',
+        type: 'auth-data',
         transport: 'callback',
         sourceType,
         verifiedOrigin,
-        stdSigData: { data, signer, domain, authenticatorData },
+        authData: { data, signer, domain, authenticatorData },
         metadata: { scope: 1, encoding: 'base64' },
         approve: spies.approve as unknown as (
             signed: PeraArbitraryDataSignResult[],
         ) => Promise<void>,
-        reject: spies.reject as unknown as Arc60SignRequest['reject'],
-        error: spies.error as unknown as Arc60SignRequest['error'],
+        reject: spies.reject as unknown as AuthDataSignRequest['reject'],
+        error: spies.error as unknown as AuthDataSignRequest['error'],
         ...overrides,
     }
     return { request, ...spies }

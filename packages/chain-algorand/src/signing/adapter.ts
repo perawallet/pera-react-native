@@ -13,6 +13,7 @@
 import { resolveArc0001SignTxnRequest } from '@perawallet/wallet-core-blockchain'
 import type {
     LocalKeySignerChainAdapter,
+    MessageSignerChainAdapter,
     PlannerChainAdapter,
     ReviewerChainAdapter,
 } from '@perawallet/wallet-core-signing'
@@ -33,6 +34,12 @@ import {
 } from './getRekeyedUnsignableReason'
 import { encodeDelegatedLsigAccount, programSigningPayload } from './lsig'
 import { mergeSigningResults } from './mergeSigningResults'
+import { validateArc60AuthRequest } from './message/arc60'
+import { isArc60WirePayload, parseArc60WireRequest } from './message/arc60-wire'
+import { parseArc60ForDisplay } from './message/parseArc60ForDisplay'
+import { signArbitraryData } from './message/signArbitraryData'
+import { signArc60AuthRequest } from './message/signArc60AuthRequest'
+import { buildSiwxAuthData } from './message/siwx'
 import { resolveMinFeeForSender } from './minFeeResolver'
 import { simulateInnerTransactions } from './simulateImpact'
 import { createLocalKeyStrategy } from './local-key/createLocalKeyStrategy'
@@ -107,4 +114,15 @@ export const algorandLocalKeySignerAdapter: LocalKeySignerChainAdapter = {
     signTransactions: signTransactionsWithLocalKey,
     createStrategy: createLocalKeyStrategy,
     signGroups: signLocalKeyGroups,
+}
+
+export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
+    signArbitraryData,
+    signAuthData: signArc60AuthRequest,
+    validateAuthData: validateArc60AuthRequest,
+    parseAuthDataForDisplay: parseArc60ForDisplay,
+    isAuthDataWirePayload: isArc60WirePayload,
+    parseAuthDataWireRequest: parseArc60WireRequest,
+    buildSiwxAuthData,
 }
