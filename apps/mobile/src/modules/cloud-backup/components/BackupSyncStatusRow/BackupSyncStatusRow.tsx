@@ -41,6 +41,8 @@ export const BackupSyncStatusRow = () => {
             iconVariant={icon.variant}
             title={t('cloud_backup.overview.latest_sync')}
             subtitle={lastSyncedLabel}
+            // Room for the "last successful sync" prefix beside a FAILED badge.
+            subtitleLines={2}
             trailing={
                 syncStatus ? <SyncStatusBadge status={syncStatus} /> : undefined
             }

@@ -638,6 +638,7 @@
         "overview": {
             "title": "Copia de seguridad en la nube",
             "latest_sync": "Última sincronización",
+            "last_successful_sync": "Última sincronización correcta: {{date}}",
             "status_success": "CORRECTO",
             "status_failed": "ERROR",
             "status_syncing": "SINCRONIZANDO",

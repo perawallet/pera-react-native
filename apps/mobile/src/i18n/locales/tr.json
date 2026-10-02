@@ -638,6 +638,7 @@
         "overview": {
             "title": "Bulut yedekleme",
             "latest_sync": "Son eşitleme",
+            "last_successful_sync": "Son başarılı eşitleme: {{date}}",
             "status_success": "BAŞARILI",
             "status_failed": "BAŞARISIZ",
             "status_syncing": "EŞİTLENİYOR",

@@ -638,6 +638,7 @@
         "overview": {
             "title": "Sauvegarde cloud",
             "latest_sync": "Dernière synchronisation",
+            "last_successful_sync": "Dernière synchronisation réussie : {{date}}",
             "status_success": "RÉUSSI",
             "status_failed": "ÉCHEC",
             "status_syncing": "SYNCHRONISATION",
