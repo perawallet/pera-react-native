@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, test, expect } from 'vitest'
 import {
+    accountType,
     canSignArbitraryData,
     canSignArc60,
     canSignProgram,
@@ -29,8 +30,15 @@ import {
     matchesAccountKey,
     resolveImportAccountType,
 } from '../utils'
-import { AccountTypes, type WalletAccount } from '../models'
+import { withCustody } from '../credentials'
+import {
+    AccountTypes,
+    DerivationTypes,
+    type AccountType,
+    type WalletAccount,
+} from '../models'
 import { MNEMONIC_WORD_COUNT } from '../constants'
+import { buildTestAccount } from './accountFactory'
 import {
     FAKE_CHAIN_ID,
     fakeAccountsChain,
@@ -579,5 +587,122 @@ describe('services/accounts/utils - authority wrappers', () => {
 
     test('isRekeyedAccount is false for a missing account', () => {
         expect(isRekeyedAccount(null, FAKE_CHAIN_ID)).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - accountType', () => {
+    const allTypes = Object.values(AccountTypes)
+
+    const ledger = (transportType: 'ble' | 'usb') =>
+        ({
+            id: `h-${transportType}`,
+            address: `LEDGER-${transportType}-ADDR`,
+            type: AccountTypes.hardware,
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: `${transportType}-1`,
+                deviceName: 'Nano X',
+                accountIndex: 2,
+                transportType,
+            },
+        }) as const satisfies WalletAccount
+
+    // Keyed by type so a new AccountTypes member without a fixture fails typecheck.
+    const legacyFixtures: Record<AccountType, WalletAccount[]> = {
+        algo25: [
+            {
+                id: 'a',
+                address: 'ALGO25-ADDR',
+                type: AccountTypes.algo25,
+                keyPairId: 'seed-ed25519',
+            },
+        ],
+        quantum: [
+            {
+                id: 'q',
+                address: 'QUANTUM-ADDR',
+                type: AccountTypes.quantum,
+                keyPairId: 'seed-quantum',
+            },
+        ],
+        hdWallet: Object.values(DerivationTypes).map(derivationType => ({
+            id: `hd-${derivationType}`,
+            address: `HD-${derivationType}-ADDR`,
+            type: AccountTypes.hdWallet,
+            keyPairId: `seed-dt${derivationType}`,
+            hdWalletDetails: {
+                account: 0,
+                change: 0,
+                keyIndex: 3,
+                derivationType,
+            },
+        })),
+        hardware: [ledger('ble'), ledger('usb')],
+        multisig: [
+            {
+                id: 'm',
+                address: 'MSIG-ADDR',
+                type: AccountTypes.multisig,
+                multisigDetails: {
+                    threshold: 2,
+                    addresses: ['P1', 'P2', 'P3'],
+                    version: 1,
+                },
+            },
+        ],
+        watch: [{ id: 'w', address: 'WATCH-ADDR', type: AccountTypes.watch }],
+    }
+
+    const backfilledCases = Object.values(legacyFixtures)
+        .flat()
+        .map(account => [account.id, account] as const)
+
+    const rekeyed = (account: WalletAccount): WalletAccount => ({
+        ...account,
+        rekeyAddress: 'AUTH-ADDR',
+        rekeyAddressByNetwork: { mainnet: 'AUTH-ADDR', testnet: 'OTHER-AUTH' },
+    })
+
+    test.each(backfilledCases)(
+        'a backfilled %s account derives its stored type',
+        (_, legacy) => {
+            const backfilled = withCustody(legacy)
+
+            expect(backfilled.provenance).toBeDefined()
+            expect(accountType(backfilled)).toBe(legacy.type)
+        },
+    )
+
+    test.each(allTypes)('a built %s account derives its stored type', type => {
+        const account = buildTestAccount(type)
+
+        expect(accountType(account)).toBe(type)
+        expect(accountType(account)).toBe(account.type)
+    })
+
+    test.each(allTypes)('a rekeyed %s account keeps its own type', type => {
+        const account = rekeyed(buildTestAccount(type))
+
+        expect(accountType(account)).toBe(type)
+    })
+
+    test('provenance decides when it disagrees with the stored type', () => {
+        const account = {
+            ...buildTestAccount(AccountTypes.watch),
+            type: AccountTypes.algo25,
+        } as WalletAccount
+
+        expect(accountType(account)).toBe(AccountTypes.watch)
+    })
+
+    test('a record the backfill skips falls back to its stored type', () => {
+        const malformed = withCustody({
+            id: 'm',
+            address: 'MSIG-ADDR',
+            type: AccountTypes.multisig,
+        } as WalletAccount)
+
+        expect(malformed.provenance).toBeUndefined()
+        expect(accountType(malformed)).toBe(AccountTypes.multisig)
     })
 })
