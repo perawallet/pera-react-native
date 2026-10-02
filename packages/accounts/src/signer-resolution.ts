@@ -11,7 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { MultiSigAccount, WalletAccount } from './models'
+import type { AccountType, MultiSigAccount, WalletAccount } from './models'
 import {
     accountType,
     isMultisigAccount,
@@ -147,10 +147,10 @@ export const canInitiateRekey = (
 ): boolean => canSignWith(account, accounts, chainId)
 
 export type RekeyTransition = {
-    /** Raw type of the rekeyed account itself. */
-    from: WalletAccount['type']
-    /** Raw type of the account it is now rekeyed to. */
-    to: WalletAccount['type']
+    /** Type of the rekeyed account itself, not followed through the rekey. */
+    from: AccountType
+    /** Type of the account it is now rekeyed to. */
+    to: AccountType
 }
 
 /** Backs the UI's "Rekeyed (Signed by <to>)" label and its info-sheet copy. */
