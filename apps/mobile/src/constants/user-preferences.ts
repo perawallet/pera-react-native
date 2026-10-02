@@ -14,7 +14,7 @@ export const UserPreferences = {
     transactionInfoAgreed: 'transaction-info-agreed',
     chartVisible: 'chart-visible',
     chartPeriod: 'chart-period',
-    developerMenuEnabled: 'developer-menu-enabled',
+    debugToolsEnabled: 'debug-tools-enabled',
     rekeySupportEnabled: 'rekey-support-enabled',
     assetFreezeSupportEnabled: 'asset-freeze-support-enabled',
     shakeToLockEnabled: 'shake-to-lock-enabled',

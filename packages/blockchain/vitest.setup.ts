@@ -11,14 +11,19 @@
  */
 
 import { vi, beforeEach } from 'vitest'
+import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
 
 const store = new Map<string, string>()
+
+// The network store resolves its `network` shim through the chain registry.
+const chains = createChainRegistry()
 
 // Reset the in-memory keyValueStorage between tests so persisted state from
 // one test doesn't leak into the next. Without this, a `setNetwork('testnet')`
 // in test A is still in storage when test B re-imports the store and rehydrates.
 beforeEach(() => {
     store.clear()
+    chains.reset()
 })
 
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
@@ -51,5 +56,6 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
                 store.delete(key)
             },
         },
+        chains,
     }),
 }))

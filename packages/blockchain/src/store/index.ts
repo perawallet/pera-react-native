@@ -11,14 +11,10 @@
  */
 
 export * from './store'
+export * from './custom-network'
 export {
     useNetworkStore,
-    getCustomNetworkConfig,
-    isCustomNetworkConfigured,
-    setCustomNetwork,
-    clearCustomNetwork,
     mergePersistedNetwork,
-    selectAlgorandCustomNetwork,
-    type CustomNetworkConfig,
     type CustomNetwork,
 } from '@perawallet/wallet-core-chain-shared'
+export type { CustomNetworkConfig } from '@perawallet/wallet-core-config'

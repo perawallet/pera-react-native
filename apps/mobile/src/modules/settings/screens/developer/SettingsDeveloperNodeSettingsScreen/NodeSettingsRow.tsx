@@ -11,20 +11,26 @@
  */
 
 import { PWRadioButton, PWView } from '@components/core'
-import type { NodeSettingsRowModel } from './useSettingsDeveloperNodeSettingsScreen'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { NodeSettingsNetworkRow } from './useSettingsDeveloperNodeSettingsScreen'
 
 export type NodeSettingsRowProps = {
-    row: NodeSettingsRowModel
+    chainId: ChainId
+    row: NodeSettingsNetworkRow
     onSelect: () => void
 }
 
-export const NodeSettingsRow = ({ row, onSelect }: NodeSettingsRowProps) => {
+export const NodeSettingsRow = ({
+    chainId,
+    row,
+    onSelect,
+}: NodeSettingsRowProps) => {
     // Unstyled wrapper: a bare radio in a column, with a `_row` testID for
     // on-device automation distinct from the radio's own `_radio` testID.
     return (
-        <PWView testID={`node_settings_${row.globalNetwork}_row`}>
+        <PWView testID={`node_settings_${chainId}_${row.networkId}_row`}>
             <PWRadioButton
-                testID={`node_settings_${row.globalNetwork}_radio`}
+                testID={`node_settings_${chainId}_${row.networkId}_radio`}
                 title={row.label}
                 onPress={onSelect}
                 isSelected={row.isSelected}

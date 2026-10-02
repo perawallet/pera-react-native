@@ -16,7 +16,7 @@ import { Linking } from 'react-native'
 import { config } from '@perawallet/wallet-core-config'
 import { areConfigOverridesIgnored } from '@perawallet/wallet-core-remote-config'
 
-import { useSettingsDeveloperMenuScreen } from '../useSettingsDeveloperMenuScreen'
+import { useSettingsDebugToolsScreen } from '../useSettingsDebugToolsScreen'
 
 const { mockPush, mockPushWebView, mockCapabilities } = vi.hoisted(() => ({
     mockPush: vi.fn(),
@@ -41,7 +41,7 @@ vi.mock('@routes/capabilities', () => ({
     routeCapabilities: mockCapabilities,
 }))
 
-describe('useSettingsDeveloperMenuScreen', () => {
+describe('useSettingsDebugToolsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockCapabilities.developerGallery = true
@@ -50,7 +50,7 @@ describe('useSettingsDeveloperMenuScreen', () => {
     })
 
     it('offers the gallery where the build includes it', () => {
-        const { result } = renderHook(() => useSettingsDeveloperMenuScreen())
+        const { result } = renderHook(() => useSettingsDebugToolsScreen())
 
         expect(result.current.isGalleryAvailable).toBe(true)
     })
@@ -58,13 +58,13 @@ describe('useSettingsDeveloperMenuScreen', () => {
     it('hides the gallery in builds that exclude it', () => {
         mockCapabilities.developerGallery = false
 
-        const { result } = renderHook(() => useSettingsDeveloperMenuScreen())
+        const { result } = renderHook(() => useSettingsDebugToolsScreen())
 
         expect(result.current.isGalleryAvailable).toBe(false)
     })
 
     it('offers Feature Flags where saved overrides take effect', () => {
-        const { result } = renderHook(() => useSettingsDeveloperMenuScreen())
+        const { result } = renderHook(() => useSettingsDebugToolsScreen())
 
         expect(result.current.isFeatureFlagsAvailable).toBe(true)
     })
@@ -72,13 +72,13 @@ describe('useSettingsDeveloperMenuScreen', () => {
     it('hides Feature Flags where saved overrides are ignored', () => {
         vi.mocked(areConfigOverridesIgnored).mockReturnValue(true)
 
-        const { result } = renderHook(() => useSettingsDeveloperMenuScreen())
+        const { result } = renderHook(() => useSettingsDebugToolsScreen())
 
         expect(result.current.isFeatureFlagsAvailable).toBe(false)
     })
 
     it('pushes the requested developer screen', () => {
-        const { result } = renderHook(() => useSettingsDeveloperMenuScreen())
+        const { result } = renderHook(() => useSettingsDebugToolsScreen())
 
         result.current.handleNavigate('FeatureFlags')
 
@@ -86,7 +86,7 @@ describe('useSettingsDeveloperMenuScreen', () => {
     })
 
     it('opens the testing dapp in the in-app webview when available', () => {
-        const { result } = renderHook(() => useSettingsDeveloperMenuScreen())
+        const { result } = renderHook(() => useSettingsDebugToolsScreen())
 
         result.current.handleOpenTestingDapp()
 
@@ -103,7 +103,7 @@ describe('useSettingsDeveloperMenuScreen', () => {
             .spyOn(Linking, 'openURL')
             .mockResolvedValue(undefined)
 
-        const { result } = renderHook(() => useSettingsDeveloperMenuScreen())
+        const { result } = renderHook(() => useSettingsDebugToolsScreen())
         result.current.handleOpenTestingDapp()
 
         expect(openURL).toHaveBeenCalledWith(config.peraDemoDappUrl)

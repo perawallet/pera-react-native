@@ -35,8 +35,8 @@ export const parseActiveNetwork = (raw: string | undefined): ActiveNetwork => {
             }
         } | null
     )?.state
-    // v1 blobs survive until a UI or offscreen context rewrites them, which may be after the worker runs.
-    const network = state?.selectedNetworkByChain?.algorand ?? state?.network
+    // The mirror wins: v3 derives it from the mode, so a live wallet's stored Algorand override must not be read. v1 has only the mirror and v2 only the entry, and either may survive until a UI or offscreen context rewrites it.
+    const network = state?.network ?? state?.selectedNetworkByChain?.algorand
     return typeof network === 'string' && SUPPORTED.has(network)
         ? (network as ActiveNetwork)
         : Networks.mainnet

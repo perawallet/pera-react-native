@@ -100,11 +100,11 @@ export const AppVersion = ({ enableSecretTaps }: AppVersionProps) => {
         }
 
         if (tapCount.current >= REQUIRED_TAPS) {
-            setPreference(UserPreferences.developerMenuEnabled, true)
+            setPreference(UserPreferences.debugToolsEnabled, true)
             showToast(
                 {
                     title: '',
-                    body: t('settings.developer.developer_menu_enabled'),
+                    body: t('settings.developer.debug_tools_enabled'),
                     type: 'success',
                 },
                 {

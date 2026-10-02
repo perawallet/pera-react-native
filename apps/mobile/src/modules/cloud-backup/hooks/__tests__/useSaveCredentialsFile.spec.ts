@@ -30,10 +30,19 @@ const { mockShowToast, mockShowError, mockLoggerError, saveCredentialsFile } =
 
 // errors.ts extends AppError from this package, so the real exports (not the
 // global unit-test stub) must survive here.
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
-    ...(await importOriginal<Record<string, unknown>>()),
-    logger: { error: mockLoggerError },
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: mockLoggerError,
+        },
+    }
+})
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))

@@ -31,10 +31,10 @@ export type NetworkId = string
 /** Persisted as a record id, so it is a storage format as well as a network id. */
 export const CUSTOM_NETWORK_ID: NetworkId = 'custom'
 
-/** The wallet-wide choice; each chain maps it onto one of its own networks. */
-export const GLOBAL_NETWORKS = [...NETWORK_TIERS, 'custom'] as const
+export const WALLET_MODES = ['live', 'developer'] as const
 
-export type GlobalNetwork = (typeof GLOBAL_NETWORKS)[number]
+/** Live puts every chain on its mainnet-tier default; developer on its testnet-tier default unless the chain has an override. */
+export type WalletMode = (typeof WALLET_MODES)[number]
 
 /**
  * The network as its own chain identifies it. A chain package adds its own
@@ -94,9 +94,9 @@ export const isChainId = (value: unknown): value is ChainId =>
 export const isNetworkId = (value: unknown): value is NetworkId =>
     typeof value === 'string' && NETWORK_ID_PATTERN.test(value)
 
-export const isGlobalNetwork = (value: unknown): value is GlobalNetwork =>
+export const isWalletMode = (value: unknown): value is WalletMode =>
     typeof value === 'string' &&
-    (GLOBAL_NETWORKS as readonly string[]).includes(value)
+    (WALLET_MODES as readonly string[]).includes(value)
 
 export const isLegacyNetwork = (value: unknown): value is LegacyNetwork =>
     typeof value === 'string' &&
