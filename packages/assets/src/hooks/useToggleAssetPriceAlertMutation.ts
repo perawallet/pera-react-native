@@ -13,7 +13,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     type Network,
     logger,
@@ -59,7 +59,10 @@ export const useToggleAssetPriceAlertMutation =
     (): UseToggleAssetPriceAlertMutationResult => {
         const queryClient = useQueryClient()
         const { network } = useNetwork()
-        const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+        const isUnavailableOnNetwork = !useChainCapability(
+            scopeForLegacyNetwork(network).chainId,
+            'priceAlerts',
+        )
 
         const mutation = useMutation<
             ToggleStatusResponse,
