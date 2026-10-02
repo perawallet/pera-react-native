@@ -23,7 +23,6 @@ import {
 import { RemoveAssetsScreen } from '@modules/accounts/screens/RemoveAssetsScreen'
 import { peraCardAccountScreens } from '@modules/card'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
-import { routeCapabilities } from '@routes/capabilities'
 import { fullScreenLayout } from '@layouts/index'
 
 import type { AccountStackParamsList } from './types'
@@ -35,8 +34,7 @@ export const AccountStackNavigator = () => {
     // Same gate the root stack puts on the rest of the card surface, so the
     // remote kill-switch removes the dashboard route too, not just its entry
     // point in the account switcher.
-    const isPeraCardEnabled = useIsPeraCardEnabled()
-    const isCardEnabled = routeCapabilities.peraCard && isPeraCardEnabled
+    const isCardEnabled = useIsPeraCardEnabled()
 
     return (
         <AccountStack.Navigator

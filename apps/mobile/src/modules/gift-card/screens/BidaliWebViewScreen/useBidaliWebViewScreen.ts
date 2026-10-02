@@ -13,6 +13,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Linking } from 'react-native'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedChainMode } from '@perawallet/wallet-core-chain-shared'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 // Imported from the handlers file directly (not the module barrel) so this
 // hook doesn't drag the whole webview stack into its dependency graph.
@@ -42,6 +44,7 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
     const { selectedAccount } = useBidali()
     const onClose = useBidaliClose()
     const { network } = useNetwork()
+    const chainMode = useSelectedChainMode(LEGACY_CHAIN_ID)
 
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
@@ -62,7 +65,12 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
     // page and the callbacks it assigned. Staleness within a session is
     // accepted; native is unaffected since its builder ignores this.
     const [frozenBalances] = useState(() =>
-        computeBidaliBalances(selectedAccount, accountBalances, network),
+        computeBidaliBalances(
+            selectedAccount,
+            accountBalances,
+            network,
+            chainMode,
+        ),
     )
 
     const url = useMemo(() => {

@@ -40,7 +40,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     }),
-    isMainnet: (network: string) => network === 'mainnet',
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedChainMode: () => 'live',
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

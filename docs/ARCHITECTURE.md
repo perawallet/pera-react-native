@@ -165,6 +165,12 @@ gesture) goes in a small `.web.ts` twin of a constant or function instead of a f
 Native-only iOS/Android splits read `isIOS()`/`isAndroid()` from `@utils/platform`; a capability that
 differs between them computes its native value there (`ledgerUsb` is `isAndroid()`).
 
+A feature that only works in some wallet modes (a chain's backend serves its mainnet and default
+test network only, say) declares the developer modes it is off in, in a chain module's
+`capabilityRestrictions` or in `routeCapabilityRestrictions`, rather than comparing a network. The
+restriction can only switch a capability off, and Feature Flags still overrides it. The UI gates through
+`useCapability` or `<CapabilityGuard>`, which follow the mode and per-chain network override live.
+
 ### Keeping code out of a build
 
 A capability hides a feature but still ships its code. Code that must not be in a bundle at all is
