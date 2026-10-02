@@ -182,7 +182,6 @@ const mockQueryReturn = (
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address,
     keyPairId: `kp-${address}`,
 })
@@ -1167,7 +1166,6 @@ describe('usePendingSignaturesContent', () => {
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
     type: AccountTypes.hardware,
-    chainId: 'algorand',
     address,
     hardwareDetails: {
         manufacturer: 'ledger',

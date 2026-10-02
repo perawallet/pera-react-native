@@ -66,7 +66,6 @@ const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 const ACCOUNT: WalletAccount = {
     id: 'observer-1',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'observer-key',
     name: 'Observer',

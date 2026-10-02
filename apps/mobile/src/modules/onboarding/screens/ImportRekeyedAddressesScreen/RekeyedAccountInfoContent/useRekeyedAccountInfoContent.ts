@@ -11,7 +11,6 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     AccountTypes,
     type AssetWithAccountBalance,
@@ -48,7 +47,6 @@ export function useRekeyedAccountInfoContent({
             id: account.rekeyAddress,
             address: account.rekeyAddress,
             type: AccountTypes.watch,
-            chainId: LEGACY_CHAIN_ID,
         }
     }, [account.rekeyAddress])
 

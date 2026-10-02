@@ -30,14 +30,12 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { buildAccount, withCustody } from '../credentials'
 import { rebuildCustody } from '../credentials/backfill'
 import { DuplicateAccountError } from '../errors'
-import { accountKey } from '../utils'
 
 const STORE_NAME = 'accounts-store'
-const STORE_VERSION = 2
+const STORE_VERSION = 1
 
 type PersistedAccountsState = Pick<
     AccountsState,
@@ -49,41 +47,29 @@ type PersistedAccountsState = Pick<
     | 'launchAccountAddress'
 >
 
-// Accounts persisted before v2 have no `chainId` at runtime despite the type;
-// every one of them is an Algorand account.
-const withChainId = <T extends WalletAccount>(account: T): T =>
-    account.chainId ? account : { ...account, chainId: LEGACY_CHAIN_ID }
-
 /**
  * v0 accounts have no `provenance`/`credentials`; they are backfilled from
- * `type` and the details object. v1 accounts have no `chainId`. Both steps
- * skip accounts that already have the field, so re-running this over
- * migrated state is a no-op.
+ * `type` and the details object. `withCustody` skips accounts that already
+ * have a provenance, so re-running this over migrated state is a no-op.
  */
 export const migrateAccountsState = (
     persistedState: unknown,
     version: number,
 ): PersistedAccountsState => {
-    let state = persistedState as PersistedAccountsState
+    const state = persistedState as PersistedAccountsState
     if (version < 1) {
-        state = {
+        return {
             ...state,
             accounts: (state.accounts ?? []).map(withCustody),
-        }
-    }
-    if (version < 2) {
-        state = {
-            ...state,
-            accounts: (state.accounts ?? []).map(withChainId),
         }
     }
     return state
 }
 
 /**
- * Collapse repeated identities (`accountKey`), the higher-precedence account
- * type winning (see `ACCOUNT_TYPE_RANK`) and equal ranks keeping the first
- * occurrence. The survivor sits at the index where its key *first* appeared:
+ * Collapse repeated addresses, the higher-precedence account type winning (see
+ * `ACCOUNT_TYPE_RANK`) and equal ranks keeping the first occurrence. The
+ * survivor sits at the index where its address *first* appeared:
  * `manualAccountOrder`, `selectedAccountAddress` and the rendered list all read
  * this array, so a dedupe that reorders accounts would be a worse bug than the
  * one it fixes.
@@ -104,14 +90,13 @@ export const migrateAccountsState = (
 const resolveDuplicateAccounts = (
     accounts: WalletAccount[],
 ): WalletAccount[] => {
-    const positionByKey = new Map<string, number>()
+    const positionByAddress = new Map<string, number>()
     const resolved: WalletAccount[] = []
 
     for (const account of accounts) {
-        const key = accountKey(account)
-        const position = positionByKey.get(key)
+        const position = positionByAddress.get(account.address)
         if (position === undefined) {
-            positionByKey.set(key, resolved.length)
+            positionByAddress.set(account.address, resolved.length)
             resolved.push(account)
             continue
         }
@@ -158,15 +143,13 @@ export const useAccountsStore: UseBoundStore<
             },
             setAccounts: (accounts: WalletAccount[]) => {
                 // Single chokepoint for every account write — dedupe by
-                // accountKey so no caller can ever persist the same account
+                // address so no caller can ever persist the same account
                 // twice, keeping the higher-precedence type (see
                 // ACCOUNT_TYPE_RANK) rather than whichever happened to come
                 // first. Callers that need to surface duplicates to the user
                 // use addAccount or throw DuplicateAccountError before
                 // reaching here; this is the structural safety net.
-                accounts = resolveDuplicateAccounts(
-                    accounts.map(withChainId),
-                ).map(withCustody)
+                accounts = resolveDuplicateAccounts(accounts).map(withCustody)
 
                 const currentSelected = get().selectedAccountAddress
                 const currentManualOrder = get().manualAccountOrder
@@ -204,14 +187,14 @@ export const useAccountsStore: UseBoundStore<
                 }
             },
             addAccount: (account: WalletAccount) => {
-                const candidate = withChainId(account)
-                const key = accountKey(candidate)
                 const { accounts } = get()
-                const existing = accounts.find(a => accountKey(a) === key)
+                const existing = accounts.find(
+                    a => a.address === account.address,
+                )
                 if (existing) {
-                    throw new DuplicateAccountError(candidate.address, existing)
+                    throw new DuplicateAccountError(account.address, existing)
                 }
-                get().setAccounts([...accounts, candidate])
+                get().setAccounts([...accounts, account])
             },
             setSelectedAccountAddress: (address: Nullable<string>) => {
                 const accounts = get().accounts

@@ -20,7 +20,6 @@ const mockAccount: WalletAccount = {
     address: 'test-address-123',
     name: 'Test Account',
     type: 'watch',
-    chainId: 'algorand',
 }
 
 describe('useReceiveFunds', () => {

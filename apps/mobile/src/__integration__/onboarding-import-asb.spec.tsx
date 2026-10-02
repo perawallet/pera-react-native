@@ -312,7 +312,6 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
             {
                 id: 'pre-seeded',
                 type: AccountTypes.algo25,
-                chainId: 'algorand',
                 address: ALGO25_TEST_ADDRESS,
                 keyPairId: 'pre-seeded',
             },

@@ -63,7 +63,6 @@ const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const multisigAccount: MultiSigAccount = {
     id: 'msig-signable',
     type: AccountTypes.multisig,
-    chainId: 'algorand',
     address: MSIG_ADDRESS,
     name: 'Shared',
     multisigDetails: {
@@ -76,7 +75,6 @@ const multisigAccount: MultiSigAccount = {
 const rekeyedSender: WalletAccount = {
     id: 'rekeyed-to-msig',
     type: AccountTypes.watch,
-    chainId: 'algorand',
     address: REKEY_TARGET_ADDRESS,
     name: 'Rekeyed to shared',
     rekeyAddress: MSIG_ADDRESS,

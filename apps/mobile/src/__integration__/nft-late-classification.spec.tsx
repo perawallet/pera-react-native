@@ -152,7 +152,6 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
     const account: WalletAccount = {
         id: 'holder-1',
         type: AccountTypes.algo25,
-        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: 'holder-key',
         name: 'Holder',

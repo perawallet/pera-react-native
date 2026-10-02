@@ -37,7 +37,6 @@ describe('useMnemonicForAddress', () => {
         const account: WalletAccount = {
             id: 'hd-account-match',
             type: AccountTypes.hdWallet,
-            chainId: 'algorand',
             address: 'HD_ADDR',
             keyPairId: 'wallet-1',
             hdWalletDetails: {
@@ -66,7 +65,6 @@ describe('useMnemonicForAddress', () => {
         const account: WalletAccount = {
             id: 'algo25-account',
             type: AccountTypes.algo25,
-            chainId: 'algorand',
             address: 'A25_ADDR',
             keyPairId: 'wallet-2',
         }
@@ -89,7 +87,6 @@ describe('useMnemonicForAddress', () => {
         const account: WalletAccount = {
             id: 'quantum-account',
             type: AccountTypes.quantum,
-            chainId: 'algorand',
             address: 'Q_ADDR',
             keyPairId: 'wallet-q',
         }
@@ -122,7 +119,6 @@ describe('useMnemonicForAddress', () => {
         const account: WalletAccount = {
             id: 'hd-account-mismatch',
             type: AccountTypes.hdWallet,
-            chainId: 'algorand',
             address: 'OTHER_ADDR',
             keyPairId: 'wallet-1',
             hdWalletDetails: {
@@ -146,7 +142,6 @@ describe('useMnemonicForAddress', () => {
         const account: WalletAccount = {
             id: 'watch-account',
             type: AccountTypes.watch,
-            chainId: 'algorand',
             address: 'WATCH_ADDR',
         }
 

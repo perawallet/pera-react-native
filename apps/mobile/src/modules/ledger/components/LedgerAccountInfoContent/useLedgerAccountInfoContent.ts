@@ -12,7 +12,6 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useLedgerAccountPreview,
     AccountTypes,
@@ -82,14 +81,12 @@ export const useLedgerAccountInfoContent = (
                       // Display-only synth account, keyed by its address.
                       id: preview.address,
                       type: AccountTypes.watch,
-                      chainId: LEGACY_CHAIN_ID,
                       address: preview.address,
                       rekeyAddress: preview.rekey.authAddress,
                   } satisfies WatchAccount)
                 : ({
                       id: preview.address,
                       type: AccountTypes.hardware,
-                      chainId: LEGACY_CHAIN_ID,
                       address: preview.address,
                       hardwareDetails: {
                           manufacturer: 'ledger',
@@ -155,7 +152,6 @@ export const useLedgerAccountInfoContent = (
             const authSynthAccount: HardwareWalletAccount = {
                 id: preview.rekey.authAddress,
                 type: AccountTypes.hardware,
-                chainId: LEGACY_CHAIN_ID,
                 address: preview.rekey.authAddress,
                 hardwareDetails: {
                     manufacturer: 'ledger',
@@ -189,7 +185,6 @@ export const useLedgerAccountInfoContent = (
                 const watchSynth: WatchAccount = {
                     id: addr,
                     type: AccountTypes.watch,
-                    chainId: LEGACY_CHAIN_ID,
                     address: addr,
                 }
                 list.push({

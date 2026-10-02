@@ -262,7 +262,6 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
             {
                 id: 'existing-algo25-1',
                 type: AccountTypes.algo25,
-                chainId: 'algorand',
                 address: ALGO25_TEST_ADDRESS,
                 keyPairId: 'pre-seeded',
             },

@@ -135,7 +135,6 @@ vi.mock('@perawallet/wallet-core-config', async () => {
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'conn-a',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'conn-a-key',
     name: 'Trading',
@@ -143,7 +142,6 @@ const SIGNING_ACCOUNT: WalletAccount = {
 const OTHER_ACCOUNT: WalletAccount = {
     id: 'conn-b',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: HD_TEST_ADDRESS,
     keyPairId: 'conn-b-key',
     name: 'DeFi',
@@ -153,7 +151,6 @@ const OTHER_ACCOUNT: WalletAccount = {
 const QUANTUM_ACCOUNT: WalletAccount = {
     id: 'conn-q',
     type: AccountTypes.quantum,
-    chainId: 'algorand',
     address: QUANTUM_TEST_ADDRESS,
     keyPairId: 'conn-q-key',
     name: 'Falcon',

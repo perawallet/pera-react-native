@@ -73,7 +73,6 @@ import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 const ACCOUNT: WalletAccount = {
     id: 'funding-account',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'funding-account-key',
     name: 'Main Account',

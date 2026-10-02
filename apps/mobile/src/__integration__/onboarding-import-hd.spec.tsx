@@ -260,7 +260,6 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             {
                 id: 'existing-1',
                 type: AccountTypes.hdWallet,
-                chainId: 'algorand',
                 address: HD_TEST_ADDRESS,
                 keyPairId: 'pre-seeded',
                 hdWalletDetails: {

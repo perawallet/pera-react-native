@@ -46,7 +46,6 @@ const NETWORK = 'mainnet' as const
 const ACCOUNT_A: WalletAccount = {
     id: 'reactivity-a',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: 'A'.repeat(58),
     keyPairId: 'reactivity-a-key',
     name: 'Funder',
@@ -55,7 +54,6 @@ const ACCOUNT_A: WalletAccount = {
 const ACCOUNT_B: WalletAccount = {
     id: 'reactivity-b',
     type: AccountTypes.hdWallet,
-    chainId: 'algorand',
     address: 'B'.repeat(58),
     keyPairId: 'reactivity-b-key',
     name: 'Needs backup',

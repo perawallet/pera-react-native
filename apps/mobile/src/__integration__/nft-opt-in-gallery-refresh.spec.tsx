@@ -190,7 +190,6 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
         sender = {
             id: 'sender-1',
             type: AccountTypes.algo25,
-            chainId: 'algorand',
             address: ALGO25_TEST_ADDRESS,
             keyPairId: key!.seedKey.id ?? '',
             name: 'Sender',

@@ -79,7 +79,6 @@ describe('services/accounts/store', () => {
             id: '1',
             name: 'Alice',
             type: 'algo25',
-            chainId: 'algorand',
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -87,7 +86,6 @@ describe('services/accounts/store', () => {
             id: '2',
             name: 'Bob',
             type: 'algo25',
-            chainId: 'algorand',
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -101,7 +99,6 @@ describe('services/accounts/store', () => {
             id: '3',
             name: 'Carol',
             type: 'algo25',
-            chainId: 'algorand',
             address: 'CAROL-ADDR',
             canSign: true,
         }
@@ -116,14 +113,12 @@ describe('services/accounts/store', () => {
             id: 'watch',
             name: 'Watched',
             type: 'watch',
-            chainId: 'algorand',
             address: 'DUPE-ADDR',
         }
         const hardwareDupe: WalletAccount = {
             id: 'hardware',
             name: 'Ledger',
             type: 'hardware',
-            chainId: 'algorand',
             address: 'DUPE-ADDR',
             hardwareDetails: {
                 manufacturer: 'ledger',
@@ -155,7 +150,6 @@ describe('services/accounts/store', () => {
                 id: '1',
                 name: 'First',
                 type: 'algo25',
-                chainId: 'algorand',
                 address: 'FIRST-ADDR',
                 keyPairId: 'kp1',
             }
@@ -163,7 +157,6 @@ describe('services/accounts/store', () => {
                 id: '3',
                 name: 'Last',
                 type: 'algo25',
-                chainId: 'algorand',
                 address: 'LAST-ADDR',
                 keyPairId: 'kp3',
             }
@@ -186,7 +179,6 @@ describe('services/accounts/store', () => {
                 id: '1',
                 name: 'Alice',
                 type: 'algo25',
-                chainId: 'algorand',
                 address: 'DUPE-ADDR',
                 keyPairId: 'kp1',
             }
@@ -194,7 +186,6 @@ describe('services/accounts/store', () => {
                 id: '2',
                 name: 'Alice copy',
                 type: 'algo25',
-                chainId: 'algorand',
                 address: 'DUPE-ADDR',
                 keyPairId: 'kp2',
             }
@@ -212,14 +203,12 @@ describe('services/accounts/store', () => {
                     id: '1',
                     name: 'Alice',
                     type: 'watch',
-                    chainId: 'algorand',
                     address: 'A',
                 },
                 {
                     id: '2',
                     name: 'Bob',
                     type: 'algo25',
-                    chainId: 'algorand',
                     address: 'B',
                     keyPairId: 'kp2',
                 },
@@ -227,7 +216,6 @@ describe('services/accounts/store', () => {
                     id: '3',
                     name: 'Carol',
                     type: 'quantum',
-                    chainId: 'algorand',
                     address: 'C',
                     keyPairId: 'kp3',
                 },
@@ -246,7 +234,6 @@ describe('services/accounts/store', () => {
             id: '1',
             name: 'Alice',
             type: 'algo25',
-            chainId: 'algorand',
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -254,7 +241,6 @@ describe('services/accounts/store', () => {
             id: '2',
             name: 'Bob',
             type: 'algo25',
-            chainId: 'algorand',
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -663,7 +649,7 @@ describe('services/accounts/store', () => {
             useAccountsStore.getState().resetState()
         })
 
-        test('appends an account whose key is free', () => {
+        test('appends an account whose address is free', () => {
             const existing = buildTestAccount('algo25', { address: 'A' })
             const added = buildTestAccount('watch', { address: 'B' })
             useAccountsStore.getState().setAccounts([existing])
@@ -676,11 +662,10 @@ describe('services/accounts/store', () => {
             ])
         })
 
-        test('throws naming the existing account when the key is taken', async () => {
+        test('throws naming the existing account when the address is taken', async () => {
             const { DuplicateAccountError } = await import('../../errors')
             const existing = buildTestAccount('algo25', {
                 id: 'existing-id',
-                name: 'Savings',
                 address: 'DUPE',
             })
             useAccountsStore.getState().setAccounts([existing])
@@ -691,25 +676,8 @@ describe('services/accounts/store', () => {
                     .addAccount(buildTestAccount('watch', { address: 'DUPE' }))
 
             expect(add).toThrow(DuplicateAccountError)
-            expect(add).toThrow(/already in the wallet as Savings/)
+            expect(add).toThrow(/already in the wallet as existing-id/)
             expect(useAccountsStore.getState().accounts).toEqual([existing])
-        })
-
-        test('treats an account stored without chainId as the same identity', async () => {
-            const { DuplicateAccountError } = await import('../../errors')
-            useAccountsStore.getState().setAccounts([
-                {
-                    id: 'legacy',
-                    type: 'watch',
-                    address: 'DUPE',
-                } as WalletAccount,
-            ])
-
-            expect(() =>
-                useAccountsStore
-                    .getState()
-                    .addAccount(buildTestAccount('watch', { address: 'DUPE' })),
-            ).toThrow(DuplicateAccountError)
         })
     })
 
@@ -743,7 +711,6 @@ describe('services/accounts/store', () => {
                     id: 'w1',
                     name: 'My Ledger (watched)',
                     type: 'watch',
-                    chainId: 'algorand',
                     address: 'WATCHED',
                     rekeyAddress: 'AUTH',
                     rekeyAddressByNetwork: { mainnet: 'AUTH' },
@@ -760,7 +727,6 @@ describe('services/accounts/store', () => {
                 id: 'w1',
                 name: 'My Ledger (watched)',
                 type: 'hardware',
-                chainId: 'algorand',
                 address: 'WATCHED',
                 rekeyAddress: 'AUTH',
                 rekeyAddressByNetwork: { mainnet: 'AUTH' },
@@ -869,7 +835,6 @@ describe('services/accounts/store', () => {
             id: '1',
             name: 'Alice',
             type: 'algo25',
-            chainId: 'algorand',
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -877,7 +842,6 @@ describe('services/accounts/store', () => {
             id: '2',
             name: 'Bob',
             type: 'algo25',
-            chainId: 'algorand',
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -1041,7 +1005,7 @@ describe('services/accounts/store', () => {
     })
 
     describe('custody', () => {
-        const legacyAccounts = [
+        const legacyAccounts: WalletAccount[] = [
             {
                 id: 'a',
                 type: 'algo25',
@@ -1061,11 +1025,7 @@ describe('services/accounts/store', () => {
                 },
             },
             { id: 'w', type: 'watch', address: 'WATCH-ADDR' },
-        ] as WalletAccount[]
-        const asV2 = (account: WalletAccount): WalletAccount => ({
-            ...withCustody(account),
-            chainId: 'algorand',
-        })
+        ]
         const v0State = {
             accounts: legacyAccounts,
             selectedAccountAddress: 'HD-ADDR',
@@ -1082,7 +1042,7 @@ describe('services/accounts/store', () => {
 
             expect(migrated).toEqual({
                 ...v0State,
-                accounts: legacyAccounts.map(asV2),
+                accounts: legacyAccounts.map(withCustody),
             })
         })
 
@@ -1108,60 +1068,11 @@ describe('services/accounts/store', () => {
             const second = (await import('../store')).useAccountsStore
             await second.persist.rehydrate()
 
-            expect(firstState.accounts).toEqual(legacyAccounts.map(asV2))
+            expect(firstState.accounts).toEqual(legacyAccounts.map(withCustody))
             expect(second.getState().accounts).toEqual(firstState.accounts)
             expect(second.getState().selectedAccountAddress).toBe('HD-ADDR')
             expect(second.getState().manualAccountOrder).toEqual(
                 v0State.manualAccountOrder,
-            )
-        })
-
-        test('migrating a v1 state backfills chainId and leaves every address unchanged', async () => {
-            const { migrateAccountsState } = await import('../store')
-            const v1State = {
-                ...v0State,
-                accounts: legacyAccounts.map(withCustody),
-            }
-
-            const migrated = migrateAccountsState(structuredClone(v1State), 1)
-
-            expect(migrated).toEqual({
-                ...v1State,
-                accounts: legacyAccounts.map(asV2),
-            })
-            expect(migrated.accounts.map(a => a.address)).toEqual(
-                legacyAccounts.map(a => a.address),
-            )
-        })
-
-        test('hydrating a v1 payload twice yields identical state', async () => {
-            const v1State = {
-                ...v0State,
-                accounts: legacyAccounts.map(withCustody),
-            }
-            getProvider().keyValueStorage.setItem(
-                'accounts-store',
-                JSON.stringify({ state: v1State, version: 1 }),
-            )
-
-            vi.resetModules()
-            const first = (await import('../store')).useAccountsStore
-            await first.persist.rehydrate()
-            const firstState = first.getState()
-
-            vi.resetModules()
-            const second = (await import('../store')).useAccountsStore
-            await second.persist.rehydrate()
-
-            expect(firstState.accounts).toEqual(legacyAccounts.map(asV2))
-            expect(second.getState().accounts).toEqual(firstState.accounts)
-        })
-
-        test('setAccounts backfills chainId on an account written without one', () => {
-            useAccountsStore.getState().setAccounts([legacyAccounts[2]])
-
-            expect(useAccountsStore.getState().accounts[0].chainId).toBe(
-                'algorand',
             )
         })
 

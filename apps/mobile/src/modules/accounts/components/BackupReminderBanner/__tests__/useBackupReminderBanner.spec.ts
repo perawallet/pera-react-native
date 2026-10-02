@@ -35,7 +35,6 @@ import { useBackupReminderBanner } from '../useBackupReminderBanner'
 const accountHD: WalletAccount = {
     id: 'hd-account',
     type: AccountTypes.hdWallet,
-    chainId: 'algorand',
     address: 'HD1',
     keyPairId: 'kp',
     hdWalletDetails: {

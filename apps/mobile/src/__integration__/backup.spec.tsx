@@ -78,7 +78,6 @@ const seedAlgo25Account = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'algo25-1',
         type: AccountTypes.algo25,
-        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Algo25 Test',
@@ -118,7 +117,6 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
     const rootAccount: WalletAccount = {
         id: 'hd-root',
         type: AccountTypes.hdWallet,
-        chainId: 'algorand',
         address: HD_TEST_ADDRESS,
         keyPairId: rootKeyId,
         name: 'HD Root',
@@ -132,7 +130,6 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
     const sibling1: WalletAccount = {
         id: 'hd-s1',
         type: AccountTypes.hdWallet,
-        chainId: 'algorand',
         address: s1Address,
         keyPairId: rootKeyId,
         name: 'HD Sibling 1',
@@ -146,7 +143,6 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
     const sibling2: WalletAccount = {
         id: 'hd-s2',
         type: AccountTypes.hdWallet,
-        chainId: 'algorand',
         address: s2Address,
         keyPairId: rootKeyId,
         name: 'HD Sibling 2',

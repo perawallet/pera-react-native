@@ -14,7 +14,6 @@ import type {
     HardwareWalletManufacturer,
     LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { AccountCredentials, AccountProvenance } from './credentials'
 
@@ -116,15 +115,10 @@ export type BaseWalletAccount = {
     name?: string
     type: AccountType
     /**
-     * Fixed for the account's whole life. With `address` it forms the
-     * account's identity (see `accountKey`).
-     */
-    chainId: ChainId
-    /**
-     * The account's one address on its chain, the same on every network of
-     * that chain. Required for every account kind that exists today (all of
-     * them are on-chain), so it is redeclared as required on each concrete
-     * type below. Optional here so future off-chain account kinds can omit it.
+     * On-chain Algorand address. Required for every account kind that exists
+     * today (all of them are on-chain), so it is redeclared as required on each
+     * concrete type below. Optional here so future off-chain account kinds can
+     * omit it.
      */
     address?: string
     keyPairId?: string

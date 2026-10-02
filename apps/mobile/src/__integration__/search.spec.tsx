@@ -52,7 +52,6 @@ const SHARED_QUERY = 'orbit'
 const SEARCH_ACCOUNT: WalletAccount = {
     id: 'search-account-1',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'search-account-key',
     name: `${SHARED_QUERY} account`,
@@ -122,7 +121,6 @@ describe('Flow: Global search', () => {
         const otherAccount: WalletAccount = {
             id: 'other-account-1',
             type: AccountTypes.watch,
-            chainId: 'algorand',
             address: HD_TEST_ADDRESS,
             name: 'unrelated',
         }
@@ -175,7 +173,6 @@ describe('Flow: Global search', () => {
         const nftHolder: WalletAccount = {
             id: 'nft-holder-1',
             type: AccountTypes.watch,
-            chainId: 'algorand',
             address: HD_TEST_ADDRESS,
             name: 'nft holder',
         }

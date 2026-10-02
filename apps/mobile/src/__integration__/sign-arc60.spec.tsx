@@ -200,7 +200,6 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const rekeyedSigner: WalletAccount = {
             id: 'rekeyed-arc60-signer',
             type: AccountTypes.watch,
-            chainId: 'algorand',
             address: REKEYED_SIGNER_ADDRESS,
             rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed SIWA signer',
@@ -243,7 +242,6 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const rekeyedSigner: WalletAccount = {
             id: 'rekeyed-with-own-key',
             type: AccountTypes.algo25,
-            chainId: 'algorand',
             address: ownAddress,
             keyPairId: ownKey.seedKey.id ?? '',
             rekeyAddress: AUTH_ADDRESS,
@@ -291,7 +289,6 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
         const rekeyedAccount: WalletAccount = {
             id: 'rekeyed-arc60-account',
             type: AccountTypes.watch,
-            chainId: 'algorand',
             address: REKEYED_SIGNER_ADDRESS,
             rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed SIWA account',

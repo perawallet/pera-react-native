@@ -47,7 +47,7 @@ export type AccountsState = BaseStoreState & {
     setAccounts: (accounts: WalletAccount[]) => void
     /**
      * Appends one account, throwing `DuplicateAccountError` naming the
-     * existing account when its `accountKey` is already taken. Unlike
+     * existing account when its address is already taken. Unlike
      * `setAccounts`, which resolves duplicates silently.
      */
     addAccount: (account: WalletAccount) => void

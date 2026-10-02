@@ -81,7 +81,6 @@ const NETWORK = 'mainnet' as const
 const ACCOUNT: WalletAccount = {
     id: 'offline-cold-start',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'offline-cold-start-key',
     name: 'Synced',

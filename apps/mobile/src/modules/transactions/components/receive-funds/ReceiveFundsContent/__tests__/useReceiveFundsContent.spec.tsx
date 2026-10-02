@@ -29,7 +29,6 @@ const mockAccount = {
     address: 'test-address-123',
     name: 'Test Account',
     type: 'watch' as const,
-    chainId: 'algorand' as const,
 }
 
 const mockSetSelectedAccount = vi.fn()

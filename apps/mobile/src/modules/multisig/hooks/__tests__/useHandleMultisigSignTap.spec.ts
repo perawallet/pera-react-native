@@ -122,7 +122,6 @@ const buildSignRequest = (
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address,
     keyPairId: `kp-${address}`,
 })
@@ -130,7 +129,6 @@ const buildAccount = (address: string): WalletAccount => ({
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
     type: AccountTypes.hardware,
-    chainId: 'algorand',
     address,
     hardwareDetails: {
         manufacturer: 'ledger',

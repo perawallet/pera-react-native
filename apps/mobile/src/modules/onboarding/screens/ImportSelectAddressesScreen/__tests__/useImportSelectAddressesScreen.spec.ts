@@ -301,7 +301,6 @@ describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
             id: 'c',
             address: 'CONCURRENT',
             type: AccountTypes.algo25,
-            chainId: 'algorand',
             keyPairId: 'kp-c',
         } as WalletAccount
         // Lands after render (useAllAccounts snapshot) but before the

@@ -93,20 +93,18 @@ export class HDImportSessionNotFoundError extends AccountError {
  * imported addresses render a chip rather than a checkbox).
  */
 export class DuplicateAccountError extends AccountError {
-    constructor(
-        address: string,
-        existingAccount?: Pick<WalletAccount, 'id' | 'name'>,
-    ) {
+    // Names the existing account by id, not its user-chosen name: the message
+    // reaches crash reports.
+    constructor(address: string, existingAccount?: Pick<WalletAccount, 'id'>) {
         super(
             existingAccount
-                ? `Account with address ${address} is already in the wallet as ${existingAccount.name ?? existingAccount.id}`
+                ? `Account with address ${address} is already in the wallet as ${existingAccount.id}`
                 : `Account with address ${address} is already in the wallet`,
             undefined,
             {
-                params: {
-                    address,
-                    existingAccountId: existingAccount?.id,
-                },
+                params: existingAccount
+                    ? { address, existingAccountId: existingAccount.id }
+                    : { address },
             },
         )
     }

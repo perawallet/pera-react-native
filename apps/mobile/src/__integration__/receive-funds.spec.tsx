@@ -31,7 +31,6 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 const PRIMARY_ACCOUNT: WalletAccount = {
     id: 'primary-1',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'primary-keypair',
     name: 'Primary',
@@ -40,7 +39,6 @@ const PRIMARY_ACCOUNT: WalletAccount = {
 const SECONDARY_ACCOUNT: WalletAccount = {
     id: 'secondary-1',
     type: AccountTypes.watch,
-    chainId: 'algorand',
     address: HD_TEST_ADDRESS,
     name: 'Hardware backup',
 }

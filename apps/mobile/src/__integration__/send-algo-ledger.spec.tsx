@@ -97,7 +97,6 @@ const seedLedgerSender = (): HardwareWalletAccount => {
     const sender: HardwareWalletAccount = {
         id: 'hw-ledger-sender',
         type: AccountTypes.hardware,
-        chainId: 'algorand',
         address: LEDGER_ADDRESS,
         hardwareDetails: {
             manufacturer: 'ledger',

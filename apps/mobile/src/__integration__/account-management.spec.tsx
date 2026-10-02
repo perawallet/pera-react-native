@@ -99,7 +99,6 @@ import {
 const ACCOUNT_A: WalletAccount = {
     id: 'a-1',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'a-key',
     name: 'Trading',
@@ -108,7 +107,6 @@ const ACCOUNT_A: WalletAccount = {
 const ACCOUNT_B: WalletAccount = {
     id: 'b-1',
     type: AccountTypes.watch,
-    chainId: 'algorand',
     address: HD_TEST_ADDRESS,
     name: 'Cold backup',
 }
@@ -290,7 +288,6 @@ describe('Flow: Account management', () => {
         ): WalletAccount => ({
             id: `hw-ledger-${accountIndex}`,
             type: AccountTypes.hardware,
-            chainId: 'algorand',
             address,
             name,
             hardwareDetails: {
@@ -353,7 +350,6 @@ describe('Flow: Account management', () => {
         const algo25Account: WalletAccount = {
             id: 'signer-1',
             type: AccountTypes.algo25,
-            chainId: 'algorand',
             address: ALGO25_TEST_ADDRESS,
             keyPairId: childKeyId,
             name: 'Signing account',

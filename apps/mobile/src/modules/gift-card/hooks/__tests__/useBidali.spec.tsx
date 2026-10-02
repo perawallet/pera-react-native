@@ -20,7 +20,6 @@ const mockAccount: WalletAccount = {
     address: 'TESTADDRESS123',
     name: 'Test Account',
     type: 'algo25',
-    chainId: 'algorand',
     keyPairId: 'test-key-pair-id',
 }
 

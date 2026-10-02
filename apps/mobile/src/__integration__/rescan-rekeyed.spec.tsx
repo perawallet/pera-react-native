@@ -51,7 +51,6 @@ import {
 const SOURCE: WalletAccount = {
     id: 'rescan-source',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'rescan-source-key',
     name: 'Source',

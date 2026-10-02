@@ -43,7 +43,6 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 const ACCOUNT_A: WalletAccount = {
     id: 'gift-card-a',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'gift-card-a-key',
     name: 'Spending',
@@ -52,7 +51,6 @@ const ACCOUNT_A: WalletAccount = {
 const ACCOUNT_B: WalletAccount = {
     id: 'gift-card-b',
     type: AccountTypes.watch,
-    chainId: 'algorand',
     address: HD_TEST_ADDRESS,
     name: 'Vault',
 }

@@ -31,7 +31,6 @@ describe('useBackupFlowLauncher', () => {
         const account: WalletAccount = {
             id: 'algo25-account',
             type: AccountTypes.algo25,
-            chainId: 'algorand',
             address: 'ADDR_1',
             keyPairId: 'kp',
         }

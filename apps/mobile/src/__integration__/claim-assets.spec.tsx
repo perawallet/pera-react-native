@@ -194,7 +194,6 @@ const seedClaimingAccount = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'claimer-1',
         type: AccountTypes.algo25,
-        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Claimer',

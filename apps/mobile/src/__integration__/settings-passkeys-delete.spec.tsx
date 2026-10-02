@@ -46,7 +46,6 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 const HD_ACCOUNT: WalletAccount = {
     id: 'hd-1',
     type: AccountTypes.hdWallet,
-    chainId: 'algorand',
     address: HD_TEST_ADDRESS,
     name: 'Universal',
     keyPairId: 'hd-key-1',

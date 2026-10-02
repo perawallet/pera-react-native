@@ -19,7 +19,6 @@ const alice: WalletAccount = {
     id: '1',
     name: 'Alice',
     type: 'algo25',
-    chainId: 'algorand',
     address: 'ALICE-ADDR',
     keyPairId: 'kp-1',
 }
@@ -27,7 +26,6 @@ const bob: WalletAccount = {
     id: '2',
     name: 'Bob',
     type: 'algo25',
-    chainId: 'algorand',
     address: 'BOB-ADDR',
     keyPairId: 'kp-2',
 }

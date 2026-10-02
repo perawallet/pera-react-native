@@ -80,7 +80,6 @@ const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 const NFT_HOLDER_PLACEHOLDER: WalletAccount = {
     id: 'holder-1',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'holder-key',
     name: 'NFT Holder',
@@ -101,7 +100,6 @@ const seedSigningHolder = async (): Promise<WalletAccount> => {
     const holder: WalletAccount = {
         id: 'holder-1',
         type: AccountTypes.algo25,
-        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'NFT Holder',

@@ -12,7 +12,6 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -149,7 +148,6 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
             const newAccount: MultiSigAccount = {
                 id: generateOrderedUniqueId(),
                 type: 'multisig',
-                chainId: LEGACY_CHAIN_ID,
                 address: multisigAddress,
                 name: accountName,
                 multisigDetails: {

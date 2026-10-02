@@ -12,7 +12,6 @@
 
 import { describe, test, expect } from 'vitest'
 import {
-    accountKey,
     canSignArbitraryData,
     canSignArc60,
     canSignProgram,
@@ -1330,13 +1329,5 @@ describe('services/accounts/utils - getAccountsRekeyedTo', () => {
                 algo25({ address: 'A', rekeyAddress: 'OTHER' }),
             ]),
         ).toEqual([])
-    })
-})
-
-describe('accountKey', () => {
-    test('joins chainId and address with a slash', () => {
-        expect(accountKey({ chainId: 'algorand', address: 'ADDR' })).toBe(
-            'algorand/ADDR',
-        )
     })
 })

@@ -97,7 +97,6 @@ const blockOnSignature = (): Promise<Uint8Array> => {
 const ledgerAccount: HardwareWalletAccount = {
     id: 'hw-ledger-1',
     type: AccountTypes.hardware,
-    chainId: 'algorand',
     address: LEDGER_ADDRESS,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -326,7 +325,6 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         const rekeyedSender: WalletAccount = {
             id: 'rekeyed-swapper',
             type: AccountTypes.watch,
-            chainId: 'algorand',
             address: LEDGER_ADDRESS,
             rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed swapper',

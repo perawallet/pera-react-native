@@ -17,7 +17,6 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     AccountTypes,
     useAccountsStore,
@@ -162,7 +161,6 @@ export const useMultisigInvitationNameScreen =
                 const newAccount: MultiSigAccount = {
                     id: generateOrderedUniqueId(),
                     type: AccountTypes.multisig,
-                    chainId: LEGACY_CHAIN_ID,
                     address: derivedAddress,
                     name: trimmedName,
                     multisigDetails: {

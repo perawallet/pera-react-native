@@ -56,7 +56,6 @@ const accountOfType = (type: WalletAccount['type']): WalletAccount =>
 const rekeyedAccount: WalletAccount = {
     id: 'rekeyed-account',
     type: 'algo25',
-    chainId: 'algorand',
     address: 'REKEYED_ADDR',
     keyPairId: 'key-1',
     rekeyAddress: 'AUTH_ADDR',
@@ -65,7 +64,6 @@ const rekeyedAccount: WalletAccount = {
 const multisigAccount: MultiSigAccount = {
     id: 'multisig-account',
     type: 'multisig',
-    chainId: 'algorand',
     address: 'MULTISIG_ADDR',
     multisigDetails: { threshold: 2, addresses: ['A', 'B', 'C'], version: 1 },
 }

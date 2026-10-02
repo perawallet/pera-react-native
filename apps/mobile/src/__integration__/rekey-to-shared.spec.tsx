@@ -78,7 +78,6 @@ const seedRekeyAccounts = async (): Promise<{
     const source: WalletAccount = {
         id: 'rekey-shared-source',
         type: AccountTypes.algo25,
-        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
@@ -86,7 +85,6 @@ const seedRekeyAccounts = async (): Promise<{
     const target: WalletAccount = {
         id: 'rekey-shared-target',
         type: AccountTypes.multisig,
-        chainId: 'algorand',
         address: MULTISIG_REKEY_INTEGRATION_ADDRESS,
         name: 'Shared target',
         multisigDetails: {

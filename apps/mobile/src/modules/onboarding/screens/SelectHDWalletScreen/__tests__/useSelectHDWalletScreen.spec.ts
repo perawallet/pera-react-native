@@ -64,7 +64,6 @@ const mockHDWalletGroups: HDWalletGroup[] = [
                 address: 'HD_ADDRESS_1',
                 name: 'My Main Wallet',
                 type: 'hdWallet' as const,
-                chainId: 'algorand',
                 hdWalletDetails: {
                     account: 0,
                     change: 0,
@@ -79,7 +78,6 @@ const mockHDWalletGroups: HDWalletGroup[] = [
             address: 'HD_ADDRESS_1',
             name: 'My Main Wallet',
             type: 'hdWallet' as const,
-            chainId: 'algorand',
             hdWalletDetails: {
                 account: 0,
                 change: 0,
@@ -97,7 +95,6 @@ const mockHDWalletGroups: HDWalletGroup[] = [
                 id: 'hd-2',
                 address: 'HD_ADDRESS_2',
                 type: 'hdWallet' as const,
-                chainId: 'algorand',
                 hdWalletDetails: {
                     account: 0,
                     change: 0,
@@ -111,7 +108,6 @@ const mockHDWalletGroups: HDWalletGroup[] = [
             id: 'hd-2',
             address: 'HD_ADDRESS_2',
             type: 'hdWallet' as const,
-            chainId: 'algorand',
             hdWalletDetails: {
                 account: 0,
                 change: 0,

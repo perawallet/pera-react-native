@@ -28,11 +28,6 @@ import {
 } from './models'
 import { MNEMONIC_WORD_COUNT } from './constants'
 
-/** An account's identity. Splits back apart at the first `/`: a ChainId never contains one. */
-export const accountKey = (
-    account: Pick<WalletAccount, 'chainId' | 'address'>,
-): string => `${account.chainId}/${account.address}`
-
 // Matches any `prefix...suffix`/`prefix…suffix` truncation of the address,
 // not just our own 5+5 format — legacy apps auto-named accounts with a 6+6
 // truncation that migration carries over verbatim.

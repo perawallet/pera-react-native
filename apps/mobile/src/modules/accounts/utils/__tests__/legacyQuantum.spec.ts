@@ -38,7 +38,6 @@ import { isLegacyQuantumChild } from '../legacyQuantum'
 const QUANTUM_ACCOUNT: WalletAccount = {
     id: 'quantum-account-1',
     type: AccountTypes.quantum,
-    chainId: 'algorand',
     address: 'QUANTUMADDRESS',
     keyPairId: 'seed-1-quantum',
 }
@@ -46,7 +45,6 @@ const QUANTUM_ACCOUNT: WalletAccount = {
 const WATCH_ACCOUNT: WalletAccount = {
     id: 'watch-account-1',
     type: AccountTypes.watch,
-    chainId: 'algorand',
     address: 'WATCHADDRESS',
 }
 

@@ -136,7 +136,6 @@ const BAANX_USER_ID = 'mock-baanx-user-id'
 const LEDGER_ACCOUNT: HardwareWalletAccount = {
     id: 'hw-ledger-1',
     type: AccountTypes.hardware,
-    chainId: 'algorand',
     address: LEDGER_ADDRESS,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -150,7 +149,6 @@ const LEDGER_ACCOUNT: HardwareWalletAccount = {
 let FUNDING_ACCOUNT: WalletAccount = {
     id: 'funding-account',
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address: FUNDING_ADDRESS,
     keyPairId: '',
     name: 'Main Account',

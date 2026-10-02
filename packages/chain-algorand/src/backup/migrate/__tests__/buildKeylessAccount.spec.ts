@@ -85,7 +85,6 @@ describe('buildWatchAccount', () => {
             id: 'mock-time-uuid',
             name: 'My Watcher',
             type: AccountTypes.watch,
-            chainId: 'algorand',
             address: 'ADDR_WATCH',
             provenance: { kind: 'watch' },
             credentials: {},
@@ -148,7 +147,6 @@ describe('buildLedgerAccount', () => {
             id: 'mock-time-uuid',
             name: 'Ledger 1',
             type: AccountTypes.hardware,
-            chainId: 'algorand',
             address: 'ADDR_LEDGER',
             hardwareDetails: {
                 manufacturer: 'ledger',
@@ -244,7 +242,6 @@ describe('buildMultiSigAccount', () => {
             id: 'mock-time-uuid',
             name: 'Joint',
             type: AccountTypes.multisig,
-            chainId: 'algorand',
             address: 'ADDR_MSIG',
             multisigDetails: {
                 threshold: 2,

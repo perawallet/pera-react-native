@@ -46,7 +46,6 @@ const WATCH_ACCOUNT: WalletAccount = {
     id: 'watch-1',
     name: 'My Cold Wallet',
     type: AccountTypes.watch,
-    chainId: 'algorand',
     address: LEDGER_ADDRESS,
 }
 

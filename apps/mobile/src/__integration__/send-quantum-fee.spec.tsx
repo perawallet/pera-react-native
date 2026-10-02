@@ -83,7 +83,6 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     const sender: WalletAccount = {
         id: 'sender-1',
         type: AccountTypes.algo25,
-        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Sender',
@@ -102,7 +101,6 @@ const seedQuantumSender = (): WalletAccount => {
     const sender: WalletAccount = {
         id: 'quantum-1',
         type: AccountTypes.quantum,
-        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: 'quantum-key-1',
         name: 'Quantum sender',

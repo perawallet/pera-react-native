@@ -92,7 +92,6 @@ const multisigAccount = (
 ): MultiSigAccount => ({
     id: `multisig-${address}`,
     type: 'multisig',
-    chainId: 'algorand',
     address,
     name: address,
     multisigDetails,
@@ -101,7 +100,6 @@ const multisigAccount = (
 const watchAccount = (address: string): WatchAccount => ({
     id: `watch-${address}`,
     type: 'watch',
-    chainId: 'algorand',
     address,
 })
 

@@ -22,7 +22,6 @@ import { splitLocalUnsignedSigners } from '../splitLocalUnsignedSigners'
 const algo25 = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
     type: AccountTypes.algo25,
-    chainId: 'algorand',
     address,
     keyPairId: `kp-${address}`,
 })
@@ -30,7 +29,6 @@ const algo25 = (address: string): WalletAccount => ({
 const hardware = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
     type: AccountTypes.hardware,
-    chainId: 'algorand',
     address,
     hardwareDetails: {
         manufacturer: 'ledger',

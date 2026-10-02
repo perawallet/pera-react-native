@@ -231,7 +231,6 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
             {
                 id: 'existing-quantum-1',
                 type: AccountTypes.quantum,
-                chainId: 'algorand',
                 address: QUANTUM_TEST_ADDRESS,
                 keyPairId: 'pre-seeded',
             },
