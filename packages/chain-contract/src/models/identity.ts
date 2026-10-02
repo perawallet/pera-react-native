@@ -37,6 +37,15 @@ export const WALLET_MODES = ['live', 'developer'] as const
 export type WalletMode = (typeof WALLET_MODES)[number]
 
 /**
+ * What a chain resolves to: `developer-override` is developer mode on any
+ * network but the chain's default test network.
+ */
+export type ChainMode = WalletMode | 'developer-override'
+
+/** The modes a capability can be switched off in; `live` can't be restricted. */
+export type DeveloperChainMode = Exclude<ChainMode, 'live'>
+
+/**
  * The network as its own chain identifies it. A chain package adds its own
  * member, discriminated by `kind`.
  */
