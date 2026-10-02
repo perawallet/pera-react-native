@@ -15,9 +15,8 @@ import { ActivityIndicator } from 'react-native'
 import { useIsFocused } from '@react-navigation/native'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { Networks } from '@perawallet/wallet-core-config'
 import { PWView } from '@components/core'
+import { CapabilityGuard } from '@components/CapabilityGuard'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import {
@@ -44,7 +43,6 @@ export const OnrampScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { theme } = useTheme()
-    const { network } = useNetwork()
     const {
         isReady,
         pairsState,
@@ -63,8 +61,7 @@ export const OnrampScreen = () => {
     // state alone would keep the history poll alive off-screen.
     const isFocused = useIsFocused()
 
-    // Above the mainnet gate below: these are hooks, so they must run on every
-    // render. One definition behind the drawer and the sheet fallback alike.
+    // One definition behind the drawer and the sheet fallback alike.
     const accountPicker = useSigningPicker()
     useAccountDrawerPickerKind('select')
 
@@ -80,80 +77,79 @@ export const OnrampScreen = () => {
         [handleTabChange],
     )
 
-    // Ramp is a mainnet-only feature (you're buying real crypto → ALGO), so on
-    // testnet show an informational placeholder instead of the buy flow.
-    if (network !== Networks.mainnet) {
-        return (
-            <PWView style={styles.screen}>
-                <EmptyView
-                    icon='info'
-                    title={t('onramp.testnet.title')}
-                    body={t('onramp.testnet.body')}
-                />
-            </PWView>
-        )
-    }
-
     return (
-        <PWView
-            style={styles.screen}
-            testID='onramp-screen'
+        <CapabilityGuard
+            requires={{ anyChain: 'onramp' }}
+            fallback={
+                <PWView style={styles.screen}>
+                    <EmptyView
+                        icon='info'
+                        title={t('onramp.testnet.title')}
+                        body={t('onramp.testnet.body')}
+                    />
+                </PWView>
+            }
         >
-            <PWView style={styles.header}>
-                <PWView style={styles.headerRow}>
-                    <AccountSelection {...accountPicker} />
-                    <OnrampCountryChip
-                        countryCode={region?.countryCode}
-                        onInfoPress={handleRegionInfoPress}
-                    />
-                </PWView>
-
-                <OnrampHeaderTabs
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                    badges={{ history: hasPendingHistory }}
-                />
-            </PWView>
-
-            <AccountDrawerPager
-                index={TAB_PAGES.indexOf(activeTab)}
-                onIndexChange={handleIndexChange}
+            <PWView
+                style={styles.screen}
+                testID='onramp-screen'
             >
-                <PWView
-                    key='fund'
-                    style={styles.page}
-                >
-                    {isReady ? (
-                        <OnrampForm
-                            sourceToken={sourceToken}
-                            destinationToken={destinationToken}
-                            selectedPair={selectedPair}
-                            onNavigateToHistory={handleNavigateToHistory}
+                <PWView style={styles.header}>
+                    <PWView style={styles.headerRow}>
+                        <AccountSelection {...accountPicker} />
+                        <OnrampCountryChip
+                            countryCode={region?.countryCode}
+                            onInfoPress={handleRegionInfoPress}
                         />
-                    ) : (
-                        <OfflineTolerantView
-                            isOffline={pairsState === 'offline'}
-                            isError={pairsState === 'error'}
-                            onRetry={handleRetryPairs}
-                        >
-                            <PWView style={styles.loadingWrapper}>
-                                <ActivityIndicator
-                                    size='large'
-                                    color={theme.colors.textMain}
-                                />
-                            </PWView>
-                        </OfflineTolerantView>
-                    )}
-                </PWView>
-                <PWView
-                    key='history'
-                    style={styles.page}
-                >
-                    <OnrampHistoryContent
-                        isActive={activeTab === 'history' && isFocused}
+                    </PWView>
+
+                    <OnrampHeaderTabs
+                        activeTab={activeTab}
+                        onTabChange={handleTabChange}
+                        badges={{ history: hasPendingHistory }}
                     />
                 </PWView>
-            </AccountDrawerPager>
-        </PWView>
+
+                <AccountDrawerPager
+                    index={TAB_PAGES.indexOf(activeTab)}
+                    onIndexChange={handleIndexChange}
+                >
+                    <PWView
+                        key='fund'
+                        style={styles.page}
+                    >
+                        {isReady ? (
+                            <OnrampForm
+                                sourceToken={sourceToken}
+                                destinationToken={destinationToken}
+                                selectedPair={selectedPair}
+                                onNavigateToHistory={handleNavigateToHistory}
+                            />
+                        ) : (
+                            <OfflineTolerantView
+                                isOffline={pairsState === 'offline'}
+                                isError={pairsState === 'error'}
+                                onRetry={handleRetryPairs}
+                            >
+                                <PWView style={styles.loadingWrapper}>
+                                    <ActivityIndicator
+                                        size='large'
+                                        color={theme.colors.textMain}
+                                    />
+                                </PWView>
+                            </OfflineTolerantView>
+                        )}
+                    </PWView>
+                    <PWView
+                        key='history'
+                        style={styles.page}
+                    >
+                        <OnrampHistoryContent
+                            isActive={activeTab === 'history' && isFocused}
+                        />
+                    </PWView>
+                </AccountDrawerPager>
+            </PWView>
+        </CapabilityGuard>
     )
 }

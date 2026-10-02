@@ -346,7 +346,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // The PeraCard navigator is only registered when the remote-config
                     // flag is on. `onError`, not a bare return: the QR scanner locks
                     // until one of its callbacks fires. Same below for SELL.
-                    if (!isPeraCardEnabled || !routeCapabilities.peraCard) {
+                    if (!isPeraCardEnabled) {
                         onError?.()
                         return
                     }
