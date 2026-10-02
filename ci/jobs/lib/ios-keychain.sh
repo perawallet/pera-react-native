@@ -25,13 +25,18 @@ ios_keychain_teardown() {
     # Only when we actually captured a list: `-s` with no arguments empties
     # the user search list, so a failed capture would cost the operator their
     # own login keychain rather than just this run.
+    # Each restore is allowed to fail: this runs from the EXIT trap under
+    # errexit, where one failing command ends the trap and leaves the keychain
+    # holding the private key, and the steps after it, undone.
     if [ ${#PERA_OLD_KEYCHAINS[@]} -gt 0 ]; then
-      security list-keychains -d user -s "${PERA_OLD_KEYCHAINS[@]}"
+      security list-keychains -d user -s "${PERA_OLD_KEYCHAINS[@]}" ||
+        echo "pera-ci: could not restore the keychain search list" >&2
     fi
     # A user that started with no default keeps a dangling one once the
     # keychain below is deleted, which security treats the same as none.
     if [ -n "$PERA_OLD_DEFAULT_KEYCHAIN" ]; then
-      security default-keychain -d user -s "$PERA_OLD_DEFAULT_KEYCHAIN"
+      security default-keychain -d user -s "$PERA_OLD_DEFAULT_KEYCHAIN" ||
+        echo "pera-ci: could not restore the default keychain" >&2
     fi
     # No -f guard here: if create-keychain ever wrote somewhere other than
     # $PERA_KEYCHAIN, a guard on that path would turn a leaked keychain into a
@@ -89,12 +94,16 @@ ios_keychain_setup() {
   # Captured before the keychain exists or the search list changes, so a
   # failure in any later step still leaves teardown with the right list to
   # restore.
+  # Paths that no longer exist are dropped: a user that started with no
+  # default is left with a dangling one naming the deleted keychain, and
+  # `security default-keychain -s` refuses to restore a missing file.
   PERA_OLD_KEYCHAINS=()
   while IFS= read -r line; do
-    [ -n "$line" ] && PERA_OLD_KEYCHAINS+=("$line")
+    [ -f "$line" ] && PERA_OLD_KEYCHAINS+=("$line")
   done < <(security list-keychains -d user | tr -d '"' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
   # Empty for a job user that has never logged in, which has no default.
   PERA_OLD_DEFAULT_KEYCHAIN=$(security default-keychain -d user 2>/dev/null | tr -d '"' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//') || true
+  [ -f "$PERA_OLD_DEFAULT_KEYCHAIN" ] || PERA_OLD_DEFAULT_KEYCHAIN=""
 
   kc_pass=$(openssl rand -base64 24)
   security create-keychain -p "$kc_pass" "$PERA_KEYCHAIN"
