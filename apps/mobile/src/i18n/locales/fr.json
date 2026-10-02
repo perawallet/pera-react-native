@@ -2855,7 +2855,7 @@
             "clear_one_time_flags": "Effacer les flags à usage unique",
             "clear_one_time_flags_success_title": "Flags à usage unique effacés",
             "clear_one_time_flags_success_body": "Les invites de premier lancement et les avertissements réapparaîtront.",
-            "taps_to_notify": "Le menu développeur s’activera dans {{remaining}} appuis",
+            "taps_to_notify": "Les outils de débogage s’activeront dans {{remaining}} appuis",
             "debug_tools_enabled": "Outils de débogage activés",
             "overridden": "Remplacé",
             "enabled": "Activé",

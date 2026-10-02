@@ -2855,7 +2855,7 @@
             "clear_one_time_flags": "Clear one-time flags",
             "clear_one_time_flags_success_title": "One-time flags cleared",
             "clear_one_time_flags_success_body": "First-run prompts and disclaimers will show again.",
-            "taps_to_notify": "Developer menu will enable in {{remaining}} taps",
+            "taps_to_notify": "Debug tools will enable in {{remaining}} taps",
             "debug_tools_enabled": "Debug tools enabled",
             "overridden": "Overridden",
             "enabled": "Enabled",

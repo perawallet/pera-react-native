@@ -2855,7 +2855,7 @@
             "clear_one_time_flags": "Borrar marcas de una sola vez",
             "clear_one_time_flags_success_title": "Marcas de una sola vez borradas",
             "clear_one_time_flags_success_body": "Los avisos y descargos de responsabilidad de primera ejecución volverán a mostrarse.",
-            "taps_to_notify": "El menú de desarrollador se activará en {{remaining}} toques",
+            "taps_to_notify": "Las herramientas de depuración se activarán en {{remaining}} toques",
             "debug_tools_enabled": "Herramientas de depuración activadas",
             "overridden": "Anulado",
             "enabled": "Activado",

@@ -2855,7 +2855,7 @@
             "clear_one_time_flags": "Tek seferlik işaretleri temizle",
             "clear_one_time_flags_success_title": "Tek seferlik işaretler temizlendi",
             "clear_one_time_flags_success_body": "İlk açılış mesajları ve uyarılar yeniden gösterilecek.",
-            "taps_to_notify": "{{remaining}} dokunuş sonra geliştirici menüsü açılacak",
+            "taps_to_notify": "{{remaining}} dokunuş sonra hata ayıklama araçları açılacak",
             "debug_tools_enabled": "Hata ayıklama araçları açıldı",
             "overridden": "Geçersiz kılındı",
             "enabled": "Açık",

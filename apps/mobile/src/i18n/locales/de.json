@@ -2847,7 +2847,7 @@
             "clear_one_time_flags": "Einmalige Flags löschen",
             "clear_one_time_flags_success_title": "Einmalige Flags gelöscht",
             "clear_one_time_flags_success_body": "Erstlauf-Hinweise und Hinweistexte werden wieder angezeigt.",
-            "taps_to_notify": "Entwicklermenü wird in {{remaining}} Tipps aktiviert",
+            "taps_to_notify": "Debug-Tools werden in {{remaining}} Tipps aktiviert",
             "debug_tools_enabled": "Debug-Tools aktiviert",
             "overridden": "Überschrieben",
             "enabled": "Aktiviert",
