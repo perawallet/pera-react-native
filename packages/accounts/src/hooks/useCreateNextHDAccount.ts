@@ -14,11 +14,8 @@ import { useCallback, useMemo } from 'react'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAllAccounts } from './useAllAccounts'
 import { useCreateAccount } from './useCreateAccount'
-import {
-    AccountTypes,
-    type HDWalletAccount,
-    type WalletAccount,
-} from '../models'
+import type { WalletAccount } from '../models'
+import { isHDWalletAccount } from '../utils'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseCreateNextHDAccountResult = {
@@ -33,10 +30,7 @@ export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
     const { seedIdOf } = useKMS()
 
     const hdWalletAccounts = useMemo(
-        () =>
-            accounts.filter(
-                (a): a is HDWalletAccount => a.type === AccountTypes.hdWallet,
-            ),
+        () => accounts.filter(isHDWalletAccount),
         [accounts],
     )
 

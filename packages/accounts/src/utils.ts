@@ -93,20 +93,20 @@ export const accountType = (account: WalletAccount): AccountType =>
 export const isHDWalletAccount = (
     account: WalletAccount,
 ): account is HDWalletAccount => {
-    return account.type === AccountTypes.hdWallet
+    return accountType(account) === AccountTypes.hdWallet
 }
 
 export const isHardwareWalletAccount = (
     account: WalletAccount,
 ): account is HardwareWalletAccount => {
-    return account.type === AccountTypes.hardware
+    return accountType(account) === AccountTypes.hardware
 }
 
 export const isLedgerAccount = (
     account: WalletAccount,
 ): account is HardwareWalletAccount => {
     return (
-        account.type === AccountTypes.hardware &&
+        isHardwareWalletAccount(account) &&
         account.hardwareDetails?.manufacturer === 'ledger'
     )
 }
@@ -123,25 +123,25 @@ export const isRekeyedAccount = (
 export const isAlgo25Account = (
     account: WalletAccount,
 ): account is Algo25Account => {
-    return account.type === AccountTypes.algo25
+    return accountType(account) === AccountTypes.algo25
 }
 
 export const isQuantumAccount = (
     account: WalletAccount,
 ): account is QuantumAccount => {
-    return account.type === AccountTypes.quantum
+    return accountType(account) === AccountTypes.quantum
 }
 
 export const isWatchAccount = (
     account: WalletAccount,
 ): account is WatchAccount => {
-    return account.type === AccountTypes.watch
+    return accountType(account) === AccountTypes.watch
 }
 
 export const isMultisigAccount = (
     account: WalletAccount,
 ): account is MultiSigAccount => {
-    return account.type === AccountTypes.multisig
+    return accountType(account) === AccountTypes.multisig
 }
 
 export const hasSigningKeys = (account: WalletAccount): boolean => {

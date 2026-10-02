@@ -12,7 +12,12 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { MultiSigAccount, WalletAccount } from './models'
-import { isMultisigAccount, isQuantumAccount, isRekeyedAccount } from './utils'
+import {
+    accountType,
+    isMultisigAccount,
+    isQuantumAccount,
+    isRekeyedAccount,
+} from './utils'
 import { RekeyTargetNotFoundError } from './errors'
 import { accountsChainAdapters } from './chain-adapter'
 
@@ -156,7 +161,9 @@ export const rekeyTransitionFor = (
 ): RekeyTransition | null => {
     if (!isRekeyedAccount(account, chainId)) return null
     const r = resolveSignerForAccount(account, accounts, chainId)
-    return r.kind === 'ok' ? { from: account.type, to: r.signer.type } : null
+    return r.kind === 'ok'
+        ? { from: accountType(account), to: accountType(r.signer) }
+        : null
 }
 
 /**
