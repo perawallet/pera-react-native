@@ -39,11 +39,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
-import {
-    getAppStatePlatform,
-    getPollingTransitionAction,
-    isActiveAppState,
-} from '@utils/app-state'
+import { isActiveAppState } from '@utils/app-state'
 
 type BackupSyncCallbacks = {
     importAccounts: ReturnType<typeof useCloudBackupImport>['importAccounts']
@@ -223,31 +219,23 @@ const useBackupSyncManagerSetup = () => {
 /** Runs the manager only while `isActive` and the app is foregrounded, matching
  *  how the account poll is gated. */
 const useForegroundBackupSync = (isActive: boolean) => {
-    const platform = useRef(getAppStatePlatform()).current
-    const appState = useRef(AppState.currentState)
-
     useEffect(() => {
         if (!isActive) return
 
         // Cold starts can begin in the background (push-launched, iOS
         // prewarming), and syncing reads every account's key material — so the
-        // initial run is gated on the same "foregrounded" condition the
-        // transitions below apply, not just on `isActive`.
-        appState.current = AppState.currentState
-        if (isActiveAppState(appState.current)) startBackupSync()
+        // initial run is gated on the app being on screen, not just on
+        // `isActive`.
+        if (isActiveAppState(AppState.currentState)) startBackupSync()
 
+        // Only a real background stops it. iOS reports `inactive` for Face ID,
+        // Control Center and notification banners, and stopping there would abort
+        // the sync under way. `start()` is a no-op while running.
         const subscription = AppState.addEventListener(
             'change',
             nextAppState => {
-                const action = getPollingTransitionAction(
-                    appState.current,
-                    nextAppState,
-                    platform,
-                )
-                if (action === 'start') startBackupSync()
-                else if (action === 'stop') stopBackupSync()
-
-                appState.current = nextAppState
+                if (nextAppState === 'background') stopBackupSync()
+                else if (isActiveAppState(nextAppState)) startBackupSync()
             },
         )
 
@@ -255,7 +243,7 @@ const useForegroundBackupSync = (isActive: boolean) => {
             stopBackupSync()
             subscription.remove()
         }
-    }, [isActive, platform])
+    }, [isActive])
 }
 
 export const useBackupSyncLifecycle = () => {
