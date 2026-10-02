@@ -14,6 +14,7 @@ import {
     CUSTOM_NETWORK_ID,
     LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,
+    toScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     isCustomNetworkConfig,
@@ -61,17 +62,13 @@ export const clearCustomNetwork = (): void =>
         .clearCustomNetwork(LEGACY_CHAIN_ID, CUSTOM_NETWORK_ID)
 
 // A literal, not Networks.custom: module load must not touch the config enum.
-const CUSTOM_SCOPE = scopeForLegacyNetwork('custom')
+const CUSTOM_SCOPE_KEY = toScopeKey(scopeForLegacyNetwork('custom'))
 
 // config resolves chain endpoints but cannot import the store, so the saved
 // node reaches getChainConfig through this reader.
 registerCustomNetworkSource(scope => {
     const saved = getCustomNetworkConfig()
-    if (
-        saved === undefined ||
-        scope.chainId !== CUSTOM_SCOPE.chainId ||
-        scope.networkId !== CUSTOM_SCOPE.networkId
-    ) {
+    if (saved === undefined || toScopeKey(scope) !== CUSTOM_SCOPE_KEY) {
         return undefined
     }
     return {
