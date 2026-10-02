@@ -18,6 +18,15 @@ import { Networks } from '@perawallet/wallet-core-config'
 
 import { useArc59SendSummaryQuery } from '../useArc59SendSummaryQuery'
 import { fetchArc59SendSummary } from '../../api'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
+    ),
+}))
 
 const mockNetwork = { network: 'testnet' }
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -178,6 +187,10 @@ describe('useArc59SendSummaryQuery', () => {
             )
 
             expect(result.current.isUnavailableOnNetwork).toBe(true)
+            expect(useChainCapability).toHaveBeenCalledWith(
+                'algorand',
+                'assetInbox',
+            )
             expect(result.current.isLoading).toBe(false)
             expect(fetchArc59SendSummary).not.toHaveBeenCalled()
         },

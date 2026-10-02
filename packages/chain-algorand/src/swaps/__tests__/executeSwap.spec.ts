@@ -127,6 +127,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
         Buffer.from(bytes).toString('base64'),
     generateOrderedUniqueId: () => 'mock-id',
     logger: {
+        debug: vi.fn(),
+        info: vi.fn(),
         warn: vi.fn(),
         error: vi.fn(),
     },

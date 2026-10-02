@@ -1732,6 +1732,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -1888,6 +1891,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2432,6 +2438,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -3177,6 +3186,12 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -4122,6 +4137,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -15744,7 +15762,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+      vitest: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@vitest/expect@4.1.11':
     dependencies:
