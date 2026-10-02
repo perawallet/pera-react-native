@@ -10,4 +10,17 @@
  limitations under the License
  */
 
-export * from './asb-crypto'
+import type { MigrationChainAdapter } from '@perawallet/wallet-core-migrate'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import {
+    classifyLegacyAccountRoute,
+    isKeylessLegacyAccount,
+    migrateLegacyAccount,
+} from './migrateLegacyAccount'
+
+export const algorandMigrationAdapter: MigrationChainAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
+    migrateAccount: migrateLegacyAccount,
+    isKeylessAccount: isKeylessLegacyAccount,
+    classifyAccountRoute: classifyLegacyAccountRoute,
+}

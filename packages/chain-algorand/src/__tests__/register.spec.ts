@@ -13,11 +13,13 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
 import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
+import { backupChainAdapters } from '@perawallet/wallet-core-backup'
 import {
     addressCodecs,
     keyDerivations,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
+import { migrationChainAdapters } from '@perawallet/wallet-core-migrate'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID, registerChain } from '..'
@@ -50,6 +52,7 @@ import {
     algorandPlannerAdapter,
     algorandReviewerAdapter,
 } from '../signing'
+import { algorandBackupAdapter, algorandMigrationAdapter } from '../backup'
 import { algorandCardAdapter } from '../card'
 import { algorandRampAdapter } from '../onramp'
 import { algorandMultisigAdapter } from '../multisig'
@@ -78,6 +81,8 @@ describe('registerChain', () => {
         addressCodecs.reset()
         keyDerivations.reset()
         accountsChainAdapters.reset()
+        backupChainAdapters.reset()
+        migrationChainAdapters.reset()
     })
 
     it('registers the Algorand accounts adapter, address codec and key derivation', () => {
@@ -208,6 +213,17 @@ describe('registerChain', () => {
 
         expect(localKeySignerChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandLocalKeySignerAdapter,
+        )
+    })
+
+    it('registers the Algorand backup and migration adapters', () => {
+        registerChain()
+
+        expect(backupChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandBackupAdapter,
+        )
+        expect(migrationChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandMigrationAdapter,
         )
     })
 })

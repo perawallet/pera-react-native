@@ -11,8 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { deriveHdAccount } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     BACKUP_ACCESS_DOMAIN,
     SeedScheme,
@@ -22,6 +20,7 @@ import {
     withSecret,
 } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import { backupSeedReference } from '../../chain-adapter'
 import type { SeedEntropyResolver } from './useCloudBackupPasskeyImport'
 
 /**
@@ -31,37 +30,30 @@ import type { SeedEntropyResolver } from './useCloudBackupPasskeyImport'
  * and searches the on-device bip39 seeds for the one that reproduces it.
  */
 export const useResolveSeedEntropyForBackup = (): SeedEntropyResolver => {
-    const { network } = useNetwork()
+    return useCallback<SeedEntropyResolver>(async seedAddress => {
+        const keys = getKeystoreStore().state.keys
 
-    return useCallback<SeedEntropyResolver>(
-        async seedAddress => {
-            const keys = getKeystoreStore().state.keys
+        for (const key of keys) {
+            if (seedSchemeOf(key) !== SeedScheme.Bip39) continue
 
-            for (const key of keys) {
-                if (seedSchemeOf(key) !== SeedScheme.Bip39) continue
-
-                const firstDerived = await deriveHdAccount(network, key.id, {
-                    account: 0,
-                    keyIndex: 0,
-                })
-                if (firstDerived.address !== seedAddress) continue
-                if (!canAccess(key, BACKUP_ACCESS_DOMAIN)) return null
-
-                const entropyId = entropyChildIdOf(key.id, keys)
-                if (!entropyId) return null
-
-                // `withSecret` zeroes its buffer once the handler returns, so
-                // the handler copies the bytes out rather than handing back
-                // the reference itself.
-                const entropy = await withSecret(
-                    entropyId,
-                    secret => new Uint8Array(secret),
-                )
-                return entropy == null ? null : { seedKeyId: key.id, entropy }
+            if ((await backupSeedReference(key.id)) !== seedAddress) {
+                continue
             }
+            if (!canAccess(key, BACKUP_ACCESS_DOMAIN)) return null
 
-            return null
-        },
-        [network],
-    )
+            const entropyId = entropyChildIdOf(key.id, keys)
+            if (!entropyId) return null
+
+            // `withSecret` zeroes its buffer once the handler returns, so
+            // the handler copies the bytes out rather than handing back
+            // the reference itself.
+            const entropy = await withSecret(
+                entropyId,
+                secret => new Uint8Array(secret),
+            )
+            return entropy == null ? null : { seedKeyId: key.id, entropy }
+        }
+
+        return null
+    }, [])
 }

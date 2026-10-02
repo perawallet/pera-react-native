@@ -11,9 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { deriveHdAccount } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
+    backupSeedReference,
     type BackupPasskey,
     useProvenPasskeysStore,
 } from '@perawallet/wallet-core-backup'
@@ -134,7 +133,6 @@ const collectCandidateKeys = async (): Promise<KeystoreKey[]> => {
 export const useListPasskeysForBackup = (): (() => Promise<
     BackupPasskey[]
 >) => {
-    const { network } = useNetwork()
     const setProvenPasskeys = useProvenPasskeysStore(
         state => state.setProvenPasskeys,
     )
@@ -163,14 +161,12 @@ export const useListPasskeysForBackup = (): (() => Promise<
         for (const input of inputs) {
             if (input === null) continue
             const { seedKeyId, ...rest } = input
-            // First-derived (acc0/idx0/Peikert) address, the same dedup key
-            // `useResolveHdSeedForBackup` derives, joining to the seed's own
-            // `secrets/` backup item.
-            const firstDerived = await deriveHdAccount(network, seedKeyId, {
-                account: 0,
-                keyIndex: 0,
+            // The same dedup key `useResolveHdSeedForBackup` derives, joining
+            // to the seed's own `secrets/` backup item.
+            passkeys.push({
+                ...rest,
+                seedAddress: await backupSeedReference(seedKeyId),
             })
-            passkeys.push({ ...rest, seedAddress: firstDerived.address })
         }
 
         // Proving the credentials costs a PBKDF2 per owning seed, so this
@@ -178,5 +174,5 @@ export const useListPasskeysForBackup = (): (() => Promise<
         // synchronously instead of re-deriving on a render path.
         setProvenPasskeys(passkeys)
         return passkeys
-    }, [network, setProvenPasskeys])
+    }, [setProvenPasskeys])
 }

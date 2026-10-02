@@ -55,3 +55,9 @@ export type AsbBackupPayload = {
     providerName: string | null
     deviceId: string | null
 }
+
+export type AsbImportablePartition = {
+    importable: AsbBackupAccount[]
+    alreadyImported: AsbBackupAccount[]
+    unsupported: AsbBackupAccount[]
+}

@@ -12,11 +12,13 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { backupChainAdapters } from '../../../chain-adapter'
+import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { useResolveSeedEntropyForBackup } from '../useResolveSeedEntropyForBackup'
 
 const {
     keystoreKeys,
-    deriveHdAccountMock,
+    seedReferenceMock,
     secretBytesById,
     withSecretMock,
     canAccessMock,
@@ -25,7 +27,7 @@ const {
     return {
         canAccessMock: vi.fn((_key: unknown, _domain: string) => true),
         keystoreKeys: vi.fn().mockReturnValue([]),
-        deriveHdAccountMock: vi.fn(),
+        seedReferenceMock: vi.fn(),
         secretBytesById,
         // Mirrors `withSecret`'s real contract: hands the handler a live
         // buffer, then zeroes THAT SAME buffer once the handler returns —
@@ -44,14 +46,6 @@ const {
         ),
     }
 })
-
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    deriveHdAccount: deriveHdAccountMock,
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     BACKUP_ACCESS_DOMAIN: 'backup-flow',
@@ -75,6 +69,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
             )
         })?.id,
     withSecret: withSecretMock,
+    kmsCore: {},
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -84,7 +79,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 describe('useResolveSeedEntropyForBackup', () => {
     beforeEach(() => {
         secretBytesById.clear()
-        deriveHdAccountMock.mockReset()
+        seedReferenceMock.mockReset()
+        backupChainAdapters.reset()
+        backupChainAdapters.register(
+            fakeBackupAdapter({ seedReference: seedReferenceMock }),
+        )
         withSecretMock.mockClear()
         canAccessMock.mockClear().mockReturnValue(true)
     })
@@ -99,15 +98,15 @@ describe('useResolveSeedEntropyForBackup', () => {
             },
         ])
         secretBytesById.set('entropy-1', new Uint8Array(32).fill(7))
-        deriveHdAccountMock.mockResolvedValue({ address: 'ADDR-9' })
+        seedReferenceMock.mockResolvedValue('ADDR-9')
 
         const { result } = renderHook(() => useResolveSeedEntropyForBackup())
         const resolved = await result.current('ADDR-9')
 
-        expect(deriveHdAccountMock).toHaveBeenCalledWith('mainnet', 'seed-1', {
-            account: 0,
-            keyIndex: 0,
-        })
+        expect(seedReferenceMock).toHaveBeenCalledWith(
+            expect.anything(),
+            'seed-1',
+        )
         // Survives the `withSecret` handler returning: not the same zeroed
         // buffer, and every byte is still 7.
         expect(resolved).not.toBeNull()
@@ -121,7 +120,7 @@ describe('useResolveSeedEntropyForBackup', () => {
         keystoreKeys.mockReturnValue([
             { id: 'seed-1', type: 'hd-root-key', metadata: {} },
         ])
-        deriveHdAccountMock.mockResolvedValue({ address: 'ADDR-1' })
+        seedReferenceMock.mockResolvedValue('ADDR-1')
 
         const { result } = renderHook(() => useResolveSeedEntropyForBackup())
         const resolved = await result.current('ADDR-NOT-FOUND')
@@ -134,7 +133,7 @@ describe('useResolveSeedEntropyForBackup', () => {
         keystoreKeys.mockReturnValue([
             { id: 'seed-1', type: 'hd-root-key', metadata: {} },
         ])
-        deriveHdAccountMock.mockResolvedValue({ address: 'ADDR-9' })
+        seedReferenceMock.mockResolvedValue('ADDR-9')
 
         const { result } = renderHook(() => useResolveSeedEntropyForBackup())
         const resolved = await result.current('ADDR-9')
@@ -153,13 +152,13 @@ describe('useResolveSeedEntropyForBackup', () => {
             },
         ])
         secretBytesById.set('entropy-1', new Uint8Array(32).fill(3))
-        deriveHdAccountMock.mockResolvedValue({ address: 'ADDR-9' })
+        seedReferenceMock.mockResolvedValue('ADDR-9')
 
         const { result } = renderHook(() => useResolveSeedEntropyForBackup())
         const resolved = await result.current('ADDR-9')
 
         expect(resolved?.entropy).toEqual(new Uint8Array(32).fill(3))
-        expect(deriveHdAccountMock).toHaveBeenCalledTimes(1)
+        expect(seedReferenceMock).toHaveBeenCalledTimes(1)
     })
 
     // The written credential's `parentKeyId` is built from this, and it has to
@@ -174,7 +173,7 @@ describe('useResolveSeedEntropyForBackup', () => {
             },
         ])
         secretBytesById.set('entropy-1', new Uint8Array(32).fill(5))
-        deriveHdAccountMock.mockResolvedValue({ address: 'ADDR-9' })
+        seedReferenceMock.mockResolvedValue('ADDR-9')
 
         const { result } = renderHook(() => useResolveSeedEntropyForBackup())
 
@@ -193,7 +192,7 @@ describe('useResolveSeedEntropyForBackup', () => {
             },
         ])
         secretBytesById.set('entropy-1', new Uint8Array(32).fill(7))
-        deriveHdAccountMock.mockResolvedValue({ address: 'ADDR-9' })
+        seedReferenceMock.mockResolvedValue('ADDR-9')
         canAccessMock.mockReturnValue(false)
 
         const { result } = renderHook(() => useResolveSeedEntropyForBackup())

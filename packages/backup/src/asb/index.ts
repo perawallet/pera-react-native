@@ -13,7 +13,6 @@
 // Algorand Secure Backup (ARC-35) — recovery-only subdomain. Pera Wallet no
 // longer produces ASB exports; this code exists so users with legacy backup
 // files can recover their accounts.
-export * from './crypto'
 export * from './errors'
 export * from './hooks'
 export * from './models'

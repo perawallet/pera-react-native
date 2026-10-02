@@ -44,15 +44,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: loggerMock,
 }))
 
-vi.mock('../migrateLegacyAccount', () => ({
-    migrateLegacyAccount: vi.fn(),
-    classifyLegacyAccountRoute: vi.fn(() => 'algo25'),
-    isKeylessLegacyAccount: vi.fn(
-        (a: { type: string; joint: unknown; ledger: unknown }) =>
-            a.type === 'watch' || a.joint !== null || a.ledger !== null,
-    ),
-}))
-
 vi.mock('../accountStoreOps', () => ({
     addKeylessAccountToStore: vi.fn(),
     applyAllLegacyMetadata: vi.fn(),
@@ -66,11 +57,9 @@ import type {
     LegacyAccount,
     LegacyHDWallet,
 } from '@perawallet/wallet-extension-platform'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { migrationChainAdapters } from '../../chain-adapter'
 import { runMigrationLoop } from '../runMigrationLoop'
-import {
-    migrateLegacyAccount,
-    classifyLegacyAccountRoute,
-} from '../migrateLegacyAccount'
 import {
     addKeylessAccountToStore,
     applyAllLegacyMetadata,
@@ -80,6 +69,9 @@ import {
     removeAccountFromStore,
 } from '../accountStoreOps'
 import type { MigrationDeps } from '../types'
+
+const migrateLegacyAccount = vi.fn()
+const classifyLegacyAccountRoute = vi.fn()
 
 const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
     ({
@@ -119,8 +111,16 @@ const buildDeps = (): MigrationDeps => ({
 
 beforeEach(() => {
     accountsStoreMock.accounts = []
-    vi.mocked(migrateLegacyAccount).mockReset()
-    vi.mocked(classifyLegacyAccountRoute).mockReset()
+    migrationChainAdapters.reset()
+    migrationChainAdapters.register({
+        chainId: 'algorand',
+        migrateAccount: migrateLegacyAccount,
+        classifyAccountRoute: classifyLegacyAccountRoute,
+        isKeylessAccount: a =>
+            a.type === 'watch' || a.joint !== null || a.ledger !== null,
+    })
+    migrateLegacyAccount.mockReset()
+    classifyLegacyAccountRoute.mockReset()
     vi.mocked(applyAllLegacyMetadata).mockReset()
     vi.mocked(applyLegacyAccountOrder).mockReset()
     vi.mocked(markLegacyBackedUpAccounts).mockReset()
@@ -128,10 +128,28 @@ beforeEach(() => {
     vi.mocked(removeAccountFromStore).mockReset()
     vi.mocked(applyRekeyAddressToStoreAccount).mockReset()
     loggerMock.error.mockReset()
-    vi.mocked(classifyLegacyAccountRoute).mockReturnValue('algo25')
+    classifyLegacyAccountRoute.mockReturnValue('algo25')
 })
 
 describe('runMigrationLoop', () => {
+    it('throws before touching the store when no migration adapter is registered', async () => {
+        migrationChainAdapters.reset()
+        accountsStoreMock.accounts = [algo25Account('EXISTING')]
+
+        await expect(
+            runMigrationLoop({
+                ...buildDeps(),
+                accounts: [buildAccount()],
+                hdWallets: [],
+            }),
+        ).rejects.toThrow(ChainAdapterNotRegisteredError)
+
+        expect(applyAllLegacyMetadata).not.toHaveBeenCalled()
+        expect(removeAccountFromStore).not.toHaveBeenCalled()
+        expect(addKeylessAccountToStore).not.toHaveBeenCalled()
+        expect(accountsStoreMock.accounts).toEqual([algo25Account('EXISTING')])
+    })
+
     it('returns an empty summary and still applies metadata + order when input is empty', async () => {
         const result = await runMigrationLoop({
             ...buildDeps(),
@@ -147,7 +165,7 @@ describe('runMigrationLoop', () => {
 
     it('skips accounts whose address is already in the wallet store', async () => {
         accountsStoreMock.accounts = [{ address: 'ADDR_EXISTING' }]
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+        migrateLegacyAccount.mockResolvedValue({
             address: 'ADDR_NEW',
         } as never)
 
@@ -167,7 +185,7 @@ describe('runMigrationLoop', () => {
 
     it('records imported accounts as MigratedAccountPair entries on the metadata batch', async () => {
         const legacy = buildAccount({ address: 'ADDR_NEW', name: 'N' })
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+        migrateLegacyAccount.mockResolvedValue({
             address: 'ADDR_NEW',
         } as never)
 
@@ -184,7 +202,7 @@ describe('runMigrationLoop', () => {
     it('forwards the migrated pairs and the injected marker to markLegacyBackedUpAccounts', async () => {
         const legacy = buildAccount({ address: 'ADDR_NEW' })
         const markAccountBackedUp = vi.fn()
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+        migrateLegacyAccount.mockResolvedValue({
             address: 'ADDR_NEW',
         } as never)
 
@@ -208,7 +226,7 @@ describe('runMigrationLoop', () => {
             entropy: new Uint8Array(32).fill(1),
             keys: [],
         }
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+        migrateLegacyAccount.mockResolvedValue({
             address: 'ADDR',
         } as never)
 
@@ -218,14 +236,14 @@ describe('runMigrationLoop', () => {
             hdWallets: [hd],
         })
 
-        const args = vi.mocked(migrateLegacyAccount).mock.calls[0][0]
+        const args = migrateLegacyAccount.mock.calls[0][0]
         expect(args.hdWalletsById.get('wallet-1')).toBe(hd)
         expect(args.importedHdRoots).toBeInstanceOf(Map)
         expect(args.importedHdRoots.size).toBe(0)
     })
 
     it('captures a failure and continues with the rest of the loop', async () => {
-        vi.mocked(migrateLegacyAccount)
+        migrateLegacyAccount
             .mockRejectedValueOnce(new Error('boom'))
             .mockResolvedValueOnce({ address: 'ADDR_OK' } as never)
 
@@ -253,10 +271,8 @@ describe('runMigrationLoop', () => {
     })
 
     it('formats non-Error throws via String() with route prefix', async () => {
-        vi.mocked(migrateLegacyAccount).mockRejectedValueOnce(
-            'kaboom' as unknown as Error,
-        )
-        vi.mocked(classifyLegacyAccountRoute).mockReturnValue('hd')
+        migrateLegacyAccount.mockRejectedValueOnce('kaboom' as unknown as Error)
+        classifyLegacyAccountRoute.mockReturnValue('hd')
 
         const result = await runMigrationLoop({
             ...buildDeps(),
@@ -268,7 +284,7 @@ describe('runMigrationLoop', () => {
     })
 
     it('treats imports as deduplicated against later legacy entries that share the address', async () => {
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+        migrateLegacyAccount.mockResolvedValue({
             address: 'ADDR_NEW',
         } as never)
 
@@ -288,7 +304,7 @@ describe('runMigrationLoop', () => {
 
     it('orders accounts as key-bearing → keyless independent → multisig', async () => {
         const order: string[] = []
-        vi.mocked(migrateLegacyAccount).mockImplementation(async args => {
+        migrateLegacyAccount.mockImplementation(async args => {
             order.push(args.account.address)
             return { address: args.account.address } as never
         })
@@ -326,7 +342,7 @@ describe('runMigrationLoop', () => {
             buildAccount({ address: 'A', preferredOrder: 0 }),
             buildAccount({ address: 'B', preferredOrder: 1 }),
         ]
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+        migrateLegacyAccount.mockResolvedValue({
             address: 'X',
         } as never)
 
@@ -387,7 +403,7 @@ describe('runMigrationLoop', () => {
             secretKey: new Uint8Array(64),
             authAddress: null,
         })
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+        migrateLegacyAccount.mockResolvedValue({
             address: 'UPGRADEME',
         } as never)
 
@@ -414,7 +430,7 @@ describe('runMigrationLoop', () => {
             secretKey: new Uint8Array(64).fill(3),
             authAddress: 'AUTH',
         })
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+        migrateLegacyAccount.mockResolvedValue({
             address: 'UPGRADEME',
         } as never)
 
@@ -438,7 +454,7 @@ describe('runMigrationLoop', () => {
             secretKey: null,
             authAddress: 'AUTH',
         })
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+        migrateLegacyAccount.mockResolvedValue({
             address: 'WATCHED',
             rekeyAddress: 'AUTH',
         } as never)
@@ -461,9 +477,7 @@ describe('runMigrationLoop', () => {
             secretKey: new Uint8Array(64).fill(2),
             authAddress: null,
         })
-        vi.mocked(migrateLegacyAccount).mockRejectedValueOnce(
-            new Error('kms exploded'),
-        )
+        migrateLegacyAccount.mockRejectedValueOnce(new Error('kms exploded'))
 
         const result = await runMigrationLoop({
             ...buildDeps(),
@@ -487,7 +501,7 @@ describe('runMigrationLoop', () => {
 
     it('does not re-add anything when a non-reconciling import throws', async () => {
         const legacy = buildAccount({ address: 'FRESH', name: 'F' })
-        vi.mocked(migrateLegacyAccount).mockRejectedValueOnce(new Error('boom'))
+        migrateLegacyAccount.mockRejectedValueOnce(new Error('boom'))
 
         const result = await runMigrationLoop({
             ...buildDeps(),
@@ -500,7 +514,7 @@ describe('runMigrationLoop', () => {
     })
 
     it('skips applyLegacyAccountOrder on an accounts-v2 re-run to preserve user reordering', async () => {
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+        migrateLegacyAccount.mockResolvedValue({
             address: 'X',
         } as never)
 

@@ -13,7 +13,7 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { algo25SecretKeyToIndices } from './legacyKeyConversion'
-import type { MigrateAccountArgs } from './types'
+import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
 
 export const migrateAlgo25Account = async ({
     account,

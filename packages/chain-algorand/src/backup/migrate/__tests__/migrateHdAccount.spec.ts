@@ -24,7 +24,10 @@ import type {
 } from '@perawallet/wallet-extension-platform'
 import { migrateHdAccount } from '../migrateHdAccount'
 import { hdWalletEntropyToIndices } from '../legacyKeyConversion'
-import type { ImportedHdRoot, MigrateAccountArgs } from '../types'
+import type {
+    ImportedHdRoot,
+    MigrateAccountArgs,
+} from '@perawallet/wallet-core-migrate'
 
 const buildKey = (overrides: Partial<LegacyHDKey> = {}): LegacyHDKey => ({
     address: 'ADDR_CHILD',

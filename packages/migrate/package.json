@@ -31,7 +31,6 @@
         "@perawallet/wallet-core-device": "workspace:*",
         "@perawallet/wallet-core-kms": "workspace:*",
         "@perawallet/wallet-core-messages": "workspace:*",
-        "@perawallet/wallet-core-multisig": "workspace:*",
         "@perawallet/wallet-core-passkeys": "workspace:*",
         "@perawallet/wallet-core-remote-config": "workspace:*",
         "@perawallet/wallet-core-security": "workspace:*",
@@ -54,7 +53,6 @@
         "vite": "catalog:",
         "vitest": "catalog:",
         "@perawallet/wallet-extension-connections": "workspace:*",
-        "@scure/bip39": "catalog:",
-        "algosdk": "catalog:"
+        "@scure/bip39": "catalog:"
     }
 }

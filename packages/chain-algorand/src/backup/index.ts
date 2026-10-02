@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export {}
+export { algorandBackupAdapter } from './adapter'
+export { algorandMigrationAdapter } from './migrate/adapter'

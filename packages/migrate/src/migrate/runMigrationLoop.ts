@@ -29,11 +29,7 @@ import {
     markLegacyBackedUpAccounts,
     removeAccountFromStore,
 } from './accountStoreOps'
-import {
-    classifyLegacyAccountRoute,
-    isKeylessLegacyAccount,
-    migrateLegacyAccount,
-} from './migrateLegacyAccount'
+import { migrationAdapterFor } from '../chain-adapter'
 import type {
     ImportedHdRoot,
     MigratedAccountPair,
@@ -57,6 +53,7 @@ export type RunMigrationLoopArgs = MigrationDeps & {
 export const runMigrationLoop = async (
     args: RunMigrationLoopArgs,
 ): Promise<MigrationResult> => {
+    const adapter = migrationAdapterFor()
     const summary: MigrationResult = { imported: 0, skipped: 0, failed: [] }
     const existingAddresses = new Set(
         useAccountsStore.getState().accounts.map(a => a.address),
@@ -65,7 +62,10 @@ export const runMigrationLoop = async (
     const importedHdRoots = new Map<string, ImportedHdRoot>()
     const pendingMetadata: MigratedAccountPair[] = []
 
-    for (const account of orderForImport(args.accounts)) {
+    for (const account of orderForImport(
+        args.accounts,
+        adapter.isKeylessAccount,
+    )) {
         // When this iteration removes a watch account to reconcile it, keep the
         // removed record so a failed reimport can restore it instead of
         // orphaning the user's visible account.
@@ -101,7 +101,7 @@ export const runMigrationLoop = async (
         }
 
         try {
-            const created = await migrateLegacyAccount({
+            const created = await adapter.migrateAccount({
                 account,
                 hdWalletsById,
                 importedHdRoots,
@@ -136,7 +136,7 @@ export const runMigrationLoop = async (
                 addKeylessAccountToStore(removedForReconcile)
                 existingAddresses.add(removedForReconcile.address)
             }
-            const route = classifyLegacyAccountRoute(account)
+            const route = adapter.classifyAccountRoute(account)
             const errorName = e instanceof Error ? e.name : 'Unknown'
             const errorMessage = e instanceof Error ? e.message : String(e)
             const reason = `[${route}] ${errorName}: ${errorMessage}`
@@ -178,15 +178,17 @@ export const runMigrationLoop = async (
     return summary
 }
 
-const orderForImport = (accounts: LegacyAccount[]): LegacyAccount[] => {
+const orderForImport = (
+    accounts: LegacyAccount[],
+    isKeylessAccount: (account: LegacyAccount) => boolean,
+): LegacyAccount[] => {
     const keyBearing: LegacyAccount[] = []
     const keylessIndependent: LegacyAccount[] = []
     const multisig: LegacyAccount[] = []
 
     for (const account of accounts) {
         if (account.joint !== null) multisig.push(account)
-        else if (isKeylessLegacyAccount(account))
-            keylessIndependent.push(account)
+        else if (isKeylessAccount(account)) keylessIndependent.push(account)
         else keyBearing.push(account)
     }
 

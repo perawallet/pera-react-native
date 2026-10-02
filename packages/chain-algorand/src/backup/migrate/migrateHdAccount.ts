@@ -17,7 +17,10 @@ import type {
     LegacyHDWallet,
 } from '@perawallet/wallet-extension-platform'
 import { hdWalletEntropyToIndices } from './legacyKeyConversion'
-import type { ImportedHdRoot, MigrateAccountArgs } from './types'
+import type {
+    ImportedHdRoot,
+    MigrateAccountArgs,
+} from '@perawallet/wallet-core-migrate'
 
 export const migrateHdAccount = async (
     args: MigrateAccountArgs,
