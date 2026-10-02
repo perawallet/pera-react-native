@@ -209,7 +209,7 @@ describe('useGlobalSearch', () => {
         const alice = makeAccount('ALICE_ADDR', 'Alice')
         mockAllAccounts.mockReturnValue([alice])
         mockFindContacts.mockReturnValue([
-            { name: 'Alice Contact', address: 'CONTACT_ADDR' },
+            { name: 'Alice Contact', addresses: { algorand: 'CONTACT_ADDR' } },
         ])
         setOwnedAssets([
             makeAsset('1', { name: 'Alice Asset', unitName: 'ALI' }),
@@ -449,7 +449,10 @@ describe('useGlobalSearch', () => {
 
     test('matches contacts via findContacts', async () => {
         mockAllAccounts.mockReturnValue([])
-        const charlie: Contact = { name: 'Charlie', address: 'CHAR_ADDR' }
+        const charlie: Contact = {
+            name: 'Charlie',
+            addresses: { algorand: 'CHAR_ADDR' },
+        }
         mockFindContacts.mockImplementation(({ keyword }) =>
             keyword.toLowerCase() === 'char' ? [charlie] : [],
         )

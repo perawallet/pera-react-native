@@ -15,7 +15,12 @@ import { renderHook } from '@testing-library/react'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useCloudBackupContactImport } from '../useCloudBackupContactImport'
 
-type Contact = { address: string; name: string; image?: string }
+type Contact = {
+    addresses: Record<string, string>
+    name: string
+    image?: string
+}
+type ContactRef = { family: string; address: string }
 
 // A working store rather than the setup file's inert stub: this hook's whole
 // job is the addContact → DuplicateAddressError → editContact fallback, which
@@ -23,17 +28,23 @@ type Contact = { address: string; name: string; image?: string }
 vi.mock('@perawallet/wallet-core-contacts', () => {
     class DuplicateAddressError extends Error {}
 
+    const holds = (contact: Contact, { family, address }: ContactRef) =>
+        contact.addresses[family] === address
+
     const state = {
         contacts: [] as Contact[],
         addContact: (contact: Contact) => {
-            if (state.contacts.some(c => c.address === contact.address)) {
-                throw new DuplicateAddressError(contact.address)
-            }
+            const clash = state.contacts.some(c =>
+                Object.entries(contact.addresses).some(([family, address]) =>
+                    holds(c, { family, address }),
+                ),
+            )
+            if (clash) throw new DuplicateAddressError()
             state.contacts = [...state.contacts, contact]
         },
-        editContact: (previousAddress: string, contact: Contact) => {
+        editContact: (previous: ContactRef, contact: Contact) => {
             state.contacts = state.contacts.map(c =>
-                c.address === previousAddress ? contact : c,
+                holds(c, previous) ? contact : c,
             )
         },
         resetState: () => {
@@ -63,22 +74,28 @@ describe('useCloudBackupContactImport', () => {
 
         expect(summary).toEqual({ imported: 1, failed: [] })
         expect(useContactsStore.getState().contacts).toEqual([
-            { address: 'A', name: 'Alice' },
+            { addresses: { algorand: 'A' }, name: 'Alice' },
         ])
     })
 
-    test('renames an existing contact without dropping its local image', async () => {
+    test('renames an existing contact without dropping its local fields or other-family addresses', async () => {
         useContactsStore.getState().addContact({
-            address: 'A',
+            addresses: { algorand: 'A', other: 'X' },
             name: 'Alice',
             image: 'file:///tmp/a.png',
-        })
+            nfd: 'alice.algo',
+        } as never)
         const { result } = renderImport()
 
         await result.current.importContacts([{ address: 'A', name: 'Alicia' }])
 
         expect(useContactsStore.getState().contacts).toEqual([
-            { address: 'A', name: 'Alicia', image: 'file:///tmp/a.png' },
+            {
+                addresses: { algorand: 'A', other: 'X' },
+                name: 'Alicia',
+                image: 'file:///tmp/a.png',
+                nfd: 'alice.algo',
+            },
         ])
     })
 
@@ -92,7 +109,7 @@ describe('useCloudBackupContactImport', () => {
 
         expect(summary.imported).toBe(2)
         expect(useContactsStore.getState().contacts).toEqual([
-            { address: 'A', name: 'Alicia' },
+            { addresses: { algorand: 'A' }, name: 'Alicia' },
         ])
     })
 })

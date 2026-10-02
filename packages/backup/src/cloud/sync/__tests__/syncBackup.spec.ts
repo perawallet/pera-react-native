@@ -497,7 +497,9 @@ describe('syncBackup', () => {
         const next = await syncBackup(
             {
                 ...deps(),
-                listContacts: () => [{ address: 'C1', name: 'Alice' }],
+                listContacts: () => [
+                    { addresses: { algorand: 'C1' }, name: 'Alice' },
+                ],
             },
             createEmptySyncState('b'),
         )
@@ -541,7 +543,9 @@ describe('syncBackup', () => {
         const next = await syncBackup(
             {
                 ...deps(),
-                listContacts: () => [{ address: 'C1', name: 'Alice' }],
+                listContacts: () => [
+                    { addresses: { algorand: 'C1' }, name: 'Alice' },
+                ],
                 listPasskeys: async () => {
                     throw new Error('KMS session denied')
                 },
