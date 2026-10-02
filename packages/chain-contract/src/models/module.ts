@@ -11,7 +11,10 @@
  */
 
 import type { ChainKeyStore } from '../contracts/key-derivation'
-import type { ChainCapabilities } from './capabilities'
+import type {
+    ChainCapabilities,
+    ChainCapabilityRestrictions,
+} from './capabilities'
 import type { ChainDescriptor } from './descriptor'
 import type { ChainScope } from './identity'
 
@@ -50,6 +53,8 @@ export interface ChainContext<E extends ChainEndpoints = ChainEndpoints> {
 export interface ChainModule<E extends ChainEndpoints = ChainEndpoints> {
     descriptor: ChainDescriptor
     capabilityDefaults: ChainCapabilities
+    /** The developer modes each capability is off in, e.g. because the chain's backend only serves mainnet. */
+    capabilityRestrictions?: ChainCapabilityRestrictions
     /** Adds every adapter the chain implements to its feature registry; `registerChainSetup` registers the descriptor. */
     register(ctx: ChainContext<E>): void
     /** Every i18n key the chain's adapters emit as data, which the literal-`t()` lint can't see. */

@@ -14,8 +14,10 @@ import type {
     CapabilitySource,
     ChainCapabilities,
     ChainCapability,
+    ChainCapabilityRestrictions,
+    ModeRestrictions,
 } from '../models/capabilities'
-import type { ChainId } from '../models/identity'
+import type { ChainId, ChainMode } from '../models/identity'
 
 /** `unknown` because both layers come from untyped storage or JSON. */
 export type CapabilityOverrides = Partial<
@@ -32,12 +34,22 @@ export interface CapabilityLayers {
      * config overrides (see `areConfigOverridesIgnored` in remote-config).
      */
     developer?: CapabilityOverrides
+    /** Declared by each chain module. */
+    restrictions?: Partial<Record<ChainId, ChainCapabilityRestrictions>>
+    /** An absent chain reads as `live`, so nothing is restricted. */
+    chainMode?: Partial<Record<ChainId, ChainMode>>
 }
 
 export interface ResolvedCapability {
     value: boolean
     source: CapabilitySource
 }
+
+export const isRestrictedIn = <K extends string>(
+    restrictions: ModeRestrictions<K> | undefined,
+    key: K,
+    mode: ChainMode,
+): boolean => mode !== 'live' && (restrictions?.[key]?.includes(mode) ?? false)
 
 // Same precedence as readRemoteConfigWithOverrides in remote-config: an
 // override of the wrong type falls through rather than being coerced.
@@ -49,6 +61,16 @@ export const resolveCapabilityWithSource = (
     const developer = layers.developer?.[chainId]?.[capability]
     if (typeof developer === 'boolean') {
         return { value: developer, source: 'developer' }
+    }
+    // Above remote: remote values are mostly true and would re-enable a feature in developer mode.
+    if (
+        isRestrictedIn(
+            layers.restrictions?.[chainId],
+            capability,
+            layers.chainMode?.[chainId] ?? 'live',
+        )
+    ) {
+        return { value: false, source: 'chainMode' }
     }
     const remote = layers.remote?.[chainId]?.[capability]
     if (typeof remote === 'boolean') {

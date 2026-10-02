@@ -114,4 +114,7 @@ export const algorandDescriptor: ChainDescriptor = {
 
 // A subpath free of the adapter graph, so a consumer's tests can read the
 // descriptor without resolving the native modules the adapters pull in.
-export { algorandCapabilityDefaults } from '../capability-defaults'
+export {
+    algorandCapabilityDefaults,
+    algorandCapabilityRestrictions,
+} from '../capability-defaults'

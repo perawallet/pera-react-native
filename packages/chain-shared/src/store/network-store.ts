@@ -13,6 +13,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import {
+    chainModeFor,
     defaultNetworkForTier,
     isNetworkId,
     isWalletMode,
@@ -20,6 +21,7 @@ import {
     networkIdForMode,
     networkTierForMode,
     type ChainId,
+    type ChainMode,
     type NetworkId,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
@@ -122,6 +124,21 @@ export const selectChainNetworkId = (
         state.mode,
         override,
     )
+}
+
+/** Agrees with `selectChainNetworkId`: a stale override reads as `developer`, as the network actually used does. */
+export const selectChainMode = (
+    state: NetworkSelection,
+    chainId: ChainId,
+): ChainMode => {
+    if (state.mode === 'live') return 'live'
+    const override = usableOverride(state, chainId)
+    const { chains } = getProvider()
+    // Mirrors the pre-bootstrap stand-in in selectChainNetworkId.
+    if (!chains.has(chainId)) {
+        return override === undefined ? 'developer' : 'developer-override'
+    }
+    return chainModeFor(chains.get(chainId).descriptor, 'developer', override)
 }
 
 export const selectCustomNetwork = (
