@@ -11,7 +11,11 @@
  */
 
 import { z } from 'zod'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    isValidAlgorandAddress,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import type { Contact } from '../models'
 
 export const contactSchema = z.object({
     id: z.string().optional(),
@@ -33,4 +37,25 @@ export const contactSchema = z.object({
         })
         .optional(),
     image: z.string().optional(),
+})
+
+export type ContactFormValues = z.infer<typeof contactSchema>
+
+// The form's single address field is the Algorand entry.
+export const contactToFormValues = ({
+    addresses,
+    ...rest
+}: Contact): ContactFormValues => ({
+    ...rest,
+    address: addresses.algorand ?? '',
+})
+
+/** Every other field comes from the form; `existing` only contributes the
+ *  addresses of families the form doesn't edit. */
+export const contactFromFormValues = (
+    { address, ...rest }: ContactFormValues,
+    existing?: Nullable<Contact>,
+): Contact => ({
+    ...rest,
+    addresses: { ...existing?.addresses, algorand: address },
 })

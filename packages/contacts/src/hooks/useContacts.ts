@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { useContactsStore } from '../store'
 
 export const useContacts = () => {
@@ -26,20 +27,29 @@ export const useContacts = () => {
     const findContacts = useCallback(
         ({
             keyword,
+            family,
             matchAddress = true,
             matchName = true,
             matchNFD = true,
         }: {
             keyword: string
+            /** Restricts results, and address matching, to this family. */
+            family?: ChainFamily
             matchAddress?: boolean
             matchName?: boolean
             matchNFD?: boolean
         }) => {
             const lowerPartial = keyword.toLowerCase()
             const matches = contacts.filter(c => {
+                const addresses = family
+                    ? [c.addresses[family]]
+                    : Object.values(c.addresses)
+                if (family && !addresses[0]) return false
                 return (
                     (matchAddress &&
-                        c.address.toLowerCase().includes(lowerPartial)) ||
+                        addresses.some(address =>
+                            address?.toLowerCase().includes(lowerPartial),
+                        )) ||
                     (matchName &&
                         c.name.toLowerCase().includes(lowerPartial)) ||
                     (matchNFD && c.nfd?.toLowerCase().includes(lowerPartial))

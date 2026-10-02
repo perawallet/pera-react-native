@@ -12,11 +12,16 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Contact } from '../../models'
 import { ContactNotFoundError, DuplicateAddressError } from '../../errors'
 
 const registerStoreMock = vi.fn()
+
+// The union has one member today; a second family exercises the per-family rule.
+const OTHER_FAMILY = 'other' as ChainFamily
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -31,6 +36,11 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+const algorandContact = (name: string, address: string): Contact => ({
+    name,
+    addresses: { algorand: address },
+})
+
 describe('ContactsStore', () => {
     beforeEach(async () => {
         const { useContactsStore } = await import('../index')
@@ -41,7 +51,7 @@ describe('ContactsStore', () => {
         test('adds a new contact', async () => {
             const { useContactsStore } = await import('../index')
             const { result } = renderHook(() => useContactsStore())
-            const contact: Contact = { name: 'Alice', address: 'ALICE123' }
+            const contact = algorandContact('Alice', 'ALICE123')
 
             act(() => {
                 result.current.addContact(contact)
@@ -51,25 +61,48 @@ describe('ContactsStore', () => {
             expect(result.current.contacts[0]).toEqual(contact)
         })
 
-        test('throws DuplicateAddressError when the address already exists', async () => {
+        test('throws DuplicateAddressError when the address already exists in the same family', async () => {
             const { useContactsStore } = await import('../index')
             const { result } = renderHook(() => useContactsStore())
 
             act(() => {
-                result.current.addContact({
-                    name: 'Alice',
-                    address: 'SHARED_ADDRESS',
+                result.current.addContact(
+                    algorandContact('Alice', 'SHARED_ADDRESS'),
+                )
+            })
+
+            let thrown: unknown
+            try {
+                result.current.addContact(
+                    algorandContact('Bob', 'SHARED_ADDRESS'),
+                )
+            } catch (error) {
+                thrown = error
+            }
+
+            expect(thrown).toBeInstanceOf(DuplicateAddressError)
+            expect(thrown).toMatchObject({
+                family: 'algorand',
+                address: 'SHARED_ADDRESS',
+            })
+            expect(result.current.contacts).toHaveLength(1)
+            expect(result.current.contacts[0]?.name).toBe('Alice')
+        })
+
+        test('accepts the same address under a different family', async () => {
+            const { useContactsStore } = await import('../index')
+
+            act(() => {
+                useContactsStore
+                    .getState()
+                    .addContact(algorandContact('Alice', 'SHARED_ADDRESS'))
+                useContactsStore.getState().addContact({
+                    name: 'Bob',
+                    addresses: { [OTHER_FAMILY]: 'SHARED_ADDRESS' },
                 })
             })
 
-            expect(() =>
-                result.current.addContact({
-                    name: 'Bob',
-                    address: 'SHARED_ADDRESS',
-                }),
-            ).toThrow(DuplicateAddressError)
-            expect(result.current.contacts).toHaveLength(1)
-            expect(result.current.contacts[0]?.name).toBe('Alice')
+            expect(useContactsStore.getState().contacts).toHaveLength(2)
         })
     })
 
@@ -79,17 +112,14 @@ describe('ContactsStore', () => {
             const { result } = renderHook(() => useContactsStore())
 
             act(() => {
-                result.current.addContact({
-                    name: 'Alice',
-                    address: 'ALICE123',
-                })
+                result.current.addContact(algorandContact('Alice', 'ALICE123'))
             })
 
             act(() => {
-                result.current.editContact('ALICE123', {
-                    name: 'Alice Updated',
-                    address: 'ALICE123',
-                })
+                result.current.editContact(
+                    { family: 'algorand', address: 'ALICE123' },
+                    algorandContact('Alice Updated', 'ALICE123'),
+                )
             })
 
             expect(result.current.contacts).toHaveLength(1)
@@ -101,68 +131,127 @@ describe('ContactsStore', () => {
             const { result } = renderHook(() => useContactsStore())
 
             act(() => {
-                result.current.addContact({
-                    name: 'Alice',
-                    address: 'ALICE123',
-                })
+                result.current.addContact(algorandContact('Alice', 'ALICE123'))
             })
 
             act(() => {
-                result.current.editContact('ALICE123', {
-                    name: 'Alice',
-                    address: 'ALICE_NEW',
-                })
+                result.current.editContact(
+                    { family: 'algorand', address: 'ALICE123' },
+                    algorandContact('Alice', 'ALICE_NEW'),
+                )
             })
 
             expect(result.current.contacts).toHaveLength(1)
-            expect(result.current.contacts[0]?.address).toBe('ALICE_NEW')
+            expect(result.current.contacts[0]?.addresses.algorand).toBe(
+                'ALICE_NEW',
+            )
         })
 
-        test('throws DuplicateAddressError when renaming into an address used by another contact', async () => {
+        test('replaces the row wholesale', async () => {
+            const { useContactsStore } = await import('../index')
+
+            act(() => {
+                useContactsStore.getState().addContact({
+                    name: 'Alice',
+                    nfd: 'alice.algo',
+                    addresses: { algorand: 'ALICE123' },
+                })
+                useContactsStore
+                    .getState()
+                    .editContact(
+                        { family: 'algorand', address: 'ALICE123' },
+                        algorandContact('Alice', 'ALICE123'),
+                    )
+            })
+
+            expect(useContactsStore.getState().contacts[0]).toEqual(
+                algorandContact('Alice', 'ALICE123'),
+            )
+        })
+
+        test('throws DuplicateAddressError when renaming into an address another contact holds in the same family', async () => {
             const { useContactsStore } = await import('../index')
             const { result } = renderHook(() => useContactsStore())
 
             act(() => {
-                result.current.addContact({
-                    name: 'Alice',
-                    address: 'ALICE123',
-                })
+                result.current.addContact(algorandContact('Alice', 'ALICE123'))
             })
             act(() => {
-                result.current.addContact({
-                    name: 'Bob',
-                    address: 'BOB456',
-                })
+                result.current.addContact(algorandContact('Bob', 'BOB456'))
             })
 
             expect(() =>
-                result.current.editContact('ALICE123', {
-                    name: 'Alice',
-                    address: 'BOB456',
-                }),
+                result.current.editContact(
+                    { family: 'algorand', address: 'ALICE123' },
+                    algorandContact('Alice', 'BOB456'),
+                ),
             ).toThrow(DuplicateAddressError)
             expect(result.current.contacts).toHaveLength(2)
         })
 
-        test('throws ContactNotFoundError when previousAddress matches no existing row', async () => {
+        test('accepts an address another contact holds under a different family', async () => {
+            const { useContactsStore } = await import('../index')
+
+            act(() => {
+                useContactsStore
+                    .getState()
+                    .addContact(algorandContact('Alice', 'ALICE123'))
+                useContactsStore.getState().addContact({
+                    name: 'Bob',
+                    addresses: { [OTHER_FAMILY]: 'BOB456' },
+                })
+                useContactsStore
+                    .getState()
+                    .editContact(
+                        { family: 'algorand', address: 'ALICE123' },
+                        algorandContact('Alice', 'BOB456'),
+                    )
+            })
+
+            expect(
+                useContactsStore.getState().contacts[0]?.addresses.algorand,
+            ).toBe('BOB456')
+        })
+
+        test('throws ContactNotFoundError when the ref matches no existing row', async () => {
             const { useContactsStore } = await import('../index')
             const { result } = renderHook(() => useContactsStore())
 
             expect(() =>
-                result.current.editContact('MISSING', {
-                    name: 'Ghost',
-                    address: 'GHOST',
-                }),
+                result.current.editContact(
+                    { family: 'algorand', address: 'MISSING' },
+                    algorandContact('Ghost', 'GHOST'),
+                ),
             ).toThrow(ContactNotFoundError)
             expect(result.current.contacts).toHaveLength(0)
+        })
+
+        test('does not match a ref whose address sits under another family', async () => {
+            const { useContactsStore } = await import('../index')
+
+            act(() => {
+                useContactsStore.getState().addContact({
+                    name: 'Bob',
+                    addresses: { [OTHER_FAMILY]: 'BOB456' },
+                })
+            })
+
+            expect(() =>
+                useContactsStore
+                    .getState()
+                    .editContact(
+                        { family: 'algorand', address: 'BOB456' },
+                        algorandContact('Bob', 'BOB456'),
+                    ),
+            ).toThrow(ContactNotFoundError)
         })
     })
 
     describe('deleteContact', () => {
-        test('removes by address', async () => {
+        test('removes the row that shares an address entry', async () => {
             const { useContactsStore } = await import('../index')
             const { result } = renderHook(() => useContactsStore())
-            const contact: Contact = { name: 'Alice', address: 'ALICE123' }
+            const contact = algorandContact('Alice', 'ALICE123')
 
             act(() => {
                 result.current.addContact(contact)
@@ -177,26 +266,111 @@ describe('ContactsStore', () => {
             expect(result.current.contacts).toHaveLength(0)
         })
 
-        test('returns false when no contact matches the address', async () => {
+        test('returns false when no contact shares an address entry', async () => {
             const { useContactsStore } = await import('../index')
             const { result } = renderHook(() => useContactsStore())
 
-            let removed: Optional<boolean>
             act(() => {
-                removed = result.current.deleteContact({
-                    name: 'Missing',
-                    address: 'MISSING',
+                result.current.addContact({
+                    name: 'Bob',
+                    addresses: { [OTHER_FAMILY]: 'MISSING' },
                 })
             })
 
+            let removed: Optional<boolean>
+            act(() => {
+                removed = result.current.deleteContact(
+                    algorandContact('Missing', 'MISSING'),
+                )
+            })
+
             expect(removed).toBe(false)
+            expect(result.current.contacts).toHaveLength(1)
+        })
+    })
+
+    describe('migrateContactsState', () => {
+        const v1State = {
+            contacts: [
+                {
+                    name: 'Alice',
+                    address: 'ALICE123',
+                    nfd: 'alice.algo',
+                    image: 'file://alice.png',
+                },
+                { name: 'Bob', address: 'BOB456' },
+            ],
+        }
+
+        test('moves each v1 address into the algorand entry and keeps the other fields in order', async () => {
+            const { migrateContactsState } = await import('../store')
+
+            expect(migrateContactsState(structuredClone(v1State), 1)).toEqual({
+                contacts: [
+                    {
+                        name: 'Alice',
+                        nfd: 'alice.algo',
+                        image: 'file://alice.png',
+                        addresses: { algorand: 'ALICE123' },
+                    },
+                    { name: 'Bob', addresses: { algorand: 'BOB456' } },
+                ],
+            })
+        })
+
+        test('drops a v1 row without a usable address', async () => {
+            const { migrateContactsState } = await import('../store')
+
+            const migrated = migrateContactsState(
+                {
+                    contacts: [
+                        { name: 'NoAddress' },
+                        { name: 'Empty', address: '' },
+                        { name: 'NotAString', address: 42 },
+                        { name: 'Bob', address: 'BOB456' },
+                    ],
+                },
+                1,
+            )
+
+            expect(migrated.contacts).toEqual([
+                { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            ])
+        })
+
+        test('leaves v2 state unchanged', async () => {
+            const { migrateContactsState } = await import('../store')
+            const v2State = {
+                contacts: [algorandContact('Alice', 'ALICE123')],
+            }
+
+            expect(migrateContactsState(structuredClone(v2State), 2)).toEqual(
+                v2State,
+            )
+        })
+
+        test('hydrating a v1 payload keeps every Algorand address', async () => {
+            getProvider().keyValueStorage.setItem(
+                'contacts-store',
+                JSON.stringify({ state: v1State, version: 1 }),
+            )
+
+            vi.resetModules()
+            const { useContactsStore } = await import('../store')
+            await useContactsStore.persist.rehydrate()
+
+            expect(
+                useContactsStore
+                    .getState()
+                    .contacts.map(contact => contact.addresses.algorand),
+            ).toEqual(['ALICE123', 'BOB456'])
         })
     })
 
     test('setSelectedContact updates the selected contact', async () => {
         const { useContactsStore } = await import('../index')
         const { result } = renderHook(() => useContactsStore())
-        const contact: Contact = { name: 'Alice', address: 'ALICE123' }
+        const contact = algorandContact('Alice', 'ALICE123')
 
         act(() => {
             result.current.setSelectedContact(contact)
@@ -219,7 +393,7 @@ describe('ContactsStore', () => {
         act(() => {
             useContactsStore
                 .getState()
-                .addContact({ name: 'Alice', address: 'A' })
+                .addContact(algorandContact('Alice', 'A'))
         })
         expect(useContactsStore.getState().contacts).toHaveLength(1)
 

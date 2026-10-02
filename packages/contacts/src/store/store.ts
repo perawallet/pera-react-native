@@ -12,7 +12,13 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { Contact, ContactsState } from '../models'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import type {
+    Contact,
+    ContactAddresses,
+    ContactRef,
+    ContactsState,
+} from '../models'
 import { ContactNotFoundError, DuplicateAddressError } from '../errors'
 import {
     registerStore,
@@ -22,10 +28,59 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'contacts-store'
+const STORE_VERSION = 2
+
+type PersistedContactsState = {
+    contacts: Contact[]
+}
 
 const initialState = {
     contacts: [] as Contact[],
     selectedContact: null as Nullable<Contact>,
+}
+
+const addressEntries = (addresses: ContactAddresses) =>
+    Object.entries(addresses).filter(
+        (entry): entry is [ChainFamily, string] => typeof entry[1] === 'string',
+    )
+
+const findContactIndex = (contacts: Contact[], ref: ContactRef): number =>
+    contacts.findIndex(c => c.addresses[ref.family] === ref.address)
+
+const assertNoFamilyConflict = (
+    contacts: Contact[],
+    addresses: ContactAddresses,
+    skipIndex?: number,
+): void => {
+    for (const [family, address] of addressEntries(addresses)) {
+        const conflict = contacts.some(
+            (c, idx) => idx !== skipIndex && c.addresses[family] === address,
+        )
+        if (conflict) throw new DuplicateAddressError(family, address)
+    }
+}
+
+type V1Contact = Omit<Contact, 'addresses'> & { address?: unknown }
+
+/**
+ * v1 stored a single Algorand `address` per contact. A row without one could
+ * never be selected, edited or backed up, so it is dropped.
+ */
+export const migrateContactsState = (
+    persistedState: unknown,
+    version: number,
+): PersistedContactsState => {
+    if (version >= STORE_VERSION) {
+        return persistedState as PersistedContactsState
+    }
+    const { contacts = [] } = persistedState as { contacts?: V1Contact[] }
+    return {
+        contacts: contacts.flatMap(({ address, ...rest }) =>
+            typeof address === 'string' && address.length > 0
+                ? [{ ...rest, addresses: { algorand: address } }]
+                : [],
+        ),
+    }
 }
 
 export const useContactsStore: UseBoundStore<
@@ -38,26 +93,17 @@ export const useContactsStore: UseBoundStore<
                 set({ selectedContact: contact }),
             addContact: (contact: Contact) => {
                 const existing = get().contacts ?? []
-                if (existing.some(c => c.address === contact.address)) {
-                    throw new DuplicateAddressError(contact.address)
-                }
+                assertNoFamilyConflict(existing, contact.addresses)
                 set({ contacts: [...existing, contact] })
                 return true
             },
-            editContact: (previousAddress: string, contact: Contact) => {
+            editContact: (previous: ContactRef, contact: Contact) => {
                 const existing = get().contacts ?? []
-                if (
-                    contact.address !== previousAddress &&
-                    existing.some(c => c.address === contact.address)
-                ) {
-                    throw new DuplicateAddressError(contact.address)
-                }
-                const idx = existing.findIndex(
-                    c => c.address === previousAddress,
-                )
+                const idx = findContactIndex(existing, previous)
                 if (idx < 0) {
-                    throw new ContactNotFoundError(previousAddress)
+                    throw new ContactNotFoundError(previous)
                 }
+                assertNoFamilyConflict(existing, contact.addresses, idx)
                 const updated = [...existing]
                 updated[idx] = contact
                 set({ contacts: updated })
@@ -65,8 +111,13 @@ export const useContactsStore: UseBoundStore<
             },
             deleteContact: (contact: Contact) => {
                 const existing = get().contacts ?? []
+                const refs = addressEntries(contact.addresses)
                 const remaining = existing.filter(
-                    c => c.address !== contact.address,
+                    c =>
+                        !refs.some(
+                            ([family, address]) =>
+                                c.addresses[family] === address,
+                        ),
                 )
                 if (remaining.length === existing.length) return false
                 set({ contacts: remaining })
@@ -77,8 +128,9 @@ export const useContactsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
-            partialize: state => ({
+            version: STORE_VERSION,
+            migrate: migrateContactsState,
+            partialize: (state): PersistedContactsState => ({
                 contacts: state.contacts,
             }),
         },

@@ -10,11 +10,14 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-contacts'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import type { Contact } from './models'
 
-export * from './contact-addresses'
-export * from './errors'
-export * from './models'
-export * from './schema'
-export * from './hooks'
-export { useContactsStore } from './store'
+export type ContactInFamily<F extends ChainFamily> = Contact & {
+    addresses: Record<F, string>
+}
+
+export const isContactInFamily = <F extends ChainFamily>(
+    contact: Contact,
+    family: F,
+): contact is ContactInFamily<F> => !!contact.addresses[family]

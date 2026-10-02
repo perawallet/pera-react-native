@@ -11,7 +11,8 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { contactSchema } from '..'
+import type { ContactAddresses } from '../../models'
+import { contactFromFormValues, contactSchema, contactToFormValues } from '..'
 
 // Zero-key address (all-zero 32-byte public key)
 const VALID_ADDRESS =
@@ -44,5 +45,47 @@ describe('contactSchema address validation', () => {
         expect(parseAddress(`${VALID_ADDRESS.slice(0, -1)}@`).success).toBe(
             false,
         )
+    })
+})
+
+describe('contact form mapping', () => {
+    test('contactToFormValues edits the Algorand entry', () => {
+        expect(
+            contactToFormValues({
+                name: 'Alice',
+                nfd: 'alice.algo',
+                addresses: {
+                    algorand: VALID_ADDRESS,
+                    other: 'X',
+                } as ContactAddresses,
+            }),
+        ).toEqual({ name: 'Alice', nfd: 'alice.algo', address: VALID_ADDRESS })
+    })
+
+    test('contactFromFormValues writes the address into the Algorand entry', () => {
+        expect(
+            contactFromFormValues({ name: 'Alice', address: VALID_ADDRESS }),
+        ).toEqual({ name: 'Alice', addresses: { algorand: VALID_ADDRESS } })
+    })
+
+    test("contactFromFormValues keeps the existing contact's other-family addresses", () => {
+        const existing = {
+            name: 'Alice',
+            image: 'file://old.png',
+            addresses: { algorand: 'OLD', other: 'X' } as ContactAddresses,
+        }
+
+        expect(
+            contactFromFormValues(
+                { name: 'Alicia', address: VALID_ADDRESS },
+                existing,
+            ),
+        ).toEqual({
+            name: 'Alicia',
+            addresses: {
+                algorand: VALID_ADDRESS,
+                other: 'X',
+            } as ContactAddresses,
+        })
     })
 })
