@@ -144,6 +144,16 @@ auditConfig:
     # chain resolves a patched version itself — and revisit immediately if a
     # `linking` config is ever added.
     - GHSA-vcc3-ghjq-m6fr # decode-uri-component: exponential-time decoding
+    # node-forge RSA PKCS#1 v1.5 signature forgery. No patched release exists:
+    # GitHub reports first_patched_version: null, and pnpm's ">=1.4.1" names a
+    # version that was never published, so there is nothing to override to. It
+    # reaches the --prod graph only because `expo` declares @expo/cli as a
+    # runtime dep; the CLI uses it for dev-server manifest signing and
+    # `expo run:ios` provisioning-cert parsing, on a developer machine. No app
+    # or extension code imports it and expo-updates is not installed, so nothing
+    # shipped verifies a signature with it. Drop this entry and raise the
+    # node-forge@1 override once a fixed release is published.
+    - GHSA-86w9-cpqp-85rv # node-forge: nested DigestAlgorithm signature forgery
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
