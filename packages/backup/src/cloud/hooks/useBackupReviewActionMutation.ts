@@ -16,8 +16,10 @@ import {
     getBackupSyncManager,
     type BackupSyncManager,
 } from '../sync/backupSyncManager'
+import type { BackupReviewItemKind } from '../sync/busyItems'
 import type {
     BackupActionOutcome,
+    BackupBackUpOutcome,
     ContactImportSummary,
     ImportSummary,
     PasskeyImportSummary,
@@ -27,7 +29,11 @@ import type {
  *  offers. */
 export type BackupReviewAction = 'backUp' | 'add' | 'delete'
 
-export type BackupReviewItemKind = 'account' | 'contact' | 'passkey'
+export type { BackupReviewItemKind }
+
+/** `deferred`: a back-up staged but cut off by a lock or stop, which the next
+ *  sync sends. Not a failure, so the row must not say it was. */
+export type BackupReviewActionResult = 'done' | 'deferred'
 
 export type BackupReviewActionVariables = {
     action: BackupReviewAction
@@ -35,7 +41,7 @@ export type BackupReviewActionVariables = {
     id: string
 }
 
-const BUSY_MESSAGE = 'Backup is busy syncing'
+const UNAVAILABLE_MESSAGE = 'Backup is unavailable'
 const NOT_BACKED_UP_MESSAGE = 'Backup did not complete'
 const NOT_DELETED_MESSAGE = 'Delete did not complete'
 
@@ -43,7 +49,7 @@ const backUpItem = (
     manager: BackupSyncManager,
     kind: BackupReviewItemKind,
     id: string,
-): Promise<boolean> => {
+): Promise<BackupBackUpOutcome> => {
     switch (kind) {
         case 'account': {
             return manager.backUpAccount(id)
@@ -110,7 +116,7 @@ const deleteItemFromBackup = (
 const runReviewAction = async (
     kind: BackupReviewItemKind,
     { action, id }: BackupReviewActionVariables,
-): Promise<void> => {
+): Promise<BackupReviewActionResult> => {
     // Mutations run networkMode 'always', so offline every action still runs,
     // and both write paths then report a success they cannot have: a failed
     // sync is only a logged warning, a failed delete only a queued retry.
@@ -120,21 +126,22 @@ const runReviewAction = async (
 
     switch (action) {
         case 'backUp': {
-            const settled = await backUpItem(manager, kind, id)
-            if (!settled) {
+            const outcome = await backUpItem(manager, kind, id)
+            if (outcome === 'deferred') return 'deferred'
+            if (outcome !== 'settled') {
                 throw new Error(NOT_BACKED_UP_MESSAGE)
             }
-            break
+            return 'done'
         }
         case 'add': {
             const summary = await addItemFromBackup(manager, kind, id)
             if (summary === null) {
-                throw new Error(BUSY_MESSAGE)
+                throw new Error(UNAVAILABLE_MESSAGE)
             }
             if (summary.failed.length > 0) {
                 throw new Error(summary.failed[0].reason)
             }
-            break
+            return 'done'
         }
         case 'delete': {
             // Unlike the removal flows, the row reports a verdict on the
@@ -143,7 +150,7 @@ const runReviewAction = async (
             if (outcome !== 'settled') {
                 throw new Error(NOT_DELETED_MESSAGE)
             }
-            break
+            return 'done'
         }
         default: {
             const exhaustive: never = action
@@ -153,13 +160,17 @@ const runReviewAction = async (
 }
 
 /**
- * Runs one review-screen row action against the sync manager. The busy-row
- * state and the toasts are the caller's, supplied through `options`, so the
- * copy stays with the screen that owns it.
+ * Runs one review-screen row action against the sync manager. The toasts are
+ * the caller's, supplied through `options`, so the copy stays with the screen
+ * that owns it; busy rows come from the manager's published items.
  */
 export const useBackupReviewActionMutation = (
     kind: BackupReviewItemKind,
-    options?: UseMutationOptions<void, Error, BackupReviewActionVariables>,
+    options?: UseMutationOptions<
+        BackupReviewActionResult,
+        Error,
+        BackupReviewActionVariables
+    >,
 ) =>
     useMutation({
         throwOnError: false,

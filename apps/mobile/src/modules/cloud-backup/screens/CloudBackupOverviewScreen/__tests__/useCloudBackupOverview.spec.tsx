@@ -15,7 +15,6 @@ import { act, renderHook } from '@testing-library/react'
 import {
     useCloudBackupStore,
     useBackupSyncStateStore,
-    deriveBackupSyncStatus,
 } from '@perawallet/wallet-core-backup'
 import {
     accountItemKey,
@@ -40,7 +39,6 @@ vi.mock('@analytics', async () => ({
 vi.mock('@perawallet/wallet-core-backup', async () => ({
     useCloudBackupStore: vi.fn(),
     useBackupSyncStateStore: vi.fn(),
-    deriveBackupSyncStatus: vi.fn(),
     backupIdToAddress: (v: string) => v.replace('did:pera:', ''),
     ...(await vi.importActual<
         typeof import('../../../../../../../../packages/backup/src/cloud/models/itemKeys')
@@ -128,10 +126,6 @@ vi.mock('../../../hooks', () => ({
         removeBackup: removeBackupMock,
         isRemoving: false,
     }),
-    useBackupSync: () => ({
-        syncNow: syncNowMock,
-        isSyncing: false,
-    }),
     useSyncDevicesQr: () => ({
         showSyncQr: showSyncQrMock,
     }),
@@ -201,11 +195,7 @@ const mockStores = (opts: {
     syncState: SyncStateFixture | null
     accounts: string[]
     contacts: string[]
-    derivedStatus?: string
 }) => {
-    ;(deriveBackupSyncStatus as unknown as Mock).mockReturnValue(
-        opts.derivedStatus ?? 'upToDate',
-    )
     ;(useCloudBackupStore as unknown as Mock).mockImplementation(
         (s: (st: { backupId: string | null }) => unknown) =>
             s({ backupId: opts.backupId }),
@@ -251,26 +241,6 @@ beforeEach(() => {
 })
 
 describe('useCloudBackupOverview', () => {
-    const badgeCases: [string, string | null][] = [
-        ['idle', null],
-        ['pending', null],
-        ['syncing', 'syncing'],
-        ['upToDate', 'success'],
-        ['error', 'failed'],
-    ]
-
-    test.each(badgeCases)('maps the %s status to %s', (status, badge) => {
-        mockStores({
-            backupId: 'did:pera:abc',
-            syncState: emptySync(),
-            accounts: ['A'],
-            contacts: [],
-            derivedStatus: status,
-        })
-        const { result } = renderHook(() => useCloudBackupOverview())
-        expect(result.current.syncStatus).toBe(badge)
-    })
-
     test('counts: 0 in sync, all local accounts not backed up (empty sync state)', () => {
         mockStores({
             backupId: 'did:pera:abc',

@@ -19,7 +19,7 @@ import {
     type IconName,
     type PWIconVariant,
 } from '@components/core'
-import { useOverviewRowStyles } from './styles'
+import { useStyles } from './styles'
 
 type OverviewRowProps = {
     icon: IconName
@@ -51,7 +51,7 @@ export const OverviewRow = ({
     onPress,
     testID,
 }: OverviewRowProps) => {
-    const styles = useOverviewRowStyles({ variant, tone })
+    const styles = useStyles({ variant, tone })
 
     return (
         <PWTouchableOpacity

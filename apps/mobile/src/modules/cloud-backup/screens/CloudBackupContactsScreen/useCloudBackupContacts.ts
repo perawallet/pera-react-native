@@ -24,7 +24,7 @@ type UseCloudBackupContactsResult = {
     isBackedUp: (address: string) => boolean
     notBackedUpCount: number
     availableFromBackupCount: number
-    busyAddress: string | null
+    isBusy: (address: string) => boolean
     onBackUp: (address: string) => void
     onReview: () => void
 }
@@ -37,7 +37,7 @@ export const useCloudBackupContacts = (): UseCloudBackupContactsResult => {
         isBackedUp,
         notBackedUpContacts,
         availableFromBackup,
-        busyAddress,
+        isBusy,
         backUpContact,
     } = useBackupContactReview()
 
@@ -46,7 +46,7 @@ export const useCloudBackupContacts = (): UseCloudBackupContactsResult => {
         isBackedUp,
         notBackedUpCount: notBackedUpContacts.length,
         availableFromBackupCount: availableFromBackup.length,
-        busyAddress,
+        isBusy,
         onBackUp: backUpContact,
         onReview: useCallback(
             () => navigation.navigate('CloudBackupContactsReview'),

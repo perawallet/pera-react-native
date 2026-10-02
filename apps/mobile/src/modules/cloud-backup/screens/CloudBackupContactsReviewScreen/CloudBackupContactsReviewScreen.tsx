@@ -16,6 +16,7 @@ import { EmptyView } from '@components/EmptyView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { useLanguage } from '@hooks/useLanguage'
+import { BackupSyncStatusRow } from '../../components/BackupSyncStatusRow'
 import { SectionHeading } from '../../components/SectionHeading'
 import { AvailableContactRow } from './AvailableContactRow'
 import { NotBackedUpContactRow } from './NotBackedUpContactRow'
@@ -29,7 +30,7 @@ export const CloudBackupContactsReviewScreen = () => {
         availableFromBackup,
         notBackedUpContacts,
         isExpanded,
-        busyAddress,
+        isBusy,
         onToggleExpanded,
         onAdd,
         onDelete,
@@ -52,6 +53,7 @@ export const CloudBackupContactsReviewScreen = () => {
     return (
         <PWScreen testID='cloud_backup_contacts_review_screen'>
             <PWView style={styles.container}>
+                <BackupSyncStatusRow />
                 {availableFromBackup.length > 0 && (
                     <PWView style={styles.card}>
                         <PWTouchableOpacity
@@ -87,9 +89,7 @@ export const CloudBackupContactsReviewScreen = () => {
                                         <AvailableContactRow
                                             address={entry.address}
                                             name={entry.name}
-                                            isBusy={
-                                                busyAddress === entry.address
-                                            }
+                                            isBusy={isBusy(entry.address)}
                                             onAdd={onAdd}
                                             onDelete={onDelete}
                                         />
@@ -117,10 +117,9 @@ export const CloudBackupContactsReviewScreen = () => {
                                     {index > 0 && <ListItemDivider />}
                                     <NotBackedUpContactRow
                                         contact={contact}
-                                        isBusy={
-                                            busyAddress ===
-                                            contact.addresses.algorand
-                                        }
+                                        isBusy={isBusy(
+                                            contact.addresses.algorand,
+                                        )}
                                         onBackUp={onBackUp}
                                     />
                                 </Fragment>

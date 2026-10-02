@@ -10,20 +10,11 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+export type BackupReviewItemKind = 'account' | 'contact' | 'passkey'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        gap: theme.spacing.xl,
-    },
-    section: {
-        gap: theme.spacing.md,
-    },
-    sectionLabel: {
-        paddingHorizontal: theme.spacing.sm,
-        color: theme.colors.textMain,
-    },
-    rows: {
-        gap: theme.spacing.md,
-    },
-}))
+/** An account and a contact can share an address, so the kind is part of the
+ *  key. */
+export const backupBusyItemKey = (
+    kind: BackupReviewItemKind,
+    id: string,
+): string => `${kind}:${id}`

@@ -24,7 +24,7 @@ type UseCloudBackupContactsReviewResult = {
     availableFromBackup: BackupContactReview['availableFromBackup']
     notBackedUpContacts: BackupContact[]
     isExpanded: boolean
-    busyAddress: string | null
+    isBusy: (address: string) => boolean
     onToggleExpanded: () => void
     onAdd: (address: string) => void
     onDelete: (address: string) => Promise<void>
@@ -38,7 +38,7 @@ export const useCloudBackupContactsReview =
         const {
             availableFromBackup,
             notBackedUpContacts,
-            busyAddress,
+            isBusy,
             addFromBackup,
             deleteFromBackup,
             backUpContact,
@@ -74,7 +74,7 @@ export const useCloudBackupContactsReview =
             availableFromBackup,
             notBackedUpContacts,
             isExpanded,
-            busyAddress,
+            isBusy,
             onToggleExpanded: useCallback(
                 () => setIsExpanded(current => !current),
                 [],

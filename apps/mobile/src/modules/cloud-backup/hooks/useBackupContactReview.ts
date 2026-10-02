@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
     isContactInFamily,
     useContactsStore,
@@ -18,7 +18,9 @@ import {
 } from '@perawallet/wallet-core-contacts'
 import {
     deriveBackupContactReview,
+    backupBusyItemKey,
     useBackupReviewActionMutation,
+    useBackupSyncActivityStore,
     useBackupSyncStateStore,
     type BackupContactReview,
     type BackupReviewAction,
@@ -39,7 +41,9 @@ export type UseBackupContactReviewResult = {
     /** Contacts the backup holds that this device deleted, with their names. */
     availableFromBackup: BackupContactReview['availableFromBackup']
     isBackedUp: (address: string) => boolean
-    busyAddress: string | null
+    /** True while a review action on this row is queued or running, even
+     *  one started before the screen was last opened. */
+    isBusy: (address: string) => boolean
     backUpContact: (address: string) => void
     addFromBackup: (address: string) => void
     deleteFromBackup: (address: string) => void
@@ -67,7 +71,7 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
-    const [busyAddress, setBusyAddress] = useState<string | null>(null)
+    const busyItems = useBackupSyncActivityStore(state => state.busyItems)
     const storedContacts = useContactsStore(state => state.contacts)
     const contacts = useMemo(
         () =>
@@ -89,13 +93,20 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
     )
 
     const { mutate } = useBackupReviewActionMutation('contact', {
-        onMutate: ({ id }) => setBusyAddress(id),
-        onSuccess: (_result, { action }) => {
-            showToast({
-                title: t(TOAST_KEY[action].success),
-                body: '',
-                type: 'success',
-            })
+        onSuccess: (result, { action }) => {
+            showToast(
+                result === 'deferred'
+                    ? {
+                          title: t('cloud_backup.contacts.back_up_deferred'),
+                          body: '',
+                          type: 'info',
+                      }
+                    : {
+                          title: t(TOAST_KEY[action].success),
+                          body: '',
+                          type: 'success',
+                      },
+            )
         },
         onError: (error, { action, id }) => {
             logger.warn('useBackupContactReview: review action failed', {
@@ -113,7 +124,6 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
                 type: 'error',
             })
         },
-        onSettled: () => setBusyAddress(null),
     })
 
     const notBackedUpAddresses = useMemo(
@@ -140,7 +150,11 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
             (address: string) => review.backedUp.has(address),
             [review.backedUp],
         ),
-        busyAddress,
+        isBusy: useCallback(
+            (address: string) =>
+                busyItems.includes(backupBusyItemKey('contact', address)),
+            [busyItems],
+        ),
         backUpContact: useCallback(
             (address: string) => mutate({ action: 'backUp', id: address }),
             [mutate],

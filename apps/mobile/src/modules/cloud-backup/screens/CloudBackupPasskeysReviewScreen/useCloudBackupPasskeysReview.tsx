@@ -25,7 +25,7 @@ type UseCloudBackupPasskeysReviewResult = {
     notBackedUpPasskeys: BackupPasskey[]
     isLoading: boolean
     isExpanded: boolean
-    busyCredentialId: string | null
+    isBusy: (credentialId: string) => boolean
     onToggleExpanded: () => void
     onAdd: (credentialId: string) => void
     onDelete: (credentialId: string) => Promise<void>
@@ -40,7 +40,7 @@ export const useCloudBackupPasskeysReview =
             availableFromBackup,
             notBackedUpPasskeys,
             isLoading,
-            busyCredentialId,
+            isBusy,
             addFromBackup,
             deleteFromBackup,
             backUpPasskey,
@@ -77,7 +77,7 @@ export const useCloudBackupPasskeysReview =
             notBackedUpPasskeys,
             isLoading,
             isExpanded,
-            busyCredentialId,
+            isBusy,
             onToggleExpanded: useCallback(
                 () => setIsExpanded(current => !current),
                 [],

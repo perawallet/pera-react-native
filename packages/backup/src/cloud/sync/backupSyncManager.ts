@@ -57,6 +57,7 @@ import { syncBackup } from './syncBackup'
 import { pullBackupDeltas } from './pullBackupDeltas'
 import { serializeAccountForBackup } from './serializeAccountForBackup'
 import { createBackupSyncStatePort } from './backupSyncStatePort'
+import { backupBusyItemKey, type BackupReviewItemKind } from './busyItems'
 import {
     BackupWebSocketClient,
     type BackupSocketFactory,
@@ -65,6 +66,7 @@ import {
 import { BackupPushIncompleteError, BackupSyncAbortedError } from './types'
 import type {
     BackupActionOutcome,
+    BackupBackUpOutcome,
     BackupSyncSources,
     BackupSyncStatePort,
     ContactImportFn,
@@ -108,6 +110,12 @@ export type BackupSyncManagerDeps = {
 export class BackupSyncManager {
     private running = false
     private inFlight: Nullable<Promise<unknown>> = null
+    private isPullQueued = false
+    private isSyncQueued = false
+    private readonly pendingActions = new Map<
+        string,
+        { itemKey: string; promise: Promise<unknown> }
+    >()
     private periodic: Nullable<ReturnType<typeof setInterval>> = null
     private socket: Nullable<BackupWebSocketClient> = null
     private unwatchAccounts: Nullable<() => void> = null
@@ -141,6 +149,7 @@ export class BackupSyncManager {
                 this.inFlight = null
                 this.pendingLocalEdits = []
                 this.state.setIsSyncing(false)
+                this.runQueued()
             }
         })()
         this.inFlight = run
@@ -170,6 +179,19 @@ export class BackupSyncManager {
         return true
     }
 
+    /** A full sync pulls too, so it supersedes a queued pull. */
+    private runQueued(): void {
+        if (!this.running) return
+        if (this.isSyncQueued) {
+            this.isSyncQueued = false
+            this.isPullQueued = false
+            void this.syncNow()
+        } else if (this.isPullQueued) {
+            this.isPullQueued = false
+            void this.runPull()
+        }
+    }
+
     private async waitUntilIdle(): Promise<void> {
         while (this.inFlight) {
             await this.inFlight.catch(() => undefined)
@@ -186,8 +208,12 @@ export class BackupSyncManager {
         while (this.inFlight) {
             await this.inFlight.catch(() => undefined)
         }
-        if (this.stopEpoch !== epoch || this.deps.isLocked()) return null
+        if (this.wasInterrupted(epoch)) return null
         return this.hold(work)
+    }
+
+    private wasInterrupted(epoch: number): boolean {
+        return this.stopEpoch !== epoch || this.deps.isLocked()
     }
 
     private context(): Nullable<{
@@ -242,6 +268,34 @@ export class BackupSyncManager {
         )
     }
 
+    /** Publishes the item as busy until the action settles, and hands a
+     *  repeat of the same action on the same item the run already queued. */
+    private trackAction<T>(
+        kind: BackupReviewItemKind,
+        id: string,
+        action: 'backUp' | 'add' | 'delete',
+        run: () => Promise<T>,
+    ): Promise<T> {
+        const itemKey = backupBusyItemKey(kind, id)
+        const actionKey = `${itemKey}|${action}`
+        const pending = this.pendingActions.get(actionKey)
+        if (pending) return pending.promise as Promise<T>
+        const promise = run().finally(() => {
+            this.pendingActions.delete(actionKey)
+            this.publishBusyItems()
+        })
+        this.pendingActions.set(actionKey, { itemKey, promise })
+        this.publishBusyItems()
+        return promise
+    }
+
+    private publishBusyItems(): void {
+        const items = new Set(
+            [...this.pendingActions.values()].map(entry => entry.itemKey),
+        )
+        this.state.setBusyItems([...items])
+    }
+
     /** Runs one exclusive mutation of the sync state, so a review action and a
      *  background sync can't both write the whole state and lose the other's
      *  edit. Waits out a running sync rather than refusing: a large backup's
@@ -276,27 +330,35 @@ export class BackupSyncManager {
     /** `syncNow` swallows transport failures, and a push the server rejects on
      *  version leaves knownVer at 0 inside a run that otherwise succeeded — so
      *  the state, not "it returned", says whether the account landed. */
-    async backUpAccount(address: string): Promise<boolean> {
-        const staged = await this.withExclusiveState(async state =>
-            markAccountForBackup(state, address),
-        )
-        if (!staged) return false
-        await this.syncWhenIdle()
-        return isAddressBackedUp(this.state.getSyncState(), address)
+    backUpAccount(address: string): Promise<BackupBackUpOutcome> {
+        return this.trackAction('account', address, 'backUp', async () => {
+            const epoch = this.stopEpoch
+            const staged = await this.withExclusiveState(async state =>
+                markAccountForBackup(state, address),
+            )
+            if (!staged) return 'refused'
+            await this.syncWhenIdle()
+            if (isAddressBackedUp(this.state.getSyncState(), address)) {
+                return 'settled'
+            }
+            return this.wasInterrupted(epoch) ? 'deferred' : 'failed'
+        })
     }
 
-    async addAccountFromBackup(address: string): Promise<ImportSummary | null> {
-        let summary: ImportSummary | null = null
-        const done = await this.withExclusiveState(async (state, deps) => {
-            const result = await importFromBackup({
-                state,
-                address,
-                deps: reviewActionDeps(deps),
+    addAccountFromBackup(address: string): Promise<ImportSummary | null> {
+        return this.trackAction('account', address, 'add', async () => {
+            let summary: ImportSummary | null = null
+            const done = await this.withExclusiveState(async (state, deps) => {
+                const result = await importFromBackup({
+                    state,
+                    address,
+                    deps: reviewActionDeps(deps),
+                })
+                summary = result.summary
+                return result.state
             })
-            summary = result.summary
-            return result.state
+            return done ? summary : null
         })
-        return done ? summary : null
     }
 
     /** A failed delete is a queued retry rather than a throw, so the state —
@@ -320,11 +382,15 @@ export class BackupSyncManager {
             : 'queued'
     }
 
-    async deleteAccountFromBackup(
-        address: string,
-    ): Promise<BackupActionOutcome> {
-        return this.runDelete((state, deps) =>
-            deleteFromBackup({ state, address, deps: reviewActionDeps(deps) }),
+    deleteAccountFromBackup(address: string): Promise<BackupActionOutcome> {
+        return this.trackAction('account', address, 'delete', () =>
+            this.runDelete((state, deps) =>
+                deleteFromBackup({
+                    state,
+                    address,
+                    deps: reviewActionDeps(deps),
+                }),
+            ),
         )
     }
 
@@ -334,40 +400,48 @@ export class BackupSyncManager {
         return this.applyLocalEdit(state => keepAccountInBackup(state, address))
     }
 
-    async backUpContact(address: string): Promise<boolean> {
-        const staged = await this.withExclusiveState(async state =>
-            markContactForBackup(state, address),
-        )
-        if (!staged) return false
-        await this.syncWhenIdle()
-        return isContactBackedUp(this.state.getSyncState(), address)
+    backUpContact(address: string): Promise<BackupBackUpOutcome> {
+        return this.trackAction('contact', address, 'backUp', async () => {
+            const epoch = this.stopEpoch
+            const staged = await this.withExclusiveState(async state =>
+                markContactForBackup(state, address),
+            )
+            if (!staged) return 'refused'
+            await this.syncWhenIdle()
+            if (isContactBackedUp(this.state.getSyncState(), address)) {
+                return 'settled'
+            }
+            return this.wasInterrupted(epoch) ? 'deferred' : 'failed'
+        })
     }
 
-    async addContactFromBackup(
+    addContactFromBackup(
         address: string,
     ): Promise<ContactImportSummary | null> {
-        let summary: ContactImportSummary | null = null
-        const done = await this.withExclusiveState(async (state, deps) => {
-            const result = await importContactFromBackup({
-                state,
-                address,
-                deps: reviewActionDeps(deps),
+        return this.trackAction('contact', address, 'add', async () => {
+            let summary: ContactImportSummary | null = null
+            const done = await this.withExclusiveState(async (state, deps) => {
+                const result = await importContactFromBackup({
+                    state,
+                    address,
+                    deps: reviewActionDeps(deps),
+                })
+                summary = result.summary
+                return result.state
             })
-            summary = result.summary
-            return result.state
+            return done ? summary : null
         })
-        return done ? summary : null
     }
 
-    async deleteContactFromBackup(
-        address: string,
-    ): Promise<BackupActionOutcome> {
-        return this.runDelete((state, deps) =>
-            deleteContactFromBackup({
-                state,
-                address,
-                deps: reviewActionDeps(deps),
-            }),
+    deleteContactFromBackup(address: string): Promise<BackupActionOutcome> {
+        return this.trackAction('contact', address, 'delete', () =>
+            this.runDelete((state, deps) =>
+                deleteContactFromBackup({
+                    state,
+                    address,
+                    deps: reviewActionDeps(deps),
+                }),
+            ),
         )
     }
 
@@ -379,40 +453,50 @@ export class BackupSyncManager {
         )
     }
 
-    async backUpPasskey(credentialId: string): Promise<boolean> {
-        const staged = await this.withExclusiveState(async state =>
-            markPasskeyForBackup(state, credentialId),
-        )
-        if (!staged) return false
-        await this.syncWhenIdle()
-        return isPasskeyBackedUp(this.state.getSyncState(), credentialId)
+    backUpPasskey(credentialId: string): Promise<BackupBackUpOutcome> {
+        return this.trackAction('passkey', credentialId, 'backUp', async () => {
+            const epoch = this.stopEpoch
+            const staged = await this.withExclusiveState(async state =>
+                markPasskeyForBackup(state, credentialId),
+            )
+            if (!staged) return 'refused'
+            await this.syncWhenIdle()
+            if (isPasskeyBackedUp(this.state.getSyncState(), credentialId)) {
+                return 'settled'
+            }
+            return this.wasInterrupted(epoch) ? 'deferred' : 'failed'
+        })
     }
 
-    async addPasskeyFromBackup(
+    addPasskeyFromBackup(
         credentialId: string,
     ): Promise<PasskeyImportSummary | null> {
-        let summary: PasskeyImportSummary | null = null
-        const done = await this.withExclusiveState(async (state, deps) => {
-            const result = await importPasskeyFromBackup({
-                state,
-                credentialId,
-                deps: reviewActionDeps(deps),
+        return this.trackAction('passkey', credentialId, 'add', async () => {
+            let summary: PasskeyImportSummary | null = null
+            const done = await this.withExclusiveState(async (state, deps) => {
+                const result = await importPasskeyFromBackup({
+                    state,
+                    credentialId,
+                    deps: reviewActionDeps(deps),
+                })
+                summary = result.summary
+                return result.state
             })
-            summary = result.summary
-            return result.state
+            return done ? summary : null
         })
-        return done ? summary : null
     }
 
-    async deletePasskeyFromBackup(
+    deletePasskeyFromBackup(
         credentialId: string,
     ): Promise<BackupActionOutcome> {
-        return this.runDelete((state, deps) =>
-            deletePasskeyFromBackup({
-                state,
-                credentialId,
-                deps: reviewActionDeps(deps),
-            }),
+        return this.trackAction('passkey', credentialId, 'delete', () =>
+            this.runDelete((state, deps) =>
+                deletePasskeyFromBackup({
+                    state,
+                    credentialId,
+                    deps: reviewActionDeps(deps),
+                }),
+            ),
         )
     }
 
@@ -504,7 +588,13 @@ export class BackupSyncManager {
         this.unwatchSettings?.()
         this.watchLocalStores()
         const epoch = this.stopEpoch
-        await this.syncNow()
+        // A run the preceding stop() cut off can still hold the slot; skipping
+        // here would leave anything it staged for the periodic tick.
+        if (this.isSyncing()) {
+            this.isSyncQueued = true
+        } else {
+            await this.syncNow()
+        }
         // Stale once a stop() lands during that await, even if a newer start()
         // followed: installing here too would leak a socket and an interval.
         if (this.stopEpoch !== epoch) return
@@ -518,6 +608,8 @@ export class BackupSyncManager {
     stop(): void {
         this.running = false
         this.stopEpoch += 1
+        this.isPullQueued = false
+        this.isSyncQueued = false
         if (this.periodic != null) {
             clearInterval(this.periodic)
             this.periodic = null
@@ -614,7 +706,13 @@ export class BackupSyncManager {
     }
 
     private async runPull(): Promise<void> {
-        if (this.isSyncing() || this.deps.isLocked()) return
+        if (this.deps.isLocked()) return
+        // The running sync may have fetched its deltas before this change
+        // landed; dropping the pull would leave it for the periodic tick.
+        if (this.isSyncing()) {
+            this.isPullQueued = true
+            return
+        }
         const ctx = this.context()
         if (!ctx) return
         await this.hold(async () => {

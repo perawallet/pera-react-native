@@ -31,7 +31,7 @@ vi.mock('../../../hooks/useBackupContactReview', () => ({
         notBackedUpContacts: notBackedUpMock.current,
         availableFromBackup: [{ address: 'GONE', name: 'Carol' }],
         isBackedUp: () => false,
-        busyAddress: null,
+        isBusy: () => false,
         backUpContact: vi.fn(),
         addFromBackup: vi.fn(),
         deleteFromBackup: deleteFromBackupMock,

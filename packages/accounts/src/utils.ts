@@ -17,6 +17,9 @@ import {
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     AccountTypes,
+    type AccountProvenance,
+    type AccountType,
+    type LocalProvenance,
     type HardwareWalletAccount,
     type HDWalletAccount,
     type Algo25Account,
@@ -56,6 +59,36 @@ export const getAccountDisplayName = (account: Nullable<WalletAccount>) => {
     if (account.name && !isAddressName) return account.name
     return truncateAlgorandAddress(account.address)
 }
+
+const LOCAL_ACCOUNT_TYPES = {
+    algo25: AccountTypes.algo25,
+    quantum: AccountTypes.quantum,
+    bip39: AccountTypes.hdWallet,
+} as const satisfies Record<LocalProvenance['seed'], AccountType>
+
+const accountTypeOf = (provenance: AccountProvenance): AccountType => {
+    switch (provenance.kind) {
+        case 'local': {
+            return LOCAL_ACCOUNT_TYPES[provenance.seed]
+        }
+        case 'hardware': {
+            return AccountTypes.hardware
+        }
+        case 'multisig': {
+            return AccountTypes.multisig
+        }
+        case 'watch': {
+            return AccountTypes.watch
+        }
+    }
+}
+
+/**
+ * Rekey state is ignored: a watch account with an auth address stays `watch`.
+ * A record the backfill left without a provenance keeps its stored `type`.
+ */
+export const accountType = (account: WalletAccount): AccountType =>
+    account.provenance ? accountTypeOf(account.provenance) : account.type
 
 export const isHDWalletAccount = (
     account: WalletAccount,

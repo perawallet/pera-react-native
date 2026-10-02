@@ -16,6 +16,7 @@ import { EmptyView } from '@components/EmptyView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { useLanguage } from '@hooks/useLanguage'
+import { BackupSyncStatusRow } from '../../components/BackupSyncStatusRow'
 import { SectionHeading } from '../../components/SectionHeading'
 import { AvailablePasskeyRow } from './AvailablePasskeyRow'
 import { NotBackedUpPasskeyRow } from './NotBackedUpPasskeyRow'
@@ -30,7 +31,7 @@ export const CloudBackupPasskeysReviewScreen = () => {
         notBackedUpPasskeys,
         isLoading,
         isExpanded,
-        busyCredentialId,
+        isBusy,
         onToggleExpanded,
         onAdd,
         onDelete,
@@ -54,6 +55,7 @@ export const CloudBackupPasskeysReviewScreen = () => {
     return (
         <PWScreen testID='cloud_backup_passkeys_review_screen'>
             <PWView style={styles.container}>
+                <BackupSyncStatusRow />
                 {availableFromBackup.length > 0 && (
                     <PWView style={styles.card}>
                         <PWTouchableOpacity
@@ -89,10 +91,7 @@ export const CloudBackupPasskeysReviewScreen = () => {
                                         <AvailablePasskeyRow
                                             credentialId={entry.credentialId}
                                             label={entry.label}
-                                            isBusy={
-                                                busyCredentialId ===
-                                                entry.credentialId
-                                            }
+                                            isBusy={isBusy(entry.credentialId)}
                                             onAdd={onAdd}
                                             onDelete={onDelete}
                                         />
@@ -120,10 +119,7 @@ export const CloudBackupPasskeysReviewScreen = () => {
                                     {index > 0 && <ListItemDivider />}
                                     <NotBackedUpPasskeyRow
                                         passkey={passkey}
-                                        isBusy={
-                                            busyCredentialId ===
-                                            passkey.credentialId
-                                        }
+                                        isBusy={isBusy(passkey.credentialId)}
                                         onBackUp={onBackUp}
                                     />
                                 </Fragment>

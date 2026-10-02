@@ -46,7 +46,7 @@ vi.mock('../../../hooks/useBackupAccountReview', () => ({
     useBackupAccountReview: () => ({
         availableFromBackup: [{ address: 'GONE', type: null }],
         notBackedUpAccounts: notBackedUpMock.current,
-        busyAddress: null,
+        isBusy: () => false,
         addFromBackup: addFromBackupMock,
         deleteFromBackup: deleteFromBackupMock,
         backUpAccount: backUpAccountMock,

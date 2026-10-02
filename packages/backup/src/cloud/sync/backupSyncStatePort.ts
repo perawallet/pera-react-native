@@ -29,6 +29,8 @@ export const createBackupSyncStatePort = (): BackupSyncStatePort => ({
     // runs it started itself.
     setIsSyncing: isSyncing =>
         useBackupSyncActivityStore.getState().setIsSyncing(isSyncing),
+    setBusyItems: busyItems =>
+        useBackupSyncActivityStore.getState().setBusyItems(busyItems),
     reset: () => {
         useCloudBackupStore.getState().resetState()
         useBackupSyncStateStore.getState().resetState()
