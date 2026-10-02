@@ -10,18 +10,19 @@
  limitations under the License
  */
 
-import {
-    CHAIN_CAPABILITIES,
-    type ChainCapabilities,
-    type ChainCapabilityRestrictions,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ReactNode } from 'react'
+import { useCapability, type CapabilityRequirement } from '@hooks/useCapability'
 
-// Algorand offers every capability; a composition root narrows per platform.
-export const algorandCapabilityDefaults = Object.fromEntries(
-    CHAIN_CAPABILITIES.map(capability => [capability, true]),
-) as ChainCapabilities
-
-// onramp buys real ALGO and USDC, so live only.
-export const algorandCapabilityRestrictions: ChainCapabilityRestrictions = {
-    onramp: ['developer', 'developer-override'],
+export type CapabilityGuardProps = {
+    requires: CapabilityRequirement
+    /** Informational stand-in only; a false capability never renders disabled. */
+    fallback?: ReactNode
+    children: ReactNode
 }
+
+export const CapabilityGuard = ({
+    requires,
+    fallback,
+    children,
+}: CapabilityGuardProps) =>
+    useCapability(requires) ? <>{children}</> : <>{fallback ?? null}</>

@@ -26,7 +26,7 @@ import {
     type ChainCapabilities,
 } from '../models/capabilities'
 import type { ChainDescriptor } from '../models/descriptor'
-import type { ChainId, ChainNetwork } from '../models/identity'
+import type { ChainId, ChainMode, ChainNetwork } from '../models/identity'
 import type { ChainContext, ChainModule } from '../models/module'
 import { descriptorContractViolations } from './descriptor-contract'
 
@@ -162,6 +162,53 @@ describe('createChainRegistry', () => {
         }))
 
         expect(registry.capabilities('algorand').staking).toBe(true)
+    })
+
+    describe('mode restrictions', () => {
+        const swapOn = { ...build, swap: true }
+        let mode: ChainMode | undefined
+
+        beforeEach(() => {
+            mode = undefined
+            registry.register(descriptor, swapOn, {
+                swap: ['developer', 'developer-override'],
+            })
+            registry.setCapabilityOverrides(() => ({
+                chainMode: mode ? { algorand: mode } : undefined,
+            }))
+        })
+
+        it('switches the capability off in a restricted mode and back on in live, without re-registering', () => {
+            mode = 'developer'
+            expect(registry.capabilities('algorand').swap).toBe(false)
+
+            mode = 'live'
+            expect(registry.capabilities('algorand').swap).toBe(true)
+
+            mode = 'developer-override'
+            expect(registry.capabilities('algorand').swap).toBe(false)
+        })
+
+        it('restricts nothing when the reader gives no chainMode', () => {
+            expect(registry.capabilities('algorand')).toEqual(swapOn)
+        })
+
+        it('leaves an unrestricted capability alone in a developer mode', () => {
+            mode = 'developer'
+
+            expect(registry.capabilities('algorand').staking).toBe(false)
+            expect(registry.capabilities('algorand').swap).toBe(false)
+        })
+
+        it('lets Feature Flags force the capability on in a restricted mode', () => {
+            mode = 'developer'
+            registry.setCapabilityOverrides(() => ({
+                chainMode: { algorand: 'developer' },
+                developer: { algorand: { swap: true } },
+            }))
+
+            expect(registry.capabilities('algorand').swap).toBe(true)
+        })
     })
 
     it('reports every capability false while the chain is switched off', () => {
@@ -317,6 +364,20 @@ describe('registerChainSetup', () => {
         expect(contextFor).toHaveBeenCalledWith(entry)
         expect(module.register).toHaveBeenCalledTimes(1)
         expect(module.register).toHaveBeenCalledWith(context)
+    })
+
+    it('forwards the module capability restrictions to the registry', () => {
+        const module = moduleWith({
+            capabilityDefaults: { ...build, swap: true },
+            capabilityRestrictions: { swap: ['developer'] },
+        })
+        chains.setCapabilityOverrides(() => ({
+            chainMode: { algorand: 'developer' },
+        }))
+
+        registerChainSetup([entryWith({ module })], chains, () => context)
+
+        expect(chains.capabilities('algorand').swap).toBe(false)
     })
 })
 

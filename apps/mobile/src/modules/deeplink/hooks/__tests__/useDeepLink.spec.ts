@@ -321,7 +321,6 @@ const { mockShowSignRequest, mockIsPeraCardEnabled, mockIsGiftCardsEnabled } =
 // all-native capabilities.ts).
 const { mockRouteCapabilities } = vi.hoisted(() => ({
     mockRouteCapabilities: {
-        peraCard: true,
         giftCards: true,
         inAppWebView: true,
         // Native map has Discover registered; these tests exercise the
@@ -419,7 +418,6 @@ describe('useDeepLink', () => {
         // layout-mounted instances); reset it so one test's initial-URL
         // handling doesn't suppress the next test's.
         resetDeeplinkListenerStateForTesting()
-        mockRouteCapabilities.peraCard = true
         mockRouteCapabilities.giftCards = true
         mockIsGiftCardsEnabled.mockReturnValue(true)
         mockRouteCapabilities.inAppWebView = true
@@ -1615,29 +1613,6 @@ describe('useDeepLink', () => {
         // staying locked forever on its handlingRef guard.
         expect(onError).toHaveBeenCalled()
         expect(onSuccess).not.toHaveBeenCalled()
-    })
-
-    it('ignores a CARDS deeplink when the peraCard capability is off', async () => {
-        mockIsPeraCardEnabled.mockReturnValue(true)
-        mockRouteCapabilities.peraCard = false
-        ;(parseDeeplink as Mock).mockReturnValue({
-            type: DeeplinkType.CARDS,
-            path: '/cards',
-        })
-        const onError = vi.fn()
-        const { result } = renderHook(() => useDeepLink())
-
-        await act(async () => {
-            await result.current.handleDeepLink(
-                'perawallet://app/cards',
-                false,
-                'deeplink',
-                onError,
-            )
-        })
-
-        expect(mockNavigate).not.toHaveBeenCalled()
-        expect(onError).toHaveBeenCalled()
     })
 
     it('opens the pending-signatures sheet for a SIGN_REQUEST deeplink', async () => {

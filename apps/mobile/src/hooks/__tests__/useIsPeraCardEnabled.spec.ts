@@ -13,7 +13,10 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
+import { useCapability } from '@hooks/useCapability'
 import { useIsPeraCardEnabled } from '../useIsPeraCardEnabled'
+
+vi.mock('@hooks/useCapability', () => ({ useCapability: vi.fn() }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
     useRemoteConfig: vi.fn(),
@@ -38,6 +41,7 @@ describe('useIsPeraCardEnabled', () => {
         vi.clearAllMocks()
         buildFlags.isDebug = false
         buildFlags.isStaging = false
+        vi.mocked(useCapability).mockReturnValue(true)
         ;(useRemoteConfig as Mock).mockReturnValue({
             getBooleanValue: mockGetBooleanValue,
         })
@@ -52,6 +56,16 @@ describe('useIsPeraCardEnabled', () => {
             'enable_pera_card',
             expect.any(Boolean),
         )
+    })
+
+    it('is off whenever the platform capability is off, whatever the remote flag says', () => {
+        vi.mocked(useCapability).mockReturnValue(false)
+        mockGetBooleanValue.mockReturnValue(true)
+
+        const { result } = renderHook(() => useIsPeraCardEnabled())
+
+        expect(useCapability).toHaveBeenCalledWith({ platform: 'peraCard' })
+        expect(result.current).toBe(false)
     })
 
     it('returns the remote value when set', () => {

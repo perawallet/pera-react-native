@@ -20,7 +20,11 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useNetworkStore } from '../../store/network-store'
-import { useSelectedNetworkId, useSelectedScope } from '../useSelectedScope'
+import {
+    useSelectedChainMode,
+    useSelectedNetworkId,
+    useSelectedScope,
+} from '../useSelectedScope'
 
 describe('useSelectedScope', () => {
     beforeEach(() => {
@@ -49,6 +53,21 @@ describe('useSelectedScope', () => {
         const { result } = renderHook(() => useSelectedNetworkId('algorand'))
 
         expect(result.current).toBe('mainnet')
+    })
+
+    test('useSelectedChainMode follows the mode and the override', () => {
+        const { result } = renderHook(() => useSelectedChainMode('algorand'))
+        expect(result.current).toBe('live')
+
+        act(() => {
+            useNetworkStore.getState().setMode('developer')
+        })
+        expect(result.current).toBe('developer')
+
+        act(() => {
+            useNetworkStore.getState().selectNetwork('algorand', 'betanet')
+        })
+        expect(result.current).toBe('developer-override')
     })
 
     test('a registered chain with no stored entry follows the mode', () => {

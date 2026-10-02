@@ -715,4 +715,76 @@ describe('chain-shared network-store', () => {
             ).toBe('goerli')
         })
     })
+
+    describe('selectChainMode', () => {
+        const state = (
+            mode: 'live' | 'developer',
+            selectedNetworkByChain: Record<string, string>,
+            customIds: string[] = [],
+        ) => ({
+            mode,
+            selectedNetworkByChain,
+            customNetworksByChain: {
+                algorand: customIds.map(id => ({ ...CONFIG, id })),
+            },
+        })
+
+        test.each(['betanet', 'custom', undefined])(
+            'live ignores override %s',
+            async override => {
+                const { selectChainMode } = await loadStore()
+                registerAlgorand()
+
+                expect(
+                    selectChainMode(
+                        state('live', override ? { algorand: override } : {}, [
+                            'custom',
+                        ]),
+                        'algorand',
+                    ),
+                ).toBe('live')
+            },
+        )
+
+        test.each([
+            [undefined, [], 'developer'],
+            ['testnet', [], 'developer'],
+            ['betanet', [], 'developer-override'],
+            ['custom', ['custom'], 'developer-override'],
+            ['custom', [], 'developer'],
+            ['unlisted', [], 'developer'],
+        ] as const)(
+            'developer with override %s and saved %j is %s',
+            async (override, customIds, expected) => {
+                const { selectChainMode } = await loadStore()
+                registerAlgorand()
+
+                expect(
+                    selectChainMode(
+                        state(
+                            'developer',
+                            override ? { algorand: override } : {},
+                            [...customIds],
+                        ),
+                        'algorand',
+                    ),
+                ).toBe(expected)
+            },
+        )
+
+        test('an unregistered chain is developer, or developer-override with an override', async () => {
+            const { selectChainMode } = await loadStore()
+
+            expect(selectChainMode(state('live', {}), ETHEREUM)).toBe('live')
+            expect(selectChainMode(state('developer', {}), ETHEREUM)).toBe(
+                'developer',
+            )
+            expect(
+                selectChainMode(
+                    state('developer', { ethereum: 'goerli' }),
+                    ETHEREUM,
+                ),
+            ).toBe('developer-override')
+        })
+    })
 })
