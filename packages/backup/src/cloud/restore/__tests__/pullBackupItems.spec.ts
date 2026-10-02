@@ -581,6 +581,110 @@ describe('pullBackupItems manifest pass-through', () => {
     })
 })
 
+// A newer client can write kinds this one has never heard of; the backup must
+// still restore everything this client does know.
+describe('pullBackupItems with an item kind it does not know', () => {
+    beforeEach(() => {
+        fetchManifest.mockReset()
+        fetchDelta.mockReset()
+        readItems.mockReset()
+    })
+
+    it('restores the known items and reports the unknown account kind as one skipped item', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: 4,
+            items: {
+                [accountKey('ADDR')]: active(1, 'h1', 1),
+                [secretsKey('ADDR')]: active(1, 'h2', 2),
+                [contactKey('CADDR')]: {
+                    ...active(1, 'h3', 3),
+                    type: 'CONTACT',
+                },
+                [accountKey('FIXADDR')]: active(1, 'h4', 4),
+            },
+        })
+        readItems.mockResolvedValue([
+            item(accountKey('ADDR'), {
+                type: 'algo25',
+                address: 'ADDR',
+                customName: 'Main',
+            }),
+            item(secretsKey('ADDR'), {
+                type: 'algo25',
+                mnemonic: 'a b c',
+                address: 'ADDR',
+            }),
+            item(contactKey('CADDR'), { address: 'CADDR', name: 'Alice' }),
+            item(accountKey('FIXADDR'), {
+                type: 'fixtureChainAccount',
+                address: 'FIXADDR',
+                updatedAt: 1,
+            }),
+        ])
+
+        const result = await pull()
+
+        expect(result.accounts).toEqual([
+            {
+                address: 'ADDR',
+                addressPayload: {
+                    type: 'algo25',
+                    address: 'ADDR',
+                    customName: 'Main',
+                },
+                secretsPayload: {
+                    type: 'algo25',
+                    mnemonic: 'a b c',
+                    address: 'ADDR',
+                },
+            },
+        ])
+        expect(result.contacts).toEqual([{ address: 'CADDR', name: 'Alice' }])
+        expect(result.skipped).toEqual([
+            { key: accountKey('FIXADDR'), reason: 'parse' },
+        ])
+        expect(result.manifestItems).toHaveProperty([accountKey('FIXADDR')])
+    })
+
+    it('never reads an item under a key prefix it does not know, and keeps it in the manifest', async () => {
+        const unknownKey = `fixture-kind/${hashAddress('FIXADDR')}`
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: 2,
+            items: {
+                [accountKey('WADDR')]: active(1, 'h1', 1),
+                [unknownKey]: active(1, 'h2', 2),
+            },
+        })
+        const stored = [
+            item(accountKey('WADDR'), { type: 'watch', address: 'WADDR' }),
+            item(unknownKey, { address: 'FIXADDR' }),
+        ]
+        // Serves only what was asked for, so a read of the unknown key would
+        // come back and surface as a skip.
+        readItems.mockImplementation(
+            async (_network, _backupId, _deviceId, keys: string[]) =>
+                stored.filter(entry => keys.includes(entry.key)),
+        )
+
+        const result = await pull()
+
+        expect(readItems).toHaveBeenCalledTimes(1)
+        expect(readItems).toHaveBeenCalledWith(
+            'mainnet',
+            backupId,
+            'device-1',
+            [accountKey('WADDR')],
+        )
+        expect(result.accounts.map(account => account.address)).toEqual([
+            'WADDR',
+        ])
+        expect(result.skipped).toEqual([])
+        expect(result.manifestItems).toHaveProperty([unknownKey])
+    })
+})
+
 describe('buildPulledAccounts', () => {
     it('attaches a hdSeed secret to its matching hdWallet account', () => {
         const addr = new Map<string, never>([

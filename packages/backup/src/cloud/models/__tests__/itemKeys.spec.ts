@@ -69,6 +69,12 @@ describe('item keys', () => {
         test('flags an uppercase-hex segment, which no hasher of ours emits', () => {
             expect(isLegacyItemKey(`accounts/${HASH.toUpperCase()}`)).toBe(true)
         })
+
+        // A newer client may add item kinds; refusing them as legacy would
+        // stop this client restoring or syncing the whole backup.
+        test('accepts a hashed key under a prefix this client does not know', () => {
+            expect(isLegacyItemKey(`fixture-kind/${HASH}`)).toBe(false)
+        })
     })
 
     test('never carries the address it was built from', () => {
