@@ -12,6 +12,7 @@
 
 import { beforeEach, vi } from 'vitest'
 import { registerFakeBroadcaster } from './src/__tests__/fakeBroadcaster'
+import { registerFakeLocalKeySignerAdapter } from './src/__tests__/fakeLocalKeySignerAdapter'
 import { registerFakePlannerAdapter } from './src/__tests__/fakePlannerAdapter'
 import { registerFakeReviewerAdapter } from './src/__tests__/fakeReviewerAdapter'
 
@@ -50,9 +51,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-// The machine and hooks resolve the chain through the planner registry.
+// The machine and hooks resolve the chain through the adapter registries.
 beforeEach(() => {
     registerFakeBroadcaster()
     registerFakeReviewerAdapter()
     registerFakePlannerAdapter()
+    registerFakeLocalKeySignerAdapter()
 })

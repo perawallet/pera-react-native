@@ -35,6 +35,7 @@ import {
     algodBackedTransport,
     registerFakeBroadcaster,
 } from '../../../../__tests__/fakeBroadcaster'
+import { registerFakePlannerAdapter } from '../../../../__tests__/fakePlannerAdapter'
 
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -89,6 +90,40 @@ describe('transportActor', () => {
         registerFakeBroadcaster({
             createSubmitTransport: () =>
                 algodBackedTransport(mockAlgokit, mockEncodeSignedTransactions),
+        })
+        // The multisig transports belong to the chain package; these stand-ins
+        // forward to the injected API functions so the routing (and the account
+        // each transport is keyed on) is what this suite pins.
+        registerFakePlannerAdapter({
+            createMultisigProposeTransport: vi.fn(proposeSignRequest => ({
+                send: async (result, source, multisigAddress) => {
+                    const response = await proposeSignRequest({
+                        multisigAddress: multisigAddress!,
+                        signedData: result.signedData,
+                        signers: result.signers,
+                        type: 'async',
+                    })
+                    return {
+                        type: 'proposed',
+                        signRequestId: response.signRequestId,
+                        status: response.status,
+                        sourceType: source.type,
+                    }
+                },
+            })),
+            createMultisigCosignTransport: vi.fn(addSignatures => ({
+                send: async (result, source) => {
+                    const response = await addSignatures({
+                        signRequestId: source.signRequestId!,
+                        signers: result.signers,
+                    })
+                    return {
+                        type: 'signatures-added',
+                        signRequestId: source.signRequestId!,
+                        status: response.status,
+                    }
+                },
+            })),
         })
         mockAlgokit.client.algod.sendRawTransaction.mockReturnValue({
             do: mockSendRawDo,

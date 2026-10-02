@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { setup, assign, sendTo } from 'xstate'
+import { setup, assign, sendTo, fromPromise } from 'xstate'
 import {
     toError,
     assertDefined,
@@ -32,16 +32,18 @@ import type {
     TransportResult,
 } from '../pipeline/types'
 import { analyzerActor } from './actors/analyzerActor'
-// Local-key and multisig are simple fromPromise actors. Hardware needs a
-// child machine instead (own retry/error lifecycle, parent-forwarded events).
-import { localKeySignerActor } from './actors/signers/localKeySignerActor'
-import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
 import { hardwareSigningMachine } from './children/hardwareSigningMachine'
 import type { HardwareSigningOutput } from './children/hardwareSigningMachine.context'
 import { resolveInitialContext, makeFailedContext } from './actions'
 import { resolveHardwareDeviceName } from './utils/resolveHardwareDeviceName'
 import { SigningError } from '../pipeline/errors'
+import {
+    localKeySignerAdapterFor,
+    plannerAdapterFor,
+    type LocalKeySignerInput,
+    type MultisigSignerInput,
+} from '../chain-adapter'
 
 /**
  * Returns the next signer type that hasn't been completed yet,
@@ -81,11 +83,20 @@ export const signingMachine = setup({
         events: {} as SigningMachineEvent,
         input: {} as SigningMachineInput,
     },
+    // Local-key and multisig are simple fromPromise actors over the chain's
+    // adapter. Hardware needs a child machine instead (own retry/error
+    // lifecycle, parent-forwarded events).
     actors: {
         analyzerActor,
-        localKeySignerActor,
+        localKeySignerActor: fromPromise<SigningResult[], LocalKeySignerInput>(
+            ({ input }) =>
+                localKeySignerAdapterFor(input.network).signGroups(input),
+        ),
         hardwareSigningMachine,
-        multisigSignerActor,
+        multisigSignerActor: fromPromise<SigningResult[], MultisigSignerInput>(
+            ({ input }) =>
+                plannerAdapterFor(input.network).signMultisigGroups(input),
+        ),
         transportActor,
     },
     // Ceiling on `transporting` so a hung submit can't pin the signing UI. Sits
@@ -355,6 +366,7 @@ export const signingMachine = setup({
                             signTransactions: context.deps.signTransactions,
                             signArbitraryData: context.deps.signArbitraryData,
                             signArc60: context.deps.signArc60,
+                            network: context.deps.network,
                         }),
                         onDone: {
                             target: 'dispatching',
@@ -469,6 +481,7 @@ export const signingMachine = setup({
                             encodeTransaction: context.deps.encodeTransaction,
                             hardwareWalletRegistry:
                                 context.deps.hardwareWalletRegistry,
+                            network: context.deps.network,
                         }),
                         onDone: {
                             target: 'dispatching',

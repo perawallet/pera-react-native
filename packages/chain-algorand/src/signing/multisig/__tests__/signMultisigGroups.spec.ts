@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
-import { createActor, toPromise } from 'xstate'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 
 // Hardware-participant signing reaches into `Address.fromString` for rekey
 // detection. The fixture addresses below are not canonical 58-char Algorand
@@ -26,19 +25,31 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     }
 })
 
-import { multisigSignerActor } from '../multisigSignerActor'
-import type { MultisigSignerActorInput } from '../multisigSignerActor'
-import type { AnalyzedSignableGroup } from '../../../../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     createHardwareWalletRegistry,
     type HardwareWalletTransport,
     type HardwareWalletTransportProvider,
-} from '@perawallet/wallet-core-hardware-wallet'
+} from '@perawallet/wallet-extension-hardware-wallet'
 import {
-    CannotSignError,
+    localKeySignerChainAdapters,
     NoLocalParticipantsError,
-} from '../../../../pipeline/errors'
+    plannerChainAdapters,
+    type AnalyzedSignableGroup,
+    type MultisigSignerInput,
+} from '@perawallet/wallet-core-signing'
+import {
+    algorandLocalKeySignerAdapter,
+    algorandPlannerAdapter,
+} from '../../adapter'
+import { signMultisigGroups } from '../signMultisigGroups'
+
+beforeEach(() => {
+    plannerChainAdapters.reset()
+    plannerChainAdapters.register(algorandPlannerAdapter)
+    localKeySignerChainAdapters.reset()
+    localKeySignerChainAdapters.register(algorandLocalKeySignerAdapter)
+})
 
 const MULTISIG_ADDRESS =
     'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM'
@@ -107,8 +118,8 @@ const mockGroup = (
 })
 
 const buildInput = (
-    overrides: Partial<MultisigSignerActorInput> = {},
-): MultisigSignerActorInput => ({
+    overrides: Partial<MultisigSignerInput> = {},
+): MultisigSignerInput => ({
     groups: [mockGroup()],
     allAccounts: [
         makeMultisigAccount(),
@@ -121,10 +132,11 @@ const buildInput = (
     signArbitraryData: vi.fn(),
     signArc60: vi.fn(),
     encodeTransaction: vi.fn(),
+    network: 'mainnet',
     ...overrides,
 })
 
-describe('multisigSignerActor', () => {
+describe('signMultisigGroups', () => {
     it('signs in parallel with all local-key participants and returns one combined SigningResult per group', async () => {
         const signTransactions = vi
             .fn()
@@ -132,9 +144,7 @@ describe('multisigSignerActor', () => {
             .mockResolvedValueOnce([{ txn: {}, sig: new Uint8Array([2]) }])
         const input = buildInput({ signTransactions })
 
-        const actor = createActor(multisigSignerActor, { input })
-        actor.start()
-        const results = await toPromise(actor)
+        const results = await signMultisigGroups(input)
 
         expect(results).toHaveLength(1)
         const [result] = results
@@ -163,9 +173,7 @@ describe('multisigSignerActor', () => {
             signTransactions,
         })
 
-        const actor = createActor(multisigSignerActor, { input })
-        actor.start()
-        const results = await toPromise(actor)
+        const results = await signMultisigGroups(input)
 
         expect(results[0].signers).toHaveLength(1)
         expect(results[0].signers[0].address).toBe(PARTICIPANT_A)
@@ -178,15 +186,12 @@ describe('multisigSignerActor', () => {
             signTransactions: vi.fn(),
         })
 
-        const actor = createActor(multisigSignerActor, { input })
-        actor.start()
-
-        await expect(toPromise(actor)).rejects.toBeInstanceOf(
+        await expect(signMultisigGroups(input)).rejects.toBeInstanceOf(
             NoLocalParticipantsError,
         )
     })
 
-    it('throws CannotSignError when group signerAddress is missing from allAccounts', async () => {
+    it('throws when group signerAddress is missing from allAccounts', async () => {
         const input = buildInput({
             allAccounts: [
                 makeAlgo25Account(PARTICIPANT_A),
@@ -195,10 +200,9 @@ describe('multisigSignerActor', () => {
             ],
         })
 
-        const actor = createActor(multisigSignerActor, { input })
-        actor.start()
-
-        await expect(toPromise(actor)).rejects.toBeInstanceOf(CannotSignError)
+        await expect(signMultisigGroups(input)).rejects.toThrow(
+            'Account not found in allAccounts',
+        )
     })
 
     it('propagates errors from participant signing', async () => {
@@ -207,10 +211,9 @@ describe('multisigSignerActor', () => {
             .mockRejectedValue(new Error('KMS unavailable'))
         const input = buildInput({ signTransactions })
 
-        const actor = createActor(multisigSignerActor, { input })
-        actor.start()
-
-        await expect(toPromise(actor)).rejects.toThrow('KMS unavailable')
+        await expect(signMultisigGroups(input)).rejects.toThrow(
+            'KMS unavailable',
+        )
     })
 
     it('produces one SigningResult per group when multiple groups are signed', async () => {
@@ -243,9 +246,7 @@ describe('multisigSignerActor', () => {
                 .mockResolvedValue([{ txn: {}, sig: new Uint8Array([7]) }]),
         })
 
-        const actor = createActor(multisigSignerActor, { input })
-        actor.start()
-        const results = await toPromise(actor)
+        const results = await signMultisigGroups(input)
 
         expect(results).toHaveLength(2)
         // First group has both PARTICIPANT_A and PARTICIPANT_B signing
@@ -300,9 +301,7 @@ describe('multisigSignerActor', () => {
             hardwareWalletRegistry,
         })
 
-        const actor = createActor(multisigSignerActor, { input })
-        actor.start()
-        const results = await toPromise(actor)
+        const results = await signMultisigGroups(input)
 
         // Only PARTICIPANT_A (local-key) signs the propose. The Ledger
         // transport must NOT be invoked — the user signs the hardware slot
@@ -352,9 +351,7 @@ describe('multisigSignerActor', () => {
             hardwareWalletRegistry,
         })
 
-        const actor = createActor(multisigSignerActor, { input })
-        actor.start()
-        const results = await toPromise(actor)
+        const results = await signMultisigGroups(input)
 
         // Empty signers is the defer signal the propose transport uses to
         // create a local draft instead of calling the backend. The raw

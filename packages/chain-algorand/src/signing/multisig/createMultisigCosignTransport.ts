@@ -12,35 +12,15 @@
 
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { toError, type Network } from '@perawallet/wallet-core-shared'
-import type {
-    DataTransport,
-    SigningResult,
-    SourceMetadata,
-    TransportResult,
-    SignRequestStatus,
-} from '../types'
-import { NetworkChangedError, TransportError } from '../errors'
-
-/**
- * Function type for adding signatures to an existing multisig request, or
- * (in the deferred-propose case) bootstrapping the backend record from a
- * local draft. When `signRequestId` is a draft id, the adapter is expected
- * to call propose on the backend instead of addSignature and return the
- * resolved real signRequestId via `resolvedSignRequestId` so the cosign
- * transport can emit a TransportResult whose `signRequestId` reflects the
- * real backend record.
- */
-export type AddSignaturesFn = (params: {
-    signRequestId: string
-    signers: SigningResult['signers']
-}) => Promise<{
-    status: SignRequestStatus
-    /**
-     * Set when the adapter resolved a draft signRequestId to a real backend
-     * id (deferred-propose bootstrap). Unset for normal cosign calls.
-     */
-    resolvedSignRequestId?: string
-}>
+import {
+    NetworkChangedError,
+    TransportError,
+    type AddSignaturesFn,
+    type DataTransport,
+    type SigningResult,
+    type SourceMetadata,
+    type TransportResult,
+} from '@perawallet/wallet-core-signing'
 
 /**
  * Creates a transport that adds signatures to an existing multisig request.

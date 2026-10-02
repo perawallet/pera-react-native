@@ -18,19 +18,20 @@ import {
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type { Network } from '@perawallet/wallet-core-shared'
 import type { SigningStrategy } from '../types'
 import { CannotSignError } from '../errors'
 import {
-    createLocalKeyStrategy,
+    localKeySignerAdapterFor,
+    plannerAdapterFor,
     type LocalSigningFunction,
     type LocalArbitrarySigningFunction,
     type LocalArc60SigningFunction,
-} from './createLocalKeyStrategy'
+} from '../../chain-adapter'
 import {
     createHardwareStrategy,
     type EncodeTransactionFunction,
 } from './createHardwareStrategy'
-import { createMultisigStrategy } from './createMultisigStrategy'
 
 /**
  * Options for creating the signing strategy selector
@@ -59,6 +60,9 @@ export interface GetSigningStrategyOptions {
 
     /** Hardware wallet registry from platform extension (optional) */
     hardwareWalletRegistry?: HardwareWalletRegistry
+
+    /** Picks the chain whose local-key and multisig strategies are built. */
+    network: Network
 }
 
 /**
@@ -71,7 +75,9 @@ export const createSigningStrategySelector = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
 ) => SigningStrategy) => {
-    const localStrategy = createLocalKeyStrategy({
+    const localStrategy = localKeySignerAdapterFor(
+        options.network,
+    ).createStrategy({
         signTransactions: options.signTransactions,
         signArbitraryData: options.signArbitraryData,
         signArc60: options.signArc60,
@@ -96,7 +102,9 @@ export const createSigningStrategySelector = (
         )
     }
 
-    const multisigStrategy = createMultisigStrategy({
+    const multisigStrategy = plannerAdapterFor(
+        options.network,
+    ).createMultisigStrategy({
         getLocalParticipants: options.getLocalParticipants,
         // Multisig participant slots are bound to the participant's OWN pubkey
         // at multisig creation — rekey indirection is intentionally NOT

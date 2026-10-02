@@ -18,21 +18,32 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     aggregateTransactionWarnings,
+    classifyHandoffPoll,
     classifyRequestStructure,
+    completeMultisigHandoff,
     computeBalanceImpact,
     createTransactionListItems,
     decodeArbitraryDataForDisplay,
     encodeProgramAccount,
     getRekeyedUnsignableReason,
+    isSignRequestMultisigUnsignable,
     legacyPlannerAdapter,
+    localKeySignerAdapterFor,
+    localKeySignerChainAdapters,
     plannerAdapterFor,
     plannerChainAdapters,
     resolveAllSignerAddresses,
     resolveMinFeeForSender,
     reviewerAdapterFor,
     reviewerChainAdapters,
+    type HandoffAssemblyContext,
+    type HandoffPollDetail,
     type ReviewerChainAdapter,
 } from '../chain-adapter'
+import {
+    fakeLocalKeySignerAdapter,
+    registerFakeLocalKeySignerAdapter,
+} from './fakeLocalKeySignerAdapter'
 import {
     fakePlannerAdapter,
     registerFakePlannerAdapter,
@@ -178,5 +189,84 @@ describe('planner chain adapters', () => {
             sig,
             'A',
         )
+    })
+})
+
+describe('multisig members of the planner', () => {
+    it('routes the thin classifyHandoffPoll by the handoff network', async () => {
+        const outcome = { kind: 'keep-polling' } as const
+        const adapter = registerFakePlannerAdapter({
+            classifyHandoffPoll: vi.fn().mockResolvedValue(outcome),
+        })
+        const detail = {
+            status: 'pending',
+            fail_reason_display: null,
+            transaction_lists: [],
+        } satisfies HandoffPollDetail
+        const context: HandoffAssemblyContext = {
+            network: 'testnet',
+            multisigAddress: 'MSIG',
+            msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
+            expectedRawTransactionsBase64: [],
+        }
+
+        await expect(classifyHandoffPoll(detail, context)).resolves.toBe(
+            outcome,
+        )
+
+        expect(adapter.classifyHandoffPoll).toHaveBeenCalledWith(
+            detail,
+            context,
+        )
+    })
+
+    it('delegates the network-less completion and unsignable checks to the registered planner', async () => {
+        const adapter = registerFakePlannerAdapter({
+            completeMultisigHandoff: vi.fn().mockResolvedValue(undefined),
+            isSignRequestMultisigUnsignable: vi.fn(() => true),
+        })
+        const args = {
+            outcome: { kind: 'soft-reject', reason: 'declined' },
+            deps: {},
+        } as unknown as Parameters<typeof completeMultisigHandoff>[0]
+
+        await completeMultisigHandoff(args)
+
+        expect(adapter.completeMultisigHandoff).toHaveBeenCalledWith(args)
+        expect(isSignRequestMultisigUnsignable({} as never, [])).toBe(true)
+        expect(adapter.isSignRequestMultisigUnsignable).toHaveBeenCalledWith(
+            {},
+            [],
+        )
+    })
+})
+
+describe('local-key signer chain adapters', () => {
+    beforeEach(() => {
+        localKeySignerChainAdapters.reset()
+    })
+
+    it('resolves the registered adapter for a legacy network', () => {
+        const adapter = registerFakeLocalKeySignerAdapter()
+
+        expect(localKeySignerAdapterFor('mainnet')).toBe(adapter)
+        expect(localKeySignerAdapterFor('testnet')).toBe(adapter)
+    })
+
+    it('throws ChainAdapterNotRegisteredError when no local-key signer is registered', () => {
+        expect(() => localKeySignerAdapterFor('mainnet')).toThrow(
+            ChainAdapterNotRegisteredError,
+        )
+        expect(() => localKeySignerAdapterFor('mainnet')).toThrow(
+            'No local-key signer adapter is registered for chain "algorand"',
+        )
+    })
+
+    it('refuses a second adapter for the same chain', () => {
+        registerFakeLocalKeySignerAdapter()
+
+        expect(() =>
+            localKeySignerChainAdapters.register(fakeLocalKeySignerAdapter()),
+        ).toThrow(DuplicateChainAdapterError)
     })
 })

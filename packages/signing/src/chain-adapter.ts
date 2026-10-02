@@ -22,11 +22,15 @@ import type {
     Arc0001ResolveResult,
     Arc0001SignTxnsRequest,
     PeraDisplayableTransaction,
+    PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { Network } from '@perawallet/wallet-core-config'
 import type { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { PQSchemeId } from '@perawallet/wallet-core-kms'
+import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
 import type {
     FeeAdjustment,
     SignRequest,
@@ -34,12 +38,24 @@ import type {
     TransactionWarning,
 } from './models'
 import type { ExternalSignTxnTransport } from './hooks/useEnqueueArc0001SignRequest'
+import type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
+import type {
+    LocalArbitrarySigningFunction,
+    LocalArc60SigningFunction,
+} from './pipeline/signing/standardDataSigning'
 import type {
     AnalysisContext,
+    AnalyzedSignableGroup,
+    DataTransport,
     SignableAnalysis,
     SignableGroup,
+    SignRequestStatus,
+    SigningCallbacks,
     SigningResult,
+    SigningStrategy,
+    SourceMetadata,
 } from './pipeline/types'
+import type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
 
 export type RequestStructure = 'single' | 'list'
 
@@ -253,6 +269,348 @@ export type GroupFeeReview = {
     highFeeWarning: Nullable<TransactionWarning>
 }
 
+export type PQSigningInfo = { schemeId: PQSchemeId; publicKey: Uint8Array }
+
+export type LocalKeySigningDeps = {
+    /**
+     * Signs each payload with the child key at `keyPairId`, returning one
+     * signature per payload in order. The caller owns key custody and the
+     * access-domain check; the adapter never sees private material.
+     */
+    signPayloads: (
+        keyPairId: string,
+        payloads: Uint8Array[],
+    ) => Promise<Uint8Array[]>
+    /**
+     * PQ scheme id + public key for a post-quantum child, or `null` for an
+     * Ed25519 one. The single oracle for which payload and which envelope
+     * field the adapter picks; see `useKMS.getPQSigningInfo` for why payload
+     * selection and signer selection must never be able to disagree.
+     */
+    getPQSigningInfo: (keyPairId: string) => PQSigningInfo | null
+    encodeTransaction: (txn: PeraTransaction) => Uint8Array
+    /**
+     * Yields to the event loop between batches. Injectable so a headless
+     * caller can run the batching logic without React's scheduling in play.
+     */
+    yieldBetweenBatches?: () => Promise<void>
+}
+
+export type LocalSigningFunction = (
+    txnGroup: PeraSignedTransaction['txn'][],
+    indexesToSign: number[],
+    account: WalletAccount,
+) => Promise<PeraSignedTransaction[]>
+
+export type { LocalArbitrarySigningFunction, LocalArc60SigningFunction }
+
+export type LocalKeyStrategyOptions = {
+    signTransactions: LocalSigningFunction
+    signArbitraryData: LocalArbitrarySigningFunction
+    signArc60: LocalArc60SigningFunction
+}
+
+export type LocalKeySignerInput = {
+    groups: AnalyzedSignableGroup[]
+    allAccounts: WalletAccount[]
+    signTransactions: LocalSigningFunction
+    signArbitraryData: LocalArbitrarySigningFunction
+    signArc60: LocalArc60SigningFunction
+    network: Network
+}
+
+export type MultisigSignerInput = LocalKeySignerInput & {
+    encodeTransaction: EncodeTransactionFunction
+    hardwareWalletRegistry?: HardwareWalletRegistry
+    signingCallbacks?: SigningCallbacks
+}
+
+export interface CreateMultisigStrategyOptions {
+    getLocalParticipants: (
+        account: WalletAccount,
+        allAccounts: WalletAccount[],
+    ) => WalletAccount[]
+    /** Rekey indirection is intentionally NOT followed here, so no `allAccounts` is threaded through. */
+    getStrategyForParticipant: (participant: WalletAccount) => SigningStrategy
+    getAllAccounts: () => WalletAccount[]
+}
+
+/**
+ * The transport supplies the propose `type` (sync for handoffs, async for
+ * in-app) so the backend picks the right post-threshold behaviour.
+ */
+export type ProposeSignRequestFn = (params: {
+    multisigAddress: string
+    signedData: SigningResult['signedData']
+    signers: SigningResult['signers']
+    type: MultisigProposeMode
+}) => Promise<{
+    signRequestId: string
+    status: SignRequestStatus
+    /**
+     * Pinned on the handoff so the resolver can refuse poll responses whose
+     * bytes differ from what the user reviewed.
+     */
+    rawTransactionsBase64: string[]
+    /**
+     * Proposing participant's address. Pinned on the handoff because the poll
+     * response declares it optional and some deployments echo null, leaving
+     * the resolver unable to cancel an orphaned request.
+     */
+    proposerAddress?: string
+}>
+
+/** Multisig metadata needed by the resolver listener to build subsigs. */
+export type MsigMetadata = {
+    version: number
+    threshold: number
+    addresses: string[]
+}
+
+export type GetMsigMetadataFn = (
+    multisigAddress: string,
+) => MsigMetadata | undefined
+
+/** Injected so this package doesn't depend on the app's device-id source. */
+export type GetDeviceIdFn = () => string | undefined
+
+/**
+ * Everything a later per-row Sign tap needs to bootstrap the real propose from
+ * one participant's signature.
+ */
+export type CreateDraftSignRequestInput = {
+    multisigAddress: string
+    /**
+     * Unsigned: `.txn` is populated, `sig`/`msig` absent. Typed as signed only
+     * because it comes straight from `SigningResult`. Only `.txn` is read, to
+     * encode the unprefixed msgpack bytes the propose API expects.
+     */
+    signedTransactions: PeraSignedTransaction[]
+    proposeType: MultisigProposeMode
+    source: SourceMetadata
+}
+
+/**
+ * Returns a synthetic `draft-`-prefixed id. Injected so this package doesn't
+ * depend on the mobile draft store. Absent, the transport throws on empty
+ * signers, preserving behaviour for callers that haven't opted in.
+ */
+export type CreateDraftSignRequestFn = (
+    input: CreateDraftSignRequestInput,
+) => string
+
+/**
+ * Adds signatures to an existing multisig request, or (in the deferred-propose
+ * case) bootstraps the backend record from a local draft. For a draft
+ * `signRequestId` the implementation proposes instead of adding a signature
+ * and returns the real id as `resolvedSignRequestId`.
+ */
+export type AddSignaturesFn = (params: {
+    signRequestId: string
+    signers: SigningResult['signers']
+}) => Promise<{
+    status: SignRequestStatus
+    /**
+     * Set when the adapter resolved a draft signRequestId to a real backend
+     * id (deferred-propose bootstrap). Unset for normal cosign calls.
+     */
+    resolvedSignRequestId?: string
+}>
+
+/**
+ * Delivery context a deferred (draft) propose carries to its bootstrap.
+ *
+ * A hardware-only proposer defers the backend propose to a local draft, but
+ * the sync-flow delivery wiring (handoff registration, `onProposed`) can only
+ * attach to a real backend record. Without this stash the bootstrapped record
+ * is created with `type: 'sync'` and no registered deliverer, so the backend
+ * holds it at `ready` forever and every participant's sheet hangs on
+ * "Submitting transaction". In-memory on purpose, matching the
+ * draft store's lifetime: if the app dies before bootstrap, the draft itself
+ * is gone and there is nothing left to deliver.
+ */
+export type DraftProposeContext = {
+    source: SourceMetadata
+    /** Validated at draft time; present only for external callback sources. */
+    msigMetadata?: MsigMetadata
+    /** Validated at draft time; present only for external callback sources. */
+    deviceId?: string
+}
+
+/**
+ * Mirrors a subset of multisig's `HandoffPollDetail`, redeclared structurally to
+ * keep the type dependency one-way (multisig -> signing).
+ */
+export type HandoffPollDetail = {
+    id?: string
+    status: string
+    fail_reason_display: string | null
+    transaction_lists: Array<{
+        raw_transactions: string[]
+        responses: Array<{
+            address: string
+            response: string
+            signatures?: (string | null)[] | null
+        }>
+    }>
+}
+
+/** Built by the resolver hook so these functions stay plain and unit-testable. */
+export type ResolverMessages = {
+    declined: string
+    expired: string
+    failed: string
+    noTransactions: string
+    deliveryFailed: string
+    assemblyFailed: (reason: string) => string
+}
+
+/** Why a handoff poll ended in a terminal failure (non-fatal to the app). */
+export type HandoffErrorReason =
+    | { kind: 'no-transactions' }
+    | { kind: 'assembly-failed'; detail: string }
+    | { kind: 'backend-failed'; displayReason: string | null }
+    | { kind: 'session-disconnected' }
+
+/** Every variant but `keep-polling` is terminal, delivered exactly once. */
+export type HandoffPollOutcome =
+    | { kind: 'keep-polling' }
+    | { kind: 'ready'; assembledBytes: Uint8Array[] }
+    | { kind: 'soft-reject'; reason: 'declined' | 'expired' }
+    | { kind: 'error'; reason: HandoffErrorReason }
+
+/** Terminal outcomes: everything `classifyHandoffPoll` returns but `keep-polling`. */
+export type TerminalHandoffOutcome = Exclude<
+    HandoffPollOutcome,
+    { kind: 'keep-polling' }
+>
+
+/**
+ * Narrower than {@link PendingWalletConnectHandoff} so non-WC consumers can
+ * reuse the classification logic without fabricating WC-only fields.
+ */
+export type HandoffAssemblyContext = {
+    /** Picks the chain whose multisig adapter assembles the envelopes. */
+    network: Network
+    multisigAddress: string
+    msigMetadata: { version: number; threshold: number; addresses: string[] }
+    expectedRawTransactionsBase64: string[]
+}
+
+/**
+ * How the resolver answers the WalletConnect peer. Injected from the app layer
+ * so the pipeline carries no WalletConnect dependency, and keyed by the
+ * serializable `clientId` / `payloadId` so it works for a rehydrated
+ * (post-kill) handoff that has no in-memory closures. All three are
+ * best-effort: a peer whose session is gone simply no-ops.
+ */
+export type HandoffPeerDelivery = {
+    /** `approveRequest` with the assembled result array. May throw (dead session). */
+    deliverResult: (
+        clientId: string,
+        payloadId: number,
+        result: Nullable<string>[],
+    ) => Promise<void>
+    /** Clean soft-reject (decline / expired), no connection-error banner. */
+    deliverSoftReject: (
+        clientId: string,
+        payloadId: number,
+        error: Error,
+    ) => Promise<void>
+    /** Terminal error reject, raising the connection-error banner. */
+    deliverError: (
+        clientId: string,
+        payloadId: number,
+        error: Error,
+    ) => Promise<void>
+}
+
+export type ResolveHandoffOutcomeArgs = {
+    outcome: TerminalHandoffOutcome
+    handoff: PendingWalletConnectHandoff
+    messages: ResolverMessages
+    delivery: HandoffPeerDelivery
+    /** Best-effort backend notification; a rejection is logged, not surfaced. */
+    markConfirmed: (input: {
+        network: Network
+        deviceId: string
+        signRequestIds: string[]
+    }) => Promise<void>
+    /**
+     * Best-effort cancel of the proposer's own backend sign request, called on
+     * terminal failures (`error`, including a failed delivery of assembled
+     * bytes, and `soft-reject`/`expired`). Nothing else terminalizes the
+     * backend record when the dApp is gone, and the pending inbox reads
+     * backend status; without this the request sits at pending/submitting
+     * forever. NOT called on a delivered `ready` (success) or on
+     * `soft-reject`/`declined` (a participant decline is already terminal on
+     * the backend). A rejection is logged, not surfaced.
+     */
+    cancelRequest?: () => Promise<void>
+}
+
+/**
+ * Side-effecting collaborators a multisig-handoff completion needs. Injected so
+ * the orchestration stays a pure function of its inputs, unit-testable without
+ * React, the node, or the multisig API, and so each consumer supplies only its own
+ * submission and status semantics.
+ */
+export type MultisigHandoffCompletionDeps = {
+    /**
+     * Submit the assembled composite-multisig bytes to the chain and return the
+     * resulting transaction ids. The consumer owns how the assembled signatures
+     * are interleaved with any pre-signed slots and grouped for submission;
+     * a throw here is treated as a terminal submission failure.
+     */
+    submit: (assembledBytes: Uint8Array[]) => Promise<string[]>
+    /**
+     * Durably record the group's tx ids the moment they're known: when
+     * `submit` resolves (before any other post-submit side effect), or from an
+     * `unknown-outcome` throw's deterministic ids so the retained handoff is
+     * crash-safe. The consumer persists them so a crash between submission and
+     * cleanup can't re-submit on relaunch (see `alreadySubmittedTxIds`).
+     * Synchronous by design: a local store write, not a network call.
+     * Best-effort.
+     */
+    recordSubmitted?: (txIds: string[]) => void
+    /** Best-effort: tell the backend the wallet submitted, so it won't broadcast. */
+    markConfirmed: () => Promise<void>
+    /**
+     * Best-effort: cancel the still-live sign-request (a proposer decline) on a
+     * terminal failure, so a pending-signatures sheet / inbox go terminal
+     * instead of lingering. May legitimately fail once threshold is met.
+     */
+    decline: () => Promise<void>
+    /**
+     * Drop the handoff from its registry once terminally resolved. Not called
+     * on an `unknown-outcome` submit; the handoff is retained for
+     * reconciliation.
+     */
+    removeHandoff: () => void
+    /** Surface a terminal failure to the user (e.g. a localized toast). */
+    reportError: (error: unknown) => void
+    /** Record a successful submission (with the resulting tx ids). Best-effort. */
+    onSubmitted: (txIds: string[]) => Promise<void>
+    /** Record a clean soft-reject (user declined / request expired). Best-effort. */
+    onSoftRejected: (reason: 'declined' | 'expired') => Promise<void>
+    /** Record a terminal failure. Best-effort. */
+    onFailed: () => Promise<void>
+}
+
+export type CompleteMultisigHandoffArgs = {
+    outcome: TerminalHandoffOutcome
+    deps: MultisigHandoffCompletionDeps
+    /**
+     * Tx ids persisted by `recordSubmitted` in a previous session. When set,
+     * the transactions are already on chain: never submit again (the node would
+     * reject the duplicate and the failure path would flip a landed swap to
+     * "failed"), and ignore whatever the poll now says; a post-crash
+     * `expired`/`failed` status just means mark-confirmed never made it.
+     * Only the best-effort post-submit tail is replayed.
+     */
+    alreadySubmittedTxIds?: string[]
+}
+
 /**
  * The chain-specific legs of planning a signature request; registered by the
  * chain package.
@@ -316,6 +674,46 @@ export interface PlannerChainAdapter {
         options: { isCosigner: boolean },
     ): void
     mergeSigningResults(results: SigningResult[]): SigningResult
+
+    /**
+     * The signed-transaction envelope for `txn`. Unsigned when `signature` is
+     * absent; the authorizing signer is recorded only when `signerAddress`
+     * differs from the sender, so the node can find the key that signed.
+     */
+    assembleSignedTransaction(
+        txn: PeraTransaction,
+        signature?: { sig: Uint8Array; signerAddress: string },
+    ): PeraSignedTransaction
+
+    createMultisigStrategy(
+        options: CreateMultisigStrategyOptions,
+    ): SigningStrategy
+    signMultisigGroups(input: MultisigSignerInput): Promise<SigningResult[]>
+    createMultisigProposeTransport(
+        proposeSignRequest: ProposeSignRequestFn,
+        capturedNetwork: Network,
+        getMsigMetadata: GetMsigMetadataFn,
+        getDeviceId: GetDeviceIdFn,
+        createDraftSignRequest?: CreateDraftSignRequestFn,
+    ): DataTransport
+    createMultisigCosignTransport(
+        addSignatures: AddSignaturesFn,
+        capturedNetwork: Network,
+    ): DataTransport
+    /** Removes and returns the stashed context; call once, after the bootstrap propose succeeded. */
+    takeDraftProposeContext(
+        draftLocalId: string,
+    ): DraftProposeContext | undefined
+    classifyHandoffPoll(
+        detail: HandoffPollDetail,
+        context: HandoffAssemblyContext,
+    ): Promise<HandoffPollOutcome>
+    resolveHandoffOutcome(args: ResolveHandoffOutcomeArgs): Promise<void>
+    completeMultisigHandoff(args: CompleteMultisigHandoffArgs): Promise<void>
+    isSignRequestMultisigUnsignable(
+        request: SignRequest,
+        accounts: WalletAccount[],
+    ): boolean
 }
 
 export const plannerChainAdapters =
@@ -328,6 +726,32 @@ export const plannerAdapterFor = (network: Network): PlannerChainAdapter =>
 // For callers with no network in hand: every legacy network maps to this chain.
 export const legacyPlannerAdapter = (): PlannerChainAdapter =>
     plannerChainAdapters.get(LEGACY_CHAIN_ID)
+
+/** The local-key signing legs; the KMS primitive is chosen by scheme, never by account type. */
+export interface LocalKeySignerChainAdapter {
+    chainId: ChainId
+
+    /**
+     * Leaves slots outside `indexesToSign` unsigned. Signs with `account` as
+     * given and never follows rekey.
+     */
+    signTransactions(
+        deps: LocalKeySigningDeps,
+        txnGroup: PeraTransaction[],
+        indexesToSign: number[],
+        account: WalletAccount,
+    ): Promise<PeraSignedTransaction[]>
+    createStrategy(options: LocalKeyStrategyOptions): SigningStrategy
+    signGroups(input: LocalKeySignerInput): Promise<SigningResult[]>
+}
+
+export const localKeySignerChainAdapters =
+    createChainAdapterRegistry<LocalKeySignerChainAdapter>('local-key signer')
+
+export const localKeySignerAdapterFor = (
+    network: Network,
+): LocalKeySignerChainAdapter =>
+    localKeySignerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
 
 export const resolveMinFeeForSender = (
     params: ResolveMinFeeForSenderParams,
@@ -345,3 +769,19 @@ export const encodeProgramAccount = (
     signerAddress: string,
 ): Uint8Array =>
     legacyPlannerAdapter().encodeProgramAccount(program, sig, signerAddress)
+
+export const classifyHandoffPoll = (
+    detail: HandoffPollDetail,
+    context: HandoffAssemblyContext,
+): Promise<HandoffPollOutcome> =>
+    plannerAdapterFor(context.network).classifyHandoffPoll(detail, context)
+
+export const completeMultisigHandoff = (
+    args: CompleteMultisigHandoffArgs,
+): Promise<void> => legacyPlannerAdapter().completeMultisigHandoff(args)
+
+export const isSignRequestMultisigUnsignable = (
+    request: SignRequest,
+    accounts: WalletAccount[],
+): boolean =>
+    legacyPlannerAdapter().isSignRequestMultisigUnsignable(request, accounts)

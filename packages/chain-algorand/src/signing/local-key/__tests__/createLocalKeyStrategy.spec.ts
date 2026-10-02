@@ -12,11 +12,14 @@
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createLocalKeyStrategy } from '../createLocalKeyStrategy'
-import type { AnalyzedSignableGroup } from '../../types'
+import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
 import { KeyNotFoundError } from '@perawallet/wallet-core-kms'
-import { SigningError, SIGNING_ERROR_KEYS } from '../../errors'
+import {
+    SigningError,
+    SIGNING_ERROR_KEYS,
+} from '@perawallet/wallet-core-signing'
 
 const mocks = vi.hoisted(() => ({
     hasSigningKeys: vi.fn(),

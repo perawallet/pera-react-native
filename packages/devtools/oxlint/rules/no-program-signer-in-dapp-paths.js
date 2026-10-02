@@ -14,6 +14,8 @@
 export const DAPP_SIGNING_PATHS = [
     'packages/signing/src/pipeline',
     'packages/signing/src/machine',
+    'packages/chain-algorand/src/signing/local-key',
+    'packages/chain-algorand/src/signing/multisig',
     'packages/signing/src/hooks/useSignAndSubmitGroup.ts',
     'packages/signing/src/hooks/useSigningRequest.ts',
     'packages/signing/src/hooks/useSigningPipeline.ts',
@@ -22,7 +24,7 @@ export const DAPP_SIGNING_PATHS = [
 // Word-bounded so cosignProgrammatic and friends stay legal. Raw text, as the
 // spec this replaces scanned it: a comment naming the signer is flagged too.
 const PROGRAM_SIGNER =
-    /\b(?:useProgramSigner|signProgram|signDelegatedLsig|encodeDelegatedLsig|ProgramSigningUnsupportedError)\b/g
+    /\b(?:useProgramSigner|signProgram|encodeProgramAccount|ProgramSigningUnsupportedError)\b/g
 
 const lineColumn = (text, index) => {
     const before = text.slice(0, index)
@@ -37,7 +39,7 @@ export const noProgramSignerInDappPaths = {
         type: 'problem',
         docs: {
             description:
-                'Keep the delegated LogicSig signer unreachable from dApp signing',
+                'Keep the program signer unreachable from dApp signing',
         },
         messages: {
             reachable:

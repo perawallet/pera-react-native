@@ -24,7 +24,6 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
-    buildWalletConnectSignResult,
     FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER,
     FeeAdjustmentDeliveryError,
     type EnqueueDappRequestDeps,
@@ -33,6 +32,7 @@ import {
     type RejectReason,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
+import { buildWalletConnectSignResult } from './multisig/buildWalletConnectSignResult'
 
 // Bridges an ARC-0001 resolver result to the signing pipeline: builds the
 // TransactionSignRequest, short-circuits when nothing is signable, and pads the

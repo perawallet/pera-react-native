@@ -10,39 +10,17 @@
  limitations under the License
  */
 
-import { fromPromise } from 'xstate'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    AnalyzedSignableGroup,
-    SigningResult,
-} from '../../../pipeline/types'
 import {
-    createLocalKeyStrategy,
-    type LocalSigningFunction,
-    type LocalArbitrarySigningFunction,
-    type LocalArc60SigningFunction,
-} from '../../../pipeline/signing/createLocalKeyStrategy'
-import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
-import { signGroupsBySignerAccount } from './signGroupsBySignerAccount'
+    resolveSigningAccount,
+    signGroupsBySignerAccount,
+    type LocalKeySignerInput,
+    type SigningResult,
+} from '@perawallet/wallet-core-signing'
+import { createLocalKeyStrategy } from './createLocalKeyStrategy'
 
-export type LocalKeySignerActorInput = {
-    groups: AnalyzedSignableGroup[]
-    allAccounts: WalletAccount[]
-    signTransactions: LocalSigningFunction
-    signArbitraryData: LocalArbitrarySigningFunction
-    signArc60: LocalArc60SigningFunction
-}
-
-/**
- * XState actor that signs all groups using local keys (Algo25 / HDWallet).
- * Each group carries its own signerAddress, so multi-signer requests are
- * handled correctly: the auth account is resolved per group, then signed.
- * Returns one SigningResult per group, preserving originalIndices for reassembly.
- */
-export const localKeySignerActor = fromPromise<
-    SigningResult[],
-    LocalKeySignerActorInput
->(async ({ input }) => {
+export const signLocalKeyGroups = async (
+    input: LocalKeySignerInput,
+): Promise<SigningResult[]> => {
     const {
         groups,
         allAccounts,
@@ -75,4 +53,4 @@ export const localKeySignerActor = fromPromise<
             return strategy.sign(group, accountForSigning)
         },
     )
-})
+}

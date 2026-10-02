@@ -12,6 +12,7 @@
 
 import { resolveArc0001SignTxnRequest } from '@perawallet/wallet-core-blockchain'
 import type {
+    LocalKeySignerChainAdapter,
     PlannerChainAdapter,
     ReviewerChainAdapter,
 } from '@perawallet/wallet-core-signing'
@@ -34,6 +35,23 @@ import { encodeDelegatedLsigAccount, programSigningPayload } from './lsig'
 import { mergeSigningResults } from './mergeSigningResults'
 import { resolveMinFeeForSender } from './minFeeResolver'
 import { simulateInnerTransactions } from './simulateImpact'
+import { createLocalKeyStrategy } from './local-key/createLocalKeyStrategy'
+import { signLocalKeyGroups } from './local-key/signLocalKeyGroups'
+import {
+    assembleSignedTransaction,
+    signTransactionsWithLocalKey,
+} from './local-key/signTransactionsWithLocalKey'
+import {
+    classifyHandoffPoll,
+    resolveHandoffOutcome,
+} from './multisig/classifyHandoffPoll'
+import { completeMultisigHandoff } from './multisig/completeMultisigHandoff'
+import { createMultisigCosignTransport } from './multisig/createMultisigCosignTransport'
+import { createMultisigProposeTransport } from './multisig/createMultisigProposeTransport'
+import { createMultisigStrategy } from './multisig/createMultisigStrategy'
+import { draftProposeContexts } from './multisig/draftProposeContexts'
+import { isSignRequestMultisigUnsignable } from './multisig/isSignRequestMultisigUnsignable'
+import { signMultisigGroups } from './multisig/signMultisigGroups'
 import {
     validateCosignSubsetIntegrity,
     validateTransactionGroupIntegrity,
@@ -72,4 +90,21 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
             ? validateCosignSubsetIntegrity(transactions)
             : validateTransactionGroupIntegrity(transactions),
     mergeSigningResults,
+    assembleSignedTransaction,
+    createMultisigStrategy,
+    signMultisigGroups,
+    createMultisigProposeTransport,
+    createMultisigCosignTransport,
+    takeDraftProposeContext: draftProposeContexts.take,
+    classifyHandoffPoll,
+    resolveHandoffOutcome,
+    completeMultisigHandoff,
+    isSignRequestMultisigUnsignable,
+}
+
+export const algorandLocalKeySignerAdapter: LocalKeySignerChainAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
+    signTransactions: signTransactionsWithLocalKey,
+    createStrategy: createLocalKeyStrategy,
+    signGroups: signLocalKeyGroups,
 }

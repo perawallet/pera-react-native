@@ -10,28 +10,7 @@
  limitations under the License
  */
 
-import type { SourceMetadata } from './types'
-import type { MsigMetadata } from './transports/createMultisigProposeTransport'
-
-/**
- * Delivery context a deferred (draft) propose carries to its bootstrap.
- *
- * A hardware-only proposer defers the backend propose to a local draft, but
- * the sync-flow delivery wiring (handoff registration, `onProposed`) can only
- * attach to a real backend record. Without this stash the bootstrapped record
- * is created with `type: 'sync'` and no registered deliverer, so the backend
- * holds it at `ready` forever and every participant's sheet hangs on
- * "Submitting transaction". In-memory on purpose, matching the
- * draft store's lifetime: if the app dies before bootstrap, the draft itself
- * is gone and there is nothing left to deliver.
- */
-export type DraftProposeContext = {
-    source: SourceMetadata
-    /** Validated at draft time; present only for external callback sources. */
-    msigMetadata?: MsigMetadata
-    /** Validated at draft time; present only for external callback sources. */
-    deviceId?: string
-}
+import type { DraftProposeContext } from '@perawallet/wallet-core-signing'
 
 const contexts = new Map<string, DraftProposeContext>()
 

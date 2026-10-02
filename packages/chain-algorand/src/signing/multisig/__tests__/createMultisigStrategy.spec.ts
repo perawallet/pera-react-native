@@ -12,12 +12,12 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    SigningStrategy,
-    SigningResult,
-    AnalyzedSignableGroup,
-} from '../../types'
-import { NoLocalParticipantsError } from '../../errors'
+import {
+    NoLocalParticipantsError,
+    type SigningStrategy,
+    type SigningResult,
+    type AnalyzedSignableGroup,
+} from '@perawallet/wallet-core-signing'
 import { createMultisigStrategy } from '../createMultisigStrategy'
 
 const makeMultisigAccount = (address: string): WalletAccount =>

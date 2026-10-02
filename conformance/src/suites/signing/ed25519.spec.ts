@@ -14,8 +14,8 @@ import { microAlgo } from '@algorandfoundation/algokit-utils'
 import algosdk, { encodeMsgpack } from 'algosdk'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createLocalKeyStrategy } from '@perawallet/wallet-core-signing/pipeline/signing/createLocalKeyStrategy'
-import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-signing/pipeline/signing/signTransactionsWithLocalKey'
+import { createLocalKeyStrategy } from '@perawallet/wallet-core-chain-algorand/signing/local-key/createLocalKeyStrategy'
+import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-chain-algorand/signing/local-key/signTransactionsWithLocalKey'
 import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing/pipeline/types'
 
 import { createAlgo25Account, fundAccount } from '../../harness/accounts'

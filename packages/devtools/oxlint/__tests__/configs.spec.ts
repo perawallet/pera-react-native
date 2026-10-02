@@ -43,6 +43,7 @@ describe('no-restricted-properties', () => {
                 [
                     'packages/kms/src/**',
                     'packages/signing/src/**',
+                    'packages/chain-algorand/src/signing/local-key/**',
                     'packages/passkeys/src/**',
                     'packages/backup/src/**',
                     'extensions/keystore-chrome/src/**',

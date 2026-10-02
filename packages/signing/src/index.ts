@@ -13,11 +13,17 @@
 export const name = '@perawallet/wallet-core-signing'
 
 export {
+    classifyHandoffPoll,
+    completeMultisigHandoff,
     computeBalanceImpact,
     encodeProgramAccount,
+    isSignRequestMultisigUnsignable,
+    localKeySignerAdapterFor,
+    localKeySignerChainAdapters,
     plannerAdapterFor,
     plannerChainAdapters,
     resolveMinFeeForSender,
+    type AddSignaturesFn,
     type AssignFeeToGroup,
     type AssignFeeToGroupDeps,
     type AssignFeeToGroupParams,
@@ -25,13 +31,40 @@ export {
     type BalanceImpact,
     type BalanceImpactCreatedAsset,
     type BalanceImpactDelta,
+    type CompleteMultisigHandoffArgs,
+    type CreateDraftSignRequestFn,
+    type CreateDraftSignRequestInput,
+    type CreateMultisigStrategyOptions,
     type DappResolveContext,
     type DappResolveResult,
     type DappSignRequest,
+    type DraftProposeContext,
     type EnqueueDappRequestDeps,
+    type GetDeviceIdFn,
+    type GetMsigMetadataFn,
     type GroupFeeReview,
+    type HandoffAssemblyContext,
+    type HandoffErrorReason,
+    type HandoffPeerDelivery,
+    type HandoffPollDetail,
+    type HandoffPollOutcome,
+    type LocalArbitrarySigningFunction,
+    type LocalArc60SigningFunction,
+    type LocalKeySignerChainAdapter,
+    type LocalKeySignerInput,
+    type LocalKeySigningDeps,
+    type LocalKeyStrategyOptions,
+    type LocalSigningFunction,
+    type MsigMetadata,
+    type MultisigHandoffCompletionDeps,
+    type MultisigSignerInput,
+    type PQSigningInfo,
     type PlannerChainAdapter,
+    type ProposeSignRequestFn,
+    type ResolveHandoffOutcomeArgs,
     type ResolveMinFeeForSenderParams,
+    type ResolverMessages,
+    type TerminalHandoffOutcome,
 } from './chain-adapter'
 
 export {
@@ -107,9 +140,7 @@ export {
     parseArc60WireRequest,
 } from './utils/arc60-wire'
 export { ARC60_SCOPE_AUTH } from './utils/arc60'
-export { buildWalletConnectSignResult } from './utils/buildWalletConnectSignResult'
 export { classifyLedgerErrorKind } from './utils/classifyLedgerErrorKind'
-export { isSignRequestMultisigUnsignable } from './utils/isSignRequestMultisigUnsignable'
 export type { Arc60ParsedPayload } from './utils/parseArc60ForDisplay'
 export { buildSiwaAuthRequest, type Siwa } from './utils/siwa'
 export {
@@ -165,13 +196,25 @@ export {
     UserCancelledError,
     isFeeAdjustmentDeliveryError,
 } from './pipeline/errors'
+export { walletConnectHandoffs } from './pipeline/walletConnectHandoffs'
+export type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
+export { createSigningStrategySelector } from './pipeline/signing/getSigningStrategy'
+export type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
 export {
-    classifyHandoffPoll,
-    type HandoffPeerDelivery,
-    type ResolverMessages,
-    type TerminalHandoffOutcome,
-} from './pipeline/classifyHandoffPoll'
-export { completeMultisigHandoff } from './pipeline/completeMultisigHandoff'
+    signArbitraryDataCase,
+    signArc60Case,
+} from './pipeline/signing/standardDataSigning'
+export { SIGNING_ERROR_KEYS } from './pipeline/errors'
+export { resolveSigningAccount } from './machine/utils/resolveSigningAccount'
+export { signGroupsBySignerAccount } from './machine/actors/signers/signGroupsBySignerAccount'
+export type {
+    AnalyzedSignableGroup,
+    SignedData,
+    SignerInfo,
+    SigningCallbacks,
+    SigningStrategy,
+    SignRequestStatus,
+} from './pipeline/types'
 
 export {
     broadcasterChainAdapters,

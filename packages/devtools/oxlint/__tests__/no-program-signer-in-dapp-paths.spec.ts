@@ -36,13 +36,13 @@ describe('pera/no-program-signer-in-dapp-paths', () => {
                 [
                     "import { signProgram } from '../program'",
                     '// falls back to useProgramSigner',
-                    "const e = 'encodeDelegatedLsig'",
+                    "const e = 'encodeProgramAccount'",
                 ].join('\n'),
             ),
         ).toEqual([
             'signProgram@1:9',
             'useProgramSigner@2:17',
-            'encodeDelegatedLsig@3:11',
+            'encodeProgramAccount@3:11',
         ])
     })
 
