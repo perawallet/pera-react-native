@@ -13,7 +13,10 @@
 import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-vi.mock('@perawallet/wallet-core-config', () => ({
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    isCustomNetworkConfig: (
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    ).isCustomNetworkConfig,
     config: {
         defaultNetwork: 'mainnet',
         mainnetBackendUrl: 'https://mainnet-api.algorand.node',
@@ -125,7 +128,8 @@ describe('hooks/useNetwork', () => {
         const callsBefore = vi.mocked(getNetworkConfig).mock.calls.length
 
         act(() => {
-            useNetworkStore.getState().setCustomNetwork({
+            useNetworkStore.getState().setCustomNetwork('algorand', {
+                id: 'custom',
                 algodUrl: 'http://10.0.0.5:4001',
                 indexerUrl: 'http://10.0.0.5:8980',
                 genesisHash: 'HASH',

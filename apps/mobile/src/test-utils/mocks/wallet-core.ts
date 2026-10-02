@@ -535,8 +535,8 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
         setCustomNetwork,
         clearCustomNetwork,
     } = await vi.importActual<
-        typeof import('@packages/chain-shared/src/store/network-store')
-    >('@packages/chain-shared/src/store/network-store')
+        typeof import('@packages/blockchain/src/store/custom-network')
+    >('@packages/blockchain/src/store/custom-network')
     // Real ARC-0001 module: `packages/connections` composes its request
     // schema from `arc0001SignTxnRequestSchema` at load, so a hand-written
     // stand-in would silently disarm the resolver's own refusals.

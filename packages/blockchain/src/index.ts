@@ -23,12 +23,14 @@ export * from './arc0001'
 export * from './pq'
 
 export {
-    useNetworkStore,
     getCustomNetworkConfig,
     isCustomNetworkConfigured,
     setCustomNetwork,
     clearCustomNetwork,
+} from './store/custom-network'
+export type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
+export {
+    useNetworkStore,
     useSelectedScope,
     useSelectedNetworkId,
-    type CustomNetworkConfig,
 } from '@perawallet/wallet-core-chain-shared'

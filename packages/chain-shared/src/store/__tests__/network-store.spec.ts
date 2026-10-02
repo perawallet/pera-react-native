@@ -18,10 +18,9 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { CustomNetworkConfig } from '../network-store'
+import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
 
 const registerStoreMock = vi.hoisted(() => vi.fn())
-const registerCustomNetworkSourceMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -35,7 +34,6 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     return {
         ...actual,
         config: { ...actual.config, defaultNetwork: 'mainnet' as const },
-        registerCustomNetworkSource: registerCustomNetworkSourceMock,
     }
 })
 
@@ -112,6 +110,21 @@ const loadStore = async () => {
     return import('../network-store')
 }
 
+type Store = Awaited<ReturnType<typeof loadStore>>
+
+const ALGORAND = 'algorand' as ChainId
+
+const savedCustom = ({ useNetworkStore, selectCustomNetwork }: Store) =>
+    selectCustomNetwork(useNetworkStore.getState(), ALGORAND, 'custom')
+
+const saveCustom = ({ useNetworkStore }: Store, config: CustomNetworkConfig) =>
+    useNetworkStore
+        .getState()
+        .setCustomNetwork(ALGORAND, { ...config, id: 'custom' })
+
+const clearCustom = ({ useNetworkStore }: Store) =>
+    useNetworkStore.getState().clearCustomNetwork(ALGORAND, 'custom')
+
 describe('chain-shared network-store', () => {
     beforeEach(() => {
         registerStoreMock.mockClear()
@@ -142,17 +155,16 @@ describe('chain-shared network-store', () => {
         test('a v1 custom selection with a legacy record keeps both', async () => {
             seedV1('custom', legacyEnvelope(CONFIG))
 
-            const { useNetworkStore, getCustomNetworkConfig } =
-                await loadStore()
+            const store = await loadStore()
 
-            const state = useNetworkStore.getState()
+            const state = store.useNetworkStore.getState()
             expect(state.customNetworksByChain.algorand).toEqual([
                 { ...CONFIG, id: 'custom' },
             ])
             expect(state.selectedNetworkByChain.algorand).toBe('custom')
             expect(state.network).toBe('custom')
             expect(state.mode).toBe('developer')
-            expect(getCustomNetworkConfig()).toMatchObject(CONFIG)
+            expect(savedCustom(store)).toMatchObject(CONFIG)
         })
 
         test('a v1 custom selection with no legacy record falls back to the default', async () => {
@@ -181,11 +193,10 @@ describe('chain-shared network-store', () => {
         test('a legacy record with no network-store blob is still folded in', async () => {
             storage().setItem('custom-network-store', legacyEnvelope(CONFIG))
 
-            const { useNetworkStore, isCustomNetworkConfigured } =
-                await loadStore()
+            const store = await loadStore()
 
-            expect(isCustomNetworkConfigured()).toBe(true)
-            expect(useNetworkStore.getState().network).toBe('mainnet')
+            expect(savedCustom(store)).toMatchObject(CONFIG)
+            expect(store.useNetworkStore.getState().network).toBe('mainnet')
         })
 
         test('a malformed legacy record is ignored', async () => {
@@ -307,7 +318,7 @@ describe('chain-shared network-store', () => {
             expect(merged.customNetworksByChain.algorand).toEqual([record])
         })
 
-        test('drops a malformed custom entry and unknown chain custom records', async () => {
+        test("keeps every chain's custom records by id and leaves their config to the chain", async () => {
             const { mergePersistedNetwork } = await loadStore()
 
             const merged = mergePersistedNetwork({
@@ -319,7 +330,10 @@ describe('chain-shared network-store', () => {
                 },
             })
 
-            expect(merged.customNetworksByChain).toEqual({ algorand: [record] })
+            expect(merged.customNetworksByChain).toEqual({
+                algorand: [record],
+                solana: [record],
+            })
             expect(merged.selectedNetworkByChain).toEqual({
                 algorand: 'betanet',
             })
@@ -557,59 +571,51 @@ describe('chain-shared network-store', () => {
         })
 
         test('resetState restores the defaults', async () => {
-            const { useNetworkStore, setCustomNetwork } = await loadStore()
-            setCustomNetwork(CONFIG)
-            useNetworkStore.getState().setNetwork('custom')
+            const store = await loadStore()
+            saveCustom(store, CONFIG)
+            store.useNetworkStore.getState().setNetwork('custom')
 
-            useNetworkStore.getState().resetState()
+            store.useNetworkStore.getState().resetState()
 
-            const state = useNetworkStore.getState()
+            const state = store.useNetworkStore.getState()
             expect(state.network).toBe('mainnet')
-            expect(state.customNetworksByChain).toEqual({ algorand: [] })
+            expect(state.customNetworksByChain).toEqual({})
         })
 
         test('setCustomNetwork replaces the whole record', async () => {
-            const { setCustomNetwork, getCustomNetworkConfig } =
-                await loadStore()
+            const store = await loadStore()
 
-            setCustomNetwork(CONFIG)
-            setCustomNetwork({
+            saveCustom(store, CONFIG)
+            saveCustom(store, {
                 algodUrl: 'http://10.0.0.9:4001',
                 indexerUrl: 'http://10.0.0.9:8980',
                 genesisHash: 'other',
                 genesisId: 'other-v1',
             })
 
-            expect(getCustomNetworkConfig()?.algodToken).toBeUndefined()
-            expect(getCustomNetworkConfig()?.algodUrl).toBe(
-                'http://10.0.0.9:4001',
-            )
+            expect(savedCustom(store)?.algodToken).toBeUndefined()
+            expect(savedCustom(store)?.algodUrl).toBe('http://10.0.0.9:4001')
         })
 
         test('clearCustomNetwork returns to unconfigured', async () => {
-            const {
-                setCustomNetwork,
-                clearCustomNetwork,
-                isCustomNetworkConfigured,
-            } = await loadStore()
-            setCustomNetwork(CONFIG)
+            const store = await loadStore()
+            saveCustom(store, CONFIG)
 
-            clearCustomNetwork()
+            clearCustom(store)
 
-            expect(isCustomNetworkConfigured()).toBe(false)
+            expect(savedCustom(store)).toBeUndefined()
         })
 
         test('clearCustomNetwork while on custom moves the shim to testnet', async () => {
             registerAlgorand()
-            const { useNetworkStore, setCustomNetwork, clearCustomNetwork } =
-                await loadStore()
-            setCustomNetwork(CONFIG)
-            useNetworkStore.getState().setNetwork('custom')
-            expect(useNetworkStore.getState().network).toBe('custom')
+            const store = await loadStore()
+            saveCustom(store, CONFIG)
+            store.useNetworkStore.getState().setNetwork('custom')
+            expect(store.useNetworkStore.getState().network).toBe('custom')
 
-            clearCustomNetwork()
+            clearCustom(store)
 
-            expect(useNetworkStore.getState().network).toBe('testnet')
+            expect(store.useNetworkStore.getState().network).toBe('testnet')
         })
 
         test('the registered clearStorage removes both keys', async () => {
@@ -707,48 +713,6 @@ describe('chain-shared network-store', () => {
                     ETHEREUM,
                 ),
             ).toBe('goerli')
-        })
-    })
-
-    describe('custom network source', () => {
-        const loadSource = async () => {
-            const store = await loadStore()
-            const source =
-                registerCustomNetworkSourceMock.mock.calls.at(-1)?.[0]
-            return { ...store, source }
-        }
-
-        test('resolves nothing until a custom network is saved', async () => {
-            const { source } = await loadSource()
-
-            expect(
-                source({ chainId: 'algorand', networkId: 'custom' }),
-            ).toBeUndefined()
-        })
-
-        test('resolves nothing for any scope other than Algorand custom', async () => {
-            const { source, setCustomNetwork } = await loadSource()
-            setCustomNetwork(CONFIG)
-
-            expect(
-                source({ chainId: 'algorand', networkId: 'mainnet' }),
-            ).toBeUndefined()
-        })
-
-        test('resolves the saved node, defaulting missing tokens to empty', async () => {
-            const { source, setCustomNetwork } = await loadSource()
-            setCustomNetwork(CONFIG)
-
-            expect(
-                source({ chainId: 'algorand', networkId: 'custom' }),
-            ).toEqual({
-                algodUrl: CONFIG.algodUrl,
-                indexerUrl: CONFIG.indexerUrl,
-                algodToken: CONFIG.algodToken,
-                indexerToken: '',
-                genesisHash: CONFIG.genesisHash,
-                genesisId: CONFIG.genesisId,
-            })
         })
     })
 })
