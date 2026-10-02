@@ -2543,7 +2543,7 @@
         "developer_settings": "Ajustes de desarrollador",
         "node_settings": "Modo desarrollador",
         "feature_flags": "Feature flags",
-        "developer_menu": "Opciones de desarrollador",
+        "debug_tools": "Herramientas de depuración",
         "manage_cache": "Gestionar caché",
         "app_integrity": "Integridad de la app",
         "messages": "Mensajes"
@@ -2856,7 +2856,7 @@
             "clear_one_time_flags_success_title": "Marcas de una sola vez borradas",
             "clear_one_time_flags_success_body": "Los avisos y descargos de responsabilidad de primera ejecución volverán a mostrarse.",
             "taps_to_notify": "El menú de desarrollador se activará en {{remaining}} toques",
-            "developer_menu_enabled": "Menú de desarrollador activado",
+            "debug_tools_enabled": "Herramientas de depuración activadas",
             "overridden": "Anulado",
             "enabled": "Activado",
             "disabled": "Desactivado"

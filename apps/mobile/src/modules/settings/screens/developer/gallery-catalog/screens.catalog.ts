@@ -1165,15 +1165,15 @@ export const getScreenSections = (): GallerySection[] => [
                 },
             },
             {
-                id: 'scr-dev-menu',
-                label: 'Developer menu',
+                id: 'scr-debug-tools',
+                label: 'Debug tools',
                 launch: {
                     kind: 'navigate',
                     target: {
                         name: 'Settings',
                         params: {
                             screen: 'DeveloperSettings',
-                            params: { screen: 'DevMenu' },
+                            params: { screen: 'DebugTools' },
                         },
                     },
                 },

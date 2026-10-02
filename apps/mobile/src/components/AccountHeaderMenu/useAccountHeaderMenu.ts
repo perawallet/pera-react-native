@@ -41,8 +41,8 @@ export const useAccountHeaderMenu = ({
     const isDeveloperMode = mode === 'developer'
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const isDeveloperMenuEnabled = !!getPreference(
-        UserPreferences.developerMenuEnabled,
+    const isDebugToolsEnabled = !!getPreference(
+        UserPreferences.debugToolsEnabled,
     )
 
     const handleModeToggle = useCallback(() => {
@@ -93,7 +93,7 @@ export const useAccountHeaderMenu = ({
             })
         }
 
-        if (isDeveloperMenuEnabled) {
+        if (isDebugToolsEnabled) {
             baseItems.push({
                 label: isDeveloperMode
                     ? t(
@@ -107,7 +107,7 @@ export const useAccountHeaderMenu = ({
             })
         }
 
-        if (isDeveloperMenuEnabled && routeCapabilities.developerGallery) {
+        if (isDebugToolsEnabled && routeCapabilities.developerGallery) {
             baseItems.push({
                 label: 'Screen Gallery',
                 icon: 'grid-view',
@@ -128,7 +128,7 @@ export const useAccountHeaderMenu = ({
         setPreference,
         setPrivacyMode,
         navigation,
-        isDeveloperMenuEnabled,
+        isDebugToolsEnabled,
         isDeveloperMode,
         handleModeToggle,
     ])

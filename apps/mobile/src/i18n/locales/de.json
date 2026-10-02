@@ -2535,7 +2535,7 @@
         "developer_settings": "Entwicklereinstellungen",
         "node_settings": "Entwicklermodus",
         "feature_flags": "Feature Flags",
-        "developer_menu": "Entwickleroptionen",
+        "debug_tools": "Debug-Tools",
         "manage_cache": "Cache verwalten",
         "app_integrity": "App-Integrität",
         "messages": "Nachrichten"
@@ -2848,7 +2848,7 @@
             "clear_one_time_flags_success_title": "Einmalige Flags gelöscht",
             "clear_one_time_flags_success_body": "Erstlauf-Hinweise und Hinweistexte werden wieder angezeigt.",
             "taps_to_notify": "Entwicklermenü wird in {{remaining}} Tipps aktiviert",
-            "developer_menu_enabled": "Entwicklermenü aktiviert",
+            "debug_tools_enabled": "Debug-Tools aktiviert",
             "overridden": "Überschrieben",
             "enabled": "Aktiviert",
             "disabled": "Deaktiviert"

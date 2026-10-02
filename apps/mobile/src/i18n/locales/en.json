@@ -2543,7 +2543,7 @@
         "developer_settings": "Developer Settings",
         "node_settings": "Developer Mode",
         "feature_flags": "Feature Flags",
-        "developer_menu": "Developer Options",
+        "debug_tools": "Debug Tools",
         "manage_cache": "Manage Cache",
         "app_integrity": "App Integrity",
         "messages": "Messages"
@@ -2856,7 +2856,7 @@
             "clear_one_time_flags_success_title": "One-time flags cleared",
             "clear_one_time_flags_success_body": "First-run prompts and disclaimers will show again.",
             "taps_to_notify": "Developer menu will enable in {{remaining}} taps",
-            "developer_menu_enabled": "Developer menu enabled",
+            "debug_tools_enabled": "Debug tools enabled",
             "overridden": "Overridden",
             "enabled": "Enabled",
             "disabled": "Disabled"

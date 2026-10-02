@@ -2543,7 +2543,7 @@
         "developer_settings": "Paramètres développeur",
         "node_settings": "Mode développeur",
         "feature_flags": "Feature flags",
-        "developer_menu": "Options développeur",
+        "debug_tools": "Outils de débogage",
         "manage_cache": "Gérer le cache",
         "app_integrity": "Intégrité de l’app",
         "messages": "Messages"
@@ -2856,7 +2856,7 @@
             "clear_one_time_flags_success_title": "Flags à usage unique effacés",
             "clear_one_time_flags_success_body": "Les invites de premier lancement et les avertissements réapparaîtront.",
             "taps_to_notify": "Le menu développeur s’activera dans {{remaining}} appuis",
-            "developer_menu_enabled": "Menu développeur activé",
+            "debug_tools_enabled": "Outils de débogage activés",
             "overridden": "Remplacé",
             "enabled": "Activé",
             "disabled": "Désactivé"

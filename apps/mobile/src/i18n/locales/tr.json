@@ -2543,7 +2543,7 @@
         "developer_settings": "Geliştirici ayarları",
         "node_settings": "Geliştirici modu",
         "feature_flags": "Özellik bayrakları",
-        "developer_menu": "Geliştirici seçenekleri",
+        "debug_tools": "Hata ayıklama araçları",
         "manage_cache": "Önbelleği yönet",
         "app_integrity": "Uygulama bütünlüğü",
         "messages": "Mesajlar"
@@ -2856,7 +2856,7 @@
             "clear_one_time_flags_success_title": "Tek seferlik işaretler temizlendi",
             "clear_one_time_flags_success_body": "İlk açılış mesajları ve uyarılar yeniden gösterilecek.",
             "taps_to_notify": "{{remaining}} dokunuş sonra geliştirici menüsü açılacak",
-            "developer_menu_enabled": "Geliştirici menüsü açıldı",
+            "debug_tools_enabled": "Hata ayıklama araçları açıldı",
             "overridden": "Geçersiz kılındı",
             "enabled": "Açık",
             "disabled": "Kapalı"

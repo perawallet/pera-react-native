@@ -42,10 +42,10 @@ vi.mock('@routes/capabilities', () => ({
 
 import { useAccountHeaderMenu } from '../useAccountHeaderMenu'
 
-const enableDeveloperMenu = () => {
+const enableDebugTools = () => {
     ;(usePreferences as Mock).mockReturnValue({
         getPreference: (key: string) =>
-            key === UserPreferences.developerMenuEnabled,
+            key === UserPreferences.debugToolsEnabled,
         setPreference: vi.fn(),
     })
 }
@@ -78,7 +78,7 @@ describe('useAccountHeaderMenu', () => {
     })
 
     it('adds the gallery shortcut to the developer items where the build includes it', () => {
-        enableDeveloperMenu()
+        enableDebugTools()
 
         const { result } = renderHook(() => useAccountHeaderMenu())
 
@@ -89,7 +89,7 @@ describe('useAccountHeaderMenu', () => {
 
     it('keeps the other developer items but drops the gallery shortcut where the build excludes it', () => {
         mockCapabilities.developerGallery = false
-        enableDeveloperMenu()
+        enableDebugTools()
 
         const { result } = renderHook(() => useAccountHeaderMenu())
 
@@ -130,7 +130,7 @@ describe('useAccountHeaderMenu', () => {
         ) => items.find(item => item.label.endsWith('_developer_mode'))
 
         it('enables developer mode and restarts sync once', () => {
-            enableDeveloperMenu()
+            enableDebugTools()
             const { result } = renderHook(() => useAccountHeaderMenu())
             const item = developerModeItem(result.current.items)
 
@@ -144,7 +144,7 @@ describe('useAccountHeaderMenu', () => {
         })
 
         it('toggles back to live while keeping the stored BetaNet override', () => {
-            enableDeveloperMenu()
+            enableDebugTools()
             useNetworkStore.getState().setMode('developer')
             useNetworkStore.getState().selectNetwork('algorand', 'betanet')
             const { result } = renderHook(() => useAccountHeaderMenu())
@@ -169,7 +169,7 @@ describe('useAccountHeaderMenu', () => {
             restart.mockImplementation(() => {
                 throw new Error('SyncService not yet initialized')
             })
-            enableDeveloperMenu()
+            enableDebugTools()
             const { result } = renderHook(() => useAccountHeaderMenu())
 
             act(() => developerModeItem(result.current.items)?.onPress())
