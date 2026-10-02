@@ -14,14 +14,16 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     CUSTOM_NETWORK_ID,
-    isGlobalNetwork,
+    defaultNetworkForTier,
     isNetworkId,
-    networkIdForGlobal,
+    isWalletMode,
+    LEGACY_CHAIN_ID,
+    networkIdForMode,
+    networkTierForMode,
     scopeForLegacyNetwork,
     type ChainId,
-    type GlobalNetwork,
     type NetworkId,
-    type NetworkTier,
+    type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     config,
@@ -37,7 +39,7 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'network-store'
-const STORE_VERSION = 2
+const STORE_VERSION = 3
 
 // Folded in on hydrate, never written. Kept on disk so a crash mid-migration
 // or a downgraded build still finds the config.
@@ -60,95 +62,115 @@ export type CustomNetworkConfig = {
 
 export type CustomNetwork = CustomNetworkConfig & { id: NetworkId }
 
-type PersistedNetworkState = {
-    globalNetwork: GlobalNetwork
-    /**
-     * Algorand's entry is always written, for the legacy `network` shim. Any
-     * other chain's entry is a per-chain override of `globalNetwork`.
-     */
-    selectedNetworkByChain: Record<ChainId, NetworkId>
+type NetworkSelection = {
+    mode: WalletMode
+    /** Developer-mode overrides; kept, unread, while the wallet is live. */
+    selectedNetworkByChain: Partial<Record<ChainId, NetworkId>>
     customNetworksByChain: Record<ChainId, CustomNetwork[]>
+}
+
+type PersistedNetworkState = NetworkSelection & {
+    /** Algorand's network in the legacy shape, derived on every write and persisted only because the extension worker reads storage without hydrating. */
+    network: Network
 }
 
 type NetworkState = BaseStoreState &
     PersistedNetworkState & {
-        /** The Algorand selection in the legacy shape; derived, never persisted. */
-        network: Network
+        setMode: (mode: WalletMode) => void
+        /** Writes a developer-mode override; the chain's default test network clears it. */
         selectNetwork: (chainId: ChainId, networkId: NetworkId) => void
-        /**
-         * Clears every per-chain override, so each chain follows the new
-         * selection. Custom commits only through `setNetwork`, once its record is saved.
-         */
-        setGlobalNetwork: (tier: NetworkTier) => void
-        /** Pins Algorand to `network` (BetaNet has no global option) and sets the global selection from it. */
+        /** Legacy entry: maps the Algorand network onto a mode plus an Algorand override. */
         setNetwork: (network: Network) => void
         setCustomNetwork: (config: CustomNetworkConfig) => void
         clearCustomNetwork: () => void
     }
 
-const withNetworkShim = (
-    selectedNetworkByChain: Record<ChainId, NetworkId>,
-): Pick<NetworkState, 'selectedNetworkByChain' | 'network'> => ({
-    selectedNetworkByChain,
-    network: selectedNetworkByChain.algorand as Network,
-})
-
-// Algorand's network ids are the global names, plus BetaNet on the testnet tier.
-const globalNetworkForAlgorand = (networkId: NetworkId): GlobalNetwork => {
-    if (networkId === 'mainnet') return 'mainnet'
-    return networkId === CUSTOM_NETWORK_ID ? 'custom' : 'testnet'
-}
-
-const initialState = (): PersistedNetworkState & { network: Network } => ({
-    globalNetwork: globalNetworkForAlgorand(config.defaultNetwork),
-    ...withNetworkShim({ algorand: config.defaultNetwork }),
-    customNetworksByChain: { algorand: [] },
-})
-
-const networkIdForChain = (
-    chainId: ChainId,
-    globalNetwork: GlobalNetwork,
-): NetworkId => {
-    const { chains } = getProvider()
-    // Before bootstrap registers the chains, the global name stands in: it is
-    // Algorand's own id for every global option.
-    if (!chains.has(chainId)) {
-        return globalNetwork
+const selectionForLegacyNetwork = (
+    network: string,
+): { mode: WalletMode; algorandOverride: NetworkId | undefined } => {
+    if (network === 'mainnet') {
+        return { mode: 'live', algorandOverride: undefined }
     }
-    return networkIdForGlobal(
-        chains.get(chainId).descriptor,
-        globalNetwork,
-        chains.capabilities(chainId).customNetworks,
-    )
+    return {
+        mode: 'developer',
+        algorandOverride: network === 'testnet' ? undefined : network,
+    }
 }
 
-// Hydrate keeps another chain's entry on shape alone, since the registry may
-// be empty then; a network its descriptor no longer lists would make every
-// read of that chain's config throw, so it falls back to the global selection.
-// Algorand's entry is validated at hydrate instead.
-const isUsableOverride = (chainId: ChainId, networkId: NetworkId): boolean => {
-    if (chainId === 'algorand') return true
+const selectionOf = (state: NetworkSelection): NetworkSelection => ({
+    mode: state.mode,
+    selectedNetworkByChain: state.selectedNetworkByChain,
+    customNetworksByChain: state.customNetworksByChain,
+})
+
+const withAlgorandOverride = (
+    overrides: NetworkSelection['selectedNetworkByChain'],
+    algorandOverride: NetworkId | undefined,
+): NetworkSelection['selectedNetworkByChain'] => {
+    const { [LEGACY_CHAIN_ID]: _dropped, ...rest } = overrides
+    return algorandOverride === undefined
+        ? rest
+        : { ...rest, [LEGACY_CHAIN_ID]: algorandOverride }
+}
+
+// A registered chain's override must name one of its test networks or a saved
+// custom network; anything else would make every read of its config throw.
+// Before registration the registry can't say, so shape alone is kept.
+const usableOverride = (
+    state: NetworkSelection,
+    chainId: ChainId,
+): NetworkId | undefined => {
+    const override = state.selectedNetworkByChain[chainId]
+    if (override === undefined) return undefined
     const { chains } = getProvider()
-    return (
-        !chains.has(chainId) ||
-        chains
-            .get(chainId)
-            .descriptor.networks.some(network => network.id === networkId)
+    if (!chains.has(chainId)) return override
+    const isTestNetwork = chains
+        .get(chainId)
+        .descriptor.networks.some(
+            network => network.id === override && network.tier === 'testnet',
+        )
+    const isCustom = (state.customNetworksByChain[chainId] ?? []).some(
+        entry => entry.id === override,
     )
+    return isTestNetwork || isCustom ? override : undefined
 }
 
-/** A stored override if the chain has a usable one, else the global selection mapped onto the chain. */
+/** Live ignores every override; developer uses a usable one, else the chain's default test network. */
 export const selectChainNetworkId = (
-    state: Pick<
-        PersistedNetworkState,
-        'globalNetwork' | 'selectedNetworkByChain'
-    >,
+    state: NetworkSelection,
     chainId: ChainId,
 ): NetworkId => {
-    const override = state.selectedNetworkByChain[chainId]
-    return override !== undefined && isUsableOverride(chainId, override)
-        ? override
-        : networkIdForChain(chainId, state.globalNetwork)
+    const override =
+        state.mode === 'developer' ? usableOverride(state, chainId) : undefined
+    const { chains } = getProvider()
+    // Before bootstrap registers the chains, the tier name stands in: it is
+    // Algorand's own id for each tier.
+    if (!chains.has(chainId)) {
+        return override ?? networkTierForMode(state.mode)
+    }
+    return networkIdForMode(
+        chains.get(chainId).descriptor,
+        state.mode,
+        override,
+    )
+}
+
+const withNetworkShim = (
+    selection: NetworkSelection,
+): PersistedNetworkState => ({
+    ...selection,
+    network: selectChainNetworkId(selection, LEGACY_CHAIN_ID) as Network,
+})
+
+const initialState = (): PersistedNetworkState => {
+    const { mode, algorandOverride } = selectionForLegacyNetwork(
+        config.defaultNetwork,
+    )
+    return withNetworkShim({
+        mode,
+        selectedNetworkByChain: withAlgorandOverride({}, algorandOverride),
+        customNetworksByChain: { algorand: [] },
+    })
 }
 
 const isCustomNetwork = (value: unknown): value is CustomNetwork => {
@@ -169,23 +191,24 @@ const findCustomNetwork = (
     customNetworks.find(entry => entry.id === CUSTOM_NETWORK_ID)
 
 /**
- * Validates a persisted v2 state on every hydrate.
+ * Validates a persisted state on every hydrate.
  *
- * An unknown selection (a device that picked 'fnet' before the custom slot
- * replaced it) would reach `getNetworkConfig`, which throws
- * `UnconfiguredScopeError` in every render that reads it, far from the cause. A `'custom'` selection with no record has no baked
+ * An unknown Algorand override (a device that picked 'fnet' before the custom
+ * slot replaced it) would reach `getNetworkConfig`, which throws
+ * `UnconfiguredScopeError` in every render that reads it, far from the cause. A `'custom'` override with no record has no baked
  * fallback, so every endpoint resolves to `''` and `useAlgorandClient` throws
- * during render. Both fall back to `config.defaultNetwork`.
+ * during render. A developer-mode wallet that loses its Algorand override, or
+ * has no valid mode, falls back to `config.defaultNetwork`; a live one just
+ * drops it.
  */
 export const mergePersistedNetwork = (
     persisted: unknown,
-): PersistedNetworkState & { network: Network } => {
-    const state = (persisted ?? {}) as Partial<
-        Record<
-            Exclude<keyof PersistedNetworkState, 'globalNetwork'>,
-            Record<string, unknown>
-        >
-    > & { globalNetwork?: unknown }
+): PersistedNetworkState => {
+    const state = (persisted ?? {}) as {
+        mode?: unknown
+        selectedNetworkByChain?: Record<string, unknown>
+        customNetworksByChain?: Record<string, unknown>
+    }
 
     const rawCustom = state.customNetworksByChain?.algorand
     const algorandCustom = Array.isArray(rawCustom)
@@ -193,36 +216,39 @@ export const mergePersistedNetwork = (
         : []
 
     const selected = state.selectedNetworkByChain?.algorand
-    const isUsable =
+    const isAlgorandUsable =
         typeof selected === 'string' &&
+        selected !== Networks.mainnet &&
         (Object.values(Networks) as string[]).includes(selected) &&
         (selected !== CUSTOM_NETWORK_ID ||
             findCustomNetwork(algorandCustom) !== undefined)
 
-    // Kept on shape alone: see isUsableOverride.
+    // Kept on shape alone: see usableOverride.
     const otherChains = Object.entries(
         state.selectedNetworkByChain ?? {},
     ).filter(
         ([chainId, networkId]) =>
             chainId !== 'algorand' && isNetworkId(networkId),
+    ) as [ChainId, NetworkId][]
+
+    const overrides = withAlgorandOverride(
+        Object.fromEntries(otherChains),
+        isAlgorandUsable ? selected : undefined,
     )
+    const isFallbackNeeded =
+        !isWalletMode(state.mode) ||
+        (state.mode === 'developer' &&
+            selected !== undefined &&
+            !isAlgorandUsable)
+    const fallback = selectionForLegacyNetwork(config.defaultNetwork)
 
-    const algorand = isUsable ? selected : config.defaultNetwork
-    // A demoted selection moves the global one with it, so the two never
-    // disagree about whether the wallet is on a custom node.
-    const globalNetwork =
-        isUsable && isGlobalNetwork(state.globalNetwork)
-            ? state.globalNetwork
-            : globalNetworkForAlgorand(algorand)
-
-    return {
-        globalNetwork,
-        ...withNetworkShim({
-            ...Object.fromEntries(otherChains),
-            algorand,
-        }),
+    return withNetworkShim({
+        mode: isFallbackNeeded ? fallback.mode : (state.mode as WalletMode),
+        selectedNetworkByChain: isFallbackNeeded
+            ? withAlgorandOverride(overrides, fallback.algorandOverride)
+            : overrides,
         customNetworksByChain: { algorand: algorandCustom },
-    }
+    })
 }
 
 const readLegacyCustomNetworks = (): unknown[] => {
@@ -240,22 +266,52 @@ const readLegacyCustomNetworks = (): unknown[] => {
     }
 }
 
+const migrateV1 = (persisted: unknown): unknown => ({
+    selectedNetworkByChain: {
+        algorand: (persisted as { network?: unknown } | null)?.network,
+    },
+    customNetworksByChain: { algorand: readLegacyCustomNetworks() },
+})
+
+/**
+ * Keyed on v2's Algorand entry, not `globalNetwork`: every v2 writer kept the
+ * two in step, and the entry is what `network` returned, so the legacy shim
+ * and the extension worker see the same network afterwards.
+ */
+const migrateV2 = (persisted: unknown): unknown => {
+    const state = (persisted ?? {}) as {
+        selectedNetworkByChain?: Record<string, unknown>
+        customNetworksByChain?: unknown
+    }
+    const entry = state.selectedNetworkByChain?.algorand
+    if (typeof entry !== 'string') {
+        return {
+            selectedNetworkByChain: state.selectedNetworkByChain,
+            customNetworksByChain: state.customNetworksByChain,
+        }
+    }
+    const { mode, algorandOverride } = selectionForLegacyNetwork(entry)
+    return {
+        mode,
+        selectedNetworkByChain: withAlgorandOverride(
+            state.selectedNetworkByChain as Record<string, string>,
+            algorandOverride,
+        ),
+        customNetworksByChain: state.customNetworksByChain,
+    }
+}
+
 /**
  * v1 kept one `network` for the whole wallet and the custom config in its own
- * store. The output is left raw; `mergePersistedNetwork` validates it next.
+ * store; v2 a global selection plus per-chain entries. The output is left
+ * raw; `mergePersistedNetwork` validates it next.
  */
 export const migrateNetworkState = (
     persisted: unknown,
     version: number,
 ): unknown => {
     if (version >= STORE_VERSION) return persisted
-
-    return {
-        selectedNetworkByChain: {
-            algorand: (persisted as { network?: unknown } | null)?.network,
-        },
-        customNetworksByChain: { algorand: readLegacyCustomNetworks() },
-    }
+    return migrateV2(version < 2 ? migrateV1(persisted) : persisted)
 }
 
 export const useNetworkStore: UseBoundStore<
@@ -264,47 +320,71 @@ export const useNetworkStore: UseBoundStore<
     persist(
         set => ({
             ...initialState(),
+            setMode: mode =>
+                set(state => withNetworkShim({ ...selectionOf(state), mode })),
             selectNetwork: (chainId, networkId) =>
-                set(state =>
-                    withNetworkShim({
-                        ...state.selectedNetworkByChain,
-                        [chainId]: networkId,
-                    }),
-                ),
-            setGlobalNetwork: tier =>
-                set({
-                    globalNetwork: tier,
-                    ...withNetworkShim({
-                        algorand: networkIdForChain('algorand', tier),
-                    }),
+                set(state => {
+                    const { chains } = getProvider()
+                    const isDefault =
+                        chains.has(chainId) &&
+                        defaultNetworkForTier(
+                            chains.get(chainId).descriptor,
+                            'testnet',
+                        )?.id === networkId
+                    const { [chainId]: _replaced, ...rest } =
+                        state.selectedNetworkByChain
+                    return withNetworkShim({
+                        ...selectionOf(state),
+                        selectedNetworkByChain: isDefault
+                            ? rest
+                            : { ...rest, [chainId]: networkId },
+                    })
                 }),
             setNetwork: network =>
-                set({
-                    globalNetwork: globalNetworkForAlgorand(network),
-                    ...withNetworkShim({ algorand: network }),
+                set(state => {
+                    const { mode, algorandOverride } =
+                        selectionForLegacyNetwork(network)
+                    return withNetworkShim({
+                        ...selectionOf(state),
+                        mode,
+                        selectedNetworkByChain:
+                            mode === 'live'
+                                ? state.selectedNetworkByChain
+                                : withAlgorandOverride(
+                                      state.selectedNetworkByChain,
+                                      algorandOverride,
+                                  ),
+                    })
                 }),
             // Replace, never merge: see CustomNetworkConfig.
             setCustomNetwork: customConfig =>
-                set(state => ({
-                    customNetworksByChain: {
-                        ...state.customNetworksByChain,
-                        algorand: [
-                            ...state.customNetworksByChain.algorand.filter(
-                                entry => entry.id !== CUSTOM_NETWORK_ID,
-                            ),
-                            { ...customConfig, id: CUSTOM_NETWORK_ID },
-                        ],
-                    },
-                })),
+                set(state =>
+                    withNetworkShim({
+                        ...selectionOf(state),
+                        customNetworksByChain: {
+                            ...state.customNetworksByChain,
+                            algorand: [
+                                ...state.customNetworksByChain.algorand.filter(
+                                    entry => entry.id !== CUSTOM_NETWORK_ID,
+                                ),
+                                { ...customConfig, id: CUSTOM_NETWORK_ID },
+                            ],
+                        },
+                    }),
+                ),
             clearCustomNetwork: () =>
-                set(state => ({
-                    customNetworksByChain: {
-                        ...state.customNetworksByChain,
-                        algorand: state.customNetworksByChain.algorand.filter(
-                            entry => entry.id !== CUSTOM_NETWORK_ID,
-                        ),
-                    },
-                })),
+                set(state =>
+                    withNetworkShim({
+                        ...selectionOf(state),
+                        customNetworksByChain: {
+                            ...state.customNetworksByChain,
+                            algorand:
+                                state.customNetworksByChain.algorand.filter(
+                                    entry => entry.id !== CUSTOM_NETWORK_ID,
+                                ),
+                        },
+                    }),
+                ),
             resetState: () => set(initialState()),
         }),
         {
@@ -312,9 +392,10 @@ export const useNetworkStore: UseBoundStore<
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: STORE_VERSION,
             partialize: state => ({
-                globalNetwork: state.globalNetwork,
+                mode: state.mode,
                 selectedNetworkByChain: state.selectedNetworkByChain,
                 customNetworksByChain: state.customNetworksByChain,
+                network: state.network,
             }),
             migrate: migrateNetworkState,
             merge: (persisted, current) => {
@@ -346,7 +427,7 @@ export const useNetworkStore: UseBoundStore<
 )
 
 export const selectAlgorandCustomNetwork = (
-    state: PersistedNetworkState,
+    state: Pick<NetworkSelection, 'customNetworksByChain'>,
 ): CustomNetwork | undefined =>
     findCustomNetwork(state.customNetworksByChain.algorand)
 
