@@ -148,7 +148,8 @@ export const runOffscreenApp = async ({
             getAccounts: () => {
                 const { accounts } = useAccountsStore.getState()
                 return accounts.flatMap(account =>
-                    account.address && canSignWith(account, accounts)
+                    account.address &&
+                    canSignWith(account, accounts, ALGORAND_CHAIN_ID)
                         ? [
                               {
                                   address: account.address,

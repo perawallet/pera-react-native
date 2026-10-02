@@ -23,6 +23,7 @@ import {
     type AccountsChainAdapter,
 } from '../chain-adapter'
 import { DerivationTypes } from '../models'
+import { canSignDirectly } from '../utils'
 
 // Every legacy `Network` resolves to this id, so the fakes register under it.
 export const FAKE_CHAIN_ID = 'algorand' as ChainId
@@ -96,6 +97,18 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     },
     singleKeyAccounts: { create: vi.fn(), importMnemonic: vi.fn() },
     fetchRekeyedAddresses: vi.fn(async () => []),
+    resolveSigner: vi.fn((account, _accounts) =>
+        canSignDirectly(account)
+            ? { kind: 'ok' as const, signer: account }
+            : { kind: 'watch' as const, account },
+    ),
+    getAuthAccount: vi.fn(account => account),
+    authority: {
+        isDelegated: vi.fn(account => !!account.rekeyAddress),
+        accountsDelegatedTo: vi.fn(() => []),
+        isEligibleTarget: vi.fn(() => false),
+        canSignProgram: vi.fn(() => false),
+    },
 })
 
 let current: FakeAccountsChain | undefined

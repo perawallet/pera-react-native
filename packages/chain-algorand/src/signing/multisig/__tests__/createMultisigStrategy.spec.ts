@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     NoLocalParticipantsError,

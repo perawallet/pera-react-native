@@ -12,10 +12,6 @@
 
 export const name = '@perawallet/wallet-core-accounts'
 
-// Side effect: keeps each account's rekeyAddress mirror in lockstep with the
-// active network (see the module for rationale).
-import './store/network-rekey-sync'
-
 export * from './constants'
 export * from './models'
 export * from './credentials'

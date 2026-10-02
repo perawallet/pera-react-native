@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
 import { canSignProgram } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -45,7 +46,10 @@ export const useProgramSigner = () => {
             // rekeyed account's own key would be rejected at draw time
             // (signing via the auth account is deferred — see canSignProgram).
             // The keyPairId re-check only narrows the type.
-            if (!canSignProgram(account) || !account.keyPairId) {
+            if (
+                !canSignProgram(account, LEGACY_CHAIN_ID) ||
+                !account.keyPairId
+            ) {
                 throw new ProgramSigningUnsupportedError(account.address)
             }
             const [sig] = await signDataWithKey(

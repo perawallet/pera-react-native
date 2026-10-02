@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback, useRef } from 'react'
 import {
     getAccountDisplayName,
@@ -111,7 +112,7 @@ export const useRekeyConfirmScreen = ({
     // created (and before the Ledger device prompt for hardware auths).
     const { isUnderfunded } = useRekeyFeePreflight(sourceAddress, feeAlgos)
 
-    const hasPreviousRekey = isRekeyedAccount(source)
+    const hasPreviousRekey = isRekeyedAccount(source, LEGACY_CHAIN_ID)
 
     // Synchronous in-flight guard: `isSubmitting` only propagates on the
     // next render, so a same-frame double tap would submit twice without it.
@@ -200,7 +201,11 @@ export const useRekeyConfirmScreen = ({
         // Rekeying a quantum account to an Ed25519 authority strips its
         // quantum-safe protection — warn before it happens. Not shown when the
         // target's effective authority is also quantum, nor for Ed25519 sources.
-        if (source && target && isQuantumDowngrade(source, target, accounts)) {
+        if (
+            source &&
+            target &&
+            isQuantumDowngrade(source, target, accounts, LEGACY_CHAIN_ID)
+        ) {
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
                     <QuantumDowngradeWarningSheet

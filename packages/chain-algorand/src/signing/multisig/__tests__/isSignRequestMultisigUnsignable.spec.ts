@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isMultisigUnsignable } from '@perawallet/wallet-core-accounts'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
@@ -46,7 +47,11 @@ describe('isSignRequestMultisigUnsignable', () => {
         expect(isSignRequestMultisigUnsignable(txRequest(), accounts)).toBe(
             true,
         )
-        expect(isMultisigUnsignable).toHaveBeenCalledWith(accounts[0], accounts)
+        expect(isMultisigUnsignable).toHaveBeenCalledWith(
+            accounts[0],
+            accounts,
+            LEGACY_CHAIN_ID,
+        )
     })
 
     it('returns false when the account is signable', () => {

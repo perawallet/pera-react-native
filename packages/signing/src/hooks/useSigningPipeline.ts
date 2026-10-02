@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { AnyActorRef } from 'xstate'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { mapToDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     canSignWith,
     useAllAccounts,
@@ -86,7 +86,9 @@ const computeDisplayData = (
     )
 
     const signableAddresses = new Set(
-        accounts.filter(a => canSignWith(a, accounts)).map(a => a.address),
+        accounts
+            .filter(a => canSignWith(a, accounts, LEGACY_CHAIN_ID))
+            .map(a => a.address),
     )
 
     const userAccountAddresses = new Set(accounts.map(a => a.address))

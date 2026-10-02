@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     hasSigningKeys,
@@ -124,7 +125,11 @@ export const createSigningStrategySelector = (
         // the auth's template authorizes the transaction. The multisig
         // strategy re-resolves the hop itself, so passing the original
         // account to `sign` stays correct.
-        const authAccount = resolveAuthAccount(account, allAccounts)
+        const authAccount = resolveAuthAccount(
+            account,
+            allAccounts,
+            LEGACY_CHAIN_ID,
+        )
         if (isMultisigAccount(authAccount)) return multisigStrategy
         return selectStrategyForAccount(authAccount)
     }

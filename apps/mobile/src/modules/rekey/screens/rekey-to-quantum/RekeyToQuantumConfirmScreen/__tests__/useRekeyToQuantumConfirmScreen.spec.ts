@@ -17,6 +17,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { useRekeyToQuantumConfirmScreen } from '../useRekeyToQuantumConfirmScreen'
 
 const mockNavigate = vi.fn()
@@ -102,6 +103,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 describe('useRekeyToQuantumConfirmScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
     })
 
     it('handleConfirmPress submits the routed addresses and navigates to the quantum success screen', async () => {

@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, describe, it, expect, vi } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 
 // Hardware-participant signing reaches into `Address.fromString` for rekey
 // detection. The fixture addresses below are not canonical 58-char Algorand
@@ -70,7 +71,11 @@ const makeMultisigAccount = (): WalletAccount =>
     }) as unknown as WalletAccount
 
 const makeAlgo25Account = (address: string, keyPairId = 'key'): WalletAccount =>
-    ({ type: 'algo25', address, keyPairId }) as unknown as WalletAccount
+    ({
+        type: 'algo25',
+        address,
+        keyPairId,
+    }) as unknown as WalletAccount
 
 const MOCK_HARDWARE_SIG = new Uint8Array([0xab, 0xcd, 0xef])
 

@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 import { createActor, setup } from 'xstate'
 import { LedgerBluetoothDisabledError } from '@perawallet/wallet-core-ledger'
 

@@ -19,6 +19,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const { mockCopyToClipboard } = vi.hoisted(() => ({
     mockCopyToClipboard: vi.fn(),
@@ -234,6 +235,7 @@ describe('useAccountOptions', () => {
     }
 
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         mockIsAccountEnabled.mockReturnValue(true)
         mockIsBackedUp.mockReturnValue(false)

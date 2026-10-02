@@ -20,6 +20,7 @@ import type {
     RekeyTransition,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mockNavigate = vi.fn()
 vi.mock('@routes/navigationRef', () => ({
@@ -120,6 +121,7 @@ const quantumAccount: WalletAccount = {
 
 describe('useAccountInfoCard', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         mockUseAccountInformationQuery.mockReturnValue({
             data: { minBalance: BigInt(100_000) },

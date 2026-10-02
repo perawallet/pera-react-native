@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type {
     WalletAccount,
     MultiSigAccount,
@@ -100,7 +101,7 @@ export const shouldDeferPropose = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
 ): boolean => {
-    const target = getAuthAccount(account, allAccounts)
+    const target = getAuthAccount(account, allAccounts, LEGACY_CHAIN_ID)
     if (!target || !isMultisigAccount(target)) return false
 
     const localParticipants = getLocalParticipants(target, allAccounts)

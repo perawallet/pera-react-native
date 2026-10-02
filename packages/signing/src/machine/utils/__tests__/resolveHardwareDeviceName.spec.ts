@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 import { resolveHardwareDeviceName } from '../resolveHardwareDeviceName'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -31,7 +32,11 @@ const ledgerAccount = (address: string, rekeyAddress?: string) =>
     }) as unknown as WalletAccount
 
 const watchAccount = (address: string, rekeyAddress?: string) =>
-    ({ type: 'watch', address, rekeyAddress }) as unknown as WalletAccount
+    ({
+        type: 'watch',
+        address,
+        rekeyAddress,
+    }) as unknown as WalletAccount
 
 const group = (
     signerAddress: string,

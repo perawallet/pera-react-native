@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import {
     AccountTypes,
     type WalletAccount,

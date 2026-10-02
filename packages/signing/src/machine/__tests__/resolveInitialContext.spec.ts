@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import { Address, Transaction } from 'algosdk'
 import { groupTransactions } from '@perawallet/wallet-core-blockchain'
 import {

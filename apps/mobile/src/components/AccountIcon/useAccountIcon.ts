@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useMemo } from 'react'
 
 import {
@@ -118,7 +119,8 @@ export const useAccountIcon = (
     return useMemo(() => {
         if (!account) return null
 
-        const isRekeyed = !ignoreRekey && isRekeyedAccount(account)
+        const isRekeyed =
+            !ignoreRekey && isRekeyedAccount(account, LEGACY_CHAIN_ID)
         const state: AccountDisplayState =
             displayState ??
             (isRekeyed

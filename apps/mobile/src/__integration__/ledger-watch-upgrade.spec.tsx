@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
@@ -141,7 +142,9 @@ describe('Flow: Ledger import upgrades a watch account', () => {
                     upgraded.type === AccountTypes.hardware &&
                         upgraded.hardwareDetails.deviceId,
                 ).toBe('test-device-id')
-                expect(canSignWith(upgraded, accounts)).toBe(true)
+                expect(canSignWith(upgraded, accounts, LEGACY_CHAIN_ID)).toBe(
+                    true,
+                )
             },
             { timeout: 10_000 },
         )

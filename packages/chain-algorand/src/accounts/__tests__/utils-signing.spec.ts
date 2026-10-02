@@ -1,0 +1,630 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { beforeAll, describe, test, expect } from 'vitest'
+import {
+    accountsChainAdapters,
+    canSignWith,
+    getRekeyAccount,
+    getSignerFor,
+    isQuantumDowngrade,
+    rekeyTransitionFor,
+    resolveAuthAccount,
+    AccountTypes,
+    RekeyTargetNotFoundError,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { algorandAccountsAdapter } from '../adapter'
+
+beforeAll(() => {
+    accountsChainAdapters.reset()
+    accountsChainAdapters.register(algorandAccountsAdapter)
+})
+
+const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'a',
+        address: overrides.address ?? 'A',
+        type: AccountTypes.algo25,
+        keyPairId: 'kp',
+        ...overrides,
+    }) as WalletAccount
+
+const hd = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'h',
+        address: overrides.address ?? 'H',
+        type: AccountTypes.hdWallet,
+        keyPairId: 'kp-hd',
+        hdWalletDetails: {
+            account: 0,
+            change: 0,
+            keyIndex: 0,
+            derivationType: 9,
+        },
+        ...overrides,
+    }) as WalletAccount
+
+const ledger = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'l',
+        address: overrides.address ?? 'L',
+        type: AccountTypes.hardware,
+        hardwareDetails: { deviceId: 'dev', addressIndex: 0 },
+        ...overrides,
+    }) as WalletAccount
+
+const watch = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'w',
+        address: overrides.address ?? 'W',
+        type: AccountTypes.watch,
+        ...overrides,
+    }) as WalletAccount
+
+const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'm',
+        address: overrides.address ?? 'M',
+        type: AccountTypes.multisig,
+        multisigDetails: {
+            threshold: 2,
+            addresses: ['P1', 'P2', 'P3'],
+            version: 1,
+        },
+        ...overrides,
+    }) as WalletAccount
+
+const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'f',
+        address: overrides.address ?? 'F',
+        type: AccountTypes.quantum,
+        keyPairId: 'kp-quantum',
+        ...overrides,
+    }) as WalletAccount
+
+describe('services/accounts/utils - account type checks', () => {
+    const baseAccount = {
+        id: '1',
+        type: 'hdWallet',
+        address: 'ADDR1',
+        keyPairId: 'pk1',
+    } as any
+
+    test('canSignWith returns true for account with keyPairId', () => {
+        expect(canSignWith(baseAccount, [], ALGORAND_CHAIN_ID)).toBe(true)
+    })
+
+    test('canSignWith returns false for account without keyPairId', () => {
+        expect(
+            canSignWith(
+                { ...baseAccount, keyPairId: undefined } as any,
+                [],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(false)
+    })
+
+    test('canSignWith returns true for rekeyed account when auth account has keys', () => {
+        const authAccount = {
+            id: '2',
+            type: 'algo25',
+            address: 'AUTH_ADDR',
+            keyPairId: 'pk2',
+        } as any
+
+        const rekeyedAccount = {
+            id: '3',
+            type: 'watch',
+            address: 'REKEYED_ADDR',
+            rekeyAddress: 'AUTH_ADDR',
+        } as any
+
+        expect(
+            canSignWith(rekeyedAccount, [authAccount], ALGORAND_CHAIN_ID),
+        ).toBe(true)
+    })
+
+    test('canSignWith returns false for rekeyed account when auth account has no keys', () => {
+        const authAccount = {
+            id: '2',
+            type: 'watch',
+            address: 'AUTH_ADDR',
+        } as any
+
+        const rekeyedAccount = {
+            id: '3',
+            type: 'watch',
+            address: 'REKEYED_ADDR',
+            rekeyAddress: 'AUTH_ADDR',
+        } as any
+
+        expect(
+            canSignWith(rekeyedAccount, [authAccount], ALGORAND_CHAIN_ID),
+        ).toBe(false)
+    })
+
+    test('canSignWith returns false for rekeyed account when auth account is not in list', () => {
+        const rekeyedAccount = {
+            id: '3',
+            type: 'watch',
+            address: 'REKEYED_ADDR',
+            rekeyAddress: 'AUTH_ADDR',
+        } as any
+
+        expect(canSignWith(rekeyedAccount, [], ALGORAND_CHAIN_ID)).toBe(false)
+    })
+
+    test('canSignWith resolves a single rekey hop only, not a chain', () => {
+        const rootAccount = {
+            id: '1',
+            type: 'algo25',
+            address: 'ROOT_ADDR',
+            keyPairId: 'pk1',
+        } as any
+
+        const middleAccount = {
+            id: '2',
+            type: 'watch',
+            address: 'MIDDLE_ADDR',
+            rekeyAddress: 'ROOT_ADDR',
+        } as any
+
+        const leafAccount = {
+            id: '3',
+            type: 'watch',
+            address: 'LEAF_ADDR',
+            rekeyAddress: 'MIDDLE_ADDR',
+        } as any
+
+        const accounts = [rootAccount, middleAccount, leafAccount]
+        // LEAF -> MIDDLE -> ROOT. MIDDLE holds no key, so LEAF cannot sign —
+        // the hop from MIDDLE to ROOT is not followed.
+        expect(canSignWith(leafAccount, accounts, ALGORAND_CHAIN_ID)).toBe(
+            false,
+        )
+        // MIDDLE -> ROOT, and ROOT holds a key, so MIDDLE can sign (one hop).
+        expect(canSignWith(middleAccount, accounts, ALGORAND_CHAIN_ID)).toBe(
+            true,
+        )
+    })
+
+    test('canSignWith does not recurse on a cyclic auth chain', () => {
+        const a = {
+            id: '1',
+            type: 'watch',
+            address: 'A',
+            rekeyAddress: 'B',
+        } as any
+        const b = {
+            id: '2',
+            type: 'watch',
+            address: 'B',
+            rekeyAddress: 'A',
+        } as any
+
+        // Single-hop: A's immediate auth B holds no key — false, no infinite
+        // recursion.
+        expect(canSignWith(a, [a, b], ALGORAND_CHAIN_ID)).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
+    test('returns true for a non-rekeyed hardware account (no keyPairId)', () => {
+        const account = {
+            type: 'hardware',
+            address: 'HW',
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
+        } as any
+        expect(canSignWith(account, [account], ALGORAND_CHAIN_ID)).toBe(true)
+    })
+
+    test('returns true for rekeyed account whose auth is a hardware account', () => {
+        const authAccount = {
+            type: 'hardware',
+            address: 'AUTH',
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
+        } as any
+        const account = {
+            type: 'watch',
+            address: 'ADDR',
+            rekeyAddress: 'AUTH',
+        } as any
+        expect(
+            canSignWith(account, [account, authAccount], ALGORAND_CHAIN_ID),
+        ).toBe(true)
+    })
+
+    test('returns true for a multisig with a local signable participant', () => {
+        const participant = {
+            type: 'algo25',
+            address: 'P1',
+            keyPairId: 'pk1',
+        } as any
+        const multisig = {
+            type: 'multisig',
+            address: 'MS',
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2'],
+                version: 1,
+            },
+        } as any
+        expect(
+            canSignWith(multisig, [multisig, participant], ALGORAND_CHAIN_ID),
+        ).toBe(true)
+    })
+
+    test('returns false for a multisig with no local signable participants', () => {
+        const multisig = {
+            type: 'multisig',
+            address: 'MS',
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2'],
+                version: 1,
+            },
+        } as any
+        expect(canSignWith(multisig, [multisig], ALGORAND_CHAIN_ID)).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - getRekeyAccount', () => {
+    test('returns the auth account when rekeyed and target is in the wallet', () => {
+        const auth = {
+            type: 'algo25',
+            address: 'AUTH',
+            keyPairId: 'pk1',
+        } as any
+        const rekeyed = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk2',
+            rekeyAddress: 'AUTH',
+        } as any
+        expect(getRekeyAccount('A', [rekeyed, auth], ALGORAND_CHAIN_ID)).toBe(
+            auth,
+        )
+    })
+
+    test('returns null when the address is not rekeyed', () => {
+        const account = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk1',
+        } as any
+        expect(getRekeyAccount('A', [account], ALGORAND_CHAIN_ID)).toBeNull()
+    })
+
+    test('returns null when the rekey target is not in the wallet', () => {
+        const rekeyed = {
+            type: 'watch',
+            address: 'A',
+            rekeyAddress: 'MISSING',
+        } as any
+        expect(getRekeyAccount('A', [rekeyed], ALGORAND_CHAIN_ID)).toBeNull()
+    })
+
+    test('returns null when the address is unknown', () => {
+        expect(getRekeyAccount('UNKNOWN', [], ALGORAND_CHAIN_ID)).toBeNull()
+    })
+})
+
+describe('services/accounts/utils - getSignerFor', () => {
+    test('returns the account itself when it holds its own key', () => {
+        const account = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk1',
+        } as any
+        expect(getSignerFor('A', [account], ALGORAND_CHAIN_ID)).toBe(account)
+    })
+
+    test('returns the immediate auth account when rekeyed and we can sign', () => {
+        const auth = {
+            type: 'algo25',
+            address: 'AUTH',
+            keyPairId: 'pk1',
+        } as any
+        const rekeyed = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk2',
+            rekeyAddress: 'AUTH',
+        } as any
+        expect(getSignerFor('A', [rekeyed, auth], ALGORAND_CHAIN_ID)).toBe(auth)
+    })
+
+    test('returns null for an unsignable rekeyed account', () => {
+        const rekeyed = {
+            type: 'watch',
+            address: 'A',
+            rekeyAddress: 'MISSING',
+        } as any
+        expect(getSignerFor('A', [rekeyed], ALGORAND_CHAIN_ID)).toBeNull()
+    })
+
+    test('returns null for a non-rekeyed watch account', () => {
+        const account = { type: 'watch', address: 'A' } as any
+        expect(getSignerFor('A', [account], ALGORAND_CHAIN_ID)).toBeNull()
+    })
+
+    test('returns the multisig itself when at least one participant is local and signable', () => {
+        const participant = {
+            type: 'algo25',
+            address: 'P1',
+            keyPairId: 'pk1',
+        } as any
+        const multisig = {
+            type: 'multisig',
+            address: 'MS',
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2'],
+                version: 1,
+            },
+        } as any
+        expect(
+            getSignerFor('MS', [multisig, participant], ALGORAND_CHAIN_ID),
+        ).toBe(multisig)
+    })
+
+    test('returns null when address is not in the wallet', () => {
+        expect(getSignerFor('UNKNOWN', [], ALGORAND_CHAIN_ID)).toBeNull()
+    })
+})
+
+describe('services/accounts/utils - rekeyTransitionFor', () => {
+    test('returns null for a non-rekeyed account', () => {
+        const account = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk1',
+        } as any
+        expect(
+            rekeyTransitionFor(account, [account], ALGORAND_CHAIN_ID),
+        ).toBeNull()
+    })
+
+    test('returns null for a rekeyed account whose auth is not in the wallet', () => {
+        const rekeyed = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk1',
+            rekeyAddress: 'MISSING',
+        } as any
+        expect(
+            rekeyTransitionFor(rekeyed, [rekeyed], ALGORAND_CHAIN_ID),
+        ).toBeNull()
+    })
+
+    test('returns from/to raw types for a signable rekey', () => {
+        const auth = {
+            type: 'hardware',
+            address: 'AUTH',
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'd',
+                deviceName: 'Ledger',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
+        } as any
+        const rekeyed = {
+            type: 'algo25',
+            address: 'A',
+            keyPairId: 'pk1',
+            rekeyAddress: 'AUTH',
+        } as any
+        expect(
+            rekeyTransitionFor(rekeyed, [rekeyed, auth], ALGORAND_CHAIN_ID),
+        ).toEqual({
+            from: 'algo25',
+            to: 'hardware',
+        })
+    })
+})
+
+describe('services/accounts/utils - quantum accounts', () => {
+    test('canSignWith resolves a quantum account as its own signer', () => {
+        const account = quantum()
+        expect(canSignWith(account, [account], ALGORAND_CHAIN_ID)).toBe(true)
+    })
+
+    test('canSignWith resolves a quantum auth account for a rekeyed account', () => {
+        const auth = quantum({ address: 'FAUTH' })
+        const rekeyed = watch({ address: 'A', rekeyAddress: 'FAUTH' })
+        expect(canSignWith(rekeyed, [rekeyed, auth], ALGORAND_CHAIN_ID)).toBe(
+            true,
+        )
+    })
+})
+
+describe('services/accounts/utils - isQuantumDowngrade', () => {
+    test('quantum source to a plain Ed25519 target is a downgrade', () => {
+        const source = quantum({ address: 'F' })
+        const target = algo25({ address: 'A' })
+        expect(
+            isQuantumDowngrade(
+                source,
+                target,
+                [source, target],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(true)
+        expect(
+            isQuantumDowngrade(
+                source,
+                hd({ address: 'H' }),
+                [source, hd({ address: 'H' })],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(true)
+    })
+
+    test('quantum source to a quantum target is not a downgrade', () => {
+        const source = quantum({ address: 'F1' })
+        const target = quantum({ address: 'F2' })
+        expect(
+            isQuantumDowngrade(
+                source,
+                target,
+                [source, target],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(false)
+    })
+
+    test('Ed25519 source to a quantum target is not a downgrade', () => {
+        const source = algo25({ address: 'A' })
+        const target = quantum({ address: 'F' })
+        expect(
+            isQuantumDowngrade(
+                source,
+                target,
+                [source, target],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(false)
+    })
+
+    test('Ed25519 source to an Ed25519 target is not a downgrade', () => {
+        const source = algo25({ address: 'A' })
+        const target = hd({ address: 'H' })
+        expect(
+            isQuantumDowngrade(
+                source,
+                target,
+                [source, target],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(false)
+    })
+
+    test('quantum source to a target whose effective auth is quantum is not a downgrade', () => {
+        // Target is itself rekeyed to a quantum account, so its effective
+        // signing authority resolves to quantum via resolveAuthAccount.
+        const source = quantum({ address: 'F1' })
+        const quantumAuth = quantum({ address: 'FAUTH' })
+        const target = watch({ address: 'T', rekeyAddress: 'FAUTH' })
+        expect(
+            isQuantumDowngrade(
+                source,
+                target,
+                [source, target, quantumAuth],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(false)
+    })
+
+    test('quantum source to a hardware/ledger target is a downgrade', () => {
+        const source = quantum({ address: 'F' })
+        const target = ledger({ address: 'L' })
+        expect(
+            isQuantumDowngrade(
+                source,
+                target,
+                [source, target],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(true)
+    })
+
+    test('Ed25519 source rekeyed to a quantum auth (rekey-in), rekeying to an Ed25519 target, is a downgrade', () => {
+        // The flagship migration path: the account's own type stays algo25,
+        // but its effective signer is quantum — rekeying to Ed25519 strips it.
+        const quantumAuth = quantum({ address: 'FAUTH' })
+        const source = algo25({ address: 'A', rekeyAddress: 'FAUTH' })
+        const target = algo25({ address: 'B' })
+        expect(
+            isQuantumDowngrade(
+                source,
+                target,
+                [source, target, quantumAuth],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(true)
+    })
+
+    test('quantum-typed source already rekeyed to an Ed25519 auth is not a downgrade', () => {
+        // Its effective signer is already Ed25519 — there is no quantum
+        // protection left to remove, so the warning would be untrue.
+        const ed25519Auth = algo25({ address: 'EAUTH' })
+        const source = quantum({ address: 'F', rekeyAddress: 'EAUTH' })
+        const target = algo25({ address: 'B' })
+        expect(
+            isQuantumDowngrade(
+                source,
+                target,
+                [source, target, ed25519Auth],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(false)
+    })
+
+    test('source whose auth is not held locally (broken chain) is not a downgrade', () => {
+        // resolveAuthAccount throws when the auth is unheld; we cannot assert
+        // quantum protection we cannot resolve.
+        const source = quantum({ address: 'F', rekeyAddress: 'MISSING' })
+        const target = algo25({ address: 'B' })
+        expect(
+            isQuantumDowngrade(
+                source,
+                target,
+                [source, target],
+                ALGORAND_CHAIN_ID,
+            ),
+        ).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - resolveAuthAccount', () => {
+    test('returns the account itself when not rekeyed', () => {
+        const a = algo25({ address: 'A' })
+        expect(resolveAuthAccount(a, [a], ALGORAND_CHAIN_ID)).toBe(a)
+    })
+
+    test('walks a single rekey hop', () => {
+        const a = algo25({ address: 'A', rekeyAddress: 'B' })
+        const b = algo25({ address: 'B' })
+        expect(resolveAuthAccount(a, [a, b], ALGORAND_CHAIN_ID)).toBe(b)
+    })
+
+    test('resolves a single hop only — not the terminal of the chain', () => {
+        // A -> B -> C. B signs for A; rekey indirection is not transitive.
+        const a = ledger({ address: 'A', rekeyAddress: 'B' })
+        const b = ledger({ address: 'B', rekeyAddress: 'C' })
+        const c = ledger({ address: 'C' })
+        expect(resolveAuthAccount(a, [a, b, c], ALGORAND_CHAIN_ID)).toBe(b)
+    })
+
+    test('throws RekeyTargetNotFoundError when the auth account is not held', () => {
+        const a = algo25({ address: 'A', rekeyAddress: 'MISSING' })
+        expect(() => resolveAuthAccount(a, [a], ALGORAND_CHAIN_ID)).toThrow(
+            RekeyTargetNotFoundError,
+        )
+    })
+})

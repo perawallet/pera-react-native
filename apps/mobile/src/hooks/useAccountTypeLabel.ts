@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useMemo } from 'react'
 import {
     AccountTypes,
@@ -57,7 +58,7 @@ export const useAccountTypeLabel = (
     return useMemo(() => {
         if (!account) return plain('')
 
-        if (isRekeyedAccount(account)) {
+        if (isRekeyedAccount(account, LEGACY_CHAIN_ID)) {
             if (!canSign) {
                 return plain(t('account_info.type_no_auth'))
             }

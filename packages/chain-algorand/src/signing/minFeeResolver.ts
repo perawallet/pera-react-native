@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
     isQuantumAccount,
@@ -40,7 +41,7 @@ export const resolveMinFeeForSender = ({
 }: ResolveMinFeeForSenderParams): bigint => {
     const baseMinFee =
         suggestedMinFee > configMinTxnFee ? suggestedMinFee : configMinTxnFee
-    const signer = getSignerFor(senderAddress, accounts)
+    const signer = getSignerFor(senderAddress, accounts, LEGACY_CHAIN_ID)
     const isPQSigner = signer !== null && isQuantumAccount(signer)
     return calculateMinTxnFee({ baseMinFee, isPQSigner, pqMultiplier })
 }

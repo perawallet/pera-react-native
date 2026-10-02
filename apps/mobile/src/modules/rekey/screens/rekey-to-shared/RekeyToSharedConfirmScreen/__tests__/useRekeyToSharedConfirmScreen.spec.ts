@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { useRekeyToSharedConfirmScreen } from '../useRekeyToSharedConfirmScreen'
 
 const mockNavigate = vi.fn()
@@ -124,6 +125,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
 
 describe('useRekeyToSharedConfirmScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         mockSourceAccount.rekeyAddress = undefined
         mockSubmitAsync.mockReset()
