@@ -65,7 +65,7 @@ export const getLocalUnsignedSigners = (
         // true), but multisig slots verify Ed25519 signatures only, and
         // algosdk's own PQ signer rejects multisig signing outright — so a
         // quantum participant can never contribute a usable subsignature.
-        // Mirrors packages/signing/src/pipeline/signing/utils.ts's
+        // Mirrors packages/chain-algorand/src/signing/multisig/multisigParticipants.ts's
         // getLocalParticipants; keep both in agreement rather than admitting
         // quantum here instead.
         if (isQuantumAccount(account)) continue

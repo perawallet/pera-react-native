@@ -79,6 +79,23 @@ export const fakePlannerAdapter = (
         if (!isCosigner) recomputeGroupIds(transactions)
     }),
     mergeSigningResults: vi.fn(results => results[0]),
+    assembleSignedTransaction: vi.fn((txn, signature) => ({
+        txn,
+        sig: signature?.sig,
+    })),
+    createMultisigStrategy: vi.fn(notStubbed('createMultisigStrategy')),
+    signMultisigGroups: vi.fn(notStubbed('signMultisigGroups')),
+    createMultisigProposeTransport: vi.fn(
+        notStubbed('createMultisigProposeTransport'),
+    ),
+    createMultisigCosignTransport: vi.fn(
+        notStubbed('createMultisigCosignTransport'),
+    ),
+    takeDraftProposeContext: vi.fn(() => undefined),
+    classifyHandoffPoll: vi.fn(notStubbed('classifyHandoffPoll')),
+    resolveHandoffOutcome: vi.fn(notStubbed('resolveHandoffOutcome')),
+    completeMultisigHandoff: vi.fn(notStubbed('completeMultisigHandoff')),
+    isSignRequestMultisigUnsignable: vi.fn(() => false),
     ...overrides,
 })
 

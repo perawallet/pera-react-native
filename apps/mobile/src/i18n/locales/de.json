@@ -3601,6 +3601,7 @@
             "retry": "Erneut scannen",
             "error": "Scan fehlgeschlagen. Stelle sicher, dass Bluetooth aktiviert ist, und versuche es erneut.",
             "usb_error": "Kein Ledger-Gerät über USB gefunden. Prüfe, ob es angeschlossen und entsperrt ist, und versuche es erneut.",
+            "web_ble_brave_error": "Brave deaktiviert Web Bluetooth standardmäßig. Öffne brave://flags/#brave-web-bluetooth-api, setze die Option auf „Enabled“, starte Brave neu und versuche es erneut.",
             "location_services_disabled": "Aktiviere den Standort in deinen Geräteeinstellungen, um nach nahegelegenen Ledger-Geräten zu suchen.",
             "open_location_settings": "Standorteinstellungen öffnen",
             "grant_permission": "Berechtigung erteilen",
@@ -3734,10 +3735,13 @@
             "provider_unavailable": "Der Hardware-Wallet-Verbindungsdienst ist nicht verfügbar. Starte Pera neu und versuche es erneut.",
             "device_not_found_title": "Ledger nicht gefunden",
             "device_not_found": "Ledger nicht gefunden. Stelle sicher, dass dein Ledger-Gerät eingeschaltet und in der Nähe ist, und versuche es erneut.",
+            "device_picker_unavailable_title": "In einem Browser-Tab fortfahren",
+            "device_picker_unavailable": "Dein Browser kann dich in diesem Fenster nicht auffordern, dein Ledger-Gerät auszuwählen. Öffne Pera in einem Browser-Tab und versuche es dort erneut.",
             "device_busy_title": "Ledger ist beschäftigt",
             "device_busy": "Ledger ist beschäftigt. Schließe die aktuelle Aktion auf deinem Ledger ab und versuche es erneut.",
             "action_enable_bluetooth": "Bluetooth aktivieren",
             "action_open_settings": "Einstellungen öffnen",
+            "action_open_in_tab": "In Tab öffnen",
             "action_open_location_settings": "Standorteinstellungen öffnen"
         },
         "troubleshooting": {

@@ -11,7 +11,10 @@
  */
 
 import type { HardwareWalletRegistry } from '@perawallet/wallet-extension-hardware-wallet'
-import { LedgerWebUsbService } from './LedgerWebUsbService'
+import {
+    LedgerWebUsbService,
+    type LedgerWebUsbServiceOptions,
+} from './LedgerWebUsbService'
 
 /**
  * wallet-provider Extension that registers the WebHID Ledger USB hardware
@@ -22,10 +25,13 @@ import { LedgerWebUsbService } from './LedgerWebUsbService'
  * Run it after `WithHardwareWalletExtension`, which provides the
  * `hardwareWalletRegistry` on the provider instance.
  */
-export const WithLedgerWebUsbExtension = (provider: {
-    hardwareWalletRegistry: HardwareWalletRegistry
-}) => {
-    const service = new LedgerWebUsbService()
+export const WithLedgerWebUsbExtension = (
+    provider: {
+        hardwareWalletRegistry: HardwareWalletRegistry
+    },
+    options?: LedgerWebUsbServiceOptions,
+) => {
+    const service = new LedgerWebUsbService(options)
     provider.hardwareWalletRegistry.register(service.createTransportProvider())
     return {}
 }

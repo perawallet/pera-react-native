@@ -19,6 +19,7 @@ import {
     LedgerDeviceBusyError,
     LedgerDeviceLockedError,
     LedgerDeviceNotFoundError,
+    LedgerDevicePickerUnavailableError,
     LedgerDisconnectedError,
     LedgerError,
     LedgerLocationServicesDisabledError,
@@ -82,6 +83,8 @@ export const classifyLedgerErrorKind = (
     if (error instanceof LedgerTimeoutError) return 'timeout'
     if (error instanceof LedgerDeviceLockedError) return 'device_locked'
     if (error instanceof LedgerDeviceNotFoundError) return 'device_not_found'
+    if (error instanceof LedgerDevicePickerUnavailableError)
+        return 'device_picker_unavailable'
     if (error instanceof LedgerDeviceBusyError) return 'device_busy'
     if (error instanceof LedgerUsbNoDeviceError) return 'usb_no_device'
     if (error instanceof LedgerUsbMultipleDevicesError)

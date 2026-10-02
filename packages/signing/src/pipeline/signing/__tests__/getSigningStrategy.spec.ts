@@ -36,6 +36,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 import { createSigningStrategySelector } from '../getSigningStrategy'
 import { CannotSignError } from '../../errors'
+import type { SigningResult, SigningStrategy } from '../../types'
+import { registerFakeLocalKeySignerAdapter } from '../../../__tests__/fakeLocalKeySignerAdapter'
+import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
 
 const algo25Account = {
     type: 'algo25',
@@ -57,8 +60,17 @@ const weirdAccount = {
     address: 'W',
 } as unknown as WalletAccount
 
+let localStrategy: SigningStrategy
+let multisigStrategy: SigningStrategy
+
+const emptyResult = (address: string): SigningResult => ({
+    signedData: { type: 'transactions', signed: [] },
+    signers: [{ address }],
+})
+
 const makeSelector = () =>
     createSigningStrategySelector({
+        network: 'mainnet',
         signTransactions: vi.fn(),
         signArbitraryData: vi.fn(),
         signArc60: vi.fn(),
@@ -68,6 +80,43 @@ const makeSelector = () =>
     })
 
 beforeEach(() => {
+    // Stand-ins for the chain package's strategies: the local one signs through
+    // the injected function, the multisig one fans out to each participant's
+    // strategy, which is the part the selector's rekey rules govern.
+    registerFakeLocalKeySignerAdapter({
+        createStrategy: vi.fn(options => {
+            localStrategy = {
+                canSign: () => true,
+                sign: async (_group, account) => {
+                    await options.signTransactions([], [], account)
+                    return emptyResult(account.address)
+                },
+            }
+            return localStrategy
+        }),
+    })
+    registerFakePlannerAdapter({
+        createMultisigStrategy: vi.fn(options => {
+            multisigStrategy = {
+                canSign: () => true,
+                sign: async (group, account, callbacks) => {
+                    const participants = options.getLocalParticipants(
+                        account,
+                        options.getAllAccounts(),
+                    )
+                    const results = await Promise.all(
+                        participants.map(participant =>
+                            options
+                                .getStrategyForParticipant(participant)
+                                .sign(group, participant, callbacks),
+                        ),
+                    )
+                    return results[0]
+                },
+            }
+            return multisigStrategy
+        }),
+    })
     mocks.isMultisigAccount.mockReset().mockReturnValue(false)
     mocks.isHardwareWalletAccount.mockReset().mockReturnValue(false)
     mocks.hasSigningKeys.mockReset().mockReturnValue(false)
@@ -80,7 +129,7 @@ describe('createSigningStrategySelector', () => {
         mocks.resolveAuthAccount.mockImplementation(a => a)
         const select = makeSelector()
         const strategy = select(multisigAccount, [multisigAccount])
-        expect(strategy.canSign(multisigAccount)).toBe(true)
+        expect(strategy).toBe(multisigStrategy)
     })
 
     test('returns multisig strategy when the auth account is multisig (rekeyed-to-msig sender)', () => {
@@ -88,7 +137,7 @@ describe('createSigningStrategySelector', () => {
         mocks.resolveAuthAccount.mockReturnValue(multisigAccount)
         const select = makeSelector()
         const strategy = select(algo25Account, [algo25Account, multisigAccount])
-        expect(strategy.canSign(multisigAccount)).toBe(true)
+        expect(strategy).toBe(multisigStrategy)
     })
 
     test('returns hardware strategy when auth account is hardware', () => {
@@ -98,6 +147,8 @@ describe('createSigningStrategySelector', () => {
         )
         const select = makeSelector()
         const strategy = select(hardwareAccount, [hardwareAccount])
+        expect(strategy).not.toBe(localStrategy)
+        expect(strategy).not.toBe(multisigStrategy)
         expect(strategy.canSign(hardwareAccount)).toBe(true)
     })
 
@@ -106,7 +157,7 @@ describe('createSigningStrategySelector', () => {
         mocks.hasSigningKeys.mockImplementation(a => a.type === 'algo25')
         const select = makeSelector()
         const strategy = select(algo25Account, [algo25Account])
-        expect(strategy.canSign(algo25Account)).toBe(true)
+        expect(strategy).toBe(localStrategy)
     })
 
     test('throws CannotSignError when no signing capability', () => {
@@ -159,6 +210,7 @@ describe('createSigningStrategySelector', () => {
             )
 
             const select = createSigningStrategySelector({
+                network: 'mainnet',
                 signTransactions,
                 signArbitraryData: vi.fn(),
                 signArc60: vi.fn(),

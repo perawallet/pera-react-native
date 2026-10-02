@@ -35,6 +35,12 @@ type SendFundsState = {
     sendMode: SendMode
     arc59Summary?: Arc59SendSummaryResponse
     isCloseAccount: boolean
+    /**
+     * Set when a browser tab reopens a send the extension popup couldn't sign.
+     * The amount screen presses Next once for the user, so the flow lands back
+     * on its confirmation step.
+     */
+    shouldContinueToConfirm: boolean
 }
 
 type SendFundsActions = {
@@ -48,6 +54,7 @@ type SendFundsActions = {
     setSendMode: (mode: SendMode) => void
     setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
     setIsCloseAccount: (isClose: boolean) => void
+    setShouldContinueToConfirm: (shouldContinue: boolean) => void
     reset: () => void
     resetState: () => void
 }
@@ -65,6 +72,7 @@ const initialState: SendFundsState = {
     sendMode: 'normal',
     arc59Summary: undefined,
     isCloseAccount: false,
+    shouldContinueToConfirm: false,
 }
 
 export const useSendFundsStore = create<SendFundsStore>()(set => ({
@@ -79,6 +87,8 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setSendMode: mode => set({ sendMode: mode }),
     setArc59Summary: summary => set({ arc59Summary: summary }),
     setIsCloseAccount: isClose => set({ isCloseAccount: isClose }),
+    setShouldContinueToConfirm: shouldContinue =>
+        set({ shouldContinueToConfirm: shouldContinue }),
     reset: () => set(initialState),
     resetState: () => set(initialState),
     clearStorage: () => {},
@@ -103,6 +113,7 @@ type UseSendFundsResult = {
     sendMode: SendMode
     arc59Summary?: Arc59SendSummaryResponse
     isCloseAccount: boolean
+    shouldContinueToConfirm: boolean
     setSelectedAssetId: (id?: string) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
@@ -113,6 +124,7 @@ type UseSendFundsResult = {
     setSendMode: (mode: SendMode) => void
     setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
     setIsCloseAccount: (isClose: boolean) => void
+    setShouldContinueToConfirm: (shouldContinue: boolean) => void
     reset: () => void
 }
 
@@ -147,6 +159,12 @@ export const useSendFunds = (): UseSendFundsResult => {
     const setIsCloseAccount = useSendFundsStore(
         state => state.setIsCloseAccount,
     )
+    const shouldContinueToConfirm = useSendFundsStore(
+        state => state.shouldContinueToConfirm,
+    )
+    const setShouldContinueToConfirm = useSendFundsStore(
+        state => state.setShouldContinueToConfirm,
+    )
     const reset = useSendFundsStore(state => state.reset)
 
     return {
@@ -160,6 +178,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         sendMode,
         arc59Summary,
         isCloseAccount,
+        shouldContinueToConfirm,
         setSelectedAssetId,
         setCanSelectAsset,
         setAmount,
@@ -170,6 +189,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         setSendMode,
         setArc59Summary,
         setIsCloseAccount,
+        setShouldContinueToConfirm,
         reset,
     }
 }

@@ -18,6 +18,7 @@ export type ExpandedFlow =
     | 'asb-import'
     | 'backup-restore-scan'
     | 'camera-access'
+    | 'resume'
 
 const FLOWS: readonly string[] = [
     'add-account',
@@ -27,6 +28,7 @@ const FLOWS: readonly string[] = [
     'asb-import',
     'backup-restore-scan',
     'camera-access',
+    'resume',
 ]
 
 /**

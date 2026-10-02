@@ -35,6 +35,7 @@ import {
 } from '@perawallet/wallet-extension-hardware-wallet'
 import {
     LEDGER_STATUS_CODES,
+    LedgerDevicePickerUnavailableError,
     LedgerUserRejectedError,
 } from '@perawallet/wallet-extension-ledger-shared'
 import { LedgerWebBleService } from '../LedgerWebBleService'
@@ -223,6 +224,30 @@ describe('LedgerWebBleService', () => {
         await provider.connect('some-other-id')
 
         expect(transportOpenMock).toHaveBeenCalledWith('some-other-id')
+    })
+
+    test('connect refuses to open a picker in a window that cannot host one', async () => {
+        const provider = new LedgerWebBleService({
+            canShowDevicePicker: () => false,
+        }).createTransportProvider()
+
+        await expect(provider.connect('some-other-id')).rejects.toBeInstanceOf(
+            LedgerDevicePickerUnavailableError,
+        )
+        expect(transportOpenMock).not.toHaveBeenCalled()
+    })
+
+    test('connect still reopens a device scanned in this window when no picker can be shown', async () => {
+        emitScannedDevice()
+        const provider = new LedgerWebBleService({
+            canShowDevicePicker: () => false,
+        }).createTransportProvider()
+        const discovered: { id: string }[] = []
+        provider.scan(d => discovered.push(d))
+
+        await provider.connect(discovered[0].id)
+
+        expect(transportOpenMock).toHaveBeenCalledWith(NANO_X_DEVICE)
     })
 
     test('opens the app through the registered driver', async () => {

@@ -26,8 +26,8 @@ import {
     isQuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
 
 /**
  * How many transactions to encode + sign per chunk before yielding back to
@@ -40,41 +40,25 @@ import { deferToNextCycle } from '@perawallet/wallet-core-shared'
  */
 export const SIGN_BATCH_SIZE = 16
 
-export type PQSigningInfo = { schemeId: PQSchemeId; publicKey: Uint8Array }
-
-export type LocalKeySigningDeps = {
-    /**
-     * Signs each payload with the child key at `keyPairId`, returning one
-     * signature per payload in order. The caller owns key custody and the
-     * access-domain check — this module never sees private material.
-     */
-    signPayloads: (
-        keyPairId: string,
-        payloads: Uint8Array[],
-    ) => Promise<Uint8Array[]>
-    /**
-     * PQ scheme id + public key for a post-quantum child, or `null` for an
-     * Ed25519 one. The single oracle for which payload and which envelope
-     * field this module picks — see `useKMS.getPQSigningInfo` for why payload
-     * selection and signer selection must never be able to disagree.
-     */
-    getPQSigningInfo: (keyPairId: string) => PQSigningInfo | null
-    encodeTransaction: (txn: PeraTransaction) => Uint8Array
-    /**
-     * Yields to the event loop between batches. Injectable so a headless
-     * caller can run the batching logic without React's scheduling in play.
-     */
-    yieldBetweenBatches?: () => Promise<void>
-}
-
 /**
- * Signs `txns` with `account`'s key and assembles the node-ready envelopes.
- *
- * Algo25, HD wallet, and quantum accounts all reference their signing key
- * directly via `keyPairId`. `getPQSigningInfo` is the single place that
- * resolves the key's scheme — everything else here (batching, rekey `sgnr`,
- * ordering) is shared regardless of which branch it picks.
+ * `sgnr` is set only when the signer is not the sender (the rekey case), or the
+ * node cannot find the authorizing key.
  */
+export const assembleSignedTransaction = (
+    txn: PeraTransaction,
+    signature?: { sig: Uint8Array; signerAddress: string },
+): PeraSignedTransaction =>
+    new SignedTransaction({
+        txn,
+        sig: signature?.sig,
+        sgnr:
+            signature &&
+            signature.signerAddress !==
+                encodeAlgorandAddress(txn.sender.publicKey)
+                ? Address.fromString(signature.signerAddress)
+                : undefined,
+    })
+
 const signSingleAccountTransactions = async (
     deps: LocalKeySigningDeps,
     account: WalletAccount,
@@ -129,18 +113,10 @@ const signSingleAccountTransactions = async (
                 return
             }
 
-            const senderPublicKey = encodeAlgorandAddress(txn.sender.publicKey)
             signed.push(
-                new SignedTransaction({
-                    txn,
+                assembleSignedTransaction(txn, {
                     sig: signatures[idx],
-                    // A signer that is not the sender is the rekey case, and
-                    // the envelope has to name it or the node cannot find the
-                    // authorizing key.
-                    sgnr:
-                        account.address !== senderPublicKey
-                            ? Address.fromString(account.address)
-                            : undefined,
+                    signerAddress: account.address,
                 }),
             )
         })
@@ -165,7 +141,7 @@ const signSingleAccountTransactions = async (
  * all.
  *
  * Pure and dependency-injected on purpose: this is the seam
- * `useLocalKeyTransactionSigner` delegates to, and the entry point the
+ * `useLocalKeyTransactionSigner` reaches through the adapter, and the entry point the
  * LocalNet conformance suite signs through, so the `sgnr`/`pqsig` envelope
  * rules are proven against a real node rather than reimplemented by a test
  * harness.
@@ -176,7 +152,7 @@ export const signTransactionsWithLocalKey = async (
     indexesToSign: number[],
     account: WalletAccount,
 ): Promise<PeraSignedTransaction[]> => {
-    const result = txnGroup.map(txn => new SignedTransaction({ txn }))
+    const result = txnGroup.map(txn => assembleSignedTransaction(txn))
 
     const toSign = indexesToSign.map(i => txnGroup[i])
     const signedTxns = await signSingleAccountTransactions(

@@ -30,15 +30,15 @@ import {
     type ProposeSignRequest,
 } from '@perawallet/wallet-core-multisig'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type {
-    CreateDraftSignRequestFn,
-    GetDeviceIdFn,
-    GetMsigMetadataFn,
-    MsigMetadata,
-    ProposeSignRequestFn,
-} from '../pipeline/transports/createMultisigProposeTransport'
-import type { AddSignaturesFn } from '../pipeline/transports/createMultisigCosignTransport'
-import { draftProposeContexts } from '../pipeline/draftProposeContexts'
+import {
+    plannerAdapterFor,
+    type AddSignaturesFn,
+    type CreateDraftSignRequestFn,
+    type GetDeviceIdFn,
+    type GetMsigMetadataFn,
+    type MsigMetadata,
+    type ProposeSignRequestFn,
+} from '../chain-adapter'
 import { walletConnectHandoffs } from '../pipeline/walletConnectHandoffs'
 import { isExternalCallbackSource, type SigningResult } from '../pipeline/types'
 
@@ -273,7 +273,10 @@ export const useMultisigTransportAdapters =
                     // path does at create time happens here instead. Without
                     // it a `sync` record has no deliverer anywhere and the
                     // backend holds it at `ready` forever.
-                    const context = draftProposeContexts.take(signRequestId)
+                    const context =
+                        plannerAdapterFor(network).takeDraftProposeContext(
+                            signRequestId,
+                        )
                     if (context) {
                         const { source, msigMetadata } = context
                         const handoffDeviceId = deviceId ?? context.deviceId

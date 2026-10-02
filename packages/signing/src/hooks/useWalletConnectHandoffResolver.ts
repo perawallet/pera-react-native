@@ -19,13 +19,12 @@ import {
     type SignRequestResponse,
 } from '@perawallet/wallet-core-multisig'
 import {
-    classifyHandoffPoll,
-    resolveHandoffOutcome,
+    plannerAdapterFor,
     type HandoffPeerDelivery,
     type HandoffPollOutcome,
     type ResolverMessages,
     type TerminalHandoffOutcome,
-} from '../pipeline/classifyHandoffPoll'
+} from '../chain-adapter'
 import type { PendingWalletConnectHandoff } from '../pipeline/walletConnectHandoffs'
 import { useWalletConnectHandoffsStore } from '../store/walletConnectHandoffsStore'
 import { useHandoffResolver } from './useHandoffResolver'
@@ -154,7 +153,10 @@ export const useWalletConnectHandoffResolver = ({
                     reason: { kind: 'session-disconnected' },
                 })
             }
-            return classifyHandoffPoll(detail, handoff)
+            return plannerAdapterFor(handoff.network).classifyHandoffPoll(
+                detail,
+                handoff,
+            )
         },
         [isPeerSessionAlive],
     )
@@ -190,7 +192,7 @@ export const useWalletConnectHandoffResolver = ({
                 onUndeliverable?.(handoff.signRequestId)
             }
 
-            return resolveHandoffOutcome({
+            return plannerAdapterFor(handoff.network).resolveHandoffOutcome({
                 outcome,
                 handoff,
                 messages,

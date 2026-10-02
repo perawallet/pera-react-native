@@ -12,6 +12,7 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Decimal } from 'decimal.js'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import {
     UserRejectedSigningError,
@@ -35,10 +36,33 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@react-navigation/stack', () => ({}))
 
-const { mockExecute, mockOnFinished } = vi.hoisted(() => ({
+const {
+    mockExecute,
+    mockOnFinished,
+    mockRegisterTabResume,
+    mockClearTabResume,
+    mockCompleteTabResume,
+    sendFundsState,
+} = vi.hoisted(() => ({
     mockExecute: vi.fn(),
     mockOnFinished: vi.fn(),
+    mockRegisterTabResume: vi.fn(),
+    mockClearTabResume: vi.fn(),
+    mockCompleteTabResume: vi.fn(),
+    sendFundsState: {
+        amount: undefined as unknown,
+        note: undefined as string | undefined,
+        isCloseAccount: false,
+    },
 }))
+
+vi.mock('@utils/tabResumeIntent', () => ({
+    registerTabResumeIntent: mockRegisterTabResume,
+    clearTabResumeIntent: mockClearTabResume,
+    completeTabResume: mockCompleteTabResume,
+}))
+
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useTransactionSendFlow: () => ({
@@ -89,12 +113,12 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: () => ({
         selectedAssetId: '0',
-        amount: undefined,
+        amount: sendFundsState.amount,
         destination: 'dest-address',
-        note: undefined,
+        note: sendFundsState.note,
         sendMode: 'normal' as const,
         arc59Summary: undefined,
-        isCloseAccount: false,
+        isCloseAccount: sendFundsState.isCloseAccount,
         onFinished: mockOnFinished,
     }),
 }))
@@ -146,6 +170,53 @@ describe('useTransactionProcessingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         signingEventBus.__resetForTests()
+        sendFundsState.amount = undefined
+        sendFundsState.note = undefined
+        sendFundsState.isCloseAccount = false
+    })
+
+    it('registers the send to resume in a tab while it signs, and clears it once settled', async () => {
+        sendFundsState.amount = new Decimal('1.25')
+        sendFundsState.note = 'rent'
+        mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        expect(mockRegisterTabResume).toHaveBeenCalledWith({
+            flow: 'send',
+            accountAddress: 'test-address',
+            assetId: '0',
+            destination: 'dest-address',
+            amount: '1.25',
+            note: 'rent',
+        })
+        await new Promise(resolve => setTimeout(resolve, 0))
+        expect(mockClearTabResume).toHaveBeenCalledOnce()
+    })
+
+    it('hands a sent transaction back to the popup with its success copy', async () => {
+        mockExecute.mockResolvedValueOnce('TXID')
+
+        renderHook(() => useTransactionProcessingScreen())
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(mockReplace).toHaveBeenCalledWith('TransactionSuccess', {
+            transactionId: 'TXID',
+        })
+        expect(mockCompleteTabResume).toHaveBeenCalledWith({
+            title: 'send_funds.success.title',
+            body: 'send_funds.success.subtitle',
+        })
+    })
+
+    it('does not offer to resume closing an account', () => {
+        sendFundsState.amount = new Decimal('1.25')
+        sendFundsState.isCloseAccount = true
+        mockExecute.mockReturnValue(new Promise(() => {}))
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        expect(mockRegisterTabResume).not.toHaveBeenCalled()
     })
 
     it('calls navigation.goBack and does not show an error toast when user cancels the signing overlay', async () => {

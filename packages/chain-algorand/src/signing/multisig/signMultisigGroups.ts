@@ -10,41 +10,20 @@
  limitations under the License
  */
 
-import { fromPromise } from 'xstate'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
-import type {
-    AnalyzedSignableGroup,
-    SigningCallbacks,
-    SigningResult,
-} from '../../../pipeline/types'
-import { createSigningStrategySelector } from '../../../pipeline/signing/getSigningStrategy'
+import {
+    createSigningStrategySelector,
+    signGroupsBySignerAccount,
+    type MultisigSignerInput,
+    type SigningResult,
+} from '@perawallet/wallet-core-signing'
 import {
     buildDeferredProposeSigningResult,
     getProposeParticipants,
     shouldDeferPropose,
-} from '../../../pipeline/signing/utils'
-import type {
-    LocalSigningFunction,
-    LocalArbitrarySigningFunction,
-    LocalArc60SigningFunction,
-} from '../../../pipeline/signing/createLocalKeyStrategy'
-import type { EncodeTransactionFunction } from '../../../pipeline/signing/createHardwareStrategy'
-import { signGroupsBySignerAccount } from './signGroupsBySignerAccount'
-
-export type MultisigSignerActorInput = {
-    groups: AnalyzedSignableGroup[]
-    allAccounts: WalletAccount[]
-    signTransactions: LocalSigningFunction
-    signArbitraryData: LocalArbitrarySigningFunction
-    signArc60: LocalArc60SigningFunction
-    encodeTransaction: EncodeTransactionFunction
-    hardwareWalletRegistry?: HardwareWalletRegistry
-    signingCallbacks?: SigningCallbacks
-}
+} from './multisigParticipants'
 
 /**
- * XState actor that signs each multisig group with every local-key (Algo25
+ * Signs each multisig group with every local-key (Algo25
  * or HD) participant in parallel, producing one combined SigningResult per
  * group. Hardware-wallet participants are deliberately skipped here:
  * `getProposeParticipants` filters them out so a Ledger device prompt
@@ -71,10 +50,9 @@ export type MultisigSignerActorInput = {
  * has no signing-capable participants in their wallet for the group's
  * multisig account.
  */
-export const multisigSignerActor = fromPromise<
-    SigningResult[],
-    MultisigSignerActorInput
->(async ({ input }) => {
+export const signMultisigGroups = async (
+    input: MultisigSignerInput,
+): Promise<SigningResult[]> => {
     const {
         groups,
         allAccounts,
@@ -84,6 +62,7 @@ export const multisigSignerActor = fromPromise<
         encodeTransaction,
         hardwareWalletRegistry,
         signingCallbacks,
+        network,
     } = input
 
     const selectStrategy = createSigningStrategySelector({
@@ -94,6 +73,7 @@ export const multisigSignerActor = fromPromise<
         hardwareWalletRegistry,
         getLocalParticipants: getProposeParticipants,
         getAllAccounts: () => allAccounts,
+        network,
     })
 
     return signGroupsBySignerAccount(
@@ -107,4 +87,4 @@ export const multisigSignerActor = fromPromise<
             return strategy.sign(group, signerAccount, signingCallbacks)
         },
     )
-})
+}

@@ -16,7 +16,7 @@ import { logger, type Network } from '@perawallet/wallet-core-shared'
 import type {
     HandoffPollOutcome,
     TerminalHandoffOutcome,
-} from '../pipeline/classifyHandoffPoll'
+} from '../chain-adapter'
 
 /** Poll cadence while the backend is responding. */
 const BASE_POLL_INTERVAL_MS = 3000

@@ -16,28 +16,15 @@ import {
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 import { encodeToBase64, type Nullable } from '@perawallet/wallet-core-shared'
-import type {
-    SigningStrategy,
-    SigningResult,
-    SignerInfo,
-    SignedData,
-} from '../types'
-import { NoLocalParticipantsError, SigningError } from '../errors'
-
-export interface CreateMultisigStrategyOptions {
-    /** Get local participants for a multisig account */
-    getLocalParticipants: (
-        account: WalletAccount,
-        allAccounts: WalletAccount[],
-    ) => WalletAccount[]
-
-    /** Get signing strategy for an individual participant. Rekey indirection is intentionally NOT
-     *  followed here — that's why no `allAccounts` is threaded through. */
-    getStrategyForParticipant: (participant: WalletAccount) => SigningStrategy
-
-    /** Get all user accounts */
-    getAllAccounts: () => WalletAccount[]
-}
+import {
+    NoLocalParticipantsError,
+    SigningError,
+    type CreateMultisigStrategyOptions,
+    type SignedData,
+    type SignerInfo,
+    type SigningResult,
+    type SigningStrategy,
+} from '@perawallet/wallet-core-signing'
 
 /**
  * Creates a signing strategy for multisig accounts.

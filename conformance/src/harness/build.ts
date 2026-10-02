@@ -19,10 +19,8 @@ import algosdk, {
 
 import { encodeTransaction } from '@perawallet/wallet-core-blockchain/utils/transact'
 import { resolvePQSigningInfo } from '@perawallet/wallet-core-kms/crypto/pq/resolvePQSigningInfo'
-import {
-    signTransactionsWithLocalKey,
-    type LocalKeySigningDeps,
-} from '@perawallet/wallet-core-signing/pipeline/signing/signTransactionsWithLocalKey'
+import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-chain-algorand/signing/local-key/signTransactionsWithLocalKey'
+import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
 
 import type { ConformanceAccount } from './accounts'
 import { getConformanceClient } from './client'

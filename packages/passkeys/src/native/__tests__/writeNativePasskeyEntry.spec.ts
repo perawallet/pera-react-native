@@ -13,7 +13,7 @@
 // @vitest-environment node
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { openNativeProviderRecord } from '@perawallet/wallet-core-passkeys/native'
+import { openNativeProviderRecord } from '../nativeProviderRecord'
 
 const { platformMock, masterKeyMock, storageMock, writeSplitMock } = vi.hoisted(
     () => ({

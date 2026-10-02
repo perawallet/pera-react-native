@@ -23,7 +23,11 @@ export type { LedgerErrorPresetKind }
  * A system-settings shortcut the user needs in order to resolve the error,
  * beyond retrying. Resolved to a platform handler by `useLedgerErrorAction`.
  */
-export type LedgerErrorActionKind = 'bluetooth' | 'app_settings' | 'location'
+export type LedgerErrorActionKind =
+    | 'bluetooth'
+    | 'app_settings'
+    | 'location'
+    | 'open_in_tab'
 
 export type LedgerErrorPreset = {
     kind: LedgerErrorPresetKind
@@ -47,11 +51,14 @@ const NON_RETRYABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
     'address_mismatch',
     'unsupported_device',
     'app_outdated',
+    // Retrying in the same window fails the same way; the action moves to a tab.
+    'device_picker_unavailable',
 ])
 
 /**
- * Only for failures the user cannot clear from inside Pera or from the device
- * — each one needs an OS-level toggle. Everything else (unlock, open the app,
+ * Only for failures the user cannot clear from this screen or from the device
+ * — an OS-level toggle, or on web a move out of the toolbar popup into a tab
+ * that can host the browser's device picker. Everything else (unlock, open the app,
  * move closer) is resolved on the Ledger itself, where a settings deep link
  * would be a dead end.
  */
@@ -69,6 +76,10 @@ const ACTION_BY_KIND: Partial<
     location_services_disabled: {
         kind: 'location',
         key: 'ledger.errors.action_open_location_settings',
+    },
+    device_picker_unavailable: {
+        kind: 'open_in_tab',
+        key: 'ledger.errors.action_open_in_tab',
     },
 }
 

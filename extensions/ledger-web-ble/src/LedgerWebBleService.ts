@@ -18,9 +18,20 @@ import type {
     HardwareWalletTransportProvider,
 } from '@perawallet/wallet-extension-hardware-wallet'
 import BluetoothTransport from '@ledgerhq/hw-transport-web-ble'
-import { classifyLedgerError } from '@perawallet/wallet-extension-ledger-shared'
+import {
+    classifyLedgerError,
+    LedgerDevicePickerUnavailableError,
+} from '@perawallet/wallet-extension-ledger-shared'
 
 type WebBluetoothDevice = { id: string; name?: string }
+
+export type LedgerWebBleServiceOptions = {
+    /**
+     * False in a window that can't host the browser's device picker (the
+     * extension's toolbar popup). Defaults to true.
+     */
+    canShowDevicePicker?: () => boolean
+}
 
 /**
  * Web Bluetooth device objects expose no advertised service UUIDs before
@@ -53,8 +64,11 @@ export class LedgerWebBleService implements HardwareWalletService {
 
     private readonly devicesById = new Map<string, WebBluetoothDevice>()
 
+    constructor(private readonly options: LedgerWebBleServiceOptions = {}) {}
+
     createTransportProvider(): HardwareWalletTransportProvider {
         const { manufacturer, devicesById } = this
+        const { canShowDevicePicker = () => true } = this.options
         return {
             manufacturer,
             transportType: 'ble',
@@ -91,6 +105,13 @@ export class LedgerWebBleService implements HardwareWalletService {
                 // chain package registers its driver after the transports.
                 const appDriver = ledgerAppDriverRegistry.resolve()
                 const cached = devicesById.get(deviceId)
+                // Without a cached device the library falls back to
+                // requestDevice(), a fresh picker. Fail first where the window
+                // can't host one: the browser cancels it, which reads as a
+                // missing device.
+                if (!cached && !canShowDevicePicker()) {
+                    throw new LedgerDevicePickerUnavailableError()
+                }
                 try {
                     const bleTransport = await BluetoothTransport.open(
                         cached ?? deviceId,

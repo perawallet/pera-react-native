@@ -49,6 +49,7 @@ export const LedgerScanScreen = () => {
         isScanTimeout,
         isUsbOnly,
         isBleUnsupported,
+        isBraveBluetoothScanError,
         needsManualStart,
         isPopupSurface,
         handleDevicePress,
@@ -126,7 +127,11 @@ export const LedgerScanScreen = () => {
             <EmptyView
                 icon='warning'
                 body={t(
-                    isUsbOnly ? 'ledger.scan.usb_error' : 'ledger.scan.error',
+                    isUsbOnly
+                        ? 'ledger.scan.usb_error'
+                        : isBraveBluetoothScanError
+                          ? 'ledger.scan.web_ble_brave_error'
+                          : 'ledger.scan.error',
                 )}
                 button={
                     <PWButton
