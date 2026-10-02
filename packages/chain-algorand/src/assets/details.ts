@@ -17,6 +17,7 @@ import {
     type AssetAuthorities,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     logger,
@@ -33,6 +34,7 @@ import {
     transformIndexerAssetResponse,
     transformPublicAssetResponse,
 } from './api'
+import { algorandNetworkOf } from '../legacy-network'
 
 /**
  * Re-asserts the real chain's values for fields that are facts about the chain
@@ -63,8 +65,9 @@ const withChainIntrinsics = (
 
 export const fetchAssetFromApis = async (
     assetId: string,
-    network: Network,
+    scope: ChainScope,
 ): Promise<PeraAsset> => {
+    const network = algorandNetworkOf(scope)
     const [peraResult, indexerResult, publicResult] = await Promise.allSettled([
         fetchAssetDetails(assetId, network).then(transformAssetResponse),
         fetchIndexerAssetDetails(assetId, network).then(
@@ -107,7 +110,7 @@ export const fetchAssetFromApis = async (
     // endpoint failed offline) can't poison decimals in the DB.
     if (peraData || indexerData) {
         try {
-            await upsertNodeAssets({ items: [asset], network })
+            await upsertNodeAssets({ items: [asset], scope })
         } catch (error) {
             logger.warn('Asset detail persist failed', {
                 assetId,

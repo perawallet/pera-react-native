@@ -12,7 +12,10 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    ChainAdapterNotRegisteredError,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-config'
 import {
     runMigrations,
@@ -30,6 +33,8 @@ import {
 import { assetsChainAdapters } from '../../chain-adapter'
 import { FAKE_NATIVE_ASSET } from '../../__tests__/fakeAssetsChain'
 import { seedNativeAssets } from '../seed'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 
 const NATIVE_ID = FAKE_NATIVE_ASSET.assetId
 
@@ -64,7 +69,7 @@ describe('seedNativeAssets', () => {
             const rows = await getAssetsByIds({
                 db,
                 assetIds: [NATIVE_ID],
-                network,
+                scope: scopeForLegacyNetwork(network),
             })
 
             expect(
@@ -85,7 +90,7 @@ describe('seedNativeAssets', () => {
         const result = await getAssetsByIds({
             db,
             assetIds: [NATIVE_ID],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
 
         expect(result).toHaveLength(1)
@@ -100,7 +105,7 @@ describe('seedNativeAssets', () => {
         await updateAssetPeraMetadata({
             db,
             assetId: NATIVE_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             updates: { isFavorited: true, isPriceAlertEnabled: true },
         })
 
@@ -109,7 +114,7 @@ describe('seedNativeAssets', () => {
         const meta = await getAssetPeraMetadata({
             db,
             assetId: NATIVE_ID,
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         expect(meta?.isFavorited).toBe(true)
         expect(meta?.isPriceAlertEnabled).toBe(true)
@@ -122,7 +127,7 @@ describe('seedNativeAssets', () => {
         await upsertAssets({
             db,
             items: [{ ...FAKE_NATIVE_ASSET, totalSupply: new Decimal('1e19') }],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
 
         await seedNativeAssets(db)
@@ -130,7 +135,7 @@ describe('seedNativeAssets', () => {
         const [algo] = await getAssetsByIds({
             db,
             assetIds: [NATIVE_ID],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
 
         expect(algo.totalSupply.toFixed()).toBe('10000000000000000')

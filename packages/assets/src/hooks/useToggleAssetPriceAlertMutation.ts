@@ -74,13 +74,14 @@ export const useToggleAssetPriceAlertMutation =
             // the DB must already hold the new value or the refetch will clobber
             // the optimistic state.
             onMutate: async variables => {
+                const scope = scopeForLegacyNetwork(variables.network)
                 const queryKey = getAssetDetailsQueryKey(
                     variables.assetID,
-                    scopeForLegacyNetwork(variables.network),
+                    scope,
                 )
                 const remoteQueryKey = getRemoteAssetDetailsQueryKey(
                     variables.assetID,
-                    scopeForLegacyNetwork(variables.network),
+                    scope,
                 )
                 await queryClient.cancelQueries({ queryKey })
                 await queryClient.cancelQueries({ queryKey: remoteQueryKey })
@@ -95,7 +96,7 @@ export const useToggleAssetPriceAlertMutation =
 
                 await updateAssetPeraMetadata({
                     assetId: variables.assetID,
-                    network: variables.network,
+                    scope,
                     updates: { isPriceAlertEnabled: variables.enabled },
                 })
 
@@ -132,9 +133,10 @@ export const useToggleAssetPriceAlertMutation =
             },
             onError: async (error, variables, context) => {
                 if (context) {
+                    const scope = scopeForLegacyNetwork(variables.network)
                     await updateAssetPeraMetadata({
                         assetId: variables.assetID,
-                        network: variables.network,
+                        scope,
                         updates: {
                             isPriceAlertEnabled:
                                 context.previousIsPriceAlertEnabled,
@@ -142,10 +144,7 @@ export const useToggleAssetPriceAlertMutation =
                     })
                     if (context.previousData) {
                         queryClient.setQueryData(
-                            getAssetDetailsQueryKey(
-                                variables.assetID,
-                                scopeForLegacyNetwork(variables.network),
-                            ),
+                            getAssetDetailsQueryKey(variables.assetID, scope),
                             context.previousData,
                         )
                     }
@@ -153,7 +152,7 @@ export const useToggleAssetPriceAlertMutation =
                         queryClient.setQueryData(
                             getRemoteAssetDetailsQueryKey(
                                 variables.assetID,
-                                scopeForLegacyNetwork(variables.network),
+                                scope,
                             ),
                             context.previousRemoteData,
                         )

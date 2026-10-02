@@ -217,6 +217,15 @@ describe('detail query keys', () => {
         )
     })
 
+    test.each([
+        ['getAssetDetailsQueryKey', getAssetDetailsQueryKey],
+        ['getRemoteAssetDetailsQueryKey', getRemoteAssetDetailsQueryKey],
+    ])('%s partitions the same asset id by scope', (_, getKey) => {
+        expect(getKey('123', scopeForLegacyNetwork('mainnet'))).not.toEqual(
+            getKey('123', scopeForLegacyNetwork('testnet')),
+        )
+    })
+
     test('getAssetAuthoritiesQueryKey includes the authorities namespace', () => {
         expect(
             getAssetAuthoritiesQueryKey(

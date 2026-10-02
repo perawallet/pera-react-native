@@ -11,7 +11,10 @@
  */
 
 import type { Database } from '@perawallet/wallet-core-database'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-config'
 import { nativeAssetFor } from '../chain-adapter'
 import { DEFAULT_ASSET_METADATA } from '../models'
@@ -54,6 +57,10 @@ export async function seedNativeAssets(db: Database): Promise<void> {
     ]
 
     for (const network of Object.values(Networks)) {
-        await upsertAssets({ db, items, network })
+        await upsertAssets({
+            db,
+            items,
+            scope: scopeForLegacyNetwork(network),
+        })
     }
 }

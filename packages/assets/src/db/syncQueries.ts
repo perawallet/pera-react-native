@@ -25,6 +25,11 @@ import {
 } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { Decimal } from 'decimal.js'
+import {
+    networkColumnValue,
+    type ChainScope,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { PeraAssetType } from '../models'
@@ -39,7 +44,7 @@ import {
 type GetStaleOrMissingAssetIdsParams = {
     db?: Database
     assetIds: string[]
-    network: string
+    scope: ChainScope
     ttlMs: number
 }
 
@@ -79,8 +84,12 @@ async function getStaleOrMissingIdsFromTable({
     assetIds,
     network,
     ttlMs,
-}: Required<GetStaleOrMissingAssetIdsParams> & {
+}: {
+    db: Database
     table: typeof AssetsNodeSchema | typeof AssetPricesSchema
+    assetIds: string[]
+    network: ChainScopeKey
+    ttlMs: number
 }): Promise<string[]> {
     if (assetIds.length === 0) return []
 
@@ -130,7 +139,7 @@ async function getUnclassifiedNftIds({
 }: {
     db: Database
     assetIds: string[]
-    network: string
+    network: ChainScopeKey
 } & UnclassifiedRecheck): Promise<string[]> {
     const now = Date.now()
 
@@ -196,7 +205,7 @@ async function getStaleArc19CollectibleIds({
 }: {
     db: Database
     assetIds: string[]
-    network: string
+    network: ChainScopeKey
 } & Arc19Recheck): Promise<string[]> {
     const now = Date.now()
 
@@ -236,15 +245,16 @@ async function getStaleArc19CollectibleIds({
 export async function getCollectibleIdsMissingUrl({
     db = getDatabase(),
     assetIds,
-    network,
+    scope,
     limit,
 }: {
     db?: Database
     assetIds: string[]
-    network: string
+    scope: ChainScope
     /** Bounds one backfill pass; the remainder converges on later passes. */
     limit?: number
 }): Promise<string[]> {
+    const network = networkColumnValue(scope)
     if (assetIds.length === 0) return []
 
     const query = db
@@ -284,24 +294,29 @@ export async function getCollectibleIdsMissingUrl({
  */
 export async function getStaleOrMissingAssetIds({
     db = getDatabase(),
+    assetIds,
+    scope,
+    ttlMs,
     recheckUnclassified,
     recheckArc19,
-    ...params
 }: GetStaleOrMissingAssetIdsParams & {
     recheckUnclassified?: UnclassifiedRecheck
     recheckArc19?: Arc19Recheck
 }): Promise<string[]> {
+    const network = networkColumnValue(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
         table: AssetsNodeSchema,
-        ...params,
+        assetIds,
+        network,
+        ttlMs,
     })
 
     const unclassified = recheckUnclassified
         ? await getUnclassifiedNftIds({
               db,
-              assetIds: params.assetIds,
-              network: params.network,
+              assetIds,
+              network,
               ...recheckUnclassified,
           })
         : []
@@ -309,8 +324,8 @@ export async function getStaleOrMissingAssetIds({
     const arc19 = recheckArc19
         ? await getStaleArc19CollectibleIds({
               db,
-              assetIds: params.assetIds,
-              network: params.network,
+              assetIds,
+              network,
               ...recheckArc19,
           })
         : []
@@ -331,19 +346,24 @@ type GetStaleOrMissingPriceAssetIdsParams = GetStaleOrMissingAssetIdsParams & {
 
 /**
  * Price-row counterpart of `getStaleOrMissingAssetIds`: returns the asset IDs
- * whose price row on `network` is absent or older than `ttlMs`. Lets the
+ * whose price row in `scope` is absent or older than `ttlMs`. Lets the
  * price syncer skip refetches when overlapping sync/enrichment paths run
  * within the TTL window.
  */
 export async function getStaleOrMissingPriceAssetIds({
     db = getDatabase(),
+    assetIds,
+    scope,
+    ttlMs,
     missRetryMs,
-    ...params
 }: GetStaleOrMissingPriceAssetIdsParams): Promise<string[]> {
+    const network = networkColumnValue(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
         table: AssetPricesSchema,
-        ...params,
+        assetIds,
+        network,
+        ttlMs,
     })
     if (missRetryMs === undefined || staleOrMissing.length === 0) {
         return staleOrMissing
@@ -351,7 +371,7 @@ export async function getStaleOrMissingPriceAssetIds({
 
     const retryThreshold = Date.now() - missRetryMs
     const conditions = [
-        eq(AssetPriceMissesSchema.network, params.network),
+        eq(AssetPriceMissesSchema.network, network),
         gte(AssetPriceMissesSchema.attemptedAt, retryThreshold),
     ]
     // Same split as getStaleOrMissingIdsFromTable: past the cap, scanning the

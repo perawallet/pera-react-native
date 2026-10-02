@@ -220,7 +220,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
         await waitFor(() => {
             expect(updateAssetPeraMetadata).toHaveBeenCalledWith({
                 assetId: '123',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 updates: { isPriceAlertEnabled: true },
             })
         })
@@ -356,12 +356,12 @@ describe('useToggleAssetPriceAlertMutation', () => {
 
         expect(updateAssetPeraMetadata).toHaveBeenNthCalledWith(1, {
             assetId: '123',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             updates: { isPriceAlertEnabled: true },
         })
         expect(updateAssetPeraMetadata).toHaveBeenNthCalledWith(2, {
             assetId: '123',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             updates: { isPriceAlertEnabled: false },
         })
     })

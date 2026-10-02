@@ -23,6 +23,7 @@ import {
     getCollectibleIdsMissingUrl,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 import {
     ARC19_COLLECTIBLE_RECHECK_TTL_MS,
@@ -34,11 +35,11 @@ import {
 import {
     isAlgoAssetId,
     partition,
-    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { algorandNetworkOf } from '../../legacy-network'
 
 const ASSET_FETCH_CONCURRENCY = 5
 
@@ -54,12 +55,16 @@ const INDEXER_ASSET_CONCURRENCY = 5
  */
 const persistFromPeraBackend = async (
     batch: string[],
-    network: Network,
+    scope: ChainScope,
     deviceId: Nullable<string>,
 ): Promise<void> => {
-    const response = await fetchAssets(batch, network, deviceId)
+    const response = await fetchAssets(
+        batch,
+        algorandNetworkOf(scope),
+        deviceId,
+    )
     const assets = response.results.map(transformAssetResponse)
-    await upsertAssets({ items: assets, network })
+    await upsertAssets({ items: assets, scope })
 }
 
 /**
@@ -73,8 +78,9 @@ const persistFromPeraBackend = async (
  */
 const persistChainIntrinsics = async (
     batch: string[],
-    network: Network,
+    scope: ChainScope,
 ): Promise<void> => {
+    const network = algorandNetworkOf(scope)
     const items: PeraAsset[] = []
 
     for (const slice of partition(batch, INDEXER_ASSET_CONCURRENCY)) {
@@ -91,7 +97,7 @@ const persistChainIntrinsics = async (
         }
     }
 
-    await upsertNodeAssets({ items, network })
+    await upsertNodeAssets({ items, scope })
 }
 
 // Bounds one url-backfill pass. Urls are immutable on-chain, so each
@@ -108,11 +114,12 @@ const COLLECTIBLE_URL_BACKFILL_MAX_PER_PASS = 100
  */
 async function backfillCollectibleUrls(
     assetIds: string[],
-    network: Network,
+    scope: ChainScope,
 ): Promise<void> {
+    const network = algorandNetworkOf(scope)
     const missing = await getCollectibleIdsMissingUrl({
         assetIds,
-        network,
+        scope,
         limit: COLLECTIBLE_URL_BACKFILL_MAX_PER_PASS,
     })
     if (missing.length === 0) return
@@ -136,7 +143,7 @@ async function backfillCollectibleUrls(
     }
 
     if (items.length > 0) {
-        await upsertNodeAssets({ items, network })
+        await upsertNodeAssets({ items, scope })
     }
 }
 
@@ -148,20 +155,21 @@ async function backfillCollectibleUrls(
  */
 export async function fetchAndPersistAssets(
     assetIds: string[],
-    network: Network,
+    scope: ChainScope,
 ): Promise<void> {
+    const network = algorandNetworkOf(scope)
     const nonAlgoIds = assetIds.filter(id => !isAlgoAssetId(id))
     if (nonAlgoIds.length === 0) return
 
     // Pera-backed networks only: elsewhere persistChainIntrinsics already
     // sources whole rows (url included) from the chain indexer.
     if (isPeraBackedNetwork(network)) {
-        await backfillCollectibleUrls(nonAlgoIds, network)
+        await backfillCollectibleUrls(nonAlgoIds, scope)
     }
 
     const toFetch = await getStaleOrMissingAssetIds({
         assetIds: nonAlgoIds,
-        network,
+        scope,
         ttlMs: ASSET_CACHE_TTL_MS,
         recheckUnclassified: {
             ttlMs: ASSET_RECLASSIFY_TTL_MS,
@@ -191,7 +199,7 @@ export async function fetchAndPersistAssets(
     for (let i = 0; i < batches.length; i += ASSET_FETCH_CONCURRENCY) {
         const slice = batches.slice(i, i + ASSET_FETCH_CONCURRENCY)
         await Promise.allSettled(
-            slice.map(batch => persistBatch(batch, network, deviceId)),
+            slice.map(batch => persistBatch(batch, scope, deviceId)),
         )
     }
 }

@@ -94,7 +94,7 @@ describe('useSingleAssetDetailsQuery', () => {
         expect(result.current.data).toEqual(dbAsset)
         expect(mocks.getAssetById).toHaveBeenCalledWith({
             assetId: '123',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
     })
 

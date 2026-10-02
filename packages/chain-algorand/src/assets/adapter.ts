@@ -31,9 +31,8 @@ export const algorandAssetsAdapter: AssetsChainAdapter = {
     // Async so a scope that is not Algorand's rejects rather than throwing
     // past a caller's `.catch`.
     syncAssets: async (assetIds, scope) =>
-        fetchAndPersistAssets(assetIds, algorandNetworkOf(scope)),
-    fetchAsset: async (assetId, scope) =>
-        fetchAssetFromApis(assetId, algorandNetworkOf(scope)),
+        fetchAndPersistAssets(assetIds, scope),
+    fetchAsset: async (assetId, scope) => fetchAssetFromApis(assetId, scope),
     fetchOnChainAsset: async (assetId, scope) =>
         fetchOnChainAsset(assetId, algorandNetworkOf(scope)),
     fetchAssetAuthorities: async (assetId, scope) =>

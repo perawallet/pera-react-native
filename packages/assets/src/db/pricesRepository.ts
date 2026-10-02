@@ -13,6 +13,10 @@
 import { eq, and, inArray, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
+    networkColumnValue,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     forEachWriteChunk,
     getDatabase,
     type Database,
@@ -27,14 +31,15 @@ export type AssetPriceRow = {
 type UpsertAssetPricesParams = {
     db?: Database
     prices: AssetPriceRow[]
-    network: string
+    scope: ChainScope
 }
 
 export async function upsertAssetPrices({
     db = getDatabase(),
     prices,
-    network,
+    scope,
 }: UpsertAssetPricesParams): Promise<void> {
+    const network = networkColumnValue(scope)
     if (prices.length === 0) return
 
     const now = Date.now()
@@ -63,14 +68,15 @@ export async function upsertAssetPrices({
 type GetAssetPricesByIdsParams = {
     db?: Database
     assetIds: string[]
-    network: string
+    scope: ChainScope
 }
 
 export async function getAssetPricesByIds({
     db = getDatabase(),
     assetIds,
-    network,
+    scope,
 }: GetAssetPricesByIdsParams): Promise<AssetPriceRow[]> {
+    const network = networkColumnValue(scope)
     if (assetIds.length === 0) return []
 
     const decimalIds = assetIds.map(id => new Decimal(id))
@@ -98,15 +104,16 @@ export async function getAssetPricesByIds({
 type PriceMissesParams = {
     db?: Database
     assetIds: string[]
-    network: string
+    scope: ChainScope
 }
 
 /** Stamps "the bulk endpoint returned no price" for the given ids, now. */
 export async function recordPriceMisses({
     db = getDatabase(),
     assetIds,
-    network,
+    scope,
 }: PriceMissesParams): Promise<void> {
+    const network = networkColumnValue(scope)
     if (assetIds.length === 0) return
 
     const now = Date.now()
@@ -135,8 +142,9 @@ export async function recordPriceMisses({
 export async function clearPriceMisses({
     db = getDatabase(),
     assetIds,
-    network,
+    scope,
 }: PriceMissesParams): Promise<void> {
+    const network = networkColumnValue(scope)
     if (assetIds.length === 0) return
 
     const decimalIds = assetIds.map(id => new Decimal(id))
@@ -157,15 +165,16 @@ export async function clearPriceMisses({
 type DeleteAssetPricesParams = {
     db?: Database
     assetIds: string[]
-    network: string
+    scope: ChainScope
 }
 
 /** Hard-deletes price rows for the given asset IDs on a network. */
 export async function deleteAssetPrices({
     db = getDatabase(),
     assetIds,
-    network,
+    scope,
 }: DeleteAssetPricesParams): Promise<void> {
+    const network = networkColumnValue(scope)
     if (assetIds.length === 0) return
 
     const decimalIds = assetIds.map(id => new Decimal(id))

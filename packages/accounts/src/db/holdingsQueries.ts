@@ -26,10 +26,10 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     LEGACY_CHAIN_ID,
+    networkColumnValue,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { networkColumnValue } from './networkColumn'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
 import type { AccountHoldingsFilters } from './holdingsRepository'

@@ -13,6 +13,10 @@
 import { eq, and, inArray, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
+    networkColumnValue,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     forEachWriteChunk,
     getDatabase,
     type Database,
@@ -99,14 +103,15 @@ function fromDb(row: {
 type UpsertNodeAssetsParams = {
     db?: Database
     items: PeraAsset[]
-    network: string
+    scope: ChainScope
 }
 
 export async function upsertNodeAssets({
     db = getDatabase(),
     items,
-    network,
+    scope,
 }: UpsertNodeAssetsParams): Promise<void> {
+    const network = networkColumnValue(scope)
     if (items.length === 0) return
 
     const now = Date.now()
@@ -151,14 +156,15 @@ export async function upsertNodeAssets({
 type UpsertPeraAssetsParams = {
     db?: Database
     items: PeraAsset[]
-    network: string
+    scope: ChainScope
 }
 
 export async function upsertPeraAssets({
     db = getDatabase(),
     items,
-    network,
+    scope,
 }: UpsertPeraAssetsParams): Promise<void> {
+    const network = networkColumnValue(scope)
     if (items.length === 0) return
 
     const now = Date.now()
@@ -246,29 +252,30 @@ export async function upsertPeraAssets({
 type UpsertAssetsParams = {
     db?: Database
     items: PeraAsset[]
-    network: string
+    scope: ChainScope
 }
 
 export async function upsertAssets({
     db = getDatabase(),
     items,
-    network,
+    scope,
 }: UpsertAssetsParams): Promise<void> {
-    await upsertNodeAssets({ db, items, network })
-    await upsertPeraAssets({ db, items, network })
+    await upsertNodeAssets({ db, items, scope })
+    await upsertPeraAssets({ db, items, scope })
 }
 
 type GetAssetsByIdsParams = {
     db?: Database
     assetIds: string[]
-    network: string
+    scope: ChainScope
 }
 
 export async function getAssetsByIds({
     db = getDatabase(),
     assetIds,
-    network,
+    scope,
 }: GetAssetsByIdsParams): Promise<PeraAsset[]> {
+    const network = networkColumnValue(scope)
     if (assetIds.length === 0) return []
 
     const decimalIds = assetIds.map(id => new Decimal(id))
@@ -307,29 +314,30 @@ export async function getAssetsByIds({
 type GetAssetByIdParams = {
     db?: Database
     assetId: string
-    network: string
+    scope: ChainScope
 }
 
 export async function getAssetById({
     db = getDatabase(),
     assetId,
-    network,
+    scope,
 }: GetAssetByIdParams): Promise<Nullable<PeraAsset>> {
-    const results = await getAssetsByIds({ db, assetIds: [assetId], network })
+    const results = await getAssetsByIds({ db, assetIds: [assetId], scope })
     return results[0] ?? null
 }
 
 type GetAssetPeraMetadataParams = {
     db?: Database
     assetId: string
-    network: string
+    scope: ChainScope
 }
 
 export async function getAssetPeraMetadata({
     db = getDatabase(),
     assetId,
-    network,
+    scope,
 }: GetAssetPeraMetadataParams): Promise<Nullable<PeraAssetMetadata>> {
+    const network = networkColumnValue(scope)
     const rows = await db
         .select({ peraMetadataJson: AssetsPeraSchema.peraMetadataJson })
         .from(AssetsPeraSchema)
@@ -348,16 +356,17 @@ export async function getAssetPeraMetadata({
 type UpdateAssetPeraMetadataParams = {
     db?: Database
     assetId: string
-    network: string
+    scope: ChainScope
     updates: Partial<PeraAssetMetadata>
 }
 
 export async function updateAssetPeraMetadata({
     db = getDatabase(),
     assetId,
-    network,
+    scope,
     updates,
 }: UpdateAssetPeraMetadataParams): Promise<void> {
+    const network = networkColumnValue(scope)
     const decimalId = new Decimal(assetId)
     const now = Date.now()
 
@@ -411,15 +420,16 @@ export async function updateAssetPeraMetadata({
 type DeleteAssetsParams = {
     db?: Database
     assetIds: string[]
-    network: string
+    scope: ChainScope
 }
 
 /** Hard-deletes node + pera metadata rows for the given asset IDs on a network. */
 export async function deleteAssets({
     db = getDatabase(),
     assetIds,
-    network,
+    scope,
 }: DeleteAssetsParams): Promise<void> {
+    const network = networkColumnValue(scope)
     if (assetIds.length === 0) return
 
     const decimalIds = assetIds.map(id => new Decimal(id))

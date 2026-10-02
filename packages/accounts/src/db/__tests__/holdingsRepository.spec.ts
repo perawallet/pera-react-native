@@ -412,7 +412,7 @@ describe('account holdings repository', () => {
                     makeAsset('300', PeraAssetType.collectible),
                     makeAsset('400', PeraAssetType.collectible),
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
         })
 

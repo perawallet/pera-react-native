@@ -33,6 +33,7 @@ export const useAssetPricesQuery = (
     enabled?: boolean,
 ): UseAssetPricesQueryResult => {
     const { network } = useNetwork()
+    const scope = scopeForLegacyNetwork(network)
 
     // Keep a stable reference to ids — only update when the actual content
     // changes. This prevents query recomputation when callers pass a new array
@@ -40,13 +41,10 @@ export const useAssetPricesQuery = (
     const stableIds = useStableIdList(ids)
 
     const query = useQuery({
-        queryKey: getAssetPricesQueryKey(
-            stableIds,
-            scopeForLegacyNetwork(network),
-        ),
+        queryKey: getAssetPricesQueryKey(stableIds, scope),
         enabled: enabled ?? true,
         staleTime: Infinity,
-        queryFn: () => getAssetPricesByIds({ assetIds: stableIds, network }),
+        queryFn: () => getAssetPricesByIds({ assetIds: stableIds, scope }),
         // SQLite is the source of truth; run the queryFn even while offline instead
         // of pausing it (TanStack's default networkMode: 'online'), which would strand
         // consumers in `pending`.

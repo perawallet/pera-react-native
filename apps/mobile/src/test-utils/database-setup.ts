@@ -28,7 +28,10 @@ import {
     upsertAssets,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { testDatabaseService } from './sqlite-database'
 
@@ -76,7 +79,7 @@ export const seedAlgoAsset = async (
 ): Promise<void> => {
     await upsertAssets({
         items: [nativeAssetFor(LEGACY_CHAIN_ID)],
-        network,
+        scope: scopeForLegacyNetwork(network),
     })
 }
 
@@ -89,5 +92,5 @@ export const seedAssets = async (
     network: Network = 'mainnet',
 ): Promise<void> => {
     if (assets.length === 0) return
-    await upsertAssets({ items: assets, network })
+    await upsertAssets({ items: assets, scope: scopeForLegacyNetwork(network) })
 }

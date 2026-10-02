@@ -12,6 +12,10 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-config'
 
 const mocks = vi.hoisted(() => ({
@@ -89,14 +93,20 @@ describe('fetchAssetFromApis', () => {
     })
 
     it('pera metadata wins on testnet, preserving current behaviour', async () => {
-        const asset = await fetchAssetFromApis('10458941', Networks.testnet)
+        const asset = await fetchAssetFromApis(
+            '10458941',
+            scopeForLegacyNetwork(Networks.testnet),
+        )
 
         expect(asset.decimals).toBe(peraDecimals)
         expect(asset.name).toBe('USDC')
     })
 
     it('indexer wins on chain-intrinsics for a network with no Pera deployment', async () => {
-        const asset = await fetchAssetFromApis('10458941', Networks.betanet)
+        const asset = await fetchAssetFromApis(
+            '10458941',
+            scopeForLegacyNetwork(Networks.betanet),
+        )
 
         expect(asset.decimals).toBe(indexerDecimals)
         expect(asset.name).toBe('FnetThing')
@@ -111,7 +121,10 @@ describe('fetchAssetFromApis', () => {
     })
 
     it('pera still supplies its own metadata on a network with no Pera deployment', async () => {
-        const asset = await fetchAssetFromApis('10458941', Networks.betanet)
+        const asset = await fetchAssetFromApis(
+            '10458941',
+            scopeForLegacyNetwork(Networks.betanet),
+        )
 
         expect(asset.peraMetadata?.verificationTier).toBe(
             PeraAssetVerificationTier.verified,
@@ -144,7 +157,10 @@ describe('fetchAssetFromApis', () => {
             logo: 'https://public-logo.png',
         })
 
-        const asset = await fetchAssetFromApis('123', Networks.mainnet)
+        const asset = await fetchAssetFromApis(
+            '123',
+            scopeForLegacyNetwork(Networks.mainnet),
+        )
 
         expect(asset.peraMetadata?.isFavorited).toBe(true)
         expect(asset.peraMetadata?.isPriceAlertEnabled).toBe(true)
@@ -152,20 +168,26 @@ describe('fetchAssetFromApis', () => {
     })
 
     it('persists the chain-intrinsics half so the next read is DB-local', async () => {
-        await fetchAssetFromApis('10458941', Networks.testnet)
+        await fetchAssetFromApis(
+            '10458941',
+            scopeForLegacyNetwork(Networks.testnet),
+        )
 
         expect(mocks.upsertNodeAssets).toHaveBeenCalledTimes(1)
-        const { items, network } = mocks.upsertNodeAssets.mock.calls[0][0]
+        const { items, scope } = mocks.upsertNodeAssets.mock.calls[0][0]
         expect(items).toHaveLength(1)
         expect(items[0].assetId).toBe('10458941')
-        expect(network).toBe(Networks.testnet)
+        expect(scope).toEqual(scopeForLegacyNetwork(Networks.testnet))
     })
 
     it('does not persist a merge built only from defaults (every lane failed)', async () => {
         mocks.fetchAssetDetails.mockRejectedValue(new Error('down'))
         mocks.fetchIndexerAssetDetails.mockRejectedValue(new Error('down'))
 
-        const asset = await fetchAssetFromApis('10458941', Networks.testnet)
+        const asset = await fetchAssetFromApis(
+            '10458941',
+            scopeForLegacyNetwork(Networks.testnet),
+        )
 
         expect(asset.assetId).toBe('10458941')
         expect(mocks.upsertNodeAssets).not.toHaveBeenCalled()
@@ -174,9 +196,24 @@ describe('fetchAssetFromApis', () => {
     it('still returns the merged asset when the persist itself fails', async () => {
         mocks.upsertNodeAssets.mockRejectedValue(new Error('db locked'))
 
-        const asset = await fetchAssetFromApis('10458941', Networks.testnet)
+        const asset = await fetchAssetFromApis(
+            '10458941',
+            scopeForLegacyNetwork(Networks.testnet),
+        )
 
         expect(asset.name).toBe('USDC')
+    })
+
+    it('refuses a scope that is not an Algorand network before fetching', async () => {
+        const foreign = {
+            chainId: 'other',
+            networkId: 'mainnet',
+        } as unknown as ChainScope
+
+        await expect(fetchAssetFromApis('123', foreign)).rejects.toThrow(
+            'Not an Algorand scope',
+        )
+        expect(mocks.fetchAssetDetails).not.toHaveBeenCalled()
     })
 })
 

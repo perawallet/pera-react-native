@@ -18,6 +18,7 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     upsertAssetPrices,
     getAssetPricesByIds,
@@ -25,6 +26,9 @@ import {
     clearPriceMisses,
 } from '../pricesRepository'
 import { getStaleOrMissingPriceAssetIds } from '../syncQueries'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 
 describe('asset prices repository', () => {
     let db: Database
@@ -50,13 +54,13 @@ describe('asset prices repository', () => {
                     { assetId: '100', usdPrice: new Decimal('1.50') },
                     { assetId: '200', usdPrice: new Decimal('0.75') },
                 ],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAssetPricesByIds({
                 db,
                 assetIds: ['100', '200'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(2)
@@ -69,19 +73,19 @@ describe('asset prices repository', () => {
             await upsertAssetPrices({
                 db,
                 prices: [{ assetId: '100', usdPrice: new Decimal('1.00') }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             await upsertAssetPrices({
                 db,
                 prices: [{ assetId: '100', usdPrice: new Decimal('2.00') }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAssetPricesByIds({
                 db,
                 assetIds: ['100'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(1)
@@ -92,13 +96,13 @@ describe('asset prices repository', () => {
             await upsertAssetPrices({
                 db,
                 prices: [],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getAssetPricesByIds({
                 db,
                 assetIds: ['100'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             expect(result).toHaveLength(0)
@@ -110,13 +114,13 @@ describe('asset prices repository', () => {
             await recordPriceMisses({
                 db,
                 assetIds: ['777'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['777', '888'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
                 ttlMs: 60_000,
                 missRetryMs: 10 * 60 * 1000,
             })
@@ -128,13 +132,13 @@ describe('asset prices repository', () => {
             await recordPriceMisses({
                 db,
                 assetIds: ['777'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['777'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
                 ttlMs: 60_000,
             })
 
@@ -145,13 +149,13 @@ describe('asset prices repository', () => {
             await recordPriceMisses({
                 db,
                 assetIds: ['777'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['777'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
                 ttlMs: 60_000,
                 missRetryMs: -1,
             })
@@ -163,19 +167,19 @@ describe('asset prices repository', () => {
             await recordPriceMisses({
                 db,
                 assetIds: ['777'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             await clearPriceMisses({
                 db,
                 assetIds: ['777'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['777'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
                 ttlMs: 60_000,
                 missRetryMs: 10 * 60 * 1000,
             })
@@ -187,13 +191,13 @@ describe('asset prices repository', () => {
             await recordPriceMisses({
                 db,
                 assetIds: ['888'],
-                network: 'testnet',
+                scope: TESTNET_SCOPE,
             })
 
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['888'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
                 missRetryMs: 10 * 60 * 1000,
             })
@@ -206,13 +210,13 @@ describe('asset prices repository', () => {
             await recordPriceMisses({
                 db,
                 assetIds: manyIds,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: manyIds,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
                 missRetryMs: 10 * 60 * 1000,
             })
@@ -224,18 +228,18 @@ describe('asset prices repository', () => {
             await upsertAssetPrices({
                 db,
                 prices: [{ assetId: '555', usdPrice: new Decimal('1.0') }],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
             await recordPriceMisses({
                 db,
                 assetIds: ['555'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             })
 
             const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['555'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 ttlMs: 60_000,
                 missRetryMs: 10 * 60 * 1000,
             })
