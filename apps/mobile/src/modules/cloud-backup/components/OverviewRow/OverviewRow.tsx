@@ -29,6 +29,7 @@ type OverviewRowProps = {
     /** Small leading glyph before the subtitle (e.g. a not-backed-up warning). */
     subtitleIcon?: IconName
     subtitleIconVariant?: PWIconVariant
+    subtitleLines?: number
     variant: 'filled' | 'bordered'
     tone?: 'default' | 'negative'
     trailing?: ReactNode
@@ -44,6 +45,7 @@ export const OverviewRow = ({
     subtitle,
     subtitleIcon,
     subtitleIconVariant = 'primary',
+    subtitleLines = 1,
     variant,
     tone = 'default',
     trailing,
@@ -85,7 +87,7 @@ export const OverviewRow = ({
                         <PWText
                             variant='body'
                             style={styles.subtitle}
-                            numberOfLines={1}
+                            numberOfLines={subtitleLines}
                         >
                             {subtitle}
                         </PWText>

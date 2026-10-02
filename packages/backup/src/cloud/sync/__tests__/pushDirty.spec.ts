@@ -249,6 +249,64 @@ describe('pushDirty', () => {
         })
     })
 
+    it('tombstones a pending delete the server no longer holds', async () => {
+        const deps = {
+            ...baseDeps(),
+            deleteItem: vi.fn(async () => {
+                throw { response: { status: 404 } }
+            }),
+        }
+        const state = createEmptySyncState('b')
+        state.lastSyncedSeq = 5
+        state.items['accounts/GONE'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 0,
+            baseVer: 0,
+            isDirty: false,
+            pendingDelete: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 1,
+        }
+
+        const next = await pushDirty({ state, localItems: [], deps })
+
+        expect(next.items['accounts/GONE']).toMatchObject({
+            status: BackupItemStatus.IGNORED,
+            pendingDelete: false,
+        })
+        expect(next.lastSyncedSeq).toBe(5)
+    })
+
+    it('keeps a pending delete queued when the server fails it', async () => {
+        const deps = {
+            ...baseDeps(),
+            deleteItem: vi.fn(async () => {
+                throw { response: { status: 503 } }
+            }),
+        }
+        const state = createEmptySyncState('b')
+        state.items['accounts/GONE'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 2,
+            baseVer: 2,
+            isDirty: false,
+            pendingDelete: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'h',
+            localUpdatedAt: 1,
+        }
+
+        const next = await pushDirty({ state, localItems: [], deps })
+
+        expect(next.items['accounts/GONE']).toMatchObject({
+            status: BackupItemStatus.ACTIVE,
+            pendingDelete: true,
+        })
+    })
+
     it('does not upload when a stop lands while a deletion is in flight', async () => {
         let stopped = false
         const deps = {

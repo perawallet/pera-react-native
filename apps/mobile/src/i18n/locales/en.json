@@ -638,6 +638,7 @@
         "overview": {
             "title": "Cloud Backup",
             "latest_sync": "Latest Sync",
+            "last_successful_sync": "Last successful sync: {{date}}",
             "status_success": "SUCCESS",
             "status_failed": "FAILED",
             "status_syncing": "SYNCING",

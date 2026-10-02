@@ -407,6 +407,16 @@ const createPeraClient = (backendUrl: string): KyInstance =>
 // its own work starts, so ky's 10s default gives up on writes that would land.
 const BACKUP_REQUEST_TIMEOUT_MS = 60_000
 
+// Every backup request carries a signed single-use nonce that the server
+// accepts before doing any work, so replaying one after any response, a 5xx
+// included, comes back 401 and reads as bad credentials. Only a request that
+// got no response at all is worth a second attempt.
+export const BACKUP_RETRY: RequestRetryOverrides = {
+    limit: 1,
+    methods: ['get', 'put', 'post', 'delete'],
+    shouldRetry: ({ error }) => isNetworkTransportError(error),
+}
+
 // Takes no network: the backup service is a single global endpoint, so every
 // network's BackendInstances holds an equivalent instance.
 const createBackupClient = (): KyInstance =>
@@ -416,7 +426,7 @@ const createBackupClient = (): KyInstance =>
             beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
         },
         prefix: config.backupBaseUrl,
-        retry: peraRetryConfig,
+        retry: BACKUP_RETRY,
         timeout: BACKUP_REQUEST_TIMEOUT_MS,
     })
 

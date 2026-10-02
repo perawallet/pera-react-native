@@ -179,20 +179,19 @@ const sweepPasskeys = async (): Promise<LocalPasskey[]> => {
         await Promise.all([caches.dispose(), readPrivateKey.dispose()])
     }
 
-    const resolved = settled.flatMap(result =>
-        result.status === 'fulfilled' && result.value !== null
-            ? [result.value]
-            : [],
-    )
-    const failure = settled.find(result => result.status === 'rejected')
-    if (failure) {
-        zeroPrivateKeys(resolved)
-        throw failure.reason
-    }
+    // A credential missing from one sweep is not a delete (reconcile ignores
+    // absence), so only the one that failed waits for the next run.
+    const resolved = settled.flatMap((result, index) => {
+        if (result.status === 'rejected') {
+            logSkippedPasskey(keys[index].id, result.reason)
+            return []
+        }
+        return result.value === null ? [] : [result.value]
+    })
 
     const passkeys: LocalPasskey[] = []
-    try {
-        for (const { seedKeyId, ...rest } of resolved) {
+    for (const { seedKeyId, ...rest } of resolved) {
+        try {
             // The same dedup key `useResolveHdSeedForBackup` derives, joining
             // to the seed's own `secrets/` backup item.
             const seedAddress =
@@ -200,12 +199,19 @@ const sweepPasskeys = async (): Promise<LocalPasskey[]> => {
                     ? undefined
                     : await backupSeedReference(seedKeyId)
             passkeys.push({ ...rest, seedAddress })
+        } catch (error) {
+            logSkippedPasskey(rest.credentialId, error)
+            zeroBytes(rest.privateKey)
         }
-    } catch (error) {
-        zeroPrivateKeys(resolved)
-        throw error
     }
     return passkeys
+}
+
+const logSkippedPasskey = (credentialId: string, error: unknown): void => {
+    logger.warn('useListPasskeysForBackup: skipped a credential', {
+        credentialId,
+        error: error instanceof Error ? error.message : String(error),
+    })
 }
 
 const withoutPrivateKey = ({

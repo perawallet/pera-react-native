@@ -344,6 +344,30 @@ describe('deleteFromBackup', () => {
         expect(next.items[accountKey('X')].status).toBe(BackupItemStatus.ACTIVE)
     })
 
+    it('tombstones a key the server no longer holds', async () => {
+        const deps = {
+            ...baseDeps(),
+            readItems: readsFor([accountKey('X')]),
+            decrypt: servingPlaintext({
+                [accountKey('X')]: algo25Address('X'),
+            }),
+            deleteItem: vi.fn(async () => {
+                throw { response: { status: 404 } }
+            }),
+        }
+
+        const { state: next } = await deleteFromBackup({
+            state: withReviewed('X'),
+            address: 'X',
+            deps,
+        })
+
+        expect(next.items[accountKey('X')]).toMatchObject({
+            status: BackupItemStatus.IGNORED,
+            pendingDelete: false,
+        })
+    })
+
     it('keeps the shared seed when a sibling still derives from it', async () => {
         const state = backupHolding(['FIRST', 'CHILD'], ['FIRST'])
         const deps = {

@@ -630,6 +630,7 @@
         "overview": {
             "title": "Cloud-Backup",
             "latest_sync": "Letzte Synchronisierung",
+            "last_successful_sync": "Letzte erfolgreiche Synchronisierung: {{date}}",
             "status_success": "ERFOLGREICH",
             "status_failed": "FEHLGESCHLAGEN",
             "status_syncing": "SYNCHRONISIERUNG",

@@ -638,6 +638,7 @@
         "overview": {
             "title": "Backup na nuvem",
             "latest_sync": "Última sincronização",
+            "last_successful_sync": "Última sincronização bem-sucedida: {{date}}",
             "status_success": "CONCLUÍDO",
             "status_failed": "FALHA",
             "status_syncing": "SINCRONIZANDO",

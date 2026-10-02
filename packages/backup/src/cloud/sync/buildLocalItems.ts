@@ -11,7 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { canonicalJson, contentHash } from './canonicalize'
+import { itemContentHash } from './itemContentHash'
 import type {
     LocalItem,
     LocalSnapshot,
@@ -22,13 +22,12 @@ import type {
 /** Content hash ignores `updatedAt` so a pure timestamp bump is not "dirty". */
 export const withContentHash = (item: SerializedItem): LocalItem => {
     const { payload } = item
-    const { updatedAt: _ignored, ...content } = payload as Record<
-        string,
-        unknown
-    >
     return {
         ...item,
-        contentHash: contentHash(canonicalJson(content)),
+        contentHash: itemContentHash(
+            item.key,
+            payload as Record<string, unknown>,
+        ),
         // A passkey has no address; its credential id is the identifier the
         // review buckets match on, since the key itself is a hash.
         address: 'address' in payload ? payload.address : payload.credentialId,

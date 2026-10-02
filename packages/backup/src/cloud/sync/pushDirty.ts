@@ -11,7 +11,7 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
-import { logger } from '@perawallet/wallet-core-shared'
+import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
 import {
     UpsertResult,
     type BatchUpsertRequest,
@@ -62,6 +62,38 @@ export type PushDirtyDeps = {
      *  each upload batch, which drops it even when the stop lands during the
      *  last delete. */
     isAborted: () => boolean
+}
+
+type DeleteItemDeps<TResponse> = Pick<
+    PushDirtyDeps,
+    'network' | 'backupId' | 'deviceId'
+> & {
+    deleteItem: (
+        network: Network,
+        backupId: BackupId,
+        deviceId: DeviceId,
+        key: BackupItemKey,
+    ) => Promise<TResponse>
+}
+
+/** The server's response, or `null` when it no longer holds the key. It
+ *  answers 404 for a key absent from its manifest, such as one that never
+ *  finished uploading, and that delete is done: retrying it can only 404 again. */
+export const deleteItemIfPresent = async <TResponse>(
+    deps: DeleteItemDeps<TResponse>,
+    key: BackupItemKey,
+): Promise<TResponse | null> => {
+    try {
+        return await deps.deleteItem(
+            deps.network,
+            deps.backupId,
+            deps.deviceId,
+            key,
+        )
+    } catch (error) {
+        if (isNotFoundError(error)) return null
+        throw error
+    }
 }
 
 /** Inject the LWW timestamp into payloads that carry one before encrypting.
@@ -119,13 +151,8 @@ export const pushDirty = async ({
         if (!item.pendingDelete) continue
         if (deps.isAborted()) throw new BackupSyncAbortedError()
         try {
-            const res = await deps.deleteItem(
-                deps.network,
-                deps.backupId,
-                deps.deviceId,
-                key,
-            )
-            ownSeqs.push(res.seq)
+            const res = await deleteItemIfPresent(deps, key)
+            if (res !== null) ownSeqs.push(res.seq)
             // Tombstone rather than drop: if another device backs this account
             // up again, the returning delta must read as "the user removed
             // this here" and go to review, not as a brand-new item to import.

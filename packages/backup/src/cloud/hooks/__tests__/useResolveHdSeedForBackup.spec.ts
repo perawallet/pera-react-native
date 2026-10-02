@@ -123,6 +123,32 @@ describe('useResolveHdSeedForBackup', () => {
         loggerWarnMock.mockReset()
     })
 
+    it('derives the public values once but reads the secrets on every run', async () => {
+        const { result } = renderHook(() => useResolveHdSeedForBackup())
+
+        await result.current(account)
+        const second = await result.current(account)
+
+        expect(seedReferenceMock).toHaveBeenCalledTimes(1)
+        expect(deriveHdAccountMock).toHaveBeenCalledTimes(1)
+        expect(withExportedKeyMock).toHaveBeenCalledTimes(2)
+        expect(executeWithMnemonicMock).toHaveBeenCalledTimes(2)
+        expect(second).toMatchObject({
+            seedFirstDerivedAddress: 'ADDR-1',
+            publicKeyHex: '02',
+        })
+    })
+
+    it('does not cache a derivation that failed', async () => {
+        seedReferenceMock.mockRejectedValueOnce(new Error('locked'))
+        const { result } = renderHook(() => useResolveHdSeedForBackup())
+
+        expect(await result.current(account)).toBeNull()
+        expect(await result.current(account)).toMatchObject({
+            seedFirstDerivedAddress: 'ADDR-1',
+        })
+    })
+
     it('resolves the seed root plus the entropy the mnemonic session hands over', async () => {
         const { result } = renderHook(() => useResolveHdSeedForBackup())
 
