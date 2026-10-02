@@ -32,6 +32,7 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { buildAccount, withCustody } from '../credentials'
 import { rebuildCustody } from '../credentials/backfill'
+import { DuplicateAccountError } from '../errors'
 
 const STORE_NAME = 'accounts-store'
 const STORE_VERSION = 1
@@ -146,7 +147,7 @@ export const useAccountsStore: UseBoundStore<
                 // twice, keeping the higher-precedence type (see
                 // ACCOUNT_TYPE_RANK) rather than whichever happened to come
                 // first. Callers that need to surface duplicates to the user
-                // (batch import) still throw DuplicateAccountError before
+                // use addAccount or throw DuplicateAccountError before
                 // reaching here; this is the structural safety net.
                 accounts = resolveDuplicateAccounts(accounts).map(withCustody)
 
@@ -184,6 +185,16 @@ export const useAccountsStore: UseBoundStore<
                         launchAccountAddress: null,
                     })
                 }
+            },
+            addAccount: (account: WalletAccount) => {
+                const { accounts } = get()
+                const existing = accounts.find(
+                    a => a.address === account.address,
+                )
+                if (existing) {
+                    throw new DuplicateAccountError(account.address, existing)
+                }
+                get().setAccounts([...accounts, account])
             },
             setSelectedAccountAddress: (address: Nullable<string>) => {
                 const accounts = get().accounts

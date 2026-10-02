@@ -572,6 +572,43 @@ describe('services/accounts/store', () => {
         })
     })
 
+    describe('addAccount', () => {
+        beforeEach(() => {
+            useAccountsStore.getState().resetState()
+        })
+
+        test('appends an account whose address is free', () => {
+            const existing = buildTestAccount('algo25', { address: 'A' })
+            const added = buildTestAccount('watch', { address: 'B' })
+            useAccountsStore.getState().setAccounts([existing])
+
+            useAccountsStore.getState().addAccount(added)
+
+            expect(useAccountsStore.getState().accounts).toEqual([
+                existing,
+                added,
+            ])
+        })
+
+        test('throws naming the existing account when the address is taken', async () => {
+            const { DuplicateAccountError } = await import('../../errors')
+            const existing = buildTestAccount('algo25', {
+                id: 'existing-id',
+                address: 'DUPE',
+            })
+            useAccountsStore.getState().setAccounts([existing])
+
+            const add = () =>
+                useAccountsStore
+                    .getState()
+                    .addAccount(buildTestAccount('watch', { address: 'DUPE' }))
+
+            expect(add).toThrow(DuplicateAccountError)
+            expect(add).toThrow(/already in the wallet as existing-id/)
+            expect(useAccountsStore.getState().accounts).toEqual([existing])
+        })
+    })
+
     describe('addRekeyedWatchAccounts', () => {
         test('stamps new watch accounts with the scanned network entry and mirror', () => {
             useAccountsStore.getState().setAccounts([])
