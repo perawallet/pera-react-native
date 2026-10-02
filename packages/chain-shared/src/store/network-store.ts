@@ -162,15 +162,18 @@ const withNetworkShim = (
     network: selectChainNetworkId(selection, LEGACY_CHAIN_ID) as Network,
 })
 
+// The store is created at module load, before every provider is wired, so the
+// shim is read straight off the default rather than resolved through the registry.
 const initialState = (): PersistedNetworkState => {
     const { mode, algorandOverride } = selectionForLegacyNetwork(
         config.defaultNetwork,
     )
-    return withNetworkShim({
+    return {
         mode,
         selectedNetworkByChain: withAlgorandOverride({}, algorandOverride),
         customNetworksByChain: { algorand: [] },
-    })
+        network: config.defaultNetwork,
+    }
 }
 
 const isCustomNetwork = (value: unknown): value is CustomNetwork => {
