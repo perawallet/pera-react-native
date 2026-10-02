@@ -13,6 +13,7 @@
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useActivateCloudBackupMutation } from '@perawallet/wallet-core-backup'
+import { useFinishCameraTab } from '@hooks/useFinishCameraTab'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { CloudBackupStackParamList } from '../routes/types'
@@ -27,6 +28,7 @@ export const useEnableCloudBackup = (): UseEnableCloudBackupResult => {
     const { showToast } = useToast()
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
+    const { finishCameraTab } = useFinishCameraTab()
 
     const mutation = useActivateCloudBackupMutation({
         onSuccess: () => {
@@ -39,6 +41,7 @@ export const useEnableCloudBackup = (): UseEnableCloudBackupResult => {
                 index: 0,
                 routes: [{ name: 'CloudBackupOverview' }],
             })
+            finishCameraTab()
         },
         onError: () => {
             showToast({

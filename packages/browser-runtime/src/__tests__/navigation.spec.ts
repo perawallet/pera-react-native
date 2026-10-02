@@ -164,7 +164,7 @@ describe('consumeInitialExpandedFlow', () => {
         expect(consumeInitialExpandedFlow()).toBe('scan')
     })
 
-    it.each(['backup-restore-scan', 'camera-access'])(
+    it.each(['backup-restore-scan', 'backup-setup', 'camera-access'])(
         'returns the %s flow',
         async flow => {
             ;(

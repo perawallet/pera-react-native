@@ -10,21 +10,19 @@
  limitations under the License
  */
 
-/** Scanners the extension popup hands off to its expanded tab. */
-export type ScanTabFlow = 'backup-restore-scan'
+/** Steps the extension popup hands off to its expanded tab. */
+export type TabHandoffFlow = 'backup-restore-scan' | 'backup-setup'
 
-export type UseScanTabHandoffResult = {
+export type UseTabHandoffResult = {
     /** Always false off-web: native has no popup surface to escape. */
     shouldHandOff: boolean
-    openScanTab: () => Promise<void>
+    openTab: () => Promise<void>
 }
 
-const openScanTab = async (): Promise<void> => {}
+const openTab = async (): Promise<void> => {}
 
 // Native no-op; see the `.web.ts` twin.
-export const useScanTabHandoff = (
-    _flow: ScanTabFlow,
-): UseScanTabHandoffResult => ({
+export const useTabHandoff = (_flow: TabHandoffFlow): UseTabHandoffResult => ({
     shouldHandOff: false,
-    openScanTab,
+    openTab,
 })

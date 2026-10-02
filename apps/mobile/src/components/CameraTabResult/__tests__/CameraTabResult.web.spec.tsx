@@ -41,6 +41,7 @@ describe('CameraTabResult', () => {
     it.each([
         ['account-imported', 'camera_tab.account_imported_title'],
         ['backup-restored', 'camera_tab.backup_restored_title'],
+        ['backup-enabled', 'cloud_backup.enable.success'],
     ] as const)('names the %s action', (result, titleKey) => {
         act(() => useCameraTabResultStore.getState().showResult(result))
 

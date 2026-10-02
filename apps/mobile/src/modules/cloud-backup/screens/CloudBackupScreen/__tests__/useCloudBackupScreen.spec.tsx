@@ -16,8 +16,10 @@ import { useNavigation } from '@react-navigation/native'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useCloudBackupScreen } from '../useCloudBackupScreen'
 
-const { mockChooseRestoreRoute } = vi.hoisted(() => ({
+const { mockChooseRestoreRoute, mockHandoff, mockOpenTab } = vi.hoisted(() => ({
     mockChooseRestoreRoute: vi.fn(),
+    mockHandoff: vi.fn(),
+    mockOpenTab: vi.fn(),
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -36,6 +38,10 @@ vi.mock('../../../hooks/useRestoreBackupOptions', () => ({
     }),
 }))
 
+vi.mock('@hooks/useTabHandoff', () => ({
+    useTabHandoff: mockHandoff,
+}))
+
 const mockNavigate = vi.fn()
 
 beforeEach(() => {
@@ -43,6 +49,7 @@ beforeEach(() => {
     ;(useNavigation as ReturnType<typeof vi.fn>).mockReturnValue({
         navigate: mockNavigate,
     })
+    mockHandoff.mockReturnValue({ shouldHandOff: false, openTab: mockOpenTab })
 })
 
 describe('useCloudBackupScreen', () => {
@@ -53,6 +60,22 @@ describe('useCloudBackupScreen', () => {
 
         expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.SetUpNew)
         expect(mockNavigate).toHaveBeenCalledWith('CloudBackupSetup')
+        expect(mockOpenTab).not.toHaveBeenCalled()
+    })
+
+    it('starts setup in the expanded tab from the extension popup', () => {
+        mockHandoff.mockReturnValue({
+            shouldHandOff: true,
+            openTab: mockOpenTab,
+        })
+        const { result } = renderHook(() => useCloudBackupScreen())
+
+        result.current.handleSetUpBackup()
+
+        expect(mockHandoff).toHaveBeenCalledWith('backup-setup')
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.SetUpNew)
+        expect(mockOpenTab).toHaveBeenCalledOnce()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('tracks the restore tap and navigates to the route the restore options pick', async () => {
