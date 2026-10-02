@@ -48,10 +48,19 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
             marginTop: theme.spacing.xl,
         },
-        chainNetworkRow: {
+        chainSection: {
+            flexDirection: 'column',
+            gap: theme.spacing.sm,
+        },
+        modeRow: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: theme.spacing.md,
+        },
+        modeText: {
+            flexDirection: 'column',
+            flex: 1,
         },
     }
 })

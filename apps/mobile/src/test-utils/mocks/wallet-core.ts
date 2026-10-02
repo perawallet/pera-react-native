@@ -570,10 +570,10 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             {
                 getState: vi.fn(() => ({
                     network: 'mainnet',
-                    globalNetwork: 'mainnet',
-                    selectedNetworkByChain: { algorand: 'mainnet' },
+                    mode: 'live',
+                    selectedNetworkByChain: {},
                     customNetworksByChain: { algorand: [] },
-                    setGlobalNetwork: vi.fn(),
+                    setMode: vi.fn(),
                     setNetwork: vi.fn(),
                     selectNetwork: vi.fn(),
                     resetState: vi.fn(),

@@ -10,18 +10,17 @@
  limitations under the License
  */
 
-import { PWScreen, PWView } from '@components/core'
+import { PWScreen, PWSwitch, PWText, PWView } from '@components/core'
 import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
 import { NodeSettingsChainNetworks } from './NodeSettingsChainNetworks'
-import { NodeSettingsRow } from './NodeSettingsRow'
 import { useSettingsDeveloperNodeSettingsScreen } from './useSettingsDeveloperNodeSettingsScreen'
 import { useStyles } from './styles'
 
 export const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { rows, chainNetworks, selectNetwork, isNonMainnetWarningVisible } =
+    const { isDeveloperMode, setDeveloperMode, chainSections, selectNetwork } =
         useSettingsDeveloperNodeSettingsScreen()
 
     return (
@@ -30,28 +29,48 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
                 style={styles.container}
                 testID='node_settings_screen'
             >
-                {rows.map(row => (
-                    <NodeSettingsRow
-                        key={row.globalNetwork}
-                        row={row}
-                        onSelect={() => void selectNetwork(row.globalNetwork)}
+                <PWView
+                    style={styles.modeRow}
+                    testID='node_settings_developer_mode_row'
+                >
+                    <PWView style={styles.modeText}>
+                        <PWText variant='body'>
+                            {t(
+                                'settings.developer.node_settings.developer_mode_title',
+                            )}
+                        </PWText>
+                        <PWText variant='caption'>
+                            {t(
+                                'settings.developer.node_settings.developer_mode_body',
+                            )}
+                        </PWText>
+                    </PWView>
+                    <PWSwitch
+                        value={isDeveloperMode}
+                        onValueChange={setDeveloperMode}
+                        testID='node_settings_developer_mode_switch'
                     />
-                ))}
+                </PWView>
             </PWView>
-            {chainNetworks.length > 0 && (
-                <NodeSettingsChainNetworks chainNetworks={chainNetworks} />
-            )}
-            {isNonMainnetWarningVisible && (
-                <InfoCallout
-                    title={t(
-                        'settings.developer.node_settings.non_mainnet_warning_title',
-                    )}
-                    body={t(
-                        'settings.developer.node_settings.non_mainnet_warning_body',
-                    )}
-                    style={styles.notice}
-                    testID='node_settings_non_mainnet_notice'
-                />
+            {isDeveloperMode && (
+                <>
+                    <NodeSettingsChainNetworks
+                        chainSections={chainSections}
+                        onSelect={(chainId, networkId) =>
+                            void selectNetwork(chainId, networkId)
+                        }
+                    />
+                    <InfoCallout
+                        title={t(
+                            'settings.developer.node_settings.non_mainnet_warning_title',
+                        )}
+                        body={t(
+                            'settings.developer.node_settings.non_mainnet_warning_body',
+                        )}
+                        style={styles.notice}
+                        testID='node_settings_non_mainnet_notice'
+                    />
+                </>
             )}
         </PWScreen>
     )

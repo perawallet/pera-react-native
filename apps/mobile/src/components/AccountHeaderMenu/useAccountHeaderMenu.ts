@@ -13,9 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import type { PWDropdownItem } from '@components/core'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { Networks } from '@perawallet/wallet-core-shared'
-import { useSwitchNetwork } from '@perawallet/wallet-core-device'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
@@ -38,27 +36,25 @@ export const useAccountHeaderMenu = ({
     const navigation = useAppNavigation()
     const { getPreference, setPreference } = usePreferences()
     const { privacyMode, setPrivacyMode } = useSettings()
-    const { isMainnet } = useNetwork()
-    const { switchNetwork } = useSwitchNetwork()
+    const mode = useNetworkStore(state => state.mode)
+    const setMode = useNetworkStore(state => state.setMode)
+    const isDeveloperMode = mode === 'developer'
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
     const isDeveloperMenuEnabled = !!getPreference(
         UserPreferences.developerMenuEnabled,
     )
 
-    const handleNetworkSwitch = useCallback(async () => {
-        const target = isMainnet ? Networks.testnet : Networks.mainnet
-        // Offline-safe local write; registration is deferred (see
-        // useSwitchNetwork). No failure to toast about.
-        await switchNetwork(target)
+    const handleModeToggle = useCallback(() => {
+        setMode(isDeveloperMode ? 'live' : 'developer')
         try {
-            // Invalidation is owned by RootComponent's network effect —
+            // Invalidation is owned by RootComponent's network effect;
             // calling it here too would double-refetch every mounted query.
             getSyncService().restart()
         } catch {
             // SyncService not yet initialized
         }
-    }, [isMainnet, switchNetwork])
+    }, [isDeveloperMode, setMode])
 
     const items = useMemo<PWDropdownItem[]>(() => {
         const baseItems: PWDropdownItem[] = [
@@ -99,11 +95,15 @@ export const useAccountHeaderMenu = ({
 
         if (isDeveloperMenuEnabled) {
             baseItems.push({
-                label: isMainnet
-                    ? t('settings.developer.node_settings.enable_testnet')
-                    : t('settings.developer.node_settings.enable_mainnet'),
+                label: isDeveloperMode
+                    ? t(
+                          'settings.developer.node_settings.disable_developer_mode',
+                      )
+                    : t(
+                          'settings.developer.node_settings.enable_developer_mode',
+                      ),
                 icon: 'globe',
-                onPress: () => void handleNetworkSwitch(),
+                onPress: handleModeToggle,
             })
         }
 
@@ -129,8 +129,8 @@ export const useAccountHeaderMenu = ({
         setPrivacyMode,
         navigation,
         isDeveloperMenuEnabled,
-        isMainnet,
-        handleNetworkSwitch,
+        isDeveloperMode,
+        handleModeToggle,
     ])
 
     return { items }

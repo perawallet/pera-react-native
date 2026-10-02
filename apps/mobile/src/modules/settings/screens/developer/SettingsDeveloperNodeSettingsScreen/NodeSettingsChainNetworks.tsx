@@ -10,45 +10,45 @@
  limitations under the License
  */
 
-import { PWBadge, PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import type { ChainNetworkSummary } from './useSettingsDeveloperNodeSettingsScreen'
+import { PWText, PWView } from '@components/core'
+import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
+import { NodeSettingsRow } from './NodeSettingsRow'
+import type { NodeSettingsChainSection } from './useSettingsDeveloperNodeSettingsScreen'
 import { useStyles } from './styles'
 
 export type NodeSettingsChainNetworksProps = {
-    chainNetworks: ChainNetworkSummary[]
+    chainSections: NodeSettingsChainSection[]
+    onSelect: (chainId: ChainId, networkId: NetworkId) => void
 }
 
 export const NodeSettingsChainNetworks = ({
-    chainNetworks,
+    chainSections,
+    onSelect,
 }: NodeSettingsChainNetworksProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
 
     return (
         <PWView
             style={styles.chainNetworks}
             testID='node_settings_chain_networks'
         >
-            <PWText variant='h4'>
-                {t('settings.developer.node_settings.chain_networks_title')}
-            </PWText>
-            {chainNetworks.map(chain => (
+            {chainSections.map(section => (
                 <PWView
-                    key={chain.chainId}
-                    style={styles.chainNetworkRow}
-                    testID={`node_settings_chain_${chain.chainId}`}
+                    key={section.chainId}
+                    style={styles.chainSection}
+                    testID={`node_settings_chain_${section.chainId}`}
                 >
-                    <PWText variant='body'>{chain.chainName}</PWText>
-                    {/* RNEUI's Badge drops testID, so the wrapper carries it. */}
-                    <PWView
-                        testID={`node_settings_chain_${chain.chainId}_badge`}
-                    >
-                        <PWBadge
-                            variant={chain.isMainnet ? 'secondary' : 'testnet'}
-                            value={chain.networkLabel}
+                    <PWText variant='h4'>{section.chainName}</PWText>
+                    {section.networks.map(row => (
+                        <NodeSettingsRow
+                            key={row.networkId}
+                            chainId={section.chainId}
+                            row={row}
+                            onSelect={() =>
+                                onSelect(section.chainId, row.networkId)
+                            }
                         />
-                    </PWView>
+                    ))}
                 </PWView>
             ))}
         </PWView>
