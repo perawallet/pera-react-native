@@ -13,7 +13,8 @@
 import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     fetchTransactionsCsv,
     CsvExportError,
@@ -107,7 +108,10 @@ export const useCsvExportMutation = (
     params: UseCsvExportMutationParams,
 ): UseCsvExportMutationResult => {
     const { network, onSuccess, onError } = params
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scopeForLegacyNetwork(network).chainId,
+        'csvExport',
+    )
 
     const mutation = useMutation({
         // `mutationDefaults` (@perawallet/wallet-core-shared) already sets

@@ -21,6 +21,17 @@ import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import { getAssetDetailsQueryKey, getAssetsQueryKey } from '../querykeys'
 import { type PeraAsset, PeraAssetVerificationTier } from '../../models/assets'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(
+            mockUseNetwork.mock.results.at(-1)?.value?.network ?? 'mainnet',
+        ),
+    ),
+}))
 
 const buildAsset = (isPriceAlertEnabled: boolean): PeraAsset => ({
     assetId: '123',
@@ -443,6 +454,10 @@ describe('useToggleAssetPriceAlertMutation', () => {
             )
 
             expect(result.current.isUnavailableOnNetwork).toBe(true)
+            expect(useChainCapability).toHaveBeenCalledWith(
+                'algorand',
+                'priceAlerts',
+            )
         },
     )
 

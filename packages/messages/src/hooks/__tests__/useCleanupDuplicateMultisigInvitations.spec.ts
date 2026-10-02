@@ -17,6 +17,10 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useCleanupDuplicateMultisigInvitations } from '../useCleanupDuplicateMultisigInvitations'
 import { fetchInbox } from '../../api/inbox'
 
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() => true),
+}))
+
 vi.mock('../../api/inbox', () => ({
     fetchInbox: vi.fn(),
 }))

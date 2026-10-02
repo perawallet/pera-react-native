@@ -16,6 +16,15 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-config'
 import { useArc59AssetRequestsQuery } from '../useArc59AssetRequestsQuery'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
+    ),
+}))
 
 const mocks = vi.hoisted(() => ({
     fetchArc59AssetRequests: vi.fn(),
@@ -83,6 +92,10 @@ describe('useArc59AssetRequestsQuery', () => {
             )
 
             expect(result.current.isUnavailableOnNetwork).toBe(true)
+            expect(useChainCapability).toHaveBeenCalledWith(
+                'algorand',
+                'assetInbox',
+            )
             expect(result.current.isPending).toBe(false)
             expect(result.current.data).toEqual([])
             expect(mocks.fetchArc59AssetRequests).not.toHaveBeenCalled()
