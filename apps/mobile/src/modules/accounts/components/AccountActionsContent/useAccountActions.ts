@@ -44,7 +44,7 @@ export const useAccountActions = ({
     const { contacts, setSelectedContact } = useContacts()
 
     const existingContact = useMemo(
-        () => contacts.find(c => c.address === address) ?? null,
+        () => contacts.find(c => c.addresses.algorand === address) ?? null,
         [contacts, address],
     )
 

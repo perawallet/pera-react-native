@@ -13,7 +13,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-    type Contact,
+    type ContactFormValues,
     DuplicateAddressError,
 } from '@perawallet/wallet-core-contacts'
 import { useAddContactForm } from '../useAddContactForm'
@@ -108,7 +108,7 @@ describe('useAddContactForm', () => {
         renderHook(() => useAddContactForm())
 
         expect(useContactFormMock).toHaveBeenCalledWith({
-            address: 'PREFILLED',
+            addresses: { algorand: 'PREFILLED' },
             name: 'Alice',
         })
     })
@@ -133,12 +133,15 @@ describe('useAddContactForm', () => {
 
     it('surfaces a duplicate-address error when addContact throws DuplicateAddressError', () => {
         addContactMock.mockImplementation(() => {
-            throw new DuplicateAddressError('ALICE123')
+            throw new DuplicateAddressError('algorand', 'ALICE123')
         })
         formState.isValid = true
 
         const { result } = renderHook(() => useAddContactForm())
-        const newContact: Contact = { name: 'Bob', address: 'ALICE123' }
+        const newContact: ContactFormValues = {
+            name: 'Bob',
+            address: 'ALICE123',
+        }
 
         act(() => {
             result.current.save(newContact)
@@ -160,7 +163,7 @@ describe('useAddContactForm', () => {
         formState.isValid = true
 
         const { result } = renderHook(() => useAddContactForm())
-        const newContact: Contact = { name: 'Bob', address: 'BOB999' }
+        const newContact: ContactFormValues = { name: 'Bob', address: 'BOB999' }
 
         expect(() => {
             act(() => {
@@ -170,17 +173,19 @@ describe('useAddContactForm', () => {
         expect(goBackMock).not.toHaveBeenCalled()
     })
 
-    it('saves and navigates back when form is valid and save succeeds', () => {
+    it('saves the form address as the Algorand entry and navigates back', () => {
         formState.isValid = true
 
         const { result } = renderHook(() => useAddContactForm())
-        const newContact: Contact = { name: 'Bob', address: 'BOB999' }
 
         act(() => {
-            result.current.save(newContact)
+            result.current.save({ name: 'Bob', address: 'BOB999' })
         })
 
-        expect(addContactMock).toHaveBeenCalledWith(newContact)
+        expect(addContactMock).toHaveBeenCalledWith({
+            name: 'Bob',
+            addresses: { algorand: 'BOB999' },
+        })
         expect(setSelectedContactMock).toHaveBeenCalledWith(null)
         expect(goBackMock).toHaveBeenCalled()
     })

@@ -25,7 +25,9 @@ const {
     kindMock,
     NoConnectionError,
 } = vi.hoisted(() => ({
-    contactsMock: { current: [] as { address: string; name: string }[] },
+    contactsMock: {
+        current: [] as { addresses: { algorand?: string }; name: string }[],
+    },
     reviewMock: {
         current: {
             backedUp: new Set<string>(),
@@ -45,6 +47,10 @@ const {
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
+    isContactInFamily: (
+        contact: { addresses: Record<string, string | undefined> },
+        family: string,
+    ) => !!contact.addresses[family],
     useContactsStore: (selector: (s: unknown) => unknown) =>
         selector({ contacts: contactsMock.current }),
 }))
@@ -104,8 +110,8 @@ const renderReview = () =>
 beforeEach(() => {
     vi.clearAllMocks()
     contactsMock.current = [
-        { address: 'A', name: 'Alice' },
-        { address: 'B', name: 'Bob' },
+        { addresses: { algorand: 'A' }, name: 'Alice' },
+        { addresses: { algorand: 'B' }, name: 'Bob' },
     ]
     reviewMock.current = {
         backedUp: new Set(['A']),
@@ -119,16 +125,30 @@ describe('useBackupContactReview', () => {
         const { result } = renderReview()
 
         expect(result.current.backedUpContacts).toEqual([
-            { address: 'A', name: 'Alice' },
+            { addresses: { algorand: 'A' }, name: 'Alice' },
         ])
         expect(result.current.notBackedUpContacts).toEqual([
-            { address: 'B', name: 'Bob' },
+            { addresses: { algorand: 'B' }, name: 'Bob' },
         ])
         expect(result.current.availableFromBackup).toEqual([
             { address: 'GONE', name: 'Carol' },
         ])
         expect(result.current.isBackedUp('A')).toBe(true)
         expect(result.current.isBackedUp('B')).toBe(false)
+    })
+
+    test('leaves out a contact without an Algorand address', () => {
+        contactsMock.current = [
+            ...contactsMock.current,
+            { addresses: {}, name: 'Nowhere' },
+        ]
+
+        const { result } = renderReview()
+
+        expect(result.current.contacts.map(c => c.name)).toEqual([
+            'Alice',
+            'Bob',
+        ])
     })
 
     test('runs each row action against the contact side of the mutation', async () => {

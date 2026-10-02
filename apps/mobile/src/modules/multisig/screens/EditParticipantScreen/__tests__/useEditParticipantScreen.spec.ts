@@ -12,7 +12,10 @@
 
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { Contact } from '@perawallet/wallet-core-contacts'
+import type {
+    Contact,
+    ContactAddresses,
+} from '@perawallet/wallet-core-contacts'
 import { useEditParticipantScreen } from '../useEditParticipantScreen'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
 
@@ -112,7 +115,7 @@ describe('useEditParticipantScreen', () => {
     it('initializes with existing contact values as defaults', () => {
         mockFindContacts.mockReturnValue([
             {
-                address: ADDR1,
+                addresses: { algorand: ADDR1 },
                 name: 'Alice',
                 image: 'file:///existing.jpg',
             },
@@ -134,7 +137,9 @@ describe('useEditParticipantScreen', () => {
     })
 
     it('isDoneDisabled is false once a valid contact is loaded', async () => {
-        mockFindContacts.mockReturnValue([{ address: ADDR1, name: 'Alice' }])
+        mockFindContacts.mockReturnValue([
+            { addresses: { algorand: ADDR1 }, name: 'Alice' },
+        ])
 
         const { result } = renderHook(() => useEditParticipantScreen())
 
@@ -144,7 +149,9 @@ describe('useEditParticipantScreen', () => {
     })
 
     it('handleDone edits the existing contact, updates participant, and navigates back', async () => {
-        mockFindContacts.mockReturnValue([{ address: ADDR1, name: 'Alice' }])
+        mockFindContacts.mockReturnValue([
+            { addresses: { algorand: ADDR1 }, name: 'Alice' },
+        ])
 
         const { result } = renderHook(() => useEditParticipantScreen())
 
@@ -157,8 +164,11 @@ describe('useEditParticipantScreen', () => {
         })
 
         expect(mockEditContact).toHaveBeenCalledWith(
-            ADDR1,
-            expect.objectContaining({ name: 'Alice', address: ADDR1 }),
+            { family: 'algorand', address: ADDR1 },
+            expect.objectContaining({
+                name: 'Alice',
+                addresses: { algorand: ADDR1 },
+            }),
         )
         expect(mockAddContact).not.toHaveBeenCalled()
         expect(
@@ -169,8 +179,42 @@ describe('useEditParticipantScreen', () => {
         expect(mockGoBack).toHaveBeenCalled()
     })
 
+    it('handleDone keeps the address the contact holds in another family', async () => {
+        mockFindContacts.mockReturnValue([
+            {
+                addresses: {
+                    algorand: ADDR1,
+                    other: 'OTHER',
+                } as ContactAddresses,
+                name: 'Alice',
+            },
+        ])
+
+        const { result } = renderHook(() => useEditParticipantScreen())
+
+        await waitFor(() => {
+            expect(result.current.isDoneDisabled).toBe(false)
+        })
+
+        await act(async () => {
+            await result.current.handleDone()
+        })
+
+        expect(mockEditContact).toHaveBeenCalledWith(
+            { family: 'algorand', address: ADDR1 },
+            expect.objectContaining({
+                addresses: {
+                    algorand: ADDR1,
+                    other: 'OTHER',
+                } as ContactAddresses,
+            }),
+        )
+    })
+
     it('persists a picked avatar image when saving', async () => {
-        mockFindContacts.mockReturnValue([{ address: ADDR1, name: 'Alice' }])
+        mockFindContacts.mockReturnValue([
+            { addresses: { algorand: ADDR1 }, name: 'Alice' },
+        ])
         mockPickFromGallery.mockResolvedValue(PICKED_IMAGE_URI)
 
         const { result } = renderHook(() => useEditParticipantScreen())
@@ -192,10 +236,10 @@ describe('useEditParticipantScreen', () => {
         })
 
         expect(mockEditContact).toHaveBeenCalledWith(
-            ADDR1,
+            { family: 'algorand', address: ADDR1 },
             expect.objectContaining({
                 name: 'Alice',
-                address: ADDR1,
+                addresses: { algorand: ADDR1 },
                 image: PICKED_IMAGE_URI,
             }),
         )

@@ -14,6 +14,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     type Contact,
+    type ContactAddresses,
     DuplicateAddressError,
 } from '@perawallet/wallet-core-contacts'
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
@@ -38,9 +39,10 @@ const keepContactInBackupMock = vi.fn(async () => true)
 // deeplink/QR tests supply { params: { address, label } }.
 const useRouteMock = vi.fn()
 
+const ALICE = 'ALICE123'
 const selectedContact: Contact = {
     name: 'Alice',
-    address: 'ALICE123',
+    addresses: { algorand: ALICE },
 }
 
 vi.mock('@perawallet/wallet-core-contacts', async () => {
@@ -155,7 +157,8 @@ describe('useEditContactForm', () => {
     })
 
     describe('deeplink / QR (route params)', () => {
-        const bob: Contact = { name: 'Bob', address: 'BOB999' }
+        const BOB = 'BOB999'
+        const bob: Contact = { name: 'Bob', addresses: { algorand: BOB } }
 
         it('targets the contact named by the deeplink address, not the stale in-app selection', () => {
             // Alice is selected in-app, but the link is for Bob's address.
@@ -166,7 +169,7 @@ describe('useEditContactForm', () => {
                 setSelectedContact: setSelectedContactMock,
                 contacts: [selectedContact, bob],
             })
-            useRouteMock.mockReturnValue({ params: { address: bob.address } })
+            useRouteMock.mockReturnValue({ params: { address: BOB } })
 
             const { result } = renderHook(() => useEditContactForm())
 
@@ -189,17 +192,24 @@ describe('useEditContactForm', () => {
                 setSelectedContact: setSelectedContactMock,
                 contacts: [selectedContact, bob],
             })
-            useRouteMock.mockReturnValue({ params: { address: bob.address } })
+            useRouteMock.mockReturnValue({ params: { address: BOB } })
             formState.isValid = true
 
             const { result } = renderHook(() => useEditContactForm())
 
-            const updated: Contact = { name: 'Bobby', address: bob.address }
             act(() => {
-                result.current.save(updated)
+                result.current.save({ name: 'Bobby', address: BOB })
             })
 
-            expect(editContactMock).toHaveBeenCalledWith(bob.address, updated)
+            const updated: Contact = {
+                name: 'Bobby',
+                addresses: { algorand: BOB },
+            }
+            expect(editContactMock).toHaveBeenCalledWith(
+                { family: 'algorand', address: BOB },
+                updated,
+            )
+            expect(setSelectedContactMock).toHaveBeenCalledWith(updated)
             expect(goBackMock).toHaveBeenCalled()
         })
 
@@ -218,7 +228,10 @@ describe('useEditContactForm', () => {
 
             const { result } = renderHook(() => useEditContactForm())
 
-            const expected: Contact = { address: 'CAROL789', name: 'Carol' }
+            const expected: Contact = {
+                addresses: { algorand: 'CAROL789' },
+                name: 'Carol',
+            }
             expect(result.current.contact).toEqual(expected)
             expect(useContactFormMock).toHaveBeenCalledWith(expected)
         })
@@ -240,7 +253,7 @@ describe('useEditContactForm', () => {
         const { result } = renderHook(() => useEditContactForm())
 
         act(() => {
-            result.current.save({ ...selectedContact, name: 'Updated' })
+            result.current.save({ name: 'Updated', address: ALICE })
         })
 
         expect(editContactMock).not.toHaveBeenCalled()
@@ -248,36 +261,67 @@ describe('useEditContactForm', () => {
     })
 
     describe('duplicate-address guard', () => {
-        it('forwards previousAddress so the store can identify the row being updated', () => {
+        it('forwards the Algorand ref so the store can identify the row being updated', () => {
             formState.isValid = true
 
             const { result } = renderHook(() => useEditContactForm())
 
             act(() => {
-                result.current.save(selectedContact)
+                result.current.save({ name: 'Alice', address: ALICE })
             })
 
             expect(setErrorMock).not.toHaveBeenCalled()
             expect(editContactMock).toHaveBeenCalledWith(
-                selectedContact.address,
+                { family: 'algorand', address: ALICE },
                 selectedContact,
             )
             expect(goBackMock).toHaveBeenCalled()
         })
 
-        it('blocks save and surfaces a form error when editContact throws DuplicateAddressError', () => {
-            editContactMock.mockImplementation(() => {
-                throw new DuplicateAddressError('BOB999')
+        it('keeps the address the contact holds in another family', () => {
+            useContactsMock.mockReturnValue({
+                editContact: editContactMock,
+                deleteContact: deleteContactMock,
+                selectedContact: {
+                    ...selectedContact,
+                    addresses: {
+                        algorand: ALICE,
+                        other: 'X',
+                    } as ContactAddresses,
+                },
+                setSelectedContact: setSelectedContactMock,
+                contacts: [],
             })
             formState.isValid = true
 
             const { result } = renderHook(() => useEditContactForm())
 
             act(() => {
-                result.current.save({
-                    ...selectedContact,
-                    address: 'BOB999',
-                })
+                result.current.save({ name: 'Alice', address: 'ALICE_NEW' })
+            })
+
+            expect(editContactMock).toHaveBeenCalledWith(
+                { family: 'algorand', address: ALICE },
+                {
+                    name: 'Alice',
+                    addresses: {
+                        algorand: 'ALICE_NEW',
+                        other: 'X',
+                    } as ContactAddresses,
+                },
+            )
+        })
+
+        it('blocks save and surfaces a form error when editContact throws DuplicateAddressError', () => {
+            editContactMock.mockImplementation(() => {
+                throw new DuplicateAddressError('algorand', 'BOB999')
+            })
+            formState.isValid = true
+
+            const { result } = renderHook(() => useEditContactForm())
+
+            act(() => {
+                result.current.save({ name: 'Alice', address: 'BOB999' })
             })
 
             expect(setErrorMock).toHaveBeenCalledWith(
@@ -331,9 +375,7 @@ describe('useEditContactForm', () => {
 
             await act(() => result.current.removeContact('delete'))
 
-            expect(deleteContactFromBackupMock).toHaveBeenCalledWith(
-                selectedContact.address,
-            )
+            expect(deleteContactFromBackupMock).toHaveBeenCalledWith(ALICE)
             expect(deleteContactMock).toHaveBeenCalledWith(selectedContact)
         })
 
@@ -370,7 +412,7 @@ describe('useEditContactForm', () => {
             await act(() => result.current.removeContact('keep'))
 
             expect(keepContactInBackupMock).toHaveBeenCalledWith(
-                selectedContact.address,
+                ALICE,
                 selectedContact.name,
             )
             expect(deleteContactMock).toHaveBeenCalledWith(selectedContact)

@@ -35,19 +35,20 @@ export const ContactRow = ({
         () => onShowQR(contact),
         [contact, onShowQR],
     )
+    const address = contact.addresses.algorand ?? ''
 
     return (
         <AddressListItem
-            address={contact.address}
+            address={address}
             onPress={handlePress}
             showDivider
-            testID={`contact_row_${contact.address}`}
+            testID={`contact_row_${address}`}
             right={
                 <PWTouchableIcon
                     name='qr'
                     variant='primary'
                     onPress={handleShowQR}
-                    testID={`contact_row_qr_button_${contact.address}`}
+                    testID={`contact_row_qr_button_${address}`}
                 />
             }
         />

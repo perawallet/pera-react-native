@@ -11,13 +11,13 @@
  */
 
 import { memo, useCallback } from 'react'
-import type { Contact } from '@perawallet/wallet-core-contacts'
 import { PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupContactRow } from '../../components/BackupContactRow'
+import type { BackupContact } from '../../hooks/useBackupContactReview'
 
 type NotBackedUpContactRowProps = {
-    contact: Contact
+    contact: BackupContact
     isBusy: boolean
     onBackUp: (address: string) => void
 }
@@ -30,13 +30,13 @@ const NotBackedUpContactRowComponent = ({
     const { t } = useLanguage()
 
     const handleBackUp = useCallback(
-        () => onBackUp(contact.address),
-        [onBackUp, contact.address],
+        () => onBackUp(contact.addresses.algorand),
+        [onBackUp, contact.addresses.algorand],
     )
 
     return (
         <BackupContactRow
-            address={contact.address}
+            address={contact.addresses.algorand}
             name={contact.name}
             contact={contact}
             isBackedUp={false}
@@ -50,7 +50,7 @@ const NotBackedUpContactRowComponent = ({
                     testID='backup_review_contact_back_up_button'
                 />
             }
-            testID={`backup_review_not_backed_up_contact_${contact.address}`}
+            testID={`backup_review_not_backed_up_contact_${contact.addresses.algorand}`}
         />
     )
 }

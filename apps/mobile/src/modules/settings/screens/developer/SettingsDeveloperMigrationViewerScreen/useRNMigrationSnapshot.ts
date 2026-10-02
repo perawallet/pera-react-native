@@ -178,7 +178,11 @@ export const useRNMigrationSnapshot = (): RNMigrationSnapshot => {
         accountsByAddress: new Map(accounts.map(a => [a.address, a] as const)),
         manualAccountOrder,
         contactsByAddress: new Map(
-            contacts.map(c => [c.address.toLowerCase(), c] as const),
+            contacts.flatMap(c =>
+                c.addresses.algorand
+                    ? [[c.addresses.algorand.toLowerCase(), c] as const]
+                    : [],
+            ),
         ),
         notificationDisabledAccounts: new Set(notificationDisabled),
         deviceIDs: {
