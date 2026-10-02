@@ -2557,7 +2557,7 @@
         "theme": "Tema",
         "language": "Idioma",
         "developer_settings": "Configurações de desenvolvedor",
-        "node_settings": "Configurações do nó",
+        "node_settings": "Modo desenvolvedor",
         "feature_flags": "Feature flags",
         "developer_menu": "Opções de desenvolvedor",
         "manage_cache": "Gerenciar cache",
@@ -2813,11 +2813,11 @@
             "body": "Como foi sua experiência?"
         },
         "developer": {
-            "node_settings_title": "Configurações do nó",
+            "node_settings_title": "Modo desenvolvedor",
             "dispenser_title": "Dispensador da Algorand",
             "node_settings": {
                 "developer_mode_title": "Modo desenvolvedor",
-                "developer_mode_body": "Coloca cada blockchain na rede de teste ou em uma que você escolher abaixo. Desative para devolver cada blockchain à rede principal.",
+                "developer_mode_body": "Muda a Pera para a TestNet ou para a rede que você escolher abaixo. Desative para voltar à MainNet.",
                 "default_network_label": "{{network}} (padrão)",
                 "custom_label": "Rede personalizada",
                 "non_mainnet_warning_title": "Suporte limitado fora da MainNet",

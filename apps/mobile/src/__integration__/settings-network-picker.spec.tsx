@@ -55,7 +55,7 @@ const registerEthereum = () =>
         allCapabilities(false),
     )
 
-describe('Flow: Settings → Node Settings developer mode', () => {
+describe('Flow: Settings → Developer Mode', () => {
     afterEach(() => {
         // Unmount first: a mounted screen re-renders on the store reset below
         // and would read a chain the registry no longer holds.

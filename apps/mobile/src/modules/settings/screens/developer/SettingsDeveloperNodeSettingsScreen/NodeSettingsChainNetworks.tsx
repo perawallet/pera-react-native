@@ -38,7 +38,10 @@ export const NodeSettingsChainNetworks = ({
                     style={styles.chainSection}
                     testID={`node_settings_chain_${section.chainId}`}
                 >
-                    <PWText variant='h4'>{section.chainName}</PWText>
+                    {/* With one chain the heading would only repeat the screen's subject. */}
+                    {chainSections.length > 1 && (
+                        <PWText variant='h4'>{section.chainName}</PWText>
+                    )}
                     {section.networks.map(row => (
                         <NodeSettingsRow
                             key={row.networkId}

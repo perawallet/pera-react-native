@@ -2541,7 +2541,7 @@
         "theme": "Thème",
         "language": "Langue",
         "developer_settings": "Paramètres développeur",
-        "node_settings": "Paramètres du nœud",
+        "node_settings": "Mode développeur",
         "feature_flags": "Feature flags",
         "developer_menu": "Options développeur",
         "manage_cache": "Gérer le cache",
@@ -2797,11 +2797,11 @@
             "body": "Comment s’est passée votre expérience ?"
         },
         "developer": {
-            "node_settings_title": "Paramètres du nœud",
+            "node_settings_title": "Mode développeur",
             "dispenser_title": "Dispenser Algorand",
             "node_settings": {
                 "developer_mode_title": "Mode développeur",
-                "developer_mode_body": "Place chaque blockchain sur son réseau de test, ou sur celui que vous choisissez ci-dessous. Désactivez-le pour remettre chaque blockchain sur son réseau principal.",
+                "developer_mode_body": "Bascule Pera sur TestNet, ou sur le réseau que vous choisissez ci-dessous. Désactivez-le pour revenir sur MainNet.",
                 "default_network_label": "{{network}} (par défaut)",
                 "custom_label": "Réseau personnalisé",
                 "non_mainnet_warning_title": "Prise en charge limitée hors MainNet",
