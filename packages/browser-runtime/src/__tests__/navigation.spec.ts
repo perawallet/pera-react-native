@@ -164,16 +164,18 @@ describe('consumeInitialExpandedFlow', () => {
         expect(consumeInitialExpandedFlow()).toBe('scan')
     })
 
-    it.each(['backup-restore-scan', 'backup-setup', 'camera-access'])(
-        'returns the %s flow',
-        async flow => {
-            ;(
-                globalThis as { __PERA_TEST_SEARCH__?: string }
-            ).__PERA_TEST_SEARCH__ = `?flow=${flow}`
-            const { consumeInitialExpandedFlow } = await import('../navigation')
-            expect(consumeInitialExpandedFlow()).toBe(flow)
-        },
-    )
+    it.each([
+        'backup-restore-scan',
+        'backup-setup',
+        'recover-qr',
+        'camera-access',
+    ])('returns the %s flow', async flow => {
+        ;(
+            globalThis as { __PERA_TEST_SEARCH__?: string }
+        ).__PERA_TEST_SEARCH__ = `?flow=${flow}`
+        const { consumeInitialExpandedFlow } = await import('../navigation')
+        expect(consumeInitialExpandedFlow()).toBe(flow)
+    })
 
     it('keeps reporting the consumed flow after the one-shot read', async () => {
         ;(

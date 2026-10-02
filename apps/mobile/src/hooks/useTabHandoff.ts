@@ -11,7 +11,10 @@
  */
 
 /** Steps the extension popup hands off to its expanded tab. */
-export type TabHandoffFlow = 'backup-restore-scan' | 'backup-setup'
+export type TabHandoffFlow =
+    | 'backup-restore-scan'
+    | 'backup-setup'
+    | 'recover-qr'
 
 export type UseTabHandoffResult = {
     /** Always false off-web: native has no popup surface to escape. */
