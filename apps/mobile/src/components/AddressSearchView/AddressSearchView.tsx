@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
 import type { AccountType } from '@perawallet/wallet-core-accounts'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -29,6 +30,8 @@ import {
 
 export type AddressSearchViewProps = {
     onSelected: (address: string, nfdName?: string) => void
+    /** See {@link UseAddressSearchViewProps.chainFamily}. */
+    chainFamily: ChainFamily
     excludeAddress?: string
     excludeTypes?: AccountType[]
     showAllContactsWhenEmpty?: boolean
@@ -41,6 +44,7 @@ export type AddressSearchViewProps = {
 
 export const AddressSearchView = ({
     onSelected,
+    chainFamily,
     excludeAddress,
     excludeTypes,
     showAllContactsWhenEmpty,
@@ -53,6 +57,7 @@ export const AddressSearchView = ({
     const { t } = useLanguage()
     const { value, setValue, matchingItems, hasResults, isNfdLoading } =
         useAddressSearchView({
+            chainFamily,
             excludeAddress,
             excludeTypes,
             showAllContactsWhenEmpty,
@@ -78,10 +83,10 @@ export const AddressSearchView = ({
                 case 'contact': {
                     return (
                         <PWTouchableOpacity
-                            onPress={() => onSelected(item.contact.address)}
+                            onPress={() => onSelected(item.address)}
                         >
                             <AddressDisplay
-                                address={item.contact.address}
+                                address={item.address}
                                 showCopy={false}
                                 style={styles.accountDisplay}
                             />

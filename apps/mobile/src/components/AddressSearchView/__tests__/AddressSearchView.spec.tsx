@@ -103,7 +103,12 @@ describe('AddressSearchView', () => {
     })
 
     it('renders empty view when no matches found and input is empty', () => {
-        render(<AddressSearchView onSelected={mockOnSelected} />)
+        render(
+            <AddressSearchView
+                chainFamily='algorand'
+                onSelected={mockOnSelected}
+            />,
+        )
 
         expect(screen.getByText('address_entry.no_accounts_found')).toBeTruthy()
         expect(screen.getByText('address_entry.no_accounts_body')).toBeTruthy()
@@ -115,7 +120,12 @@ describe('AddressSearchView', () => {
             mockAccount,
         ] as unknown as ReturnType<typeof useAllAccounts>)
 
-        render(<AddressSearchView onSelected={mockOnSelected} />)
+        render(
+            <AddressSearchView
+                chainFamily='algorand'
+                onSelected={mockOnSelected}
+            />,
+        )
 
         expect(screen.getByText('address_entry.my_accounts')).toBeTruthy()
         expect(screen.getByText('Test Account')).toBeTruthy()
@@ -125,10 +135,19 @@ describe('AddressSearchView', () => {
     })
 
     it('shows matching contacts when searching', () => {
-        const mockContact = { address: 'CONT12345', name: 'Friend' }
+        const CONTACT_ADDRESS = 'CONT12345'
+        const mockContact = {
+            addresses: { algorand: CONTACT_ADDRESS },
+            name: 'Friend',
+        }
         mockFindContacts.mockReturnValue([mockContact])
 
-        render(<AddressSearchView onSelected={mockOnSelected} />)
+        render(
+            <AddressSearchView
+                chainFamily='algorand'
+                onSelected={mockOnSelected}
+            />,
+        )
 
         // Two search fields render: the non-interactive sticky display mirror
         // and the focusable overlay (last in document order) — type into the
@@ -138,12 +157,15 @@ describe('AddressSearchView', () => {
         )[1]
         fireEvent.change(input, { target: { value: 'Friend' } })
 
-        expect(mockFindContacts).toHaveBeenCalledWith({ keyword: 'Friend' })
+        expect(mockFindContacts).toHaveBeenCalledWith({
+            keyword: 'Friend',
+            family: 'algorand',
+        })
         expect(screen.getByText('address_entry.contacts')).toBeTruthy()
-        expect(screen.getByText(mockContact.address)).toBeTruthy()
+        expect(screen.getByText(CONTACT_ADDRESS)).toBeTruthy()
 
-        fireEvent.click(screen.getByText(mockContact.address))
-        expect(mockOnSelected).toHaveBeenCalledWith(mockContact.address)
+        fireEvent.click(screen.getByText(CONTACT_ADDRESS))
+        expect(mockOnSelected).toHaveBeenCalledWith(CONTACT_ADDRESS)
     })
 
     it('excludes account matching excludeAddress', () => {
@@ -162,6 +184,7 @@ describe('AddressSearchView', () => {
 
         render(
             <AddressSearchView
+                chainFamily='algorand'
                 onSelected={mockOnSelected}
                 excludeAddress='SENDER_ADDRESS_123'
             />,
@@ -175,7 +198,12 @@ describe('AddressSearchView', () => {
         vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
         const validAddress = 'VALID_ALGO_ADDRESS_123'
 
-        render(<AddressSearchView onSelected={mockOnSelected} />)
+        render(
+            <AddressSearchView
+                chainFamily='algorand'
+                onSelected={mockOnSelected}
+            />,
+        )
 
         // Two search fields render: the non-interactive sticky display mirror
         // and the focusable overlay (last in document order) — type into the
@@ -193,6 +221,7 @@ describe('AddressSearchView', () => {
 
         render(
             <AddressSearchView
+                chainFamily='algorand'
                 onSelected={mockOnSelected}
                 showAddIcon
             />,
@@ -212,7 +241,12 @@ describe('AddressSearchView', () => {
     it('does not render + add icon when showAddIcon is false', () => {
         vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
 
-        render(<AddressSearchView onSelected={mockOnSelected} />)
+        render(
+            <AddressSearchView
+                chainFamily='algorand'
+                onSelected={mockOnSelected}
+            />,
+        )
 
         // Two search fields render: the non-interactive sticky display mirror
         // and the focusable overlay (last in document order) — type into the
@@ -231,11 +265,16 @@ describe('AddressSearchView', () => {
             mockAccount,
         ] as unknown as ReturnType<typeof useAllAccounts>)
         mockFindContacts.mockReturnValue([
-            { address: 'CONT12345', name: 'Friend' },
+            { addresses: { algorand: 'CONT12345' }, name: 'Friend' },
         ])
         vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
 
-        render(<AddressSearchView onSelected={mockOnSelected} />)
+        render(
+            <AddressSearchView
+                chainFamily='algorand'
+                onSelected={mockOnSelected}
+            />,
+        )
 
         // Two search fields render: the non-interactive sticky display mirror
         // and the focusable overlay (last in document order) — type into the
@@ -262,7 +301,12 @@ describe('AddressSearchView', () => {
             isLoading: false,
         } as unknown as ReturnType<typeof useNfdSearchQuery>)
 
-        render(<AddressSearchView onSelected={mockOnSelected} />)
+        render(
+            <AddressSearchView
+                chainFamily='algorand'
+                onSelected={mockOnSelected}
+            />,
+        )
 
         fireEvent.click(screen.getByText('NFD_ADDRESS_123'))
 

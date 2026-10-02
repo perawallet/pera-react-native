@@ -33,7 +33,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 // state is the one the screens read.
 const addTestContact = (name: string, address: string) => {
     const { result } = renderHook(() => useContacts())
-    result.current.addContact({ name, address })
+    result.current.addContact({ name, addresses: { algorand: address } })
 }
 
 // Reset by deleting all current contacts via the same hook.
@@ -109,6 +109,7 @@ describe('Flow: Contacts → use in send destination picker', () => {
             () => (
                 <AddressSearchView
                     onSelected={onSelected}
+                    chainFamily='algorand'
                     showAllContactsWhenEmpty
                 />
             ),

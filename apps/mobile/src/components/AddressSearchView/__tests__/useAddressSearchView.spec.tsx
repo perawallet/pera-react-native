@@ -13,11 +13,15 @@
 import React from 'react'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import {
     useAddressSearchView,
     type AddressSearchItem,
 } from '../useAddressSearchView'
-import { useContacts } from '@perawallet/wallet-core-contacts'
+import {
+    useContacts,
+    type ContactAddresses,
+} from '@perawallet/wallet-core-contacts'
 import {
     useAllAccounts,
     useSortedAccounts,
@@ -109,7 +113,9 @@ describe('useAddressSearchView', () => {
     })
 
     it('initializes with empty value and no results', () => {
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         expect(result.current.value).toBe('')
         expect(result.current.matchingItems).toEqual([])
@@ -125,7 +131,9 @@ describe('useAddressSearchView', () => {
             accounts as unknown as ReturnType<typeof useAllAccounts>,
         )
 
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         act(() => {
             result.current.setValue('ABC')
@@ -159,7 +167,9 @@ describe('useAddressSearchView', () => {
             accounts as unknown as ReturnType<typeof useAllAccounts>,
         )
 
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         act(() => {
             result.current.setValue('Savings')
@@ -187,7 +197,10 @@ describe('useAddressSearchView', () => {
         )
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ excludeAddress: 'ABC123' }),
+            useAddressSearchView({
+                chainFamily: 'algorand',
+                excludeAddress: 'ABC123',
+            }),
         )
 
         const accountItems = itemsOfType(
@@ -220,7 +233,10 @@ describe('useAddressSearchView', () => {
         )
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ excludeTypes: [AccountTypes.quantum] }),
+            useAddressSearchView({
+                chainFamily: 'algorand',
+                excludeTypes: [AccountTypes.quantum],
+            }),
         )
 
         const accountItems = itemsOfType(
@@ -236,16 +252,23 @@ describe('useAddressSearchView', () => {
     })
 
     it('returns contact items with section header when contacts match', () => {
-        const contacts = [{ address: 'CONT123', name: 'Friend' }]
+        const contacts = [
+            { addresses: { algorand: 'CONT123' }, name: 'Friend' },
+        ]
         mockFindContacts.mockReturnValue(contacts)
 
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         act(() => {
             result.current.setValue('Friend')
         })
 
-        expect(mockFindContacts).toHaveBeenCalledWith({ keyword: 'Friend' })
+        expect(mockFindContacts).toHaveBeenCalledWith({
+            keyword: 'Friend',
+            family: 'algorand',
+        })
 
         const headers = itemsOfType(
             result.current.matchingItems,
@@ -264,7 +287,9 @@ describe('useAddressSearchView', () => {
     })
 
     it('does not search contacts when value is empty by default', () => {
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         expect(
             itemsOfType(result.current.matchingItems, 'contact'),
@@ -274,16 +299,22 @@ describe('useAddressSearchView', () => {
 
     it('shows all contacts when value is empty and showAllContactsWhenEmpty is true', () => {
         const contacts = [
-            { address: 'CONT123', name: 'Friend' },
-            { address: 'CONT456', name: 'Buddy' },
+            { addresses: { algorand: 'CONT123' }, name: 'Friend' },
+            { addresses: { algorand: 'CONT456' }, name: 'Buddy' },
         ]
         mockFindContacts.mockReturnValue(contacts)
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ showAllContactsWhenEmpty: true }),
+            useAddressSearchView({
+                chainFamily: 'algorand',
+                showAllContactsWhenEmpty: true,
+            }),
         )
 
-        expect(mockFindContacts).toHaveBeenCalledWith({ keyword: '' })
+        expect(mockFindContacts).toHaveBeenCalledWith({
+            keyword: '',
+            family: 'algorand',
+        })
 
         const contactItems = itemsOfType(
             result.current.matchingItems,
@@ -309,10 +340,12 @@ describe('useAddressSearchView', () => {
         )
         vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
         mockFindContacts.mockReturnValue([
-            { address: 'CONT123', name: 'Friend' },
+            { addresses: { algorand: 'CONT123' }, name: 'Friend' },
         ])
 
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         act(() => {
             result.current.setValue('VALID_58_CHAR_ADDRESS')
@@ -343,7 +376,9 @@ describe('useAddressSearchView', () => {
         )
         vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
 
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         act(() => {
             result.current.setValue('OWN_ADDRESS')
@@ -370,7 +405,9 @@ describe('useAddressSearchView', () => {
             accounts as unknown as ReturnType<typeof useAllAccounts>,
         )
 
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         const accountItems = itemsOfType(
             result.current.matchingItems,
@@ -382,13 +419,17 @@ describe('useAddressSearchView', () => {
 
     it('orders items as address, accounts, then contacts', () => {
         const accounts = [{ address: 'ABC123', name: 'Account 1' }]
-        const contacts = [{ address: 'CONT123', name: 'Friend' }]
+        const contacts = [
+            { addresses: { algorand: 'CONT123' }, name: 'Friend' },
+        ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
         )
         mockFindContacts.mockReturnValue(contacts)
 
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         act(() => {
             result.current.setValue('C')
@@ -413,8 +454,8 @@ describe('useAddressSearchView', () => {
     it('excludes a contact whose address is already a wallet account', () => {
         const accounts = [{ address: 'SHARED_ADDR', name: 'My Account' }]
         const contacts = [
-            { address: 'SHARED_ADDR', name: 'Same As Account' },
-            { address: 'CONT_ONLY', name: 'Contact Only' },
+            { addresses: { algorand: 'SHARED_ADDR' }, name: 'Same As Account' },
+            { addresses: { algorand: 'CONT_ONLY' }, name: 'Contact Only' },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
@@ -422,7 +463,10 @@ describe('useAddressSearchView', () => {
         mockFindContacts.mockReturnValue(contacts)
 
         const { result } = renderHook(() =>
-            useAddressSearchView({ showAllContactsWhenEmpty: true }),
+            useAddressSearchView({
+                chainFamily: 'algorand',
+                showAllContactsWhenEmpty: true,
+            }),
         )
 
         const accountItems = itemsOfType(
@@ -443,7 +487,7 @@ describe('useAddressSearchView', () => {
         expect(contactItems).toHaveLength(1)
         expect(contactItems[0]).toEqual(
             expect.objectContaining({
-                contact: expect.objectContaining({ address: 'CONT_ONLY' }),
+                address: 'CONT_ONLY',
             }),
         )
     })
@@ -451,15 +495,17 @@ describe('useAddressSearchView', () => {
     it('excludes a contact whose address is a wallet account even when searching by contact name', () => {
         const accounts = [{ address: 'OWN_ADDR_XYZ', name: 'My Account' }]
         const contacts = [
-            { address: 'OWN_ADDR_XYZ', name: 'Alice' },
-            { address: 'CONT_ONLY', name: 'Alice Other' },
+            { addresses: { algorand: 'OWN_ADDR_XYZ' }, name: 'Alice' },
+            { addresses: { algorand: 'CONT_ONLY' }, name: 'Alice Other' },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
         )
         mockFindContacts.mockReturnValue(contacts)
 
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         act(() => {
             result.current.setValue('Alice')
@@ -472,7 +518,7 @@ describe('useAddressSearchView', () => {
         expect(contactItems).toHaveLength(1)
         expect(contactItems[0]).toEqual(
             expect.objectContaining({
-                contact: expect.objectContaining({ address: 'CONT_ONLY' }),
+                address: 'CONT_ONLY',
             }),
         )
     })
@@ -480,8 +526,8 @@ describe('useAddressSearchView', () => {
     it('excludes a contact whose address matches excludeAddress', () => {
         const accounts = [{ address: 'OWN_ADDR_XYZ', name: 'My Account' }]
         const contacts = [
-            { address: 'OWN_ADDR_XYZ', name: 'Me' },
-            { address: 'CONT_ONLY', name: 'Someone Else' },
+            { addresses: { algorand: 'OWN_ADDR_XYZ' }, name: 'Me' },
+            { addresses: { algorand: 'CONT_ONLY' }, name: 'Someone Else' },
         ]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
@@ -490,6 +536,7 @@ describe('useAddressSearchView', () => {
 
         const { result } = renderHook(() =>
             useAddressSearchView({
+                chainFamily: 'algorand',
                 excludeAddress: 'OWN_ADDR_XYZ',
                 showAllContactsWhenEmpty: true,
             }),
@@ -502,9 +549,42 @@ describe('useAddressSearchView', () => {
         expect(contactItems).toHaveLength(1)
         expect(contactItems[0]).toEqual(
             expect.objectContaining({
-                contact: expect.objectContaining({ address: 'CONT_ONLY' }),
+                address: 'CONT_ONLY',
             }),
         )
+    })
+
+    it('excludes and selects contacts by their address in the requested family', () => {
+        const accounts = [{ address: 'OWN_ADDR', name: 'My Account' }]
+        const otherFamily = 'other' as ChainFamily
+        const contacts = [
+            {
+                addresses: {
+                    algorand: 'OWN_ADDR',
+                    other: 'OTHER_ADDR',
+                } as ContactAddresses,
+                name: 'Two Chains',
+            },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({
+                chainFamily: otherFamily,
+                showAllContactsWhenEmpty: true,
+            }),
+        )
+
+        expect(mockFindContacts).toHaveBeenCalledWith({
+            keyword: '',
+            family: otherFamily,
+        })
+        expect(itemsOfType(result.current.matchingItems, 'contact')).toEqual([
+            expect.objectContaining({ address: 'OTHER_ADDR' }),
+        ])
     })
 
     it('returns NFD results when value contains a dot', () => {
@@ -519,7 +599,9 @@ describe('useAddressSearchView', () => {
             isLoading: false,
         } as unknown as ReturnType<typeof useNfdSearchQuery>)
 
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         act(() => {
             result.current.setValue('alice.algo')
@@ -548,7 +630,9 @@ describe('useAddressSearchView', () => {
     })
 
     it('does not search NFD when value has no dot', () => {
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         act(() => {
             result.current.setValue('alice')
@@ -569,7 +653,9 @@ describe('useAddressSearchView', () => {
             isLoading: true,
         } as unknown as ReturnType<typeof useNfdSearchQuery>)
 
-        const { result } = renderHook(() => useAddressSearchView())
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
 
         act(() => {
             result.current.setValue('alice.algo')
@@ -590,7 +676,10 @@ describe('useAddressSearchView', () => {
             )
 
             const { result } = renderHook(() =>
-                useAddressSearchView({ showClipboardPaste: true }),
+                useAddressSearchView({
+                    chainFamily: 'algorand',
+                    showClipboardPaste: true,
+                }),
             )
 
             await waitFor(() => {
@@ -612,7 +701,10 @@ describe('useAddressSearchView', () => {
             vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
 
             const { result } = renderHook(() =>
-                useAddressSearchView({ showClipboardPaste: true }),
+                useAddressSearchView({
+                    chainFamily: 'algorand',
+                    showClipboardPaste: true,
+                }),
             )
 
             await waitFor(() => expect(mockReadText).toHaveBeenCalled())
@@ -629,7 +721,9 @@ describe('useAddressSearchView', () => {
             )
             vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
 
-            const { result } = renderHook(() => useAddressSearchView())
+            const { result } = renderHook(() =>
+                useAddressSearchView({ chainFamily: 'algorand' }),
+            )
 
             expect(mockReadText).not.toHaveBeenCalled()
             expect(
@@ -648,7 +742,10 @@ describe('useAddressSearchView', () => {
             )
 
             const { result } = renderHook(() =>
-                useAddressSearchView({ showClipboardPaste: true }),
+                useAddressSearchView({
+                    chainFamily: 'algorand',
+                    showClipboardPaste: true,
+                }),
             )
             await waitFor(() => {
                 expect(
@@ -683,7 +780,9 @@ describe('useAddressSearchView', () => {
             )
             mockSortedAs([storeOrder[1]!, storeOrder[0]!])
 
-            const { result } = renderHook(() => useAddressSearchView())
+            const { result } = renderHook(() =>
+                useAddressSearchView({ chainFamily: 'algorand' }),
+            )
 
             expect(
                 itemsOfType(result.current.matchingItems, 'account').map(
@@ -705,7 +804,9 @@ describe('useAddressSearchView', () => {
             )
             mockSortedAs([accounts[1]!, accounts[0]!, accounts[2]!])
 
-            const { result } = renderHook(() => useAddressSearchView())
+            const { result } = renderHook(() =>
+                useAddressSearchView({ chainFamily: 'algorand' }),
+            )
 
             act(() => {
                 result.current.setValue('Shared')

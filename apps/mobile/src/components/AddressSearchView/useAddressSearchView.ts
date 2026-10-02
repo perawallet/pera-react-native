@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import {
     useAllAccounts,
@@ -35,12 +36,15 @@ import { useFocusEffect } from '@react-navigation/native'
 export type AddressSearchItem =
     | { type: 'section_header'; title: string; key: string }
     | { type: 'account'; account: WalletAccount; key: string }
-    | { type: 'contact'; contact: Contact; key: string }
+    /** `address` is the contact's entry in the searched family. */
+    | { type: 'contact'; contact: Contact; address: string; key: string }
     | { type: 'nfd'; nfd: NfdSearchResult; key: string }
     | { type: 'address'; address: string; key: string }
     | { type: 'paste'; address: string; key: string }
 
 type UseAddressSearchViewProps = {
+    /** Only contacts holding an address in this family are offered. */
+    chainFamily: ChainFamily
     excludeAddress?: string
     excludeTypes?: AccountType[]
     showAllContactsWhenEmpty?: boolean
@@ -61,13 +65,13 @@ type UseAddressSearchViewResult = {
     isNfdLoading: boolean
 }
 
-export const useAddressSearchView = (
-    props?: UseAddressSearchViewProps,
-): UseAddressSearchViewResult => {
-    const excludeAddress = props?.excludeAddress
-    const excludeTypes = props?.excludeTypes
-    const showAllContactsWhenEmpty = props?.showAllContactsWhenEmpty ?? false
-    const showClipboardPaste = props?.showClipboardPaste ?? false
+export const useAddressSearchView = ({
+    chainFamily,
+    excludeAddress,
+    excludeTypes,
+    showAllContactsWhenEmpty = false,
+    showClipboardPaste = false,
+}: UseAddressSearchViewProps): UseAddressSearchViewResult => {
     const [value, setValue] = useState('')
     const [clipboardAddress, setClipboardAddress] =
         useState<Nullable<string>>(null)
@@ -137,12 +141,18 @@ export const useAddressSearchView = (
         // - the explicitly-excluded address (e.g. the FROM account in a send flow)
         const excludedAddresses = new Set(accounts.map(a => a.address))
         if (excludeAddress) excludedAddresses.add(excludeAddress)
-        return findContacts({ keyword: value }).filter(
-            c => !excludedAddresses.has(c.address),
+        return findContacts({ keyword: value, family: chainFamily }).flatMap(
+            contact => {
+                const address = contact.addresses[chainFamily]
+                return address && !excludedAddresses.has(address)
+                    ? [{ contact, address }]
+                    : []
+            },
         )
     }, [
         value,
         findContacts,
+        chainFamily,
         addressIsValid,
         showAllContactsWhenEmpty,
         accounts,
@@ -220,11 +230,12 @@ export const useAddressSearchView = (
                 title: 'address_entry.contacts',
                 key: 'header-contacts',
             })
-            for (const c of matchingContacts) {
+            for (const { contact, address } of matchingContacts) {
                 items.push({
                     type: 'contact',
-                    contact: c,
-                    key: `contact-${c.address}-${items.length}`,
+                    contact,
+                    address,
+                    key: `contact-${address}-${items.length}`,
                 })
             }
         }
