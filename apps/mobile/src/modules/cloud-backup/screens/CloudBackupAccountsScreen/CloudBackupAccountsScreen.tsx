@@ -15,6 +15,7 @@ import { PWScreen, PWView } from '@components/core'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupReviewCard } from '../../components/BackupReviewCard'
+import { BackupSyncStatusRow } from '../../components/BackupSyncStatusRow'
 import { SectionHeading } from '../../components/SectionHeading'
 import { DeviceAccountRow } from './DeviceAccountRow'
 import { useCloudBackupAccounts } from './useCloudBackupAccounts'
@@ -36,6 +37,7 @@ export const CloudBackupAccountsScreen = () => {
     return (
         <PWScreen testID='cloud_backup_accounts_screen'>
             <PWView style={styles.container}>
+                <BackupSyncStatusRow />
                 <BackupReviewCard
                     title={t('cloud_backup.accounts.review_title')}
                     lines={[

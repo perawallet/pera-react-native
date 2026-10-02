@@ -16,6 +16,7 @@ import { EmptyView } from '@components/EmptyView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { useLanguage } from '@hooks/useLanguage'
+import { BackupSyncStatusRow } from '../../components/BackupSyncStatusRow'
 import { SectionHeading } from '../../components/SectionHeading'
 import { AvailableFromBackupRow } from './AvailableFromBackupRow'
 import { NotBackedUpAccountRow } from './NotBackedUpAccountRow'
@@ -52,6 +53,7 @@ export const CloudBackupAccountsReviewScreen = () => {
     return (
         <PWScreen testID='cloud_backup_accounts_review_screen'>
             <PWView style={styles.container}>
+                <BackupSyncStatusRow />
                 {availableFromBackup.length > 0 && (
                     <PWView style={styles.card}>
                         <PWTouchableOpacity

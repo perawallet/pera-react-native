@@ -16,6 +16,7 @@ import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupReviewCard } from '../../components/BackupReviewCard'
+import { BackupSyncStatusRow } from '../../components/BackupSyncStatusRow'
 import { SectionHeading } from '../../components/SectionHeading'
 import { DeviceContactRow } from './DeviceContactRow'
 import { useCloudBackupContacts } from './useCloudBackupContacts'
@@ -50,6 +51,7 @@ export const CloudBackupContactsScreen = () => {
     return (
         <PWScreen testID='cloud_backup_contacts_screen'>
             <PWView style={styles.container}>
+                <BackupSyncStatusRow />
                 <BackupReviewCard
                     title={t('cloud_backup.contacts.review_title')}
                     lines={[

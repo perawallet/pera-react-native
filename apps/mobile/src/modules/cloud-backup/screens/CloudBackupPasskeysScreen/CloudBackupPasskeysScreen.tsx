@@ -16,6 +16,7 @@ import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupReviewCard } from '../../components/BackupReviewCard'
+import { BackupSyncStatusRow } from '../../components/BackupSyncStatusRow'
 import { SectionHeading } from '../../components/SectionHeading'
 import { DevicePasskeyRow } from './DevicePasskeyRow'
 import { useCloudBackupPasskeys } from './useCloudBackupPasskeys'
@@ -65,6 +66,7 @@ export const CloudBackupPasskeysScreen = () => {
     return (
         <PWScreen testID='cloud_backup_passkeys_screen'>
             <PWView style={styles.container}>
+                <BackupSyncStatusRow />
                 <BackupReviewCard
                     title={t('cloud_backup.passkeys.review_title')}
                     lines={[
