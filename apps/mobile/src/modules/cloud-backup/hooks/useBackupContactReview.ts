@@ -12,8 +12,9 @@
 
 import { useCallback, useMemo } from 'react'
 import {
+    isContactInFamily,
     useContactsStore,
-    type Contact,
+    type ContactInFamily,
 } from '@perawallet/wallet-core-contacts'
 import {
     deriveBackupContactReview,
@@ -29,10 +30,14 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
 
+// The backup payload carries one Algorand address, so only contacts holding
+// one take part in the backup.
+export type BackupContact = ContactInFamily<'algorand'>
+
 export type UseBackupContactReviewResult = {
-    contacts: Contact[]
-    backedUpContacts: Contact[]
-    notBackedUpContacts: Contact[]
+    contacts: BackupContact[]
+    backedUpContacts: BackupContact[]
+    notBackedUpContacts: BackupContact[]
     /** Contacts the backup holds that this device deleted, with their names. */
     availableFromBackup: BackupContactReview['availableFromBackup']
     isBackedUp: (address: string) => boolean
@@ -67,11 +72,18 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const busyItems = useBackupSyncActivityStore(state => state.busyItems)
-    const contacts = useContactsStore(state => state.contacts)
+    const storedContacts = useContactsStore(state => state.contacts)
+    const contacts = useMemo(
+        () =>
+            storedContacts.filter((contact): contact is BackupContact =>
+                isContactInFamily(contact, 'algorand'),
+            ),
+        [storedContacts],
+    )
     const syncState = useBackupSyncStateStore(state => state.syncState)
 
     const addresses = useMemo(
-        () => contacts.map(contact => contact.address),
+        () => contacts.map(contact => contact.addresses.algorand),
         [contacts],
     )
 
@@ -122,11 +134,15 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
     return {
         contacts,
         backedUpContacts: useMemo(
-            () => contacts.filter(c => review.backedUp.has(c.address)),
+            () =>
+                contacts.filter(c => review.backedUp.has(c.addresses.algorand)),
             [contacts, review.backedUp],
         ),
         notBackedUpContacts: useMemo(
-            () => contacts.filter(c => notBackedUpAddresses.has(c.address)),
+            () =>
+                contacts.filter(c =>
+                    notBackedUpAddresses.has(c.addresses.algorand),
+                ),
             [contacts, notBackedUpAddresses],
         ),
         availableFromBackup: review.availableFromBackup,

@@ -12,13 +12,14 @@
 
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { contactsFingerprint } from '../contactsFingerprint'
 
 describe('contactsFingerprint', () => {
     it('is order-independent', () => {
         const contacts = [
-            { address: 'A', name: 'Alice' },
-            { address: 'B', name: 'Bob' },
+            { addresses: { algorand: 'A' }, name: 'Alice' },
+            { addresses: { algorand: 'B' }, name: 'Bob' },
         ]
 
         expect(contactsFingerprint(contacts)).toBe(
@@ -27,8 +28,14 @@ describe('contactsFingerprint', () => {
     })
 
     it('changes on a rename', () => {
-        expect(contactsFingerprint([{ address: 'A', name: 'Alice' }])).not.toBe(
-            contactsFingerprint([{ address: 'A', name: 'Alicia' }]),
+        expect(
+            contactsFingerprint([
+                { addresses: { algorand: 'A' }, name: 'Alice' },
+            ]),
+        ).not.toBe(
+            contactsFingerprint([
+                { addresses: { algorand: 'A' }, name: 'Alicia' },
+            ]),
         )
     })
 
@@ -36,12 +43,27 @@ describe('contactsFingerprint', () => {
         expect(
             contactsFingerprint([
                 {
-                    address: 'A',
+                    addresses: { algorand: 'A' },
                     name: 'Alice',
                     image: 'file:///tmp/a.png',
                     nfd: 'alice.algo',
                 },
             ]),
-        ).toBe(contactsFingerprint([{ address: 'A', name: 'Alice' }]))
+        ).toBe(
+            contactsFingerprint([
+                { addresses: { algorand: 'A' }, name: 'Alice' },
+            ]),
+        )
+    })
+
+    it('ignores a contact without an Algorand address', () => {
+        const alice = { addresses: { algorand: 'A' }, name: 'Alice' }
+
+        expect(
+            contactsFingerprint([
+                alice,
+                { addresses: { ['other' as ChainFamily]: 'B' }, name: 'Bob' },
+            ]),
+        ).toBe(contactsFingerprint([alice]))
     })
 })

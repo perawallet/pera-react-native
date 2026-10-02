@@ -48,7 +48,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 })
 
 const mockAddContact = vi.fn()
-const mockContacts = vi.fn<() => { address: string; name: string }[]>(() => [])
+const mockContacts = vi.fn<
+    () => { addresses: { algorand?: string }; name: string }[]
+>(() => [])
 
 vi.mock('@perawallet/wallet-core-contacts', async () => {
     const actual = await vi.importActual<
@@ -293,7 +295,7 @@ describe('useCreateMultisigScreen', () => {
             expect(mockAddContact).toHaveBeenCalledTimes(1)
             expect(mockAddContact).toHaveBeenCalledWith({
                 name: truncateAlgorandAddress(ADDR),
-                address: ADDR,
+                addresses: { algorand: ADDR },
             })
             expect(result.current.participants).toHaveLength(1)
         })
@@ -312,7 +314,9 @@ describe('useCreateMultisigScreen', () => {
         })
 
         it('skips an address already saved as a contact', async () => {
-            mockContacts.mockReturnValue([{ address: ADDR, name: 'Alice' }])
+            mockContacts.mockReturnValue([
+                { addresses: { algorand: ADDR }, name: 'Alice' },
+            ])
             mockRequestBottomSheet.mockResolvedValueOnce({ address: ADDR })
             const { result } = renderHook(() => useCreateMultisigScreen())
 
@@ -325,7 +329,9 @@ describe('useCreateMultisigScreen', () => {
         })
 
         it('hydrates name from an existing contact on duplicate adds', async () => {
-            mockContacts.mockReturnValue([{ address: ADDR, name: 'Alice' }])
+            mockContacts.mockReturnValue([
+                { addresses: { algorand: ADDR }, name: 'Alice' },
+            ])
             mockRequestBottomSheet
                 .mockResolvedValueOnce({ address: ADDR })
                 .mockResolvedValueOnce({ address: ADDR })
@@ -350,7 +356,7 @@ describe('useCreateMultisigScreen', () => {
                 .mockResolvedValueOnce({ address: ADDR })
             mockAddContact.mockImplementation(c => {
                 mockContacts.mockReturnValue([
-                    { address: c.address, name: c.name },
+                    { addresses: c.addresses, name: c.name },
                 ])
             })
             const { result } = renderHook(() => useCreateMultisigScreen())
@@ -368,7 +374,10 @@ describe('useCreateMultisigScreen', () => {
 
         it('swallows a duplicate-contact error', async () => {
             mockAddContact.mockImplementationOnce(() => {
-                throw new DuplicateAddressError(ADDR)
+                throw new DuplicateAddressError({
+                    family: 'algorand',
+                    address: ADDR,
+                })
             })
             mockRequestBottomSheet.mockResolvedValueOnce({ address: ADDR })
             const { result } = renderHook(() => useCreateMultisigScreen())
@@ -398,7 +407,7 @@ describe('useCreateMultisigScreen', () => {
             })
 
             expect(mockAddContact).toHaveBeenCalledWith({
-                address: ADDR,
+                addresses: { algorand: ADDR },
                 name: NFD,
                 nfd: NFD,
             })
@@ -419,7 +428,9 @@ describe('useCreateMultisigScreen', () => {
         })
 
         it('keeps an existing contact name over the NFD name', async () => {
-            mockContacts.mockReturnValue([{ address: ADDR, name: 'Alice' }])
+            mockContacts.mockReturnValue([
+                { addresses: { algorand: ADDR }, name: 'Alice' },
+            ])
             mockRequestBottomSheet.mockResolvedValueOnce({
                 address: ADDR,
                 nfdName: NFD,

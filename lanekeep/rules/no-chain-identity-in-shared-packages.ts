@@ -74,6 +74,11 @@ const ALLOWED: readonly Allowed[] = [
         text: "'algorand'",
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',
     },
+    {
+        file: 'packages/backup/src/cloud/hooks/useCloudBackupContactImport.ts',
+        text: "'algorand'",
+        reason: "A contact payload's bare `address` predates chain families, so it is always an Algorand address.",
+    },
 ]
 
 export default defineRule({

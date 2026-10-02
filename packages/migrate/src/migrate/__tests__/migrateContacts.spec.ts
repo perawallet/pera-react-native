@@ -12,7 +12,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-type Contact = { name: string; address: string; image?: string }
+type Contact = {
+    name: string
+    addresses: Record<string, string>
+    image?: string
+}
 
 const { contactsStoreMock, setStateMock } = vi.hoisted(() => ({
     contactsStoreMock: {
@@ -66,17 +70,27 @@ describe('migrateContacts', () => {
         expect(result).toEqual({ imported: 2, skipped: 0 })
         expect(setStateMock).toHaveBeenCalledTimes(1)
         expect(writtenContacts()).toEqual([
-            { name: 'Alice', address: 'ADDR_A', image: undefined },
-            { name: 'Bob', address: 'ADDR_B', image: undefined },
+            {
+                name: 'Alice',
+                addresses: { algorand: 'ADDR_A' },
+                image: undefined,
+            },
+            {
+                name: 'Bob',
+                addresses: { algorand: 'ADDR_B' },
+                image: undefined,
+            },
         ])
     })
 
     it('preserves existing store contacts when importing', () => {
-        contactsStoreMock.contacts = [{ name: 'Existing', address: 'ADDR_OLD' }]
+        contactsStoreMock.contacts = [
+            { name: 'Existing', addresses: { algorand: 'ADDR_OLD' } },
+        ]
 
         migrateContacts([buildLegacyContact({ address: 'ADDR_NEW' })])
 
-        expect(writtenContacts().map(c => c.address)).toEqual([
+        expect(writtenContacts().map(c => c.addresses.algorand)).toEqual([
             'ADDR_OLD',
             'ADDR_NEW',
         ])
@@ -84,7 +98,7 @@ describe('migrateContacts', () => {
 
     it('skips legacy contacts whose address already exists (case-insensitive)', () => {
         contactsStoreMock.contacts = [
-            { name: 'Existing', address: 'addr_existing' },
+            { name: 'Existing', addresses: { algorand: 'addr_existing' } },
         ]
 
         const result = migrateContacts([
@@ -94,10 +108,26 @@ describe('migrateContacts', () => {
 
         expect(result).toEqual({ imported: 1, skipped: 1 })
         const written = writtenContacts()
-        expect(written.find(c => c.address === 'ADDR_NEW')).toBeDefined()
         expect(
-            written.filter(c => c.address.toLowerCase() === 'addr_existing'),
+            written.find(c => c.addresses.algorand === 'ADDR_NEW'),
+        ).toBeDefined()
+        expect(
+            written.filter(
+                c => c.addresses.algorand.toLowerCase() === 'addr_existing',
+            ),
         ).toHaveLength(1)
+    })
+
+    it('does not dedupe against an address held under another family', () => {
+        contactsStoreMock.contacts = [
+            { name: 'Other', addresses: { other: 'ADDR_SHARED' } },
+        ]
+
+        const result = migrateContacts([
+            buildLegacyContact({ address: 'ADDR_SHARED' }),
+        ])
+
+        expect(result).toEqual({ imported: 1, skipped: 0 })
     })
 
     it('dedupes legacy contacts against each other within the same call', () => {
@@ -122,14 +152,16 @@ describe('migrateContacts', () => {
         ])
 
         const written = writtenContacts()
-        const withPic = written.find(c => c.address === 'ADDR_PIC')
-        const noPic = written.find(c => c.address === 'ADDR_NO_PIC')
+        const withPic = written.find(c => c.addresses.algorand === 'ADDR_PIC')
+        const noPic = written.find(c => c.addresses.algorand === 'ADDR_NO_PIC')
         expect(withPic?.image).toBe('data:image/jpeg;base64,xx')
         expect(noPic?.image).toBeUndefined()
     })
 
     it('does not write to the store when every legacy contact already exists', () => {
-        contactsStoreMock.contacts = [{ name: 'A', address: 'addr_a' }]
+        contactsStoreMock.contacts = [
+            { name: 'A', addresses: { algorand: 'addr_a' } },
+        ]
 
         const result = migrateContacts([
             buildLegacyContact({ address: 'ADDR_A' }),

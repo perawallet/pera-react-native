@@ -210,7 +210,11 @@ const mockStores = (opts: {
     )
     ;(useContactsStore as unknown as Mock).mockImplementation(
         (s: (st: { contacts: unknown[] }) => unknown) =>
-            s({ contacts: opts.contacts.map(address => ({ address })) }),
+            s({
+                contacts: opts.contacts.map(address => ({
+                    addresses: { algorand: address },
+                })),
+            }),
     )
 }
 

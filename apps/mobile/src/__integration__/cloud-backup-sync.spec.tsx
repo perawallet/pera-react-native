@@ -315,7 +315,9 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
     })
 
     const seedContact = (address: string, name: string) =>
-        useContactsStore.getState().addContact({ address, name })
+        useContactsStore
+            .getState()
+            .addContact({ addresses: { algorand: address }, name })
 
     it('pushes a local contact: address + name land on the backend encrypted', async () => {
         seedContact('CONTACT_A', 'Alice')
@@ -370,7 +372,7 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
 
         expect(summary).toMatchObject({ imported: 1, failed: [] })
         expect(useContactsStore.getState().contacts).toEqual([
-            { address: 'CONTACT_A', name: 'Alice' },
+            { addresses: { algorand: 'CONTACT_A' }, name: 'Alice' },
         ])
     })
 
@@ -422,7 +424,7 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         await manager.syncNow()
 
         expect(useContactsStore.getState().contacts).toEqual([
-            { address: 'CONTACT_B', name: 'Bob' },
+            { addresses: { algorand: 'CONTACT_B' }, name: 'Bob' },
         ])
     })
 })

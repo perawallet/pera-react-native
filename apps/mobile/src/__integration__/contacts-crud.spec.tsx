@@ -119,7 +119,7 @@ const EditContactHost = () => {
         <>
             <ContactForm
                 control={control}
-                address={contact?.address ?? ''}
+                address={contact?.addresses.algorand ?? ''}
                 nameLabel='name'
                 addressLabel='address'
                 nameError={errors.name?.message}
@@ -150,14 +150,17 @@ const SENDER_ACCOUNT: WalletAccount = {
 const seedContact = (name: string, address: string) => {
     const { result } = renderHook(() => useContacts())
     act(() => {
-        result.current.addContact({ name, address })
+        result.current.addContact({ name, addresses: { algorand: address } })
     })
 }
 
 const selectContact = (name: string, address: string) => {
     const { result } = renderHook(() => useContacts())
     act(() => {
-        result.current.setSelectedContact({ name, address })
+        result.current.setSelectedContact({
+            name,
+            addresses: { algorand: address },
+        })
     })
 }
 
@@ -239,7 +242,7 @@ describe('Flow: Contacts CRUD', () => {
         })
         const [contact] = readContacts()
         expect(contact.name).toBe('Alice')
-        expect(contact.address).toBe(HD_TEST_ADDRESS)
+        expect(contact.addresses.algorand).toBe(HD_TEST_ADDRESS)
     })
 
     it('Given a duplicate address is entered on AddContactScreen, when submit is tapped, then no second contact is added', async () => {
@@ -314,7 +317,7 @@ describe('Flow: Contacts CRUD', () => {
             expect(readContacts()[0]?.name).toBe('Alice Renamed')
         })
         expect(readContacts()).toHaveLength(1)
-        expect(readContacts()[0].address).toBe(HD_TEST_ADDRESS)
+        expect(readContacts()[0].addresses.algorand).toBe(HD_TEST_ADDRESS)
     })
 
     it('Given a selected contact, when delete is confirmed in the bottom sheet, then the contact is removed from the store', async () => {

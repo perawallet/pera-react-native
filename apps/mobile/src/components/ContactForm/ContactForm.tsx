@@ -74,7 +74,11 @@ export const ContactForm = <T extends FieldValues>({
     const renderAvatar = () => (
         <ContactAvatar
             size='xxl'
-            contact={{ name: '', address, image: imageUri }}
+            contact={{
+                name: '',
+                addresses: { algorand: address },
+                image: imageUri,
+            }}
         />
     )
 

@@ -70,7 +70,9 @@ const {
     accountsListeners: {
         current: [] as ((accounts: unknown[]) => void)[],
     },
-    contactsState: { current: [] as { address: string; name: string }[] },
+    contactsState: {
+        current: [] as { addresses: { algorand?: string }; name: string }[],
+    },
     contactsListeners: {
         current: [] as ((contacts: unknown[]) => void)[],
     },
@@ -289,7 +291,9 @@ const setAccounts = (accounts: { address: string; name?: string }[]) => {
     }
 }
 
-const setContacts = (contacts: { address: string; name: string }[]) => {
+const setContacts = (
+    contacts: { addresses: { algorand?: string }; name: string }[],
+) => {
     contactsState.current = contacts
     for (const listener of [...contactsListeners.current]) {
         listener(contacts)
@@ -1095,7 +1099,7 @@ describe('BackupSyncManager account watcher', () => {
         await mgr.start()
         mockSyncBackup.mockClear()
 
-        setContacts([{ address: 'C1', name: 'Alice' }])
+        setContacts([{ addresses: { algorand: 'C1' }, name: 'Alice' }])
         await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
 
         expect(mockSyncBackup).toHaveBeenCalledTimes(1)
@@ -1104,11 +1108,13 @@ describe('BackupSyncManager account watcher', () => {
 
     it('does not sync for a contact write the backup cannot see', async () => {
         const mgr = new BackupSyncManager(makeDeps())
-        contactsState.current = [{ address: 'C1', name: 'Alice' }]
+        contactsState.current = [
+            { addresses: { algorand: 'C1' }, name: 'Alice' },
+        ]
         await mgr.start()
         mockSyncBackup.mockClear()
 
-        setContacts([{ address: 'C1', name: 'Alice' }])
+        setContacts([{ addresses: { algorand: 'C1' }, name: 'Alice' }])
         await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
 
         expect(mockSyncBackup).not.toHaveBeenCalled()

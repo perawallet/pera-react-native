@@ -72,21 +72,23 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
             // NFD search result.
             const existingName =
                 participants.find(p => p.address === address)?.name ??
-                contacts.find(c => c.address === address)?.name
+                contacts.find(c => c.addresses.algorand === address)?.name
             addParticipant({ address, name: existingName ?? nfdName })
 
             // Auto-save a non-wallet address as a contact so it gets a
             // friendly name and is reusable later. Skip wallet accounts and
             // addresses that are already contacts.
             const isWalletAccount = accounts.some(a => a.address === address)
-            const isExistingContact = contacts.some(c => c.address === address)
+            const isExistingContact = contacts.some(
+                c => c.addresses.algorand === address,
+            )
             if (isWalletAccount || isExistingContact) return
 
             try {
                 // Prefer the NFD name as the nickname; only an address
                 // typed/pasted without an NFD falls back to a truncation.
                 addContact({
-                    address,
+                    addresses: { algorand: address },
                     name: nfdName ?? truncateAlgorandAddress(address),
                     ...(nfdName ? { nfd: nfdName } : {}),
                 })

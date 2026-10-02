@@ -25,7 +25,7 @@ describe('ContactAvatar', () => {
     it('renders the person placeholder icon when the contact has no image', () => {
         const contact: Contact = {
             name: 'John',
-            address: 'addr',
+            addresses: { algorand: 'addr' },
         }
         render(
             <ContactAvatar
@@ -40,7 +40,7 @@ describe('ContactAvatar', () => {
         const contact: Contact = {
             name: 'John',
             image: 'https://example.com/image.png',
-            address: 'addr',
+            addresses: { algorand: 'addr' },
         }
         render(
             <ContactAvatar

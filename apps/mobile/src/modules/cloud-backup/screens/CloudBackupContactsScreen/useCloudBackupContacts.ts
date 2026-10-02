@@ -13,12 +13,14 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { Contact } from '@perawallet/wallet-core-contacts'
-import { useBackupContactReview } from '../../hooks/useBackupContactReview'
+import {
+    useBackupContactReview,
+    type BackupContact,
+} from '../../hooks/useBackupContactReview'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
 type UseCloudBackupContactsResult = {
-    contacts: Contact[]
+    contacts: BackupContact[]
     isBackedUp: (address: string) => boolean
     notBackedUpCount: number
     availableFromBackupCount: number

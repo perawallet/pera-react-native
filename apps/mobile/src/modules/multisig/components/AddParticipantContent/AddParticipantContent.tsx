@@ -58,6 +58,7 @@ export const AddParticipantContent = () => {
             />
             <AddressSearchView
                 onSelected={handleSelected}
+                chainFamily='algorand'
                 excludeTypes={EXCLUDE_TYPES}
                 showAllContactsWhenEmpty
                 inBottomSheet

@@ -98,10 +98,10 @@ export const SearchScreen = () => {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onContactPress(item.contact)}
-                            testID={`search_result_contact_${item.contact.address}`}
+                            testID={`search_result_contact_${item.contact.addresses.algorand}`}
                         >
                             <AddressDisplay
-                                address={item.contact.address}
+                                address={item.contact.addresses.algorand ?? ''}
                                 showCopy={false}
                                 style={styles.rowContainer}
                             />

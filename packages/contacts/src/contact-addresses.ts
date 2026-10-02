@@ -10,15 +10,14 @@
  limitations under the License
  */
 
-import type { Contact } from '@perawallet/wallet-core-contacts'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import type { Contact } from './models'
 
-/** The Algorand address and name are the only fields the contact payload
- *  carries. `image` and `nfd` are deliberately absent: reacting to a
- *  re-resolved NFD would sync on a timer the user never touched. */
-export const contactsFingerprint = (contacts: readonly Contact[]): string =>
-    contacts
-        .flatMap(({ addresses, name }) =>
-            addresses.algorand ? [`${addresses.algorand} ${name}`] : [],
-        )
-        .sort()
-        .join('')
+export type ContactInFamily<F extends ChainFamily> = Contact & {
+    addresses: Record<F, string>
+}
+
+export const isContactInFamily = <F extends ChainFamily>(
+    contact: Contact,
+    family: F,
+): contact is ContactInFamily<F> => !!contact.addresses[family]

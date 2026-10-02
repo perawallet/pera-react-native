@@ -72,8 +72,16 @@ const { stores, withSecretMock, parsePinRecordMock, mkStore, seedStores } =
             })
             Object.assign(stores.contacts, {
                 contacts: [
-                    { id: '1', name: 'Alice', address: 'ADDR_C1' },
-                    { id: '2', name: 'Bob', address: 'ADDR_C2' },
+                    {
+                        id: '1',
+                        name: 'Alice',
+                        addresses: { algorand: 'ADDR_C1' },
+                    },
+                    {
+                        id: '2',
+                        name: 'Bob',
+                        addresses: { algorand: 'ADDR_C2' },
+                    },
                 ],
             })
             Object.assign(stores.notifications, {
@@ -225,7 +233,7 @@ describe('useRNMigrationSnapshot > derived maps', () => {
 
     it('builds contactsByAddress with lowercase address keys', () => {
         stores.contacts.contacts = [
-            { id: '1', name: 'Alice', address: 'ADDR_MIXED' },
+            { id: '1', name: 'Alice', addresses: { algorand: 'ADDR_MIXED' } },
         ]
 
         const { result } = renderHook(() => useRNMigrationSnapshot())

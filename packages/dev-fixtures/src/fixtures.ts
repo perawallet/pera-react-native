@@ -76,7 +76,7 @@ const MOCK_CONTACT_SPECS: Array<{ name: string; nfd?: string }> = [
 export const mockContacts: Contact[] = MOCK_CONTACT_SPECS.map(
     (spec, index) => ({
         name: spec.name,
-        address: mockContactAddress(index),
+        addresses: { algorand: mockContactAddress(index) },
         ...(spec.nfd ? { nfd: spec.nfd } : {}),
     }),
 )

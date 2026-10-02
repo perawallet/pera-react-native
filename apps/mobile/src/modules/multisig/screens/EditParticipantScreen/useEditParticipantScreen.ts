@@ -14,10 +14,12 @@ import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { Control } from 'react-hook-form'
 import {
+    contactFromFormValues,
     ContactNotFoundError,
     DuplicateAddressError,
     useContacts,
     type Contact,
+    type ContactFormValues,
 } from '@perawallet/wallet-core-contacts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useContactForm } from '@modules/contacts'
@@ -27,7 +29,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 
 type UseEditParticipantScreenResult = {
     address: string
-    control: Control<Contact>
+    control: Control<ContactFormValues>
     imageUri: Optional<string>
     isDoneDisabled: boolean
     onPickImage: () => Promise<void>
@@ -52,15 +54,16 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
     const existingContact = useMemo(() => {
         const matches = findContacts({
             keyword: address,
+            family: 'algorand',
             matchAddress: true,
             matchName: false,
             matchNFD: false,
         })
-        return matches.find(c => c.address === address) ?? null
+        return matches.find(c => c.addresses.algorand === address) ?? null
     }, [findContacts, address])
 
     const initialContact: Contact = useMemo(
-        () => existingContact ?? { name: '', address },
+        () => existingContact ?? { name: '', addresses: { algorand: address } },
         [existingContact, address],
     )
 
@@ -68,16 +71,15 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
         useContactForm(initialContact)
 
     const onDone = useCallback(
-        (data: Contact) => {
-            const contactData: Contact = {
-                ...data,
-                name: data.name.trim(),
-                address,
-            }
+        (data: ContactFormValues) => {
+            const contactData = contactFromFormValues(
+                { ...data, name: data.name.trim(), address },
+                existingContact,
+            )
 
             try {
                 if (existingContact) {
-                    editContact(address, contactData)
+                    editContact({ family: 'algorand', address }, contactData)
                 } else {
                     addContact(contactData)
                 }

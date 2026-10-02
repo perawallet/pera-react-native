@@ -18,10 +18,12 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import {
+    contactFromFormValues,
     ContactNotFoundError,
     DuplicateAddressError,
     useContacts,
     type Contact,
+    type ContactFormValues,
 } from '@perawallet/wallet-core-contacts'
 
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
@@ -48,7 +50,7 @@ export type UseEditContactFormResult = UseContactFormResult & {
     contact: Contact | null
     /** True when removing this contact needs the cloud-backup choice first. */
     needsBackupChoice: boolean
-    save: (data: Contact) => void
+    save: (data: ContactFormValues) => void
     removeContact: (backupChoice?: ContactBackupChoice) => Promise<void>
     isRemoving: boolean
 }
@@ -77,26 +79,33 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     const targetContact = useMemo<Contact | null>(() => {
         if (!routeAddress) return selectedContact
         return (
-            contacts.find(contact => contact.address === routeAddress) ?? {
-                address: routeAddress,
+            contacts.find(
+                contact => contact.addresses.algorand === routeAddress,
+            ) ?? {
+                addresses: { algorand: routeAddress },
                 name: routeLabel ?? '',
             }
         )
     }, [routeAddress, routeLabel, contacts, selectedContact])
 
     const form = useContactForm(targetContact)
+    const targetAddress = targetContact?.addresses.algorand ?? ''
 
     const { showToast } = useToast()
     const isCloudBackupEnabled = useIsCloudBackupEnabled()
-    const isBackedUp = useIsContactBackedUp(targetContact?.address ?? '')
+    const isBackedUp = useIsContactBackedUp(targetAddress)
     const needsBackupChoice = isCloudBackupEnabled && isBackedUp
 
     const save = useCallback(
-        (data: Contact) => {
+        (data: ContactFormValues) => {
             if (!form.isValid || !targetContact) return
 
+            const contact = contactFromFormValues(data, targetContact)
             try {
-                editContact(targetContact.address, data)
+                editContact(
+                    { family: 'algorand', address: targetAddress },
+                    contact,
+                )
                 trackEvent(ContactsEvent.Edit)
             } catch (e) {
                 if (e instanceof DuplicateAddressError) {
@@ -121,10 +130,18 @@ export const useEditContactForm = (): UseEditContactFormResult => {
 
             // Keep the saved contact as selected so ViewContact re-renders
             // with the updated values when we pop back.
-            setSelectedContact(data)
+            setSelectedContact(contact)
             navigation.goBack()
         },
-        [form, t, editContact, targetContact, setSelectedContact, navigation],
+        [
+            form,
+            t,
+            editContact,
+            targetContact,
+            targetAddress,
+            setSelectedContact,
+            navigation,
+        ],
     )
 
     const { isPending: isRemoving, run: runRemoval } = useSingleFlight()
@@ -145,15 +162,15 @@ export const useEditContactForm = (): UseEditContactFormResult => {
                     isRecorded =
                         backupChoice === 'delete'
                             ? (await manager.deleteContactFromBackup(
-                                  targetContact.address,
+                                  targetAddress,
                               )) !== 'refused'
                             : await manager.keepContactInBackup(
-                                  targetContact.address,
+                                  targetAddress,
                                   targetContact.name,
                               )
                 } catch (error) {
                     logger.warn('useEditContactForm: backup choice failed', {
-                        address: targetContact.address,
+                        address: targetAddress,
                         error:
                             error instanceof Error
                                 ? error.message
@@ -187,6 +204,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
         },
         [
             targetContact,
+            targetAddress,
             deleteContact,
             setSelectedContact,
             navigation,
