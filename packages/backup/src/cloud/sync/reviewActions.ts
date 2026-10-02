@@ -42,6 +42,7 @@ import {
     type SyncState,
 } from '../models'
 import { buildPulledAccounts } from '../restore'
+import { deleteItemIfPresent } from './pushDirty'
 import type {
     ContactImportFn,
     ContactImportSummary,
@@ -403,12 +404,7 @@ const deleteKeysFromBackup = async ({
         // finish rather than a delete the user asked for and never got.
         items[key] = { ...(items[key] as SyncItemState), pendingDelete: true }
         try {
-            await deps.deleteItem(
-                deps.network,
-                deps.backupId,
-                deps.deviceId,
-                key,
-            )
+            await deleteItemIfPresent(deps, key)
         } catch (error) {
             logger.warn('reviewActions: delete failed, queued for retry', {
                 key,
