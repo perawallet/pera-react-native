@@ -15,16 +15,22 @@ import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
+import { useCapability } from '@hooks/useCapability'
 
 /**
  * Pera Card is in progress and hidden from store users. Defaults visible in
  * debug and staging builds so the team can keep testing; Firebase Remote
- * Config can override.
+ * Config can override. Also folds in the platform capability so callers have
+ * a single check.
  */
 export const useIsPeraCardEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
-    return remoteConfig.getBooleanValue(
-        RemoteConfigKeys.enable_pera_card,
-        isDebug || isStaging,
+    const isPlatformEnabled = useCapability({ platform: 'peraCard' })
+    return (
+        isPlatformEnabled &&
+        remoteConfig.getBooleanValue(
+            RemoteConfigKeys.enable_pera_card,
+            isDebug || isStaging,
+        )
     )
 }

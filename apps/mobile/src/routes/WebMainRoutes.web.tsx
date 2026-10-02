@@ -155,7 +155,7 @@ export const WebMainRoutes = ({
                         name='Messages'
                         component={MessagesStackNavigator}
                     />
-                    {routeCapabilities.peraCard && isPeraCardEnabled && (
+                    {isPeraCardEnabled && (
                         <>
                             <RootStack.Screen
                                 name='PeraCard'
