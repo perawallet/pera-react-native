@@ -17,7 +17,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { useScanTabHandoff } from '@hooks/useScanTabHandoff'
+import { useTabHandoff } from '@hooks/useTabHandoff'
 import { ChooseCredentialsFileSheet } from '../components/ChooseCredentialsFileSheet'
 import { OPTION_LIST_SHEET_OPTIONS } from '../components/OptionListSheet'
 import {
@@ -41,7 +41,7 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
     const navigation = useAppNavigation()
     const { showError } = useErrorToast()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { shouldHandOff, openScanTab } = useScanTabHandoff(
+    const { shouldHandOff, openTab: openScanTab } = useTabHandoff(
         'backup-restore-scan',
     )
     const [isReadingCredentials, setIsReadingCredentials] = useState(false)

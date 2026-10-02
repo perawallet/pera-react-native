@@ -150,6 +150,20 @@ describe('useExpandedFlowNavigation', () => {
         expect(navigate).toHaveBeenCalledTimes(1)
     })
 
+    it('deep-links into cloud backup setup over the backup home when the flow is backup-setup', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('backup-setup')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('Settings', {
+            screen: 'CloudBackupSettings',
+            params: { screen: 'CloudBackupSetup', initial: false },
+        })
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
     it('navigates to CameraAccess when the flow is camera-access', () => {
         consumeInitialExpandedFlowMock.mockReturnValue('camera-access')
         const navigate = vi.fn()

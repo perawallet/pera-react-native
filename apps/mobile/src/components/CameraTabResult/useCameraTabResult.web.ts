@@ -30,6 +30,10 @@ const COPY_KEYS: Record<CameraTabResult, { title: string; body: string }> = {
         title: 'camera_tab.backup_restored_title',
         body: 'camera_tab.body',
     },
+    'backup-enabled': {
+        title: 'cloud_backup.enable.success',
+        body: 'camera_tab.body',
+    },
     'import-failed': {
         title: 'onboarding.import_account.failed_title',
         body: 'onboarding.import_account.failed_body',

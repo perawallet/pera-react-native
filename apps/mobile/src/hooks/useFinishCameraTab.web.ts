@@ -30,6 +30,7 @@ import type {
 const RESULT_BY_FLOW: Partial<Record<ExpandedFlow, CameraTabResultKind>> = {
     scan: 'account-imported',
     'backup-restore-scan': 'backup-restored',
+    'backup-setup': 'backup-enabled',
 }
 
 export const useFinishCameraTab = (): UseFinishCameraTabResult => {
