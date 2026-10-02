@@ -21,6 +21,7 @@ import {
     useCloudBackupImport,
     useCloudBackupPasskeyImport,
     useCloudBackupStore,
+    useListPasskeysForBackup,
     useResolveHdSeedForBackup,
     useResolveMnemonicForBackup,
     useResolveSeedEntropyForBackup,
@@ -30,6 +31,7 @@ import {
 import { useSecurityStore } from '@perawallet/wallet-core-security'
 import {
     isPasskeyKey,
+    keystoreEntriesFingerprint,
     subscribeToPasskeyChanges,
 } from '@perawallet/wallet-core-passkeys'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
@@ -42,7 +44,6 @@ import {
     getPollingTransitionAction,
     isActiveAppState,
 } from '@utils/app-state'
-import { useListPasskeysForBackup } from './useListPasskeysForBackup'
 
 type BackupSyncCallbacks = {
     importAccounts: ReturnType<typeof useCloudBackupImport>['importAccounts']
@@ -125,9 +126,20 @@ const subscribePasskeyChanges = (onChange: () => void): (() => void) => {
         onChange()
     })
     const unsubscribeFlatRecords = subscribeToPasskeyChanges(onChange)
+    // A credential the native provider minted (in a browser's sign-up flow,
+    // with the app backgrounded) reaches neither subscription above.
+    let lastEntries = keystoreEntriesFingerprint()
+    const appStateSub = AppState.addEventListener('change', nextAppState => {
+        if (!isActiveAppState(nextAppState)) return
+        const nextEntries = keystoreEntriesFingerprint()
+        if (nextEntries === lastEntries) return
+        lastEntries = nextEntries
+        onChange()
+    })
     return () => {
         sub.unsubscribe()
         unsubscribeFlatRecords()
+        appStateSub.remove()
     }
 }
 

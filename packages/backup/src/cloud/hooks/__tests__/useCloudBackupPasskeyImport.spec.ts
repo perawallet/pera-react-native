@@ -57,6 +57,17 @@ const derivedSinceClear = (): Promise<DerivedPasskeyCredential[]> =>
         vi.mocked(derivePasskeyCredential).mock.results.map(r => r.value),
     )
 
+const toBase64 = (bytes: Uint8Array): string =>
+    Buffer.from(bytes).toString('base64')
+
+const deriveFromSeed = async (identity: string, counter: number) =>
+    derivePasskeyCredential({
+        mainKey: await derivePasskeyMainKey(ENTROPY, subtle),
+        origin: 'webauthn.io',
+        identity,
+        counter,
+    })
+
 const buildPayload = async (
     overrides: { identity?: string; counter?: number } & Record<
         string,
@@ -65,23 +76,15 @@ const buildPayload = async (
 ) => {
     const identity = overrides.identity ?? 'alice'
     const counter = overrides.counter ?? 0
-    const mainKey = await derivePasskeyMainKey(ENTROPY, subtle)
     // Derived with the same counter the payload carries, or the public key
     // would not match and every such payload would skip.
-    const derived = await derivePasskeyCredential({
-        mainKey,
-        origin: 'webauthn.io',
-        identity,
-        counter,
-    })
+    const derived = await deriveFromSeed(identity, counter)
     return {
         credentialId: derived.credentialId,
         origin: 'webauthn.io',
         identity,
         counter,
-        publicKeySpkiDer: Buffer.from(derived.publicKeySpkiDer).toString(
-            'base64',
-        ),
+        publicKeySpkiDer: toBase64(derived.publicKeySpkiDer),
         seedAddress: 'SEEDADDRESS',
         userId: 'dXNlcg==',
         userName: 'alice',
@@ -91,157 +94,291 @@ const buildPayload = async (
     }
 }
 
+/** A credential as a build that backs up its key writes it: no derivation
+ *  inputs, so only the secret can restore it. */
+const buildPulledWithSecret = async (identity = 'carol') => {
+    const derived = await deriveFromSeed(identity, 0)
+    return {
+        payload: {
+            credentialId: derived.credentialId,
+            origin: 'webauthn.io',
+            publicKeySpkiDer: toBase64(derived.publicKeySpkiDer),
+            userId: 'dXNlcg==',
+            createdAt: 1,
+        },
+        secret: {
+            credentialId: derived.credentialId,
+            privateKey: toBase64(derived.privateKey),
+        },
+    }
+}
+
+const withoutSecret = async (
+    overrides: Parameters<typeof buildPayload>[0] = {},
+) => ({ payload: await buildPayload(overrides), secret: null })
+
 describe('useCloudBackupPasskeyImport', () => {
     beforeEach(() => {
-        writeEntry.mockClear()
+        writeEntry.mockReset()
         entryExists.mockReturnValue(false)
+        resolveEntropy.mockClear()
     })
 
-    it('writes a credential whose derived public key matches', async () => {
-        const payload = await buildPayload()
-        const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(resolveEntropy),
-        )
+    describe('with a backed-up private key', () => {
+        it('writes the credential without its wallet being on this device', async () => {
+            const pulled = await buildPulledWithSecret()
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
 
-        const summary = await result.current.importPasskeys([payload])
+            const summary = await result.current.importPasskeys([pulled])
 
-        expect(summary.imported).toBe(1)
-        expect(writeEntry).toHaveBeenCalledTimes(1)
+            expect(summary.imported).toBe(1)
+            expect(resolveEntropy).not.toHaveBeenCalled()
+            expect(writeEntry).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    credentialId: pulled.payload.credentialId,
+                    parentKeyId: undefined,
+                    createdAtMs: pulled.payload.createdAt,
+                }),
+            )
+        })
+
+        it('prefers the secret over a seed it could re-derive from', async () => {
+            const pulled = {
+                payload: await buildPayload(),
+                secret: (await buildPulledWithSecret('alice')).secret,
+            }
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            const summary = await result.current.importPasskeys([pulled])
+
+            expect(summary.imported).toBe(1)
+            expect(resolveEntropy).not.toHaveBeenCalled()
+        })
+
+        it('skips and never writes when the key does not produce the backed-up public key', async () => {
+            const pulled = await buildPulledWithSecret()
+            const other = await buildPulledWithSecret('mallory')
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            const summary = await result.current.importPasskeys([
+                { ...pulled, secret: other.secret },
+            ])
+
+            expect(summary.skipped).toEqual([
+                {
+                    credentialId: pulled.payload.credentialId,
+                    reason: 'pubkey-mismatch',
+                },
+            ])
+            expect(writeEntry).not.toHaveBeenCalled()
+        })
+
+        it('skips a secret that is not a P-256 private key', async () => {
+            const pulled = await buildPulledWithSecret()
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            const summary = await result.current.importPasskeys([
+                {
+                    ...pulled,
+                    secret: { ...pulled.secret, privateKey: 'AAAA' },
+                },
+            ])
+
+            expect(summary.skipped[0]?.reason).toBe('pubkey-mismatch')
+            expect(writeEntry).not.toHaveBeenCalled()
+        })
+
+        it('zeroes the decoded private key once it is written', async () => {
+            const pulled = await buildPulledWithSecret()
+            let handed: Uint8Array | undefined
+            writeEntry.mockImplementationOnce(
+                async (params: { privateKey: Uint8Array }) => {
+                    handed = params.privateKey
+                    expect(handed.some(byte => byte !== 0)).toBe(true)
+                },
+            )
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            await result.current.importPasskeys([pulled])
+
+            expect(handed!.every(byte => byte === 0)).toBe(true)
+        })
     })
 
-    // Without these the credential is unprovable on the device that just
-    // restored it, which reports it as one it cannot back up.
-    it('records the local parent key id and the derivation counter', async () => {
-        const payload = await buildPayload({ counter: 3 })
-        const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(resolveEntropy),
-        )
+    describe('without a backed-up private key', () => {
+        it('re-derives a credential whose public key matches', async () => {
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
 
-        await result.current.importPasskeys([payload])
+            const summary = await result.current.importPasskeys([
+                await withoutSecret(),
+            ])
 
-        expect(writeEntry).toHaveBeenCalledWith(
-            expect.objectContaining({
-                parentKeyId: 'local-seed-id-passkey-main',
-                counter: 3,
-                identity: 'alice',
-            }),
-        )
-    })
+            expect(summary.imported).toBe(1)
+            expect(writeEntry).toHaveBeenCalledTimes(1)
+        })
 
-    it('skips and never writes when the derived public key disagrees', async () => {
-        const payload = await buildPayload({ publicKeySpkiDer: 'd3Jvbmc=' })
-        const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(resolveEntropy),
-        )
+        it('records the local parent key id and the derivation counter', async () => {
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
 
-        const summary = await result.current.importPasskeys([payload])
+            await result.current.importPasskeys([
+                await withoutSecret({ counter: 3 }),
+            ])
 
-        expect(summary.imported).toBe(0)
-        expect(summary.skipped[0].reason).toBe('pubkey-mismatch')
-        expect(writeEntry).not.toHaveBeenCalled()
-    })
+            expect(writeEntry).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    parentKeyId: 'local-seed-id-passkey-main',
+                    counter: 3,
+                    identity: 'alice',
+                }),
+            )
+        })
 
-    it('skips when the owning seed is not on this device', async () => {
-        const payload = await buildPayload({ seedAddress: 'OTHER' })
-        const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(resolveEntropy),
-        )
+        it('skips and never writes when the derived public key disagrees', async () => {
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
 
-        const summary = await result.current.importPasskeys([payload])
+            const summary = await result.current.importPasskeys([
+                await withoutSecret({ publicKeySpkiDer: 'd3Jvbmc=' }),
+            ])
 
-        expect(summary.skipped[0].reason).toBe('seed-missing')
-        expect(writeEntry).not.toHaveBeenCalled()
+            expect(summary.imported).toBe(0)
+            expect(summary.skipped[0]?.reason).toBe('pubkey-mismatch')
+            expect(writeEntry).not.toHaveBeenCalled()
+        })
+
+        it('skips when the owning seed is not on this device', async () => {
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            const summary = await result.current.importPasskeys([
+                await withoutSecret({ seedAddress: 'OTHER' }),
+            ])
+
+            expect(summary.skipped[0]?.reason).toBe('seed-missing')
+            expect(writeEntry).not.toHaveBeenCalled()
+        })
+
+        it('skips when the record carries no derivation inputs either', async () => {
+            const { payload } = await buildPulledWithSecret()
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            const summary = await result.current.importPasskeys([
+                { payload, secret: null },
+            ])
+
+            expect(summary.skipped[0]?.reason).toBe('secret-missing')
+            expect(resolveEntropy).not.toHaveBeenCalled()
+            expect(writeEntry).not.toHaveBeenCalled()
+        })
+
+        it('zeroes the derived private key once it is written', async () => {
+            const pulled = await withoutSecret()
+            const written: Uint8Array[] = []
+            writeEntry.mockImplementationOnce(
+                async (params: { privateKey: Uint8Array }) => {
+                    written.push(Uint8Array.from(params.privateKey))
+                },
+            )
+            vi.mocked(derivePasskeyCredential).mockClear()
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            await result.current.importPasskeys([pulled])
+
+            const [derived] = await derivedSinceClear()
+            expect(written[0]!.some(byte => byte !== 0)).toBe(true)
+            expect(derived!.privateKey.every(byte => byte === 0)).toBe(true)
+        })
+
+        it('zeroes the derived private key when the public key disagrees', async () => {
+            const pulled = await withoutSecret({ publicKeySpkiDer: 'd3Jvbmc=' })
+            vi.mocked(derivePasskeyCredential).mockClear()
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            await result.current.importPasskeys([pulled])
+
+            const [derived] = await derivedSinceClear()
+            expect(derived!.privateKey.every(byte => byte === 0)).toBe(true)
+        })
+
+        it('zeroes the derived private key when the write fails', async () => {
+            const pulled = await withoutSecret()
+            writeEntry.mockRejectedValueOnce(new Error('keystore unavailable'))
+            vi.mocked(derivePasskeyCredential).mockClear()
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            const summary = await result.current.importPasskeys([pulled])
+
+            const [derived] = await derivedSinceClear()
+            expect(summary.failed).toHaveLength(1)
+            expect(derived!.privateKey.every(byte => byte === 0)).toBe(true)
+        })
+
+        it('zeroes the seed entropy when the main-key derivation fails', async () => {
+            const pulled = await withoutSecret()
+            vi.mocked(derivePasskeyMainKey).mockRejectedValueOnce(
+                new Error('kdf unavailable'),
+            )
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            const summary = await result.current.importPasskeys([pulled])
+
+            const resolved: ResolvedSeed | null =
+                await resolveEntropy.mock.results[0]!.value
+            expect(summary.failed).toHaveLength(1)
+            expect(resolved!.entropy.every(byte => byte === 0)).toBe(true)
+        })
+
+        it('derives the main key once per seed across several credentials', async () => {
+            const first = await withoutSecret()
+            const second = await withoutSecret({ identity: 'bob' })
+            resolveEntropy.mockClear()
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            await result.current.importPasskeys([first, second])
+
+            expect(resolveEntropy).toHaveBeenCalledTimes(1)
+        })
     })
 
     it('does not clobber a credential the device already holds', async () => {
         entryExists.mockReturnValue(true)
-        const payload = await buildPayload()
         const { result } = renderHook(() =>
             useCloudBackupPasskeyImport(resolveEntropy),
         )
 
-        const summary = await result.current.importPasskeys([payload])
+        const summary = await result.current.importPasskeys([
+            await buildPulledWithSecret(),
+        ])
 
-        expect(summary.skipped[0].reason).toBe('already-present')
+        expect(summary.skipped[0]?.reason).toBe('already-present')
         expect(writeEntry).not.toHaveBeenCalled()
-    })
-
-    it('zeroes the derived private key once it is written', async () => {
-        const payload = await buildPayload()
-        const written: Uint8Array[] = []
-        writeEntry.mockImplementationOnce(
-            async (params: { privateKey: Uint8Array }) => {
-                written.push(Uint8Array.from(params.privateKey))
-            },
-        )
-        vi.mocked(derivePasskeyCredential).mockClear()
-        const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(resolveEntropy),
-        )
-
-        await result.current.importPasskeys([payload])
-
-        const [derived] = await derivedSinceClear()
-        expect(written[0]!.some(byte => byte !== 0)).toBe(true)
-        expect(derived!.privateKey.every(byte => byte === 0)).toBe(true)
-    })
-
-    it('zeroes the derived private key when the public key disagrees', async () => {
-        const payload = await buildPayload({ publicKeySpkiDer: 'd3Jvbmc=' })
-        vi.mocked(derivePasskeyCredential).mockClear()
-        const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(resolveEntropy),
-        )
-
-        await result.current.importPasskeys([payload])
-
-        const [derived] = await derivedSinceClear()
-        expect(derived!.privateKey.every(byte => byte === 0)).toBe(true)
-    })
-
-    it('zeroes the derived private key when the write fails', async () => {
-        const payload = await buildPayload()
-        writeEntry.mockRejectedValueOnce(new Error('keystore unavailable'))
-        vi.mocked(derivePasskeyCredential).mockClear()
-        const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(resolveEntropy),
-        )
-
-        const summary = await result.current.importPasskeys([payload])
-
-        const [derived] = await derivedSinceClear()
-        expect(summary.failed).toHaveLength(1)
-        expect(derived!.privateKey.every(byte => byte === 0)).toBe(true)
-    })
-
-    it('zeroes the seed entropy when the main-key derivation fails', async () => {
-        const payload = await buildPayload()
-        vi.mocked(derivePasskeyMainKey).mockRejectedValueOnce(
-            new Error('kdf unavailable'),
-        )
-        resolveEntropy.mockClear()
-        const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(resolveEntropy),
-        )
-
-        const summary = await result.current.importPasskeys([payload])
-
-        const resolved: ResolvedSeed | null =
-            await resolveEntropy.mock.results[0]!.value
-        expect(summary.failed).toHaveLength(1)
-        expect(resolved!.entropy.every(byte => byte === 0)).toBe(true)
-    })
-
-    it('derives the main key once per seed across several credentials', async () => {
-        const first = await buildPayload()
-        const second = await buildPayload({ identity: 'bob' })
-        resolveEntropy.mockClear()
-        const { result } = renderHook(() =>
-            useCloudBackupPasskeyImport(resolveEntropy),
-        )
-
-        await result.current.importPasskeys([first, second])
-
-        expect(resolveEntropy).toHaveBeenCalledTimes(1)
     })
 })

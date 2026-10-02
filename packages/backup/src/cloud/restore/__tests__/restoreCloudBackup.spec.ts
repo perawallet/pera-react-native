@@ -181,7 +181,9 @@ const pull = {
         },
     ],
     contacts: [{ address: 'C', name: 'Alice', updatedAt: 5 }],
-    passkeys: [{ credentialId: 'cred-1', seedAddress: 'A' }],
+    passkeys: [
+        { payload: { credentialId: 'cred-1', seedAddress: 'A' }, secret: null },
+    ],
     settings: null,
     skipped: [],
 }
@@ -536,13 +538,15 @@ describe('restoreCloudBackup: passkey acceptance', () => {
     const SEED_PUBKEY = new Uint8Array(32).fill(5)
     const SEED_ADDRESS = encodeAlgorandAddress(SEED_PUBKEY)
 
-    const buildRestoredPasskeyPayload = async () => {
-        const mainKey = await derivePasskeyMainKey(ENTROPY, subtle)
-        const derived = await derivePasskeyCredential({
-            mainKey,
+    const derivePasskey = async () =>
+        derivePasskeyCredential({
+            mainKey: await derivePasskeyMainKey(ENTROPY, subtle),
             origin: 'webauthn.io',
             identity: 'alice',
         })
+
+    const buildRestoredPasskeyPayload = async () => {
+        const derived = await derivePasskey()
         return {
             credentialId: derived.credentialId,
             origin: 'webauthn.io',
@@ -590,7 +594,10 @@ describe('restoreCloudBackup: passkey acceptance', () => {
 
     test('a passkey created on device A authenticates on device B after restore', async () => {
         const payload = await buildRestoredPasskeyPayload()
-        pullBackupItemsMock.mockResolvedValue({ ...pull, passkeys: [payload] })
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            passkeys: [{ payload, secret: null }],
+        })
 
         const { result } = renderHook(() =>
             useCloudBackupPasskeyImport(useResolveSeedEntropyForBackup()),
@@ -606,6 +613,46 @@ describe('restoreCloudBackup: passkey acceptance', () => {
         expect(writeNativePasskeyEntryMock).toHaveBeenCalledTimes(1)
         expect(writeNativePasskeyEntryMock).toHaveBeenCalledWith(
             expect.objectContaining({ credentialId: payload.credentialId }),
+        )
+    })
+
+    test('a passkey whose wallet device B never holds still restores from its backed-up key', async () => {
+        const derived = await derivePasskey()
+        const payload = {
+            credentialId: derived.credentialId,
+            origin: 'webauthn.io',
+            publicKeySpkiDer: Buffer.from(derived.publicKeySpkiDer).toString(
+                'base64',
+            ),
+            createdAt: 1,
+        }
+        keystoreKeysMock.mockReturnValue([])
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            passkeys: [
+                {
+                    payload,
+                    secret: {
+                        credentialId: derived.credentialId,
+                        privateKey: Buffer.from(derived.privateKey).toString(
+                            'base64',
+                        ),
+                    },
+                },
+            ],
+        })
+
+        const { result } = renderHook(() =>
+            useCloudBackupPasskeyImport(useResolveSeedEntropyForBackup()),
+        )
+
+        await restoreCloudBackup({
+            ...params(),
+            importPasskeys: result.current.importPasskeys,
+        })
+
+        expect(writeNativePasskeyEntryMock).toHaveBeenCalledWith(
+            expect.objectContaining({ credentialId: derived.credentialId }),
         )
     })
 })

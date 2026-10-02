@@ -47,6 +47,25 @@ export const passkeyItemKey = (hash: ItemKeyHash): BackupItemKey =>
 export const isPasskeyItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX)
 
+export const BACKUP_PASSKEY_SECRETS_KEY_PREFIX = 'passkey-secrets/'
+
+/** A credential's private key, apart from its `passkeys/` record so that a
+ *  record downloaded only to label a review row never carries key material.
+ *  Both halves hash the same credential id, so either key names the other. */
+export const passkeySecretsItemKey = (hash: ItemKeyHash): BackupItemKey =>
+    `${BACKUP_PASSKEY_SECRETS_KEY_PREFIX}${hash}`
+
+export const isPasskeySecretsItemKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_PASSKEY_SECRETS_KEY_PREFIX)
+
+export const passkeyPartnerKey = (key: BackupItemKey): BackupItemKey | null => {
+    if (isPasskeyItemKey(key))
+        return `${BACKUP_PASSKEY_SECRETS_KEY_PREFIX}${key.slice(BACKUP_PASSKEYS_KEY_PREFIX.length)}`
+    if (isPasskeySecretsItemKey(key))
+        return `${BACKUP_PASSKEYS_KEY_PREFIX}${key.slice(BACKUP_PASSKEY_SECRETS_KEY_PREFIX.length)}`
+    return null
+}
+
 export const BACKUP_SETTINGS_KEY_PREFIX = 'settings/'
 
 /** The single settings item is still keyed by a hash, of a fixed id rather

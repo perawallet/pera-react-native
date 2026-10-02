@@ -48,11 +48,13 @@ import { toDerivationUserHandle } from '../../authenticator/authenticator'
 import {
     derivePasskeyCredential,
     derivePasskeyMainKey,
+    p256PrivateKeyToSpkiDer,
 } from '../../crypto/derivePasskeyCredential'
 import {
     identityCandidates,
     passkeyBackupInputs,
     seedKeyIdFromPasskeyMainKeyId,
+    storedPasskeyBackupInputs,
 } from '../passkeyBackup'
 
 const subtle = webcrypto.subtle as unknown as SubtleCrypto
@@ -163,6 +165,16 @@ describe('passkeyBackupInputs', () => {
         expect(inputs?.origin).toBe('webauthn.io')
         expect(inputs?.seedKeyId).toBe(SEED_KEY_ID)
         expect(inputs?.counter).toBe(0)
+    })
+
+    it('hands back the private key that reproduced the stored public key', async () => {
+        const key = await buildReproducibleKey('alice', { userName: 'alice' })
+
+        const inputs = await passkeyBackupInputs(key, resolveEntropy, subtle)
+
+        expect(p256PrivateKeyToSpkiDer(inputs!.privateKey)).toEqual(
+            key.publicKey,
+        )
     })
 
     // IMPORTANT 6: iOS writes `createdAt` in seconds
@@ -403,5 +415,155 @@ describe('passkeyBackupInputs', () => {
         expect(
             await passkeyBackupInputs(legacy, resolveEntropy, subtle),
         ).toBeNull()
+    })
+})
+
+describe('storedPasskeyBackupInputs', () => {
+    const derive = async (identity = 'alice') =>
+        derivePasskeyCredential({
+            mainKey: await derivePasskeyMainKey(ENTROPY, subtle),
+            origin: 'webauthn.io',
+            identity,
+        })
+
+    const recordFor = (
+        publicKey: Uint8Array,
+        metadata: Record<string, unknown> = {},
+    ): Key =>
+        ({
+            id: 'credential-id',
+            type: 'hd-derived-p256',
+            algorithm: 'P256',
+            extractable: false,
+            publicKey,
+            metadata: {
+                origin: 'webauthn.io',
+                userId: 'dXNlcg==',
+                userName: 'alice',
+                createdAt: 1_700_000_000_000,
+                ...metadata,
+            },
+        }) as unknown as Key
+
+    // No `parentKeyId`: the legacy importer's records and every credential
+    // whose wallet is gone look like this, and the seed path rejects them.
+    it('builds inputs from the key a record holds, with no seed', async () => {
+        const derived = await derive()
+
+        const inputs = storedPasskeyBackupInputs(
+            recordFor(derived.publicKeySpkiDer),
+            derived.privateKey,
+        )
+
+        expect(inputs).toMatchObject({
+            credentialId: 'credential-id',
+            origin: 'webauthn.io',
+            publicKeySpkiDer: encodeToBase64(derived.publicKeySpkiDer),
+            userId: 'dXNlcg==',
+            createdAt: 1_700_000_000_000,
+        })
+        expect(inputs?.seedKeyId).toBeUndefined()
+        expect(inputs?.identity).toBeUndefined()
+        expect(inputs?.privateKey).toBe(derived.privateKey)
+    })
+
+    it('labels an Android provider record by the name its userHandle holds', async () => {
+        const derived = await derive()
+
+        const inputs = storedPasskeyBackupInputs(
+            recordFor(derived.publicKeySpkiDer, {
+                userName: undefined,
+                userHandle: 'alice',
+                userId: 'YWxpY2UtaWQ=',
+            }),
+            derived.privateKey,
+        )
+
+        expect(inputs?.userName).toBe('alice')
+    })
+
+    it('does not take a userHandle that only repeats the user id as a name', async () => {
+        const derived = await derive()
+
+        const inputs = storedPasskeyBackupInputs(
+            recordFor(derived.publicKeySpkiDer, {
+                userName: undefined,
+                userHandle: 'YWxpY2UtaWQ=',
+                userId: 'YWxpY2UtaWQ=',
+            }),
+            derived.privateKey,
+        )
+
+        expect(inputs?.userName).toBeUndefined()
+    })
+
+    it('carries a stored identity and derivation counter through', async () => {
+        const derived = await derive()
+
+        const inputs = storedPasskeyBackupInputs(
+            recordFor(derived.publicKeySpkiDer, {
+                identity: 'Alice',
+                counter: 2,
+            }),
+            derived.privateKey,
+        )
+
+        expect(inputs).toMatchObject({ identity: 'Alice', counter: 2 })
+    })
+
+    it('reports 0, not the clock, for a record that stored no creation time', async () => {
+        const derived = await derive()
+        const record = recordFor(derived.publicKeySpkiDer)
+        delete (record.metadata as Record<string, unknown>).createdAt
+
+        expect(
+            storedPasskeyBackupInputs(record, derived.privateKey)?.createdAt,
+        ).toBe(0)
+    })
+
+    it('accepts a stored public key in the raw 64-byte form', async () => {
+        const derived = await derive()
+        const raw = derived.publicKeySpkiDer.slice(-64)
+
+        expect(
+            storedPasskeyBackupInputs(recordFor(raw), derived.privateKey),
+        ).not.toBeNull()
+    })
+
+    it('returns null and zeroes the key when it does not produce the public key', async () => {
+        const derived = await derive()
+        const other = await derive('mallory')
+
+        const inputs = storedPasskeyBackupInputs(
+            recordFor(derived.publicKeySpkiDer),
+            other.privateKey,
+        )
+
+        expect(inputs).toBeNull()
+        expect(other.privateKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('returns null and zeroes the key for a migration-flagged record', async () => {
+        const derived = await derive()
+
+        const inputs = storedPasskeyBackupInputs(
+            recordFor(derived.publicKeySpkiDer, {
+                migration: 'needs-migration',
+            }),
+            derived.privateKey,
+        )
+
+        expect(inputs).toBeNull()
+        expect(derived.privateKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('returns null for a key that is not a passkey credential', async () => {
+        const derived = await derive()
+        const record = {
+            ...recordFor(derived.publicKeySpkiDer),
+            type: 'hd-root-key',
+        } as unknown as Key
+
+        expect(storedPasskeyBackupInputs(record, derived.privateKey)).toBeNull()
     })
 })

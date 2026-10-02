@@ -40,6 +40,11 @@ const ALLOWED: readonly AllowedImport[] = [
         reason: "Reads the native autofill module's keystore envelope, which has no provider API.",
     },
     {
+        file: 'packages/passkeys/src/native/readPasskeyPrivateKey.ts',
+        specifier: '@algorandfoundation/react-native-keystore',
+        reason: "Reads the native autofill module's keystore envelope, which has no provider API.",
+    },
+    {
         file: 'packages/passkeys/src/native/writeNativePasskeyEntry.ts',
         specifier: '@algorandfoundation/react-native-keystore',
         reason: "Writes into the native autofill module's keystore envelope, which has no provider API.",

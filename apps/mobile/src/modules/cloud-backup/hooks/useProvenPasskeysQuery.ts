@@ -10,12 +10,13 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
+    useListPasskeyMetadataForBackup,
     useProvenPasskeysStore,
     type BackupPasskey,
 } from '@perawallet/wallet-core-backup'
-import { useListPasskeysForBackup } from './useListPasskeysForBackup'
 
 export type UseProvenPasskeysQueryResult = {
     passkeys: BackupPasskey[]
@@ -27,16 +28,21 @@ export type UseProvenPasskeysQueryResult = {
     isResolved: boolean
 }
 
-/** Proving a credential costs a PBKDF2 per owning seed, so the sweep runs here
- *  and the store is the read side: a sync tick running the same sweep in the
- *  background refreshes an open screen without a refetch. */
+/** Re-deriving a credential costs a PBKDF2 per owning seed, so the sweep runs
+ *  here and the store is the read side: a sync tick running the same sweep in
+ *  the background refreshes an open screen without a refetch. */
 export const useProvenPasskeysQuery = (): UseProvenPasskeysQueryResult => {
-    const listPasskeys = useListPasskeysForBackup()
+    const listPasskeyMetadata = useListPasskeyMetadataForBackup()
     const provenPasskeys = useProvenPasskeysStore(state => state.provenPasskeys)
+
+    const sweep = useCallback(
+        async () => (await listPasskeyMetadata()).length,
+        [listPasskeyMetadata],
+    )
 
     const { isLoading, isError } = useQuery({
         queryKey: ['cloud-backup', 'proven-passkeys'],
-        queryFn: listPasskeys,
+        queryFn: sweep,
     })
 
     return {

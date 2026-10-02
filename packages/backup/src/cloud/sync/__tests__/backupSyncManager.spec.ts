@@ -89,7 +89,10 @@ vi.mock('../reviewActions', () => ({
         summary: { imported: 1, skippedDuplicate: 0, failed: [] },
     }),
     deleteFromBackup: mockDeleteFromBackup,
-    keepAccountInBackup: (state: unknown) => state,
+    keepAccountInBackup: (state: object, address: string) => ({
+        ...state,
+        keptAddress: address,
+    }),
 }))
 
 vi.mock('../../credentials/keyStorage', () => ({
@@ -550,19 +553,33 @@ describe('BackupSyncManager', () => {
             expect(mockSyncBackup).not.toHaveBeenCalled()
         })
 
-        it('drops a review action still queued behind the run it waited out', async () => {
+        it('records a keep at once instead of waiting out a running sync', async () => {
             const held = holdNextSync()
             const mgr = new BackupSyncManager(makeDeps())
             const running = mgr.syncNow()
-            const kept = mgr.keepAccountInBackup('ADDR')
 
-            const suspending = mgr.suspend()
+            expect(await mgr.keepAccountInBackup('ADDR')).toBe(true)
+            expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+
             held.release()
             await running
-            await suspending
+        })
 
-            expect(await kept).toBe(false)
-            expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        it('reapplies the keep over the state the running sync commits', async () => {
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+            const running = mgr.syncNow()
+            await mgr.keepAccountInBackup('ADDR')
+
+            held.release()
+            await running
+
+            expect(mockSetSyncState).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    lastSyncResult: 'SUCCESS',
+                    keptAddress: 'ADDR',
+                }),
+            )
         })
     })
 

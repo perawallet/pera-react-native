@@ -45,6 +45,10 @@ export const derivePasskeyMainKey = (
         DP256_DEFAULT_KEY_LENGTH_BYTES,
     )
 
+/** Throws on a scalar that is not a valid P-256 private key. */
+export const p256PrivateKeyToSpkiDer = (privateKey: Uint8Array): Uint8Array =>
+    p256RawPublicKeyToSpkiDer(dp256.getPurePKBytes(privateKey))
+
 export type DerivedPasskeyCredential = {
     /** Standard-base64 SHA-256 of the SPKI DER — the keystore/MMKV credential id. */
     credentialId: string
@@ -72,8 +76,7 @@ export const derivePasskeyCredential = async (params: {
         identity,
         counter,
     )
-    const pubRaw = dp256.getPurePKBytes(privateKey)
-    const publicKeySpkiDer = p256RawPublicKeyToSpkiDer(pubRaw)
+    const publicKeySpkiDer = p256PrivateKeyToSpkiDer(privateKey)
     const credentialIdBytes = sha256(publicKeySpkiDer)
 
     return {

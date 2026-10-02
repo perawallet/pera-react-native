@@ -11,7 +11,7 @@
  */
 
 // @vitest-environment node
-import { passkeyItemKey } from '../../models/itemKeys'
+import { passkeyItemKey, passkeySecretsItemKey } from '../../models/itemKeys'
 import { describe, expect, it, vi } from 'vitest'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
@@ -611,6 +611,7 @@ describe('contact review actions', () => {
 })
 
 const PASSKEY_ONE_KEY = passkeyItemKey(hashAddress('one'))
+const PASSKEY_ONE_SECRET_KEY = passkeySecretsItemKey(hashAddress('one'))
 
 describe('passkey review actions', () => {
     const passkey = (overrides: Partial<SyncItemState> = {}): SyncState => {
@@ -725,13 +726,203 @@ describe('passkey review actions', () => {
         })
 
         expect(deps.importPasskeys).toHaveBeenCalledWith([
-            expect.objectContaining({ credentialId: 'one' }),
+            {
+                payload: expect.objectContaining({ credentialId: 'one' }),
+                secret: null,
+            },
         ])
         expect(summary.imported).toBe(1)
         expect(next.items[PASSKEY_ONE_KEY]).toMatchObject({
             pendingImport: false,
             label: 'Alice',
             knownVer: 4,
+        })
+    })
+
+    describe('with a backed-up secret', () => {
+        const pair = (overrides: Partial<SyncItemState> = {}): SyncState => {
+            const state = passkey(overrides)
+            state.items[PASSKEY_ONE_SECRET_KEY] = tracked('one', {
+                type: BackupItemType.PASSKEY,
+                ...overrides,
+            })
+            return state
+        }
+
+        const record = {
+            credentialId: 'one',
+            origin: 'https://example.com',
+            publicKeySpkiDer: 'pk',
+            createdAt: 5,
+            updatedAt: 5,
+        }
+        const secret = { credentialId: 'one', privateKey: 'a2V5' }
+
+        it('markPasskeyForBackup drops both tombstones', () => {
+            const next = markPasskeyForBackup(
+                pair({ status: BackupItemStatus.IGNORED }),
+                'one',
+            )
+
+            expect(next.items[PASSKEY_ONE_KEY]).toBeUndefined()
+            expect(next.items[PASSKEY_ONE_SECRET_KEY]).toBeUndefined()
+        })
+
+        it('keepPasskeyInBackup holds both items, labelling the record', () => {
+            const next = keepPasskeyInBackup(pair(), 'one', 'Alice')
+
+            expect(next.items[PASSKEY_ONE_KEY]).toMatchObject({
+                pendingImport: true,
+                label: 'Alice',
+            })
+            expect(next.items[PASSKEY_ONE_SECRET_KEY]).toMatchObject({
+                pendingImport: true,
+            })
+        })
+
+        it('deletePasskeyFromBackup deletes the secret with the record', async () => {
+            const deps = baseDeps()
+
+            const result = await deletePasskeyFromBackup({
+                state: pair(),
+                credentialId: 'one',
+                deps,
+            })
+
+            expect(result.keys).toEqual([
+                PASSKEY_ONE_KEY,
+                PASSKEY_ONE_SECRET_KEY,
+            ])
+            expect(deps.deleteItem).toHaveBeenCalledTimes(2)
+            expect(result.state.items[PASSKEY_ONE_SECRET_KEY]!.status).toBe(
+                BackupItemStatus.IGNORED,
+            )
+        })
+
+        it('importPasskeyFromBackup reads and imports both halves', async () => {
+            const deps = baseDeps()
+            deps.readItems.mockImplementation(
+                async (_n: unknown, _b: unknown, _d: unknown, keys: string[]) =>
+                    keys.map(key => ({
+                        key,
+                        ver: 4,
+                        hash: 'rh',
+                        payload: key,
+                    })),
+            )
+            deps.decrypt.mockImplementation((payload: string) =>
+                JSON.stringify(
+                    payload === PASSKEY_ONE_SECRET_KEY ? secret : record,
+                ),
+            )
+
+            const { state: next } = await importPasskeyFromBackup({
+                state: pair({ pendingImport: true }),
+                credentialId: 'one',
+                deps,
+            })
+
+            expect(deps.importPasskeys).toHaveBeenCalledWith([
+                { payload: record, secret },
+            ])
+            expect(next.items[PASSKEY_ONE_SECRET_KEY]).toMatchObject({
+                pendingImport: false,
+                knownVer: 4,
+            })
+        })
+
+        const pairWithAddresslessSecret = (
+            overrides: Partial<SyncItemState> = {},
+        ): SyncState => {
+            const state = pair(overrides)
+            const { address: _address, ...secret } = state.items[
+                PASSKEY_ONE_SECRET_KEY
+            ] as SyncItemState
+            state.items[PASSKEY_ONE_SECRET_KEY] = secret as SyncItemState
+            return state
+        }
+
+        it('deletePasskeyFromBackup deletes a secret it never downloaded', async () => {
+            const deps = baseDeps()
+
+            const result = await deletePasskeyFromBackup({
+                state: pairWithAddresslessSecret(),
+                credentialId: 'one',
+                deps,
+            })
+
+            expect(result.keys).toEqual([
+                PASSKEY_ONE_KEY,
+                PASSKEY_ONE_SECRET_KEY,
+            ])
+        })
+
+        it('importPasskeyFromBackup reads a secret it never downloaded', async () => {
+            const deps = baseDeps()
+            deps.readItems.mockImplementation(
+                async (_n: unknown, _b: unknown, _d: unknown, keys: string[]) =>
+                    keys.map(key => ({
+                        key,
+                        ver: 4,
+                        hash: 'rh',
+                        payload: key,
+                    })),
+            )
+            deps.decrypt.mockImplementation((payload: string) =>
+                JSON.stringify(
+                    payload === PASSKEY_ONE_SECRET_KEY ? secret : record,
+                ),
+            )
+
+            await importPasskeyFromBackup({
+                state: pairWithAddresslessSecret({ pendingImport: true }),
+                credentialId: 'one',
+                deps,
+            })
+
+            expect(deps.importPasskeys).toHaveBeenCalledWith([
+                { payload: record, secret },
+            ])
+        })
+
+        it('keepPasskeyInBackup holds a secret it never downloaded', () => {
+            const next = keepPasskeyInBackup(
+                pairWithAddresslessSecret(),
+                'one',
+                'Alice',
+            )
+
+            expect(next.items[PASSKEY_ONE_SECRET_KEY]).toMatchObject({
+                pendingImport: true,
+            })
+        })
+
+        it('importPasskeyFromBackup still imports when the secret is unreadable', async () => {
+            const deps = baseDeps()
+            deps.readItems.mockImplementation(
+                async (_n: unknown, _b: unknown, _d: unknown, keys: string[]) =>
+                    keys.map(key => ({
+                        key,
+                        ver: 4,
+                        hash: 'rh',
+                        payload: key,
+                    })),
+            )
+            deps.decrypt.mockImplementation((payload: string) =>
+                payload === PASSKEY_ONE_SECRET_KEY
+                    ? '{"nope":true}'
+                    : JSON.stringify(record),
+            )
+
+            await importPasskeyFromBackup({
+                state: pair({ pendingImport: true }),
+                credentialId: 'one',
+                deps,
+            })
+
+            expect(deps.importPasskeys).toHaveBeenCalledWith([
+                { payload: record, secret: null },
+            ])
         })
     })
 

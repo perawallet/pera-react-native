@@ -16,6 +16,7 @@ import { collectPasskeyPayloads } from '../collectPasskeyPayloads'
 import type { FetchedItem, SyncItemState } from '../../models'
 
 const KEY = 'passkeys/Y3JlZC1pZA=='
+const SECRET_KEY = 'passkey-secrets/Y3JlZC1pZA=='
 
 const payload = {
     credentialId: 'Y3JlZC1pZA==',
@@ -29,17 +30,21 @@ const payload = {
     updatedAt: 100,
 }
 
-const fetchedItem = (): FetchedItem => ({
-    key: KEY,
-    payload: 'ciphertext',
+const secret = { credentialId: 'Y3JlZC1pZA==', privateKey: 'a2V5' }
+
+const fetchedItem = (key = KEY): FetchedItem => ({
+    key,
+    payload: key,
     hash: 'hash-1',
     ver: 2,
 })
 
+// The fetched payload names its key, so one decrypt serves both halves.
 const deps = {
     encryptionKey: new Uint8Array(32),
     backupId: 'backup-1',
-    decrypt: () => JSON.stringify(payload),
+    decrypt: (ciphertext: string) =>
+        JSON.stringify(ciphertext === SECRET_KEY ? secret : payload),
 } as never
 
 const trackedItem = (overrides: Partial<SyncItemState>): SyncItemState =>
@@ -65,9 +70,36 @@ describe('collectPasskeyPayloads', () => {
             deps,
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].identity).toBe('alice')
-        expect(items[KEY].label).toBe('Alice')
+        expect(result).toEqual([{ payload, secret: null }])
+        expect(items[KEY]!.label).toBe('Alice')
+        expect(items[KEY]!.address).toBe(payload.credentialId)
+    })
+
+    it('joins a credential to its secret', () => {
+        const items: Record<string, SyncItemState> = {}
+
+        const result = collectPasskeyPayloads({
+            fetched: [fetchedItem(SECRET_KEY), fetchedItem()],
+            items,
+            deps,
+        })
+
+        expect(result).toEqual([{ payload, secret }])
+        expect(items[SECRET_KEY]!.address).toBe(secret.credentialId)
+        expect(items[SECRET_KEY]!.knownVer).toBe(2)
+    })
+
+    it('adopts a secret whose record did not arrive without importing anything', () => {
+        const items: Record<string, SyncItemState> = {}
+
+        const result = collectPasskeyPayloads({
+            fetched: [fetchedItem(SECRET_KEY)],
+            items,
+            deps,
+        })
+
+        expect(result).toEqual([])
+        expect(items[SECRET_KEY]!.lastRemoteHash).toBe('hash-1')
     })
 
     it('caches the label but does not import a credential held for review', () => {
@@ -80,8 +112,8 @@ describe('collectPasskeyPayloads', () => {
         })
 
         expect(result).toEqual([])
-        expect(items[KEY].label).toBe('Alice')
-        expect(items[KEY].knownVer).toBe(2)
+        expect(items[KEY]!.label).toBe('Alice')
+        expect(items[KEY]!.knownVer).toBe(2)
     })
 
     it('keeps a newer local edit instead of importing', () => {

@@ -116,6 +116,9 @@ export class BackupSyncManager {
     private unwatchSettings: Nullable<() => void> = null
     private localChangeTimer: Nullable<ReturnType<typeof setTimeout>> = null
     private stopEpoch = 0
+    /** Edits made while a run was in flight. That run read the state before
+     *  them and commits its own, so they are applied again on top of it. */
+    private pendingLocalEdits: ((state: SyncState) => SyncState)[] = []
     private accountsFingerprint = ''
     private contactsFingerprint = ''
     private settingsFingerprint = ''
@@ -136,11 +139,35 @@ export class BackupSyncManager {
                 return await work()
             } finally {
                 this.inFlight = null
+                this.pendingLocalEdits = []
                 this.state.setIsSyncing(false)
             }
         })()
         this.inFlight = run
         return run
+    }
+
+    private commitSyncState(next: SyncState): void {
+        const edits = this.pendingLocalEdits
+        this.pendingLocalEdits = []
+        this.state.setSyncState(
+            edits.reduce((state, edit) => edit(state), next),
+        )
+    }
+
+    /** Lands now rather than waiting out a long sync, which made a removal
+     *  look like it did nothing; re-applied over whatever that sync commits. */
+    private applyLocalEdit(edit: (state: SyncState) => SyncState): boolean {
+        if (this.deps.isLocked()) return false
+        const ctx = this.context()
+        if (!ctx) return false
+        this.state.setSyncState(
+            edit(
+                this.state.getSyncState() ?? createEmptySyncState(ctx.backupId),
+            ),
+        )
+        if (this.inFlight) this.pendingLocalEdits.push(edit)
+        return true
     }
 
     private async waitUntilIdle(): Promise<void> {
@@ -231,7 +258,7 @@ export class BackupSyncManager {
                 run(state, deps),
             )
             if (!next) return false
-            this.state.setSyncState(next)
+            this.commitSyncState(next)
             return true
         })
         return done ?? false
@@ -304,9 +331,7 @@ export class BackupSyncManager {
     /** Leaves the backup's copy in place, so the address returns to the review
      *  screen under "available from backup". */
     async keepAccountInBackup(address: string): Promise<boolean> {
-        return this.withExclusiveState(async state =>
-            keepAccountInBackup(state, address),
-        )
+        return this.applyLocalEdit(state => keepAccountInBackup(state, address))
     }
 
     async backUpContact(address: string): Promise<boolean> {
@@ -349,7 +374,7 @@ export class BackupSyncManager {
     /** Leaves the backup's copy in place, so the contact returns to the review
      *  screen under "available from backup". */
     async keepContactInBackup(address: string, name: string): Promise<boolean> {
-        return this.withExclusiveState(async state =>
+        return this.applyLocalEdit(state =>
             keepContactInBackup(state, address, name),
         )
     }
@@ -397,7 +422,7 @@ export class BackupSyncManager {
         credentialId: string,
         label: string,
     ): Promise<boolean> {
-        return this.withExclusiveState(async state =>
+        return this.applyLocalEdit(state =>
             keepPasskeyInBackup(state, credentialId, label),
         )
     }
@@ -564,7 +589,7 @@ export class BackupSyncManager {
                 syncBackup(deps, state),
             )
             if (next) {
-                this.state.setSyncState(next)
+                this.commitSyncState(next)
             } else {
                 logger.warn(
                     'BackupSyncManager: sync produced no state, encryption key unavailable',
@@ -584,7 +609,7 @@ export class BackupSyncManager {
                     ? error.state
                     : (this.state.getSyncState() ??
                       createEmptySyncState(ctx.backupId))
-            this.state.setSyncState({ ...s, lastSyncResult: 'FAILED' })
+            this.commitSyncState({ ...s, lastSyncResult: 'FAILED' })
         }
     }
 
@@ -600,7 +625,7 @@ export class BackupSyncManager {
                 const next = await this.withEngineDeps(ctx, deps =>
                     pullBackupDeltas(deps, state),
                 )
-                if (next) this.state.setSyncState(next)
+                if (next) this.commitSyncState(next)
             } catch (error) {
                 if (error instanceof BackupSyncAbortedError) return
                 logger.warn('BackupSyncManager: pull failed', {

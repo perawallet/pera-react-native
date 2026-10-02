@@ -243,6 +243,31 @@ describe('createNativePasskeyWriter master-key reuse', () => {
         expect(metadata.counter).toBe(4)
         expect(metadata.count).toBe(0)
     })
+
+    it('stores the creation time it was given, and none when given none', async () => {
+        // Each write zeroes the master key it was handed.
+        masterKeyMock.mockImplementation(async () =>
+            Uint8Array.from(MASTER_KEY),
+        )
+        platformMock.OS = 'ios'
+
+        await writeNativePasskeyEntry(
+            { ...entryParams('cred-3'), createdAtMs: 1_700_000_000_123 },
+            subtle,
+        )
+        const stamped = (await lastWrittenRecord()).metadata as Record<
+            string,
+            unknown
+        >
+        await writeNativePasskeyEntry(entryParams('cred-4'), subtle)
+        const unstamped = (await lastWrittenRecord()).metadata as Record<
+            string,
+            unknown
+        >
+
+        expect(stamped.createdAt).toBe(1_700_000_000_123)
+        expect(unstamped).not.toHaveProperty('createdAt')
+    })
 })
 
 describe('writeNativePasskeyEntry change notification', () => {

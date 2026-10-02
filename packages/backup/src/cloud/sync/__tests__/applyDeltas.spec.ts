@@ -643,12 +643,100 @@ describe('applyDeltas: passkeys', () => {
             deps,
         })
 
-        expect(deps.importPasskeys).toHaveBeenCalledWith([passkeyPayload()])
+        expect(deps.importPasskeys).toHaveBeenCalledWith([
+            { payload: passkeyPayload(), secret: null },
+        ])
         expect(next.items['passkeys/P1']).toMatchObject({
             label: 'Alice',
             isDirty: false,
             knownVer: 3,
             baseVer: 3,
+            address: 'P1',
+        })
+    })
+
+    describe('with a secret', () => {
+        const SECRET_KEY = 'passkey-secrets/P1'
+        const secret = { credentialId: 'P1', privateKey: 'a2V5' }
+
+        // Serves whichever keys are asked for, so a test can assert on what
+        // the engine chose to read.
+        const servingBoth = () => {
+            const deps = baseDeps()
+            deps.readItems.mockImplementation(
+                async (_n: unknown, _b: unknown, _d: unknown, keys: string[]) =>
+                    keys.map(key => ({
+                        key,
+                        ver: 3,
+                        hash: 'rh',
+                        payload: key,
+                    })),
+            )
+            deps.decrypt.mockImplementation((payload: string) =>
+                JSON.stringify(
+                    payload === SECRET_KEY ? secret : passkeyPayload(),
+                ),
+            )
+            return deps
+        }
+
+        it('imports a credential with its secret when both arrive', async () => {
+            const deps = servingBoth()
+
+            await applyDeltas({
+                state: createEmptySyncState('b'),
+                deltas: [passkeyDelta(), passkeyDelta({ key: SECRET_KEY })],
+                deps,
+            })
+
+            expect(deps.importPasskeys).toHaveBeenCalledWith([
+                { payload: passkeyPayload(), secret },
+            ])
+        })
+
+        it('reads the unchanged half of a pair alongside the one that changed', async () => {
+            const deps = servingBoth()
+            const state = createEmptySyncState('b')
+            state.items['passkeys/P1'] = trackedPasskey({
+                lastRemoteHash: 'rh',
+            })
+
+            await applyDeltas({
+                state,
+                deltas: [passkeyDelta({ key: SECRET_KEY })],
+                deps,
+            })
+
+            expect(deps.readItems.mock.calls[0]![3]).toEqual([
+                SECRET_KEY,
+                'passkeys/P1',
+            ])
+            expect(deps.importPasskeys).toHaveBeenCalledWith([
+                { payload: passkeyPayload(), secret },
+            ])
+        })
+
+        it('never downloads the secret of a credential held for review', async () => {
+            const deps = servingBoth()
+            const state = createEmptySyncState('b')
+            state.items['passkeys/P1'] = trackedPasskey({
+                status: BackupItemStatus.IGNORED,
+            })
+            state.items[SECRET_KEY] = trackedPasskey({
+                status: BackupItemStatus.IGNORED,
+            })
+
+            await applyDeltas({
+                state,
+                deltas: [
+                    passkeyDelta({ ver: 4 }),
+                    passkeyDelta({ key: SECRET_KEY, ver: 4 }),
+                ],
+                deps,
+            })
+
+            expect(deps.readItems.mock.calls[0]![3]).toEqual(['passkeys/P1'])
+            expect(deps.importPasskeys).not.toHaveBeenCalled()
         })
     })
 

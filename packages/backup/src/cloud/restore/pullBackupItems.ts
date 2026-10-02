@@ -17,6 +17,7 @@ import {
     parseAddressPayload,
     parseContactPayload,
     parsePasskeyPayload,
+    parsePasskeySecretsPayload,
     parseSecretsPayload,
     parseSettingsPayload,
 } from '../api/payloadParsers'
@@ -25,12 +26,14 @@ import {
     BACKUP_ACCOUNTS_KEY_PREFIX,
     BACKUP_CONTACTS_KEY_PREFIX,
     BACKUP_PASSKEYS_KEY_PREFIX,
+    BACKUP_PASSKEY_SECRETS_KEY_PREFIX,
     BACKUP_SECRETS_KEY_PREFIX,
     BACKUP_SETTINGS_KEY_PREFIX,
     BackupAccountType,
     BackupItemStatus,
     isContactItemKey,
     isPasskeyItemKey,
+    isPasskeySecretsItemKey,
     isSettingsItemKey,
     type AddressBackupPayload,
     type BackupId,
@@ -40,9 +43,11 @@ import {
     type FetchedItem,
     type ManifestItem,
     type PasskeyBackupPayload,
+    type PasskeySecretsBackupPayload,
     type SecretsBackupPayload,
     type SettingsBackupPayload,
 } from '../models'
+import type { PulledPasskey } from '../sync/types'
 
 const READ_BATCH_SIZE = 50
 
@@ -74,7 +79,7 @@ export type PullBackupItemsResult = {
     addressByKey: Record<BackupItemKey, string>
     accounts: PulledAccount[]
     contacts: ContactBackupPayload[]
-    passkeys: PasskeyBackupPayload[]
+    passkeys: PulledPasskey[]
     settings: PulledSettings | null
     skipped: SkippedItem[]
 }
@@ -113,6 +118,7 @@ const selectWantedKeys = (
                     key.startsWith(BACKUP_SECRETS_KEY_PREFIX) ||
                     key.startsWith(BACKUP_CONTACTS_KEY_PREFIX) ||
                     key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_PASSKEY_SECRETS_KEY_PREFIX) ||
                     key.startsWith(BACKUP_SETTINGS_KEY_PREFIX)),
         )
         .map(([key]) => key)
@@ -153,7 +159,7 @@ type CollectedPayloads = {
     addressPayloads: Map<string, AddressBackupPayload>
     secretsPayloads: Map<string, SecretsBackupPayload>
     contacts: ContactBackupPayload[]
-    passkeys: PasskeyBackupPayload[]
+    passkeys: PulledPasskey[]
     settings: PulledSettings | null
     addressByKey: Record<BackupItemKey, string>
     skipped: SkippedItem[]
@@ -164,6 +170,7 @@ type ParsedItemPayload =
     | { kind: 'secrets'; payload: SecretsBackupPayload }
     | { kind: 'contact'; payload: ContactBackupPayload }
     | { kind: 'passkey'; payload: PasskeyBackupPayload }
+    | { kind: 'passkeySecrets'; payload: PasskeySecretsBackupPayload }
     | { kind: 'settings'; payload: SettingsBackupPayload }
 
 /** The prefixes are deliberately in the clear, so they still say which of the
@@ -176,6 +183,11 @@ const parseItemPayload = (
         return { kind: 'contact', payload: parseContactPayload(plaintext) }
     if (isPasskeyItemKey(key))
         return { kind: 'passkey', payload: parsePasskeyPayload(plaintext) }
+    if (isPasskeySecretsItemKey(key))
+        return {
+            kind: 'passkeySecrets',
+            payload: parsePasskeySecretsPayload(plaintext),
+        }
     if (isSettingsItemKey(key))
         return { kind: 'settings', payload: parseSettingsPayload(plaintext) }
     if (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX))
@@ -194,7 +206,8 @@ const collectItemPayloads = (
     const addressPayloads = new Map<string, AddressBackupPayload>()
     const secretsPayloads = new Map<string, SecretsBackupPayload>()
     const contacts: ContactBackupPayload[] = []
-    const passkeys: PasskeyBackupPayload[] = []
+    const passkeyPayloads: PasskeyBackupPayload[] = []
+    const passkeySecrets = new Map<string, PasskeySecretsBackupPayload>()
     let settings: PulledSettings | null = null
     const addressByKey: Record<BackupItemKey, string> = {}
     const skipped: SkippedItem[] = []
@@ -226,7 +239,12 @@ const collectItemPayloads = (
         // review buckets read back out of `addressByKey`.
         if (parsed.kind === 'passkey') {
             addressByKey[item.key] = parsed.payload.credentialId
-            passkeys.push(parsed.payload)
+            passkeyPayloads.push(parsed.payload)
+            continue
+        }
+        if (parsed.kind === 'passkeySecrets') {
+            addressByKey[item.key] = parsed.payload.credentialId
+            passkeySecrets.set(parsed.payload.credentialId, parsed.payload)
             continue
         }
 
@@ -242,7 +260,10 @@ const collectItemPayloads = (
         addressPayloads,
         secretsPayloads,
         contacts,
-        passkeys,
+        passkeys: passkeyPayloads.map(payload => ({
+            payload,
+            secret: passkeySecrets.get(payload.credentialId) ?? null,
+        })),
         settings,
         addressByKey,
         skipped,

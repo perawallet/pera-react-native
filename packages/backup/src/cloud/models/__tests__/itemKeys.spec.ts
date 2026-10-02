@@ -20,7 +20,10 @@ import {
     isContactItemKey,
     isLegacyItemKey,
     isPasskeyItemKey,
+    isPasskeySecretsItemKey,
     passkeyItemKey,
+    passkeyPartnerKey,
+    passkeySecretsItemKey,
     secretsItemKey,
 } from '../itemKeys'
 
@@ -88,6 +91,24 @@ describe('passkey item keys', () => {
         expect(isPasskeyItemKey(passkeyItemKey(HASH))).toBe(true)
         expect(isPasskeyItemKey(accountItemKey(HASH))).toBe(false)
         expect(isPasskeyItemKey(contactItemKey(HASH))).toBe(false)
+    })
+
+    test('keeps the record and its secret apart', () => {
+        expect(passkeySecretsItemKey(HASH)).toBe(`passkey-secrets/${HASH}`)
+        expect(isPasskeyItemKey(passkeySecretsItemKey(HASH))).toBe(false)
+        expect(isPasskeySecretsItemKey(passkeyItemKey(HASH))).toBe(false)
+        expect(isPasskeySecretsItemKey(secretsItemKey(HASH))).toBe(false)
+        expect(isLegacyItemKey(passkeySecretsItemKey(HASH))).toBe(false)
+    })
+
+    test('names each half of a pair from the other', () => {
+        expect(passkeyPartnerKey(passkeyItemKey(HASH))).toBe(
+            passkeySecretsItemKey(HASH),
+        )
+        expect(passkeyPartnerKey(passkeySecretsItemKey(HASH))).toBe(
+            passkeyItemKey(HASH),
+        )
+        expect(passkeyPartnerKey(secretsItemKey(HASH))).toBeNull()
     })
 
     // The server rejects any key whose `/`-separated segments are not

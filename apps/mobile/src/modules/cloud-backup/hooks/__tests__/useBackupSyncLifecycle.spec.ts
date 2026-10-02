@@ -37,6 +37,7 @@ const {
     keysRef,
     keystoreListeners,
     passkeyChangeListeners,
+    entriesRef,
 } = vi.hoisted(() => ({
     initializeMock: vi.fn(),
     managerMock: { start: vi.fn(), stop: vi.fn() },
@@ -57,12 +58,14 @@ const {
     keysRef: { current: [] as FakeKeystoreKey[] },
     keystoreListeners: new Set<() => void>(),
     passkeyChangeListeners: new Set<() => void>(),
+    entriesRef: { current: '' },
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
     createBackupSyncStoreSources: () => ({}),
     initializeBackupSyncManager: initializeMock,
     getBackupSyncManager: () => managerMock,
+    useListPasskeysForBackup: () => listPasskeysMock,
     useCloudBackupImport: () => ({ importAccounts: importAccountsMock }),
     useCloudBackupContactImport: () => ({
         importContacts: importContactsMock,
@@ -83,10 +86,6 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
         JSON.stringify(value, Object.keys(value as object).sort()),
 }))
 
-vi.mock('../useListPasskeysForBackup', () => ({
-    useListPasskeysForBackup: () => listPasskeysMock,
-}))
-
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({
         get state() {
@@ -101,6 +100,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 vi.mock('@perawallet/wallet-core-passkeys', () => ({
     isPasskeyKey: (key: FakeKeystoreKey) => key.type === 'hd-derived-p256',
+    keystoreEntriesFingerprint: () => entriesRef.current,
     subscribeToPasskeyChanges: (listener: () => void) => {
         passkeyChangeListeners.add(listener)
         return () => passkeyChangeListeners.delete(listener)
@@ -285,6 +285,7 @@ describe('useBackupSyncLifecycle', () => {
             keysRef.current = []
             keystoreListeners.clear()
             passkeyChangeListeners.clear()
+            entriesRef.current = 'k/seed-1'
         })
 
         it('does not report an unrelated keystore write', () => {
@@ -394,6 +395,29 @@ describe('useBackupSyncLifecycle', () => {
             unsubscribe()
 
             emitPasskeyChange()
+
+            expect(onChange).not.toHaveBeenCalled()
+        })
+
+        it('reports a credential the native provider minted once the app is foregrounded', () => {
+            renderHook(() => useBackupSyncLifecycle())
+            const deps = (initializeMock as Mock).mock.calls[0][0]
+            const onChange = vi.fn()
+            deps.subscribePasskeyChanges(onChange)
+
+            entriesRef.current = 'k/seed-1\nk/credential-1'
+            emitAppState('active')
+
+            expect(onChange).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not report a return to the foreground that added no entry', () => {
+            renderHook(() => useBackupSyncLifecycle())
+            const deps = (initializeMock as Mock).mock.calls[0][0]
+            const onChange = vi.fn()
+            deps.subscribePasskeyChanges(onChange)
+
+            emitAppState('active')
 
             expect(onChange).not.toHaveBeenCalled()
         })

@@ -10,25 +10,42 @@
  limitations under the License
  */
 
-import { BackupItemType, passkeyItemKey } from '../models'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import {
+    BackupItemType,
+    passkeyItemKey,
+    passkeySecretsItemKey,
+} from '../models'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import { withContentHash } from './buildLocalItems'
-import type { BackupPasskey, LocalItem } from './types'
+import type { LocalItem, LocalPasskey } from './types'
 
 /** Kept separate from `buildLocalItems` so the account builder's `skipped`
- *  count stays account-only: a credential that could not be re-derived was
- *  already dropped by the collector upstream, so nothing here can fail.
- *  `updatedAt` is epoch millis; `pushDirty` overwrites it with the tracked
- *  `localUpdatedAt` before encrypting. */
+ *  count stays account-only: a credential whose key could not be read or
+ *  re-derived was already dropped by the sweep upstream, so nothing here can
+ *  fail. `updatedAt` is epoch millis; `pushDirty` overwrites it with the
+ *  tracked `localUpdatedAt` before encrypting. Does not zero `privateKey`:
+ *  the caller owns it. */
 export const buildLocalPasskeyItems = (
-    passkeys: readonly BackupPasskey[],
+    passkeys: readonly LocalPasskey[],
     updatedAt: number,
     hashAddress: ItemKeyHasher,
 ): LocalItem[] =>
-    passkeys.map(passkey =>
-        withContentHash({
-            key: passkeyItemKey(hashAddress(passkey.credentialId)),
-            type: BackupItemType.PASSKEY,
-            payload: { ...passkey, updatedAt },
-        }),
-    )
+    passkeys.flatMap(({ privateKey, ...passkey }) => {
+        const hash = hashAddress(passkey.credentialId)
+        return [
+            withContentHash({
+                key: passkeyItemKey(hash),
+                type: BackupItemType.PASSKEY,
+                payload: { ...passkey, updatedAt },
+            }),
+            withContentHash({
+                key: passkeySecretsItemKey(hash),
+                type: BackupItemType.PASSKEY,
+                payload: {
+                    credentialId: passkey.credentialId,
+                    privateKey: encodeToBase64(privateKey),
+                },
+            }),
+        ]
+    })

@@ -172,3 +172,19 @@ export const readFlatKeystoreRecords = async ({
         masterKey.fill(0)
     }
 }
+
+/** Entry ids only, nothing decrypted, so it is cheap to compare on every
+ *  return to the foreground. */
+export const keystoreEntriesFingerprint = (
+    storage: Pick<FlatKeystoreStorage, 'getAllKeys'> = keystoreStorage,
+): string => {
+    try {
+        return storage
+            .getAllKeys()
+            .filter(key => !key.startsWith(MATERIAL_PREFIX))
+            .sort()
+            .join('\n')
+    } catch {
+        return ''
+    }
+}

@@ -51,10 +51,6 @@ const {
     NoConnectionError: class NoConnectionError extends Error {},
 }))
 
-vi.mock('../useListPasskeysForBackup', () => ({
-    useListPasskeysForBackup: () => listPasskeysMock,
-}))
-
 // The mutation itself belongs to the package and is covered there. Standing
 // real react-query over a stub action keeps this file on what the hook still
 // owns: the buckets, the busy row and the toasts.
@@ -62,6 +58,7 @@ vi.mock('@perawallet/wallet-core-backup', async () => {
     const { useMutation } = await import('@tanstack/react-query')
     return {
         deriveBackupPasskeyReview: () => reviewMock.current,
+        useListPasskeyMetadataForBackup: () => listPasskeysMock,
         useBackupSyncStateStore: (selector: (s: unknown) => unknown) =>
             selector({ syncState: null }),
         useProvenPasskeysStore: (selector: (s: unknown) => unknown) =>

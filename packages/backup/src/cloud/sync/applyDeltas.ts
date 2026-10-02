@@ -18,7 +18,9 @@ import {
     DeltaOperation,
     isContactItemKey,
     isPasskeyItemKey,
+    isPasskeySecretsItemKey,
     isSettingsItemKey,
+    passkeyPartnerKey,
     type BackupId,
     type BackupItemKey,
     type DeltaEntry,
@@ -57,6 +59,30 @@ const isSecretsKey = (key: BackupItemKey): boolean =>
 
 const isAccountFamilyKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) || isSecretsKey(key)
+
+const isPasskeyFamilyKey = (key: BackupItemKey): boolean =>
+    isPasskeyItemKey(key) || isPasskeySecretsItemKey(key)
+
+/** A delta batch can carry one half of a pair; the other is re-read so the
+ *  import never sees a record without the key the backup already holds. */
+const withPasskeyPartners = (
+    keys: BackupItemKey[],
+    items: Record<string, SyncItemState>,
+): BackupItemKey[] => {
+    const wanted = new Set(keys)
+    for (const key of keys) {
+        const partner = passkeyPartnerKey(key)
+        if (partner === null || wanted.has(partner)) continue
+        const tracked = items[partner]
+        if (
+            tracked?.status === BackupItemStatus.ACTIVE &&
+            tracked.pendingImport !== true
+        ) {
+            wanted.add(partner)
+        }
+    }
+    return [...wanted]
+}
 
 export const applyDeltas = async ({
     state,
@@ -97,7 +123,7 @@ export const applyDeltas = async ({
         const isKnownKey =
             isAccountFamilyKey(d.key) ||
             isContactItemKey(d.key) ||
-            isPasskeyItemKey(d.key) ||
+            isPasskeyFamilyKey(d.key) ||
             isSettingsItemKey(d.key)
         // The user deleted this here and another device has since backed it up
         // again. Re-importing would undo that deletion behind their back, so
@@ -132,8 +158,12 @@ export const applyDeltas = async ({
         if (!isKnownKey) continue
         // A held item's own record is still downloaded, because its cached
         // address is what puts the row on the review screen. Only the secret
-        // stays untouched until the user adds the account back.
-        if (pendingImport && isSecretsKey(d.key)) continue
+        // stays untouched until the user adds the account or credential back.
+        if (
+            pendingImport &&
+            (isSecretsKey(d.key) || isPasskeySecretsItemKey(d.key))
+        )
+            continue
         const hashChanged =
             !existing ||
             existing.lastRemoteHash !== d.hash ||
@@ -147,7 +177,7 @@ export const applyDeltas = async ({
         deps.network,
         deps.backupId,
         deps.deviceId,
-        downloadKeys,
+        withPasskeyPartners(downloadKeys, items),
     )
 
     const accounts = collectAccountPayloads({
@@ -161,7 +191,7 @@ export const applyDeltas = async ({
         deps,
     })
     const passkeys = collectPasskeyPayloads({
-        fetched: fetched.filter(item => isPasskeyItemKey(item.key)),
+        fetched: fetched.filter(item => isPasskeyFamilyKey(item.key)),
         items,
         deps,
     })

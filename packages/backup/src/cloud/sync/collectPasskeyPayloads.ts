@@ -11,12 +11,17 @@
  */
 
 import { logger } from '@perawallet/wallet-core-shared'
-import { parsePasskeyPayload } from '../api/payloadParsers'
-import type {
-    BackupItemKey,
-    FetchedItem,
-    PasskeyBackupPayload,
-    SyncItemState,
+import {
+    parsePasskeyPayload,
+    parsePasskeySecretsPayload,
+} from '../api/payloadParsers'
+import {
+    isPasskeySecretsItemKey,
+    type BackupItemKey,
+    type FetchedItem,
+    type PasskeyBackupPayload,
+    type PasskeySecretsBackupPayload,
+    type SyncItemState,
 } from '../models'
 import {
     adoptRemote,
@@ -25,9 +30,11 @@ import {
     keepLocalEdit,
     type CollectPayloadsDeps,
 } from './collectPayloads'
+import type { PulledPasskey } from './types'
 
-/** `items` is mutated in place. Returns the credentials to write — one held for
- *  review is decrypted but deliberately left out. */
+/** `items` is mutated in place. Returns the credentials to write, each joined
+ *  to its secret by credential id — one held for review is decrypted but
+ *  deliberately left out. */
 export const collectPasskeyPayloads = ({
     fetched,
     items,
@@ -36,14 +43,37 @@ export const collectPasskeyPayloads = ({
     fetched: FetchedItem[]
     items: Record<BackupItemKey, SyncItemState>
     deps: CollectPayloadsDeps
-}): PasskeyBackupPayload[] => {
+}): PulledPasskey[] => {
     const toImport: PasskeyBackupPayload[] = []
+    const secrets = new Map<string, PasskeySecretsBackupPayload>()
 
     for (const item of fetched) {
         const plaintext = decryptItem(item, deps)
         if (plaintext === null) continue
 
         const existing = items[item.key]
+
+        // A held credential's secret is never downloaded (see `applyDeltas`),
+        // so one that arrives here is wanted. It has no editable field, so
+        // there is no local edit for it to lose to.
+        if (isPasskeySecretsItemKey(item.key)) {
+            let secret: PasskeySecretsBackupPayload
+            try {
+                secret = parsePasskeySecretsPayload(plaintext)
+            } catch {
+                logger.warn('collectPasskeyPayloads: failed to parse', {
+                    key: item.key,
+                })
+                continue
+            }
+            secrets.set(secret.credentialId, secret)
+            items[item.key] = {
+                ...adoptRemote(existing as SyncItemState, item, plaintext),
+                address: secret.credentialId,
+            }
+            continue
+        }
+
         if (existing && isLocalNewer(existing, plaintext)) {
             items[item.key] = keepLocalEdit(existing, item)
             continue
@@ -63,14 +93,14 @@ export const collectPasskeyPayloads = ({
 
         // Held for review: cache the label so the row can render something
         // other than a base64 credential id, but do not write — the user
-        // removed this credential here on purpose. Downloading it at all is
-        // only safe because the payload holds no key material.
+        // removed this credential here on purpose.
         if (existing?.pendingImport === true) {
             items[item.key] = {
                 ...existing,
                 knownVer: item.ver,
                 baseVer: item.ver,
                 lastRemoteHash: item.hash,
+                address: payload.credentialId,
                 label,
             }
             continue
@@ -79,9 +109,13 @@ export const collectPasskeyPayloads = ({
         toImport.push(payload)
         items[item.key] = {
             ...adoptRemote(items[item.key] as SyncItemState, item, plaintext),
+            address: payload.credentialId,
             label,
         }
     }
 
-    return toImport
+    return toImport.map(payload => ({
+        payload,
+        secret: secrets.get(payload.credentialId) ?? null,
+    }))
 }

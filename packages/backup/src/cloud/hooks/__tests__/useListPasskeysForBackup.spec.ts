@@ -12,8 +12,11 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useProvenPasskeysStore } from '@perawallet/wallet-core-backup'
-import { useListPasskeysForBackup } from '../useListPasskeysForBackup'
+import {
+    useListPasskeyMetadataForBackup,
+    useListPasskeysForBackup,
+} from '../useListPasskeysForBackup'
+import { useProvenPasskeysStore } from '../../store/provenPasskeysStore'
 
 const keystoreKeys = vi.fn().mockReturnValue([])
 const inputsFor = vi.fn()
@@ -22,8 +25,11 @@ const entropyChildIdOfMock = vi.fn<() => string | undefined>()
 const withSecretMock = vi.fn<() => Promise<Uint8Array | null>>()
 const zeroBytesMock = vi.fn<(secret: Uint8Array) => void>()
 const canAccessMock = vi.fn<(key: unknown, domain: string) => boolean>()
+const readPrivateKeyMock = vi.fn<(id: string) => Promise<Uint8Array | null>>()
+const disposeReaderMock = vi.fn(async () => {})
+const storedInputsFor = vi.fn()
 
-vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
+vi.mock('../../../chain-adapter', async importOriginal => ({
     ...(await importOriginal<object>()),
     backupSeedReference: (seedKeyId: string) =>
         backupSeedReferenceMock(seedKeyId),
@@ -39,11 +45,29 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({ state: { keys: keystoreKeys() } }),
+    keystoreSubtle: {},
 }))
 
 vi.mock('@perawallet/wallet-core-passkeys', () => ({
+    createPasskeyPrivateKeyReader: () =>
+        Object.assign((id: string) => readPrivateKeyMock(id), {
+            dispose: disposeReaderMock,
+        }),
+    isPasskeyKey: (key: { id: string }) => key.id !== 'seed-1',
     passkeyBackupInputs: (...args: unknown[]) => inputsFor(...args),
+    storedPasskeyBackupInputs: (...args: unknown[]) => storedInputsFor(...args),
 }))
+
+const derivedInputs = (credentialId = 'a') => ({
+    credentialId,
+    origin: 'webauthn.io',
+    identity: 'alice',
+    counter: 0,
+    publicKeySpkiDer: 'cHVi',
+    seedKeyId: 'seed-1',
+    createdAt: 1,
+    privateKey: new Uint8Array(32).fill(1),
+})
 
 describe('useListPasskeysForBackup', () => {
     beforeEach(() => {
@@ -54,20 +78,15 @@ describe('useListPasskeysForBackup', () => {
         withSecretMock.mockReset().mockResolvedValue(null)
         zeroBytesMock.mockReset()
         canAccessMock.mockReset().mockReturnValue(true)
+        readPrivateKeyMock.mockReset().mockResolvedValue(null)
+        disposeReaderMock.mockClear()
+        storedInputsFor.mockReset()
     })
 
     it('drops credentials that cannot be re-derived', async () => {
         keystoreKeys.mockReturnValue([{ id: 'a' }, { id: 'b' }])
         inputsFor
-            .mockResolvedValueOnce({
-                credentialId: 'a',
-                origin: 'webauthn.io',
-                identity: 'alice',
-                counter: 0,
-                publicKeySpkiDer: 'cHVi',
-                seedKeyId: 'seed-1',
-                createdAt: 1,
-            })
+            .mockResolvedValueOnce(derivedInputs())
             .mockResolvedValueOnce(null)
 
         const { result } = renderHook(() => useListPasskeysForBackup())
@@ -79,15 +98,7 @@ describe('useListPasskeysForBackup', () => {
 
     it('replaces the seed key id with the seed first-derived address', async () => {
         keystoreKeys.mockReturnValue([{ id: 'a' }])
-        inputsFor.mockResolvedValue({
-            credentialId: 'a',
-            origin: 'webauthn.io',
-            identity: 'alice',
-            counter: 0,
-            publicKeySpkiDer: 'cHVi',
-            seedKeyId: 'seed-1',
-            createdAt: 1,
-        })
+        inputsFor.mockResolvedValue(derivedInputs())
 
         const { result } = renderHook(() => useListPasskeysForBackup())
         const [passkey] = await result.current()
@@ -99,22 +110,68 @@ describe('useListPasskeysForBackup', () => {
 
     it('caches the result in the proven-passkeys store', async () => {
         keystoreKeys.mockReturnValue([{ id: 'a' }])
-        inputsFor.mockResolvedValue({
-            credentialId: 'a',
-            origin: 'webauthn.io',
-            identity: 'alice',
-            counter: 0,
-            publicKeySpkiDer: 'cHVi',
-            seedKeyId: 'seed-1',
-            createdAt: 1,
-        })
+        inputsFor.mockResolvedValue(derivedInputs())
 
         const { result } = renderHook(() => useListPasskeysForBackup())
         const passkeys = await result.current()
 
         expect(useProvenPasskeysStore.getState().provenPasskeys).toEqual(
-            passkeys,
+            passkeys.map(({ privateKey: _privateKey, ...passkey }) => passkey),
         )
+    })
+
+    it('never puts a private key in the proven-passkeys store', async () => {
+        keystoreKeys.mockReturnValue([{ id: 'a' }])
+        inputsFor.mockResolvedValue(derivedInputs())
+
+        const { result } = renderHook(() => useListPasskeysForBackup())
+        await result.current()
+
+        const [cached] = useProvenPasskeysStore.getState().provenPasskeys
+        expect(cached).not.toHaveProperty('privateKey')
+    })
+
+    it('uses the key a record holds without touching the seed', async () => {
+        keystoreKeys.mockReturnValue([{ id: 'a' }])
+        const stored = new Uint8Array(32).fill(2)
+        readPrivateKeyMock.mockResolvedValue(stored)
+        storedInputsFor.mockReturnValue({
+            ...derivedInputs(),
+            seedKeyId: undefined,
+            privateKey: stored,
+        })
+
+        const { result } = renderHook(() => useListPasskeysForBackup())
+        const [passkey] = await result.current()
+
+        expect(storedInputsFor).toHaveBeenCalledWith({ id: 'a' }, stored)
+        expect(inputsFor).not.toHaveBeenCalled()
+        expect(backupSeedReferenceMock).not.toHaveBeenCalled()
+        expect(passkey!.privateKey).toBe(stored)
+        expect(passkey!.seedAddress).toBeUndefined()
+    })
+
+    it('re-derives when the key a record holds does not match its public key', async () => {
+        keystoreKeys.mockReturnValue([{ id: 'a' }])
+        readPrivateKeyMock.mockResolvedValue(new Uint8Array(32).fill(2))
+        storedInputsFor.mockReturnValue(null)
+        inputsFor.mockResolvedValue(derivedInputs())
+
+        const { result } = renderHook(() => useListPasskeysForBackup())
+        const [passkey] = await result.current()
+
+        expect(inputsFor).toHaveBeenCalledTimes(1)
+        expect(passkey!.seedAddress).toBe('SEED-REF')
+    })
+
+    it('never reads a key for a keystore entry that is not a credential', async () => {
+        keystoreKeys.mockReturnValue([{ id: 'seed-1' }])
+
+        const { result } = renderHook(() => useListPasskeysForBackup())
+        await result.current()
+
+        expect(readPrivateKeyMock).not.toHaveBeenCalled()
+        expect(disposeReaderMock).toHaveBeenCalledTimes(1)
     })
 
     // Proving each credential costs a 210k-iteration PBKDF2 over the same seed
@@ -135,15 +192,7 @@ describe('useListPasskeysForBackup', () => {
                 resolveEntropy: (seedKeyId: string) => Promise<unknown>,
             ) => {
                 await resolveEntropy('seed-1')
-                return {
-                    credentialId: key.id,
-                    origin: 'webauthn.io',
-                    identity: 'alice',
-                    counter: 0,
-                    publicKeySpkiDer: 'cHVi',
-                    seedKeyId: 'seed-1',
-                    createdAt: 1,
-                }
+                return derivedInputs(key.id)
             },
         )
 
@@ -187,5 +236,43 @@ describe('useListPasskeysForBackup', () => {
         expect(resolved).toBeNull()
         expect(withSecretMock).not.toHaveBeenCalled()
         expect(passkeys).toEqual([])
+    })
+
+    // A KMS read that throws for one seed is an expected failure, and the
+    // keys other credentials already produced must not outlive it.
+    it('zeroes every key already read when another credential fails', async () => {
+        keystoreKeys.mockReturnValue([{ id: 'a' }, { id: 'b' }])
+        const stored = new Uint8Array(32).fill(2)
+        readPrivateKeyMock.mockImplementation(async id =>
+            id === 'a' ? stored : null,
+        )
+        storedInputsFor.mockReturnValue({
+            ...derivedInputs(),
+            seedKeyId: undefined,
+            privateKey: stored,
+        })
+        inputsFor.mockRejectedValue(new Error('KMS session denied'))
+
+        const { result } = renderHook(() => useListPasskeysForBackup())
+
+        await expect(result.current()).rejects.toThrow('KMS session denied')
+        expect(zeroBytesMock).toHaveBeenCalledWith(stored)
+        expect(disposeReaderMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('hands metadata-only callers no keys and zeroes them before resolving', async () => {
+        keystoreKeys.mockReturnValue([{ id: 'a' }])
+        const derived = derivedInputs()
+        inputsFor.mockResolvedValue(derived)
+
+        const { result } = renderHook(() => useListPasskeyMetadataForBackup())
+        const [passkey] = await result.current()
+
+        expect(passkey).not.toHaveProperty('privateKey')
+        expect(passkey!.credentialId).toBe('a')
+        expect(zeroBytesMock).toHaveBeenCalledWith(derived.privateKey)
+        expect(useProvenPasskeysStore.getState().provenPasskeys).toEqual([
+            passkey,
+        ])
     })
 })
