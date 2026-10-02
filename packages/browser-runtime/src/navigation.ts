@@ -18,6 +18,7 @@ export type ExpandedFlow =
     | 'asb-import'
     | 'backup-restore-scan'
     | 'backup-setup'
+    | 'recover-qr'
     | 'camera-access'
     | 'resume'
 
@@ -29,6 +30,7 @@ const FLOWS: readonly string[] = [
     'asb-import',
     'backup-restore-scan',
     'backup-setup',
+    'recover-qr',
     'camera-access',
     'resume',
 ]

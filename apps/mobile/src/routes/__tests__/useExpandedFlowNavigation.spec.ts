@@ -164,6 +164,19 @@ describe('useExpandedFlowNavigation', () => {
         expect(navigate).toHaveBeenCalledTimes(1)
     })
 
+    it('opens import options with the scanner up when the flow is recover-qr', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('recover-qr')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'ImportAccountOptions',
+            params: { isScannerOpen: true },
+        })
+    })
+
     it('navigates to CameraAccess when the flow is camera-access', () => {
         consumeInitialExpandedFlowMock.mockReturnValue('camera-access')
         const navigate = vi.fn()
@@ -220,6 +233,21 @@ describe('useOnboardingExpandedFlowNavigation', () => {
         result.current()
 
         expect(navigate).toHaveBeenCalledWith('CloudBackupRestoreScan')
+        expect(setIsOnboardingMock).toHaveBeenCalledWith(true)
+    })
+
+    it('opens import options with the scanner up for recover-qr', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('recover-qr')
+        const navigate = vi.fn()
+        const { result } = renderHook(() =>
+            useOnboardingExpandedFlowNavigation(navigate),
+        )
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('ImportAccountOptions', {
+            isScannerOpen: true,
+        })
         expect(setIsOnboardingMock).toHaveBeenCalledWith(true)
     })
 
