@@ -86,6 +86,9 @@ export type WriteNativePasskeyEntryParams = {
     counter?: number
     /** Optional last-used timestamp, preserved in metadata for parity. */
     lastUsedAtMs?: number | null
+    /** Unix ms. Kept so a restored credential backs up with the same
+     *  `createdAt` it was restored with, rather than a new one each sweep. */
+    createdAtMs?: number
 }
 
 const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
@@ -117,6 +120,7 @@ const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
             ? { displayName: params.displayName }
             : {}),
         count: params.count ?? 0,
+        ...(params.createdAtMs ? { createdAt: params.createdAtMs } : {}),
         ...(params.lastUsedAtMs != null
             ? { lastUsedAt: params.lastUsedAtMs }
             : {}),

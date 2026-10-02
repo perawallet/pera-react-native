@@ -39,6 +39,7 @@ export {
     accountItemKey,
     contactItemKey,
     passkeyItemKey,
+    passkeySecretsItemKey,
     secretsItemKey,
     settingsItemKey,
 } from './cloud/models/itemKeys'

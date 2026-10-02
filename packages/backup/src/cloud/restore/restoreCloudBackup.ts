@@ -28,7 +28,6 @@ import type {
     BackupItemKey,
     ContactBackupPayload,
     DeviceId,
-    PasskeyBackupPayload,
     SyncItemState,
     SyncState,
 } from '../models'
@@ -37,6 +36,7 @@ import type {
     ContactImportSummary,
     ImportSummary,
     PasskeyImportFn,
+    PulledPasskey,
     SettingsImportFn,
     SyncImportFn,
 } from '../sync/types'
@@ -207,7 +207,7 @@ const trackedItemsFromPull = (
  *  and contacts are already in place by the time this runs. */
 const importPasskeysSafely = async (
     importPasskeys: PasskeyImportFn,
-    passkeys: PasskeyBackupPayload[],
+    passkeys: PulledPasskey[],
 ): Promise<void> => {
     if (passkeys.length === 0) return
     try {

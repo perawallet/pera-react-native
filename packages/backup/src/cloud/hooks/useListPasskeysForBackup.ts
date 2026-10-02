@@ -12,11 +12,6 @@
 
 import { useCallback } from 'react'
 import {
-    backupSeedReference,
-    type BackupPasskey,
-    useProvenPasskeysStore,
-} from '@perawallet/wallet-core-backup'
-import {
     BACKUP_ACCESS_DOMAIN,
     canAccess,
     entropyChildIdOf,
@@ -24,12 +19,22 @@ import {
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import {
+    createPasskeyPrivateKeyReader,
+    isPasskeyKey,
     passkeyBackupInputs,
     readFlatKeystoreRecords,
+    storedPasskeyBackupInputs,
+    type PasskeyBackupInputs,
+    type PasskeyPrivateKeyReader,
 } from '@perawallet/wallet-core-passkeys'
 import { logger } from '@perawallet/wallet-core-shared'
-import { subtle } from 'react-native-quick-crypto'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    keystoreSubtle,
+} from '@perawallet/wallet-extension-provider'
+import { backupSeedReference } from '../../chain-adapter'
+import { useProvenPasskeysStore } from '../store/provenPasskeysStore'
+import type { BackupPasskey, LocalPasskey } from '../sync/types'
 
 /** Resolves a seed key id's entropy directly. `SeedEntropyResolver` keys by
  *  seed address because that is all a restored payload carries;
@@ -108,7 +113,7 @@ const collectCandidateKeys = async (): Promise<KeystoreKey[]> => {
     let flat
     try {
         flat = await readFlatKeystoreRecords({
-            subtle: subtle as unknown as SubtleCrypto,
+            subtle: keystoreSubtle,
         })
     } catch (error) {
         // Never fail the sweep over the flat scan: the store's own keys are
@@ -130,7 +135,103 @@ const collectCandidateKeys = async (): Promise<KeystoreKey[]> => {
     ]
 }
 
-export const useListPasskeysForBackup = (): (() => Promise<
+/** The record's own key wins because it needs no seed. Re-deriving covers a
+ *  biometric-wrapped Android key or an engine record without material. */
+const resolveBackupInputs = async (
+    key: KeystoreKey,
+    readPrivateKey: PasskeyPrivateKeyReader,
+    caches: SweepCaches,
+): Promise<PasskeyBackupInputs | null> => {
+    if (!isPasskeyKey(key)) return null
+    const stored = await readPrivateKey(key.id)
+    const fromRecord =
+        stored === null ? null : storedPasskeyBackupInputs(key, stored)
+    return (
+        fromRecord ??
+        passkeyBackupInputs(
+            key,
+            caches.resolveEntropy,
+            undefined,
+            caches.mainKeys,
+        )
+    )
+}
+
+const zeroPrivateKeys = (passkeys: readonly { privateKey: Uint8Array }[]) => {
+    for (const passkey of passkeys) zeroBytes(passkey.privateKey)
+}
+
+const sweepPasskeys = async (): Promise<LocalPasskey[]> => {
+    const keys = await collectCandidateKeys()
+
+    const caches = createSweepCaches()
+    const readPrivateKey = createPasskeyPrivateKeyReader({
+        subtle: keystoreSubtle,
+    })
+    let settled: PromiseSettledResult<PasskeyBackupInputs | null>[]
+    try {
+        // Settled rather than `Promise.all`: one credential's failure must not
+        // abandon the keys every other credential has already produced.
+        settled = await Promise.allSettled(
+            keys.map(key => resolveBackupInputs(key, readPrivateKey, caches)),
+        )
+    } finally {
+        await Promise.all([caches.dispose(), readPrivateKey.dispose()])
+    }
+
+    const resolved = settled.flatMap(result =>
+        result.status === 'fulfilled' && result.value !== null
+            ? [result.value]
+            : [],
+    )
+    const failure = settled.find(result => result.status === 'rejected')
+    if (failure) {
+        zeroPrivateKeys(resolved)
+        throw failure.reason
+    }
+
+    const passkeys: LocalPasskey[] = []
+    try {
+        for (const { seedKeyId, ...rest } of resolved) {
+            // The same dedup key `useResolveHdSeedForBackup` derives, joining
+            // to the seed's own `secrets/` backup item.
+            const seedAddress =
+                seedKeyId === undefined
+                    ? undefined
+                    : await backupSeedReference(seedKeyId)
+            passkeys.push({ ...rest, seedAddress })
+        }
+    } catch (error) {
+        zeroPrivateKeys(resolved)
+        throw error
+    }
+    return passkeys
+}
+
+const withoutPrivateKey = ({
+    privateKey: _privateKey,
+    ...passkey
+}: LocalPasskey): BackupPasskey => passkey
+
+export const useListPasskeysForBackup = (): (() => Promise<LocalPasskey[]>) => {
+    const setProvenPasskeys = useProvenPasskeysStore(
+        state => state.setProvenPasskeys,
+    )
+
+    return useCallback(async () => {
+        const passkeys = await sweepPasskeys()
+        // Re-deriving costs a PBKDF2 per owning seed, so the metadata is cached
+        // for the review screens and overview counts to read synchronously
+        // instead of re-running the sweep on a render path. Never the keys.
+        setProvenPasskeys(passkeys.map(withoutPrivateKey))
+        return passkeys
+    }, [setProvenPasskeys])
+}
+
+/** For callers that only show which credentials can be backed up. Proving one
+ *  still reads its key, but every key is zeroed before this resolves, so none
+ *  outlives the sweep. */
+export const useListPasskeyMetadataForBackup = (): (() => Promise<
     BackupPasskey[]
 >) => {
     const setProvenPasskeys = useProvenPasskeysStore(
@@ -138,41 +239,14 @@ export const useListPasskeysForBackup = (): (() => Promise<
     )
 
     return useCallback(async () => {
-        const keys = await collectCandidateKeys()
-
-        const caches = createSweepCaches()
-        let inputs
+        const passkeys = await sweepPasskeys()
+        let metadata: BackupPasskey[]
         try {
-            inputs = await Promise.all(
-                keys.map(key =>
-                    passkeyBackupInputs(
-                        key,
-                        caches.resolveEntropy,
-                        undefined,
-                        caches.mainKeys,
-                    ),
-                ),
-            )
+            metadata = passkeys.map(withoutPrivateKey)
         } finally {
-            await caches.dispose()
+            zeroPrivateKeys(passkeys)
         }
-
-        const passkeys: BackupPasskey[] = []
-        for (const input of inputs) {
-            if (input === null) continue
-            const { seedKeyId, ...rest } = input
-            // The same dedup key `useResolveHdSeedForBackup` derives, joining
-            // to the seed's own `secrets/` backup item.
-            passkeys.push({
-                ...rest,
-                seedAddress: await backupSeedReference(seedKeyId),
-            })
-        }
-
-        // Proving the credentials costs a PBKDF2 per owning seed, so this
-        // result is cached for the review screens and overview counts to read
-        // synchronously instead of re-deriving on a render path.
-        setProvenPasskeys(passkeys)
-        return passkeys
+        setProvenPasskeys(metadata)
+        return metadata
     }, [setProvenPasskeys])
 }

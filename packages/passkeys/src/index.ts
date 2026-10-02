@@ -26,6 +26,7 @@ export * from './native/writeNativePasskeyEntry'
 export * from './native/readFlaggedPasskeyCredentials'
 // Root-only for the same reason: it depends on the keystore package.
 export * from './native/readFlatKeystoreRecords'
+export * from './native/readPasskeyPrivateKey'
 export { subscribeToPasskeyChanges } from './native/passkeyChanges'
 export * from './errors'
 export * from './authenticator/authenticator'

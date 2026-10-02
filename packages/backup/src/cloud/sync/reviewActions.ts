@@ -17,12 +17,14 @@ import {
     parseAddressPayload,
     parseContactPayload,
     parsePasskeyPayload,
+    parsePasskeySecretsPayload,
     parseSecretsPayload,
 } from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import {
     isAccountItemKey,
+    passkeyPartnerKey,
     secretsItemKey,
     BACKUP_ACCOUNTS_KEY_PREFIX,
     BACKUP_CONTACTS_KEY_PREFIX,
@@ -594,6 +596,22 @@ export const importContactFromBackup = async ({
     }
 }
 
+/** Each tracked record with its secret. The secret is named from the
+ *  record's key, never matched on its cached address: a secret this device
+ *  never downloaded (held for review, or first seen as a delete) has none. */
+const passkeyKeysFor = (
+    state: SyncState,
+    credentialId: string,
+): BackupItemKey[] =>
+    trackedKeysUnder(state, credentialId, BACKUP_PASSKEYS_KEY_PREFIX).flatMap(
+        key => {
+            const secretKey = passkeyPartnerKey(key)
+            return secretKey !== null && state.items[secretKey]
+                ? [key, secretKey]
+                : [key]
+        },
+    )
+
 /** Mirror of `markContactForBackup`: dropping the tombstone rather than
  *  reviving it is what makes the re-upload correct, since the server deleted
  *  the key and it has to go back at version 0. */
@@ -602,11 +620,7 @@ export const markPasskeyForBackup = (
     credentialId: string,
 ): SyncState => {
     const items = { ...state.items }
-    for (const key of trackedKeysUnder(
-        state,
-        credentialId,
-        BACKUP_PASSKEYS_KEY_PREFIX,
-    )) {
+    for (const key of passkeyKeysFor(state, credentialId)) {
         delete items[key]
     }
     return { ...state, items }
@@ -624,19 +638,19 @@ export const keepPasskeyInBackup = (
     const key = liveKeyUnder(state, credentialId, BACKUP_PASSKEYS_KEY_PREFIX)
     if (key === null) return state
 
-    return {
-        ...state,
-        items: {
-            ...state.items,
-            [key]: {
-                ...(state.items[key] as SyncItemState),
-                pendingImport: true,
-                isDirty: false,
-                pendingDelete: false,
-                label,
-            },
-        },
+    const items = { ...state.items }
+    for (const held of passkeyKeysFor(state, credentialId).filter(
+        isLiveIn(state),
+    )) {
+        items[held] = {
+            ...(items[held] as SyncItemState),
+            pendingImport: true,
+            isDirty: false,
+            pendingDelete: false,
+        }
     }
+    items[key] = { ...(items[key] as SyncItemState), label }
+    return { ...state, items }
 }
 
 export const deletePasskeyFromBackup = async ({
@@ -648,8 +662,7 @@ export const deletePasskeyFromBackup = async ({
     credentialId: string
     deps: ReviewActionDeps
 }): Promise<BackupDeleteResult> => {
-    const key = liveKeyUnder(state, credentialId, BACKUP_PASSKEYS_KEY_PREFIX)
-    const keys = key === null ? [] : [key]
+    const keys = passkeyKeysFor(state, credentialId).filter(isLiveIn(state))
 
     return { state: await deleteKeysFromBackup({ state, keys, deps }), keys }
 }
@@ -666,8 +679,19 @@ const passkeyNotInBackup = (
     },
 })
 
-/** Re-reads the item rather than trusting the cached `label`, so `label` stays
- *  a pure display concern and writes have one code path. */
+const decryptWith =
+    (deps: ReviewActionDeps) =>
+    (item: FetchedItem): string =>
+        deps.decrypt(item.payload, {
+            encryptionKey: deps.encryptionKey,
+            backupId: deps.backupId,
+            key: item.key,
+        })
+
+/** Re-reads the items rather than trusting the cached `label`, so `label`
+ *  stays a pure display concern and writes have one code path. An unreadable
+ *  secret is not fatal: the import falls back to the owning seed, or reports
+ *  the credential as skipped. */
 export const importPasskeyFromBackup = async ({
     state,
     credentialId,
@@ -679,24 +703,23 @@ export const importPasskeyFromBackup = async ({
 }): Promise<{ state: SyncState; summary: PasskeyImportSummary }> => {
     const key = liveKeyUnder(state, credentialId, BACKUP_PASSKEYS_KEY_PREFIX)
     if (key === null) return passkeyNotInBackup(state, credentialId)
+    const partner = passkeyPartnerKey(key)
+    const secretKey =
+        partner !== null && isLiveIn(state)(partner) ? partner : null
 
-    const [fetched] = await deps.readItems(
+    const fetchedItems = await deps.readItems(
         deps.network,
         deps.backupId,
         deps.deviceId,
-        [key],
+        secretKey === null ? [key] : [key, secretKey],
     )
+    const byKey = new Map(fetchedItems.map(item => [item.key, item]))
+    const fetched = byKey.get(key)
     if (!fetched) return passkeyNotInBackup(state, credentialId)
 
     let payload
     try {
-        payload = parsePasskeyPayload(
-            deps.decrypt(fetched.payload, {
-                encryptionKey: deps.encryptionKey,
-                backupId: deps.backupId,
-                key,
-            }),
-        )
+        payload = parsePasskeyPayload(decryptWith(deps)(fetched))
     } catch (error) {
         logger.warn('reviewActions: unreadable passkey', { key })
         return {
@@ -717,21 +740,33 @@ export const importPasskeyFromBackup = async ({
         }
     }
 
-    const summary = await deps.importPasskeys([payload])
-    return {
-        state: {
-            ...state,
-            items: {
-                ...state.items,
-                [key]: {
-                    ...clearReviewed(
-                        state.items[key] as SyncItemState,
-                        fetched,
-                    ),
-                    label: payload.displayName ?? payload.origin,
-                },
-            },
-        },
-        summary,
+    const fetchedSecret = secretKey === null ? undefined : byKey.get(secretKey)
+    let secret = null
+    if (fetchedSecret) {
+        try {
+            secret = parsePasskeySecretsPayload(
+                decryptWith(deps)(fetchedSecret),
+            )
+        } catch {
+            logger.warn('reviewActions: unreadable passkey secret', {
+                key: secretKey,
+            })
+        }
     }
+
+    const summary = await deps.importPasskeys([{ payload, secret }])
+    const items = {
+        ...state.items,
+        [key]: {
+            ...clearReviewed(state.items[key] as SyncItemState, fetched),
+            label: payload.displayName ?? payload.origin,
+        },
+    }
+    if (secretKey !== null) {
+        items[secretKey] = clearReviewed(
+            state.items[secretKey] as SyncItemState,
+            fetchedSecret,
+        )
+    }
+    return { state: { ...state, items }, summary }
 }

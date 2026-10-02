@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
 import { batchUpsertItems, deleteItem, fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
@@ -23,7 +24,7 @@ import { fetchDeltaOrRebuild } from './rebuildFromManifest'
 import { reconcile } from './reconcile'
 import { reconcileLocalSettings } from './reconcileSettings'
 import { BackupSyncAbortedError } from './types'
-import type { LocalSnapshot, SyncEngineDeps } from './types'
+import type { LocalItem, LocalSnapshot, SyncEngineDeps } from './types'
 
 const abortIfStopped = (deps: SyncEngineDeps): void => {
     if (deps.isAborted()) throw new BackupSyncAbortedError()
@@ -80,6 +81,12 @@ export const syncBackup = async (
         })
         return []
     })
+    let passkeyItems: LocalItem[]
+    try {
+        passkeyItems = buildLocalPasskeyItems(passkeys, now, deps.hashAddress)
+    } finally {
+        for (const passkey of passkeys) zeroBytes(passkey.privateKey)
+    }
     const local: LocalSnapshot = {
         items: [
             ...accounts.items,
@@ -88,7 +95,7 @@ export const syncBackup = async (
                 now,
                 deps.hashAddress,
             ),
-            ...buildLocalPasskeyItems(passkeys, now, deps.hashAddress),
+            ...passkeyItems,
         ],
         // Account-only: a contact cannot fail to serialize, and a credential
         // that could not be re-derived never reaches this list.

@@ -27,6 +27,7 @@ import type {
     ContactBackupPayload,
     DeviceId,
     PasskeyBackupPayload,
+    PasskeySecretsBackupPayload,
     SecretsBackupPayload,
     SyncState,
 } from '../models'
@@ -81,23 +82,30 @@ export type SerializedItem = {
         | SecretsBackupPayload
         | ContactBackupPayload
         | PasskeyBackupPayload
+        | PasskeySecretsBackupPayload
 }
 
-/** A credential this device has already proven it can re-derive. `seedAddress`
- *  is the first-derived address of the owning seed, which is how the seed's
+/** A credential this device can back up: its private key was read from its
+ *  own record, or re-derived from its seed. `identity`, `counter` and
+ *  `seedAddress` are set only for the latter; `seedAddress` is the
+ *  first-derived address of the owning seed, which is how the seed's
  *  `secrets/` item is keyed. */
 export type BackupPasskey = {
     credentialId: string
     origin: string
-    identity: string
-    counter: number
+    identity?: string
+    counter?: number
     publicKeySpkiDer: string
-    seedAddress: string
+    seedAddress?: string
     userId?: string
     userName?: string
     displayName?: string
     createdAt: number
 }
+
+/** What the sweep hands the engine. `privateKey` is the raw 32-byte P-256
+ *  scalar; whoever receives it zeroes it, and it never reaches a store. */
+export type LocalPasskey = BackupPasskey & { privateKey: Uint8Array }
 
 export type SerializedAccount = {
     address: SerializedItem
@@ -159,9 +167,17 @@ export type ContactImportFn = (
 
 /** Why a credential in the backup was not written to this device. */
 export type PasskeySkipReason =
+    | 'secret-missing'
     | 'seed-missing'
     | 'pubkey-mismatch'
     | 'already-present'
+
+/** A credential's two backup items, joined. `secret` is `null` when the
+ *  `passkey-secrets/` item is absent or unreadable. */
+export type PulledPasskey = {
+    payload: PasskeyBackupPayload
+    secret: PasskeySecretsBackupPayload | null
+}
 
 export type PasskeyImportSummary = {
     imported: number
@@ -170,7 +186,7 @@ export type PasskeyImportSummary = {
 }
 
 export type PasskeyImportFn = (
-    passkeys: PasskeyBackupPayload[],
+    passkeys: PulledPasskey[],
 ) => Promise<PasskeyImportSummary>
 
 /** A value this device cannot apply is skipped; the sync keeps the remote's
@@ -202,9 +218,10 @@ export type SyncEngineDeps = {
     listContacts: () => Contact[]
     /** Decrypted remote contacts → contacts store (insert or update). */
     importContacts: ContactImportFn
-    /** Credentials this device has proven it can re-derive. Async because
-     *  proving one runs a PBKDF2 per owning seed inside a KMS session. */
-    listPasskeys: () => Promise<BackupPasskey[]>
+    /** Credentials this device can back up, with their private keys. Async
+     *  because a credential whose key is not readable is re-derived, which
+     *  runs a PBKDF2 per owning seed inside a KMS session. */
+    listPasskeys: () => Promise<LocalPasskey[]>
     /** Decrypted remote credentials → native provider records. */
     importPasskeys: PasskeyImportFn
     getSettings: () => BackupSettings

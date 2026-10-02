@@ -441,18 +441,28 @@ describe('pullBackupItems', () => {
         ])
     })
 
-    it('pulls active passkey items and returns their payloads', async () => {
+    it('pulls active passkey items and joins each to its secret', async () => {
+        const record = {
+            credentialId: 'Y3JlZC1pZA==',
+            origin: 'webauthn.io',
+            publicKeySpkiDer: 'cHVi',
+            createdAt: 1,
+        }
+        const secret = { credentialId: 'Y3JlZC1pZA==', privateKey: 'a2V5' }
+        const manifestItem = {
+            type: 'PASSKEY',
+            ver: 1,
+            status: 'ACTIVE',
+            hash: 'h1',
+            lastSeq: 1,
+        }
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'sha256:global',
             lastSeq: 1,
             items: {
-                'passkeys/Y3JlZC1pZA==': {
-                    type: 'PASSKEY',
-                    ver: 1,
-                    status: 'ACTIVE',
-                    hash: 'h1',
-                    lastSeq: 1,
-                },
+                'passkeys/Y3JlZC1pZA==': manifestItem,
+                'passkey-secrets/Y3JlZC1pZA==': manifestItem,
+                'passkeys/b3JwaGFu': manifestItem,
             },
         })
         readItems.mockResolvedValue([
@@ -460,25 +470,40 @@ describe('pullBackupItems', () => {
                 key: 'passkeys/Y3JlZC1pZA==',
                 ver: 1,
                 hash: 'h1',
+                payload: enc('passkeys/Y3JlZC1pZA==', JSON.stringify(record)),
+            },
+            {
+                key: 'passkey-secrets/Y3JlZC1pZA==',
+                ver: 1,
+                hash: 'h1',
                 payload: enc(
-                    'passkeys/Y3JlZC1pZA==',
-                    JSON.stringify({
-                        credentialId: 'Y3JlZC1pZA==',
-                        origin: 'webauthn.io',
-                        identity: 'alice',
-                        counter: 0,
-                        publicKeySpkiDer: 'cHVi',
-                        seedAddress: 'SEEDADDRESS',
-                        createdAt: 1,
-                    }),
+                    'passkey-secrets/Y3JlZC1pZA==',
+                    JSON.stringify(secret),
+                ),
+            },
+            {
+                key: 'passkeys/b3JwaGFu',
+                ver: 1,
+                hash: 'h1',
+                payload: enc(
+                    'passkeys/b3JwaGFu',
+                    JSON.stringify({ ...record, credentialId: 'b3JwaGFu' }),
                 ),
             },
         ])
 
         const result = await pull()
 
-        expect(result.passkeys).toHaveLength(1)
-        expect(result.passkeys[0].identity).toBe('alice')
+        expect(result.passkeys).toEqual([
+            { payload: record, secret },
+            {
+                payload: { ...record, credentialId: 'b3JwaGFu' },
+                secret: null,
+            },
+        ])
+        expect(result.addressByKey['passkey-secrets/Y3JlZC1pZA==']).toBe(
+            'Y3JlZC1pZA==',
+        )
     })
 
     it('records an unparseable passkey as skipped rather than throwing', async () => {

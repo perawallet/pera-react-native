@@ -15,11 +15,13 @@ import {
     addressBackupPayloadSchema,
     contactBackupPayloadSchema,
     passkeyBackupPayloadSchema,
+    passkeySecretsBackupPayloadSchema,
     secretsBackupPayloadSchema,
     settingsBackupPayloadSchema,
     type AddressBackupPayload,
     type ContactBackupPayload,
     type PasskeyBackupPayload,
+    type PasskeySecretsBackupPayload,
     type SecretsBackupPayload,
     type SettingsBackupPayload,
 } from '../models'
@@ -66,6 +68,11 @@ export const parseContactPayload = (raw: string): ContactBackupPayload =>
 
 export const parsePasskeyPayload = (raw: string): PasskeyBackupPayload =>
     parsePayload(passkeyBackupPayloadSchema, raw, 'passkey')
+
+export const parsePasskeySecretsPayload = (
+    raw: string,
+): PasskeySecretsBackupPayload =>
+    parsePayload(passkeySecretsBackupPayloadSchema, raw, 'passkey secrets')
 
 export const parseSettingsPayload = (raw: string): SettingsBackupPayload =>
     parsePayload(settingsBackupPayloadSchema, raw, 'settings')

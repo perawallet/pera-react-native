@@ -16,12 +16,9 @@ import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 import type { BackupPasskey } from '../sync/types'
 
 type ProvenPasskeysState = BaseStoreState & {
-    /** Credentials this device most recently proved it can re-derive.
-     *  Written by `listPasskeys` on every sync tick — proving one runs a
-     *  PBKDF2 per owning seed, so review screens and overview counts read
-     *  this instead of re-deriving on a render path. A credential minted
-     *  since the last sync is absent here until the next sync runs, the
-     *  same lag natively-minted credentials already accept. */
+    /** Never holds private keys. Written by every sync tick's sweep, which can
+     *  cost a PBKDF2 per seed, so render paths read this instead; a credential
+     *  minted since the last sync is absent until the next one. */
     provenPasskeys: BackupPasskey[]
 }
 

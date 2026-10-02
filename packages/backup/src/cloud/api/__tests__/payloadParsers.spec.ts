@@ -15,6 +15,7 @@ import {
     parseAddressPayload,
     parseContactPayload,
     parsePasskeyPayload,
+    parsePasskeySecretsPayload,
     parseSecretsPayload,
     BackupPayloadParseError,
 } from '../payloadParsers'
@@ -310,17 +311,46 @@ describe('parsePasskeyPayload', () => {
         expect(parsed.counter).toBe(0)
     })
 
-    it('rejects a payload missing the identity', () => {
-        const { identity: _dropped, ...withoutIdentity } = valid
+    it('parses a payload without derivation inputs', () => {
+        const {
+            identity: _identity,
+            counter: _counter,
+            seedAddress: _seedAddress,
+            ...withoutInputs
+        } = valid
+
+        expect(
+            parsePasskeyPayload(JSON.stringify(withoutInputs)).credentialId,
+        ).toBe(valid.credentialId)
+    })
+
+    it('rejects a payload missing the public key', () => {
+        const { publicKeySpkiDer: _dropped, ...withoutPublicKey } = valid
 
         expect(() =>
-            parsePasskeyPayload(JSON.stringify(withoutIdentity)),
+            parsePasskeyPayload(JSON.stringify(withoutPublicKey)),
         ).toThrow(BackupPayloadParseError)
     })
 
     it('rejects a negative counter', () => {
         expect(() =>
             parsePasskeyPayload(JSON.stringify({ ...valid, counter: -1 })),
+        ).toThrow(BackupPayloadParseError)
+    })
+})
+
+describe('parsePasskeySecretsPayload', () => {
+    it('parses a credential id and private key', () => {
+        const valid = { credentialId: 'Y3JlZC1pZA==', privateKey: 'a2V5' }
+
+        expect(parsePasskeySecretsPayload(JSON.stringify(valid))).toEqual(valid)
+    })
+
+    it('rejects a payload missing the private key', () => {
+        expect(() =>
+            parsePasskeySecretsPayload(
+                JSON.stringify({ credentialId: 'Y3JlZC1pZA==' }),
+            ),
         ).toThrow(BackupPayloadParseError)
     })
 })
