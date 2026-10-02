@@ -68,6 +68,8 @@ vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
         chainModule: {
             descriptor: descriptorEntry.algorandDescriptor,
             capabilityDefaults: descriptorEntry.algorandCapabilityDefaults,
+            capabilityRestrictions:
+                descriptorEntry.algorandCapabilityRestrictions,
             register: mocks.registerModule,
             i18nKeys: () => [],
         },
@@ -164,6 +166,45 @@ describe('registerChainAdapters', () => {
         expect(capabilities.swap).toBe(false)
         expect(capabilities.card).toBe(false)
         expect(capabilities.send).toBe(true)
+    })
+
+    describe('mode restrictions', () => {
+        it.each([
+            ['live', {}, true],
+            ['developer', {}, false],
+            ['developer', { algorand: 'betanet' }, false],
+        ] as const)(
+            'resolves onramp in %s mode with overrides %j as %s',
+            (mode, selectedNetworkByChain, expected) => {
+                mocks.networkGetState.mockReturnValue({
+                    mode,
+                    selectedNetworkByChain,
+                    customNetworksByChain: { algorand: [] },
+                })
+                registerChainAdapters()
+
+                expect(
+                    mocks.provider.chains.capabilities('algorand').onramp,
+                ).toBe(expected)
+            },
+        )
+
+        it('follows a mode change without registering again', () => {
+            registerChainAdapters()
+            expect(mocks.provider.chains.capabilities('algorand').onramp).toBe(
+                true,
+            )
+
+            mocks.networkGetState.mockReturnValue({
+                mode: 'developer',
+                selectedNetworkByChain: {},
+                customNetworksByChain: { algorand: [] },
+            })
+
+            expect(mocks.provider.chains.capabilities('algorand').onramp).toBe(
+                false,
+            )
+        })
     })
 
     describe('the chain context', () => {
