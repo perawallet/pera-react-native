@@ -10,17 +10,14 @@
  limitations under the License
  */
 
-import React, { useCallback, useState } from 'react'
-import { useNavigation, type NavigationProp } from '@react-navigation/native'
-import { closeCurrentTab } from '@perawallet/wallet-core-browser-runtime'
+import React from 'react'
 import { PWScreen, PWView } from '@components/core'
 // Explicit `.web` suffix: tsc has no platform-suffix resolution (same
 // reasoning as QRScannerView.web's `./styles.web` import). This screen is
 // itself web-only — it's registered only in WebMainRoutes.
 import { QRScannerContent } from '@components/QRScannerView/QRScannerContent.web'
-import { navigationRef } from '@routes/navigationRef'
-import type { RootStackParamList } from '@routes/types'
 import { useStyles } from './styles'
+import { useScanQRScreen } from './useScanQRScreen.web'
 
 /**
  * Full-page camera scanner (user-feedback round 2 #3): the expanded tab's
@@ -31,30 +28,8 @@ import { useStyles } from './styles'
  */
 export const ScanQRScreen = () => {
     const styles = useStyles()
-    const navigation = useNavigation<NavigationProp<RootStackParamList>>()
-    // Remount key: re-arms the camera after a non-dispatchable decode,
-    // mirroring QRScannerView.web's restart contract.
-    const [restartKey, setRestartKey] = useState(0)
-
-    // Deep-link side effects (sheets/navigation) commit in the same tick
-    // the scanner's success callback fires; popping synchronously unmounts
-    // this screen mid-commit and trips the shell error boundary. Defer the
-    // pop a tick, and skip it if the dispatch already navigated away.
-    const handleScanned = useCallback(() => {
-        setTimeout(() => {
-            if (navigationRef.getCurrentRoute()?.name !== 'ScanQR') return
-            if (navigation.canGoBack()) navigation.goBack()
-        }, 0)
-    }, [navigation])
-
-    const handleClose = useCallback(() => {
-        if (navigation.canGoBack()) {
-            navigation.goBack()
-            return
-        }
-        // Tab was opened purely to host the scanner (?flow=scan): close it.
-        void closeCurrentTab()
-    }, [navigation])
+    const { restartKey, handleScanned, handleClose, handleRestart } =
+        useScanQRScreen()
 
     return (
         <PWScreen
@@ -66,7 +41,7 @@ export const ScanQRScreen = () => {
                     key={restartKey}
                     onClose={handleClose}
                     onSuccess={handleScanned}
-                    onRestart={() => setRestartKey(key => key + 1)}
+                    onRestart={handleRestart}
                 />
             </PWView>
         </PWScreen>

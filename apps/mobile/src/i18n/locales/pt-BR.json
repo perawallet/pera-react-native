@@ -530,7 +530,14 @@
         "camera_access_close": "Fechar aba",
         "paste_label": "Ou cole um payload de QR",
         "paste_placeholder": "Cole um endereço ou URI do WalletConnect",
-        "paste_submit": "Enviar"
+        "paste_submit": "Enviar",
+        "invalid_code": "A Pera não consegue usar este código QR. Tente outro.",
+        "try_again": "Tentar novamente"
+    },
+    "camera_tab": {
+        "account_imported_title": "Conta importada",
+        "backup_restored_title": "Backup restaurado",
+        "body": "Você pode fechar esta aba e voltar para a extensão."
     },
     "paste_link": {
         "title": "Colar um link",
