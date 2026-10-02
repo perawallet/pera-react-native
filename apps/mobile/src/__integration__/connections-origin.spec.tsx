@@ -54,6 +54,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'origin-a',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'origin-a-key',
     name: 'Trading',
@@ -61,6 +62,7 @@ const SIGNING_ACCOUNT: WalletAccount = {
 const OTHER_ACCOUNT: WalletAccount = {
     id: 'origin-b',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: HD_TEST_ADDRESS,
     keyPairId: 'origin-b-key',
     name: 'DeFi',

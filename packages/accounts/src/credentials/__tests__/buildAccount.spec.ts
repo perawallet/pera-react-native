@@ -65,6 +65,7 @@ describe('buildAccount', () => {
     test('builds a legacy algo25 account keyed by its Algorand credential', () => {
         expect(buildAccount({ id: 'id', ...inputs.algo25 })).toStrictEqual({
             id: 'id',
+            chainId: 'algorand',
             address: 'ADDR',
             type: 'algo25',
             keyPairId: 'seed-ed25519',
@@ -91,6 +92,7 @@ describe('buildAccount', () => {
     test('builds a hardware account with its device details and no credentials', () => {
         expect(buildAccount({ id: 'id', ...inputs.hardware })).toStrictEqual({
             id: 'id',
+            chainId: 'algorand',
             address: 'ADDR',
             type: 'hardware',
             hardwareDetails: { ...device, accountIndex: 2 },
@@ -114,6 +116,7 @@ describe('buildAccount', () => {
     test('builds a watch account', () => {
         expect(buildAccount({ id: 'id', ...inputs.watch })).toStrictEqual({
             id: 'id',
+            chainId: 'algorand',
             address: 'ADDR',
             type: 'watch',
             provenance: { kind: 'watch' },

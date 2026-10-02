@@ -99,6 +99,7 @@ const resetNotificationPreferences = (): void => {
 const quantumAccount: WalletAccount = {
     id: 'quantum-1',
     type: AccountTypes.quantum,
+    chainId: 'algorand',
     address: QUANTUM_TEST_ADDRESS,
     keyPairId: 'quantum-1-key',
     name: 'Quantum account',
@@ -107,6 +108,7 @@ const quantumAccount: WalletAccount = {
 const watchedAccount: WalletAccount = {
     id: 'watch-1',
     type: AccountTypes.watch,
+    chainId: 'algorand',
     address: HD_TEST_ADDRESS,
     name: 'Watched account',
 }
@@ -114,6 +116,7 @@ const watchedAccount: WalletAccount = {
 const algo25Account: WalletAccount = {
     id: 'algo25-1',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'algo25-1-key',
     name: 'Algo25 account',

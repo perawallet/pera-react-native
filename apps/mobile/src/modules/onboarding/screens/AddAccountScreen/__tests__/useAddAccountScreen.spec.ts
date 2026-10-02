@@ -168,6 +168,7 @@ const HD_ACCOUNT = {
     id: 'hd-1',
     address: 'HD_ADDRESS',
     type: 'hdWallet' as const,
+    chainId: 'algorand' as const,
     hdWalletDetails: {
         account: 0,
         change: 0,
@@ -481,6 +482,7 @@ describe('useAddAccountScreen', () => {
             id: 'new-id',
             address: 'NEW_ADDRESS',
             type: 'hdWallet' as const,
+            chainId: 'algorand' as const,
             canSign: true,
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
@@ -530,6 +532,7 @@ describe('useAddAccountScreen', () => {
             id: 'new-id',
             address: 'NEW_ADDRESS',
             type: 'hdWallet' as const,
+            chainId: 'algorand' as const,
             canSign: true,
         }
         mockBuildHdWalletAccount.mockResolvedValue(newAccount)
@@ -801,6 +804,7 @@ describe('useAddAccountScreen', () => {
             id: 'new-hd',
             address: 'NEW_HD_ADDRESS',
             type: 'hdWallet' as const,
+            chainId: 'algorand' as const,
             canSign: true,
         }
         mockBuildNextHDAccount.mockResolvedValue(newAccount)
@@ -961,6 +965,7 @@ describe('useAddAccountScreen', () => {
             id: 'new-hd',
             address: 'NEW_HD_ADDRESS',
             type: 'hdWallet' as const,
+            chainId: 'algorand' as const,
             canSign: true,
         }
         mockBuildNextHDAccount.mockResolvedValue(newAccount)

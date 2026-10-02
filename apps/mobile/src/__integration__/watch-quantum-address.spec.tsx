@@ -127,6 +127,7 @@ describe('watch quantum address', () => {
             {
                 id: 'existing-1',
                 type: AccountTypes.watch,
+                chainId: 'algorand',
                 address: WATCH_TARGET_ADDRESS,
             },
         ])

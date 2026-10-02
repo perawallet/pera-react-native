@@ -45,6 +45,12 @@ export type AccountsState = BaseStoreState & {
     launchAccountAddress: Nullable<string>
     getSelectedAccount: () => Nullable<WalletAccount>
     setAccounts: (accounts: WalletAccount[]) => void
+    /**
+     * Appends one account, throwing `DuplicateAccountError` naming the
+     * existing account when its `accountKey` is already taken. Unlike
+     * `setAccounts`, which resolves duplicates silently.
+     */
+    addAccount: (account: WalletAccount) => void
     setSelectedAccountAddress: (address: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void
     /**

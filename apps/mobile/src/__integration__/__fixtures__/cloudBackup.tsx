@@ -75,6 +75,7 @@ export const seedAlgo25Account = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'algo25-1',
         type: AccountTypes.algo25,
+        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Algo25 Test',
@@ -122,6 +123,7 @@ export const seedHDWalletAccounts = async (params?: {
             // with the first's on `id`.
             id: `hd-${seedKeyId}-${account}-${keyIndex}`,
             type: AccountTypes.hdWallet,
+            chainId: 'algorand',
             address: derived.address,
             keyPairId: derived.keyPairId,
             name,

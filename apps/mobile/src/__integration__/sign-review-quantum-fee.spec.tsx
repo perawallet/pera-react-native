@@ -76,6 +76,7 @@ const seedQuantumSigner = async (): Promise<void> => {
     const quantumAccount: QuantumAccount = {
         id: account.id,
         type: AccountTypes.quantum,
+        chainId: 'algorand',
         address: REVIEW_SIGNER_ADDRESS,
         keyPairId: account.keyPairId ?? '',
         name: account.name,
@@ -97,6 +98,7 @@ const seedQuantumRekeyedToStandard = async (): Promise<void> => {
     const rekeyedQuantum: QuantumAccount = {
         id: 'rekeyed-quantum',
         type: AccountTypes.quantum,
+        chainId: 'algorand',
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'unused-once-rekeyed',
         name: 'Rekeyed Quantum',
@@ -118,6 +120,7 @@ const seedStandardRekeyedToQuantum = async (): Promise<void> => {
     const rekeyedWatch: WatchAccount = {
         id: 'rekeyed-watch',
         type: AccountTypes.watch,
+        chainId: 'algorand',
         address: REVIEW_RECEIVER_ADDRESS,
         name: 'Rekeyed Watch',
         rekeyAddress: REVIEW_SIGNER_ADDRESS,

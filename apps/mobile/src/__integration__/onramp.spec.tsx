@@ -367,6 +367,7 @@ const seedSelectedAccount = (): WalletAccount => {
     const account: WalletAccount = {
         id: 'buyer-1',
         type: AccountTypes.algo25,
+        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: 'buyer-key-1',
         name: 'Buyer',
@@ -391,6 +392,7 @@ const seedSignableAccount = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'buyer-1',
         type: AccountTypes.algo25,
+        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Buyer',

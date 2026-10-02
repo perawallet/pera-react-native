@@ -104,6 +104,7 @@ export const seedAlgo25Signer = async (): Promise<WalletAccount> => {
     const account: WalletAccount = {
         id: 'review-signer',
         type: AccountTypes.algo25,
+        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Review Signer',
@@ -131,6 +132,7 @@ export const seedQuantumSigner = async (): Promise<WalletAccount> => {
     const account: QuantumAccount = {
         id: 'review-quantum-signer',
         type: AccountTypes.quantum,
+        chainId: 'algorand',
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: keyResult!.signKeyId,
         name: 'Quantum Review Signer',

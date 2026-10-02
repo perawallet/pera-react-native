@@ -56,6 +56,7 @@ describe('Flow: Ledger imported account row checkbox', () => {
             {
                 id: 'hw-ledger-1',
                 type: AccountTypes.hardware,
+                chainId: 'algorand',
                 address: LEDGER_ADDRESS,
                 hardwareDetails: {
                     manufacturer: 'ledger',

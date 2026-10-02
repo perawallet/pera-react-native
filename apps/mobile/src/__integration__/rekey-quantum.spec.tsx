@@ -159,6 +159,7 @@ const seedRekeyInAccounts = async (): Promise<{
     const source: WalletAccount = {
         id: 'rekey-in-source',
         type: AccountTypes.algo25,
+        chainId: 'algorand',
         address: ALGO25_TEST_ADDRESS,
         keyPairId: key!.seedKey.id ?? '',
         name: 'Source',
@@ -166,6 +167,7 @@ const seedRekeyInAccounts = async (): Promise<{
     const quantumTarget: WalletAccount = {
         id: 'rekey-in-quantum-target',
         type: AccountTypes.quantum,
+        chainId: 'algorand',
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'rekey-in-quantum-target-key',
         name: 'Quantum target',
@@ -199,6 +201,7 @@ const seedRekeyOutAccounts = async (): Promise<{
     const quantumSource: WalletAccount = {
         id: 'rekey-out-quantum-source',
         type: AccountTypes.quantum,
+        chainId: 'algorand',
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: 'rekey-out-quantum-source-key',
         name: 'Quantum source',
@@ -206,6 +209,7 @@ const seedRekeyOutAccounts = async (): Promise<{
     const target: WalletAccount = {
         id: 'rekey-out-target',
         type: AccountTypes.algo25,
+        chainId: 'algorand',
         address: HD_TEST_ADDRESS,
         keyPairId: 'rekey-out-target-key',
         name: 'Target',

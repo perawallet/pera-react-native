@@ -74,6 +74,7 @@ const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
 const HOLDER: WalletAccount = {
     id: 'gallery-holder',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'gallery-holder-key',
     name: 'Gallery Holder',

@@ -85,6 +85,7 @@ const blockOnSignature = (): Promise<Uint8Array> => {
 const ledgerAccount: HardwareWalletAccount = {
     id: 'hw-ledger-1',
     type: AccountTypes.hardware,
+    chainId: 'algorand',
     address: LEDGER_ADDRESS,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -122,6 +123,7 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
         const rekeyedSender: WalletAccount = {
             id: 'rekeyed-sender',
             type: AccountTypes.watch,
+            chainId: 'algorand',
             address: REKEYED_SENDER_ADDRESS,
             rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed sender',
@@ -224,6 +226,7 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
         const rekeyedSender: WalletAccount = {
             id: 'rekeyed-sender',
             type: AccountTypes.watch,
+            chainId: 'algorand',
             address: REKEYED_SENDER_ADDRESS,
             rekeyAddress: AUTH_ADDRESS,
             name: 'Rekeyed sender',

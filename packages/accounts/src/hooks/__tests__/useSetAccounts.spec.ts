@@ -62,6 +62,7 @@ describe('useSetAccounts', () => {
                 id: '1',
                 address: 'A',
                 type: 'algo25',
+                chainId: 'algorand',
                 canSign: true,
                 name: 'A',
             },

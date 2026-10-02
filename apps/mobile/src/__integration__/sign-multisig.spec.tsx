@@ -59,6 +59,7 @@ const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const multisigAccount: MultiSigAccount = {
     id: 'msig-signable',
     type: AccountTypes.multisig,
+    chainId: 'algorand',
     address: MSIG_ADDRESS,
     name: 'Shared',
     multisigDetails: {

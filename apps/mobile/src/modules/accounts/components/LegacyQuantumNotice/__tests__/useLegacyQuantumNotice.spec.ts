@@ -42,6 +42,7 @@ import { useLegacyQuantumNotice } from '../useLegacyQuantumNotice'
 const LEGACY_ACCOUNT: WalletAccount = {
     id: 'legacy-account-1',
     type: AccountTypes.quantum,
+    chainId: 'algorand',
     address: 'LEGACYADDRESS',
     keyPairId: 'seed-1-quantum',
 }
@@ -49,6 +50,7 @@ const LEGACY_ACCOUNT: WalletAccount = {
 const CANONICAL_ACCOUNT: WalletAccount = {
     id: 'canonical-account-1',
     type: AccountTypes.quantum,
+    chainId: 'algorand',
     address: 'CANONICALADDRESS',
     keyPairId: 'seed-2-quantum-pqk1',
 }

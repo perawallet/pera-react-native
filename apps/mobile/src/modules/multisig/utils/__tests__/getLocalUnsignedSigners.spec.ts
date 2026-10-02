@@ -37,6 +37,7 @@ import { getLocalUnsignedSigners } from '../getLocalUnsignedSigners'
 const buildAlgo25Account = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address,
     keyPairId: `kp-${address}`,
 })
@@ -44,6 +45,7 @@ const buildAlgo25Account = (address: string): WalletAccount => ({
 const buildQuantumAccount = (address: string): WalletAccount => ({
     id: `quantum-${address}`,
     type: AccountTypes.quantum,
+    chainId: 'algorand',
     address,
     keyPairId: `kp-${address}`,
 })
@@ -51,6 +53,7 @@ const buildQuantumAccount = (address: string): WalletAccount => ({
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
     type: AccountTypes.hardware,
+    chainId: 'algorand',
     address,
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -155,6 +158,7 @@ describe('getLocalUnsignedSigners', () => {
         const watch: WalletAccount = {
             id: 'watch-w',
             type: AccountTypes.watch,
+            chainId: 'algorand',
             address: 'W',
         }
         const signRequest = buildSignRequest(['A', 'W'])
@@ -178,6 +182,7 @@ describe('getLocalUnsignedSigners', () => {
         const rekeyed: WalletAccount = {
             id: 'watch-rekeyed-local',
             type: AccountTypes.watch,
+            chainId: 'algorand',
             address: 'PARTICIPANT',
             rekeyAddress: 'AUTH',
         }
@@ -193,6 +198,7 @@ describe('getLocalUnsignedSigners', () => {
         const rekeyed: WalletAccount = {
             id: 'watch-rekeyed-hardware',
             type: AccountTypes.watch,
+            chainId: 'algorand',
             address: 'PARTICIPANT',
             rekeyAddress: 'AUTH',
         }

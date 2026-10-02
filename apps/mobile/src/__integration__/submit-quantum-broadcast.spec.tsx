@@ -91,6 +91,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     const sender: WalletAccount = {
         id: 'quantum-sender-1',
         type: AccountTypes.quantum,
+        chainId: 'algorand',
         address: QUANTUM_TEST_ADDRESS,
         keyPairId: keyResult!.signKeyId,
         name: 'Quantum sender',

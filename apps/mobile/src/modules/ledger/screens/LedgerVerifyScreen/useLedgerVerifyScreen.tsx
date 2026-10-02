@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAccountsStore,
@@ -277,6 +278,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     number: nextDefaultNameNumber++,
                 }),
                 type: AccountTypes.hardware,
+                chainId: LEGACY_CHAIN_ID,
                 address: acc.address,
                 hardwareDetails: detailsFor(acc),
             })
@@ -311,6 +313,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     batch.push({
                         id: generateOrderedUniqueId(),
                         type: AccountTypes.watch,
+                        chainId: LEGACY_CHAIN_ID,
                         address: sel.address,
                         rekeyAddress: sel.authAccount.address,
                     })

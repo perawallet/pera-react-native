@@ -39,6 +39,7 @@ const DEVICE_ID = 'test-device-id'
 const SIGNER: WalletAccount = {
     id: 'signer-1',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'signer-key',
     name: 'Trading',

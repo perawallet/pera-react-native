@@ -202,6 +202,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
             {
                 id: 'pre-seeded',
                 type: AccountTypes.algo25,
+                chainId: 'algorand',
                 address: ALGO25_TEST_ADDRESS,
                 keyPairId: 'pre-seeded-keypair-id',
             },

@@ -597,6 +597,7 @@ describe('useLedgerVerifyScreen', () => {
             const untouched = {
                 id: 'hw-1',
                 type: AccountTypes.hardware,
+                chainId: 'algorand',
                 address: 'LEDGER0',
                 hardwareDetails: {
                     manufacturer: 'ledger',

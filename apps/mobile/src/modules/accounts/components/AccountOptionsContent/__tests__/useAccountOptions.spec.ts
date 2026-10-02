@@ -176,6 +176,7 @@ describe('useAccountOptions', () => {
         id: 'acc-1',
         address: 'ALGO25ADDRESS',
         type: AccountTypes.algo25,
+        chainId: 'algorand',
         keyPairId: 'key-1',
         name: 'My Account',
     }
@@ -184,12 +185,14 @@ describe('useAccountOptions', () => {
         id: 'acc-2',
         address: 'WATCHADDRESS',
         type: AccountTypes.watch,
+        chainId: 'algorand',
     }
 
     const quantumAccount: WalletAccount = {
         id: 'acc-q',
         address: 'QUANTUMADDRESS',
         type: AccountTypes.quantum,
+        chainId: 'algorand',
         keyPairId: 'key-q',
         name: 'My Quantum Account',
     }
@@ -198,6 +201,7 @@ describe('useAccountOptions', () => {
         id: 'acc-3',
         address: 'REKEYEDADDRESS',
         type: AccountTypes.algo25,
+        chainId: 'algorand',
         keyPairId: 'key-3',
         rekeyAddress: 'AUTHADDRESS',
     }
@@ -206,6 +210,7 @@ describe('useAccountOptions', () => {
         id: 'acc-5',
         address: 'REKEYEDWATCHADDRESS',
         type: AccountTypes.watch,
+        chainId: 'algorand',
         rekeyAddress: 'ALGO25ADDRESS',
     }
 
@@ -213,6 +218,7 @@ describe('useAccountOptions', () => {
         id: 'acc-4',
         address: 'HARDWAREADDRESS',
         type: AccountTypes.hardware,
+        chainId: 'algorand',
         hardwareDetails: {
             manufacturer: 'ledger',
             deviceId: 'test-device',
@@ -226,6 +232,7 @@ describe('useAccountOptions', () => {
         id: 'acc-6',
         address: 'MULTISIGADDRESS',
         type: AccountTypes.multisig,
+        chainId: 'algorand',
         multisigDetails: {
             threshold: 2,
             addresses: ['ALGO25ADDRESS', 'HARDWAREADDRESS'],
@@ -1183,6 +1190,7 @@ describe('useAccountOptions', () => {
                 id: 'acc-rekeyed',
                 address: 'SOMEOTHERADDRESS',
                 type: AccountTypes.algo25,
+                chainId: 'algorand',
                 keyPairId: 'key-rekeyed',
                 rekeyAddress: 'ALGO25ADDRESS',
             }
@@ -1212,6 +1220,7 @@ describe('useAccountOptions', () => {
                 id: 'acc-rekeyed',
                 address: 'SOMEOTHERADDRESS',
                 type: AccountTypes.algo25,
+                chainId: 'algorand',
                 keyPairId: 'key-rekeyed',
                 rekeyAddress: 'ALGO25ADDRESS',
             }
@@ -1258,6 +1267,7 @@ describe('useAccountOptions', () => {
                 id: 'acc-ledger',
                 address: 'LEDGERADDRESS',
                 type: AccountTypes.hardware,
+                chainId: 'algorand',
                 hardwareDetails: {
                     manufacturer: 'ledger',
                     deviceId: 'test-device',

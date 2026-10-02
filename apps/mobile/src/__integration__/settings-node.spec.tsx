@@ -48,6 +48,7 @@ const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
 const SAME_ADDRESS_ACCOUNT: WalletAccount = {
     id: 'multi-network',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'multi-network-key',
     name: 'Multi-network Account',

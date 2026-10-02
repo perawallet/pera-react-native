@@ -40,12 +40,14 @@ describe('useAccountsRekeyedTo', () => {
     it('reads the store to find the accounts rekeyed to the address', () => {
         const rekeyed = {
             type: 'algo25',
+            chainId: 'algorand',
             address: 'A',
             keyPairId: 'k',
             rekeyAddress: 'PQ',
         } as WalletAccount
         const target = {
             type: 'quantum',
+            chainId: 'algorand',
             address: 'PQ',
             keyPairId: 'k2',
         } as WalletAccount

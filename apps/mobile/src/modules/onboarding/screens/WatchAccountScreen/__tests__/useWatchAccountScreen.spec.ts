@@ -220,6 +220,7 @@ describe('useWatchAccountScreen', () => {
             id: 'mock-uuid',
             address: 'VALID_ALGORAND_ADDRESS',
             type: 'watch',
+            chainId: 'algorand',
         }
 
         expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
@@ -253,6 +254,7 @@ describe('useWatchAccountScreen', () => {
                 id: 'mock-uuid',
                 address: 'VALID_ALGORAND_ADDRESS',
                 type: 'watch',
+                chainId: 'algorand',
             },
         ])
     })
@@ -309,6 +311,7 @@ describe('useWatchAccountScreen', () => {
             id: 'mock-uuid',
             address: QUANTUM_TEST_ADDRESS,
             type: AccountTypes.watch,
+            chainId: 'algorand',
         }
 
         expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])

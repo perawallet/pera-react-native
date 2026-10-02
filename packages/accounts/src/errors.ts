@@ -17,6 +17,7 @@ import {
     type ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
+import type { WalletAccount } from './models'
 
 /**
  * Base account error
@@ -92,11 +93,21 @@ export class HDImportSessionNotFoundError extends AccountError {
  * imported addresses render a chip rather than a checkbox).
  */
 export class DuplicateAccountError extends AccountError {
-    constructor(address: string) {
+    constructor(
+        address: string,
+        existingAccount?: Pick<WalletAccount, 'id' | 'name'>,
+    ) {
         super(
-            `Account with address ${address} is already in the wallet`,
+            existingAccount
+                ? `Account with address ${address} is already in the wallet as ${existingAccount.name ?? existingAccount.id}`
+                : `Account with address ${address} is already in the wallet`,
             undefined,
-            { params: { address } },
+            {
+                params: {
+                    address,
+                    existingAccountId: existingAccount?.id,
+                },
+            },
         )
     }
 }

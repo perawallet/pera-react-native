@@ -13,11 +13,13 @@
 import { useCallback, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAccountsStore,
     useAllAccounts,
     AccountTypes,
     type WalletAccount,
+    type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { trackEvent, OnboardingEvent } from '@analytics'
@@ -64,10 +66,11 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
             return
         }
 
-        const newAccount = {
+        const newAccount: WatchAccount = {
             id: generateOrderedUniqueId(),
             address: resolvedAddress,
             type: AccountTypes.watch,
+            chainId: LEGACY_CHAIN_ID,
         }
 
         setAccounts([...accounts, newAccount])

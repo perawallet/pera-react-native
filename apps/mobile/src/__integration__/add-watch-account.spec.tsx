@@ -111,6 +111,7 @@ describe('Flow: Add Account → Watch address', () => {
             {
                 id: 'existing-1',
                 type: AccountTypes.watch,
+                chainId: 'algorand',
                 address: WATCH_TARGET_ADDRESS,
             },
         ])

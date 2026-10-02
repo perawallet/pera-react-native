@@ -74,6 +74,7 @@ const USDC_ASSET = {
 const ACCOUNT_A: WalletAccount = {
     id: 'portfolio-a',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'portfolio-a-key',
     name: 'Trading',
@@ -82,6 +83,7 @@ const ACCOUNT_A: WalletAccount = {
 const ACCOUNT_B: WalletAccount = {
     id: 'portfolio-b',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: HD_TEST_ADDRESS,
     keyPairId: 'portfolio-b-key',
     name: 'Long-term',

@@ -30,12 +30,14 @@ const MOCK_ACCOUNTS = [
         id: '1',
         address: 'ACC1',
         type: AccountTypes.watch,
+        chainId: 'algorand' as const,
         rekeyAddress: 'REKEY',
     },
     {
         id: '2',
         address: 'ACC2',
         type: AccountTypes.watch,
+        chainId: 'algorand' as const,
         rekeyAddress: 'REKEY',
     },
 ]

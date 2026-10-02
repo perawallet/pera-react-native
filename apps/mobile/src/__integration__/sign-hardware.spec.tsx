@@ -79,6 +79,7 @@ const blockOnSignature = (): Promise<Uint8Array> => {
 const ledgerAccount: HardwareWalletAccount = {
     id: 'hw-ledger-1',
     type: AccountTypes.hardware,
+    chainId: 'algorand',
     address: LEDGER_ADDRESS,
     hardwareDetails: {
         manufacturer: 'ledger',

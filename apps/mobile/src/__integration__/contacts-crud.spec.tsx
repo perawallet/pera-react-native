@@ -142,6 +142,7 @@ const EditContactHost = () => {
 const SENDER_ACCOUNT: WalletAccount = {
     id: 'sender-1',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'sender-key',
     name: 'Sender',

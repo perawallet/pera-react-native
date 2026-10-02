@@ -26,6 +26,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 const TRADING: WalletAccount = {
     id: 'a-1',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: ALGO25_TEST_ADDRESS,
     keyPairId: 'a-key',
     name: 'Trading',
@@ -34,6 +35,7 @@ const TRADING: WalletAccount = {
 const SAVINGS: WalletAccount = {
     id: 'a-2',
     type: AccountTypes.algo25,
+    chainId: 'algorand',
     address: HD_TEST_ADDRESS,
     keyPairId: 'b-key',
     name: 'Savings',

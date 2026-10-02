@@ -307,6 +307,7 @@ describe('useCreateAccount', () => {
                 id: 'ACC1',
                 address: 'ADDR1',
                 type: 'algo25',
+                chainId: 'algorand',
                 keyPairId: 'SEED1-ed25519',
             },
             seedKeyId: 'SEED1',

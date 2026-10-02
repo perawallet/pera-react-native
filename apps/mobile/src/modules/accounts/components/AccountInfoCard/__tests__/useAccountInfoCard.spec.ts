@@ -71,6 +71,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 const hdAccount: HDWalletAccount = {
     id: 'hd-account',
     type: 'hdWallet',
+    chainId: 'algorand',
     address: 'HD_ADDR',
     keyPairId: 'key-1',
     hdWalletDetails: {
@@ -84,6 +85,7 @@ const hdAccount: HDWalletAccount = {
 const ledgerAccount: HardwareWalletAccount = {
     id: 'ledger-account',
     type: 'hardware',
+    chainId: 'algorand',
     address: 'LEDGER_ADDR',
     hardwareDetails: {
         manufacturer: 'ledger',
@@ -97,12 +99,14 @@ const ledgerAccount: HardwareWalletAccount = {
 const watchAccount: WalletAccount = {
     id: 'watch-account',
     type: 'watch',
+    chainId: 'algorand',
     address: 'WATCH_ADDR',
 }
 
 const multisigAccount: MultiSigAccount = {
     id: 'multisig-account',
     type: 'multisig',
+    chainId: 'algorand',
     address: 'MULTISIG_ADDR',
     multisigDetails: {
         threshold: 2,
@@ -114,6 +118,7 @@ const multisigAccount: MultiSigAccount = {
 const quantumAccount: WalletAccount = {
     id: 'quantum-account',
     type: 'quantum',
+    chainId: 'algorand',
     address: 'QUANTUM_ADDR',
     keyPairId: 'key-1',
 }
@@ -178,6 +183,7 @@ describe('useAccountInfoCard', () => {
         const subLedgerAccount: HardwareWalletAccount = {
             id: 'ledger-sub-account',
             type: 'hardware',
+            chainId: 'algorand',
             address: 'LEDGER_SUB_ADDR',
             hardwareDetails: {
                 manufacturer: 'ledger',

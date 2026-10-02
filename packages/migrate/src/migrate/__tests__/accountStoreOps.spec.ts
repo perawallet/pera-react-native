@@ -37,6 +37,7 @@ const buildWalletAccount = (
 ): WalletAccount =>
     ({
         type: AccountTypes.algo25,
+        chainId: 'algorand',
         address: 'ADDR_A',
         name: 'Account A',
         keyPairId: 'kp-a',

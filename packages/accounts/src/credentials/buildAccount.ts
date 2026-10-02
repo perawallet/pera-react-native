@@ -153,6 +153,7 @@ export const buildAccount = <P extends AccountProvenance>(
     return {
         id: id ?? generateOrderedUniqueId(),
         ...(name !== undefined ? { name } : {}),
+        chainId: LEGACY_CHAIN_ID,
         address,
         ...legacyFieldsOf(provenance, credentials),
         ...(rekeyAddress !== undefined ? { rekeyAddress } : {}),
