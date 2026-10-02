@@ -328,6 +328,28 @@ describe('restoreCloudBackup', () => {
         expect(syncState.items[UNREADABLE_KEY].address ?? null).toBeNull()
     })
 
+    // A newer client may add item kinds; their keys are hashed, so they must
+    // not be mistaken for the legacy layout the restore refuses.
+    test('restores a backup holding an item kind it does not know and keeps tracking it', async () => {
+        const unknownKey = `fixture-kind/${hashAddress('FIXADDR')}`
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            manifestItems: {
+                ...pull.manifestItems,
+                [unknownKey]: manifestItem({ ver: 4 }),
+            },
+        })
+
+        const { syncState } = await restoreCloudBackup(params())
+
+        expect(importAccounts).toHaveBeenCalledWith(pull.accounts)
+        expect(syncState.items[unknownKey]).toMatchObject({
+            knownVer: 4,
+            status: 'ACTIVE',
+        })
+        expect(syncState.items[unknownKey].address ?? null).toBeNull()
+    })
+
     test('keeps a restore whose accounts landed when the contact import throws', async () => {
         importContacts.mockRejectedValue(new Error('store unavailable'))
 
