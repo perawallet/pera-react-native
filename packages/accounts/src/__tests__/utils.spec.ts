@@ -22,6 +22,7 @@ import {
     hasSigningKeys,
     isAlgo25Account,
     isQuantumAccount,
+    isHardwareWalletAccount,
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
@@ -295,6 +296,32 @@ describe('services/accounts/utils - account type checks', () => {
             } as any),
         ).toBe(true)
     })
+
+    const guards: Record<AccountType, (account: WalletAccount) => boolean> = {
+        algo25: isAlgo25Account,
+        quantum: isQuantumAccount,
+        hdWallet: isHDWalletAccount,
+        hardware: isHardwareWalletAccount,
+        multisig: isMultisigAccount,
+        watch: isWatchAccount,
+    }
+
+    test.each(Object.values(AccountTypes))(
+        'the %s guard follows provenance over a contradicting stored type',
+        type => {
+            const storedType =
+                type === AccountTypes.watch
+                    ? AccountTypes.algo25
+                    : AccountTypes.watch
+            const account = {
+                ...buildTestAccount(type),
+                type: storedType,
+            } as WalletAccount
+
+            expect(guards[type](account)).toBe(true)
+            expect(guards[storedType](account)).toBe(false)
+        },
+    )
 
     test('hasSigningKeys checks keyPairId', () => {
         expect(hasSigningKeys(baseAccount)).toBe(true)

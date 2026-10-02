@@ -685,10 +685,10 @@ describe('services/accounts/store', () => {
 
             expect(updated).toBe(true)
             const stored = useAccountsStore.getState().accounts[0]
-            expect(
-                stored.type === 'hardware' &&
-                    stored.hardwareDetails.deviceId === 'new-device',
-            ).toBe(true)
+            expect(stored).toMatchObject({
+                type: 'hardware',
+                hardwareDetails: { deviceId: 'new-device' },
+            })
             expect(stored.name).toBe('Ledger 1')
             expect(useAccountsStore.getState().accounts).toHaveLength(1)
         })

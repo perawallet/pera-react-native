@@ -136,9 +136,10 @@ export type BaseWalletAccount = {
      */
     rekeyAddressByNetwork?: Partial<Record<Network, string>>
     /**
-     * `type` and its details stay authoritative. The store backfills these two
-     * on every write, except on a record missing the details its `type`
-     * requires (e.g. a multisig without `multisigDetails`).
+     * Classification reads this (see `accountType`), falling back to `type`
+     * when absent. `setAccounts` only fills a missing one, so a write that
+     * changes `type` or its details must go through `rebuildCustody` or the old
+     * kind sticks. A record missing the details its `type` requires stays bare.
      */
     provenance?: AccountProvenance
     /** Keyed by chain; empty when no local key signs for the account. */

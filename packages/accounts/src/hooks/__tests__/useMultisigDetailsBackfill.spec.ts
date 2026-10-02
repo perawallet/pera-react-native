@@ -32,10 +32,6 @@ vi.mock('../useUpdateAccount', () => ({
     useUpdateAccount: () => mocks.updateAccount,
 }))
 
-vi.mock('../../utils', () => ({
-    isMultisigAccount: (account: WalletAccount) => account.type === 'multisig',
-}))
-
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     useMultisigAccountDetailQuery: mocks.useMultisigAccountDetailQuery,
     multisigAdapterFor: mocks.multisigAdapterFor,
