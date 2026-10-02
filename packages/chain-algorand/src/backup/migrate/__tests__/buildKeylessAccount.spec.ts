@@ -12,6 +12,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {

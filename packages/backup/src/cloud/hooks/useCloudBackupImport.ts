@@ -13,7 +13,6 @@
 import { useCallback, useMemo } from 'react'
 import {
     buildAccount,
-    deriveHdAccount,
     DuplicateAccountError,
     useAccountsStore,
     useImportAccount,
@@ -24,23 +23,17 @@ import {
     type WalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    isValidAlgorandAddress,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import {
     hexToBytes,
+    kmsCore,
     mnemonicWordsToIndices,
     useKMS,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
-import {
-    generateOrderedUniqueId,
-    logger,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import { backupAdapterFor, type BackupChainAdapter } from '../../chain-adapter'
 import {
     BackupAccountType,
     type Algo25AddressPayload,
@@ -64,7 +57,7 @@ type ImportContext = Pick<
     ReturnType<typeof useKMS>,
     'keys' | 'hasSeedWithEntropy' | 'persistHDMasterKey'
 > & {
-    network: Network
+    adapter: BackupChainAdapter
     importAccount: ReturnType<typeof useImportAccount>
     updateAccount: ReturnType<typeof useUpdateAccount>
     appendAccount: (account: WalletAccount) => void
@@ -81,16 +74,20 @@ const nameField = (
 ): { name: string } | Record<string, never> =>
     customName ? { name: customName } : {}
 
-const assertValidAddress = (address: string): void => {
-    if (!isValidAlgorandAddress(address)) {
-        throw new Error(`Invalid Algorand address: ${address}`)
+const assertValidAddress = (
+    { adapter }: ImportContext,
+    address: string,
+): void => {
+    if (!addressCodecs.get(adapter.chainId).isValid(address)) {
+        throw new Error(`Invalid ${adapter.chainId} address: ${address}`)
     }
 }
 
 const buildHardwareAccount = (
+    context: ImportContext,
     payload: HardwareAddressPayload,
 ): HardwareWalletAccount => {
-    assertValidAddress(payload.address)
+    assertValidAddress(context, payload.address)
     return buildAccount({
         address: payload.address,
         provenance: {
@@ -107,8 +104,11 @@ const buildHardwareAccount = (
     })
 }
 
-const buildWatchAccount = (payload: WatchAddressPayload): WatchAccount => {
-    assertValidAddress(payload.address)
+const buildWatchAccount = (
+    context: ImportContext,
+    payload: WatchAddressPayload,
+): WatchAccount => {
+    assertValidAddress(context, payload.address)
     return buildAccount({
         address: payload.address,
         provenance: { kind: 'watch' },
@@ -117,10 +117,10 @@ const buildWatchAccount = (payload: WatchAddressPayload): WatchAccount => {
 }
 
 const buildMultisigAccount = (
+    { adapter }: ImportContext,
     payload: MultisigAddressPayload,
 ): MultiSigAccount => {
-    // The backup format predates chain scopes, so every entry is the legacy chain's.
-    const derived = multisigChainAdapters.get(LEGACY_CHAIN_ID).deriveAddress({
+    const derived = multisigChainAdapters.get(adapter.chainId).deriveAddress({
         version: payload.version,
         threshold: payload.threshold,
         addresses: payload.participantAddresses,
@@ -143,16 +143,24 @@ const buildMultisigAccount = (
 }
 
 const buildHdWalletAccount = async (
-    { network }: ImportContext,
+    { adapter }: ImportContext,
     seedKeyId: string,
     payload: HdWalletAddressPayload,
 ): Promise<HDWalletAccount> => {
-    // Deriving also commits the child key to the keystore under `keyPairId`.
-    const derived = await deriveHdAccount(network, seedKeyId, {
+    const hdWalletDetails: HDWalletAccount['hdWalletDetails'] = {
         account: payload.account,
+        change: payload.change,
         keyIndex: payload.keyIndex,
-        derivationType: payload.derivationType,
-    })
+        derivationType:
+            payload.derivationType as HDWalletAccount['hdWalletDetails']['derivationType'],
+    }
+    // Derivation also commits the child key to the keystore, so no separate
+    // `generateDerivedKey` call is needed here.
+    const derived = await adapter.deriveHdAccount(
+        kmsCore,
+        seedKeyId,
+        hdWalletDetails,
+    )
     if (derived.address !== payload.address) {
         throw new Error(
             `hdWallet address mismatch: derived ${derived.address} != backup ${payload.address}`,
@@ -160,19 +168,9 @@ const buildHdWalletAccount = async (
     }
     return buildAccount({
         address: payload.address,
-        provenance: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: {
-                account: payload.account,
-                change: payload.change,
-                keyIndex: payload.keyIndex,
-                derivationType:
-                    payload.derivationType as HDWalletAccount['hdWalletDetails']['derivationType'],
-            },
-        },
+        provenance: { kind: 'local', seed: 'bip39', hd: hdWalletDetails },
         credentials: {
-            [LEGACY_CHAIN_ID]: { keyPairId: derived.keyPairId },
+            [adapter.chainId]: { keyPairId: derived.keyPairId },
         },
         ...nameField(payload.customName),
     })
@@ -229,7 +227,7 @@ const importFromMnemonic = async (
  * base64 + entropy-driven import and is not yet interoperable.
  */
 const persistSeedFromBackup = async (
-    { persistHDMasterKey, network }: ImportContext,
+    { adapter, persistHDMasterKey }: ImportContext,
     secretsPayload: { seed: string; entropy: string },
 ): Promise<{ seedKeyId: string; firstDerivedAddress: string }> => {
     if (secretsPayload.seed.length % 2 !== 0) {
@@ -246,11 +244,10 @@ const persistSeedFromBackup = async (
     // `persistHDMasterKey` zeroes `rootKey`/`entropy` in a finally.
     await persistHDMasterKey({ keyId: seedKeyId, rootKey, entropy })
 
-    const first = await deriveHdAccount(network, seedKeyId, {
-        account: 0,
-        keyIndex: 0,
-    })
-    return { seedKeyId, firstDerivedAddress: first.address }
+    return {
+        seedKeyId,
+        firstDerivedAddress: await adapter.seedReference(kmsCore, seedKeyId),
+    }
 }
 
 /**
@@ -259,9 +256,9 @@ const persistSeedFromBackup = async (
  * unguarded re-restore orphans a second copy of the user's HD root.
  */
 const resolveHeldSeeds = async ({
+    adapter,
     keys,
     hasSeedWithEntropy,
-    network,
 }: ImportContext): Promise<Map<string, string>> => {
     const held = new Map<string, string>()
     for (const seedKeyId of keys.keys()) {
@@ -269,11 +266,7 @@ const resolveHeldSeeds = async ({
         // nothing to derive an address path against.
         if (!hasSeedWithEntropy(seedKeyId)) continue
         try {
-            const first = await deriveHdAccount(network, seedKeyId, {
-                account: 0,
-                keyIndex: 0,
-            })
-            held.set(first.address, seedKeyId)
+            held.set(await adapter.seedReference(kmsCore, seedKeyId), seedKeyId)
         } catch (error) {
             // A seed we can't derive against can't be matched, so it just
             // doesn't participate in the guard.
@@ -401,17 +394,17 @@ const importOneAccount = async (
         }
 
         case BackupAccountType.hardware: {
-            context.appendAccount(buildHardwareAccount(addressPayload))
+            context.appendAccount(buildHardwareAccount(context, addressPayload))
             return 1
         }
 
         case BackupAccountType.watch: {
-            context.appendAccount(buildWatchAccount(addressPayload))
+            context.appendAccount(buildWatchAccount(context, addressPayload))
             return 1
         }
 
         case BackupAccountType.multisig: {
-            context.appendAccount(buildMultisigAccount(addressPayload))
+            context.appendAccount(buildMultisigAccount(context, addressPayload))
             return 1
         }
 
@@ -480,11 +473,10 @@ const importBatch = async (
     return summary
 }
 
-const useImportContext = (): ImportContext => {
+const useImportContext = (): Omit<ImportContext, 'adapter'> => {
     const importAccount = useImportAccount()
     const updateAccount = useUpdateAccount()
     const { keys, hasSeedWithEntropy, persistHDMasterKey } = useKMS()
-    const { network } = useNetwork()
     // Reading the hook-subscribed snapshot would close over a single render's
     // account list, so back-to-back appends in the loop would clobber each
     // other. We always read+write the live store instead.
@@ -495,7 +487,6 @@ const useImportContext = (): ImportContext => {
             keys,
             hasSeedWithEntropy,
             persistHDMasterKey,
-            network,
             importAccount,
             updateAccount,
             appendAccount: newAccount =>
@@ -508,7 +499,6 @@ const useImportContext = (): ImportContext => {
             keys,
             hasSeedWithEntropy,
             persistHDMasterKey,
-            network,
             importAccount,
             updateAccount,
             setAccounts,
@@ -519,8 +509,11 @@ const useImportContext = (): ImportContext => {
 export const useCloudBackupImport = (): UseCloudBackupImportResult => {
     const context = useImportContext()
 
+    // Resolved before the seed pre-pass so a build without the chain's adapter
+    // refuses the whole restore instead of half-importing it.
     const importAccounts = useCallback(
-        (accounts: PulledAccount[]) => importBatch(context, accounts),
+        async (accounts: PulledAccount[]) =>
+            importBatch({ ...context, adapter: backupAdapterFor() }, accounts),
         [context],
     )
 

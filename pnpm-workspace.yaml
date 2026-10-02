@@ -144,16 +144,11 @@ auditConfig:
     # chain resolves a patched version itself — and revisit immediately if a
     # `linking` config is ever added.
     - GHSA-vcc3-ghjq-m6fr # decode-uri-component: exponential-time decoding
-    # node-forge RSA PKCS#1 v1.5 signature forgery. No patched release exists:
-    # GitHub reports first_patched_version: null, and pnpm's ">=1.4.1" names a
-    # version that was never published, so there is nothing to override to. It
-    # reaches the --prod graph only because `expo` declares @expo/cli as a
-    # runtime dep; the CLI uses it for dev-server manifest signing and
-    # `expo run:ios` provisioning-cert parsing, on a developer machine. No app
-    # or extension code imports it and expo-updates is not installed, so nothing
-    # shipped verifies a signature with it. Drop this entry and raise the
-    # node-forge@1 override once a fixed release is published.
-    - GHSA-86w9-cpqp-85rv # node-forge: nested DigestAlgorithm signature forgery
+    # node-forge has no patched release (first_patched_version: null; npm's
+    # latest is 1.4.0). Its only consumers are @expo/cli and
+    # @expo/code-signing-certificates, dev/build tooling that never ships to a
+    # device. Drop this entry and bump the node-forge@1 override once a fix lands.
+    - GHSA-86w9-cpqp-85rv # node-forge: lax RSA PKCS#1 v1.5 signature verification
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
@@ -325,11 +320,11 @@ overrides:
   # GHSA-rgw5-rvv9-x895 is patched per major line, not by one version: the 1.x
   # and 2.x consumers (minimatch@3/@9 via eslint, glob, @expo/cli) default-import
   # brace-expansion, and 5.x only ships a named `expand` export — so they have to
-  # stay on their own patched lines rather than all pointing at 5.x. 5.0.12 also
-  # covers GHSA-6j4f-fj2g-mc7p, GHSA-qhr7-859c-m2p7 and GHSA-q2hr-2g5m-vwhr (CPU
-  # denial of service on crafted patterns).
-  brace-expansion@1: 1.1.18
-  brace-expansion@2: 2.1.4
+  # stay on their own patched lines rather than all pointing at 5.x. Each line is
+  # pinned to its floor for GHSA-6j4f-fj2g-mc7p, GHSA-qhr7-859c-m2p7 and
+  # GHSA-q2hr-2g5m-vwhr (DoS on crafted patterns), which 5.0.12 also covers.
+  brace-expansion@1: 1.1.21
+  brace-expansion@2: 2.1.7
   brace-expansion@3: 5.0.12
   brace-expansion@4: 5.0.12
   brace-expansion@5: 5.0.12

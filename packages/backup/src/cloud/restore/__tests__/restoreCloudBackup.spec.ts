@@ -20,7 +20,6 @@ const {
     persistBackupKeysMock,
     deleteBackupKeysMock,
     pullBackupItemsMock,
-    deriveHdAccountMock,
     keystoreKeysMock,
     secretBytesById,
     withSecretMock,
@@ -33,7 +32,6 @@ const {
         persistBackupKeysMock: vi.fn(),
         deleteBackupKeysMock: vi.fn(),
         pullBackupItemsMock: vi.fn(),
-        deriveHdAccountMock: vi.fn(),
         keystoreKeysMock: vi.fn().mockReturnValue([]),
         secretBytesById,
         // Mirrors `withSecret`'s real contract: hands the handler a live
@@ -68,8 +66,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 }))
 // Real `entropyChildIdOf`/`seedSchemeOf`/`SeedScheme`/`zeroBytes`, so the
 // acceptance test below exercises the actual seed-lookup logic; only the
-// secret read (`withSecret`, which needs a real keystore backend) and the
-// seed's first derive (`deriveHdAccount`) are faked.
+// secret read (`withSecret`, which needs a real keystore backend) is faked.
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     ...(await importOriginal<object>()),
     withSecret: withSecretMock,
@@ -110,6 +107,8 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useCloudBackupPasskeyImport } from '../../hooks/useCloudBackupPasskeyImport'
 import { useResolveSeedEntropyForBackup } from '../../hooks/useResolveSeedEntropyForBackup'
+import { backupChainAdapters } from '../../../chain-adapter'
+import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
@@ -566,9 +565,10 @@ describe('restoreCloudBackup: passkey acceptance', () => {
 
         // A single on-device bip39 seed ("device B") whose first-derived
         // address matches the payload's `seedAddress`.
-        deriveHdAccountMock
-            .mockReset()
-            .mockResolvedValue({ address: SEED_ADDRESS })
+        backupChainAdapters.reset()
+        backupChainAdapters.register(
+            fakeBackupAdapter({ seedReference: async () => SEED_ADDRESS }),
+        )
         keystoreKeysMock.mockReturnValue([
             {
                 id: 'seed-b',

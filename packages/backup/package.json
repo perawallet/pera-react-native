@@ -50,7 +50,7 @@
         "typescript": "catalog:",
         "vite": "catalog:",
         "vitest": "catalog:",
-        "algosdk": "catalog:",
+        "@scure/base": "catalog:",
         "react-dom": "catalog:"
     }
 }

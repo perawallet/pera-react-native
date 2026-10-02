@@ -22,7 +22,7 @@ import {
     algo25SeedToIndices,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import { useMarkMnemonicBackupComplete } from '../mnemonic'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 
 /**
  * Copy the first 32 bytes off `privateKey` so the caller's buffer is left

@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { parseBackupEnvelope } from '../parse-backup-envelope'
-import { AsbImportError, AsbErrorReason } from '../../errors'
+import { AsbImportError, AsbErrorReason } from '@perawallet/wallet-core-backup'
 
 const makeEnvelopeFile = (envelope: unknown): string =>
     encodeToBase64(new TextEncoder().encode(JSON.stringify(envelope)))

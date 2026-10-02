@@ -28,7 +28,7 @@ import {
     KeyContext,
     XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
-import { encodeAddress } from 'algosdk'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 const HD_ENTROPY_HEX =
     '6d6967726174696f6e2d73696d756c61746f722d68642d77616c6c65742d3031'
@@ -122,7 +122,7 @@ const sk64FromSeed = (seed: Buffer): Buffer => {
 }
 
 const addressFromSeed = (seed: Buffer): string =>
-    encodeAddress(new Uint8Array(seedToPublicKey(seed)))
+    encodeAlgorandAddress(new Uint8Array(seedToPublicKey(seed)))
 
 describe('generateMigrationFixtures (tool)', () => {
     test('emits FixtureCrypto.kt', async () => {
@@ -147,7 +147,7 @@ describe('generateMigrationFixtures (tool)', () => {
                 keyIndex,
                 BIP32DerivationType.Peikert,
             )
-            const address = encodeAddress(pubkey)
+            const address = encodeAlgorandAddress(pubkey)
             const sk64 = Buffer.concat([
                 Buffer.from(pubkey),
                 Buffer.from(pubkey),

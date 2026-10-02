@@ -17,9 +17,12 @@ import {
     decodeFromBase64,
 } from '@perawallet/wallet-core-shared'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
-import { backupIndicesToKey, generateBackupCipherKey } from '../../crypto'
-import { AsbErrorReason, AsbImportError } from '../../errors'
-import { AsbAccountKind, type AsbBackupEnvelope } from '../../models'
+import { backupIndicesToKey, generateBackupCipherKey } from '../asb-crypto'
+import { AsbErrorReason, AsbImportError } from '@perawallet/wallet-core-backup'
+import {
+    AsbAccountKind,
+    type AsbBackupEnvelope,
+} from '@perawallet/wallet-core-backup'
 import { decryptBackupPayload } from '../decrypt-backup-payload'
 
 const RECOVERY_MNEMONIC =

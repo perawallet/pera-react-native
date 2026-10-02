@@ -27,6 +27,13 @@ const keyValueStorage = {
     },
 }
 
+// The backup package reaches the passkeys native writer, which imports a
+// module with no loadable build outside a device runtime.
+vi.mock('@algorandfoundation/react-native-keystore', () => ({
+    readMasterKey: vi.fn(async () => new Uint8Array(32)),
+    storage: { get: vi.fn(), set: vi.fn(), getString: vi.fn() },
+}))
+
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({ keyValueStorage }),
     getPlatformServices: () => ({ keyValueStorage }),

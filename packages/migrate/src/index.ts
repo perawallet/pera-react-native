@@ -12,6 +12,7 @@
 
 export const name = '@perawallet/wallet-core-migrate'
 
+export * from './chain-adapter'
 export * from './hooks'
 export * from './migrate'
 export * from './store'

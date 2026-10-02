@@ -17,7 +17,10 @@ import {
     DuplicateAccountError,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { AsbAccountKind, type AsbBackupAccount } from '../../models'
+import {
+    AsbAccountKind,
+    type AsbBackupAccount,
+} from '@perawallet/wallet-core-backup'
 
 const mockImportAlgo25 = vi.fn()
 const mockUpdateAccount = vi.fn()
@@ -46,7 +49,8 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     zeroBytes: (...args: unknown[]) => mockZeroBytes(...args),
 }))
 
-vi.mock('../../../mnemonic', () => ({
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    AsbAccountKind: { Single: 'single', Watch: 'watch' },
     useMarkMnemonicBackupComplete: () => mockMarkBackupComplete,
 }))
 
