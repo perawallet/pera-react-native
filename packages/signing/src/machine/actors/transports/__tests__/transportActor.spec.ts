@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../../../__tests__/registerAlgorandAccounts'
 import { createActor, toPromise } from 'xstate'
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {

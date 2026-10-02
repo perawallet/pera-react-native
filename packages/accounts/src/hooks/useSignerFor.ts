@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getSignerFor } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
@@ -20,7 +21,8 @@ export const useSignerFor = (
 ): WalletAccount | null => {
     const accounts = useAccountsStore(state => state.accounts)
     return useMemo(
-        () => (address ? getSignerFor(address, accounts) : null),
+        () =>
+            address ? getSignerFor(address, accounts, LEGACY_CHAIN_ID) : null,
         [address, accounts],
     )
 }

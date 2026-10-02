@@ -15,10 +15,10 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    type Arc60ParsedPayload,
-    type Arc60SignRequest,
+    type AuthDataSignRequest,
+    type ParsedAuthData,
     type SigningLifecycleEvent,
-    isArc60OriginMismatch,
+    isAuthDataOriginMismatch,
     isExternalCallbackSource,
     resolveAllSignerAddresses,
     useLastSigningEvent,
@@ -40,9 +40,9 @@ import type { SigningStackParamList } from '@modules/signing/routes'
 type NavigationProp = StackNavigationProp<SigningStackParamList, 'Arc60Signing'>
 
 type UseArc60SigningScreenResult = {
-    request: Nullable<Arc60SignRequest>
+    request: Nullable<AuthDataSignRequest>
     account: Optional<WalletAccount>
-    parsed: Nullable<Arc60ParsedPayload>
+    parsed: Nullable<ParsedAuthData>
     isPending: boolean
     canConfirm: boolean
     /** Localized copy for the pipeline's failure, resolved for direct display. */
@@ -72,12 +72,12 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const pipeline = useSigningPipeline()
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const request =
-        (pipeline.currentRequest as Optional<Arc60SignRequest>) ?? null
+        (pipeline.currentRequest as Optional<AuthDataSignRequest>) ?? null
 
-    const account = useFindAccountByAddress(request?.stdSigData.signer ?? '')
+    const account = useFindAccountByAddress(request?.authData.signer ?? '')
     const isQuantumBlocked = useIsQuantumDataSigningBlocked(request)
     const parsed =
-        pipeline.resolved?.kind.type === 'arc60'
+        pipeline.resolved?.kind.type === 'auth-data'
             ? pipeline.resolved.kind.parsed
             : null
 
@@ -91,10 +91,10 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     )
     const isApproving = !!signingStarted
 
-    // `sourceType: 'arc60'` marks the first-party card-creation request (the
+    // `sourceType: 'card'` marks the first-party card-creation request (the
     // only local producer of ARC-60 requests); dApp-originated ones come in as
     // 'injected' / 'webview' / 'walletconnect' and must not fire card events.
-    const isCardRequest = request?.sourceType === 'arc60'
+    const isCardRequest = request?.sourceType === 'card'
 
     const handleApprove = useCallback(() => {
         // Backstop for the blocked terminal state — the confirm control is
@@ -137,10 +137,10 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
 
     const isPending = pipeline.isLoading || isApproving
     const canConfirm =
-        !isPending && !!account && parsed?.type === 'siwa' && !isQuantumBlocked
+        !isPending && !!account && parsed?.type === 'siwx' && !isQuantumBlocked
 
-    const hasOriginMismatch = isArc60OriginMismatch(
-        request?.stdSigData.domain ?? '',
+    const hasOriginMismatch = isAuthDataOriginMismatch(
+        request?.authData.domain ?? '',
         request?.verifiedOrigin,
     )
 

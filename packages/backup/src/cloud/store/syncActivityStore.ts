@@ -18,16 +18,20 @@ type BackupSyncActivityState = BaseStoreState & {
     /** True while the manager holds the sync slot, for any reason — periodic,
      *  account-change, socket-driven pull, review action or the manual button. */
     isSyncing: boolean
+    /** `backupBusyItemKey`s of review actions queued or running, so a row keeps
+     *  its spinner when its screen is left and reopened. */
+    busyItems: string[]
 }
 
 type BackupSyncActivityActions = {
     setIsSyncing: (isSyncing: boolean) => void
+    setBusyItems: (busyItems: string[]) => void
 }
 
 export type BackupSyncActivityStore = BackupSyncActivityState &
     BackupSyncActivityActions
 
-const initialState = { isSyncing: false }
+const initialState = { isSyncing: false, busyItems: [] as string[] }
 
 /**
  * Deliberately not persisted: this describes a run that only exists inside the
@@ -38,6 +42,7 @@ export const useBackupSyncActivityStore = create<BackupSyncActivityStore>()(
     set => ({
         ...initialState,
         setIsSyncing: isSyncing => set({ isSyncing }),
+        setBusyItems: busyItems => set({ busyItems }),
         resetState: () => set(initialState),
     }),
 )

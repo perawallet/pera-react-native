@@ -33,22 +33,20 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-const mockIsEligibleSharedRekeyTarget = vi.fn(
-    (
-        account: WalletAccount,
-        _source: WalletAccount,
-        _allAccounts: WalletAccount[],
-    ) => account.address !== 'SRC',
+const mockUseAuthorityTargets = vi.fn(
+    (_source: WalletAccount | undefined, _kind: string, _options?: object) => [
+        targetA,
+        targetB,
+    ],
 )
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [sourceAccount, targetA, targetB],
     useFindAccountByAddress: (address: string) =>
         address === 'SRC' ? sourceAccount : undefined,
-    isEligibleSharedRekeyTarget: (
-        account: WalletAccount,
-        source: WalletAccount,
-        allAccounts: WalletAccount[],
-    ) => mockIsEligibleSharedRekeyTarget(account, source, allAccounts),
+    useAuthorityTargets: (
+        source: WalletAccount | undefined,
+        kind: string,
+        options?: object,
+    ) => mockUseAuthorityTargets(source, kind, options),
 }))
 
 describe('useRekeyToSharedSelectTargetScreen', () => {
@@ -56,21 +54,16 @@ describe('useRekeyToSharedSelectTargetScreen', () => {
         vi.clearAllMocks()
     })
 
-    it('filters out ineligible accounts via isEligibleSharedRekeyTarget', () => {
+    it('returns the targets the chain accepts for the resolved source', () => {
         const { result } = renderHook(() =>
             useRekeyToSharedSelectTargetScreen(),
         )
 
         expect(result.current.targets).toEqual([targetA, targetB])
-    })
-
-    it('passes the resolved source account to isEligibleSharedRekeyTarget', () => {
-        renderHook(() => useRekeyToSharedSelectTargetScreen())
-
-        expect(mockIsEligibleSharedRekeyTarget).toHaveBeenCalledWith(
-            targetA,
+        expect(mockUseAuthorityTargets).toHaveBeenCalledWith(
             sourceAccount,
-            [sourceAccount, targetA, targetB],
+            'shared',
+            undefined,
         )
     })
 

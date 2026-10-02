@@ -106,7 +106,7 @@ describe('account holdings queries', () => {
             })
             await upsertAssets({
                 db,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 items: [
                     collectible('2', 'Banana', 'Fruit Club'),
                     collectible('10', 'apple', 'Fruit Club'),
@@ -212,7 +212,7 @@ describe('account holdings queries', () => {
             })
             await upsertAssets({
                 db,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 items: huge.map((assetId, i) =>
                     collectible(assetId, `Huge ${i}`),
                 ),
@@ -340,7 +340,7 @@ describe('account holdings queries', () => {
             })
             await upsertAssets({
                 db,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 items: [
                     richAsset('0', 'Algo'),
                     richAsset('100', 'Banana'),
@@ -350,7 +350,7 @@ describe('account holdings queries', () => {
             })
             await upsertAssetPrices({
                 db,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 prices: [
                     { assetId: '0', usdPrice: new Decimal('0.2') },
                     { assetId: '100', usdPrice: new Decimal('1') },
@@ -408,7 +408,7 @@ describe('account holdings queries', () => {
             })
             await upsertAssetPrices({
                 db,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 prices: [{ assetId: '999', usdPrice: new Decimal('2') }],
             })
 

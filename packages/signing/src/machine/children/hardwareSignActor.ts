@@ -122,7 +122,7 @@ export const hardwareSignActor = fromCallback<
         onError: (error: Error) => {
             if (cancelled) return
             // Only genuine Ledger device/transport errors drive the BLE-class
-            // teardown gate. Non-device failures (e.g. ARC-60 validation
+            // teardown gate. Non-device failures (e.g. auth-data validation
             // errors wrapped in SigningError) bypass the gate and surface as
             // an immediate inline error instead of pinning the troubleshooting
             // sheet open.

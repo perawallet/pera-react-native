@@ -37,5 +37,4 @@ export const SESSION_REQUEST_TTL_MS = 5 * 60 * 1000
 export {
     MAX_DATA_SIGN_REQUESTS,
     MAX_TRANSACTION_SIGN_REQUESTS,
-    ARC60_MAX_REQUEST_BYTES,
 } from '@perawallet/wallet-core-signing'

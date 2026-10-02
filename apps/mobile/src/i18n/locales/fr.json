@@ -530,7 +530,14 @@
         "camera_access_close": "Fermer l’onglet",
         "paste_label": "Ou collez le contenu d’un QR code",
         "paste_placeholder": "Collez une adresse ou un URI WalletConnect",
-        "paste_submit": "Valider"
+        "paste_submit": "Valider",
+        "invalid_code": "Pera ne peut pas utiliser ce code QR. Essayez-en un autre.",
+        "try_again": "Réessayer"
+    },
+    "camera_tab": {
+        "account_imported_title": "Compte importé",
+        "backup_restored_title": "Sauvegarde restaurée",
+        "body": "Vous pouvez fermer cet onglet et revenir à l’extension."
     },
     "paste_link": {
         "title": "Coller un lien",
@@ -692,6 +699,7 @@
             "review_empty_body": "Tous les comptes de cet appareil sont dans votre Cloud Backup.",
             "back_up_success": "Compte sauvegardé",
             "back_up_error": "Impossible de sauvegarder ce compte. Veuillez réessayer.",
+            "back_up_deferred": "Ce compte sera sauvegardé lors de la prochaine synchronisation.",
             "add_success": "Compte ajouté",
             "add_error": "Impossible d’ajouter ce compte. Veuillez réessayer.",
             "delete_sheet_title": "Supprimer du Cloud Backup ?",
@@ -726,6 +734,7 @@
             "review_empty_body": "Tous les contacts de cet appareil sont dans votre Cloud Backup.",
             "back_up_success": "Contact sauvegardé",
             "back_up_error": "Impossible de sauvegarder ce contact. Veuillez réessayer.",
+            "back_up_deferred": "Ce contact sera sauvegardé lors de la prochaine synchronisation.",
             "add_success": "Contact ajouté",
             "add_error": "Impossible d’ajouter ce contact. Veuillez réessayer.",
             "delete_sheet_title": "Supprimer du Cloud Backup ?",
@@ -759,6 +768,7 @@
             "review_empty_body": "Tous les passkeys de cet appareil sont dans votre Cloud Backup.",
             "back_up_success": "Passkey sauvegardé",
             "back_up_error": "Impossible de sauvegarder ce passkey. Veuillez réessayer.",
+            "back_up_deferred": "Ce passkey sera sauvegardé lors de la prochaine synchronisation.",
             "add_success": "Passkey ajouté",
             "add_error": "Impossible d’ajouter ce passkey. Veuillez réessayer.",
             "delete_sheet_title": "Supprimer du Cloud Backup ?",

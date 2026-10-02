@@ -12,11 +12,14 @@
 
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useFinishCameraTab } from '@hooks/useFinishCameraTab'
 import type { PostCreateReturnTarget } from '@modules/onboarding/routes/types'
 import { useIsOnboarding } from './useOnboardingStore'
 
 type UseExitAccountFlowResult = {
     exitAccountFlow: (returnTo?: PostCreateReturnTarget) => void
+    /** Same exit, for an import that saved nothing. */
+    exitFailedAccountFlow: () => void
 }
 
 /**
@@ -34,8 +37,9 @@ type UseExitAccountFlowResult = {
 export const useExitAccountFlow = (): UseExitAccountFlowResult => {
     const navigation = useAppNavigation()
     const { isOnboarding, setIsOnboarding } = useIsOnboarding()
+    const { finishCameraTab } = useFinishCameraTab()
 
-    const exitAccountFlow = useCallback(
+    const navigateOut = useCallback(
         (returnTo?: PostCreateReturnTarget) => {
             if (returnTo) {
                 navigation.navigate(
@@ -54,5 +58,18 @@ export const useExitAccountFlow = (): UseExitAccountFlowResult => {
         [isOnboarding, setIsOnboarding, navigation],
     )
 
-    return { exitAccountFlow }
+    const exitAccountFlow = useCallback(
+        (returnTo?: PostCreateReturnTarget) => {
+            navigateOut(returnTo)
+            finishCameraTab()
+        },
+        [navigateOut, finishCameraTab],
+    )
+
+    const exitFailedAccountFlow = useCallback(() => {
+        navigateOut()
+        finishCameraTab('failed')
+    }, [navigateOut, finishCameraTab])
+
+    return { exitAccountFlow, exitFailedAccountFlow }
 }

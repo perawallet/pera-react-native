@@ -44,7 +44,10 @@ import {
     METADATA_PREFIX,
 } from '@algorandfoundation/react-native-keystore'
 import { sealNativeProviderRecord } from '../nativeProviderRecord'
-import { readFlatKeystoreRecords } from '../readFlatKeystoreRecords'
+import {
+    keystoreEntriesFingerprint,
+    readFlatKeystoreRecords,
+} from '../readFlatKeystoreRecords'
 
 const subtle = globalThis.crypto.subtle
 const MASTER_KEY = new Uint8Array(32).fill(7)
@@ -179,5 +182,49 @@ describe('readFlatKeystoreRecords', () => {
 
         expect(scan).toEqual({ keys: [], isComplete: true })
         expect(readKey).not.toHaveBeenCalled()
+    })
+})
+
+describe('keystoreEntriesFingerprint', () => {
+    const storageOf = (keys: string[]) => ({ getAllKeys: () => keys })
+
+    it('changes when an entry is added, whatever order the store lists them in', () => {
+        const before = keystoreEntriesFingerprint(
+            storageOf([METADATA_PREFIX + 'b', METADATA_PREFIX + 'a']),
+        )
+
+        expect(
+            keystoreEntriesFingerprint(
+                storageOf([METADATA_PREFIX + 'a', METADATA_PREFIX + 'b']),
+            ),
+        ).toBe(before)
+        expect(
+            keystoreEntriesFingerprint(
+                storageOf([
+                    METADATA_PREFIX + 'a',
+                    METADATA_PREFIX + 'b',
+                    METADATA_PREFIX + 'c',
+                ]),
+            ),
+        ).not.toBe(before)
+    })
+
+    // Material is resealed on every write without changing the entry set.
+    it('ignores material entries', () => {
+        expect(
+            keystoreEntriesFingerprint(
+                storageOf([METADATA_PREFIX + 'a', MATERIAL_PREFIX + 'a']),
+            ),
+        ).toBe(keystoreEntriesFingerprint(storageOf([METADATA_PREFIX + 'a'])))
+    })
+
+    it('reads as empty rather than throwing when the store cannot list', () => {
+        expect(
+            keystoreEntriesFingerprint({
+                getAllKeys: () => {
+                    throw new Error('locked')
+                },
+            }),
+        ).toBe('')
     })
 })

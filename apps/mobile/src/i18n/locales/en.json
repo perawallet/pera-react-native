@@ -530,7 +530,14 @@
         "camera_access_close": "Close Tab",
         "paste_label": "Or paste a QR payload",
         "paste_placeholder": "Paste an address or WalletConnect URI",
-        "paste_submit": "Submit"
+        "paste_submit": "Submit",
+        "invalid_code": "Pera can't use this QR code. Try a different one.",
+        "try_again": "Try Again"
+    },
+    "camera_tab": {
+        "account_imported_title": "Account imported",
+        "backup_restored_title": "Backup restored",
+        "body": "You can close this tab and return to the extension."
     },
     "paste_link": {
         "title": "Paste a Link",
@@ -692,6 +699,7 @@
             "review_empty_body": "Every account on this device is in your Cloud Backup.",
             "back_up_success": "Account backed up",
             "back_up_error": "Couldn’t back up this account. Please try again.",
+            "back_up_deferred": "This account will be backed up on the next sync.",
             "add_success": "Account added",
             "add_error": "Couldn’t add this account. Please try again.",
             "delete_sheet_title": "Delete from Cloud Backup?",
@@ -726,6 +734,7 @@
             "review_empty_body": "Every contact on this device is in your Cloud Backup.",
             "back_up_success": "Contact backed up",
             "back_up_error": "Couldn’t back up this contact. Please try again.",
+            "back_up_deferred": "This contact will be backed up on the next sync.",
             "add_success": "Contact added",
             "add_error": "Couldn’t add this contact. Please try again.",
             "delete_sheet_title": "Delete from Cloud Backup?",
@@ -759,6 +768,7 @@
             "review_empty_body": "Every passkey on this device is in your Cloud Backup.",
             "back_up_success": "Passkey backed up",
             "back_up_error": "Couldn’t back up this passkey. Please try again.",
+            "back_up_deferred": "This passkey will be backed up on the next sync.",
             "add_success": "Passkey added",
             "add_error": "Couldn’t add this passkey. Please try again.",
             "delete_sheet_title": "Delete from Cloud Backup?",

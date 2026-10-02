@@ -41,6 +41,8 @@ import {
     accountItemKey,
     contactItemKey,
     createEmptySyncState,
+    passkeyItemKey,
+    passkeySecretsItemKey,
     settingsItemKey,
     SETTINGS_ITEM_ID,
     type SyncState,
@@ -556,5 +558,42 @@ describe('syncBackup', () => {
             'syncBackup: listPasskeys failed, skipping passkeys',
             { error: 'KMS session denied' },
         )
+    })
+
+    it('pushes a credential with its secret and zeroes the key it was handed', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g4',
+            lastSeq: 0,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        batchUpsertItems.mockResolvedValue({ results: [] })
+        const privateKey = new Uint8Array(32).fill(9)
+
+        await syncBackup(
+            {
+                ...deps(),
+                listPasskeys: async () => [
+                    {
+                        credentialId: 'Y3JlZC1pZA==',
+                        origin: 'webauthn.io',
+                        publicKeySpkiDer: 'cHVi',
+                        createdAt: 1,
+                        privateKey,
+                    },
+                ],
+            },
+            createEmptySyncState('b'),
+        )
+
+        const [, , , request] = batchUpsertItems.mock.calls[0]
+        const keys = request.items.map((entry: { key: string }) => entry.key)
+        expect(keys).toEqual(
+            expect.arrayContaining([
+                passkeyItemKey(hashAddress('Y3JlZC1pZA==')),
+                passkeySecretsItemKey(hashAddress('Y3JlZC1pZA==')),
+            ]),
+        )
+        expect(privateKey.every(byte => byte === 0)).toBe(true)
     })
 })

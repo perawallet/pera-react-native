@@ -18,6 +18,7 @@ import type {
     RekeyTransition,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -70,6 +71,7 @@ const multisigAccount: MultiSigAccount = {
 
 describe('useAccountTypeLabel', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue(null)

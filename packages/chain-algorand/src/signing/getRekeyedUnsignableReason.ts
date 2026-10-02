@@ -10,13 +10,14 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     resolveSignerForAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
     isTransactionRequest,
     type DelegatedUnsignableReason,
     type SignRequest,
@@ -41,8 +42,8 @@ export const resolveAllSignerAddresses = (request: SignRequest): string[] => {
             .map(entry => entry.signer)
             .filter((address): address is string => !!address)
     }
-    if (isArc60Request(request)) {
-        const signer = request.stdSigData?.signer
+    if (isAuthDataRequest(request)) {
+        const signer = request.authData?.signer
         return signer ? [signer] : []
     }
     return []
@@ -69,7 +70,11 @@ export const getRekeyedUnsignableReason = (
     for (const address of uniqueSigners) {
         const account = accounts.find(a => a.address === address)
         if (!account) continue
-        const resolution = resolveSignerForAccount(account, accounts)
+        const resolution = resolveSignerForAccount(
+            account,
+            accounts,
+            LEGACY_CHAIN_ID,
+        )
         if (resolution.kind === 'authMissing') {
             return {
                 kind: 'authMissing',

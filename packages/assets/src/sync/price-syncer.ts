@@ -47,6 +47,8 @@ const PRICE_MISS_RETRY_MS = 10 * 60 * 1000
 // are targeted enrichments and stay independent.
 const WHOLE_WALLET_PASS_MIN_IDS = 256
 type InFlightPricePass = { ids: Set<string>; pass: Promise<void> }
+// Keyed by the network string, not a scope: a fresh scope object per call
+// would never hit the map, so concurrent passes would stop sharing.
 const inFlightWholeWalletPasses = new Map<Network, InFlightPricePass>()
 
 export function fetchAndPersistPrices(
@@ -94,7 +96,7 @@ async function runPricePass(
     const nonNativeIds = assetIds.filter(id => id !== nativeId)
     const staleIds = await getStaleOrMissingPriceAssetIds({
         assetIds: nonNativeIds,
-        network,
+        scope,
         ttlMs: PRICE_CACHE_TTL_MS,
         missRetryMs: PRICE_MISS_RETRY_MS,
     })
@@ -107,7 +109,7 @@ async function runPricePass(
         (async () => {
             const staleNative = await getStaleOrMissingPriceAssetIds({
                 assetIds: [nativeId],
-                network,
+                scope,
                 ttlMs: PRICE_CACHE_TTL_MS,
             })
             if (staleNative.length === 0) {
@@ -118,7 +120,7 @@ async function runPricePass(
             const usdPrice = await adapter.fetchNativeUsdPrice(scope)
             await upsertAssetPrices({
                 prices: [{ assetId: nativeId, usdPrice }],
-                network,
+                scope,
             })
         })(),
     ])
@@ -137,12 +139,12 @@ async function runPricePass(
                 const hitIds = batch.filter(id => pricedIds.has(id))
                 const missedIds = batch.filter(id => !pricedIds.has(id))
                 if (missedIds.length > 0) {
-                    await recordPriceMisses({ assetIds: missedIds, network })
+                    await recordPriceMisses({ assetIds: missedIds, scope })
                 }
                 if (hitIds.length > 0) {
-                    await clearPriceMisses({ assetIds: hitIds, network })
+                    await clearPriceMisses({ assetIds: hitIds, scope })
                 }
-                await upsertAssetPrices({ prices, network })
+                await upsertAssetPrices({ prices, scope })
             }),
         )
         batchResults.push(...sliceResults)

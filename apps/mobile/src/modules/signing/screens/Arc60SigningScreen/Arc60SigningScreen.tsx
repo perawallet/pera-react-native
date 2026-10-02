@@ -128,7 +128,7 @@ export const Arc60SigningScreen = () => {
                             style={styles.originWarningText}
                         >
                             {t('signing.arc60_view.origin_mismatch', {
-                                domain: request.stdSigData.domain,
+                                domain: request.authData.domain,
                             })}
                         </PWText>
                     </PWView>

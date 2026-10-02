@@ -13,6 +13,7 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import {
     UserRejectedSigningError,
@@ -168,6 +169,7 @@ const publishProposed = (
 
 describe('useTransactionProcessingScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         signingEventBus.__resetForTests()
         sendFundsState.amount = undefined
@@ -332,7 +334,11 @@ describe('useTransactionProcessingScreen', () => {
 
     it('keeps non-hardware copy for a plain local-key sender', () => {
         mockExecute.mockReturnValue(new Promise(() => {}))
-        const sender = { address: 'SRC', type: 'algo25', keyPairId: 'kp' }
+        const sender = {
+            address: 'SRC',
+            type: 'algo25',
+            keyPairId: 'kp',
+        }
         vi.mocked(useSelectedAccount).mockReturnValue(sender as never)
         vi.mocked(useAllAccounts).mockReturnValue([sender] as never)
 

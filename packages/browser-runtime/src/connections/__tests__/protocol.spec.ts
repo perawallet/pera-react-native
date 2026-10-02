@@ -65,8 +65,8 @@ describe('wallet operation wire codec', () => {
         const operation: WalletOperation = {
             type: 'sign-data',
             payload: {
-                type: 'arc60',
-                stdSigData: {
+                type: 'auth-data',
+                authData: {
                     data: 'ZGF0YQ==',
                     signer: 'AAAA',
                     domain: 'dapp.example',
@@ -83,13 +83,13 @@ describe('wallet operation wire codec', () => {
         expect(
             wire.type === 'sign-data' &&
                 !Array.isArray(wire.payload) &&
-                wire.payload.stdSigData.authenticatorData,
+                wire.payload.authData.authenticatorData,
         ).toEqual(expect.any(String))
         expect(decoded).toEqual(operation)
         expect(
             decoded.type === 'sign-data' &&
                 !Array.isArray(decoded.payload) &&
-                decoded.payload.stdSigData.authenticatorData,
+                decoded.payload.authData.authenticatorData,
         ).toBeInstanceOf(Uint8Array)
     })
 

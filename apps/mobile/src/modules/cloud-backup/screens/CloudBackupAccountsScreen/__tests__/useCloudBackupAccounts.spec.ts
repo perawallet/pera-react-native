@@ -41,7 +41,7 @@ vi.mock('../../../hooks/useBackupAccountReview', () => ({
         isBackedUp: isBackedUpMock,
         notBackedUpAccounts: [{ address: 'B' }],
         availableFromBackup: ['GONE', 'ALSO_GONE'],
-        busyAddress: 'B',
+        isBusy: (address: string) => address === 'B',
         backUpAccount: backUpAccountMock,
     }),
 }))
@@ -59,7 +59,7 @@ describe('useCloudBackupAccounts', () => {
         expect(result.current.isBackedUp('B')).toBe(false)
         expect(result.current.notBackedUpCount).toBe(1)
         expect(result.current.availableFromBackupCount).toBe(2)
-        expect(result.current.busyAddress).toBe('B')
+        expect(result.current.isBusy('B')).toBe(true)
     })
 
     it('tracks and opens the review screen', () => {

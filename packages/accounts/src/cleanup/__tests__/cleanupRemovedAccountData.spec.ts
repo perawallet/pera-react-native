@@ -104,7 +104,7 @@ describe('cleanupRemovedAccountData', () => {
         await upsertAssets({
             db,
             items: [makeAsset('100')],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         await refreshAccountHoldings({
             db,
@@ -158,12 +158,12 @@ describe('cleanupRemovedAccountData', () => {
         await upsertAssets({
             db,
             items: [makeAsset('100')],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         await upsertAssetPrices({
             db,
             prices: [{ assetId: '100', usdPrice: new Decimal('1.5') }],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         await refreshAccountHoldings({
             db,
@@ -178,13 +178,17 @@ describe('cleanupRemovedAccountData', () => {
         })
 
         expect(
-            await getAssetsByIds({ db, assetIds: ['100'], network: 'mainnet' }),
+            await getAssetsByIds({
+                db,
+                assetIds: ['100'],
+                scope: MAINNET_SCOPE,
+            }),
         ).toHaveLength(0)
         expect(
             await getAssetPricesByIds({
                 db,
                 assetIds: ['100'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             }),
         ).toHaveLength(0)
         expect(result.prunedAssetIdsByNetwork).toEqual({ mainnet: ['100'] })
@@ -194,7 +198,7 @@ describe('cleanupRemovedAccountData', () => {
         await upsertAssets({
             db,
             items: [makeAsset('100'), makeAsset('200'), makeAsset('400')],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         await refreshAccountHoldings({
             db,
@@ -219,12 +223,16 @@ describe('cleanupRemovedAccountData', () => {
         await cleanupRemovedAccountData({ db, accountAddress: 'ADDR1' })
 
         expect(
-            await getAssetsByIds({ db, assetIds: ['100'], network: 'mainnet' }),
+            await getAssetsByIds({
+                db,
+                assetIds: ['100'],
+                scope: MAINNET_SCOPE,
+            }),
         ).toHaveLength(0)
         const kept = await getAssetsByIds({
             db,
             assetIds: ['200', '400'],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         expect(kept.map(a => a.assetId).sort()).toEqual(['200', '400'])
     })
@@ -233,12 +241,12 @@ describe('cleanupRemovedAccountData', () => {
         await upsertAssets({
             db,
             items: [makeAsset('100')],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         await upsertAssets({
             db,
             items: [makeAsset('300')],
-            network: 'testnet',
+            scope: TESTNET_SCOPE,
         })
         await refreshAccountHoldings({
             db,
@@ -259,10 +267,18 @@ describe('cleanupRemovedAccountData', () => {
         })
 
         expect(
-            await getAssetsByIds({ db, assetIds: ['100'], network: 'mainnet' }),
+            await getAssetsByIds({
+                db,
+                assetIds: ['100'],
+                scope: MAINNET_SCOPE,
+            }),
         ).toHaveLength(0)
         expect(
-            await getAssetsByIds({ db, assetIds: ['300'], network: 'testnet' }),
+            await getAssetsByIds({
+                db,
+                assetIds: ['300'],
+                scope: TESTNET_SCOPE,
+            }),
         ).toHaveLength(0)
         expect(result.networksAffected.sort()).toEqual(['mainnet', 'testnet'])
     })
@@ -272,7 +288,7 @@ describe('cleanupRemovedAccountData', () => {
         await upsertAssetPrices({
             db,
             prices: [{ assetId: '0', usdPrice: new Decimal('0.2') }],
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
         })
         // The syncer persists ALGO as an ordinary holding row, so it lands in
         // the removed account's held-id set like any ASA.
@@ -289,13 +305,13 @@ describe('cleanupRemovedAccountData', () => {
         })
 
         expect(
-            await getAssetsByIds({ db, assetIds: ['0'], network: 'mainnet' }),
+            await getAssetsByIds({ db, assetIds: ['0'], scope: MAINNET_SCOPE }),
         ).toHaveLength(1)
         expect(
             await getAssetPricesByIds({
                 db,
                 assetIds: ['0'],
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
             }),
         ).toHaveLength(1)
         expect(result.prunedAssetIdsByNetwork).toEqual({})

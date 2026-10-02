@@ -55,7 +55,7 @@ an SDK must not wait on either. Re-read `getAddresses()` instead.
 `requestTransactionSigning` and the ARC-60 form of `requestDataSigning` keep the
 in-app webview bridge's param and result shapes (see
 [WebView Architecture](WEBVIEW_ARCHITECTURE.md)) — both data paths reach
-`parseArc60WireRequest` — so one SDK codec serves both. The legacy data form
+`parseAuthDataWireRequest` — so one SDK codec serves both. The legacy data form
 does not: here `data` is an **array** of `{ data, signer, chainId?, message? }`
 (`data` base64, `signer` the address to sign with) and `metadata` is neither
 required nor read, where the webview takes a single `data` object and requires

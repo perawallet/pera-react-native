@@ -33,12 +33,14 @@ import { algorandSwapAdapter } from './swaps'
 import {
     broadcasterChainAdapters,
     localKeySignerChainAdapters,
+    messageSignerChainAdapters,
     plannerChainAdapters,
     reviewerChainAdapters,
 } from '@perawallet/wallet-core-signing'
 import {
     algorandBroadcasterAdapter,
     algorandLocalKeySignerAdapter,
+    algorandMessageSignerAdapter,
     algorandPlannerAdapter,
     algorandReviewerAdapter,
 } from './signing'
@@ -56,6 +58,7 @@ import {
     algorandAddressCodec,
     algorandKeyDerivation,
 } from './accounts'
+import { startNetworkRekeySync } from './accounts/network-rekey-sync'
 
 // Adapters must be module-level instances, not built in here: the registries
 // ignore a repeat of the same instance but reject a new one, which is what
@@ -80,4 +83,6 @@ export const registerChain = (): void => {
     localKeySignerChainAdapters.register(algorandLocalKeySignerAdapter)
     backupChainAdapters.register(algorandBackupAdapter)
     migrationChainAdapters.register(algorandMigrationAdapter)
+    messageSignerChainAdapters.register(algorandMessageSignerAdapter)
+    startNetworkRekeySync()
 }

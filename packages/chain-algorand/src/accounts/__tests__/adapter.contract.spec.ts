@@ -20,7 +20,11 @@ import {
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
-import { DerivationTypes } from '@perawallet/wallet-core-accounts'
+import {
+    AccountTypes,
+    DerivationTypes,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
@@ -29,6 +33,7 @@ import { algorandAddressCodec } from '../address-codec'
 
 const FUNDED = 'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM'
 const EMPTY = 'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
+const SIGNER = 'GD64YIY3TWGDMCNPP553DZPPR6LDUSFQOIJVFDPPXWEG3FVOJCCDBBHU5A'
 const REKEYED = 'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
 // Pinned vector shared with the kms quantum candidate specs: both derivations'
 // addresses are known, so the on-chain probe can be stubbed.
@@ -38,6 +43,24 @@ const QUANTUM_CANONICAL =
     'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
 const QUANTUM_LEGACY =
     'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
+
+const keyed = (id: string, address: string, extra = {}): WalletAccount => ({
+    id,
+    address,
+    type: AccountTypes.algo25,
+    keyPairId: `${id}-key`,
+    ...extra,
+})
+
+const rekeyedWatch = (
+    address: string,
+    rekeyAddress: string,
+): WalletAccount => ({
+    id: 'rekeyed',
+    address,
+    type: AccountTypes.watch,
+    rekeyAddress,
+})
 
 accountsContractTests(() => algorandAccountsAdapter, {
     scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' },
@@ -105,7 +128,20 @@ accountsContractTests(() => algorandAccountsAdapter, {
             }),
         ),
     },
+    signers: {
+        signing: keyed('signing', SIGNER),
+        watch: {
+            id: 'watch',
+            address: EMPTY,
+            type: AccountTypes.watch,
+        },
+    },
     rekeyed: {
+        accounts: {
+            account: rekeyedWatch(REKEYED, FUNDED),
+            auth: keyed('auth', FUNDED, { rekeyAddress: EMPTY }),
+            next: keyed('next', EMPTY),
+        },
         authAddress: FUNDED,
         rekeyedAddresses: [REKEYED],
         handlers: [

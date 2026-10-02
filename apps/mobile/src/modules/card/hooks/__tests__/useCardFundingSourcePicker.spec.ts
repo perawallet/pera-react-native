@@ -67,6 +67,7 @@ import {
     isSigningCapableFundingSource,
     useCardFundingSourcePicker,
 } from '../useCardFundingSourcePicker'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const account = (
     address: string,
@@ -75,6 +76,7 @@ const account = (
 ): WalletAccount => ({ address, type, ...extra }) as WalletAccount
 
 beforeEach(() => {
+    registerAlgorandAccountsAdapter()
     vi.clearAllMocks()
     mockConnectedAddress = null
 })

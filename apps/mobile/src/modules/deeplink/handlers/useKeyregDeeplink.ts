@@ -17,7 +17,10 @@ import {
     useNetwork,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     useMinimumFeeCalculator,
     useSigningRequest,
@@ -90,7 +93,11 @@ const checkSigningEligibility = (
 
     // Judged on the RESOLVED signer, so a signable account rekeyed to an
     // unsignable one is rejected too.
-    const resolution = resolveSignerForAccount(account, accounts)
+    const resolution = resolveSignerForAccount(
+        account,
+        accounts,
+        LEGACY_CHAIN_ID,
+    )
     if (resolution.kind === 'ok') {
         return null
     }

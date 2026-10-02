@@ -362,6 +362,7 @@ describe('pushDirty', () => {
                     publicKeySpkiDer: 'cHVi',
                     seedAddress: 'SEEDADDRESS',
                     createdAt: 1,
+                    privateKey: new Uint8Array(32).fill(9),
                 },
             ],
             0,

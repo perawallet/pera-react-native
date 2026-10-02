@@ -167,20 +167,22 @@ export const contactBackupPayloadSchema = z.object({
 export type ContactBackupPayload = z.infer<typeof contactBackupPayloadSchema>
 
 /** No discriminant: the `passkeys/` prefix and the PASSKEY item type already
- *  identify the shape. `origin`, `identity` and `counter` are the derivation
- *  inputs, stored as the strings that provably reproduced this credential;
+ *  identify the shape. Holds no key material; that is `passkey-secrets/`.
+ *  `identity`, `counter` and `seedAddress` are the derivation inputs, present
+ *  when this credential was proven against its seed; a restore only falls back
+ *  to them for a credential whose `passkey-secrets/` item is missing.
  *  `userId`/`userName`/`displayName` only build the native record and label the
  *  UI, and must never reach derivation — they are not consistently encoded
  *  across the platforms that wrote them. */
 export const passkeyBackupPayloadSchema = z.object({
     credentialId: z.string(),
     origin: z.string(),
-    identity: z.string(),
-    counter: nonNegativeInt,
+    identity: z.string().optional(),
+    counter: nonNegativeInt.optional(),
     /** Base64 of the 91-byte X.509 SPKI DER; the restore-time match target. */
     publicKeySpkiDer: z.string(),
     /** First-derived address of the owning seed, joining to its `secrets/` item. */
-    seedAddress: z.string(),
+    seedAddress: z.string().optional(),
     userId: z.string().optional(),
     userName: z.string().optional(),
     displayName: z.string().optional(),
@@ -189,6 +191,17 @@ export const passkeyBackupPayloadSchema = z.object({
 })
 
 export type PasskeyBackupPayload = z.infer<typeof passkeyBackupPayloadSchema>
+
+/** No `updatedAt`: like an account secret, a credential's key never changes. */
+export const passkeySecretsBackupPayloadSchema = z.object({
+    credentialId: z.string(),
+    /** Base64 of the raw 32-byte P-256 private scalar. */
+    privateKey: z.string(),
+})
+
+export type PasskeySecretsBackupPayload = z.infer<
+    typeof passkeySecretsBackupPayloadSchema
+>
 
 /** `updatedAt` is per field (epoch millis; 0 = never edited) so edits to
  *  different settings on two devices both survive. A field that fails to parse

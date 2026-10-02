@@ -530,7 +530,14 @@
         "camera_access_close": "Fechar aba",
         "paste_label": "Ou cole um payload de QR",
         "paste_placeholder": "Cole um endereço ou URI do WalletConnect",
-        "paste_submit": "Enviar"
+        "paste_submit": "Enviar",
+        "invalid_code": "A Pera não consegue usar este código QR. Tente outro.",
+        "try_again": "Tentar novamente"
+    },
+    "camera_tab": {
+        "account_imported_title": "Conta importada",
+        "backup_restored_title": "Backup restaurado",
+        "body": "Você pode fechar esta aba e voltar para a extensão."
     },
     "paste_link": {
         "title": "Colar um link",
@@ -692,6 +699,7 @@
             "review_empty_body": "Todas as contas deste dispositivo estão no seu Cloud Backup.",
             "back_up_success": "Backup da conta feito",
             "back_up_error": "Não foi possível fazer o backup desta conta. Tente novamente.",
+            "back_up_deferred": "O backup desta conta será feito na próxima sincronização.",
             "add_success": "Conta adicionada",
             "add_error": "Não foi possível adicionar esta conta. Tente novamente.",
             "delete_sheet_title": "Excluir do Cloud Backup?",
@@ -726,6 +734,7 @@
             "review_empty_body": "Todos os contatos deste dispositivo estão no seu Cloud Backup.",
             "back_up_success": "Backup do contato feito",
             "back_up_error": "Não foi possível fazer o backup deste contato. Tente novamente.",
+            "back_up_deferred": "O backup deste contato será feito na próxima sincronização.",
             "add_success": "Contato adicionado",
             "add_error": "Não foi possível adicionar este contato. Tente novamente.",
             "delete_sheet_title": "Excluir do Cloud Backup?",
@@ -759,6 +768,7 @@
             "review_empty_body": "Todas as passkeys deste dispositivo estão no seu Cloud Backup.",
             "back_up_success": "Backup da passkey feito",
             "back_up_error": "Não foi possível fazer o backup desta passkey. Tente novamente.",
+            "back_up_deferred": "O backup desta passkey será feito na próxima sincronização.",
             "add_success": "Passkey adicionada",
             "add_error": "Não foi possível adicionar esta passkey. Tente novamente.",
             "delete_sheet_title": "Excluir do Cloud Backup?",

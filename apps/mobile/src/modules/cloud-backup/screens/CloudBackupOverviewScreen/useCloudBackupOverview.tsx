@@ -16,7 +16,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useCloudBackupStore,
     useBackupSyncStateStore,
-    deriveBackupSyncStatus,
     deriveBackupAccountReview,
     deriveBackupContactReview,
     deriveBackupPasskeyReview,
@@ -24,10 +23,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
-import {
-    formatDatetime,
-    truncateAlgorandAddress,
-} from '@perawallet/wallet-core-shared'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
@@ -42,7 +38,6 @@ import {
 } from '../../components/TurnOffBackupSheet'
 import {
     useDisableCloudBackup,
-    useBackupSync,
     useRemoveCloudBackup,
     useSyncDevicesQr,
     useCloudBackupIntroduction,
@@ -51,11 +46,7 @@ import {
 } from '../../hooks'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
-export type SyncBadge = 'success' | 'failed' | 'syncing'
-
 type UseCloudBackupOverviewResult = {
-    syncStatus: SyncBadge | null
-    lastSyncedLabel: string
     credentialAddressLabel: string
     accountsInSync: number
     accountsNotBackedUp: number
@@ -75,23 +66,6 @@ type UseCloudBackupOverviewResult = {
     isSavingCredentials: boolean
 }
 
-const formatSyncedAt = (millis: number | null): string => {
-    if (millis == null) return '—'
-    return formatDatetime(new Date(millis), undefined, 'medium')
-}
-
-type BackupSyncStatus = ReturnType<typeof deriveBackupSyncStatus>
-
-/** `null` renders no badge: a backup that has never synced is neither in sync
- *  nor syncing, and there is no fourth badge to say so. */
-const STATUS_TO_BADGE: Record<BackupSyncStatus, SyncBadge | null> = {
-    idle: null,
-    pending: null,
-    syncing: 'syncing',
-    upToDate: 'success',
-    error: 'failed',
-}
-
 export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const { requirePinVerification } = useRequirePinVerification()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -99,7 +73,6 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
     const { disableBackup } = useDisableCloudBackup()
     const { removeBackup } = useRemoveCloudBackup()
-    const { isSyncing } = useBackupSync()
     const { showSyncQr } = useSyncDevicesQr()
     const { storeCredentials, isSaving: isSavingCredentials } =
         useStoreBackupCredentials()
@@ -146,21 +119,9 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         [syncState, addresses],
     )
 
-    const status = deriveBackupSyncStatus({
-        isConfigured: backupId != null,
-        isSyncing,
-        lastSyncResult: syncState?.lastSyncResult ?? null,
-    })
-
     const credentialAddressLabel = backupId
         ? truncateAlgorandAddress(backupIdToAddress(backupId))
         : ''
-
-    const lastSyncedAt = syncState?.lastSyncedAt ?? null
-    const lastSyncedLabel = useMemo(
-        () => formatSyncedAt(lastSyncedAt),
-        [lastSyncedAt],
-    )
 
     const onPressAccounts = useCallback(() => {
         trackEvent(CloudBackupEvent.OverviewAccounts)
@@ -237,8 +198,6 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     ])
 
     return {
-        syncStatus: STATUS_TO_BADGE[status],
-        lastSyncedLabel,
         credentialAddressLabel,
         accountsInSync: backedUp.size,
         accountsNotBackedUp: notBackedUp.length,

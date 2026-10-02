@@ -115,6 +115,7 @@
     "@tanstack/react-query": "catalog:",
     "algosdk": "catalog:",
     "buffer": "catalog:",
+    "canonify": "^2.1.1",
     "decimal.js": "catalog:",
     "react": "catalog:",
     "tweetnacl": "catalog:",

@@ -530,7 +530,14 @@
         "camera_access_close": "Tab schließen",
         "paste_label": "Oder QR-Inhalt einfügen",
         "paste_placeholder": "Adresse oder WalletConnect-URI einfügen",
-        "paste_submit": "Absenden"
+        "paste_submit": "Absenden",
+        "invalid_code": "Pera kann diesen QR-Code nicht verwenden. Versuche es mit einem anderen.",
+        "try_again": "Erneut versuchen"
+    },
+    "camera_tab": {
+        "account_imported_title": "Konto importiert",
+        "backup_restored_title": "Backup wiederhergestellt",
+        "body": "Du kannst diesen Tab schließen und zur Erweiterung zurückkehren."
     },
     "chart": {
         "one_day": {
@@ -684,6 +691,7 @@
             "review_empty_body": "Jedes Konto auf diesem Gerät ist in deinem Cloud-Backup.",
             "back_up_success": "Konto gesichert",
             "back_up_error": "Dieses Konto konnte nicht gesichert werden. Bitte versuche es erneut.",
+            "back_up_deferred": "Dieses Konto wird bei der nächsten Synchronisierung gesichert.",
             "add_success": "Konto hinzugefügt",
             "add_error": "Dieses Konto konnte nicht hinzugefügt werden. Bitte versuche es erneut.",
             "delete_sheet_title": "Aus dem Cloud-Backup löschen?",
@@ -718,6 +726,7 @@
             "review_empty_body": "Jeder Kontakt auf diesem Gerät ist in deinem Cloud-Backup.",
             "back_up_success": "Kontakt gesichert",
             "back_up_error": "Dieser Kontakt konnte nicht gesichert werden. Bitte versuche es erneut.",
+            "back_up_deferred": "Dieser Kontakt wird bei der nächsten Synchronisierung gesichert.",
             "add_success": "Kontakt hinzugefügt",
             "add_error": "Dieser Kontakt konnte nicht hinzugefügt werden. Bitte versuche es erneut.",
             "delete_sheet_title": "Aus dem Cloud-Backup löschen?",
@@ -751,6 +760,7 @@
             "review_empty_body": "Jeder Passkey auf diesem Gerät ist in deinem Cloud-Backup.",
             "back_up_success": "Passkey gesichert",
             "back_up_error": "Dieser Passkey konnte nicht gesichert werden. Bitte versuche es erneut.",
+            "back_up_deferred": "Dieser Passkey wird bei der nächsten Synchronisierung gesichert.",
             "add_success": "Passkey hinzugefügt",
             "add_error": "Dieser Passkey konnte nicht hinzugefügt werden. Bitte versuche es erneut.",
             "delete_sheet_title": "Aus dem Cloud-Backup löschen?",

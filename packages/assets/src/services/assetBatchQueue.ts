@@ -23,15 +23,19 @@ const ASSET_BATCH_DELAY_MS = 100 // same value as NFD
  * On-demand asset batch queue. Used by `useSingleAssetDetailsQuery`'s DB-miss
  * path to coalesce concurrent asset lookups (e.g. a list mounting 30 rows
  * over a few render commits) into a single bulk-read HTTP call.
+ *
+ * Partitioned by the network string, not a scope: partitions are Map keys,
+ * so a fresh scope object per enqueue would never batch.
  */
 export const assetBatchQueue = new BatchQueue<
     string,
     Nullable<PeraAsset>,
     Network
 >(async (assetIds, network) => {
-    await fetchAndPersistAssets(assetIds, scopeForLegacyNetwork(network))
+    const scope = scopeForLegacyNetwork(network)
+    await fetchAndPersistAssets(assetIds, scope)
 
-    const assets = await getAssetsByIds({ assetIds, network })
+    const assets = await getAssetsByIds({ assetIds, scope })
     const map = new Map<string, Nullable<PeraAsset>>()
     for (const asset of assets) {
         map.set(asset.assetId, asset)

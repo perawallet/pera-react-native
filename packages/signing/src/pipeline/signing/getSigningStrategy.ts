@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     hasSigningKeys,
@@ -26,7 +27,7 @@ import {
     plannerAdapterFor,
     type LocalSigningFunction,
     type LocalArbitrarySigningFunction,
-    type LocalArc60SigningFunction,
+    type LocalAuthDataSigningFunction,
 } from '../../chain-adapter'
 import {
     createHardwareStrategy,
@@ -43,8 +44,8 @@ export interface GetSigningStrategyOptions {
     /** Arbitrary-data signing function from useArbitraryDataSigner */
     signArbitraryData: LocalArbitrarySigningFunction
 
-    /** ARC-60 signing function from useLocalKeyArc60Signer */
-    signArc60: LocalArc60SigningFunction
+    /** Auth-data signing function from useAuthDataSigner */
+    signAuthData: LocalAuthDataSigningFunction
 
     /** Get local participants for a multisig account */
     getLocalParticipants: (
@@ -80,7 +81,7 @@ export const createSigningStrategySelector = (
     ).createStrategy({
         signTransactions: options.signTransactions,
         signArbitraryData: options.signArbitraryData,
-        signArc60: options.signArc60,
+        signAuthData: options.signAuthData,
     })
     const hardwareStrategy = createHardwareStrategy({
         hardwareWalletRegistry: options.hardwareWalletRegistry,
@@ -124,7 +125,11 @@ export const createSigningStrategySelector = (
         // the auth's template authorizes the transaction. The multisig
         // strategy re-resolves the hop itself, so passing the original
         // account to `sign` stays correct.
-        const authAccount = resolveAuthAccount(account, allAccounts)
+        const authAccount = resolveAuthAccount(
+            account,
+            allAccounts,
+            LEGACY_CHAIN_ID,
+        )
         if (isMultisigAccount(authAccount)) return multisigStrategy
         return selectStrategyForAccount(authAccount)
     }

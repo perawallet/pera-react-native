@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 import type {
     AnalyzedSignableGroup,
     LocalKeySignerInput,
@@ -55,7 +56,7 @@ const buildInput = (
     allAccounts: [mockAlgo25Account],
     signTransactions: vi.fn().mockResolvedValue([mockSignedTxn]),
     signArbitraryData: vi.fn(),
-    signArc60: vi.fn(),
+    signAuthData: vi.fn(),
     network: 'mainnet',
     ...overrides,
 })

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
 import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import { backupChainAdapters } from '@perawallet/wallet-core-backup'
@@ -43,12 +43,14 @@ import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import {
     broadcasterChainAdapters,
     localKeySignerChainAdapters,
+    messageSignerChainAdapters,
     plannerChainAdapters,
     reviewerChainAdapters,
 } from '@perawallet/wallet-core-signing'
 import {
     algorandBroadcasterAdapter,
     algorandLocalKeySignerAdapter,
+    algorandMessageSignerAdapter,
     algorandPlannerAdapter,
     algorandReviewerAdapter,
 } from '../signing'
@@ -61,6 +63,11 @@ import {
     algorandAddressCodec,
     algorandKeyDerivation,
 } from '../accounts'
+import { startNetworkRekeySync } from '../accounts/network-rekey-sync'
+
+vi.mock('../accounts/network-rekey-sync', () => ({
+    startNetworkRekeySync: vi.fn(),
+}))
 
 describe('registerChain', () => {
     beforeEach(() => {
@@ -78,6 +85,7 @@ describe('registerChain', () => {
         reviewerChainAdapters.reset()
         plannerChainAdapters.reset()
         localKeySignerChainAdapters.reset()
+        messageSignerChainAdapters.reset()
         addressCodecs.reset()
         keyDerivations.reset()
         accountsChainAdapters.reset()
@@ -103,6 +111,12 @@ describe('registerChain', () => {
         expect(assetsChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandAssetsAdapter,
         )
+    })
+
+    it('starts the network rekey sync', () => {
+        registerChain()
+
+        expect(startNetworkRekeySync).toHaveBeenCalled()
     })
 
     it('registers the Algorand swap adapter', () => {
@@ -224,6 +238,14 @@ describe('registerChain', () => {
         )
         expect(migrationChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandMigrationAdapter,
+        )
+    })
+
+    it('registers the Algorand message signer adapter', () => {
+        registerChain()
+
+        expect(messageSignerChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandMessageSignerAdapter,
         )
     })
 })

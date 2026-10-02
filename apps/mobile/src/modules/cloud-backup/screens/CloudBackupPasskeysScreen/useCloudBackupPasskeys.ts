@@ -27,7 +27,7 @@ type UseCloudBackupPasskeysResult = {
     hasUnsupportedPasskeys: boolean
     notBackedUpCount: number
     availableFromBackupCount: number
-    busyCredentialId: string | null
+    isBusy: (credentialId: string) => boolean
     onBackUp: (credentialId: string) => void
     onReview: () => void
 }
@@ -41,7 +41,7 @@ export const useCloudBackupPasskeys = (): UseCloudBackupPasskeysResult => {
         isLoading,
         notBackedUpPasskeys,
         availableFromBackup,
-        busyCredentialId,
+        isBusy,
         backUpPasskey,
     } = useBackupPasskeyReview()
     const { passkeys: devicePasskeys } = usePasskeysQuery()
@@ -53,7 +53,7 @@ export const useCloudBackupPasskeys = (): UseCloudBackupPasskeysResult => {
         hasUnsupportedPasskeys: devicePasskeys.length > passkeys.length,
         notBackedUpCount: notBackedUpPasskeys.length,
         availableFromBackupCount: availableFromBackup.length,
-        busyCredentialId,
+        isBusy,
         onBackUp: backUpPasskey,
         onReview: useCallback(
             () => navigation.navigate('CloudBackupPasskeysReview'),

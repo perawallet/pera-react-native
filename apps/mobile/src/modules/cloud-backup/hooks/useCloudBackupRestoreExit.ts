@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useFinishCameraTab } from '@hooks/useFinishCameraTab'
 import type { CloudBackupStackParamList } from '../routes/types'
 
 type UseCloudBackupRestoreExitResult = {
@@ -30,15 +31,15 @@ export const useCloudBackupRestoreExit =
             useNavigation<
                 NativeStackNavigationProp<CloudBackupStackParamList>
             >()
+        const { finishCameraTab } = useFinishCameraTab()
 
-        const exitToOverview = useCallback(
-            () =>
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'CloudBackupOverview' }],
-                }),
-            [navigation],
-        )
+        const exitToOverview = useCallback(() => {
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'CloudBackupOverview' }],
+            })
+            finishCameraTab()
+        }, [navigation, finishCameraTab])
 
         return { exitToOverview }
     }

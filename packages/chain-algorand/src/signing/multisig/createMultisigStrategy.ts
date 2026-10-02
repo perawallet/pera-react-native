@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     isMultisigAccount,
@@ -48,14 +49,18 @@ export const createMultisigStrategy = (
                 )
             }
 
-            if (group.data.type === 'arc60') {
+            if (group.data.type === 'auth-data') {
                 throw new SigningError(
                     'Multisig signing of ARC-60 requests is not supported',
                 )
             }
 
             const allAccounts = getAllAccounts()
-            const multisigAccount = resolveAuthAccount(account, allAccounts)
+            const multisigAccount = resolveAuthAccount(
+                account,
+                allAccounts,
+                LEGACY_CHAIN_ID,
+            )
             const localParticipants = getLocalParticipants(
                 multisigAccount,
                 allAccounts,

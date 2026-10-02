@@ -19,7 +19,6 @@ import { createWalletConnectConnector } from '../createConnector'
 vi.mock('@perawallet/wallet-core-signing', () => ({
     MAX_DATA_SIGN_REQUESTS: 10,
     MAX_TRANSACTION_SIGN_REQUESTS: 64,
-    ARC60_MAX_REQUEST_BYTES: 64 * 1024,
 }))
 
 // Deliberately does NOT mock '@perawallet/walletconnect' the way

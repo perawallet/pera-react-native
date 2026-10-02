@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { createElement, useCallback } from 'react'
 import { useCardStore } from '@perawallet/wallet-core-card'
 import {
@@ -39,7 +40,7 @@ export const isEligibleFundingSource = (account: WalletAccount): boolean =>
     (isAlgo25Account(account) ||
         isHDWalletAccount(account) ||
         isHardwareWalletAccount(account)) &&
-    !isRekeyedAccount(account)
+    !isRekeyedAccount(account, LEGACY_CHAIN_ID)
 
 /**
  * Funding sources that can also sign the ARC-60 ownership proof card creation
@@ -56,7 +57,7 @@ export const isSigningCapableFundingSource = (
  * creates cards but its firmware will never sign a program.
  */
 export const canAutoFund = (account: WalletAccount): boolean =>
-    canSignProgram(account)
+    canSignProgram(account, LEGACY_CHAIN_ID)
 
 export type UseCardFundingSourcePickerResult = {
     /**

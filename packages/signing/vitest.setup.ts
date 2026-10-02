@@ -13,6 +13,7 @@
 import { beforeEach, vi } from 'vitest'
 import { registerFakeBroadcaster } from './src/__tests__/fakeBroadcaster'
 import { registerFakeLocalKeySignerAdapter } from './src/__tests__/fakeLocalKeySignerAdapter'
+import { registerFakeMessageSignerAdapter } from './src/__tests__/fakeMessageSignerAdapter'
 import { registerFakePlannerAdapter } from './src/__tests__/fakePlannerAdapter'
 import { registerFakeReviewerAdapter } from './src/__tests__/fakeReviewerAdapter'
 
@@ -57,4 +58,5 @@ beforeEach(() => {
     registerFakeReviewerAdapter()
     registerFakePlannerAdapter()
     registerFakeLocalKeySignerAdapter()
+    registerFakeMessageSignerAdapter()
 })

@@ -11,36 +11,60 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useSignerFor } from '../useSignerFor'
 import { useCanSignWith } from '../useCanSignWith'
 import { useRekeyAccount } from '../useRekeyAccount'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
+import {
+    fakeAccountsChain,
+    registerFakeAccountsChain,
+} from '../../__tests__/fakeAccountsChain'
+
+const held = (address: string, extra: Partial<WalletAccount> = {}) =>
+    ({
+        id: address,
+        type: 'algo25',
+        address,
+        keyPairId: 'k',
+        ...extra,
+    }) as WalletAccount
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
 
+beforeEach(() => {
+    useAccountsStore.getState().resetState()
+    registerFakeAccountsChain()
+})
+
 describe('useSignerFor', () => {
-    beforeEach(() => {
-        useAccountsStore.getState().resetState()
+    it('returns the signer the chain resolves', () => {
+        const auth = held('S')
+        setAccounts([held('A'), auth])
+        const { adapter } = fakeAccountsChain()
+        vi.mocked(adapter.resolveSigner).mockReturnValue({
+            kind: 'ok',
+            signer: auth,
+        })
+
+        const { result } = renderHook(() => useSignerFor('A'))
+
+        expect(result.current).toBe(auth)
     })
 
-    it('returns the auth account when rekeyed to a local signer', () => {
-        setAccounts([
-            { type: 'watch', address: 'A', rekeyAddress: 'S' } as WalletAccount,
-            { type: 'algo25', address: 'S', keyPairId: 'k' } as WalletAccount,
-        ])
-        const { result } = renderHook(() => useSignerFor('A'))
-        expect(result.current?.address).toBe('S')
-    })
+    it('returns null when the chain names no signer', () => {
+        setAccounts([held('A')])
+        const { adapter } = fakeAccountsChain()
+        vi.mocked(adapter.resolveSigner).mockReturnValue({
+            kind: 'watch',
+            account: held('A'),
+        })
 
-    it('returns the account itself when it holds its own key', () => {
-        setAccounts([
-            { type: 'algo25', address: 'A', keyPairId: 'k' } as WalletAccount,
-        ])
         const { result } = renderHook(() => useSignerFor('A'))
-        expect(result.current?.address).toBe('A')
+
+        expect(result.current).toBeNull()
     })
 
     it('returns null for an unknown address', () => {
@@ -51,23 +75,15 @@ describe('useSignerFor', () => {
 })
 
 describe('useCanSignWith', () => {
-    beforeEach(() => {
-        useAccountsStore.getState().resetState()
-    })
-
-    it('returns true for a signable account', () => {
-        const account = {
-            type: 'algo25',
-            address: 'A',
-            keyPairId: 'k',
-        } as WalletAccount
+    it('is true when the chain resolves a signer', () => {
+        const account = held('A')
         setAccounts([account])
         const { result } = renderHook(() => useCanSignWith(account))
         expect(result.current).toBe(true)
     })
 
-    it('returns false for a watch account', () => {
-        const account = { type: 'watch', address: 'A' } as WalletAccount
+    it('is false when the chain resolves none', () => {
+        const account = held('A', { type: 'watch', keyPairId: undefined })
         setAccounts([account])
         const { result } = renderHook(() => useCanSignWith(account))
         expect(result.current).toBe(false)
@@ -75,36 +91,30 @@ describe('useCanSignWith', () => {
 })
 
 describe('useRekeyAccount', () => {
-    beforeEach(() => {
-        useAccountsStore.getState().resetState()
-    })
+    it("returns the chain's auth account for a rekeyed account", () => {
+        const auth = held('S')
+        setAccounts([held('A', { rekeyAddress: 'S' }), auth])
+        const { adapter } = fakeAccountsChain()
+        vi.mocked(adapter.getAuthAccount).mockReturnValue(auth)
 
-    it('returns the rekey target when present in the wallet', () => {
-        setAccounts([
-            { type: 'watch', address: 'A', rekeyAddress: 'S' } as WalletAccount,
-            { type: 'algo25', address: 'S', keyPairId: 'k' } as WalletAccount,
-        ])
         const { result } = renderHook(() => useRekeyAccount('A'))
-        expect(result.current?.address).toBe('S')
+
+        expect(result.current).toBe(auth)
     })
 
     it('returns null when the account is not rekeyed', () => {
-        setAccounts([
-            { type: 'algo25', address: 'A', keyPairId: 'k' } as WalletAccount,
-        ])
+        setAccounts([held('A')])
         const { result } = renderHook(() => useRekeyAccount('A'))
         expect(result.current).toBeNull()
     })
 
-    it('returns null when the rekey target is unknown locally', () => {
-        setAccounts([
-            {
-                type: 'watch',
-                address: 'A',
-                rekeyAddress: 'MISSING',
-            } as WalletAccount,
-        ])
+    it('returns null when the chain cannot find the auth account', () => {
+        setAccounts([held('A', { rekeyAddress: 'MISSING' })])
+        const { adapter } = fakeAccountsChain()
+        vi.mocked(adapter.getAuthAccount).mockReturnValue(null)
+
         const { result } = renderHook(() => useRekeyAccount('A'))
+
         expect(result.current).toBeNull()
     })
 })

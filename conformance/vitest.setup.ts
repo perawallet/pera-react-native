@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import './src/harness/registerAlgorandAccounts'
 
 // The submission chokepoint (packages/chain-algorand/src/signing/submission) reaches
 // `@perawallet/wallet-core-blockchain`'s network/accounts stores for their

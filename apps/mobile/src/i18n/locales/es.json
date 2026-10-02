@@ -530,7 +530,14 @@
         "camera_access_close": "Cerrar pestaña",
         "paste_label": "O pega el contenido de un QR",
         "paste_placeholder": "Pega una dirección o un URI de WalletConnect",
-        "paste_submit": "Enviar"
+        "paste_submit": "Enviar",
+        "invalid_code": "Pera no puede usar este código QR. Prueba con otro.",
+        "try_again": "Intentar de nuevo"
+    },
+    "camera_tab": {
+        "account_imported_title": "Cuenta importada",
+        "backup_restored_title": "Copia de seguridad restaurada",
+        "body": "Puedes cerrar esta pestaña y volver a la extensión."
     },
     "paste_link": {
         "title": "Pegar un enlace",
@@ -692,6 +699,7 @@
             "review_empty_body": "Todas las cuentas de este dispositivo están en tu Cloud Backup.",
             "back_up_success": "Cuenta respaldada",
             "back_up_error": "No se pudo respaldar esta cuenta. Inténtalo de nuevo.",
+            "back_up_deferred": "Esta cuenta se respaldará en la próxima sincronización.",
             "add_success": "Cuenta añadida",
             "add_error": "No se pudo añadir esta cuenta. Inténtalo de nuevo.",
             "delete_sheet_title": "¿Eliminar del Cloud Backup?",
@@ -726,6 +734,7 @@
             "review_empty_body": "Todos los contactos de este dispositivo están en tu Cloud Backup.",
             "back_up_success": "Contacto respaldado",
             "back_up_error": "No se pudo respaldar este contacto. Inténtalo de nuevo.",
+            "back_up_deferred": "Este contacto se respaldará en la próxima sincronización.",
             "add_success": "Contacto añadido",
             "add_error": "No se pudo añadir este contacto. Inténtalo de nuevo.",
             "delete_sheet_title": "¿Eliminar del Cloud Backup?",
@@ -759,6 +768,7 @@
             "review_empty_body": "Todas las passkeys de este dispositivo están en tu Cloud Backup.",
             "back_up_success": "Passkey respaldada",
             "back_up_error": "No se pudo respaldar esta passkey. Inténtalo de nuevo.",
+            "back_up_deferred": "Esta passkey se respaldará en la próxima sincronización.",
             "add_success": "Passkey añadida",
             "add_error": "No se pudo añadir esta passkey. Inténtalo de nuevo.",
             "delete_sheet_title": "¿Eliminar del Cloud Backup?",

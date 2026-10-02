@@ -11,6 +11,7 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useAssetPricesQuery } from '../useAssetPricesQuery'
@@ -71,7 +72,7 @@ describe('useAssetPricesQuery', () => {
         )
         expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
             assetIds: ['123'],
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
     })
 
@@ -157,7 +158,7 @@ describe('useAssetPricesQuery', () => {
         await waitFor(() =>
             expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
                 assetIds: ['456'],
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             }),
         )
     })
@@ -190,7 +191,7 @@ describe('useAssetPricesQuery', () => {
 
         expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
             assetIds: ['123'],
-            network: 'testnet',
+            scope: scopeForLegacyNetwork('testnet'),
         })
     })
 

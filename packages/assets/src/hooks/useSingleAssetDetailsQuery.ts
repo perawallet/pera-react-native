@@ -39,7 +39,7 @@ export const useSingleAssetDetailsQuery = (
         queryFn: async (): Promise<PeraAsset> => {
             // Try DB first (data synced by sync service)
             if (useDB) {
-                const dbAsset = await getAssetById({ assetId, network })
+                const dbAsset = await getAssetById({ assetId, scope })
                 if (dbAsset !== null) {
                     return dbAsset
                 }

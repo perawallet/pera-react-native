@@ -12,11 +12,18 @@
 
 import { describe, expect, it } from 'vitest'
 import { InvalidScopeKeyError } from '../errors'
-import { CHAIN_IDS, type ChainId, type ChainScope } from '../models/identity'
+import {
+    CHAIN_IDS,
+    LEGACY_NETWORKS,
+    type ChainId,
+    type ChainScope,
+} from '../models/identity'
 import {
     legacyColumnValue,
+    networkColumnValue,
     parseScopeKey,
     scopeForLegacyNetwork,
+    scopeFromNetworkColumn,
     toScopeKey,
 } from '../scope'
 
@@ -136,6 +143,45 @@ describe('legacyColumnValue', () => {
 
     it('rejects a chain id this build does not know', () => {
         expect(() => legacyColumnValue(UNKNOWN_CHAIN_SCOPE)).toThrow(
+            InvalidScopeKeyError,
+        )
+    })
+})
+
+describe('network column encoding', () => {
+    it.each(LEGACY_NETWORKS)(
+        'stores the Algorand %s scope as the bare network',
+        network => {
+            expect(networkColumnValue(scopeForLegacyNetwork(network))).toBe(
+                network,
+            )
+        },
+    )
+
+    it.each(LEGACY_NETWORKS)(
+        'decodes a bare %s value to the Algorand scope',
+        network => {
+            expect(scopeFromNetworkColumn(network)).toEqual(
+                scopeForLegacyNetwork(network),
+            )
+        },
+    )
+
+    it('decodes a scope key', () => {
+        expect(scopeFromNetworkColumn('algorand/testnet')).toEqual({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
+    })
+
+    it('rejects a bare value that is not a known network', () => {
+        expect(() => scopeFromNetworkColumn('devnet')).toThrow(
+            InvalidScopeKeyError,
+        )
+    })
+
+    it('rejects a scope key for an unknown chain', () => {
+        expect(() => scopeFromNetworkColumn('ethereum/mainnet')).toThrow(
             InvalidScopeKeyError,
         )
     })

@@ -19,7 +19,8 @@ import {
 } from '@perawallet/wallet-core-chain-contract/testing'
 import type { AccountsChainAdapter } from '../chain-adapter'
 import { InvalidBip44PathError } from '../errors'
-import { DerivationTypes } from '../models'
+import { AccountTypes, DerivationTypes, type WalletAccount } from '../models'
+import { canSignDirectly } from '../utils'
 import { accountsContractTests } from './adapter-contract'
 
 // A second chain with no rekey, quantum or single-key accounts, so the
@@ -91,6 +92,11 @@ const fixtureAdapter: AccountsChainAdapter = {
             Uint8Array.from([account, keyIndex, ...rootKey.subarray(0, 30)]),
     hdKeyPairId: (seedKeyId, { account, keyIndex, derivationType }) =>
         `${seedKeyId}-fx-${account}-${keyIndex}-${derivationType}`,
+    resolveSigner: (account, _accounts) =>
+        canSignDirectly(account)
+            ? { kind: 'ok', signer: account }
+            : { kind: 'watch', account },
+    getAuthAccount: account => account,
     assertHdPathMatches: (hdPath, details) => {
         const match = HD_PATH.exec(hdPath)
         if (!match) {
@@ -112,6 +118,20 @@ const fixtureAdapter: AccountsChainAdapter = {
         }
     },
 }
+
+const walletAccount = (
+    id: string,
+    address: string,
+    type: 'algo25' | 'watch',
+): WalletAccount =>
+    type === 'watch'
+        ? { id, address, type: AccountTypes.watch }
+        : {
+              id,
+              address,
+              type: AccountTypes.algo25,
+              keyPairId: `${id}-key`,
+          }
 
 const account = (address: string, body: FixtureAccount) =>
     http.get(`${ORIGIN}/accounts/${address}`, () => HttpResponse.json(body))
@@ -149,6 +169,10 @@ accountsContractTests(() => fixtureAdapter, {
             HttpResponse.json({}, { status: 503 }),
         ),
     ],
+    signers: {
+        signing: walletAccount('signing', FUNDED, 'algo25'),
+        watch: walletAccount('watch', EMPTY, 'watch'),
+    },
     rootKey: new Uint8Array(64).fill(1),
     hdPath: {
         details: {

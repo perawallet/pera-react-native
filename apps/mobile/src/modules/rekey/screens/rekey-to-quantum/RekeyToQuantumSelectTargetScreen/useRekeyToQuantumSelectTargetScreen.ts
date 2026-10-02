@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-    isEligibleQuantumRekeyTarget,
-    useAllAccounts,
+    useAuthorityTargets,
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -40,21 +39,12 @@ export const useRekeyToQuantumSelectTargetScreen =
                 >
             >()
         const sourceAddress = route.params.sourceAddress
-        const accounts = useAllAccounts()
         const source = useFindAccountByAddress(sourceAddress)
         const isQuantumTargetEnabled = useIsQuantumAccountsEnabled()
 
-        const targets = useMemo(
-            () =>
-                accounts.filter(account =>
-                    isEligibleQuantumRekeyTarget(
-                        account,
-                        source ?? { address: sourceAddress },
-                        isQuantumTargetEnabled,
-                    ),
-                ),
-            [accounts, source, sourceAddress, isQuantumTargetEnabled],
-        )
+        const targets = useAuthorityTargets(source, 'quantum', {
+            isQuantumTargetEnabled,
+        })
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {

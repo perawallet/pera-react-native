@@ -24,9 +24,10 @@ import { splitP256PublicKey } from '../authenticator/webauthn-structures'
 import {
     derivePasskeyCredential,
     derivePasskeyMainKey,
+    p256PrivateKeyToSpkiDer,
     p256RawPublicKeyToSpkiDer,
 } from '../crypto/derivePasskeyCredential'
-import { isMigrationFlagged, normalizeTimestamp } from './passkey'
+import { isMigrationFlagged, isPasskeyKey, normalizeTimestamp } from './passkey'
 
 /** Suffix `passkeyMainKeyId` appends to a seed key id. Restated rather than
  *  imported so this module stays out of the provider's dependency graph. */
@@ -46,18 +47,23 @@ export const seedKeyIdFromPasskeyMainKeyId = (
 export type PasskeyBackupInputs = {
     credentialId: string
     origin: string
-    /** The exact string that reproduced this credential. Replayed, never rebuilt. */
-    identity: string
+    /** The exact string that reproduced this credential. Replayed, never
+     *  rebuilt. Absent when the record carries none and no seed re-derived it. */
+    identity?: string
     /** The derivation counter (`metadata.counter`), NOT the WebAuthn signature counter. */
-    counter: number
-    /** Base64 of the derived 91-byte SPKI DER — never an echo of whatever the record stored. */
+    counter?: number
+    /** Base64 of the 91-byte SPKI DER, computed from `privateKey` — never an
+     *  echo of whatever the record stored. */
     publicKeySpkiDer: string
-    seedKeyId: string
+    /** Set only when the private key was re-derived from this seed. */
+    seedKeyId?: string
     userId?: string
     userName?: string
     displayName?: string
-    /** Unix ms. */
+    /** Unix ms; 0 when the record never stored one. */
     createdAt: number
+    /** Raw 32-byte P-256 scalar. The caller owns it and must zero it. */
+    privateKey: Uint8Array
 }
 
 const readString = (
@@ -138,6 +144,79 @@ const toSpkiDer = (publicKey: Uint8Array): Uint8Array => {
     if (publicKey.length === SPKI_DER_LENGTH) return publicKey
     const { x, y } = splitP256PublicKey(publicKey)
     return p256RawPublicKeyToSpkiDer(concatBytes(x, y))
+}
+
+/** Android's provider keeps `user.name` under `userHandle`, because its picker
+ *  labels credentials by it, and stores no `userName`; iOS keeps the opaque
+ *  user id in both fields. Without this a restored Android credential is
+ *  labelled with its base64 user id. */
+const userNameOf = (metadata: Record<string, unknown>): string | undefined => {
+    const userName = readString(metadata, 'userName')
+    if (userName) return userName
+    const userHandle = readString(metadata, 'userHandle')
+    return userHandle && userHandle !== readString(metadata, 'userId')
+        ? userHandle
+        : undefined
+}
+
+/** Unix ms, or 0 when the record never stored one. Not the clock: `createdAt`
+ *  is in the backup item's content hash, so a fresh value on every sweep would
+ *  re-push the credential on every sync. */
+const createdAtOf = (metadata: Record<string, unknown>): number =>
+    normalizeTimestamp(
+        typeof metadata.createdAt === 'number'
+            ? (metadata.createdAt as number)
+            : undefined,
+    ) ?? 0
+
+/** `null` when the key does not produce the record's public key. Takes
+ *  ownership of `privateKey`: it is returned inside the inputs, or zeroed. */
+export const storedPasskeyBackupInputs = (
+    key: Key,
+    privateKey: Uint8Array,
+): PasskeyBackupInputs | null => {
+    const metadata = (key.metadata ?? {}) as Record<string, unknown>
+    const origin = readString(metadata, 'origin')
+    if (
+        !isPasskeyKey(key) ||
+        isMigrationFlagged(metadata) ||
+        !origin ||
+        !key.publicKey
+    ) {
+        zeroBytes(privateKey)
+        return null
+    }
+
+    let publicKeySpkiDer: Uint8Array
+    try {
+        publicKeySpkiDer = p256PrivateKeyToSpkiDer(privateKey)
+        if (!bytesEqual(publicKeySpkiDer, toSpkiDer(key.publicKey))) {
+            throw new Error('public key mismatch')
+        }
+    } catch {
+        logger.warn(
+            'storedPasskeyBackupInputs: stored private key does not match the public key',
+            { origin },
+        )
+        zeroBytes(privateKey)
+        return null
+    }
+
+    return {
+        credentialId: key.id,
+        origin,
+        identity: readString(metadata, 'identity'),
+        counter:
+            typeof metadata.counter === 'number'
+                ? (metadata.counter as number)
+                : undefined,
+        publicKeySpkiDer: encodeToBase64(publicKeySpkiDer),
+        userId: readString(metadata, 'userId'),
+        userName: userNameOf(metadata),
+        displayName: readString(metadata, 'displayName'),
+        createdAt: createdAtOf(metadata),
+        privateKey,
+    }
 }
 
 /**
@@ -242,14 +321,12 @@ export const passkeyBackupInputs = async (
                     publicKeySpkiDer: encodeToBase64(derived.publicKeySpkiDer),
                     seedKeyId,
                     userId: readString(metadata, 'userId'),
-                    userName: readString(metadata, 'userName'),
+                    userName: userNameOf(metadata),
                     displayName: readString(metadata, 'displayName'),
-                    createdAt:
-                        normalizeTimestamp(
-                            typeof metadata.createdAt === 'number'
-                                ? (metadata.createdAt as number)
-                                : undefined,
-                        ) ?? Date.now(),
+                    createdAt: createdAtOf(metadata),
+                    // A copy, so the derived buffer is zeroed on every path
+                    // below and the caller owns exactly what it receives.
+                    privateKey: Uint8Array.from(derived.privateKey),
                 }
             } finally {
                 zeroBytes(derived.privateKey)

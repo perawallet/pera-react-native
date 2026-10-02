@@ -86,7 +86,7 @@ describe('account portfolio queries', () => {
             })
             await upsertAssets({
                 db,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 items: [
                     richAsset('0', 'Algo'),
                     richAsset('100', 'Banana'),
@@ -96,7 +96,7 @@ describe('account portfolio queries', () => {
             })
             await upsertAssetPrices({
                 db,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 prices: [
                     { assetId: '0', usdPrice: new Decimal('0.2') },
                     { assetId: '100', usdPrice: new Decimal('1') },
@@ -163,7 +163,7 @@ describe('account portfolio queries', () => {
             })
             await upsertAssetPrices({
                 db,
-                network: 'mainnet',
+                scope: MAINNET_SCOPE,
                 prices: [{ assetId: '999', usdPrice: new Decimal('2') }],
             })
 

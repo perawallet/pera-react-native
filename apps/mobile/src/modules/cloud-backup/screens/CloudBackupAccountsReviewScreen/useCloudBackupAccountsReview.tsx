@@ -22,7 +22,7 @@ type UseCloudBackupAccountsReviewResult = {
     availableFromBackup: BackupAccountReview['availableFromBackup']
     notBackedUpAccounts: WalletAccount[]
     isExpanded: boolean
-    busyAddress: string | null
+    isBusy: (address: string) => boolean
     onToggleExpanded: () => void
     onAdd: (address: string) => void
     onDelete: (address: string) => Promise<void>
@@ -35,7 +35,7 @@ export const useCloudBackupAccountsReview =
         const {
             availableFromBackup,
             notBackedUpAccounts,
-            busyAddress,
+            isBusy,
             addFromBackup,
             deleteFromBackup,
             backUpAccount,
@@ -90,7 +90,7 @@ export const useCloudBackupAccountsReview =
             availableFromBackup,
             notBackedUpAccounts,
             isExpanded,
-            busyAddress,
+            isBusy,
             onToggleExpanded,
             onAdd,
             onDelete,

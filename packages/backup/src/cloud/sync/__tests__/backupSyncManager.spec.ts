@@ -28,6 +28,7 @@ const {
     mockDisconnect,
     mockSetSyncState,
     mockSetIsSyncing,
+    mockSetBusyItems,
     mockResetSyncActivity,
     mockResetCloudBackup,
     mockResetSyncState,
@@ -59,6 +60,7 @@ const {
     mockDisconnect: vi.fn(),
     mockSetSyncState: vi.fn(),
     mockSetIsSyncing: vi.fn(),
+    mockSetBusyItems: vi.fn(),
     mockResetSyncActivity: vi.fn(),
     mockResetCloudBackup: vi.fn(),
     mockResetSyncState: vi.fn(),
@@ -89,7 +91,10 @@ vi.mock('../reviewActions', () => ({
         summary: { imported: 1, skippedDuplicate: 0, failed: [] },
     }),
     deleteFromBackup: mockDeleteFromBackup,
-    keepAccountInBackup: (state: unknown) => state,
+    keepAccountInBackup: (state: object, address: string) => ({
+        ...state,
+        keptAddress: address,
+    }),
 }))
 
 vi.mock('../../credentials/keyStorage', () => ({
@@ -134,6 +139,7 @@ vi.mock('../../store', () => ({
     useBackupSyncActivityStore: {
         getState: () => ({
             setIsSyncing: mockSetIsSyncing,
+            setBusyItems: mockSetBusyItems,
             resetState: mockResetSyncActivity,
         }),
     },
@@ -550,19 +556,33 @@ describe('BackupSyncManager', () => {
             expect(mockSyncBackup).not.toHaveBeenCalled()
         })
 
-        it('drops a review action still queued behind the run it waited out', async () => {
+        it('records a keep at once instead of waiting out a running sync', async () => {
             const held = holdNextSync()
             const mgr = new BackupSyncManager(makeDeps())
             const running = mgr.syncNow()
-            const kept = mgr.keepAccountInBackup('ADDR')
 
-            const suspending = mgr.suspend()
+            expect(await mgr.keepAccountInBackup('ADDR')).toBe(true)
+            expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+
             held.release()
             await running
-            await suspending
+        })
 
-            expect(await kept).toBe(false)
-            expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        it('reapplies the keep over the state the running sync commits', async () => {
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+            const running = mgr.syncNow()
+            await mgr.keepAccountInBackup('ADDR')
+
+            held.release()
+            await running
+
+            expect(mockSetSyncState).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    lastSyncResult: 'SUCCESS',
+                    keptAddress: 'ADDR',
+                }),
+            )
         })
     })
 
@@ -612,6 +632,43 @@ describe('BackupSyncManager', () => {
         mgr.stop()
     })
 
+    it('pulls a change announced mid-sync once that sync finishes', async () => {
+        const held = holdNextSync()
+        const mgr = new BackupSyncManager(makeDeps())
+        const started = mgr.start()
+
+        await mgr.handleSocketEvent({
+            kind: 'itemsUpdated',
+            fromSeq: 1,
+            toSeq: 2,
+        })
+        expect(mockPullBackupDeltas).not.toHaveBeenCalled()
+
+        held.release()
+        await started
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(mockPullBackupDeltas).toHaveBeenCalledTimes(1)
+        mgr.stop()
+    })
+
+    it('runs the sync a restart owes once a run the stop cut off lets go', async () => {
+        const held = holdNextSync()
+        const mgr = new BackupSyncManager(makeDeps())
+        const background = mgr.syncNow()
+
+        mgr.stop()
+        await mgr.start()
+        expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+
+        held.release()
+        await background
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(mockSyncBackup).toHaveBeenCalledTimes(2)
+        mgr.stop()
+    })
+
     it('handleSocketEvent backupDeleted stops syncing, deletes on-device keys, resets stores, and notifies', async () => {
         const onBackupDeleted = vi.fn()
         const mgr = new BackupSyncManager({ ...makeDeps(), onBackupDeleted })
@@ -652,7 +709,43 @@ describe('BackupSyncManager', () => {
             syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 })
             const mgr = new BackupSyncManager(makeDeps())
 
-            expect(await mgr.backUpAccount(ADDR)).toBe(true)
+            expect(await mgr.backUpAccount(ADDR)).toBe('settled')
+            mgr.stop()
+        })
+
+        it('publishes the account as busy while it waits, and clears it once settled', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 })
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+            const background = mgr.syncNow()
+
+            const backedUp = mgr.backUpAccount(ADDR)
+            expect(mockSetBusyItems).toHaveBeenLastCalledWith([
+                `account:${ADDR}`,
+            ])
+            held.release()
+            await background
+            await backedUp
+
+            expect(mockSetBusyItems).toHaveBeenLastCalledWith([])
+            mgr.stop()
+        })
+
+        it('runs a repeat request for an account already queued only once', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 })
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+            const background = mgr.syncNow()
+
+            const first = mgr.backUpAccount(ADDR)
+            const repeat = mgr.backUpAccount(ADDR)
+            held.release()
+            await background
+
+            expect(await first).toBe('settled')
+            expect(await repeat).toBe('settled')
+            // One background sync, then the single staged sync.
+            expect(mockSyncBackup).toHaveBeenCalledTimes(2)
             mgr.stop()
         })
 
@@ -660,7 +753,7 @@ describe('BackupSyncManager', () => {
             syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 0 })
             const mgr = new BackupSyncManager(makeDeps())
 
-            expect(await mgr.backUpAccount(ADDR)).toBe(false)
+            expect(await mgr.backUpAccount(ADDR)).toBe('failed')
             mgr.stop()
         })
 
@@ -677,7 +770,7 @@ describe('BackupSyncManager', () => {
             held.release()
             await running
 
-            expect(await backingUp).toBe(true)
+            expect(await backingUp).toBe('settled')
             expect(mockSyncBackup).toHaveBeenCalledTimes(2)
             mgr.stop()
         })
@@ -701,12 +794,16 @@ describe('BackupSyncManager', () => {
             const mgr = new BackupSyncManager(makeDeps())
             const running = mgr.syncNow()
 
-            const rows = [mgr.backUpAccount(ADDR), mgr.backUpAccount(ADDR)]
+            // Different items: a repeat of one action on one item shares its
+            // run, so it would not exercise two waiters.
+            const backedUp = mgr.backUpAccount(ADDR)
+            const added = mgr.addAccountFromBackup('OTHER-ADDR')
             await vi.advanceTimersByTimeAsync(0)
             held.release()
             await running
 
-            expect(await Promise.all(rows)).toEqual([true, true])
+            expect(await backedUp).toBe('settled')
+            expect(await added).not.toBeNull()
             expect(maxActive).toBe(1)
             mgr.stop()
         })
@@ -724,10 +821,23 @@ describe('BackupSyncManager', () => {
             held.release()
             await running
 
-            expect(await backingUp).toBe(false)
+            expect(await backingUp).toBe('refused')
             expect(mockWithBackupEncryptionKey).toHaveBeenCalledTimes(1)
             expect(mockSyncBackup).toHaveBeenCalledTimes(1)
             mgr.stop()
+        })
+
+        it('reports a back-up whose upload a stop cut off as deferred, not failed', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 0 })
+            const held = holdNextSync()
+            const mgr = new BackupSyncManager(makeDeps())
+
+            const backedUp = mgr.backUpAccount(ADDR)
+            await vi.waitFor(() => expect(held.deps).not.toBeNull())
+            mgr.stop()
+            held.release()
+
+            expect(await backedUp).toBe('deferred')
         })
 
         it('reports failure when the sync itself threw', async () => {
@@ -737,7 +847,7 @@ describe('BackupSyncManager', () => {
             mockSyncBackup.mockRejectedValue(new Error('network down'))
             const mgr = new BackupSyncManager(makeDeps())
 
-            expect(await mgr.backUpAccount(ADDR)).toBe(false)
+            expect(await mgr.backUpAccount(ADDR)).toBe('failed')
             mgr.stop()
         })
     })
@@ -769,6 +879,7 @@ describe('BackupSyncManager', () => {
                     stored = next
                 },
                 setIsSyncing: vi.fn(),
+                setBusyItems: vi.fn(),
                 reset: vi.fn(),
             }
         }
@@ -782,7 +893,7 @@ describe('BackupSyncManager', () => {
                 }),
             })
 
-            expect(await mgr.backUpPasskey(CREDENTIAL_ID)).toBe(true)
+            expect(await mgr.backUpPasskey(CREDENTIAL_ID)).toBe('settled')
             mgr.stop()
         })
 
@@ -795,7 +906,7 @@ describe('BackupSyncManager', () => {
                 }),
             })
 
-            expect(await mgr.backUpPasskey(CREDENTIAL_ID)).toBe(false)
+            expect(await mgr.backUpPasskey(CREDENTIAL_ID)).toBe('failed')
             mgr.stop()
         })
     })
@@ -881,6 +992,7 @@ describe('BackupSyncManager', () => {
             getSyncState: () => null,
             setSyncState: vi.fn(),
             setIsSyncing: vi.fn(),
+            setBusyItems: vi.fn(),
             reset: vi.fn(),
         }
         const mgr = new BackupSyncManager({ ...makeDeps(), state })

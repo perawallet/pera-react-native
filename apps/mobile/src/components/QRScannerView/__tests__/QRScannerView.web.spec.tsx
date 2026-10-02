@@ -98,6 +98,12 @@ vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     openExpandedTab: (...args: unknown[]) => mockOpenExpandedTab(...args),
 }))
 
+const mockShowToast = vi.fn()
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mockShowToast }),
+}))
+
 const PASTED_VALUE = 'ALGO-ADDRESS'
 
 // Feature-detected BarcodeDetector, so the camera-start path is reachable —
@@ -218,6 +224,38 @@ describe('QRScannerView (web)', () => {
             await flushAsync()
             expect(screen.queryByTestId('qr-scan-with-camera')).toBeNull()
         })
+
+        it('offers a retry that asks for the camera again when it is blocked', async () => {
+            getUserMedia.mockRejectedValueOnce(
+                new DOMException('denied', 'NotAllowedError'),
+            )
+            renderScanner()
+            await flushAsync()
+
+            fireEvent.click(screen.getByTestId('qr-camera-retry'))
+            await flushAsync()
+
+            expect(getUserMedia).toHaveBeenCalledTimes(2)
+        })
+
+        it('cancels through onClose when the camera is unavailable', async () => {
+            getUserMedia.mockRejectedValueOnce(new Error('in use'))
+            const onClose = vi.fn()
+            renderScanner({ onClose })
+            await flushAsync()
+
+            fireEvent.click(screen.getByTestId('qr-camera-cancel'))
+
+            expect(onClose).toHaveBeenCalledTimes(1)
+        })
+
+        it('offers no retry when the browser cannot scan QR codes', async () => {
+            vi.stubGlobal('BarcodeDetector', undefined)
+            renderScanner()
+            await flushAsync()
+
+            expect(screen.queryByTestId('qr-camera-error')).toBeNull()
+        })
     })
 
     describe('sheet chrome', () => {
@@ -319,6 +357,22 @@ describe('QRScannerView (web)', () => {
 
             expect(mockHandleDeepLink).not.toHaveBeenCalled()
             expect(onSuccess).not.toHaveBeenCalled()
+        })
+
+        it('toasts and keeps scanning when the code is not one Pera can use', () => {
+            mockIsValidDeepLink.mockReturnValue(false)
+            renderScanner()
+
+            submitPasted(PASTED_VALUE)
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'qr_scanner.invalid_code',
+                    type: 'error',
+                }),
+            )
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+            expect(screen.getByTestId('qr-paste-input')).toBeTruthy()
         })
 
         it('skips handleDeepLink and calls onSuccess directly when skipDeepLinkHandler is true', () => {

@@ -41,7 +41,7 @@ export const mockWalletAccounts = [
         name: 'Watch Only Account',
         balance: new Decimal('0'),
         assets: [],
-        type: 'watch' as const,
+        type: 'watch',
         isWatchOnly: true,
     },
 ]

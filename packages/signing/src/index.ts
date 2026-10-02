@@ -49,7 +49,7 @@ export {
     type HandoffPollDetail,
     type HandoffPollOutcome,
     type LocalArbitrarySigningFunction,
-    type LocalArc60SigningFunction,
+    type LocalAuthDataSigningFunction,
     type LocalKeySignerChainAdapter,
     type LocalKeySignerInput,
     type LocalKeySigningDeps,
@@ -74,10 +74,10 @@ export {
 
 export {
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
     isTransactionRequest,
     type ArbitraryDataSignRequest,
-    type Arc60SignRequest,
+    type AuthDataSignRequest,
     type FeeAdjustment,
     type FeeAdjustmentReason,
     type PeraArbitraryDataMessage,
@@ -131,18 +131,19 @@ export {
     LEGACY_DATA_MAX_REQUEST_CHARS,
     legacyArbitraryDataWireSchema,
 } from './utils/arbitrary-data-wire'
-export {
-    ARC60_MAX_REQUEST_BYTES,
-    arc60WireSchema,
-    assertArc60RequestWithinLimits,
-    isArc60OriginMismatch,
-    isArc60WirePayload,
-    parseArc60WireRequest,
-} from './utils/arc60-wire'
-export { ARC60_SCOPE_AUTH } from './utils/arc60'
+export { isAuthDataOriginMismatch } from './utils/authDataOrigin'
 export { classifyLedgerErrorKind } from './utils/classifyLedgerErrorKind'
-export type { Arc60ParsedPayload } from './utils/parseArc60ForDisplay'
-export { buildSiwaAuthRequest, type Siwa } from './utils/siwa'
+export {
+    buildSiwxAuthData,
+    isAuthDataWirePayload,
+    messageSignerChainAdapters,
+    parseAuthDataWireRequest,
+    type BuildSiwxAuthDataArgs,
+    type MessageSignerChainAdapter,
+    type MessageSigningDeps,
+    type ParsedAuthData,
+    type SiwxMessage,
+} from './message-signer'
 export {
     aggregateTransactionWarnings,
     decodeArbitraryDataForDisplay,
@@ -164,9 +165,11 @@ export {
     type AlgorandTransactionSummary,
     type AnalysisContext,
     type AnalysisWarning,
-    type Arc60Metadata,
-    type Arc60SignableData,
-    type Arc60StdSigData,
+    type ArbitraryDataSignableData,
+    type AuthDataMetadata,
+    type AuthDataPayload,
+    type AuthDataSignableData,
+    type AuthData,
     type DataAnalyzer,
     type RejectReason,
     type DataTransport,
@@ -200,10 +203,6 @@ export { walletConnectHandoffs } from './pipeline/walletConnectHandoffs'
 export type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
 export { createSigningStrategySelector } from './pipeline/signing/getSigningStrategy'
 export type { EncodeTransactionFunction } from './pipeline/signing/createHardwareStrategy'
-export {
-    signArbitraryDataCase,
-    signArc60Case,
-} from './pipeline/signing/standardDataSigning'
 export { SIGNING_ERROR_KEYS } from './pipeline/errors'
 export { resolveSigningAccount } from './machine/utils/resolveSigningAccount'
 export { signGroupsBySignerAccount } from './machine/actors/signers/signGroupsBySignerAccount'

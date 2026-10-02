@@ -16,8 +16,7 @@ import type {
 } from '@perawallet/wallet-core-blockchain'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type {
-    Arc60Metadata,
-    Arc60StdSigData,
+    AuthDataPayload,
     RejectReason,
     SignableAnalysis,
     SignRequestTransportOptions,
@@ -52,7 +51,7 @@ export type SignRequestSource = {
 
 type BaseSignRequest = {
     id: string
-    type: 'transactions' | 'arbitrary-data' | 'arc60'
+    type: 'transactions' | 'arbitrary-data' | 'auth-data'
     transport: 'algod' | 'callback'
     transportId?: string
     /** Origin of the request. Defaults to 'local' when not specified. */
@@ -140,13 +139,10 @@ export type ArbitraryDataSignRequest = {
     error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
-export type Arc60SignRequest = {
-    stdSigData: Arc60StdSigData
-    /** Supplied by the dApp. */
-    metadata: Arc60Metadata
+export type AuthDataSignRequest = AuthDataPayload & {
     /**
-     * Always invoked with a single-element array, so the `algo_signData`
-     * response shape stays consistent across legacy and ARC-60 modalities.
+     * Always invoked with a single-element array, so the response shape stays
+     * consistent with arbitrary-data signing.
      */
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
     reject?: (reason?: RejectReason) => Promise<void>
@@ -156,7 +152,7 @@ export type Arc60SignRequest = {
 export type SignRequest =
     | TransactionSignRequest
     | ArbitraryDataSignRequest
-    | Arc60SignRequest
+    | AuthDataSignRequest
 
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
@@ -222,5 +218,5 @@ export type SigningPipelineEvent =
 export {
     isTransactionRequest,
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
 } from './guards'

@@ -76,7 +76,14 @@ export type ChainScopeKey = `${ChainId}/${NetworkId}` & {
  * The same values as `Network` in packages/config, declared here so this
  * package depends on nothing.
  */
-export type LegacyNetwork = 'mainnet' | 'testnet' | 'betanet' | 'custom'
+export const LEGACY_NETWORKS = [
+    'mainnet',
+    'testnet',
+    'betanet',
+    'custom',
+] as const
+
+export type LegacyNetwork = (typeof LEGACY_NETWORKS)[number]
 
 const NETWORK_ID_PATTERN = /^[a-z0-9-]+$/
 
@@ -90,3 +97,7 @@ export const isNetworkId = (value: unknown): value is NetworkId =>
 export const isGlobalNetwork = (value: unknown): value is GlobalNetwork =>
     typeof value === 'string' &&
     (GLOBAL_NETWORKS as readonly string[]).includes(value)
+
+export const isLegacyNetwork = (value: unknown): value is LegacyNetwork =>
+    typeof value === 'string' &&
+    (LEGACY_NETWORKS as readonly string[]).includes(value)

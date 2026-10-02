@@ -98,6 +98,7 @@ describe('useImportRekeyedAddressesScreen', () => {
 
         vi.mocked(useExitAccountFlow).mockReturnValue({
             exitAccountFlow: mockExitAccountFlow,
+            exitFailedAccountFlow: vi.fn(),
         })
     })
 

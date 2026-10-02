@@ -25,8 +25,8 @@ import {
     ProgramSigningUnsupportedError,
     UserRejectedSigningError,
     useSigningRequest,
-    type Arc60Metadata,
-    type Arc60StdSigData,
+    type AuthDataMetadata,
+    type AuthData,
     type PeraArbitraryDataSignResult,
 } from '@perawallet/wallet-core-signing'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
@@ -66,23 +66,23 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
         [],
     )
 
-    // Enqueues a first-party ARC-60 request with `sourceType: 'arc60'` (one
+    // Enqueues a first-party ARC-60 request with `sourceType: 'card'` (one
     // of the pipeline's INTERACTIVE_SOURCES) so the shared signing pipeline
     // shows the same review screen used for dApp-initiated ARC-60 signing,
     // instead of signing silently behind a bare PIN check.
     const requestArc60Approval = useCallback(
         (
             account: WalletAccount,
-            stdSigData: Arc60StdSigData,
-            metadata: Arc60Metadata,
+            authData: AuthData,
+            metadata: AuthDataMetadata,
         ): Promise<Uint8Array> =>
             new Promise((resolve, reject) => {
                 addSignRequest({
                     id: generateOrderedUniqueId(),
-                    type: 'arc60',
+                    type: 'auth-data',
                     transport: 'callback',
-                    sourceType: 'arc60',
-                    stdSigData,
+                    sourceType: 'card',
+                    authData,
                     metadata,
                     approve: async (signed: PeraArbitraryDataSignResult[]) => {
                         resolve(signed[0].signature)
@@ -106,8 +106,8 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
             }
             return signOwnershipAsync({
                 address: account.address,
-                signArc60: (stdSigData, metadata) =>
-                    requestArc60Approval(account, stdSigData, metadata),
+                signAuthData: (authData, metadata) =>
+                    requestArc60Approval(account, authData, metadata),
             })
         },
         [canCreateCard, signOwnershipAsync, requestArc60Approval],

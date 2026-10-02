@@ -24,8 +24,13 @@ import {
 } from './discovery'
 import { fetchAccountInformation, fetchAssetOptInRounds } from './information'
 import { algorandNetworkOf } from '../legacy-network'
+import { algorandAuthority } from './authority'
 import { algorandQuantumDerivation } from './quantum'
 import { algorandSingleKeyAccounts } from './single-key-accounts'
+import {
+    getAlgorandAuthAccount,
+    resolveAlgorandSigner,
+} from './signer-resolution'
 
 export const algorandAccountsAdapter: AccountsChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
@@ -48,4 +53,7 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     singleKeyAccounts: algorandSingleKeyAccounts,
     fetchRekeyedAddresses: (authAddress, scope) =>
         fetchAlgorandRekeyedAddresses(authAddress, algorandNetworkOf(scope)),
+    authority: algorandAuthority,
+    resolveSigner: resolveAlgorandSigner,
+    getAuthAccount: getAlgorandAuthAccount,
 }

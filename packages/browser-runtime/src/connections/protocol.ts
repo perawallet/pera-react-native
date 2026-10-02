@@ -49,11 +49,8 @@ type SignDataPayload = Extract<
 type LegacySignDataPayload = Extract<SignDataPayload, readonly unknown[]>
 type Arc60SignDataPayload = Exclude<SignDataPayload, readonly unknown[]>
 
-type WireArc60SignDataPayload = Omit<Arc60SignDataPayload, 'stdSigData'> & {
-    stdSigData: Omit<
-        Arc60SignDataPayload['stdSigData'],
-        'authenticatorData'
-    > & {
+type WireArc60SignDataPayload = Omit<Arc60SignDataPayload, 'authData'> & {
+    authData: Omit<Arc60SignDataPayload['authData'], 'authenticatorData'> & {
         /** base64 of `authenticatorData`. */
         authenticatorData: string
     }
@@ -86,10 +83,10 @@ export const encodeWalletOperation = (
         type: 'sign-data',
         payload: {
             ...payload,
-            stdSigData: {
-                ...payload.stdSigData,
+            authData: {
+                ...payload.authData,
                 authenticatorData: encodeToBase64(
-                    payload.stdSigData.authenticatorData,
+                    payload.authData.authenticatorData,
                 ),
             },
         },
@@ -108,10 +105,10 @@ export const decodeWalletOperation = (
         type: 'sign-data',
         payload: {
             ...payload,
-            stdSigData: {
-                ...payload.stdSigData,
+            authData: {
+                ...payload.authData,
                 authenticatorData: decodeFromBase64(
-                    payload.stdSigData.authenticatorData,
+                    payload.authData.authenticatorData,
                 ),
             },
         },

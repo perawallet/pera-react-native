@@ -11,8 +11,6 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { sha256 } from '@noble/hashes/sha2.js'
-import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
@@ -42,7 +40,10 @@ vi.mock('@perawallet/wallet-core-ledger', async () => {
 })
 
 import { createHardwareStrategy } from '../createHardwareStrategy'
+import { registerFakeMessageSignerAdapter } from '../../../__tests__/fakeMessageSignerAdapter'
 import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
+import { messageSignerChainAdapters } from '../../../message-signer'
+import { CannotSignError } from '../../errors'
 import type { EncodeTransactionFunction } from '../createHardwareStrategy'
 import type { AnalyzedSignableGroup } from '../../types'
 import type {
@@ -832,40 +833,20 @@ describe('createHardwareStrategy', () => {
         })
     })
 
-    // Build valid ARC-60 fixtures whose signer address equals the hardware
-    // account address so connectAndVerify + SIWA signer-match both pass.
-    const ARC60_DOMAIN = 'arc60.io'
-    const arc60RpIdHash = sha256(new TextEncoder().encode(ARC60_DOMAIN))
-    const ARC60_AUTH_DATA = new Uint8Array([...arc60RpIdHash, 0x05])
+    const AUTH_DOMAIN = 'example.io'
+    const AUTH_DATA_BASE64 = encodeToBase64(new TextEncoder().encode('payload'))
+    const AUTH_METADATA = { scope: 1, encoding: 'base64' }
 
-    const buildArc60Siwa = (overrides: Record<string, unknown> = {}): string =>
-        canonify({
-            domain: ARC60_DOMAIN,
-            account_address: SIGNER_ADDRESS,
-            uri: 'https://arc60.io/login',
-            version: '1',
-            nonce: 'abc123',
-            chain_id: 'algorand:mainnet',
-            type: 'ed25519',
-            ...overrides,
-        })!
-
-    const arc60SiwaPayload = new TextEncoder().encode(buildArc60Siwa())
-    const ARC60_DATA_BASE64 = encodeToBase64(arc60SiwaPayload)
-
-    const makeArc60Group = (): AnalyzedSignableGroup => ({
+    const makeAuthDataGroup = (): AnalyzedSignableGroup => ({
         data: {
-            type: 'arc60',
-            stdSigData: {
-                data: ARC60_DATA_BASE64,
+            type: 'auth-data',
+            authData: {
+                data: AUTH_DATA_BASE64,
                 signer: SIGNER_ADDRESS,
-                domain: ARC60_DOMAIN,
-                authenticatorData: ARC60_AUTH_DATA,
+                domain: AUTH_DOMAIN,
+                authenticatorData: new Uint8Array(37).fill(5),
             },
-            metadata: {
-                scope: 1,
-                encoding: 'base64',
-            },
+            metadata: AUTH_METADATA,
         },
         source: { type: 'local' },
         signerAddress: SIGNER_ADDRESS,
@@ -879,21 +860,21 @@ describe('createHardwareStrategy', () => {
         },
     })
 
-    const makeArc60Transport = (
+    const makeAuthDataTransport = (
         overrides?: Partial<HardwareWalletTransport>,
     ): HardwareWalletTransport => ({
         ...makeMockTransport(),
         ...overrides,
     })
 
-    describe('arc60 hardware signing', () => {
-        it('signs ARC-60 with a supported app version', async () => {
-            const arc60Signature = Uint8Array.from([1, 2, 3])
-            const transport = makeArc60Transport({
+    describe('auth-data hardware signing', () => {
+        it('signs with a supported app version', async () => {
+            const authDataSignature = Uint8Array.from([1, 2, 3])
+            const transport = makeAuthDataTransport({
                 getAppVersion: vi
                     .fn()
                     .mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
-                signData: vi.fn().mockResolvedValue(arc60Signature),
+                signData: vi.fn().mockResolvedValue(authDataSignature),
             })
             const provider = makeMockProvider(transport)
             const registry = makeRegistry(provider)
@@ -902,7 +883,7 @@ describe('createHardwareStrategy', () => {
                 encodeTransaction,
                 getAllAccounts: () => [],
             })
-            const group = makeArc60Group()
+            const group = makeAuthDataGroup()
             const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
 
             const result = await strategy.sign(group, account)
@@ -910,118 +891,123 @@ describe('createHardwareStrategy', () => {
             expect(transport.signData).toHaveBeenCalledWith(
                 expect.objectContaining({
                     accountIndex: 0,
-                    data: ARC60_DATA_BASE64,
-                    domain: ARC60_DOMAIN,
+                    data: AUTH_DATA_BASE64,
+                    domain: AUTH_DOMAIN,
                     scope: 1,
                     encoding: 'base64',
                     signerPublicKey: expect.any(Uint8Array),
                 }),
             )
             expect(result).toEqual({
-                signedData: { type: 'arc60', signature: arc60Signature },
+                signedData: { type: 'auth-data', signature: authDataSignature },
                 signers: [{ address: SIGNER_ADDRESS }],
                 originalIndices: [0],
             })
         })
 
         it('throws LedgerAppOutdatedError on too-old app version', async () => {
-            const transport = makeArc60Transport({
+            const transport = makeAuthDataTransport({
                 getAppVersion: vi
                     .fn()
                     .mockResolvedValue({ major: 1, minor: 9, patch: 0 }),
                 signData: vi.fn(),
             })
-            const provider = makeMockProvider(transport)
-            const registry = makeRegistry(provider)
+            const validateAuthData = vi.fn()
+            registerFakeMessageSignerAdapter({ validateAuthData })
             const strategy = createHardwareStrategy({
-                hardwareWalletRegistry: registry,
+                hardwareWalletRegistry: makeRegistry(
+                    makeMockProvider(transport),
+                ),
                 encodeTransaction,
                 getAllAccounts: () => [],
-            })
-            const group = makeArc60Group()
-            const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
-
-            await expect(strategy.sign(group, account)).rejects.toBeInstanceOf(
-                LedgerAppOutdatedError,
-            )
-            expect(transport.signData).not.toHaveBeenCalled()
-        })
-
-        it('rejects and does not call signData when host validation fails (domain mismatch)', async () => {
-            // Build an authenticatorData whose first 32 bytes are sha256("evil.com")
-            // instead of sha256(ARC60_DOMAIN). validateArc60AuthRequest will throw
-            // Arc60DomainMismatchError before signData is ever reached.
-            const evilRpIdHash = sha256(new TextEncoder().encode('evil.com'))
-            const mismatchedAuthData = new Uint8Array([...evilRpIdHash, 0x05])
-
-            const transport = makeArc60Transport({
-                getAppVersion: vi
-                    .fn()
-                    .mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
-                getAddress: vi.fn().mockResolvedValue({
-                    address: SIGNER_ADDRESS,
-                    publicKey: new Uint8Array(32),
-                    accountIndex: 0,
-                }),
-                signData: vi.fn(),
-            })
-            const provider = makeMockProvider(transport)
-            const registry = makeRegistry(provider)
-            const strategy = createHardwareStrategy({
-                hardwareWalletRegistry: registry,
-                encodeTransaction,
-                getAllAccounts: () => [],
-            })
-
-            // Override only the authenticatorData to the mismatched value;
-            // everything else (signer, domain string, data payload) is valid.
-            const group: AnalyzedSignableGroup = {
-                ...makeArc60Group(),
-                data: {
-                    type: 'arc60',
-                    stdSigData: {
-                        data: ARC60_DATA_BASE64,
-                        signer: SIGNER_ADDRESS,
-                        domain: ARC60_DOMAIN,
-                        authenticatorData: mismatchedAuthData,
-                    },
-                    metadata: {
-                        scope: 1,
-                        encoding: 'base64',
-                    },
-                },
-            }
-            const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
-
-            await expect(strategy.sign(group, account)).rejects.toThrow()
-            expect(transport.signData).not.toHaveBeenCalled()
-        })
-
-        it('cross-checks the SIWA signer against the injected accounts', async () => {
-            const transport = makeArc60Transport({
-                getAppVersion: vi
-                    .fn()
-                    .mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
-                signData: vi.fn(),
-            })
-            const registry = makeRegistry(makeMockProvider(transport))
-            const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
-            const getAllAccounts = vi.fn(() => [
-                { ...account, rekeyAddress: 'AUTHADDR' } as WalletAccount,
-            ])
-            const strategy = createHardwareStrategy({
-                hardwareWalletRegistry: registry,
-                encodeTransaction,
-                getAllAccounts,
             })
 
             await expect(
-                strategy.sign(makeArc60Group(), account),
-            ).rejects.toThrow(/rekeyed/)
-            expect(getAllAccounts).toHaveBeenCalled()
+                strategy.sign(
+                    makeAuthDataGroup(),
+                    makeLedgerAccount(SIGNER_ADDRESS, 0),
+                ),
+            ).rejects.toBeInstanceOf(LedgerAppOutdatedError)
+            expect(validateAuthData).not.toHaveBeenCalled()
+            expect(transport.signData).not.toHaveBeenCalled()
+        })
+
+        it('rejects and does not call signData when host validation fails', async () => {
+            const transport = makeAuthDataTransport({
+                signData: vi.fn(),
+            })
+            registerFakeMessageSignerAdapter({
+                validateAuthData: () => {
+                    throw new Error('rejected by the chain validator')
+                },
+            })
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: makeRegistry(
+                    makeMockProvider(transport),
+                ),
+                encodeTransaction,
+                getAllAccounts: () => [],
+            })
+
+            await expect(
+                strategy.sign(
+                    makeAuthDataGroup(),
+                    makeLedgerAccount(SIGNER_ADDRESS, 0),
+                ),
+            ).rejects.toThrow('rejected by the chain validator')
             expect(transport.signData).not.toHaveBeenCalled()
             expect(transport.disconnect).toHaveBeenCalled()
         })
+
+        it('validates against the accounts current at sign time', async () => {
+            const transport = makeAuthDataTransport()
+            const account = makeLedgerAccount(SIGNER_ADDRESS, 0)
+            const accounts = [
+                { ...account, rekeyAddress: 'AUTHADDR' } as WalletAccount,
+            ]
+            const validateAuthData = vi.fn(() => ({
+                decodedData: new Uint8Array(),
+            }))
+            registerFakeMessageSignerAdapter({ validateAuthData })
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: makeRegistry(
+                    makeMockProvider(transport),
+                ),
+                encodeTransaction,
+                getAllAccounts: () => accounts,
+            })
+            const group = makeAuthDataGroup()
+
+            await strategy.sign(group, account)
+
+            expect(validateAuthData).toHaveBeenCalledWith(
+                group.data.type === 'auth-data' ? group.data.authData : null,
+                AUTH_METADATA,
+                accounts,
+            )
+        })
+
+        it('refuses before any device prompt when no message signer is registered', async () => {
+            const transport = makeAuthDataTransport()
+            const provider = makeMockProvider(transport)
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: makeRegistry(provider),
+                encodeTransaction,
+                getAllAccounts: () => [],
+            })
+            messageSignerChainAdapters.reset()
+
+            await expect(
+                strategy.sign(
+                    makeAuthDataGroup(),
+                    makeLedgerAccount(SIGNER_ADDRESS, 0),
+                ),
+            ).rejects.toBeInstanceOf(CannotSignError)
+            expect(provider.connect).not.toHaveBeenCalled()
+            expect(transport.getAppVersion).not.toHaveBeenCalled()
+            expect(transport.signData).not.toHaveBeenCalled()
+        })
+
         it('still rejects legacy arbitrary-data on hardware', async () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
@@ -1029,7 +1015,7 @@ describe('createHardwareStrategy', () => {
                 getAllAccounts: () => [],
             })
             const group = {
-                ...makeArc60Group(),
+                ...makeAuthDataGroup(),
                 data: { type: 'arbitrary-data' as const, data: [] },
             } as unknown as AnalyzedSignableGroup
 
@@ -1133,10 +1119,10 @@ describe('createHardwareStrategy', () => {
             expect(mockTransport.signTransaction).not.toHaveBeenCalled()
         })
 
-        it('arc60: abort during a hanging signData disconnects the transport', async () => {
+        it('auth-data: abort during a hanging signData disconnects the transport', async () => {
             const controller = new AbortController()
             let rejectExchange: (error: Error) => void = () => {}
-            const transport = makeArc60Transport({
+            const transport = makeAuthDataTransport({
                 signData: vi.fn(
                     () =>
                         new Promise((_, reject) => {
@@ -1158,7 +1144,7 @@ describe('createHardwareStrategy', () => {
             })
 
             const signPromise = strategy.sign(
-                makeArc60Group(),
+                makeAuthDataGroup(),
                 makeLedgerAccount(),
                 {
                     signal: controller.signal,

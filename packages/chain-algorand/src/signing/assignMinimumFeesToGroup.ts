@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
     isQuantumAccount,
@@ -80,7 +81,7 @@ export const groupHasQuantumSigner = ({
             signerOverrides,
             subsetIndex,
         )
-        const signer = getSignerFor(authorizer, accounts)
+        const signer = getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
         return signer !== null && isQuantumAccount(signer)
     })
 
@@ -152,7 +153,7 @@ export const assignMinimumFeesToGroup = ({
             signerOverrides,
             i,
         )
-        const signer = getSignerFor(authorizer, accounts)
+        const signer = getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
         if (signer === null || !isQuantumAccount(signer)) continue
         // Add the premium to what the dApp set, then floor at the PQ minimum
         // for a fee that wouldn't even cover a plain transaction. The floor

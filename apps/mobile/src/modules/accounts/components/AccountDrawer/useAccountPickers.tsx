@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback, useMemo } from 'react'
 import {
     canSignWith,
@@ -40,7 +41,8 @@ export const useSigningPicker = (): AccountDrawerPickerProps => {
     const accounts = useAllAccounts()
 
     const accountFilter = useCallback(
-        (account: WalletAccount) => canSignWith(account, accounts),
+        (account: WalletAccount) =>
+            canSignWith(account, accounts, LEGACY_CHAIN_ID),
         [accounts],
     )
 

@@ -139,7 +139,7 @@ const seedPreviouslySyncedAccount = async () => {
     })
     await upsertAssetPrices({
         prices: [{ assetId: '0', usdPrice: new Decimal('0.30') }],
-        network: NETWORK,
+        scope: scopeForLegacyNetwork(NETWORK),
     })
     await upsertTransactions({
         items: [CACHED_TX],

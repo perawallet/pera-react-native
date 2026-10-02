@@ -14,9 +14,12 @@ import {
     truncateAlgorandAddress,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     AccountTypes,
-    type BaseWalletAccount,
+    type AccountProvenance,
+    type AccountType,
+    type LocalProvenance,
     type HardwareWalletAccount,
     type HDWalletAccount,
     type Algo25Account,
@@ -27,6 +30,7 @@ import {
     type WalletAccount,
 } from './models'
 import { MNEMONIC_WORD_COUNT } from './constants'
+import { accountsChainAdapters } from './chain-adapter'
 
 // Matches any `prefix...suffix`/`prefix…suffix` truncation of the address,
 // not just our own 5+5 format — legacy apps auto-named accounts with a 6+6
@@ -56,6 +60,36 @@ export const getAccountDisplayName = (account: Nullable<WalletAccount>) => {
     return truncateAlgorandAddress(account.address)
 }
 
+const LOCAL_ACCOUNT_TYPES = {
+    algo25: AccountTypes.algo25,
+    quantum: AccountTypes.quantum,
+    bip39: AccountTypes.hdWallet,
+} as const satisfies Record<LocalProvenance['seed'], AccountType>
+
+const accountTypeOf = (provenance: AccountProvenance): AccountType => {
+    switch (provenance.kind) {
+        case 'local': {
+            return LOCAL_ACCOUNT_TYPES[provenance.seed]
+        }
+        case 'hardware': {
+            return AccountTypes.hardware
+        }
+        case 'multisig': {
+            return AccountTypes.multisig
+        }
+        case 'watch': {
+            return AccountTypes.watch
+        }
+    }
+}
+
+/**
+ * Rekey state is ignored: a watch account with an auth address stays `watch`.
+ * A record the backfill left without a provenance keeps its stored `type`.
+ */
+export const accountType = (account: WalletAccount): AccountType =>
+    account.provenance ? accountTypeOf(account.provenance) : account.type
+
 export const isHDWalletAccount = (
     account: WalletAccount,
 ): account is HDWalletAccount => {
@@ -77,8 +111,14 @@ export const isLedgerAccount = (
     )
 }
 
-export const isRekeyedAccount = (account: Nullable<WalletAccount>): boolean =>
-    !!account?.rekeyAddress
+/** False on a chain whose signing authority can't be delegated. */
+export const isRekeyedAccount = (
+    account: Nullable<WalletAccount>,
+    chainId: ChainId,
+): boolean =>
+    !!account &&
+    (accountsChainAdapters.get(chainId).authority?.isDelegated(account) ??
+        false)
 
 export const isAlgo25Account = (
     account: WalletAccount,
@@ -130,12 +170,6 @@ export const canSignViaParticipants = (
         )
     })
 
-const canSignViaMultisig = (
-    multisig: MultiSigAccount,
-    accounts: WalletAccount[],
-): boolean =>
-    canSignViaParticipants(multisig.multisigDetails.addresses, accounts)
-
 /**
  * Off-chain data has no auth-addr lookup — the dApp verifies against the
  * requested account's own pubkey — so rekey indirection is NOT followed: a
@@ -161,132 +195,13 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
 export const canSignArc60 = (account: WalletAccount): boolean =>
     canSignDirectly(account)
 
-/**
- * Whether `account` can produce a *usable* delegated LogicSig (LSig / dLSig).
- *
- * Three exclusions:
- * - Hardware wallets — permanent. Not merely because they carry no
- *   `keyPairId`: their firmware signs transactions and ARC-60 payloads only,
- *   and will never sign a program. Unlike {@link canSignArc60}, which Ledger
- *   does satisfy.
- * - Multisig — permanent for a *delegated* LSig, which carries a single
- *   `sigkey`: `encodeProgramAccount` emits one signature, so a threshold
- *   account can never be represented. Stated explicitly rather than relying on
- *   `hasSigningKeys`, because `keyPairId` is optional on `BaseWalletAccount`
- *   and a multisig account is only key-less by convention.
- * - Rekeyed accounts — deferred, not impossible. A delegated LSig authorizes
- *   spending, so the chain verifies it against the sender's auth-addr: the
- *   delegation is signable, but only by the auth account. Supporting that
- *   needs auth-account resolution in `useProgramSigner` (which signs with the
- *   sender's own key today) plus on-chain rekey verification in the AB and
- *   Pera backends — until then a rekeyed sender must be refused, whereas
- *   {@link canSignArbitraryData} deliberately ignores rekeys because
- *   off-chain data has no auth-addr lookup.
- */
-export const canSignProgram = (account: WalletAccount): boolean =>
-    !isHardwareWalletAccount(account) &&
-    !isMultisigAccount(account) &&
-    !isRekeyedAccount(account) &&
-    hasSigningKeys(account)
-
-/**
- * Wallet accounts whose auth-addr is `address` — the accounts `address` signs
- * for. Self-references are excluded (an account rekeyed to itself is not
- * "another account").
- *
- * Looks at every network the wallet has observed, not just the active-network
- * `rekeyAddress` mirror: a mainnet rekey still strands the mainnet account
- * while the user is browsing testnet. The legacy mirror is kept in the check
- * for accounts persisted before `rekeyAddressByNetwork` existed.
- */
-export const getAccountsRekeyedTo = (
-    address: string,
-    accounts: WalletAccount[],
-): WalletAccount[] =>
-    accounts.filter(
-        a =>
-            a.address !== address &&
-            (a.rekeyAddress === address ||
-                Object.values(a.rekeyAddressByNetwork ?? {}).includes(address)),
-    )
-
-/**
- * Rekeying to self or to the current auth are both fee-burning no-ops, so
- * eligibility needs both fields. A full {@link WalletAccount} satisfies this.
- */
-type RekeySourceFields = Pick<BaseWalletAccount, 'address' | 'rekeyAddress'>
-
-/**
- * Mirrors Android
- * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`.
- *
- * Quantum accounts are excluded here: the dedicated rekey-to-quantum flow
- * lists them via {@link isEligibleQuantumRekeyTarget}.
- */
-export const isEligibleRekeyTarget = (
-    target: WalletAccount,
-    source: RekeySourceFields,
-): boolean => {
-    if (target.address === source.address) return false
-    if (target.address === source.rekeyAddress) return false
-    if (
-        target.type !== AccountTypes.algo25 &&
-        target.type !== AccountTypes.hdWallet
-    )
-        return false
-    if (!hasSigningKeys(target)) return false
-    if (isRekeyedAccount(target)) return false
-    return true
-}
-
-/**
- * `isQuantumTargetEnabled` is a hard functional limit rather than a rollout
- * toggle. Signing works locally, but mainnet and testnet algod still reject
- * the `pqsig` field, so on those networks the rekey is a one-way door that
- * strands the funds: every later transaction needs a `pqsig`, *including the
- * rekey-back that would undo it*.
- */
-export const isEligibleQuantumRekeyTarget = (
-    target: WalletAccount,
-    source: RekeySourceFields,
-    isQuantumTargetEnabled: boolean,
-): boolean => {
-    if (!isQuantumTargetEnabled) return false
-    if (target.address === source.address) return false
-    if (target.address === source.rekeyAddress) return false
-    if (target.type !== AccountTypes.quantum) return false
-    if (!hasSigningKeys(target)) return false
-    if (isRekeyedAccount(target)) return false
-    return true
-}
-
-export const isEligibleLedgerRekeyTarget = (
-    target: WalletAccount,
-    source: RekeySourceFields,
-): boolean => {
-    if (target.address === source.address) return false
-    if (target.address === source.rekeyAddress) return false
-    if (target.type !== AccountTypes.hardware) return false
-    if (isRekeyedAccount(target)) return false
-    return true
-}
-
-/**
- * Requires one signable participant, not `threshold` of them: signing is
- * propose-based, so one local participant can propose and the rest are
- * collected from co-signers. Zero would permanently lock the source account.
- */
-export const isEligibleSharedRekeyTarget = (
-    target: WalletAccount,
-    source: RekeySourceFields,
-    allAccounts: WalletAccount[],
-): boolean => {
-    if (target.address === source.address) return false
-    if (target.address === source.rekeyAddress) return false
-    if (!isMultisigAccount(target)) return false
-    if (isRekeyedAccount(target)) return false
-    return canSignViaMultisig(target, allAccounts)
-}
+/** False on a chain that can't sign programs. */
+export const canSignProgram = (
+    account: WalletAccount,
+    chainId: ChainId,
+): boolean =>
+    accountsChainAdapters.get(chainId).authority?.canSignProgram(account) ??
+    false
 
 /** An on-chain address, an internal account id, or both. */
 export type AccountKey = {

@@ -142,8 +142,8 @@ describe('createStandardAnalyzer', () => {
     ): SignableGroup =>
         ({
             data: {
-                type: 'arc60',
-                stdSigData: { domain, signer: ACCOUNT_A },
+                type: 'auth-data',
+                authData: { domain, signer: ACCOUNT_A },
                 metadata: { scope: 1, encoding: 'base64' },
             },
             source: { type: 'webview', verifiedOrigin },

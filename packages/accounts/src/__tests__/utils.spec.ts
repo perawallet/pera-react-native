@@ -10,21 +10,17 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { beforeEach, describe, test, expect } from 'vitest'
 import {
+    accountType,
     canSignArbitraryData,
     canSignArc60,
     canSignProgram,
     canSignViaParticipants,
     findAccountByKey,
     getAccountDisplayName,
-    getAccountsRekeyedTo,
     hasSigningKeys,
     isAlgo25Account,
-    isEligibleLedgerRekeyTarget,
-    isEligibleQuantumRekeyTarget,
-    isEligibleRekeyTarget,
-    isEligibleSharedRekeyTarget,
     isQuantumAccount,
     isHDWalletAccount,
     isLedgerAccount,
@@ -34,17 +30,20 @@ import {
     matchesAccountKey,
     resolveImportAccountType,
 } from '../utils'
+import { withCustody } from '../credentials'
 import {
-    canSignWith,
-    getRekeyAccount,
-    getSignerFor,
-    isQuantumDowngrade,
-    rekeyTransitionFor,
-    resolveAuthAccount,
-} from '../signer-resolution'
-import { AccountTypes, type WalletAccount } from '../models'
+    AccountTypes,
+    DerivationTypes,
+    type AccountType,
+    type WalletAccount,
+} from '../models'
 import { MNEMONIC_WORD_COUNT } from '../constants'
-import { RekeyTargetNotFoundError } from '../errors'
+import { buildTestAccount } from './accountFactory'
+import {
+    FAKE_CHAIN_ID,
+    fakeAccountsChain,
+    registerFakeAccountsChain,
+} from './fakeAccountsChain'
 
 vi.mock('tweetnacl', () => ({
     default: {
@@ -255,16 +254,6 @@ describe('services/accounts/utils - account type checks', () => {
         ).toBe(false)
     })
 
-    test('isRekeyedAccount returns true if rekeyAddress is present', () => {
-        expect(isRekeyedAccount(baseAccount)).toBe(false)
-        expect(
-            isRekeyedAccount({
-                ...baseAccount,
-                rekeyAddress: 'ADDR2',
-            } as any),
-        ).toBe(true)
-    })
-
     test('isAlgo25Account returns true if type is algo25', () => {
         expect(isAlgo25Account(baseAccount)).toBe(false)
         expect(
@@ -315,179 +304,6 @@ describe('services/accounts/utils - account type checks', () => {
                 keyPairId: undefined,
             } as any),
         ).toBe(false)
-    })
-
-    test('canSignWith returns true for account with keyPairId', () => {
-        expect(canSignWith(baseAccount, [])).toBe(true)
-    })
-
-    test('canSignWith returns false for account without keyPairId', () => {
-        expect(
-            canSignWith({ ...baseAccount, keyPairId: undefined } as any, []),
-        ).toBe(false)
-    })
-
-    test('canSignWith returns true for rekeyed account when auth account has keys', () => {
-        const authAccount = {
-            id: '2',
-            type: 'algo25',
-            address: 'AUTH_ADDR',
-            keyPairId: 'pk2',
-        } as any
-
-        const rekeyedAccount = {
-            id: '3',
-            type: 'watch',
-            address: 'REKEYED_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
-        } as any
-
-        expect(canSignWith(rekeyedAccount, [authAccount])).toBe(true)
-    })
-
-    test('canSignWith returns false for rekeyed account when auth account has no keys', () => {
-        const authAccount = {
-            id: '2',
-            type: 'watch',
-            address: 'AUTH_ADDR',
-        } as any
-
-        const rekeyedAccount = {
-            id: '3',
-            type: 'watch',
-            address: 'REKEYED_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
-        } as any
-
-        expect(canSignWith(rekeyedAccount, [authAccount])).toBe(false)
-    })
-
-    test('canSignWith returns false for rekeyed account when auth account is not in list', () => {
-        const rekeyedAccount = {
-            id: '3',
-            type: 'watch',
-            address: 'REKEYED_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
-        } as any
-
-        expect(canSignWith(rekeyedAccount, [])).toBe(false)
-    })
-
-    test('canSignWith resolves a single rekey hop only, not a chain', () => {
-        const rootAccount = {
-            id: '1',
-            type: 'algo25',
-            address: 'ROOT_ADDR',
-            keyPairId: 'pk1',
-        } as any
-
-        const middleAccount = {
-            id: '2',
-            type: 'watch',
-            address: 'MIDDLE_ADDR',
-            rekeyAddress: 'ROOT_ADDR',
-        } as any
-
-        const leafAccount = {
-            id: '3',
-            type: 'watch',
-            address: 'LEAF_ADDR',
-            rekeyAddress: 'MIDDLE_ADDR',
-        } as any
-
-        const accounts = [rootAccount, middleAccount, leafAccount]
-        // LEAF -> MIDDLE -> ROOT. MIDDLE holds no key, so LEAF cannot sign —
-        // the hop from MIDDLE to ROOT is not followed.
-        expect(canSignWith(leafAccount, accounts)).toBe(false)
-        // MIDDLE -> ROOT, and ROOT holds a key, so MIDDLE can sign (one hop).
-        expect(canSignWith(middleAccount, accounts)).toBe(true)
-    })
-
-    test('canSignWith does not recurse on a cyclic auth chain', () => {
-        const a = {
-            id: '1',
-            type: 'watch',
-            address: 'A',
-            rekeyAddress: 'B',
-        } as any
-        const b = {
-            id: '2',
-            type: 'watch',
-            address: 'B',
-            rekeyAddress: 'A',
-        } as any
-
-        // Single-hop: A's immediate auth B holds no key — false, no infinite
-        // recursion.
-        expect(canSignWith(a, [a, b])).toBe(false)
-    })
-})
-
-describe('services/accounts/utils - canSignWith (hardware + multisig)', () => {
-    test('returns true for a non-rekeyed hardware account (no keyPairId)', () => {
-        const account = {
-            type: 'hardware',
-            address: 'HW',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'test-device',
-                deviceName: 'Ledger Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as any
-        expect(canSignWith(account, [account])).toBe(true)
-    })
-
-    test('returns true for rekeyed account whose auth is a hardware account', () => {
-        const authAccount = {
-            type: 'hardware',
-            address: 'AUTH',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'test-device',
-                deviceName: 'Ledger Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as any
-        const account = {
-            type: 'watch',
-            address: 'ADDR',
-            rekeyAddress: 'AUTH',
-        } as any
-        expect(canSignWith(account, [account, authAccount])).toBe(true)
-    })
-
-    test('returns true for a multisig with a local signable participant', () => {
-        const participant = {
-            type: 'algo25',
-            address: 'P1',
-            keyPairId: 'pk1',
-        } as any
-        const multisig = {
-            type: 'multisig',
-            address: 'MS',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2'],
-                version: 1,
-            },
-        } as any
-        expect(canSignWith(multisig, [multisig, participant])).toBe(true)
-    })
-
-    test('returns false for a multisig with no local signable participants', () => {
-        const multisig = {
-            type: 'multisig',
-            address: 'MS',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2'],
-                version: 1,
-            },
-        } as any
-        expect(canSignWith(multisig, [multisig])).toBe(false)
     })
 })
 
@@ -550,179 +366,6 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
         test('accepts a rekeyed account that still holds its own key', () => {
             const rekeyed = { ...localKey, rekeyAddress: watch.address } as any
             expect(canSignArc60(rekeyed)).toBe(true)
-        })
-    })
-
-    test('canSignProgram excludes hardware, which has no program-signing path', () => {
-        expect(canSignProgram(localKey)).toBe(true)
-        expect(canSignProgram(hardware)).toBe(false)
-        expect(canSignProgram(watch)).toBe(false)
-        expect(canSignProgram(multisig)).toBe(false)
-    })
-
-    // Guards the reason canSignProgram checks the account type rather than
-    // relying on hardware and multisig accounts happening to carry no
-    // keyPairId: the field is optional on the base type, so nothing stops one
-    // appearing. A delegated LSig carries a single sigkey, so multisig can
-    // never be represented regardless of what keys it holds.
-    test('canSignProgram stays false for hardware and multisig even with a keyPairId', () => {
-        expect(canSignProgram({ ...hardware, keyPairId: 'pk1' })).toBe(false)
-        expect(canSignArc60({ ...hardware, keyPairId: 'pk1' })).toBe(true)
-        expect(canSignProgram({ ...multisig, keyPairId: 'pk1' })).toBe(false)
-    })
-
-    // A delegated LSig is checked against the sender's auth-addr, so only the
-    // auth account could usefully sign it. Refused until the signer resolves
-    // that; canSignArbitraryData ignores rekeys (no auth-addr off-chain).
-    test('canSignProgram excludes rekeyed accounts, unlike canSignArbitraryData', () => {
-        const rekeyed = { ...localKey, rekeyAddress: 'AUTH' }
-        expect(canSignProgram(rekeyed)).toBe(false)
-        expect(canSignArbitraryData(rekeyed)).toBe(true)
-    })
-})
-
-describe('services/accounts/utils - getRekeyAccount', () => {
-    test('returns the auth account when rekeyed and target is in the wallet', () => {
-        const auth = {
-            type: 'algo25',
-            address: 'AUTH',
-            keyPairId: 'pk1',
-        } as any
-        const rekeyed = {
-            type: 'algo25',
-            address: 'A',
-            keyPairId: 'pk2',
-            rekeyAddress: 'AUTH',
-        } as any
-        expect(getRekeyAccount('A', [rekeyed, auth])).toBe(auth)
-    })
-
-    test('returns null when the address is not rekeyed', () => {
-        const account = {
-            type: 'algo25',
-            address: 'A',
-            keyPairId: 'pk1',
-        } as any
-        expect(getRekeyAccount('A', [account])).toBeNull()
-    })
-
-    test('returns null when the rekey target is not in the wallet', () => {
-        const rekeyed = {
-            type: 'watch',
-            address: 'A',
-            rekeyAddress: 'MISSING',
-        } as any
-        expect(getRekeyAccount('A', [rekeyed])).toBeNull()
-    })
-
-    test('returns null when the address is unknown', () => {
-        expect(getRekeyAccount('UNKNOWN', [])).toBeNull()
-    })
-})
-
-describe('services/accounts/utils - getSignerFor', () => {
-    test('returns the account itself when it holds its own key', () => {
-        const account = {
-            type: 'algo25',
-            address: 'A',
-            keyPairId: 'pk1',
-        } as any
-        expect(getSignerFor('A', [account])).toBe(account)
-    })
-
-    test('returns the immediate auth account when rekeyed and we can sign', () => {
-        const auth = {
-            type: 'algo25',
-            address: 'AUTH',
-            keyPairId: 'pk1',
-        } as any
-        const rekeyed = {
-            type: 'algo25',
-            address: 'A',
-            keyPairId: 'pk2',
-            rekeyAddress: 'AUTH',
-        } as any
-        expect(getSignerFor('A', [rekeyed, auth])).toBe(auth)
-    })
-
-    test('returns null for an unsignable rekeyed account', () => {
-        const rekeyed = {
-            type: 'watch',
-            address: 'A',
-            rekeyAddress: 'MISSING',
-        } as any
-        expect(getSignerFor('A', [rekeyed])).toBeNull()
-    })
-
-    test('returns null for a non-rekeyed watch account', () => {
-        const account = { type: 'watch', address: 'A' } as any
-        expect(getSignerFor('A', [account])).toBeNull()
-    })
-
-    test('returns the multisig itself when at least one participant is local and signable', () => {
-        const participant = {
-            type: 'algo25',
-            address: 'P1',
-            keyPairId: 'pk1',
-        } as any
-        const multisig = {
-            type: 'multisig',
-            address: 'MS',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2'],
-                version: 1,
-            },
-        } as any
-        expect(getSignerFor('MS', [multisig, participant])).toBe(multisig)
-    })
-
-    test('returns null when address is not in the wallet', () => {
-        expect(getSignerFor('UNKNOWN', [])).toBeNull()
-    })
-})
-
-describe('services/accounts/utils - rekeyTransitionFor', () => {
-    test('returns null for a non-rekeyed account', () => {
-        const account = {
-            type: 'algo25',
-            address: 'A',
-            keyPairId: 'pk1',
-        } as any
-        expect(rekeyTransitionFor(account, [account])).toBeNull()
-    })
-
-    test('returns null for a rekeyed account whose auth is not in the wallet', () => {
-        const rekeyed = {
-            type: 'algo25',
-            address: 'A',
-            keyPairId: 'pk1',
-            rekeyAddress: 'MISSING',
-        } as any
-        expect(rekeyTransitionFor(rekeyed, [rekeyed])).toBeNull()
-    })
-
-    test('returns from/to raw types for a signable rekey', () => {
-        const auth = {
-            type: 'hardware',
-            address: 'AUTH',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'd',
-                deviceName: 'Ledger',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as any
-        const rekeyed = {
-            type: 'algo25',
-            address: 'A',
-            keyPairId: 'pk1',
-            rekeyAddress: 'AUTH',
-        } as any
-        expect(rekeyTransitionFor(rekeyed, [rekeyed, auth])).toEqual({
-            from: 'algo25',
-            to: 'hardware',
         })
     })
 })
@@ -903,17 +546,6 @@ describe('services/accounts/utils - quantum accounts', () => {
         expect(canSignArc60(quantum())).toBe(true)
     })
 
-    test('canSignWith resolves a quantum account as its own signer', () => {
-        const account = quantum()
-        expect(canSignWith(account, [account])).toBe(true)
-    })
-
-    test('canSignWith resolves a quantum auth account for a rekeyed account', () => {
-        const auth = quantum({ address: 'FAUTH' })
-        const rekeyed = watch({ address: 'A', rekeyAddress: 'FAUTH' })
-        expect(canSignWith(rekeyed, [rekeyed, auth])).toBe(true)
-    })
-
     test('quantum keys are not valid multisig participants (Ed25519-only protocol)', () => {
         expect(canSignViaParticipants(['F'], [quantum({ address: 'F' })])).toBe(
             false,
@@ -921,413 +553,156 @@ describe('services/accounts/utils - quantum accounts', () => {
     })
 })
 
-describe('services/accounts/utils - isEligibleRekeyTarget', () => {
-    const src = { address: 'SRC' }
+describe('services/accounts/utils - authority wrappers', () => {
+    const account = {
+        ...algo25({ address: 'A' }),
+    } as WalletAccount
 
-    test('rejects target equal to source', () => {
-        expect(
-            isEligibleRekeyTarget(algo25({ address: 'A' }), { address: 'A' }),
-        ).toBe(false)
-    })
-
-    test("rejects target equal to source's current auth", () => {
-        expect(
-            isEligibleRekeyTarget(algo25({ address: 'B' }), {
-                address: 'SRC',
-                rekeyAddress: 'B',
-            }),
-        ).toBe(false)
-    })
-
-    test('rejects multisig / hardware / watch targets', () => {
-        expect(isEligibleRekeyTarget(multisig({ address: 'M' }), src)).toBe(
-            false,
-        )
-        expect(isEligibleRekeyTarget(ledger({ address: 'L' }), src)).toBe(false)
-        expect(isEligibleRekeyTarget(watch({ address: 'W' }), src)).toBe(false)
-    })
-
-    test('rejects quantum targets (the dedicated rekey-to-quantum flow lists them)', () => {
-        expect(isEligibleRekeyTarget(quantum({ address: 'F' }), src)).toBe(
-            false,
-        )
-    })
-
-    test('rejects target without signing keys', () => {
-        const noKey = algo25({ address: 'A' })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(noKey as any).keyPairId = undefined
-        expect(isEligibleRekeyTarget(noKey, src)).toBe(false)
-    })
-
-    test('rejects target already rekeyed away', () => {
-        expect(
-            isEligibleRekeyTarget(
-                algo25({ address: 'A', rekeyAddress: 'B' }),
-                src,
-            ),
-        ).toBe(false)
-    })
-
-    test('accepts valid algo25 / hdWallet target', () => {
-        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), src)).toBe(true)
-        expect(isEligibleRekeyTarget(hd({ address: 'H' }), src)).toBe(true)
-    })
-
-    test('accepts a rekeyed source rekeying to a different fresh target', () => {
-        expect(
-            isEligibleRekeyTarget(algo25({ address: 'A' }), {
-                address: 'SRC',
-                rekeyAddress: 'B',
-            }),
-        ).toBe(true)
-    })
-})
-
-describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
-    const src = { address: 'SRC' }
-
-    test('accepts a quantum target when quantum targets are enabled (rekey-in migration path)', () => {
-        expect(
-            isEligibleQuantumRekeyTarget(quantum({ address: 'F' }), src, true),
-        ).toBe(true)
-    })
-
-    test('rejects a quantum target when quantum targets are disabled', () => {
-        expect(
-            isEligibleQuantumRekeyTarget(quantum({ address: 'F' }), src, false),
-        ).toBe(false)
-    })
-
-    test('rejects every non-quantum account type', () => {
-        for (const target of [
-            algo25({ address: 'A' }),
-            hd({ address: 'H' }),
-            ledger({ address: 'L' }),
-            multisig({ address: 'M' }),
-            watch({ address: 'W' }),
-        ]) {
-            expect(isEligibleQuantumRekeyTarget(target, src, true)).toBe(false)
-        }
-    })
-
-    test('rejects target equal to source', () => {
-        expect(
-            isEligibleQuantumRekeyTarget(
-                quantum({ address: 'F' }),
-                { address: 'F' },
-                true,
-            ),
-        ).toBe(false)
-    })
-
-    test("rejects target equal to source's current auth", () => {
-        expect(
-            isEligibleQuantumRekeyTarget(
-                quantum({ address: 'F' }),
-                { address: 'SRC', rekeyAddress: 'F' },
-                true,
-            ),
-        ).toBe(false)
-    })
-
-    test('rejects target without signing keys', () => {
-        const noKey = quantum({ address: 'F' })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(noKey as any).keyPairId = undefined
-        expect(isEligibleQuantumRekeyTarget(noKey, src, true)).toBe(false)
-    })
-
-    test('rejects a quantum target already rekeyed away', () => {
-        expect(
-            isEligibleQuantumRekeyTarget(
-                quantum({ address: 'F', rekeyAddress: 'X' }),
-                src,
-                true,
-            ),
-        ).toBe(false)
-    })
-
-    test('accepts a rekeyed source rekeying to a different fresh quantum target', () => {
-        expect(
-            isEligibleQuantumRekeyTarget(
-                quantum({ address: 'F' }),
-                { address: 'SRC', rekeyAddress: 'B' },
-                true,
-            ),
-        ).toBe(true)
-    })
-})
-
-describe('services/accounts/utils - isQuantumDowngrade', () => {
-    test('quantum source to a plain Ed25519 target is a downgrade', () => {
-        const source = quantum({ address: 'F' })
-        const target = algo25({ address: 'A' })
-        expect(isQuantumDowngrade(source, target, [source, target])).toBe(true)
-        expect(
-            isQuantumDowngrade(source, hd({ address: 'H' }), [
-                source,
-                hd({ address: 'H' }),
-            ]),
-        ).toBe(true)
-    })
-
-    test('quantum source to a quantum target is not a downgrade', () => {
-        const source = quantum({ address: 'F1' })
-        const target = quantum({ address: 'F2' })
-        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
-    })
-
-    test('Ed25519 source to a quantum target is not a downgrade', () => {
-        const source = algo25({ address: 'A' })
-        const target = quantum({ address: 'F' })
-        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
-    })
-
-    test('Ed25519 source to an Ed25519 target is not a downgrade', () => {
-        const source = algo25({ address: 'A' })
-        const target = hd({ address: 'H' })
-        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
-    })
-
-    test('quantum source to a target whose effective auth is quantum is not a downgrade', () => {
-        // Target is itself rekeyed to a quantum account, so its effective
-        // signing authority resolves to quantum via resolveAuthAccount.
-        const source = quantum({ address: 'F1' })
-        const quantumAuth = quantum({ address: 'FAUTH' })
-        const target = watch({ address: 'T', rekeyAddress: 'FAUTH' })
-        expect(
-            isQuantumDowngrade(source, target, [source, target, quantumAuth]),
-        ).toBe(false)
-    })
-
-    test('quantum source to a hardware/ledger target is a downgrade', () => {
-        const source = quantum({ address: 'F' })
-        const target = ledger({ address: 'L' })
-        expect(isQuantumDowngrade(source, target, [source, target])).toBe(true)
-    })
-
-    test('Ed25519 source rekeyed to a quantum auth (rekey-in), rekeying to an Ed25519 target, is a downgrade', () => {
-        // The flagship migration path: the account's own type stays algo25,
-        // but its effective signer is quantum — rekeying to Ed25519 strips it.
-        const quantumAuth = quantum({ address: 'FAUTH' })
-        const source = algo25({ address: 'A', rekeyAddress: 'FAUTH' })
-        const target = algo25({ address: 'B' })
-        expect(
-            isQuantumDowngrade(source, target, [source, target, quantumAuth]),
-        ).toBe(true)
-    })
-
-    test('quantum-typed source already rekeyed to an Ed25519 auth is not a downgrade', () => {
-        // Its effective signer is already Ed25519 — there is no quantum
-        // protection left to remove, so the warning would be untrue.
-        const ed25519Auth = algo25({ address: 'EAUTH' })
-        const source = quantum({ address: 'F', rekeyAddress: 'EAUTH' })
-        const target = algo25({ address: 'B' })
-        expect(
-            isQuantumDowngrade(source, target, [source, target, ed25519Auth]),
-        ).toBe(false)
-    })
-
-    test('source whose auth is not held locally (broken chain) is not a downgrade', () => {
-        // resolveAuthAccount throws when the auth is unheld; we cannot assert
-        // quantum protection we cannot resolve.
-        const source = quantum({ address: 'F', rekeyAddress: 'MISSING' })
-        const target = algo25({ address: 'B' })
-        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
-    })
-})
-
-describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
-    const src = { address: 'SRC' }
-
-    test('rejects non-hardware targets', () => {
-        expect(isEligibleLedgerRekeyTarget(algo25({ address: 'A' }), src)).toBe(
-            false,
-        )
-        expect(isEligibleLedgerRekeyTarget(hd({ address: 'H' }), src)).toBe(
-            false,
-        )
-    })
-
-    test('rejects target equal to source / already rekeyed', () => {
-        expect(
-            isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), {
-                address: 'L',
-            }),
-        ).toBe(false)
-        expect(
-            isEligibleLedgerRekeyTarget(
-                ledger({ address: 'L', rekeyAddress: 'X' }),
-                src,
-            ),
-        ).toBe(false)
-    })
-
-    test("rejects target equal to source's current auth", () => {
-        expect(
-            isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), {
-                address: 'SRC',
-                rekeyAddress: 'L',
-            }),
-        ).toBe(false)
-    })
-
-    test('accepts a clean hardware target', () => {
-        expect(isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), src)).toBe(
-            true,
-        )
-    })
-})
-
-describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
-    const src = { address: 'SRC' }
-
-    test('rejects non-multisig targets', () => {
-        const all: WalletAccount[] = []
-        expect(
-            isEligibleSharedRekeyTarget(algo25({ address: 'A' }), src, all),
-        ).toBe(false)
-        expect(
-            isEligibleSharedRekeyTarget(ledger({ address: 'L' }), src, all),
-        ).toBe(false)
-    })
-
-    test('rejects multisig when the wallet holds none of its participants', () => {
-        const ms = multisig({
-            address: 'M',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2', 'P3'],
-                version: 1,
+    beforeEach(() => {
+        registerFakeAccountsChain({
+            authority: {
+                isDelegated: vi.fn(() => true),
+                accountsDelegatedTo: vi.fn(() => []),
+                isEligibleTarget: vi.fn(() => false),
+                canSignProgram: vi.fn(() => true),
             },
         })
-        const all: WalletAccount[] = [algo25({ id: 'x', address: 'OTHER' })]
-        expect(isEligibleSharedRekeyTarget(ms, src, all)).toBe(false)
     })
 
-    test('rejects multisig when the only held participant cannot sign', () => {
-        // A watch-only participant has no key of its own — it can't propose.
-        const ms = multisig({
-            address: 'M',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2', 'P3'],
-                version: 1,
-            },
-        })
-        const all: WalletAccount[] = [watch({ id: 'p1', address: 'P1' })]
-        expect(isEligibleSharedRekeyTarget(ms, src, all)).toBe(false)
+    test("isRekeyedAccount and canSignProgram defer to the chain's authority", () => {
+        const { authority } = fakeAccountsChain().adapter
+
+        expect(isRekeyedAccount(account, FAKE_CHAIN_ID)).toBe(true)
+        expect(canSignProgram(account, FAKE_CHAIN_ID)).toBe(true)
+        expect(authority?.isDelegated).toHaveBeenCalledWith(account)
+        expect(authority?.canSignProgram).toHaveBeenCalledWith(account)
     })
 
-    test('accepts multisig when the wallet holds one signable participant, even below threshold', () => {
-        // Propose-based signing: one local participant can propose; the
-        // remaining signatures are collected from co-signers.
-        const ms = multisig({
-            address: 'M',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2', 'P3'],
-                version: 1,
-            },
-        })
-        const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
-        expect(isEligibleSharedRekeyTarget(ms, src, all)).toBe(true)
+    test('fail closed on a chain without an authority', () => {
+        registerFakeAccountsChain({ authority: undefined })
+
+        expect(isRekeyedAccount(account, FAKE_CHAIN_ID)).toBe(false)
+        expect(canSignProgram(account, FAKE_CHAIN_ID)).toBe(false)
     })
 
-    test("rejects multisig equal to source's current auth", () => {
-        const ms = multisig({
-            address: 'M',
-            multisigDetails: {
-                threshold: 2,
-                addresses: ['P1', 'P2', 'P3'],
-                version: 1,
-            },
-        })
-        const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
-        expect(
-            isEligibleSharedRekeyTarget(
-                ms,
-                { address: 'SRC', rekeyAddress: 'M' },
-                all,
-            ),
-        ).toBe(false)
-    })
-
-    test('rejects multisig already rekeyed away', () => {
-        const ms = multisig({
-            address: 'M',
-            rekeyAddress: 'X',
-            multisigDetails: {
-                threshold: 1,
-                addresses: ['P1'],
-                version: 1,
-            },
-        })
-        const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
-        expect(isEligibleSharedRekeyTarget(ms, src, all)).toBe(false)
+    test('isRekeyedAccount is false for a missing account', () => {
+        expect(isRekeyedAccount(null, FAKE_CHAIN_ID)).toBe(false)
     })
 })
 
-describe('services/accounts/utils - resolveAuthAccount', () => {
-    test('returns the account itself when not rekeyed', () => {
-        const a = algo25({ address: 'A' })
-        expect(resolveAuthAccount(a, [a])).toBe(a)
+describe('services/accounts/utils - accountType', () => {
+    const allTypes = Object.values(AccountTypes)
+
+    const ledger = (transportType: 'ble' | 'usb') =>
+        ({
+            id: `h-${transportType}`,
+            address: `LEDGER-${transportType}-ADDR`,
+            type: AccountTypes.hardware,
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: `${transportType}-1`,
+                deviceName: 'Nano X',
+                accountIndex: 2,
+                transportType,
+            },
+        }) as const satisfies WalletAccount
+
+    // Keyed by type so a new AccountTypes member without a fixture fails typecheck.
+    const legacyFixtures: Record<AccountType, WalletAccount[]> = {
+        algo25: [
+            {
+                id: 'a',
+                address: 'ALGO25-ADDR',
+                type: AccountTypes.algo25,
+                keyPairId: 'seed-ed25519',
+            },
+        ],
+        quantum: [
+            {
+                id: 'q',
+                address: 'QUANTUM-ADDR',
+                type: AccountTypes.quantum,
+                keyPairId: 'seed-quantum',
+            },
+        ],
+        hdWallet: Object.values(DerivationTypes).map(derivationType => ({
+            id: `hd-${derivationType}`,
+            address: `HD-${derivationType}-ADDR`,
+            type: AccountTypes.hdWallet,
+            keyPairId: `seed-dt${derivationType}`,
+            hdWalletDetails: {
+                account: 0,
+                change: 0,
+                keyIndex: 3,
+                derivationType,
+            },
+        })),
+        hardware: [ledger('ble'), ledger('usb')],
+        multisig: [
+            {
+                id: 'm',
+                address: 'MSIG-ADDR',
+                type: AccountTypes.multisig,
+                multisigDetails: {
+                    threshold: 2,
+                    addresses: ['P1', 'P2', 'P3'],
+                    version: 1,
+                },
+            },
+        ],
+        watch: [{ id: 'w', address: 'WATCH-ADDR', type: AccountTypes.watch }],
+    }
+
+    const backfilledCases = Object.values(legacyFixtures)
+        .flat()
+        .map(account => [account.id, account] as const)
+
+    const rekeyed = (account: WalletAccount): WalletAccount => ({
+        ...account,
+        rekeyAddress: 'AUTH-ADDR',
+        rekeyAddressByNetwork: { mainnet: 'AUTH-ADDR', testnet: 'OTHER-AUTH' },
     })
 
-    test('walks a single rekey hop', () => {
-        const a = algo25({ address: 'A', rekeyAddress: 'B' })
-        const b = algo25({ address: 'B' })
-        expect(resolveAuthAccount(a, [a, b])).toBe(b)
+    test.each(backfilledCases)(
+        'a backfilled %s account derives its stored type',
+        (_, legacy) => {
+            const backfilled = withCustody(legacy)
+
+            expect(backfilled.provenance).toBeDefined()
+            expect(accountType(backfilled)).toBe(legacy.type)
+        },
+    )
+
+    test.each(allTypes)('a built %s account derives its stored type', type => {
+        const account = buildTestAccount(type)
+
+        expect(accountType(account)).toBe(type)
+        expect(accountType(account)).toBe(account.type)
     })
 
-    test('resolves a single hop only — not the terminal of the chain', () => {
-        // A -> B -> C. B signs for A; rekey indirection is not transitive.
-        const a = ledger({ address: 'A', rekeyAddress: 'B' })
-        const b = ledger({ address: 'B', rekeyAddress: 'C' })
-        const c = ledger({ address: 'C' })
-        expect(resolveAuthAccount(a, [a, b, c])).toBe(b)
+    test.each(allTypes)('a rekeyed %s account keeps its own type', type => {
+        const account = rekeyed(buildTestAccount(type))
+
+        expect(accountType(account)).toBe(type)
     })
 
-    test('throws RekeyTargetNotFoundError when the auth account is not held', () => {
-        const a = algo25({ address: 'A', rekeyAddress: 'MISSING' })
-        expect(() => resolveAuthAccount(a, [a])).toThrow(
-            RekeyTargetNotFoundError,
-        )
-    })
-})
+    test('provenance decides when it disagrees with the stored type', () => {
+        const account = {
+            ...buildTestAccount(AccountTypes.watch),
+            type: AccountTypes.algo25,
+        } as WalletAccount
 
-describe('services/accounts/utils - getAccountsRekeyedTo', () => {
-    test('returns the accounts whose active-network auth-addr is the address', () => {
-        const target = quantum({ address: 'PQ' })
-        const rekeyed = algo25({ address: 'A', rekeyAddress: 'PQ' })
-        const unrelated = algo25({ address: 'B' })
-
-        expect(
-            getAccountsRekeyedTo('PQ', [target, rekeyed, unrelated]),
-        ).toEqual([rekeyed])
+        expect(accountType(account)).toBe(AccountTypes.watch)
     })
 
-    test('excludes the address itself', () => {
-        const selfRekeyed = algo25({ address: 'A', rekeyAddress: 'A' })
-        expect(getAccountsRekeyedTo('A', [selfRekeyed])).toEqual([])
-    })
+    test('a record the backfill skips falls back to its stored type', () => {
+        const malformed = withCustody({
+            id: 'm',
+            address: 'MSIG-ADDR',
+            type: AccountTypes.multisig,
+        } as WalletAccount)
 
-    test('matches a rekey recorded on a non-active network', () => {
-        // The mirror follows the active network, so a mainnet rekey seen while
-        // browsing testnet lives only in the per-network map.
-        const rekeyed = algo25({
-            address: 'A',
-            rekeyAddressByNetwork: { mainnet: 'PQ' },
-        })
-        expect(getAccountsRekeyedTo('PQ', [rekeyed])).toEqual([rekeyed])
-    })
-
-    test('returns an empty list when nothing points at the address', () => {
-        expect(
-            getAccountsRekeyedTo('PQ', [
-                algo25({ address: 'A', rekeyAddress: 'OTHER' }),
-            ]),
-        ).toEqual([])
+        expect(malformed.provenance).toBeUndefined()
+        expect(accountType(malformed)).toBe(AccountTypes.multisig)
     })
 })

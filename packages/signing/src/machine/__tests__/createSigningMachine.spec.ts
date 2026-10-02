@@ -42,7 +42,7 @@ const makeDeps = (): SigningMachineDeps =>
     ({
         signTransactions: vi.fn(),
         signArbitraryData: vi.fn(),
-        signArc60: vi.fn(),
+        signAuthData: vi.fn(),
         createTransport: vi.fn(),
         network: 'mainnet',
         encodeTransaction: vi.fn(),
@@ -68,7 +68,7 @@ describe('createSigningMachine', () => {
         // Each dep function is forwarded by reference into context.deps.
         expect(ctx.deps.signTransactions).toBe(deps.signTransactions)
         expect(ctx.deps.signArbitraryData).toBe(deps.signArbitraryData)
-        expect(ctx.deps.signArc60).toBe(deps.signArc60)
+        expect(ctx.deps.signAuthData).toBe(deps.signAuthData)
         expect(ctx.deps.createTransport).toBe(deps.createTransport)
         expect(ctx.deps.encodeTransaction).toBe(deps.encodeTransaction)
         expect(ctx.deps.network).toBe(deps.network)

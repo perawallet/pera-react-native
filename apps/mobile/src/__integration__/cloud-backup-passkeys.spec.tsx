@@ -35,6 +35,7 @@ import {
     useCloudBackupPasskeyImport,
     useCloudBackupRestoreDraftStore,
     useCloudBackupStore,
+    useListPasskeysForBackup,
     useResolveHdSeedForBackup,
     useResolveMnemonicForBackup,
     useResolveSeedEntropyForBackup,
@@ -43,10 +44,13 @@ import {
     buildSyncHandlers,
     createItemKeyHasher,
     passkeyItemKey,
+    passkeySecretsItemKey,
 } from '@perawallet/wallet-core-backup/test-handlers'
 import {
+    derivePasskeyCredential,
     nativePasskeyEntryExists,
     openNativeProviderRecord,
+    writeNativePasskeyEntry,
 } from '@perawallet/wallet-core-passkeys'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
@@ -60,7 +64,6 @@ import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScre
 import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
 import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
 import { CloudBackupRestoreEncryptionKeyRoute } from '@modules/cloud-backup/routes'
-import { useListPasskeysForBackup } from '@modules/cloud-backup/hooks/useListPasskeysForBackup'
 
 // Not on the package barrel: nothing outside the engine encrypts an item, and
 // only this file has to forge one the way another device would have written it.
@@ -247,6 +250,119 @@ describe('Flow: Cloud backup → Passkeys', () => {
         )
     })
 
+    // The credential carries its own key and no wallet is ever on either
+    // device, so only the backed-up key can bring it back.
+    it('Given a passkey whose wallet is not on the device, when the device is wiped and restored, then the credential is rewritten with the same public key', async () => {
+        const keys = await deriveBackupKeys({
+            mnemonic: BACKUP_MNEMONIC,
+            salt: BACKUP_SALT,
+        })
+        const derived = await derivePasskeyCredential({
+            mainKey: new Uint8Array(32).fill(3),
+            origin: 'walletless.example',
+            identity: 'user@example.com',
+        })
+        await writeNativePasskeyEntry({
+            credentialId: derived.credentialId,
+            origin: 'walletless.example',
+            userId: 'dXNlcg==',
+            userName: 'user@example.com',
+            publicKeySpkiDer: derived.publicKeySpkiDer,
+            privateKey: derived.privateKey,
+        })
+        const hashAddress = await configureBackup(keys)
+
+        const { handlers, getItem } = buildSyncHandlers({
+            backupId: keys.backupId,
+        })
+        server.use(...handlers)
+        const itemKey = passkeyItemKey(hashAddress(derived.credentialId))
+        const deviceA = startRealSyncManager()
+        await deviceA.syncNow()
+
+        expect(
+            getItem(passkeySecretsItemKey(hashAddress(derived.credentialId))),
+        ).toBeDefined()
+        const pushedVer = getItem(itemKey)!.ver
+        await deviceA.syncNow()
+        expect(getItem(itemKey)!.ver).toBe(pushedVer)
+
+        await wipeDevice()
+        expect(nativePasskeyEntryExists(derived.credentialId)).toBe(false)
+        renderCloudBackupFlow()
+        await runRestoreFlow()
+
+        await waitFor(
+            () => {
+                expect(nativePasskeyEntryExists(derived.credentialId)).toBe(
+                    true,
+                )
+            },
+            { timeout: 10_000 },
+        )
+        expect(await restoredPublicKey(derived.credentialId)).toEqual(
+            Array.from(derived.publicKeySpkiDer),
+        )
+
+        // The first sync after a restore records the device's own baseline,
+        // as for every restored item; any later one must find nothing to push,
+        // or the restored record does not read back as the item it came from.
+        const manager = startRealSyncManager()
+        await manager.syncNow()
+        const settledVer = getItem(itemKey)!.ver
+        await manager.syncNow()
+        expect(getItem(itemKey)!.ver).toBe(settledVer)
+    })
+
+    it('Given a backed-up credential whose private key was swapped for another, when the device is restored, then nothing is written', async () => {
+        const keys = await deriveBackupKeys({
+            mnemonic: BACKUP_MNEMONIC,
+            salt: BACKUP_SALT,
+        })
+        const { seedKeyId } = await seedHDWalletAccounts()
+        const passkey = await seedPasskey({ seedKeyId })
+        const hashAddress = await configureBackup(keys)
+
+        const { handlers, getItem, pushFromOtherDevice } = buildSyncHandlers({
+            backupId: keys.backupId,
+        })
+        server.use(...handlers)
+        await startRealSyncManager().syncNow()
+
+        const secretKey = passkeySecretsItemKey(
+            hashAddress(passkey.credentialId),
+        )
+        const other = await derivePasskeyCredential({
+            mainKey: new Uint8Array(32).fill(4),
+            origin: 'example.com',
+            identity: 'mallory',
+        })
+        pushFromOtherDevice(
+            secretKey,
+            encryptItemPayload(
+                JSON.stringify({
+                    credentialId: passkey.credentialId,
+                    privateKey: encodeToBase64(other.privateKey),
+                }),
+                {
+                    encryptionKey: keys.encryptionKey,
+                    backupId: keys.backupId,
+                    key: secretKey,
+                },
+            ),
+        )
+        expect(getItem(secretKey)).toBeDefined()
+
+        await wipeDevice()
+        renderCloudBackupFlow()
+        await runRestoreFlow()
+
+        await waitFor(() => {
+            expect(useBackupSyncStateStore.getState().syncState).not.toBeNull()
+        })
+        expect(nativePasskeyEntryExists(passkey.credentialId)).toBe(false)
+    })
+
     // The case a device-wide passkey main key would have broken: the credential
     // belongs to the second wallet's seed, not the first's.
     it('Given two wallets on the device, when a credential derived from the second is restored, then it still round-trips', async () => {
@@ -310,7 +426,11 @@ describe('Flow: Cloud backup → Passkeys', () => {
         await startRealSyncManager().syncNow()
 
         const itemKey = passkeyItemKey(hashAddress(passkey.credentialId))
+        const secretKey = passkeySecretsItemKey(
+            hashAddress(passkey.credentialId),
+        )
         expect(getItem(itemKey)?.status).toBe('ACTIVE')
+        expect(getItem(secretKey)?.status).toBe('ACTIVE')
 
         const outcome = await getBackupSyncManager().deletePasskeyFromBackup(
             passkey.credentialId,
@@ -318,6 +438,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
 
         expect(outcome).toBe('settled')
         expect(getItem(itemKey)?.status).not.toBe('ACTIVE')
+        expect(getItem(secretKey)?.status).not.toBe('ACTIVE')
     })
 
     it('Given a backed-up credential whose stored public key was tampered with, when the device is restored, then nothing is written and the item is still tracked', async () => {

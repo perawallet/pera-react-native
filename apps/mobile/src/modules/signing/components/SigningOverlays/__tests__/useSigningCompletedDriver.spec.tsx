@@ -61,7 +61,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 type BuildOpts = {
-    type?: 'transactions' | 'arbitrary-data' | 'arc60'
+    type?: 'transactions' | 'arbitrary-data' | 'auth-data'
     name?: string
     id?: string
     transportId?: string
@@ -132,9 +132,9 @@ describe('useSigningCompletedDriver', () => {
         expect(requestBottomSheetMock).not.toHaveBeenCalled()
     })
 
-    it('does not open the sheet for arc60 signing', () => {
+    it('does not open the sheet for auth-data signing', () => {
         renderHook(() => useSigningCompletedDriver())
-        publishCompleted(buildRequest('arc60', { type: 'arc60' }))
+        publishCompleted(buildRequest('card', { type: 'auth-data' }))
         expect(requestBottomSheetMock).not.toHaveBeenCalled()
     })
 

@@ -35,7 +35,7 @@ export type ExternalSignTxnTransport = {
     payloadId?: number
     sourceMetadata?: SignRequestSource
     /** SW/platform-observed origin (trusted, not dApp-asserted) — used for
-     *  trust display and ARC-60 SIWA domain binding. */
+     *  trust display and sign-in domain binding. */
     verifiedOrigin?: string
     // ARC-0001 response: an array of (SignedTxnStr | null), same length and
     // order as the original request. Returning a Promise lets transports

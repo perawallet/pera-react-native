@@ -11,17 +11,16 @@
  */
 
 import { z } from 'zod'
-import { MAX_DATA_SIGN_REQUESTS } from '../constants'
-import { BASE64_PATTERN } from './arc60-wire'
+import { BASE64_PATTERN, MAX_DATA_SIGN_REQUESTS } from '../constants'
 
-/** Per-item cap in base64 characters (~12 KiB decoded), matching ARC-60's `data` cap. */
+/** Per-item cap in base64 characters (~12 KiB decoded). */
 export const LEGACY_DATA_MAX_ITEM_CHARS = 16 * 1024
 
 /** Whole-request cap across every item's `data` and `message`, in characters. */
 export const LEGACY_DATA_MAX_REQUEST_CHARS = 256 * 1024
 
-// Shared by every transport that accepts the legacy arbitrary-data shape, like
-// `arc60WireSchema` for ARC-60. Signer authorization stays with each transport.
+// Shared by every transport that accepts the legacy arbitrary-data shape.
+// Signer authorization stays with each transport.
 export const legacyArbitraryDataWireSchema = z
     .array(
         z.object({

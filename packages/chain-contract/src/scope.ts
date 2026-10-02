@@ -13,6 +13,7 @@
 import { InvalidScopeKeyError } from './errors'
 import {
     isChainId,
+    isLegacyNetwork,
     isNetworkId,
     type ChainId,
     type ChainScope,
@@ -71,4 +72,20 @@ const LEGACY_COLUMN_VALUE: Record<ChainId, (scope: ChainScope) => string> = {
 export const legacyColumnValue = (scope: ChainScope): string => {
     assertValidScope(scope)
     return LEGACY_COLUMN_VALUE[scope.chainId](scope)
+}
+
+// Until the column is backfilled to scope keys it still holds the bare legacy
+// network, so this cast is the one place the column's type runs ahead of its rows.
+export const networkColumnValue = (scope: ChainScope): ChainScopeKey =>
+    legacyColumnValue(scope) as ChainScopeKey
+
+// Never parseScopeKey a stored value directly: legacy rows hold a bare network.
+export const scopeFromNetworkColumn = (value: string): ChainScope => {
+    if (value.includes(SCOPE_KEY_SEPARATOR)) {
+        return parseScopeKey(value)
+    }
+    if (!isLegacyNetwork(value)) {
+        throw new InvalidScopeKeyError(value)
+    }
+    return scopeForLegacyNetwork(value)
 }

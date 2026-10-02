@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { Decimal } from 'decimal.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -215,7 +216,7 @@ export const useInputScreen = () => {
     // balance — the rekey would be lost and the account left unusable. So
     // MAX is the spendable amount, and the close-account path is suppressed.
     const isRekeyedSender = selectedAccount
-        ? isRekeyedAccount(selectedAccount)
+        ? isRekeyedAccount(selectedAccount, LEGACY_CHAIN_ID)
         : false
 
     const setMax = useCallback(() => {

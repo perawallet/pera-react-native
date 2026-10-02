@@ -125,7 +125,7 @@ describe('ed25519 signing conformance', () => {
             signArbitraryData: () => {
                 throw new Error('not exercised by this test')
             },
-            signArc60: () => {
+            signAuthData: () => {
                 throw new Error('not exercised by this test')
             },
         })

@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { AnyActorRef } from 'xstate'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { mapToDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     canSignWith,
     useAllAccounts,
@@ -86,7 +86,9 @@ const computeDisplayData = (
     )
 
     const signableAddresses = new Set(
-        accounts.filter(a => canSignWith(a, accounts)).map(a => a.address),
+        accounts
+            .filter(a => canSignWith(a, accounts, LEGACY_CHAIN_ID))
+            .map(a => a.address),
     )
 
     const userAccountAddresses = new Set(accounts.map(a => a.address))
@@ -417,7 +419,7 @@ export const useSigningPipeline = (
         // A retryable failure leaves the actor parked in `failed`, where
         // resolving the approval gate (signAndSendRequest) is a no-op — the
         // actor is no longer waiting on it. Re-attempting via the same
-        // control (e.g. the ARC-60 slide-to-confirm after "device locked" /
+        // control (e.g. the auth-data slide-to-confirm after "device locked" /
         // "app not open") must RETRY the actor so the device re-prompts,
         // rather than silently doing nothing.
         if (stage === 'failed' && isRetryableError(error)) {

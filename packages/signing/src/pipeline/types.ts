@@ -33,14 +33,14 @@ export interface ArbitraryDataSignableData {
 }
 
 /**
- * Per ARC-60, `data` is opaque to the signing primitive (decoded for user
- * review only). The wallet must verify
- * `authenticatorData[0:32] === sha256(utf8(domain))` before signing.
+ * `data` is opaque to the signing primitive (decoded for user review only).
+ * The chain's validator checks that `authenticatorData` binds `domain` before
+ * anything is signed.
  */
-export interface Arc60StdSigData {
+export interface AuthData {
     /** Encoded payload — decoded for display, hashed for signing. */
     data: string
-    /** Algorand address / Ed25519 public key of the signer. */
+    /** Address / public key of the signer. */
     signer: string
     /** Origin requesting the signature (URL / DID / identifier). */
     domain: string
@@ -52,23 +52,27 @@ export interface Arc60StdSigData {
     hdPath?: string
 }
 
-export interface Arc60Metadata {
-    /** ARC-60 scope; only `1` (AUTH) is defined today. */
+export interface AuthDataMetadata {
+    /** Auth scope; only `1` (AUTH) is defined today. */
     scope: number
     /** Encoding of `data` (e.g. 'base64'). */
     encoding: string
 }
 
-export interface Arc60SignableData {
-    type: 'arc60'
-    stdSigData: Arc60StdSigData
-    metadata: Arc60Metadata
+export type AuthDataPayload = {
+    authData: AuthData
+    /** Supplied by the dApp. */
+    metadata: AuthDataMetadata
+}
+
+export interface AuthDataSignableData extends AuthDataPayload {
+    type: 'auth-data'
 }
 
 export type SignableData =
     | TransactionSignableData
     | ArbitraryDataSignableData
-    | Arc60SignableData
+    | AuthDataSignableData
 
 /** Shared by SourceMetadata (pipeline) and SignRequest (models). */
 export type SourceType =
@@ -77,7 +81,7 @@ export type SourceType =
     | 'webview'
     | 'deeplink'
     | 'multisig-cosign'
-    | 'arc60'
+    | 'card'
     | 'gift-card'
     | 'injected' // browser-extension window.pera provider
 
@@ -92,7 +96,7 @@ export const INTERACTIVE_SOURCES = [
     'webview',
     'deeplink',
     'multisig-cosign',
-    'arc60',
+    'card',
     'gift-card',
     'injected',
 ] as const satisfies readonly SourceType[]
@@ -107,7 +111,7 @@ export const isInteractiveSource = (
  * Sources whose signed result goes back to an out-of-app caller via
  * {@link SourceCallbacks} rather than to algod. A strict subset of
  * {@link INTERACTIVE_SOURCES} — excludes `multisig-cosign` (own transport) and
- * `arc60` / `gift-card`.
+ * `card` / `gift-card`.
  */
 export const EXTERNAL_CALLBACK_SOURCES = [
     'walletconnect',
@@ -156,7 +160,7 @@ export interface SourceMetadata {
      * Origin the platform itself observed (the in-app webview's loaded host).
      * Trusted for origin-binding checks because, unlike {@link peerMetadata},
      * it is not dApp-asserted. Unset for transports with no verifiable origin
-     * (e.g. WalletConnect). See {@link isArc60OriginMismatch}.
+     * (e.g. WalletConnect). See {@link isAuthDataOriginMismatch}.
      */
     verifiedOrigin?: string
 
@@ -201,7 +205,7 @@ export interface SourceCallbacks {
     error?: (error: Error) => Promise<void>
     /**
      * Delivers pre-encoded canonical msgpack SignedTransaction bytes, skipping
-     * algosdk's decode + re-encode round-trip. Required for the multisig
+     * the SDK decode + re-encode round-trip. Required for the multisig
      * sync-flow handoff: canonical-msgpack rules differ across SDKs, so
      * re-encoding can produce bytes whose signatures algod won't verify.
      * Length and order MUST match the original request.
@@ -350,15 +354,15 @@ export interface SignedArbitraryData {
     signatures: Uint8Array[]
 }
 
-export interface SignedArc60Data {
-    type: 'arc60'
+export interface SignedAuthData {
+    type: 'auth-data'
     signature: Uint8Array
 }
 
 export type SignedData =
     | SignedTransactionData
     | SignedArbitraryData
-    | SignedArc60Data
+    | SignedAuthData
 
 export interface SigningResult {
     signedData: SignedData

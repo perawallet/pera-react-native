@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, test, vi } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import { Address, computeGroupID, Transaction } from 'algosdk'
 import {
     AccountTypes,
