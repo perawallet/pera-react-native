@@ -188,7 +188,7 @@ describe('resolveSwapHandoffOutcome', () => {
 
         expect(deps.recordSubmissionAttempt).toHaveBeenCalledTimes(2)
         expect(deps.recordSubmissionAttempt).toHaveBeenNthCalledWith(1, {
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             txIds: ['id-a'],
             flow: 'cosign',
             intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
@@ -198,7 +198,7 @@ describe('resolveSwapHandoffOutcome', () => {
             lastValid: 20,
         })
         expect(deps.recordSubmissionAttempt).toHaveBeenNthCalledWith(2, {
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             txIds: ['id-b'],
             flow: 'cosign',
             intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },

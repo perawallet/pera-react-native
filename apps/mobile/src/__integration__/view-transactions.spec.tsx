@@ -183,7 +183,7 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [TX_PAYMENT, TX_ASSET_TRANSFER],
             accountAddress: ACCOUNT.address,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
     })
 
@@ -362,7 +362,7 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [closeOutTx],
             accountAddress: ACCOUNT.address,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const lookupSpy = vi.fn(() =>
@@ -483,7 +483,7 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: fullPage,
             accountAddress: ACCOUNT.address,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         // Pera transaction-history endpoint. The endpoint URL is
@@ -583,7 +583,7 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [TX_STATE_PROOF],
             accountAddress: ACCOUNT.address,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const lookupSpy = vi.fn(() =>

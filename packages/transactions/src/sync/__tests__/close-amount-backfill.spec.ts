@@ -22,6 +22,7 @@ import type { TransactionHistoryItem } from '../../models/types'
 import { upsertTransactions, getTransactionHistory } from '../../db'
 import { historyChainAdapters } from '../../history-adapter'
 import { backfillMissingCloseAmounts } from '../close-amount-backfill'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const makeTx = (
     overrides: Partial<TransactionHistoryItem> = {},
@@ -66,7 +67,7 @@ describe('backfillMissingCloseAmounts', () => {
             db,
             items: [makeTx({ id: 'TXSTALE' })],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         const fetchCloseAmount = vi.fn().mockResolvedValue('50854132929')
 
@@ -80,7 +81,7 @@ describe('backfillMissingCloseAmounts', () => {
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         expect(row.closeAmount).toEqual(new Decimal('50854132929'))
     })
@@ -90,7 +91,7 @@ describe('backfillMissingCloseAmounts', () => {
             db,
             items: [makeTx({ id: 'TXSTALE' })],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         const fetchCloseAmount = vi.fn().mockRejectedValue(new Error('offline'))
 
@@ -105,7 +106,7 @@ describe('backfillMissingCloseAmounts', () => {
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         // Still null — the row keeps matching the backfill predicate, so the
         // next sync pass retries naturally.
@@ -122,7 +123,7 @@ describe('backfillMissingCloseAmounts', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         const fetchCloseAmount = vi.fn()
 
@@ -140,7 +141,7 @@ describe('backfillMissingCloseAmounts', () => {
             db,
             items: [makeTx({ id: 'TXSTALE' })],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         historyChainAdapters.reset()
         historyChainAdapters.register({
@@ -155,7 +156,7 @@ describe('backfillMissingCloseAmounts', () => {
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         expect(row.closeAmount).toBeNull()
     })

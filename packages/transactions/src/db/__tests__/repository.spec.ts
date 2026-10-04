@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
     runMigrations,
@@ -30,6 +30,7 @@ import {
     updateTransactionCloseAmount,
 } from '../repository'
 import { TransactionsSchema } from '../schema'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 describe('transaction repository', () => {
     let db: Database
@@ -68,6 +69,24 @@ describe('transaction repository', () => {
         ...overrides,
     })
 
+    // Every other test writes and reads through the same encoder, so only a raw
+    // read catches a writer that stops storing what existing installs hold.
+    it('stores the bare legacy network in both tables', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx()],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('testnet'),
+        })
+
+        for (const table of ['transactions', 'account_transactions']) {
+            const rows = (await db.all(
+                sql.raw(`select network from ${table}`),
+            )) as Array<[string]>
+            expect(rows.map(([network]) => network)).toEqual(['testnet'])
+        }
+    })
+
     // The syncer only fetches transactions newer than the newest cached one,
     // so a row that captured the backend's `asset(0)` placeholder is never
     // refetched — the read path is the only place it can be repaired.
@@ -88,13 +107,13 @@ describe('transaction repository', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result[0].balanceImpacts[0]).toEqual({
@@ -119,13 +138,13 @@ describe('transaction repository', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result[0].asset?.unitName).toBe('ALGO')
@@ -154,13 +173,13 @@ describe('transaction repository', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result[0].swapGroupDetail?.assetInDecimals).toBe(6)
@@ -172,13 +191,13 @@ describe('transaction repository', () => {
             db,
             items: [makeTx()],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result).toHaveLength(1)
@@ -198,13 +217,13 @@ describe('transaction repository', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result[0].closeTo).toBe('CLOSE_ADDR')
@@ -225,19 +244,19 @@ describe('transaction repository', () => {
                 }),
             ],
             accountAddress: 'SENDER_ACCT',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         await upsertTransactions({
             db,
             items: [makeTx({ closeTo: 'CLOSE_ADDR', closeAmount: null })],
             accountAddress: 'RECEIVER_ACCT',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'SENDER_ACCT',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result[0].closeAmount).toEqual(new Decimal('50854132929'))
@@ -260,12 +279,12 @@ describe('transaction repository', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const rows = await getCloseRowsMissingCloseAmount({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(rows.map(row => row.id)).toEqual(['TXSTALE'])
@@ -282,20 +301,20 @@ describe('transaction repository', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         await updateTransactionCloseAmount({
             db,
             id: 'TXSTALE',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             closeAmount: new Decimal('50854132929'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         expect(result[0].closeAmount).toEqual(new Decimal('50854132929'))
     })
@@ -305,19 +324,19 @@ describe('transaction repository', () => {
             db,
             items: [makeTx({ amount: new Decimal(100) })],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         await upsertTransactions({
             db,
             items: [makeTx({ amount: new Decimal(200) })],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result).toHaveLength(1)
@@ -339,20 +358,20 @@ describe('transaction repository', () => {
                 makeTx({ id: 'TX_NO_ASSET' }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const withAsset = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             assetId: '31566704',
         })
 
         const all = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(withAsset).toHaveLength(1)
@@ -408,19 +427,19 @@ describe('transaction repository', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const usdc = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             assetId: '31566704',
         })
         const algo = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             assetId: '0',
         })
 
@@ -451,7 +470,7 @@ describe('transaction repository', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         await db
             .update(TransactionsSchema)
@@ -465,7 +484,7 @@ describe('transaction repository', () => {
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             assetId: '31566704',
         })
 
@@ -481,13 +500,13 @@ describe('transaction repository', () => {
             db,
             items,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             limit: 3,
         })
 
@@ -503,13 +522,13 @@ describe('transaction repository', () => {
                 makeTx({ id: 'TX_MID', roundTime: 1700000500 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result.map(r => r.id)).toEqual(['TX_NEW', 'TX_MID', 'TX_OLD'])
@@ -520,24 +539,24 @@ describe('transaction repository', () => {
             db,
             items: [makeTx({ id: 'TX_MAIN' })],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         await upsertTransactions({
             db,
             items: [makeTx({ id: 'TX_TEST' })],
             accountAddress: 'ACCT1',
-            network: 'testnet',
+            scope: scopeForLegacyNetwork('testnet'),
         })
 
         const mainnet = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         const testnet = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'testnet',
+            scope: scopeForLegacyNetwork('testnet'),
         })
 
         expect(mainnet).toHaveLength(1)
@@ -572,13 +591,13 @@ describe('transaction repository', () => {
             db,
             items: [makeTx({ asset, swapGroupDetail, interpretedMeaning })],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result[0].asset).toEqual(asset)
@@ -606,13 +625,13 @@ describe('transaction repository', () => {
             db,
             items: [makeTx({ txType: 'appl', balanceImpacts })],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result[0].balanceImpacts).toEqual(balanceImpacts)
@@ -623,13 +642,13 @@ describe('transaction repository', () => {
             db,
             items: [makeTx()],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result[0].balanceImpacts).toEqual([])
@@ -644,13 +663,13 @@ describe('transaction repository', () => {
                 makeTx({ id: 'TX3', roundTime: 3000 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             atOrBeforeRoundTime: 2500,
         })
 
@@ -668,13 +687,13 @@ describe('transaction repository', () => {
                 makeTx({ id: 'TX3', roundTime: 2000 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             atOrBeforeRoundTime: 2000,
         })
 
@@ -696,7 +715,7 @@ describe('transaction repository', () => {
                     makeTx({ id: 'TX_JAN03', roundTime: JAN_03 + 100 }),
                 ],
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             })
         })
 
@@ -704,7 +723,7 @@ describe('transaction repository', () => {
             const result = await getTransactionHistory({
                 db,
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 afterTime: '2024-01-02',
             })
 
@@ -715,7 +734,7 @@ describe('transaction repository', () => {
             const result = await getTransactionHistory({
                 db,
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 beforeTime: '2024-01-02',
             })
 
@@ -726,7 +745,7 @@ describe('transaction repository', () => {
             const result = await getTransactionHistory({
                 db,
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 afterTime: '2024-01-02',
                 beforeTime: '2024-01-02',
             })
@@ -738,7 +757,7 @@ describe('transaction repository', () => {
             const result = await getTransactionHistory({
                 db,
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 afterTime: 'not-a-date',
             })
 
@@ -755,13 +774,13 @@ describe('transaction repository', () => {
                 makeTx({ id: 'TX3', roundTime: 2000 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         const result = await getLatestTransactionRoundTime({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result).toBe(3000)
@@ -771,7 +790,7 @@ describe('transaction repository', () => {
         const result = await getLatestTransactionRoundTime({
             db,
             accountAddress: 'UNKNOWN',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         expect(result).toBeNull()
@@ -805,12 +824,12 @@ describe('transaction repository', () => {
                     makeTx({ id: 'STALE', swapGroupDetail: legacySwapDetail }),
                 ],
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             })
 
             const rows = await getSwapRowsMissingAssetFacts({
                 db,
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 accountAddress: 'ACCT1',
             })
 
@@ -824,12 +843,12 @@ describe('transaction repository', () => {
                     makeTx({ id: 'HEALED', swapGroupDetail: healedSwapDetail }),
                 ],
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             })
 
             const rows = await getSwapRowsMissingAssetFacts({
                 db,
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 accountAddress: 'ACCT1',
             })
 
@@ -843,7 +862,7 @@ describe('transaction repository', () => {
                     makeTx({ id: 'MINE', swapGroupDetail: legacySwapDetail }),
                 ],
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             })
             await upsertTransactions({
                 db,
@@ -851,12 +870,12 @@ describe('transaction repository', () => {
                     makeTx({ id: 'THEIRS', swapGroupDetail: legacySwapDetail }),
                 ],
                 accountAddress: 'ACCT2',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             })
 
             const rows = await getSwapRowsMissingAssetFacts({
                 db,
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 accountAddress: 'ACCT1',
             })
 
@@ -871,7 +890,7 @@ describe('transaction repository', () => {
                     makeTx({ id: 'STALE', swapGroupDetail: legacySwapDetail }),
                 ],
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             })
             await db
                 .update(TransactionsSchema)
@@ -881,7 +900,7 @@ describe('transaction repository', () => {
 
             const rows = await getSwapRowsMissingAssetFacts({
                 db,
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 accountAddress: 'ACCT1',
             })
 
@@ -895,19 +914,19 @@ describe('transaction repository', () => {
                     makeTx({ id: 'STALE', swapGroupDetail: legacySwapDetail }),
                 ],
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             })
 
             await persistResolvedSwapAssetFacts({
                 db,
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 ids: ['STALE'],
             })
 
             expect(
                 await getSwapRowsMissingAssetFacts({
                     db,
-                    network: 'mainnet',
+                    scope: scopeForLegacyNetwork('mainnet'),
                     accountAddress: 'ACCT1',
                 }),
             ).toEqual([])
@@ -915,7 +934,7 @@ describe('transaction repository', () => {
             const [row] = await getTransactionHistory({
                 db,
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             })
             expect(row.swapGroupDetail?.assetInDecimals).toBe(6)
         })
@@ -925,12 +944,12 @@ describe('transaction repository', () => {
                 db,
                 items: [makeTx({ id: 'PLAIN' })],
                 accountAddress: 'ACCT1',
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             })
 
             const rows = await getSwapRowsMissingAssetFacts({
                 db,
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 accountAddress: 'ACCT1',
             })
 
