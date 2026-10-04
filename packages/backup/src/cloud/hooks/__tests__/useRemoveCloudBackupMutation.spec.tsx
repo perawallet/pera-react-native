@@ -74,7 +74,7 @@ vi.mock('../../store/syncActivityStore', () => ({
     ) => selector({ resetState: resetSyncActivityMock }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

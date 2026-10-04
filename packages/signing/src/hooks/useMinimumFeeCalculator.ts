@@ -14,8 +14,8 @@ import { useCallback } from 'react'
 import {
     useFetchSuggestedMinFee,
     useMinimumFeeConfig,
-    useNetwork,
 } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 
 import { plannerAdapterFor, type AssignFeeToGroup } from '../chain-adapter'

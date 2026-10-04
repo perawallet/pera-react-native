@@ -25,7 +25,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: vi.fn().mockReturnValue('test-device-id'),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn().mockReturnValue({ network: 'testnet' }),
 }))
 

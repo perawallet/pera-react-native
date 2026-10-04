@@ -11,7 +11,7 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { fetchSwapHistory } from '../api'
 import type { SwapHistoryItem } from '../models'

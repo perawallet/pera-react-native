@@ -41,13 +41,19 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
-    useNetwork: () => ({ network: 'testnet' }),
     useAlgorandClient: () => ({
         newGroup: () => ({
             addAssetTransfer: mockAddAssetTransfer,
             build: mockBuild,
         }),
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: 'testnet' }),
 }))
 
 vi.mock('@tanstack/react-query', async () => ({

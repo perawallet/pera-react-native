@@ -13,7 +13,7 @@
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { waitForConfirmation as algosdkWaitForConfirmation } from 'algosdk'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Network } from '@perawallet/wallet-core-shared'

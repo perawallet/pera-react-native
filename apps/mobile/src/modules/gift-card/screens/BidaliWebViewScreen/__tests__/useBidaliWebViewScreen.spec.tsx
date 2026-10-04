@@ -44,6 +44,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedChainMode: () => 'live',
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -53,8 +54,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: (addr: string) => /^[A-Z2-7]{58}$/.test(addr ?? ''),
     useAlgorandClient: () => ({ newGroup: () => ({}) }),
-    useNetwork: () => ({ network: 'mainnet' }),
-    displayUnitsToBaseUnits: () => ({ toFixed: () => '0' }),
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({ decimals: 6 }))
@@ -75,10 +74,21 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: vi.fn() }),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    generateOrderedUniqueId: () => 'id',
-    logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { displayUnitsToBaseUnits } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+    return {
+        generateOrderedUniqueId: () => 'id',
+        logger: {
+            warn: vi.fn(),
+            error: vi.fn(),
+            info: vi.fn(),
+            debug: vi.fn(),
+        },
+        displayUnitsToBaseUnits,
+    }
+})
 
 vi.mock('@hooks/useLanguage')
 

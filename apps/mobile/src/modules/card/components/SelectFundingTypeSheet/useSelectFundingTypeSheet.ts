@@ -16,7 +16,7 @@ import {
     isLedgerAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { describeError, logger } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'

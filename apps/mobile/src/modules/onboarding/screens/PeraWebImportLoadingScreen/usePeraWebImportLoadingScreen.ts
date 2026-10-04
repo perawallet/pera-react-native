@@ -20,7 +20,7 @@ import {
     usePeraWebAccountImport,
 } from '@perawallet/wallet-core-backup'
 import { DuplicateAccountError } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'

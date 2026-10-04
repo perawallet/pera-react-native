@@ -23,7 +23,7 @@ import {
     type PeraAssetVerificationTier,
     getAssetsQueryKey,
 } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useAvailableAssetsQuery,

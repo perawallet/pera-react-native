@@ -43,9 +43,15 @@ vi.mock('@hooks/useLanguage')
 // `instanceof AlgodError` check, so the mock needs a real class identity too
 // — importActual pulls in the network store's own module deps, so stub instead.
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
     AlgodError: class AlgodError extends Error {},
     toAlgodError: (err: unknown) => err,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({

@@ -143,11 +143,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    getCustomNetworkConfig,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {
         getState: networkGetState,
         persist: { rehydrate: vi.fn() },
     },
-    getCustomNetworkConfig,
 }))
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,

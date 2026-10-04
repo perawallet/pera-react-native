@@ -21,7 +21,10 @@ const useSignRequestDetailQueryMock =
     vi.fn<() => { data: MultisigSignRequest | undefined }>()
 
 vi.mock('@hooks/useIsDarkMode', () => ({ useIsDarkMode: () => false }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 vi.mock('@perawallet/wallet-core-device', () => ({

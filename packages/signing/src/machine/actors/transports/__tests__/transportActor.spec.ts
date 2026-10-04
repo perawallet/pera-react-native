@@ -14,19 +14,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import '../../../../__tests__/registerAlgorandAccounts'
 import { createActor, toPromise } from 'xstate'
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...original,
-        useNetworkStore: {
-            getState: () => ({ network: 'testnet' }),
-            subscribe: () => () => {},
-        },
-    }
-})
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetworkStore: {
+        getState: () => ({ network: 'testnet' }),
+        subscribe: () => () => {},
+    },
+}))
 
 import { transportActor, type TransportActorInput } from '../transportActor'
 import { createTransportSelector } from '../../../../pipeline/transports/getTransport'

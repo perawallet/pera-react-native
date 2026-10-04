@@ -62,23 +62,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 // re-mocking the whole module — reset in beforeEach to avoid cross-test leakage.
 let mockNetwork = 'mainnet'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    getAlgorandClient: () => ({
-        account: {
-            getInformation: vi.fn(() =>
-                Promise.resolve({
-                    balance: { microAlgos: 1000000n },
-                    minBalance: { microAlgos: 100000n },
-                    status: 'Online',
-                    assets: [{ assetId: 123, amount: 100 }],
-                    totalAssetsOptedIn: 1,
-                    totalCreatedAssets: 0,
-                    totalAppsOptedIn: 0,
-                    authAddr: undefined,
-                }),
-            ),
-        },
-    }),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {
         getState: () => ({ network: mockNetwork }),
     },
@@ -175,7 +159,7 @@ describe('SyncService', () => {
         // to the mockNetwork-driven implementation here so this test's
         // behavior does not depend on suite execution order.
         const { useNetworkStore } =
-            await import('@perawallet/wallet-core-blockchain')
+            await import('@perawallet/wallet-core-chain-shared')
         useNetworkStore.getState = () => ({ network: mockNetwork })
         queryClient = new QueryClient()
         // The store-backed ports over the mocked stores, so the tests below
@@ -928,7 +912,7 @@ describe('SyncService', () => {
 
     it('force-syncs a network absent from the persisted round map, sending null (not undefined) for its last-refreshed round', async () => {
         const { useNetworkStore } =
-            await import('@perawallet/wallet-core-blockchain')
+            await import('@perawallet/wallet-core-chain-shared')
         const { usePollingStore } = await import('../polling')
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')

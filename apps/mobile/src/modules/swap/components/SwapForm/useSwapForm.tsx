@@ -20,7 +20,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
     pickBestByAmountOut,
     useCalculateSwapAmountMutation,
@@ -34,6 +33,7 @@ import {
     isDecimalEqual,
     uint64IdToNumber,
     type Nullable,
+    baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useToast } from '@hooks/useToast'

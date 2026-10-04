@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     multisigAdapterFor,
     useMultisigAccountDetailQuery,

@@ -24,7 +24,7 @@ import {
     useSelectedAccountAddress,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { multisigAdapterFor } from '@perawallet/wallet-core-multisig'

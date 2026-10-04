@@ -17,7 +17,7 @@ import type { Network } from '@perawallet/wallet-core-shared'
 import { useDeviceStore } from '../../store'
 import { useIsDeviceRegistrationPending } from '../useIsDeviceRegistrationPending'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

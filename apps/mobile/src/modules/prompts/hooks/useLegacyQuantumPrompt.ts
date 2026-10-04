@@ -18,7 +18,7 @@ import {
     isQuantumAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { isLegacyQuantumChild } from '@modules/accounts'
 

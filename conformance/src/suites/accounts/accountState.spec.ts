@@ -21,7 +21,7 @@ import {
 import {
     baseUnitsToDisplayUnits,
     microAlgosToAlgos,
-} from '@perawallet/wallet-core-blockchain/utils'
+} from '@perawallet/wallet-core-shared'
 
 import {
     createAlgo25Account,

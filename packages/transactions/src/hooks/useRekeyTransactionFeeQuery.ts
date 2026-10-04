@@ -13,11 +13,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
-    microAlgosToAlgos,
     useMinimumFeeConfig,
-    useNetwork,
     useSuggestedParametersQuery,
 } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { resolveMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { sendFlowFeatureFor } from '../chain-adapter'

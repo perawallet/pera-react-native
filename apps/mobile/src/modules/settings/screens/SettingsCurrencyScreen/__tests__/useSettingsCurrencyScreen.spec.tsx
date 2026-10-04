@@ -36,7 +36,10 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

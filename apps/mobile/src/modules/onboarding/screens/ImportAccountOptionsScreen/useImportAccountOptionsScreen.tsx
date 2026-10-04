@@ -17,7 +17,7 @@ import {
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import type { IconName } from '@components/core'

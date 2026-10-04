@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { AssetPrices } from '../models'
 import { getAssetPricesQueryKey } from './querykeys'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useStableIdList } from '@perawallet/wallet-core-shared'
 import { getAssetPricesByIds } from '../db'
 

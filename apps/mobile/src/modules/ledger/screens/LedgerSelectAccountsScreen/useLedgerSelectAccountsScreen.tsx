@@ -30,7 +30,7 @@ import {
 } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'

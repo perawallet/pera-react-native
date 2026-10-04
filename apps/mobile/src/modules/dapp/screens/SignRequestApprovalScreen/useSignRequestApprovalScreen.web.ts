@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useSigningRequest,

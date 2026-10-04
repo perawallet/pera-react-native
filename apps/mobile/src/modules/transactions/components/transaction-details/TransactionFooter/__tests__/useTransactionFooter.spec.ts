@@ -22,13 +22,18 @@ const { mockNetworkConfig } = vi.hoisted(() => ({
     mockNetworkConfig: { explorerUrl: 'https://explorer.test' },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual = (await importOriginal()) as Record<string, unknown>
-    return {
-        ...actual,
-        useNetwork: () => ({ networkConfig: mockNetworkConfig }),
-    }
-})
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-blockchain')
+    >()),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ networkConfig: mockNetworkConfig }),
+}))
 
 vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
     useWebView: () => ({ pushWebView: mockPushWebView }),

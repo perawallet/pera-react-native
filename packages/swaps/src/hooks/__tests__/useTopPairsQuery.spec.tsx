@@ -17,7 +17,7 @@ import React from 'react'
 import { useTopPairsQuery } from '../useTopPairsQuery'
 import { fetchTopPairs } from '../../api'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

@@ -23,8 +23,10 @@ import type {
 import { useCallback } from 'react'
 import { getAssetPriceHistoryQueryKey } from './querykeys'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import type { AssetPriceHistory } from '../models'
 
 export type UseAssetPriceHistoryQueryResult = {

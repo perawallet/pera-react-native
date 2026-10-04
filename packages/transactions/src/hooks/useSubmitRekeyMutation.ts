@@ -21,8 +21,8 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     useFetchSuggestedMinFee,
     useMinimumFeeConfig,
-    useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     getOpenSubmissionAttemptsForIntent,
     STALE_OPEN_ATTEMPT_MS,

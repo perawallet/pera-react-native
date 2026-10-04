@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_ID,
+    microAlgosToAlgos,
+} from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'

@@ -11,8 +11,10 @@
  */
 
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import type { AccountAssetBalanceHistoryItem, WalletAccount } from '../models'

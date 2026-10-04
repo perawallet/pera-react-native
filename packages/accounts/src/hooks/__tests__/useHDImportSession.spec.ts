@@ -31,7 +31,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     prepareHDMasterKey: prepareMock,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
 }))

@@ -13,10 +13,8 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { AnyActorRef, SnapshotFrom } from 'xstate'
 import { AppError, logger, type Optional } from '@perawallet/wallet-core-shared'
-import {
-    useTransactionEncoder,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useTransactionEncoder } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'

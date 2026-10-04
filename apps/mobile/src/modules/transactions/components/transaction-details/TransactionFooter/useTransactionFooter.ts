@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useMemo } from 'react'
 import { useWebView } from '@modules/webview'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'

@@ -59,8 +59,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => ({ network: 'testnet' }),
 }))
 
 describe('useAssetOptInMutation', () => {

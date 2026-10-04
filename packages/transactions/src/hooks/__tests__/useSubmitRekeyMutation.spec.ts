@@ -39,9 +39,12 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
     useFetchSuggestedMinFee: () => async () =>
         BigInt((await mockGetSuggestedParams()).minFee),
-    useNetworkStore: { getState: () => mockNetworkStoreGetState() },
     compactSignedResults: (signed: unknown[]) =>
         signed.filter(tx => tx !== null),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetworkStore: { getState: () => mockNetworkStoreGetState() },
 }))
 
 // Full replacement (not importActual): the real barrels pull in

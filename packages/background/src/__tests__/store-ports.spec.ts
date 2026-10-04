@@ -25,7 +25,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: { getState: () => ({ network: 'testnet' }) },
 }))
 

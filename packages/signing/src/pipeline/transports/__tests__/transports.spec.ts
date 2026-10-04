@@ -29,13 +29,19 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
         >()
     return {
         ...actual,
-        useNetworkStore: {
-            getState: () => getNetworkMock(),
-            subscribe: () => () => {},
-        },
         encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1, 0xa2])),
     }
 })
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetworkStore: {
+        getState: () => getNetworkMock(),
+        subscribe: () => () => {},
+    },
+}))
 
 const transactionResult: SigningResult = {
     signedData: {

@@ -11,7 +11,7 @@
  */
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { destroyBackup } from '../api'
 import { deleteBackupKeys } from '../credentials/keyStorage'

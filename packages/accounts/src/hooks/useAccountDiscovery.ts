@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     discoverAccounts as baseDiscoverAccounts,
     discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,

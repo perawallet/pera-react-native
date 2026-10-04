@@ -24,8 +24,10 @@ import {
     type SourceMetadata,
 } from '@perawallet/wallet-core-signing'
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
-    ...(await importOriginal<object>()),
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetworkStore: {
         getState: () => ({ network: 'testnet' }),
         subscribe: () => () => {},

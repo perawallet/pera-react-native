@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'

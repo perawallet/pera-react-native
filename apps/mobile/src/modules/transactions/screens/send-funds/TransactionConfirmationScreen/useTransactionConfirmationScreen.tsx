@@ -34,7 +34,6 @@ import {
     useAssetsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { displayUnitsToBaseUnits } from '@perawallet/wallet-core-blockchain'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -45,6 +44,7 @@ import {
     type Maybe,
     type Nullable,
     type Optional,
+    displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
 
 type useTransactionConfirmationScreenResult = {

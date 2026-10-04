@@ -11,7 +11,7 @@
  */
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchUser } from '../api/user'
 import type { CardUser } from '../models'

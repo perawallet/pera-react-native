@@ -16,7 +16,6 @@ import {
     computeBalanceImpact,
     useImpactTransactions,
 } from '@perawallet/wallet-core-signing'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
     useNativeAsset,
     PeraAssetType,
@@ -26,7 +25,10 @@ import {
     type DisplayableAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_ID,
+    baseUnitsToDisplayUnits,
+} from '@perawallet/wallet-core-shared'
 
 export type BalanceImpactDirection = 'receive' | 'spend'
 

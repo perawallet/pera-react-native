@@ -27,6 +27,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
             mocks.useNetwork.mock.results.at(-1)?.value?.network ?? 'mainnet',
         ),
     ),
+    useNetwork: mocks.useNetwork,
 }))
 
 // Mock endpoints
@@ -42,10 +43,6 @@ vi.mock('../../api', async importOriginal => {
         fetchAssetPriceHistory: mocks.fetchAssetPriceHistory,
     }
 })
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mocks.useNetwork,
-}))
 
 describe('useAssetPriceHistoryQuery', () => {
     let queryClient: QueryClient

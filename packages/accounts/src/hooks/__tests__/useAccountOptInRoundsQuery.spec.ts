@@ -21,7 +21,7 @@ import {
     MAINNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

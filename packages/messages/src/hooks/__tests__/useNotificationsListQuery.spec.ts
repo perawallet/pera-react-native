@@ -14,12 +14,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
 import { useNotificationsListQuery } from '../useNotificationsListQuery'
 import { fetchNotificationList } from '../../api/notifications'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
@@ -30,6 +32,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
                 'mainnet',
         ),
     ),
+    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
 }))
 
 vi.mock('../../api/notifications', () => ({
@@ -44,10 +47,6 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
         useDeviceID: vi.fn().mockReturnValue('test-device-id'),
     }
 })
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
-}))
 
 beforeEach(() => {
     vi.mocked(useNetwork).mockReturnValue({

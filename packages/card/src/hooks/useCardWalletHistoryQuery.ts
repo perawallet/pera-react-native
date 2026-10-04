@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchWalletHistory } from '../api/wallet-balance'
 import type { CardWalletHistoryEntry, CardWalletKind } from '../models'

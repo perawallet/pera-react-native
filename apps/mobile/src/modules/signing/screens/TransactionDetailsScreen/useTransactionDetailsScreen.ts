@@ -22,9 +22,9 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import {
     useTransactionDetailQuery,
     useGroupTransactionsQuery,
-    useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'
 import { mapHistoryItemToDisplayableTransaction } from '@perawallet/wallet-core-transactions'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'

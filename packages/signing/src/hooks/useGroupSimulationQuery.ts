@@ -11,11 +11,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { plannerAdapterFor } from '../chain-adapter'
 

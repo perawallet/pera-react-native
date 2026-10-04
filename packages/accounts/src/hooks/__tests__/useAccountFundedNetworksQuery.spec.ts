@@ -32,7 +32,7 @@ vi.mock('../../sync/account-syncer', () => ({
         mockEnsureAccountFetched(...(args as [])),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

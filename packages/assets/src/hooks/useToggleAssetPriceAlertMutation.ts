@@ -12,8 +12,10 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     type Network,
     logger,

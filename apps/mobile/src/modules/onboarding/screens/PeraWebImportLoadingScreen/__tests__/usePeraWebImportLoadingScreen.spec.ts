@@ -12,7 +12,7 @@
 
 import { renderHook, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { Networks } from '@perawallet/wallet-core-config'
 import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks'
 import { usePeraWebImportLoadingScreen } from '../usePeraWebImportLoadingScreen'

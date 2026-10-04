@@ -54,7 +54,7 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     decodeFromBase64,
     encodeToBase64,

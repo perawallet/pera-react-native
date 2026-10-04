@@ -28,12 +28,15 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    isValidAlgorandAddress: mocks.isValidAlgorandAddress,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    isValidAlgorandAddress: mocks.isValidAlgorandAddress,
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({

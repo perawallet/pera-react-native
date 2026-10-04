@@ -69,8 +69,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
         }
     }
     return {
-        microAlgosToAlgos: (microAlgos: { div: (n: number) => unknown }) =>
-            microAlgos.div(1_000_000),
         AlgodError: MockAlgodError,
         toAlgodError: (err: unknown) =>
             new MockAlgodError(

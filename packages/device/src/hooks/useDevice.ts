@@ -17,7 +17,7 @@ import {
     isPeraNetworkError,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRegisterDeviceMutation } from './useRegisterDeviceMutation'

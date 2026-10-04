@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    microAlgosToAlgos,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 export const usePaymentTransactionDisplay = (

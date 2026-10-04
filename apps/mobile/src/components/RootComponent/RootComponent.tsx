@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     useAllAccounts,
     useSyncNewAccounts,

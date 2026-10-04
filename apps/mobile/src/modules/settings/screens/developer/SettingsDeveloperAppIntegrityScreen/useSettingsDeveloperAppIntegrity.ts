@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAppIntegrityRegistration,

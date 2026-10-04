@@ -21,8 +21,10 @@ import type {
 } from '../models'
 import { useCallback } from 'react'
 import { Decimal } from 'decimal.js'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { getAccountBalancesHistoryQueryKey } from './querykeys'

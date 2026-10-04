@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { addressCodecFor, fetchRekeyedAddresses } from '../chain-adapter'
 import { useAccountsStore } from '../store'
 

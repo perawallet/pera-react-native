@@ -51,7 +51,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
