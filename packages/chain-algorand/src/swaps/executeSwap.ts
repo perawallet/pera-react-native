@@ -230,7 +230,7 @@ export const executeAlgorandSwap = async (
         let blocked: boolean
         try {
             const openAttempts = await getOpenSubmissionAttempts({
-                network,
+                scope,
                 sender: swapSender,
                 flows: ['swap', 'cosign'],
                 unevaluatableBefore,

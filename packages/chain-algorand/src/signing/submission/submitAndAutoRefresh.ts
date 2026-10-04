@@ -15,6 +15,7 @@ import { waitForConfirmation as algosdkWaitForConfirmation } from 'algosdk'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
@@ -197,7 +198,7 @@ const recordLedgerRow = async (
     await runLedgerBestEffort(async () => {
         attemptId = await recordSubmissionAttempt({
             db: input.db,
-            network: input.network,
+            scope: scopeForLegacyNetwork(input.network),
             txIds,
             flow: input.ledger?.flow ?? 'generic',
             intentKey: input.ledger?.intentKey,

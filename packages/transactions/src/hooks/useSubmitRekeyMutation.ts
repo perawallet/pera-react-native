@@ -105,9 +105,11 @@ export const useSubmitRekeyMutation = ({
         }: SubmitRekeyParams): Promise<string[]> => {
             // A still-open ledger row for the same rekey may land any
             // moment — a rebuild would mint a new txid algod cannot dedupe.
-            const network = useNetworkStore.getState().network
+            const scope = scopeForLegacyNetwork(
+                useNetworkStore.getState().network,
+            )
             const openAttempts = await getOpenSubmissionAttemptsForIntent({
-                network,
+                scope,
                 sender: sourceAddress,
                 intentKey: { kind: 'rekey', address: sourceAddress },
                 unevaluatableBefore: Date.now() - STALE_OPEN_ATTEMPT_MS,
@@ -140,7 +142,6 @@ export const useSubmitRekeyMutation = ({
                     configMinTxnFee: minTxnFee,
                     pqMultiplier,
                 })
-                const scope = scopeForLegacyNetwork(network)
                 unsignedTxn = await sendFlowFeatureFor(scope, 'rekey').buildTx({
                     scope,
                     sourceAddress,

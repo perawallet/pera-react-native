@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import { fetchCloseAmount as defaultFetchCloseAmount } from '../history-adapter'
@@ -46,9 +47,10 @@ export async function backfillMissingCloseAmounts({
     network,
     fetchCloseAmount = defaultFetchCloseAmount,
 }: BackfillParams): Promise<void> {
+    const scope = scopeForLegacyNetwork(network)
     let rows: Array<{ id: string }>
     try {
-        rows = await getCloseRowsMissingCloseAmount({ db, network })
+        rows = await getCloseRowsMissingCloseAmount({ db, scope })
     } catch (error) {
         logger.warn('close-amount backfill: work-list query failed', { error })
         return
@@ -61,7 +63,7 @@ export async function backfillMissingCloseAmounts({
             await updateTransactionCloseAmount({
                 db,
                 id,
-                network,
+                scope,
                 closeAmount: new Decimal(closeAmount),
             })
         } catch (error) {
