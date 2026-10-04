@@ -21,7 +21,7 @@ import { useQuantumFeeExplainer } from './useQuantumFeeExplainer'
 import { useFeeAdjustment } from './useFeeAdjustment'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import type { StackNavigationProp } from '@react-navigation/stack'
 

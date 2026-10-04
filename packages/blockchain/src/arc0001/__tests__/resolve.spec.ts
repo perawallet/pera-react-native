@@ -24,7 +24,8 @@ import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import { resolveArc0001SignTxnRequest } from '../resolve'
 import { Arc0001Error } from '../errors'
-import { Arc0001ErrorCode, type Arc0001WalletTransaction } from '../types'
+import { Arc0001ErrorCode } from '../types'
+import type { Arc0001WalletTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const addrA = new Address(new Uint8Array(32).fill(1))
 const addrB = new Address(new Uint8Array(32).fill(2))

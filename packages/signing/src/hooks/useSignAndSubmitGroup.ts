@@ -12,11 +12,12 @@
 
 import { useCallback } from 'react'
 import { compactSignedResults } from '@perawallet/wallet-core-blockchain'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import type {
-    PeraSignedTransaction,
-    PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraSignedTransaction,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+
 import {
     AppError,
     ErrorCategory,

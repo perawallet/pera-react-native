@@ -16,7 +16,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
 import {
     SIGN_BATCH_SIZE,

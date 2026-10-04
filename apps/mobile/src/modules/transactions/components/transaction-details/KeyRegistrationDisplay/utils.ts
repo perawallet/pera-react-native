@@ -13,7 +13,7 @@
 import type {
     KeyRegType,
     PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 /**

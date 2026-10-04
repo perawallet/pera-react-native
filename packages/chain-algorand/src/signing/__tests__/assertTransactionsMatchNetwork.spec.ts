@@ -13,7 +13,7 @@
 import { describe, test, expect } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-config'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 import { assertTransactionsMatchNetwork } from '../assertTransactionsMatchNetwork'
 import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'

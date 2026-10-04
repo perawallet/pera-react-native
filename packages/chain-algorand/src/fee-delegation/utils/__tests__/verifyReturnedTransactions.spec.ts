@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, test } from 'vitest'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 import { returnedTransactionsMatchSent } from '../verifyReturnedTransactions'
 

@@ -13,7 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const mockSignTransactionsWithKey = vi.fn()
 const mockGetPQSigningInfo = vi.fn()

@@ -13,7 +13,7 @@
 import { describe, test, expect } from 'vitest'
 import { mergeSigningResults } from '../mergeSigningResults'
 import type { SigningResult } from '@perawallet/wallet-core-signing'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const makeSigned = (id: string): PeraSignedTransaction =>
     ({ txID: id, blob: new Uint8Array() }) as unknown as PeraSignedTransaction

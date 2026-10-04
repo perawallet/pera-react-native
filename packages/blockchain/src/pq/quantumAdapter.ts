@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import { addressFromPQKey, SignedTransaction, type Transaction } from 'algosdk'
+import { addressFromPQKey, SignedTransaction } from 'algosdk'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 import { DEFAULT_PQ_SCHEME_ID, PQ_SCHEMES } from './schemes'
 import type { PQSignature } from '../models'
+import { asAlgosdkTransaction } from '../utils/transact'
 
 /**
  * The exact bytes a post-quantum signer must sign for `txn`.
@@ -35,7 +37,7 @@ import type { PQSignature } from '../models'
  * `__tests__/quantumAdapter.spec.ts`, which asserts byte-parity with the
  * SDK's own signer so a reintroduced pre-hash fails the build.
  */
-export const pqSigningDigest = (txn: Transaction): Uint8Array =>
+export const pqSigningDigest = (txn: PeraTransaction): Uint8Array =>
     txn.bytesToSign()
 
 /** The address a post-quantum public key authorizes under `schemeId`. */
@@ -54,7 +56,7 @@ export const deriveQuantumAddress = (
  * authorizes, which is exactly the rekey case.
  */
 export const assemblePQSignedTransaction = (input: {
-    txn: Transaction
+    txn: PeraTransaction
     signature: PQSignature
 }): SignedTransaction => {
     const { txn, signature } = input
@@ -62,7 +64,7 @@ export const assemblePQSignedTransaction = (input: {
     const { address, salt } = addressFromPQKey(scheme, signature.publicKey)
 
     return new SignedTransaction({
-        txn,
+        txn: asAlgosdkTransaction(txn),
         pqsig: {
             sch: scheme,
             slt: salt,

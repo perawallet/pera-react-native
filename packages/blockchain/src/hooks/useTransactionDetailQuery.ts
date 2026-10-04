@@ -15,7 +15,7 @@ import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getTransactionDetailQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
-import type { PeraDisplayableTransaction } from '../models'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from './useNetwork'
 
 type UseTransactionDetailQueryParams = {

@@ -11,13 +11,16 @@
  */
 
 import {
+    asAlgosdkTransaction,
     createWalletAlgorandClient,
     decodeTransaction,
     encodeTransactionRaw,
     mapToDisplayableTransaction,
-    type PeraDisplayableTransaction,
-    type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraDisplayableTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-config'
 
 // Minimal structural view of algosdk's SimulateResponse — only the inner-txn
@@ -100,7 +103,9 @@ export const simulateInnerTransactions = async (
 ): Promise<PeraDisplayableTransaction[]> => {
     const composer = createWalletAlgorandClient(network).newGroup()
     for (const tx of groupTxs) {
-        composer.addTransaction(tx.group ? ungroupForSimulation(tx) : tx)
+        composer.addTransaction(
+            asAlgosdkTransaction(tx.group ? ungroupForSimulation(tx) : tx),
+        )
     }
     const { simulateResponse } = await composer.simulate({
         skipSignatures: true,

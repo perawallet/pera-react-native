@@ -18,7 +18,7 @@ import { compactSignedResults } from '@perawallet/wallet-core-blockchain'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
 type AddSignRequestFn = (request: TransactionSignRequest) => void

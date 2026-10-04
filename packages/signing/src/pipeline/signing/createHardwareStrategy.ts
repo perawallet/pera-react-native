@@ -19,10 +19,7 @@ import type {
     HardwareWalletRegistry,
     HardwareWalletTransport,
 } from '@perawallet/wallet-core-hardware-wallet'
-import type {
-    PeraTransaction,
-    PeraSignedTransaction,
-} from '@perawallet/wallet-core-blockchain'
+
 import { Address } from '@perawallet/wallet-core-blockchain'
 import { encodeToBase64, withTimeout } from '@perawallet/wallet-core-shared'
 import type {
@@ -43,7 +40,11 @@ import {
     MIN_ARBITRARY_SIGN_APP_VERSION,
     isAppVersionAtLeast,
 } from '@perawallet/wallet-core-ledger'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraTransaction,
+    type PeraSignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { legacyPlannerAdapter } from '../../chain-adapter'
 import {
     messageSignerFor,

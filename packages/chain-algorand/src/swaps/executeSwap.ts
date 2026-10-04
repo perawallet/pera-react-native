@@ -13,11 +13,13 @@
 import { Decimal } from 'decimal.js'
 import {
     mapToDisplayableTransaction,
-    type PeraDisplayableTransaction,
-    type PeraSignedTransaction,
-    type PeraTransaction,
     type getAlgorandClient,
 } from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraDisplayableTransaction,
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isAssetFrozen,
     isMultisigAccount,

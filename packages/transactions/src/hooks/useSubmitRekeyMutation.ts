@@ -15,6 +15,7 @@ import { useMutation } from '@tanstack/react-query'
 import {
     LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
@@ -33,8 +34,6 @@ import { assertOnline } from '@perawallet/wallet-core-shared'
 import { RekeyError } from '../errors'
 import { sendFlowFeatureFor } from '../chain-adapter'
 import { requestRekeySignatures } from './requestRekeySignatures'
-
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 
 export type SubmitRekeyParams = {
     /** Sender / receiver of the 0-amount payment that carries the rekey. */

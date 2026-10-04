@@ -17,7 +17,7 @@ import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionPreview } from '@modules/transactions/components/transaction-details/TransactionPreview'
 import { GroupDetailHeader } from '@modules/signing'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useGroupTransactionListScreen } from './useGroupTransactionListScreen'
 import { useStyles } from './styles'
 

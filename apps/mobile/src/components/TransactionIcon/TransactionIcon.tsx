@@ -17,7 +17,7 @@ import {
     type PWIconVariant,
     type PWRoundIconProps,
 } from '@components/core'
-import type { PeraTransactionType } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransactionType } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 
 export type TransactionIconType =

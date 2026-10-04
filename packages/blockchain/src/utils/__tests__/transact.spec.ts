@@ -13,13 +13,19 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import {
+    Address,
     encodeMsgpack,
     makePaymentTxnWithSuggestedParamsFromObject,
     decodeSignedTransaction,
 } from 'algosdk'
 import { generateKey, signCompressed } from 'falcon-1024'
-import { compactSignedResults, encodeSignedTransaction } from '..'
-import type { PeraSignedTransaction } from '..'
+import {
+    asAlgosdkTransaction,
+    compactSignedResults,
+    encodeSignedTransaction,
+    groupTransactions,
+} from '..'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     assemblePQSignedTransaction,
     deriveQuantumAddress,
@@ -85,5 +91,38 @@ describe('utils/transact — pqsig transactions use the ordinary encoding path',
         expect(
             decodeSignedTransaction(encodeSignedTransaction(signed)).pqsig,
         ).toBeDefined()
+    })
+})
+
+describe('utils/transact — algosdk narrowing', () => {
+    const makePayment = (amount: number) =>
+        makePaymentTxnWithSuggestedParamsFromObject({
+            sender: Address.zeroAddress(),
+            receiver: Address.zeroAddress(),
+            amount,
+            suggestedParams: {
+                fee: 1000,
+                flatFee: true,
+                firstValid: 1,
+                lastValid: 1000,
+                genesisHash: new Uint8Array(32),
+                genesisID: 'testnet-v1.0',
+            },
+        })
+
+    it('returns the same instance from asAlgosdkTransaction', () => {
+        const txn = makePayment(1)
+
+        expect(asAlgosdkTransaction(txn)).toBe(txn)
+    })
+
+    it("groups in place and returns the caller's array", () => {
+        const input = [makePayment(1), makePayment(2)]
+
+        const grouped = groupTransactions(input)
+
+        expect(grouped).toBe(input)
+        expect(grouped[0].group).toBeDefined()
+        expect(grouped[0].group).toEqual(grouped[1].group)
     })
 })

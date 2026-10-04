@@ -11,10 +11,8 @@
  */
 
 import { useMemo } from 'react'
-import {
-    algorandSafeJsonStringify,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { algorandSafeJsonStringify } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     bottomSheetNotifier,
     PWIcon,

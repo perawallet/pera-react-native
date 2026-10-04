@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import {
-    compactSignedResults,
-    type PeraSignedTransaction,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { compactSignedResults } from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isQuantumAccount,
     type WalletAccount,

@@ -48,6 +48,11 @@ export default defineConfig({
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
         passWithNoTests: true,
+        typecheck: {
+            enabled: true,
+            include: ['src/**/*.test-d.ts'],
+            tsconfig: './tsconfig.typecheck.json',
+        },
     },
     resolve: {
         conditions: ['default'],

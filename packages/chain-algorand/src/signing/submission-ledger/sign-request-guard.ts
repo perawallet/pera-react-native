@@ -11,7 +11,7 @@
  */
 
 import { computeGroupID, Transaction } from 'algosdk'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import {

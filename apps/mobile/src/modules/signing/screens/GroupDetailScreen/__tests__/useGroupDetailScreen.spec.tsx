@@ -14,7 +14,7 @@ import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useGroupDetailScreen } from '../useGroupDetailScreen'
 import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const mockNavigate = vi.fn()
 const mockRouteParams = { groupIndex: 0 }

@@ -21,7 +21,7 @@ import {
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     LONG_ADDRESS_LENGTH,
     truncateAlgorandAddress,

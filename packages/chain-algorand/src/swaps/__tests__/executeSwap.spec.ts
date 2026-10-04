@@ -15,7 +15,7 @@ import { Decimal } from 'decimal.js'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'

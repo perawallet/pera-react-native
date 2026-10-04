@@ -17,7 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'
 

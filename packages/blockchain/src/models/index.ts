@@ -10,74 +10,19 @@
  limitations under the License
  */
 
-import type { SignedTransaction, Transaction, indexerModels } from 'algosdk'
+import type {
+    PeraSignedTransaction,
+    PeraSignedTransactionGroup,
+    PeraTransactionGroup,
+} from '@perawallet/wallet-core-chain-contract'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
-import type { Address } from 'algosdk'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
-
-type IndexerTransaction = indexerModels.Transaction
 
 export const MAX_TX_NOTE_BYTES = 1024
 
 export type BlockchainStore = BaseStoreState
 
 export { Address } from 'algosdk'
-
-// algosdk's indexer models are classes implementing Encodable (each carries
-// `getEncodingSchema`/`toEncodingData` methods). The displayable transaction is
-// built as a plain object, so strip method-valued properties recursively to get
-// a structural, literal-assignable shape while keeping every data field.
-type PlainModel<T> = T extends Uint8Array
-    ? T
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      T extends (...args: any[]) => any
-      ? never
-      : T extends (infer U)[]
-        ? PlainModel<U>[]
-        : T extends object
-          ? {
-                [
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    K in keyof T as T[K] extends (...args: any[]) => any
-                        ? never
-                        : K
-                ]: PlainModel<T[K]>
-            }
-          : T
-
-export type PeraDisplayableTransaction = PlainModel<IndexerTransaction> & {
-    roundTimeMillis?: number
-    rawTransaction?: PeraTransaction
-    /**
-     * Count of inner transactions when only the local summary is available
-     * (mapped from the SQLite history row). Indexer-fetched transactions
-     * carry the full `innerTxns` array instead; prefer it when present.
-     */
-    innerTransactionCount?: number
-}
-
-export type AccountInformation = {
-    /** Minimum balance in microAlgos (base units, bigint) */
-    minBalance: bigint
-    /** Account balance in microAlgos (base units, bigint) */
-    amount: bigint
-    address: Address
-    status: string
-    /** Pending rewards in microAlgos (base units, bigint) */
-    rewards: bigint
-    /** Opted-in assets with amounts in base units (smallest indivisible unit) */
-    assets: Array<{ assetId: bigint; amount: bigint; isFrozen: boolean }>
-    /** Auth (signer) address when the account is rekeyed; undefined otherwise */
-    authAddress?: string
-}
-
-export type PeraTransaction = Transaction
-
-export type PeraTransactionGroup = PeraTransaction[]
-
-export type PeraSignedTransaction = SignedTransaction
-
-export type PeraSignedTransactionGroup = PeraSignedTransaction[]
 
 /**
  * A post-quantum signature together with the material needed to verify it.
@@ -101,20 +46,6 @@ export const compactSignedResults = (
 ): PeraSignedTransaction[] =>
     signed.filter((tx): tx is PeraSignedTransaction => tx !== null)
 
-export type PeraTransactionType =
-    | 'payment'
-    | 'asset-transfer'
-    | 'asset-opt-in'
-    | 'asset-opt-out'
-    | 'asset-clawback'
-    | 'asset-config'
-    | 'asset-freeze'
-    | 'key-registration'
-    | 'app-call'
-    | 'state-proof'
-    | 'heartbeat'
-    | 'unknown'
-
 export type PeraTransactionSigner = (
     txnGroup: PeraTransactionGroup,
     indexesToSign: number[],
@@ -124,14 +55,3 @@ export type PeraEncodedTransactionSigner = (
     txnGroup: PeraTransactionGroup,
     indexesToSign: number[],
 ) => Promise<Uint8Array[]>
-
-export type KeyRegType = 'online' | 'offline'
-
-export type AssetTransferType =
-    | 'transfer'
-    | 'opt-in'
-    | 'opt-out'
-    | 'clawback'
-    | 'unknown'
-
-export type AssetConfigType = 'create' | 'update' | 'destroy'
