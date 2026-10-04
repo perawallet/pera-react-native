@@ -15,8 +15,10 @@ import { createHash } from 'crypto'
 import type {
     BiometricsAuthenticateFailureReason,
     BiometricsAuthenticatePrompt,
+    BiometricsService,
     BiometricType,
     BiometricUnwrapFailureReason,
+    BiometricUnwrapSession,
 } from '@perawallet/wallet-extension-platform'
 import { getKeystore, getProvider } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from '@perawallet/wallet-core-kms'
@@ -91,11 +93,21 @@ type UseBiometricsResult = {
 // clear is in flight would lose its fresh key.
 let legacySweep: Nullable<Promise<void>> = null
 
-// The mount-time reads are fire-and-forget, and every native call shares one
-// Expo queue with the lock screen's own checks, so concurrent mounts share one
-// run. Explicit calls never join: the unlock path decides on a fresh reading.
-let mountReconcile: Nullable<Promise<boolean>> = null
-let mountAvailability: Nullable<Promise<boolean>> = null
+// Every native call here shares one Expo queue with the unlock prompt, so
+// overlapping runs share one: the mounts with each other and the unlock with
+// them. Shared only while in flight, so a joiner reads what the OS reported
+// moments ago. An explicit `checkBiometricsEnabled` still runs afresh.
+let inFlightReconcile: Nullable<Promise<boolean>> = null
+let inFlightAvailability: Nullable<Promise<boolean>> = null
+
+const checkAvailabilityShared = (
+    service: BiometricsService,
+): Promise<boolean> => {
+    inFlightAvailability ??= service.checkBiometricsAvailable().finally(() => {
+        inFlightAvailability = null
+    })
+    return inFlightAvailability
+}
 
 const sha256Hex = (bytes: Uint8Array): string =>
     bytesToHex(new Uint8Array(createHash('sha256').update(bytes).digest()))
@@ -203,7 +215,7 @@ export const useBiometrics = (): UseBiometricsResult => {
 
         // Android folds a self-clearing lockout in with "nothing enrolled"
         // here, so this branch may report disabled but never destroy.
-        if (!(await biometricsService.checkBiometricsAvailable())) {
+        if (!(await checkAvailabilityShared(biometricsService))) {
             setIsEnabled(false)
             // Only a persistent cause is worth explaining, and a decline has to
             // be remembered here because this is re-derived on every reconcile.
@@ -267,15 +279,22 @@ export const useBiometrics = (): UseBiometricsResult => {
         return biometricsService.checkBiometricsAvailable()
     }, [biometricsService])
 
+    const reconcile = useCallback((): Promise<boolean> => {
+        inFlightReconcile ??= checkBiometricsEnabled().finally(() => {
+            inFlightReconcile = null
+        })
+        return inFlightReconcile
+    }, [checkBiometricsEnabled])
+
     useEffect(() => {
-        mountReconcile ??= checkBiometricsEnabled().finally(() => {
-            mountReconcile = null
-        })
-        mountAvailability ??= checkBiometricsAvailable().finally(() => {
-            mountAvailability = null
-        })
-        void mountAvailability.then(setIsAvailable)
-    }, [checkBiometricsEnabled, checkBiometricsAvailable])
+        void reconcile()
+        // Behind hydration, as the reconcile's own availability read is, so
+        // the two land together and share one.
+        void getKeystore()
+            .ready.catch(() => undefined)
+            .then(() => checkAvailabilityShared(biometricsService))
+            .then(setIsAvailable)
+    }, [reconcile, biometricsService])
 
     const writeBiometricBlob = useCallback(
         async (blob: string, tokenHash: string): Promise<void> => {
@@ -499,65 +518,142 @@ export const useBiometrics = (): UseBiometricsResult => {
         ],
     )
 
+    const handleUnwrapFailure = useCallback(
+        async (
+            reason: BiometricUnwrapFailureReason,
+        ): Promise<BiometricUnlockOutcome> => {
+            // The one reason that is affirmative rather than a prompt outcome:
+            // the OS destroyed the key.
+            if (reason === 'invalidated') {
+                await dropOptIn('enrollment-changed')
+                return { kind: 'mismatch' }
+            }
+            // A key that passes the ceremony and still cannot release the
+            // token is dead in every case but a pruned keystore operation, so
+            // it is dropped once that stops looking transient.
+            if (reason === 'decrypt-failed') {
+                const failures =
+                    useSecurityStore.getState().biometricUnwrapFailures + 1
+                if (failures >= MAX_BIOMETRIC_UNWRAP_FAILURES) {
+                    await dropOptIn('rebind-required')
+                    return { kind: 'mismatch' }
+                }
+                setUnwrapFailures(failures)
+            }
+            return { kind: 'failed', reason }
+        },
+        [dropOptIn, setUnwrapFailures],
+    )
+
+    // The prompt goes up before the reconcile and the keystore reads settle,
+    // because on a slow keystore they queue behind every other caller for
+    // seconds. Nothing they decide is skipped, only reordered: a refusal
+    // dismisses the prompt, and a passed ceremony only becomes an unlock once
+    // both have agreed and the token checks out.
     const unlockWithBiometrics = useCallback(
         async (
             prompt: BiometricsAuthenticatePrompt,
         ): Promise<BiometricUnlockOutcome> => {
-            // Wrapped so a failed keystore read (null) is distinguishable from
-            // bytes that came back but did not decode; only the latter says
-            // anything about the blob.
-            const startReads = () => {
-                const reads = {
-                    lockoutEndTime: readLockoutEndTime(),
-                    blobRead: withSecret(BIOMETRIC_BLOB_KEY_ID, bytes => ({
-                        decoded: decodeBiometricBlob(bytes),
-                    })),
-                }
-                // Only for reads a failed reconcile abandons; an awaited one
-                // still throws.
-                reads.lockoutEndTime.catch(() => undefined)
-                reads.blobRead.catch(() => undefined)
-                return reads
-            }
+            let session: Nullable<BiometricUnwrapSession> = null
+            let isFinishing = false
             try {
-                // The keychain and the Expo queue are separate native lanes, so
-                // the reads run while the reconcile does. `hasSecret` needs the
-                // hydrated metadata; without a blob the reconcile fails anyway.
+                // `hasSecret` needs the hydrated metadata.
                 await getKeystore().ready.catch(() => undefined)
-                const earlyReads = hasSecret(BIOMETRIC_BLOB_KEY_ID)
-                    ? startReads()
-                    : null
 
-                if (!(await checkBiometricsEnabled())) {
-                    if (isPendingRearmRecoverable()) {
-                        return await recoverPendingRearm(prompt)
+                // With no current blob there is nothing to unwrap yet, and a
+                // legacy one has to be swept first, so the reconcile runs
+                // before any prompt; it may still find a blob written since.
+                let enabled: Nullable<Promise<boolean>> = null
+                const hasCurrentBlob =
+                    !legacySweep &&
+                    !hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID) &&
+                    hasSecret(BIOMETRIC_BLOB_KEY_ID)
+                if (!hasCurrentBlob) {
+                    enabled = reconcile()
+                    if (!(await enabled)) {
+                        if (isPendingRearmRecoverable()) {
+                            return await recoverPendingRearm(prompt)
+                        }
+                        return { kind: 'failed', reason: 'unavailable' }
                     }
-                    return { kind: 'failed', reason: 'unavailable' }
                 }
-                const reads = earlyReads ?? startReads()
 
-                // The store's lockout flag is not hydrated yet on a cold start;
-                // the record is the authority, and biometrics must not outrank
-                // a PIN lockout.
-                const lockoutEndTime = await reads.lockoutEndTime
-                if (lockoutEndTime !== null) {
-                    return { kind: 'locked', lockoutEndTime }
+                // First, so no reconcile call is queued ahead of it natively.
+                const activeSession =
+                    biometricsService.beginBiometricUnwrap(prompt)
+                session = activeSession
+                enabled ??= reconcile()
+                const verifiedEnabled = enabled
+
+                // Wrapped so a failed keystore read (null) is distinguishable
+                // from bytes that came back but did not decode; only the latter
+                // says anything about the blob.
+                const lockoutRead = readLockoutEndTime()
+                const blobRead = withSecret(BIOMETRIC_BLOB_KEY_ID, bytes => ({
+                    decoded: decodeBiometricBlob(bytes),
+                }))
+                // Only for reads a refusal abandons; an awaited one still
+                // throws.
+                lockoutRead.catch(() => undefined)
+                blobRead.catch(() => undefined)
+
+                const refusal = (async (): Promise<
+                    Nullable<BiometricUnlockOutcome>
+                > => {
+                    if (!(await verifiedEnabled)) {
+                        return { kind: 'failed', reason: 'unavailable' }
+                    }
+                    // The store's lockout flag is not hydrated yet on a cold
+                    // start; the record is the authority, and biometrics must
+                    // not outrank a PIN lockout.
+                    const lockoutEndTime = await lockoutRead
+                    return lockoutEndTime === null
+                        ? null
+                        : { kind: 'locked', lockoutEndTime }
+                })()
+                // Dismissed as soon as the answer is no, not after the user
+                // authenticates against a prompt that cannot unlock.
+                refusal.then(
+                    outcome => {
+                        if (outcome) void activeSession.cancel()
+                    },
+                    () => undefined,
+                )
+
+                // A refusal does not wait for the dismissed ceremony to report
+                // back; a passed ceremony still waits for the refusal check.
+                const first = await Promise.race([
+                    refusal.then(outcome =>
+                        outcome
+                            ? { refused: outcome }
+                            : new Promise<never>(() => undefined),
+                    ),
+                    activeSession.authenticated.then(result => ({
+                        ceremony: result,
+                    })),
+                ])
+                if ('refused' in first) return first.refused
+                const { ceremony } = first
+                const refused = await refusal
+                if (refused) return refused
+                if (!ceremony.success) {
+                    return await handleUnwrapFailure(ceremony.reason)
                 }
 
                 const expected = getSecretMetadata(BIOMETRIC_BLOB_KEY_ID)?.[
                     BIOMETRIC_TOKEN_HASH_METADATA_KEY
                 ]
-                const blobRead = await reads.blobRead
-                if (!blobRead) {
+                const blob = await blobRead
+                if (!blob) {
                     return { kind: 'failed', reason: 'unavailable' }
                 }
-                if (!blobRead.decoded || typeof expected !== 'string') {
+                if (!blob.decoded || typeof expected !== 'string') {
                     await dropOptIn('rebind-required')
                     return { kind: 'mismatch' }
                 }
 
-                // A wrong PIN entered during the reconcile writes its lockout
-                // after the early record read; the store already has it.
+                // A wrong PIN entered during the ceremony writes its lockout
+                // after the record read; the store already has it.
                 const storeLockoutEndTime =
                     useSecurityStore.getState().lockoutEndTime
                 if (
@@ -570,32 +666,10 @@ export const useBiometrics = (): UseBiometricsResult => {
                     }
                 }
 
-                const released = await biometricsService.unwrapBiometricToken(
-                    blobRead.decoded,
-                    prompt,
-                )
+                isFinishing = true
+                const released = await activeSession.finish(blob.decoded)
                 if (!released.success) {
-                    // The one reason that is affirmative rather than a prompt
-                    // outcome: the OS destroyed the key.
-                    if (released.reason === 'invalidated') {
-                        await dropOptIn('enrollment-changed')
-                        return { kind: 'mismatch' }
-                    }
-                    // A key that passes the ceremony and still cannot release
-                    // the token is dead in every case but a pruned keystore
-                    // operation, so it is dropped once that stops looking
-                    // transient.
-                    if (released.reason === 'decrypt-failed') {
-                        const failures =
-                            useSecurityStore.getState()
-                                .biometricUnwrapFailures + 1
-                        if (failures >= MAX_BIOMETRIC_UNWRAP_FAILURES) {
-                            await dropOptIn('rebind-required')
-                            return { kind: 'mismatch' }
-                        }
-                        setUnwrapFailures(failures)
-                    }
-                    return { kind: 'failed', reason: released.reason }
+                    return await handleUnwrapFailure(released.reason)
                 }
 
                 try {
@@ -613,10 +687,14 @@ export const useBiometrics = (): UseBiometricsResult => {
                 return { kind: 'ok' }
             } catch {
                 return { kind: 'failed', reason: 'unknown' }
+            } finally {
+                // Every exit short of `finish` must release the key a passed
+                // ceremony left authorised.
+                if (session && !isFinishing) void session.cancel()
             }
         },
         [
-            checkBiometricsEnabled,
+            reconcile,
             isPendingRearmRecoverable,
             recoverPendingRearm,
             readLockoutEndTime,
@@ -625,6 +703,7 @@ export const useBiometrics = (): UseBiometricsResult => {
             withSecret,
             biometricsService,
             dropOptIn,
+            handleUnwrapFailure,
             setUnwrapFailures,
         ],
     )

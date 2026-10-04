@@ -61,6 +61,7 @@ const mockedBiometrics = () =>
                 >
             >
         >
+        beginBiometricUnwrap: ReturnType<typeof vi.fn>
         getSecurityLevel: ReturnType<typeof vi.fn>
         getSupportedBiometricType: ReturnType<typeof vi.fn>
         checkEnrollmentBinding: ReturnType<typeof vi.fn>
@@ -95,6 +96,19 @@ const wireBiometricsService = (config: {
             ? { success: true, token: Uint8Array.from(TEST_TOKEN) }
             : { success: false, reason: 'user-cancel' },
     )
+    // An unlock splits the same unwrap around the ceremony.
+    biometrics.beginBiometricUnwrap.mockImplementation(() => ({
+        authenticated: Promise.resolve(
+            config.unwrap
+                ? { success: true }
+                : { success: false, reason: 'user-cancel' },
+        ),
+        finish: async () => ({
+            success: true,
+            token: Uint8Array.from(TEST_TOKEN),
+        }),
+        cancel: async () => undefined,
+    }))
     // enableBiometrics only binds to a strong (class-3) authenticator; the
     // default scenario presents one so the enable path reaches the prompt.
     biometrics.getSecurityLevel.mockResolvedValue('strong')
@@ -310,9 +324,8 @@ describe('Flow: Biometric authentication lifecycle', () => {
         await act(async () => {
             outcome = await result.current.unlockWithBiometrics(PROMPT)
         })
-        // The hook short-circuits when checkBiometricsEnabled is
-        // false — the platform's unwrapBiometricToken() doesn't even
-        // get a chance to run.
+        // With no blob there is nothing to unwrap, so no prompt is ever
+        // begun.
         expect(outcome).toEqual({
             kind: 'failed',
             reason: 'unavailable',

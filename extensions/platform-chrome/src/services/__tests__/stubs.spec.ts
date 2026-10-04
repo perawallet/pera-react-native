@@ -53,6 +53,15 @@ describe('capability stubs', () => {
                 reason: 'unavailable',
             },
         )
+        const session = service.beginBiometricUnwrap()
+        await expect(session.authenticated).resolves.toEqual({
+            success: false,
+            reason: 'unavailable',
+        })
+        await expect(session.finish('anything')).resolves.toEqual({
+            success: false,
+            reason: 'unavailable',
+        })
     })
 
     it('reports migration as already done, so the migrator never runs on web', async () => {

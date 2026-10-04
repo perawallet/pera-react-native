@@ -59,11 +59,21 @@ private const val LOG_TAG = "PeraBiometricBinding"
  *   through `KeyStore.getEntry`, which turns the same invalidation into
  *   `UnrecoverableKeyException` and loses the distinction between 'changed' and never there.
  *
- * `checkBinding` resolves 'valid' | 'changed' | 'absent' | 'unavailable'; `unwrapToken` rejects
- * with one of 'invalidated', 'decrypt-failed', 'no-binding', 'user-cancel', 'system-cancel',
- * 'lockout', 'unavailable', 'failed'. Anything else degrades to 'unknown' in JavaScript.
+ * `checkBinding` resolves 'valid' | 'changed' | 'absent' | 'unavailable'; `beginUnwrap` and
+ * `finishUnwrap` reject with one of 'invalidated', 'decrypt-failed', 'no-binding', 'user-cancel',
+ * 'system-cancel', 'lockout', 'unavailable', 'failed'. Anything else degrades to 'unknown' in
+ * JavaScript.
  */
 class PeraBiometricBindingModule : Module() {
+  // One unwrap at a time. The prompt's callbacks land on the main thread and the module's calls on
+  // the Expo queue, so every field is read and written under `lock`; `generation` lets a callback
+  // from a cancelled or superseded prompt see that it no longer owns the session.
+  private val lock = Any()
+  private var generation = 0
+  private var activePrompt: BiometricPrompt? = null
+  private var pendingBegin: Promise? = null
+  private var authorizedCipher: Cipher? = null
+
   override fun definition() = ModuleDefinition {
     Name("PeraBiometricBinding")
 
@@ -103,7 +113,13 @@ class PeraBiometricBindingModule : Module() {
       }
     }
 
-    AsyncFunction("unwrapToken") { blob: String, prompt: Map<String, String>, promise: Promise ->
+    // The ceremony alone: the prompt goes up without waiting for the blob, and a passed ceremony
+    // holds the authorised cipher for `finishUnwrap`.
+    AsyncFunction("beginUnwrap") { prompt: Map<String, String>, promise: Promise ->
+      val session = synchronized(lock) {
+        endSession()
+        generation
+      }
       try {
         val entry = loadKeyStore().getEntry(UNLOCK_ALIAS, null) as? KeyStore.PrivateKeyEntry
         if (entry == null) {
@@ -112,9 +128,7 @@ class PeraBiometricBindingModule : Module() {
         }
         val cipher = Cipher.getInstance(RSA_TRANSFORMATION)
         cipher.init(Cipher.DECRYPT_MODE, entry.privateKey, oaepSpec())
-        // The ceremony is bound to this cipher, so a successful doFinal proves the TEE released
-        // the key.
-        authenticateWithCryptoObject(cipher, prompt, blob, promise)
+        authenticateWithCryptoObject(cipher, prompt, session, promise)
       } catch (e: KeyPermanentlyInvalidatedException) {
         Log.w(LOG_TAG, "the unlock key was invalidated", e)
         promise.reject(CodedException("invalidated", "key invalidated", null))
@@ -122,6 +136,32 @@ class PeraBiometricBindingModule : Module() {
         Log.w(LOG_TAG, "preparing the unwrap cipher failed", t)
         promise.reject(CodedException("decrypt-failed", "unwrap failed", null))
       }
+    }
+
+    AsyncFunction("finishUnwrap") { blob: String, promise: Promise ->
+      val cipher = synchronized(lock) {
+        authorizedCipher.also { authorizedCipher = null }
+      }
+      if (cipher == null) {
+        promise.reject(CodedException("failed", "no authorised unwrap", null))
+        return@AsyncFunction
+      }
+      try {
+        // The cipher the TEE authorised; any other would defeat the binding.
+        promise.resolve(cipher.doFinal(Base64.decode(blob, Base64.NO_WRAP)))
+      } catch (e: KeyPermanentlyInvalidatedException) {
+        Log.w(LOG_TAG, "the unlock key was invalidated mid-unwrap", e)
+        promise.reject(CodedException("invalidated", "key invalidated", null))
+      } catch (t: Throwable) {
+        Log.w(LOG_TAG, "decrypting the token failed", t)
+        promise.reject(CodedException("decrypt-failed", "decrypt failed", null))
+      }
+    }
+
+    // A prompt still up is dismissed and its `beginUnwrap` rejected with 'system-cancel'.
+    AsyncFunction("cancelUnwrap") { promise: Promise ->
+      synchronized(lock) { endSession() }
+      promise.resolve(null)
     }
 
     AsyncFunction("checkBinding") { promise: Promise -> promise.resolve(checkBinding()) }
@@ -262,10 +302,35 @@ class PeraBiometricBindingModule : Module() {
       else -> "failed"
     }
 
+  /**
+   * Called with `lock` held: drops the authorised cipher and dismisses a prompt still up. Its
+   * promise is settled here rather than left to the prompt's error callback, which a cancel from
+   * the app is not guaranteed to fire.
+   */
+  private fun endSession() {
+    generation += 1
+    authorizedCipher = null
+    pendingBegin?.reject(CodedException("system-cancel", "unwrap cancelled", null))
+    pendingBegin = null
+    val prompt = activePrompt ?: return
+    activePrompt = null
+    appContext.currentActivity?.runOnUiThread { prompt.cancelAuthentication() }
+  }
+
+  /** Under `lock`: whether this prompt's callback still owns the session, ending it if so. */
+  private fun claimSession(session: Int, promise: Promise): Boolean {
+    val owns = session == generation && pendingBegin === promise
+    if (owns) {
+      activePrompt = null
+      pendingBegin = null
+    }
+    return owns
+  }
+
   private fun authenticateWithCryptoObject(
     cipher: Cipher,
     prompt: Map<String, String>,
-    blob: String,
+    session: Int,
     promise: Promise,
   ) {
     // A checked cast, so a host that is not a FragmentActivity reports 'unavailable' rather than
@@ -291,7 +356,7 @@ class PeraBiometricBindingModule : Module() {
           promise.reject(CodedException("unavailable", "prompt unavailable", null))
           return@runOnUiThread
         }
-        showPrompt(activity, prompt, blob, cipher, promise)
+        showPrompt(activity, prompt, session, cipher, promise)
       } catch (t: Throwable) {
         Log.w(LOG_TAG, "showing the biometric prompt failed", t)
         promise.reject(CodedException("unavailable", "prompt unavailable", null))
@@ -302,7 +367,7 @@ class PeraBiometricBindingModule : Module() {
   private fun showPrompt(
     activity: FragmentActivity,
     prompt: Map<String, String>,
-    blob: String,
+    session: Int,
     cipher: Cipher,
     promise: Promise,
   ) {
@@ -323,29 +388,46 @@ class PeraBiometricBindingModule : Module() {
           // `onAuthenticationFailed` is deliberately not overridden: a rejected fingerprint is not
           // terminal, and the prompt stays up until one of the two callbacks below fires.
           override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-            try {
-              // The cipher the TEE authorised; any other would defeat the binding.
-              val authorized = result.cryptoObject!!.cipher!!
-              val token = authorized.doFinal(Base64.decode(blob, Base64.NO_WRAP))
-              promise.resolve(token)
-            } catch (e: KeyPermanentlyInvalidatedException) {
-              Log.w(LOG_TAG, "the unlock key was invalidated mid-ceremony", e)
-              promise.reject(CodedException("invalidated", "key invalidated", null))
-            } catch (t: Throwable) {
-              Log.w(LOG_TAG, "decrypting the token failed", t)
-              promise.reject(CodedException("decrypt-failed", "decrypt failed", null))
+            val authorized = result.cryptoObject?.cipher
+            val owns = synchronized(lock) {
+              claimSession(session, promise).also { if (it) authorizedCipher = authorized }
+            }
+            // A session that was cancelled or superseded has already been settled.
+            when {
+              !owns -> return
+              authorized == null -> {
+                Log.w(LOG_TAG, "the passed ceremony returned no cipher")
+                promise.reject(CodedException("decrypt-failed", "no authorised cipher", null))
+              }
+              else -> promise.resolve(null)
             }
           }
 
           override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
             // JS keeps only the mapped reason, so the raw code is logged here or lost.
             Log.w(LOG_TAG, "the biometric prompt failed: $errorCode $errString")
+            if (!synchronized(lock) { claimSession(session, promise) }) return
             promise.reject(
               CodedException(promptErrorCode(errorCode), errString.toString(), null),
             )
           }
         },
       )
+    // Checked and registered in one step: a cancel that lands before this has no prompt to dismiss
+    // and must stop it going up, and one after finds it. Its dismissal is posted to this thread, so
+    // it runs after `authenticate`.
+    val isCurrent = synchronized(lock) {
+      (session == generation).also {
+        if (it) {
+          activePrompt = biometricPrompt
+          pendingBegin = promise
+        }
+      }
+    }
+    if (!isCurrent) {
+      promise.reject(CodedException("system-cancel", "unwrap cancelled", null))
+      return
+    }
     biometricPrompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
   }
 

@@ -39,6 +39,19 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             unwrapBiometricToken: vi
                 .fn()
                 .mockResolvedValue({ success: false, reason: 'unavailable' }),
+            beginBiometricUnwrap: vi.fn(() => ({
+                authenticated: Promise.resolve({
+                    success: false,
+                    reason: 'unavailable',
+                }),
+                finish: vi
+                    .fn()
+                    .mockResolvedValue({
+                        success: false,
+                        reason: 'unavailable',
+                    }),
+                cancel: vi.fn().mockResolvedValue(undefined),
+            })),
         },
         crashReporting: {
             log: vi.fn(),
@@ -152,6 +165,19 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             unwrapBiometricToken: vi
                 .fn()
                 .mockResolvedValue({ success: false, reason: 'unavailable' }),
+            beginBiometricUnwrap: vi.fn(() => ({
+                authenticated: Promise.resolve({
+                    success: false,
+                    reason: 'unavailable',
+                }),
+                finish: vi
+                    .fn()
+                    .mockResolvedValue({
+                        success: false,
+                        reason: 'unavailable',
+                    }),
+                cancel: vi.fn().mockResolvedValue(undefined),
+            })),
         },
         crashReporting: {
             log: vi.fn(),

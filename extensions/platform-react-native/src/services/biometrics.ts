@@ -23,6 +23,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import type {
     BiometricArmResult,
     BiometricAvailability,
+    BiometricCeremonyResult,
     BiometricEnrollmentBinding,
     BiometricSecurityLevel,
     BiometricsAuthenticatePrompt,
@@ -30,6 +31,7 @@ import type {
     BiometricType,
     BiometricUnwrapFailureReason,
     BiometricUnwrapResult,
+    BiometricUnwrapSession,
 } from '@perawallet/wallet-extension-platform'
 
 const LOG_SOURCE = 'RNBiometricsService'
@@ -40,10 +42,9 @@ interface NativePeraBiometricBinding {
     clearBinding(): Promise<void>
     getAvailability(): Promise<string>
     armBinding(): Promise<{ blob: string; tokenHash: string } | null>
-    unwrapToken(
-        blob: string,
-        prompt: { title: string; cancelLabel: string },
-    ): Promise<Uint8Array>
+    beginUnwrap(prompt: { title: string; cancelLabel: string }): Promise<void>
+    finishUnwrap(blob: string): Promise<Uint8Array>
+    cancelUnwrap(): Promise<void>
 }
 
 const AVAILABILITIES: readonly BiometricAvailability[] = [
@@ -97,6 +98,15 @@ const mapUnwrapFailureReason = (
 ): BiometricUnwrapFailureReason => {
     const code = (error as { code?: unknown } | null)?.code
     return UNWRAP_FAILURE_REASONS.find(reason => reason === code) ?? 'unknown'
+}
+
+const logUnwrapFailure = (error: unknown): BiometricUnwrapFailureReason => {
+    const reason = mapUnwrapFailureReason(error)
+    logger.warn('Biometric unwrap did not succeed', {
+        source: LOG_SOURCE,
+        reason,
+    })
+    return reason
 }
 
 // Backed by `expo-local-authentication` (Expo SDK 57), which on iOS uses
@@ -217,20 +227,54 @@ export class RNBiometricsService implements BiometricsService {
         blob: string,
         prompt: BiometricsAuthenticatePrompt,
     ): Promise<BiometricUnwrapResult> {
+        const session = this.beginBiometricUnwrap(prompt)
+        const ceremony = await session.authenticated
+        if (!ceremony.success) return ceremony
+        return session.finish(blob)
+    }
+
+    beginBiometricUnwrap(
+        prompt: BiometricsAuthenticatePrompt,
+    ): BiometricUnwrapSession {
         const module = getBindingModule()
         // No module means no key, which is indistinguishable from a key that
         // was never created — and both are recoverable by re-opting in.
-        if (!module) return { success: false, reason: 'no-binding' }
-        try {
-            const token = await module.unwrapToken(blob, prompt)
-            return { success: true, token }
-        } catch (error) {
-            const reason = mapUnwrapFailureReason(error)
-            logger.warn('Biometric unwrap did not succeed', {
-                source: LOG_SOURCE,
-                reason,
-            })
-            return { success: false, reason }
+        if (!module) {
+            const noBinding = { success: false, reason: 'no-binding' } as const
+            return {
+                authenticated: Promise.resolve(noBinding),
+                finish: async () => noBinding,
+                cancel: async () => undefined,
+            }
+        }
+
+        const authenticated = module.beginUnwrap(prompt).then(
+            (): BiometricCeremonyResult => ({ success: true }),
+            (error: unknown): BiometricCeremonyResult => ({
+                success: false,
+                reason: logUnwrapFailure(error),
+            }),
+        )
+        return {
+            authenticated,
+            finish: async blob => {
+                try {
+                    const token = await module.finishUnwrap(blob)
+                    return { success: true, token }
+                } catch (error) {
+                    return { success: false, reason: logUnwrapFailure(error) }
+                }
+            },
+            cancel: async () => {
+                try {
+                    await module.cancelUnwrap()
+                } catch (error) {
+                    logger.warn('cancelUnwrap native call threw', {
+                        source: LOG_SOURCE,
+                        error,
+                    })
+                }
+            },
         }
     }
 }

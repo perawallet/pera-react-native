@@ -50,7 +50,9 @@ const bindingMocks = vi.hoisted(() => ({
         clearBinding: ReturnType<typeof vi.fn>
         getAvailability: ReturnType<typeof vi.fn>
         armBinding: ReturnType<typeof vi.fn>
-        unwrapToken: ReturnType<typeof vi.fn>
+        beginUnwrap: ReturnType<typeof vi.fn>
+        finishUnwrap: ReturnType<typeof vi.fn>
+        cancelUnwrap: ReturnType<typeof vi.fn>
     } | null,
 }))
 
@@ -65,8 +67,13 @@ const emptyBindingModule = {
     clearBinding: vi.fn(),
     getAvailability: vi.fn(),
     armBinding: vi.fn().mockResolvedValue(null),
-    unwrapToken: vi.fn().mockResolvedValue(new Uint8Array()),
+    beginUnwrap: vi.fn().mockResolvedValue(undefined),
+    finishUnwrap: vi.fn().mockResolvedValue(new Uint8Array()),
+    cancelUnwrap: vi.fn().mockResolvedValue(undefined),
 }
+
+const nativeError = (code: string): Error =>
+    Object.assign(new Error('native failure'), { code })
 
 const PROMPT = { title: 'Unlock', cancelLabel: 'Cancel' }
 
@@ -303,66 +310,34 @@ describe('RNBiometricsService', () => {
     })
 
     describe('unwrapBiometricToken', () => {
-        it('returns the released token on success', async () => {
+        it('releases the token by finishing the session it began', async () => {
             const token = new Uint8Array([1, 2, 3])
+            const beginUnwrap = vi.fn().mockResolvedValue(undefined)
+            const finishUnwrap = vi.fn().mockResolvedValue(token)
             bindingMocks.module = {
                 ...emptyBindingModule,
-                unwrapToken: vi.fn().mockResolvedValue(token),
+                beginUnwrap,
+                finishUnwrap,
             }
 
             const result = await new RNBiometricsService().unwrapBiometricToken(
                 'ct',
-                { title: 'Unlock', cancelLabel: 'Cancel' },
+                PROMPT,
             )
 
             expect(result).toEqual({ success: true, token })
+            expect(beginUnwrap).toHaveBeenCalledWith(PROMPT)
+            expect(finishUnwrap).toHaveBeenCalledWith('ct')
         })
 
-        it('forwards the prompt copy to the native call', async () => {
-            const unwrapToken = vi.fn().mockResolvedValue(new Uint8Array(32))
-            bindingMocks.module = { ...emptyBindingModule, unwrapToken }
-
-            await new RNBiometricsService().unwrapBiometricToken('ct', {
-                title: 'Unlock Pera',
-                cancelLabel: 'Not now',
-            })
-
-            expect(unwrapToken).toHaveBeenCalledWith('ct', {
-                title: 'Unlock Pera',
-                cancelLabel: 'Not now',
-            })
-        })
-
-        it('never substitutes its own copy for the caller prompt', async () => {
-            const unwrapToken = vi.fn().mockResolvedValue(new Uint8Array(32))
-            bindingMocks.module = { ...emptyBindingModule, unwrapToken }
-
-            await new RNBiometricsService().unwrapBiometricToken('ct', {
-                title: '',
-                cancelLabel: '',
-            })
-
-            expect(unwrapToken).toHaveBeenCalledWith('ct', {
-                title: '',
-                cancelLabel: '',
-            })
-        })
-
-        it.each([
-            ['invalidated', 'invalidated'],
-            ['decrypt-failed', 'decrypt-failed'],
-            ['no-binding', 'no-binding'],
-            ['user-cancel', 'user-cancel'],
-            ['system-cancel', 'system-cancel'],
-            ['lockout', 'lockout'],
-            ['unavailable', 'unavailable'],
-            ['failed', 'failed'],
-        ])('maps native code %s to reason %s', async (code, reason) => {
-            const error = new Error('native failure')
-            ;(error as Error & { code?: string }).code = code
+        it('does not finish after a failed ceremony', async () => {
+            const finishUnwrap = vi.fn()
             bindingMocks.module = {
                 ...emptyBindingModule,
-                unwrapToken: vi.fn().mockRejectedValue(error),
+                beginUnwrap: vi
+                    .fn()
+                    .mockRejectedValue(nativeError('user-cancel')),
+                finishUnwrap,
             }
 
             const result = await new RNBiometricsService().unwrapBiometricToken(
@@ -370,23 +345,8 @@ describe('RNBiometricsService', () => {
                 PROMPT,
             )
 
-            expect(result).toEqual({ success: false, reason })
-        })
-
-        it('maps an unrecognized native code to unknown', async () => {
-            const error = new Error('native failure')
-            ;(error as Error & { code?: string }).code = 'something-new'
-            bindingMocks.module = {
-                ...emptyBindingModule,
-                unwrapToken: vi.fn().mockRejectedValue(error),
-            }
-
-            const result = await new RNBiometricsService().unwrapBiometricToken(
-                'ct',
-                PROMPT,
-            )
-
-            expect(result).toEqual({ success: false, reason: 'unknown' })
+            expect(result).toEqual({ success: false, reason: 'user-cancel' })
+            expect(finishUnwrap).not.toHaveBeenCalled()
         })
 
         it('reports no-binding when the native module is absent', async () => {
@@ -398,6 +358,128 @@ describe('RNBiometricsService', () => {
             )
 
             expect(result).toEqual({ success: false, reason: 'no-binding' })
+        })
+    })
+
+    describe('beginBiometricUnwrap', () => {
+        it('forwards the caller prompt untouched, even when empty', async () => {
+            const beginUnwrap = vi.fn().mockResolvedValue(undefined)
+            bindingMocks.module = { ...emptyBindingModule, beginUnwrap }
+
+            await new RNBiometricsService().beginBiometricUnwrap({
+                title: '',
+                cancelLabel: '',
+            }).authenticated
+
+            expect(beginUnwrap).toHaveBeenCalledWith({
+                title: '',
+                cancelLabel: '',
+            })
+        })
+
+        it('resolves the ceremony before any blob is supplied', async () => {
+            const finishUnwrap = vi.fn()
+            bindingMocks.module = { ...emptyBindingModule, finishUnwrap }
+
+            const session = new RNBiometricsService().beginBiometricUnwrap(
+                PROMPT,
+            )
+
+            await expect(session.authenticated).resolves.toEqual({
+                success: true,
+            })
+            expect(finishUnwrap).not.toHaveBeenCalled()
+        })
+
+        it.each([
+            'invalidated',
+            'decrypt-failed',
+            'no-binding',
+            'user-cancel',
+            'system-cancel',
+            'lockout',
+            'unavailable',
+            'failed',
+        ])('maps a ceremony rejected with %s to that reason', async code => {
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                beginUnwrap: vi.fn().mockRejectedValue(nativeError(code)),
+            }
+
+            const session = new RNBiometricsService().beginBiometricUnwrap(
+                PROMPT,
+            )
+
+            await expect(session.authenticated).resolves.toEqual({
+                success: false,
+                reason: code,
+            })
+        })
+
+        it.each(['invalidated', 'decrypt-failed', 'failed'])(
+            'maps a finish rejected with %s to that reason',
+            async code => {
+                bindingMocks.module = {
+                    ...emptyBindingModule,
+                    finishUnwrap: vi.fn().mockRejectedValue(nativeError(code)),
+                }
+
+                const session = new RNBiometricsService().beginBiometricUnwrap(
+                    PROMPT,
+                )
+
+                await expect(session.finish('ct')).resolves.toEqual({
+                    success: false,
+                    reason: code,
+                })
+            },
+        )
+
+        it('maps an unrecognized native code to unknown', async () => {
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                beginUnwrap: vi
+                    .fn()
+                    .mockRejectedValue(nativeError('something-new')),
+            }
+
+            const session = new RNBiometricsService().beginBiometricUnwrap(
+                PROMPT,
+            )
+
+            await expect(session.authenticated).resolves.toEqual({
+                success: false,
+                reason: 'unknown',
+            })
+        })
+
+        it('cancels natively and swallows a cancel that throws', async () => {
+            const cancelUnwrap = vi.fn().mockRejectedValue(new Error('gone'))
+            bindingMocks.module = { ...emptyBindingModule, cancelUnwrap }
+
+            const session = new RNBiometricsService().beginBiometricUnwrap(
+                PROMPT,
+            )
+
+            await expect(session.cancel()).resolves.toBeUndefined()
+            expect(cancelUnwrap).toHaveBeenCalledTimes(1)
+        })
+
+        it('reports no-binding for every step when the native module is absent', async () => {
+            bindingMocks.module = null
+
+            const session = new RNBiometricsService().beginBiometricUnwrap(
+                PROMPT,
+            )
+
+            await expect(session.authenticated).resolves.toEqual({
+                success: false,
+                reason: 'no-binding',
+            })
+            await expect(session.finish('ct')).resolves.toEqual({
+                success: false,
+                reason: 'no-binding',
+            })
         })
     })
 })
