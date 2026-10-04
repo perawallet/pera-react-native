@@ -62,7 +62,7 @@ from `@perawallet/wallet-core-chain-algorand`'s signing module, and that file al
 classification logic the suite exercises). The barrel itself resolves fine, but
 its own source has non-aliased dependencies one level out:
 `fees/useMinimumFeeConfig.ts` imports `@perawallet/wallet-core-remote-config`,
-and `utils/clearCustomNetworkCache.ts` imports `@perawallet/wallet-core-database`.
+and chain-shared's `utils/clearCustomNetworkCache.ts` imports `@perawallet/wallet-core-database`.
 Neither of those is in `vitest.config.ts`'s alias list, so each resolves
 through its own `package.json` `main` or `exports` field, meaning its built
 `dist/`, and remote-config transitively pulls in `wallet-extension-platform` and
