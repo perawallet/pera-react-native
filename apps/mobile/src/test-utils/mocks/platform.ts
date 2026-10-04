@@ -44,12 +44,10 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
                     success: false,
                     reason: 'unavailable',
                 }),
-                finish: vi
-                    .fn()
-                    .mockResolvedValue({
-                        success: false,
-                        reason: 'unavailable',
-                    }),
+                finish: vi.fn().mockResolvedValue({
+                    success: false,
+                    reason: 'unavailable',
+                }),
                 cancel: vi.fn().mockResolvedValue(undefined),
             })),
         },
@@ -170,12 +168,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
                     success: false,
                     reason: 'unavailable',
                 }),
-                finish: vi
-                    .fn()
-                    .mockResolvedValue({
-                        success: false,
-                        reason: 'unavailable',
-                    }),
+                finish: vi.fn().mockResolvedValue({
+                    success: false,
+                    reason: 'unavailable',
+                }),
                 cancel: vi.fn().mockResolvedValue(undefined),
             })),
         },
