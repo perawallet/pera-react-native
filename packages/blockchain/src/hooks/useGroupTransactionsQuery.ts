@@ -11,11 +11,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getGroupTransactionsQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from './useNetwork'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type UseGroupTransactionsQueryParams = {

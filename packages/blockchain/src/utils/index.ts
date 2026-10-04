@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
 import {
     TransactionType,
     Transaction,
@@ -21,7 +20,6 @@ import {
 
 export * from './algorandClient'
 export * from './resolveGenesisHash'
-export * from './clearCustomNetworkCache'
 export * from './fetchGenesisFromNode'
 export * from './createAlgorandClient'
 export * from './createWalletAlgorandClient'
@@ -32,23 +30,6 @@ export * from './transactions'
 export * from './rawTransactions'
 export * from './json'
 export * from './transact'
-export {
-    baseUnitsToDisplayUnits,
-    displayUnitsToBaseUnits,
-    toBigInt,
-    displayUnitsToBaseUnitsBigInt,
-    algosToMicroAlgosBigInt,
-    microAlgosToAlgos,
-    algosToMicroAlgos,
-} from '@perawallet/wallet-core-shared'
-
-export const percentChange = (first: Decimal, last: Decimal): Decimal => {
-    if (first.isZero()) {
-        return new Decimal(0)
-    }
-    return last.minus(first).div(first).mul(100)
-}
-
 export {
     TransactionType,
     Transaction,

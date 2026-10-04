@@ -15,8 +15,11 @@ import { renderHook } from '@testing-library/react'
 
 import { useAlgorandClient } from '../../hooks'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { useNetwork } from '../useNetwork'
-import { setCustomNetwork, useNetworkStore } from '../../store'
+import {
+    useNetwork,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
+import { setCustomNetwork } from '../../store'
 import { createTimeoutBoundedAlgorandClient } from '../../utils/createAlgorandClient'
 
 // Mock AlgorandClient factory methods so we can assert which one is chosen
@@ -37,7 +40,10 @@ vi.mock('@algorandfoundation/algokit-utils', () => {
 })
 
 // Mock useNetwork
-vi.mock('../useNetwork', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 

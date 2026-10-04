@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-export * from './querykeys'
-export * from './useAlgorandClient'
-export * from './useAccountSigTypeQuery'
-export * from './useSuggestedParametersQuery'
-export * from './useTransactionDetailQuery'
-export * from './useGroupTransactionsQuery'
-export * from './useTransactionEncoder'
+import { Decimal } from 'decimal.js'
+
+export const percentChange = (first: Decimal, last: Decimal): Decimal => {
+    if (first.isZero()) {
+        return new Decimal(0)
+    }
+    return last.minus(first).div(first).mul(100)
+}

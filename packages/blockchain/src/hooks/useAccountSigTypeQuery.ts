@@ -13,8 +13,8 @@
 import { useQuery } from '@tanstack/react-query'
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useAlgorandClient } from './useAlgorandClient'
-import { useNetwork } from './useNetwork'
 import { getAccountSigTypeQueryKey } from './querykeys'
 
 export const AccountSigTypes = {

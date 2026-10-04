@@ -11,10 +11,13 @@
  */
 
 import { useMemo } from 'react'
+import {
+    useNetwork,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import type { PeraTransactionSigner } from '../models'
-import { selectAlgorandCustomNetwork, useNetworkStore } from '../store'
+import { selectAlgorandCustomNetwork } from '../store'
 import { createWalletAlgorandClient } from '../utils/createWalletAlgorandClient'
-import { useNetwork } from './useNetwork'
 
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { network } = useNetwork()
