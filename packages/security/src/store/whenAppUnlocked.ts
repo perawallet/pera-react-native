@@ -10,5 +10,21 @@
  limitations under the License
  */
 
-export { useSecurityStore } from './store'
-export { whenAppUnlocked } from './whenAppUnlocked'
+import { useSecurityStore } from './store'
+
+/**
+ * Resolves once the lock screen is gone. `isAppLockActive` starts true and
+ * stays so until the guard has settled, so this never resolves early.
+ */
+export const whenAppUnlocked = (): Promise<void> =>
+    new Promise(resolve => {
+        if (!useSecurityStore.getState().isAppLockActive) {
+            resolve()
+            return
+        }
+        const unsubscribe = useSecurityStore.subscribe(state => {
+            if (state.isAppLockActive) return
+            unsubscribe()
+            resolve()
+        })
+    })
