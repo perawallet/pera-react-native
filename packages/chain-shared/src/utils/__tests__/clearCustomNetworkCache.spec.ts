@@ -21,8 +21,14 @@ import {
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { Networks } from '@perawallet/wallet-core-config'
 import {
+    networkColumnValue,
+    scopeForLegacyNetwork,
+    type LegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     shouldClearCustomCache,
     clearCustomNetworkCache,
+    NETWORK_PARTITIONED_TABLES,
 } from '../clearCustomNetworkCache'
 
 describe('shouldClearCustomCache', () => {
@@ -77,64 +83,77 @@ describe('clearCustomNetworkCache', () => {
         teardown()
     })
 
-    test('deletes custom-network rows from every network-partitioned table, leaving other networks untouched', async () => {
-        // One row per network in each of the 8 physical tables spread across
-        // the accounts/assets/transactions/nfd schemas. `transactions` is
-        // seeded with distinct ids since its primary key is `id` alone (not
-        // composite with `network`), unlike the other seven tables.
+    const storedValue = (network: LegacyNetwork) =>
+        networkColumnValue(scopeForLegacyNetwork(network))
+
+    test('lists every table that has a network column', async () => {
+        const rows = await db.values<[string]>(sql`
+            SELECT m.name FROM sqlite_master m, pragma_table_info(m.name) c
+            WHERE m.type = 'table' AND c.name = 'network'
+        `)
+
+        expect(rows.map(([name]) => name).sort()).toEqual(
+            [...NETWORK_PARTITIONED_TABLES].sort(),
+        )
+    })
+
+    test('deletes custom-scope rows from all ten network-partitioned tables, leaving other networks untouched', async () => {
+        const custom = storedValue('custom')
+        const testnet = storedValue('testnet')
+        // `transactions` and `submission_attempts` key on `id` alone, so each
+        // network's row needs its own id.
         await db.run(sql`
             INSERT INTO asset_prices (asset_id, network, usd_price, updated_at)
-            VALUES ('1', ${Networks.custom}, '1.23', 1), ('1', ${Networks.testnet}, '1.23', 1)
+            VALUES ('1', ${custom}, '1.23', 1), ('1', ${testnet}, '1.23', 1)
+        `)
+        await db.run(sql`
+            INSERT INTO asset_price_misses (asset_id, network, attempted_at)
+            VALUES ('1', ${custom}, 1), ('1', ${testnet}, 1)
         `)
         await db.run(sql`
             INSERT INTO assets_node (asset_id, network, updated_at)
-            VALUES ('1', ${Networks.custom}, 1), ('1', ${Networks.testnet}, 1)
+            VALUES ('1', ${custom}, 1), ('1', ${testnet}, 1)
         `)
         await db.run(sql`
             INSERT INTO assets_pera (asset_id, network, updated_at)
-            VALUES ('1', ${Networks.custom}, 1), ('1', ${Networks.testnet}, 1)
+            VALUES ('1', ${custom}, 1), ('1', ${testnet}, 1)
         `)
         await db.run(sql`
             INSERT INTO account_asset_holdings (account_address, asset_id, network, updated_at)
-            VALUES ('ADDR', '1', ${Networks.custom}, 1), ('ADDR', '1', ${Networks.testnet}, 1)
+            VALUES ('ADDR', '1', ${custom}, 1), ('ADDR', '1', ${testnet}, 1)
         `)
         await db.run(sql`
             INSERT INTO account_balances (account_address, network, updated_at)
-            VALUES ('ADDR', ${Networks.custom}, 1), ('ADDR', ${Networks.testnet}, 1)
+            VALUES ('ADDR', ${custom}, 1), ('ADDR', ${testnet}, 1)
         `)
         await db.run(sql`
             INSERT INTO account_transactions (account_address, transaction_id, network, round_time)
-            VALUES ('ADDR', 'TX', ${Networks.custom}, 1), ('ADDR', 'TX', ${Networks.testnet}, 1)
+            VALUES ('ADDR', 'TX', ${custom}, 1), ('ADDR', 'TX', ${testnet}, 1)
         `)
         await db.run(sql`
             INSERT INTO transactions (id, network, tx_type, sender, confirmed_round, round_time, fee, updated_at)
-            VALUES ('TX_CUSTOM', ${Networks.custom}, 'pay', 'SENDER', 1, 1, '1000', 1),
-                   ('TX_TESTNET', ${Networks.testnet}, 'pay', 'SENDER', 1, 1, '1000', 1)
+            VALUES ('TX_CUSTOM', ${custom}, 'pay', 'SENDER', 1, 1, '1000', 1),
+                   ('TX_TESTNET', ${testnet}, 'pay', 'SENDER', 1, 1, '1000', 1)
         `)
         await db.run(sql`
             INSERT INTO nfd_cache (address, network, updated_at)
-            VALUES ('ADDR', ${Networks.custom}, 1), ('ADDR', ${Networks.testnet}, 1)
+            VALUES ('ADDR', ${custom}, 1), ('ADDR', ${testnet}, 1)
+        `)
+        await db.run(sql`
+            INSERT INTO submission_attempts (id, network, tx_ids_json, flow, status, created_at)
+            VALUES ('ATTEMPT_CUSTOM', ${custom}, '[]', 'send', 'open', 1),
+                   ('ATTEMPT_TESTNET', ${testnet}, '[]', 'send', 'open', 1)
         `)
 
         await clearCustomNetworkCache(queryClient, db)
 
-        const tables = [
-            'asset_prices',
-            'assets_node',
-            'assets_pera',
-            'account_asset_holdings',
-            'account_balances',
-            'account_transactions',
-            'transactions',
-            'nfd_cache',
-        ] as const
-
-        for (const table of tables) {
+        expect(NETWORK_PARTITIONED_TABLES).toHaveLength(10)
+        for (const table of NETWORK_PARTITIONED_TABLES) {
             const customRows = await db.values<[number]>(
-                sql`SELECT 1 FROM ${sql.raw(table)} WHERE network = ${Networks.custom}`,
+                sql`SELECT 1 FROM ${sql.raw(table)} WHERE network = ${custom}`,
             )
             const otherRows = await db.values<[number]>(
-                sql`SELECT 1 FROM ${sql.raw(table)} WHERE network = ${Networks.testnet}`,
+                sql`SELECT 1 FROM ${sql.raw(table)} WHERE network = ${testnet}`,
             )
             expect([table, customRows]).toEqual([table, []])
             expect([table, otherRows]).toEqual([table, [[1]]])

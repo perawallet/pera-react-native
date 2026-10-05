@@ -13,13 +13,16 @@
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isAlgoAssetId,
     logger,
     pow10,
     useStableIdList,
-    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type {
@@ -46,10 +49,9 @@ type AccountDbSnapshot = {
 
 async function readAccountFromDb(
     address: string,
-    network: Network,
+    scope: ChainScope,
     filters?: AccountHoldingsFilters,
 ): Promise<AccountDbSnapshot> {
-    const scope = scopeForLegacyNetwork(network)
     // If this account has no balance row yet the background sync either
     // hasn't run or silently failed. Pull directly from the chain before
     // reading so the UI recovers without waiting for the next poll cycle.
@@ -58,6 +60,7 @@ async function readAccountFromDb(
         scope,
     })
     if (!balance) {
+        const network = legacyNetworkOf(scope)
         try {
             await fetchAndPersistAccount(address, network)
         } catch (error) {
@@ -116,7 +119,12 @@ export const useAccountBalancesQuery = (
                 // where _observerMatches and _result can get out of sync during
                 // synchronous notifications, causing "new Proxy target must be an Object".
                 notifyOnChangeProps: 'all' as const,
-                queryFn: () => readAccountFromDb(address, network, filters),
+                queryFn: () =>
+                    readAccountFromDb(
+                        address,
+                        scopeForLegacyNetwork(network),
+                        filters,
+                    ),
             }
         })
         // filters is a stable object passed from a Zustand selector or memoized

@@ -15,6 +15,7 @@ import {
     isChainId,
     isLegacyNetwork,
     isNetworkId,
+    LEGACY_NETWORKS,
     type ChainId,
     type ChainScope,
     type ChainScopeKey,
@@ -62,6 +63,10 @@ export const scopeForLegacyNetwork = (network: LegacyNetwork): ChainScope => ({
     networkId: network,
 })
 
+export const LEGACY_SCOPES: readonly ChainScope[] = LEGACY_NETWORKS.map(
+    scopeForLegacyNetwork,
+)
+
 export const scopeKeyForLegacyNetwork = (
     network: LegacyNetwork,
 ): ChainScopeKey => toScopeKey(scopeForLegacyNetwork(network))
@@ -103,6 +108,23 @@ export const legacyColumnValue = (scope: ChainScope): string => {
 // network, so this cast is the one place the column's type runs ahead of its rows.
 export const networkColumnValue = (scope: ChainScope): ChainScopeKey =>
     legacyColumnValue(scope) as ChainScopeKey
+
+// Every network-partitioned query key embeds legacyColumnValue(scope), either as a
+// bare element or as the `network` field of an object element. Typed without
+// TanStack's QueryKey so this package keeps depending on nothing.
+export const queryKeyReferencesScope = (
+    queryKey: readonly unknown[],
+    scope: ChainScope,
+): boolean => {
+    const value = legacyColumnValue(scope)
+    return queryKey.some(
+        part =>
+            part === value ||
+            (typeof part === 'object' &&
+                part !== null &&
+                (part as { network?: unknown }).network === value),
+    )
+}
 
 // Never parseScopeKey a stored value directly: legacy rows hold a bare network.
 export const scopeFromNetworkColumn = (value: string): ChainScope => {

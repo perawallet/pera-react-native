@@ -16,6 +16,7 @@ import {
     getSyncService,
     releaseNetworkScopedQueries,
 } from '@perawallet/wallet-core-background'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 /**
@@ -36,7 +37,10 @@ export const useNetworkSwitchInvalidation = (): void => {
         if (previousNetwork.current === network) return
         const departed = previousNetwork.current
         previousNetwork.current = network
-        releaseNetworkScopedQueries(queryClient, departed)
+        releaseNetworkScopedQueries(
+            queryClient,
+            scopeForLegacyNetwork(departed),
+        )
         try {
             getSyncService().invalidateQueries()
         } catch {
