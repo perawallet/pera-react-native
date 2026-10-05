@@ -62,6 +62,31 @@ export const scopeForLegacyNetwork = (network: LegacyNetwork): ChainScope => ({
     networkId: network,
 })
 
+export const scopeKeyForLegacyNetwork = (
+    network: LegacyNetwork,
+): ChainScopeKey => toScopeKey(scopeForLegacyNetwork(network))
+
+// A Record so that adding a chain id stops this compiling. A new chain has no
+// legacy networks, so its entry returns undefined.
+const LEGACY_NETWORK_OF: Record<
+    ChainId,
+    (scope: ChainScope) => LegacyNetwork | undefined
+> = {
+    algorand: scope =>
+        isLegacyNetwork(scope.networkId) ? scope.networkId : undefined,
+}
+
+// The inverse, for the backend and algod clients that are still keyed by the
+// legacy network.
+export const legacyNetworkOf = (scope: ChainScope): LegacyNetwork => {
+    assertValidScope(scope)
+    const network = LEGACY_NETWORK_OF[scope.chainId](scope)
+    if (network === undefined) {
+        throw new InvalidScopeKeyError(joinScope(scope))
+    }
+    return network
+}
+
 // A Record so that adding a chain id stops this compiling. A new chain has no
 // rows from before scope keys, so its entry must return its scope key: a bare
 // network id would collide with the legacy chain's rows.
@@ -88,4 +113,22 @@ export const scopeFromNetworkColumn = (value: string): ChainScope => {
         throw new InvalidScopeKeyError(value)
     }
     return scopeForLegacyNetwork(value)
+}
+
+// For persisted state keyed by the bare legacy network. A key that already is a
+// scope key passes through, so migrated state re-keys to itself. Any other key
+// is dropped rather than thrown: a throw inside a store migration discards the
+// whole store.
+export const rekeyLegacyNetworkRecord = <V>(
+    record: Readonly<Record<string, V>> | null | undefined,
+): Partial<Record<ChainScopeKey, V>> => {
+    const rekeyed: Partial<Record<ChainScopeKey, V>> = {}
+    for (const [key, value] of Object.entries(record ?? {})) {
+        try {
+            rekeyed[toScopeKey(scopeFromNetworkColumn(key))] = value
+        } catch {
+            // Unreadable key: dropped, see above.
+        }
+    }
+    return rekeyed
 }

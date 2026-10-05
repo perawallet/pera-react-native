@@ -38,7 +38,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { deviceIdFor, useDeviceStore } from '@perawallet/wallet-core-device'
 import { algorandNetworkOf } from '../../legacy-network'
 
 const ASSET_FETCH_CONCURRENCY = 5
@@ -179,7 +179,7 @@ export async function fetchAndPersistAssets(
     })
     if (toFetch.length === 0) return
 
-    const deviceId = useDeviceStore.getState().deviceIDs?.get(network) ?? null
+    const deviceId = deviceIdFor(useDeviceStore.getState(), network)
 
     const batches = partition(toFetch, ASSET_BULK_CHUNK_SIZE)
 

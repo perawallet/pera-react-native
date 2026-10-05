@@ -12,10 +12,10 @@
 
 import {
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
+    legacyNetworkOf,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
 import {
     completeMultisigHandoff,
     deriveSubmissionAttemptFromBytes,
@@ -72,7 +72,7 @@ export type SwapHandoffResolutionDeps = {
     }) => Promise<unknown>
     /** Best-effort: tell the backend the wallet submitted, so it won't broadcast. */
     markConfirmed: (input: {
-        network: SwapHandoffRecord['network']
+        network: Network
         deviceId: string
         signRequestIds: string[]
     }) => Promise<void>
@@ -170,7 +170,8 @@ export const resolveSwapHandoffOutcome = async ({
     record: SwapHandoffRecord
     deps: SwapHandoffResolutionDeps
 }): Promise<void> => {
-    const { signRequestId, swapIdStr, network, deviceId, plan } = record
+    const { signRequestId, swapIdStr, deviceId, plan } = record
+    const network = legacyNetworkOf(record.scope)
 
     await completeMultisigHandoff({
         outcome,
@@ -199,7 +200,7 @@ export const resolveSwapHandoffOutcome = async ({
                     let attemptId: string | null = null
                     if (derived.txIds.length > 0) {
                         attemptId = await deps.recordSubmissionAttempt({
-                            scope: scopeForLegacyNetwork(network),
+                            scope: record.scope,
                             txIds: derived.txIds,
                             flow: 'cosign',
                             intentKey: {

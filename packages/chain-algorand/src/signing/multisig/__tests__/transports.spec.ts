@@ -313,7 +313,10 @@ describe('createMultisigProposeTransport', () => {
             expect(handoff).toBeDefined()
             expect(handoff?.multisigAddress).toBe('JOINT_ADDR')
             expect(handoff?.deviceId).toBe('device-1')
-            expect(handoff?.network).toBe('testnet')
+            expect(handoff?.scope).toEqual({
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
             expect(handoff?.msigMetadata).toEqual(MSIG_METADATA)
             // The bytes the adapter actually sent are pinned on the handoff
             // so the resolver can refuse mismatching poll responses.

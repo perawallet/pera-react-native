@@ -10,13 +10,16 @@
  limitations under the License
  */
 
+import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import type {
     BaseStoreState,
     Network,
     Nullable,
 } from '@perawallet/wallet-core-shared'
 
-export type LastRefreshedRounds = Partial<Record<Network, Nullable<number>>>
+export type LastRefreshedRounds = Partial<
+    Record<ChainScopeKey, Nullable<number>>
+>
 
 export type PollingState = BaseStoreState & {
     lastRefreshedRound: LastRefreshedRounds

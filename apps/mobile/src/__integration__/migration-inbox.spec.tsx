@@ -47,6 +47,7 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import {
+    deviceIdFor,
     useDeviceRegistration,
     useDeviceStore,
     type DeviceRegistrationRequest,
@@ -170,7 +171,7 @@ const MigratedUserApp = () => {
         [accounts],
     )
     const legacyDeviceId = useDeviceStore(state =>
-        state.deviceIDs.get(Networks.mainnet),
+        deviceIdFor(state, Networks.mainnet),
     )
     const migrationSettled = addresses.length >= 2 && !!legacyDeviceId
 

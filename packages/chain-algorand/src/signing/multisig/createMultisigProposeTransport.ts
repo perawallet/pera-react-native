@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { toError, type Network } from '@perawallet/wallet-core-shared'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
@@ -171,7 +172,7 @@ export const createMultisigProposeTransport = (
                         expectedRawTransactionsBase64:
                             response.rawTransactionsBase64,
                         deviceId,
-                        network: capturedNetwork,
+                        scope: scopeForLegacyNetwork(capturedNetwork),
                         sourceType: source.type,
                         registeredAt: Date.now(),
                         proposerAddress: response.proposerAddress,

@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useTransactionEncoder } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -290,7 +291,7 @@ export const useMultisigTransportAdapters =
                                 expectedRawTransactionsBase64:
                                     draft.rawTransactionsBase64,
                                 deviceId: handoffDeviceId,
-                                network,
+                                scope: scopeForLegacyNetwork(network),
                                 sourceType: source.type,
                                 registeredAt: Date.now(),
                                 proposerAddress: proposer.address,

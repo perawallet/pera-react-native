@@ -97,7 +97,7 @@ const makeRecord = (
 ): SwapHandoffRecord => ({
     swapIdStr: '42',
     signRequestId: 'req-1',
-    network: 'mainnet',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     multisigAddress: 'JOINT_ADDR',
     deviceId: 'device-1',
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
@@ -141,8 +141,14 @@ beforeEach(() => {
 
 describe('swaps/useSwapCosignResolver', () => {
     it('drives the shared resolver over all handoffs, opting into the active-network filter', () => {
-        const onMainnet = makeRecord({ signRequestId: 'a', network: 'mainnet' })
-        const onTestnet = makeRecord({ signRequestId: 'b', network: 'testnet' })
+        const onMainnet = makeRecord({
+            signRequestId: 'a',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+        })
+        const onTestnet = makeRecord({
+            signRequestId: 'b',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+        })
         mocks.handoffs = { a: onMainnet, b: onTestnet }
 
         render()
@@ -208,7 +214,7 @@ describe('swaps/useSwapCosignResolver', () => {
 
         config().classify(detail, handoff)
         expect(mocks.classifyHandoffPoll).toHaveBeenCalledWith(detail, {
-            network: handoff.network,
+            scope: handoff.scope,
             multisigAddress: 'JOINT_ADDR',
             msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
             expectedRawTransactionsBase64: ['cmF3'],
@@ -518,7 +524,7 @@ describe('settleCosignAttempt', () => {
     it('ignores handoffs on other networks or without an intersecting submission', async () => {
         const otherNetwork = makeRecord({
             signRequestId: 'other-net',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             submission: { txIds: ['txid-1'], submittedAt: 2 },
         })
         const noSubmission = makeRecord({ signRequestId: 'no-sub' })

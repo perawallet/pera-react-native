@@ -13,6 +13,10 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import {
+    isLegacyNetwork,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     registerStore,
     type BaseStoreState,
     type WithPersist,
@@ -47,6 +51,32 @@ type Actions = {
 
 export type WalletConnectHandoffsStore = State & Actions
 
+type PersistedV1Handoff = Omit<PendingWalletConnectHandoff, 'scope'> & {
+    network?: unknown
+}
+
+/**
+ * v1 records carried a bare `network`; v2 carries a ChainScope. A record whose
+ * network this build doesn't know is dropped: replaying it under a guessed
+ * scope would poll, and possibly decline, on the wrong backend.
+ */
+export const migrateWalletConnectHandoffsState = (
+    persistedState: unknown,
+    version: number,
+): State => {
+    let state = (persistedState ?? {}) as { handoffs?: Record<string, unknown> }
+    if (version < 2) {
+        const handoffs: Record<string, PendingWalletConnectHandoff> = {}
+        for (const [id, value] of Object.entries(state.handoffs ?? {})) {
+            const { network, ...record } = value as PersistedV1Handoff
+            if (!isLegacyNetwork(network)) continue
+            handoffs[id] = { ...record, scope: scopeForLegacyNetwork(network) }
+        }
+        state = { ...state, handoffs }
+    }
+    return { handoffs: {}, ...state } as State
+}
+
 export const useWalletConnectHandoffsStore: UseBoundStore<
     WithPersist<StoreApi<WalletConnectHandoffsStore>, unknown>
 > = create<WalletConnectHandoffsStore>()(
@@ -72,7 +102,8 @@ export const useWalletConnectHandoffsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
+            version: 2,
+            migrate: migrateWalletConnectHandoffsState,
             partialize: state => ({ handoffs: state.handoffs }),
         },
     ),

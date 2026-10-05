@@ -14,6 +14,11 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { DeviceIdOrigin, DeviceState } from '../models'
 import {
+    rekeyLegacyNetworkRecord,
+    scopeKeyForLegacyNetwork,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     registerStore,
     type Network,
     type WithPersist,
@@ -24,34 +29,54 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 const STORE_NAME = 'device-store'
 
 const objectToDeviceIDs = (
-    object: Record<string, Nullable<string>>,
-): Map<Network, Nullable<string>> => {
-    const map = new Map<Network, Nullable<string>>()
-    Object.entries(object).forEach(([key, value]) => {
-        map.set(key as Network, value)
-    })
-    return map
+    object: Partial<Record<string, Nullable<string>>> | undefined,
+): Map<ChainScopeKey, Nullable<string>> =>
+    new Map(Object.entries(object ?? {}) as [ChainScopeKey, Nullable<string>][])
+
+type PersistedDeviceState = {
+    deviceIDs?: Partial<Record<string, Nullable<string>>>
+    pushToken?: Nullable<string>
+    deviceIdOrigins?: Partial<Record<string, DeviceIdOrigin>>
 }
 
-// Rehydration function to convert persisted object back to Map
-const rehydrateDeviceSlice = (
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    persistedState: any,
-): Partial<DeviceState> => {
-    if (persistedState) {
-        return {
-            ...persistedState,
-            deviceIDs: objectToDeviceIDs(persistedState.deviceIDs),
+/**
+ * v1 keyed `deviceIDs` and `deviceIdOrigins` by the bare network; v2 keys them
+ * by ChainScopeKey. Ids are carried over unchanged: losing one makes the next
+ * registration mint a new backend device and orphans the old one's push
+ * token and device-keyed server state.
+ */
+export const migrateDeviceState = (
+    persistedState: unknown,
+    version: number,
+): PersistedDeviceState => {
+    let state = (persistedState ?? {}) as PersistedDeviceState
+    if (version < 2) {
+        state = {
+            ...state,
+            deviceIDs: rekeyLegacyNetworkRecord(state.deviceIDs),
+            deviceIdOrigins: rekeyLegacyNetworkRecord(state.deviceIdOrigins),
         }
     }
-    return persistedState
+    return state
 }
 
+export const deviceIdFor = (
+    state: Pick<DeviceState, 'deviceIDs'>,
+    network: Network,
+): Nullable<string> =>
+    state.deviceIDs?.get(scopeKeyForLegacyNetwork(network)) ?? null
+
+export const deviceIdOriginFor = (
+    state: Pick<DeviceState, 'deviceIdOrigins'>,
+    network: Network,
+): DeviceIdOrigin | undefined =>
+    state.deviceIdOrigins[scopeKeyForLegacyNetwork(network)]
+
 const initialState = {
-    deviceIDs: new Map<Network, Nullable<string>>(),
+    deviceIDs: new Map<ChainScopeKey, Nullable<string>>(),
     pushToken: null as Nullable<string>,
     pendingRegistrationNetworks: [] as Network[],
-    deviceIdOrigins: {} as Partial<Record<Network, DeviceIdOrigin>>,
+    deviceIdOrigins: {} as Partial<Record<ChainScopeKey, DeviceIdOrigin>>,
 }
 
 export const useDeviceStore: UseBoundStore<
@@ -65,7 +90,7 @@ export const useDeviceStore: UseBoundStore<
             },
             setDeviceID: (network: Network, id: Nullable<string>) => {
                 const deviceIDs = new Map(get().deviceIDs)
-                deviceIDs.set(network, id)
+                deviceIDs.set(scopeKeyForLegacyNetwork(network), id)
                 set({ deviceIDs })
             },
             setRegistrationPending: (network: Network, isPending: boolean) => {
@@ -81,7 +106,7 @@ export const useDeviceStore: UseBoundStore<
                 set({
                     deviceIdOrigins: {
                         ...get().deviceIdOrigins,
-                        [network]: origin,
+                        [scopeKeyForLegacyNetwork(network)]: origin,
                     },
                 })
             },
@@ -95,7 +120,8 @@ export const useDeviceStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
+            version: 2,
+            migrate: migrateDeviceState,
             // pendingRegistrationNetworks is deliberately not persisted: the
             // mount effect re-registers on every cold start anyway, and a
             // rehydrated pending flag would arm the retry subscriptions before
@@ -105,11 +131,17 @@ export const useDeviceStore: UseBoundStore<
                 pushToken: state.pushToken,
                 deviceIdOrigins: state.deviceIdOrigins,
             }),
-            onRehydrateStorage: () => state => {
-                if (state) {
-                    // Rehydrate device slice to convert deviceIDs back to Map
-                    const deviceState = rehydrateDeviceSlice(state)
-                    Object.assign(state, deviceState)
+            // The Map is rebuilt here, not in onRehydrateStorage: after a
+            // migration zustand writes the merged state back through
+            // partialize before that callback runs, and partialize needs a Map.
+            merge: (persistedState, currentState) => {
+                if (!persistedState) return currentState
+                const persisted = persistedState as PersistedDeviceState
+                return {
+                    ...currentState,
+                    ...persisted,
+                    deviceIDs: objectToDeviceIDs(persisted.deviceIDs),
+                    deviceIdOrigins: persisted.deviceIdOrigins ?? {},
                 }
             },
         },

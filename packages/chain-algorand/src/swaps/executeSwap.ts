@@ -106,7 +106,6 @@ export const executeAlgorandSwap = async (
     }: ExecuteSwapParams,
     {
         scope,
-        network,
         algorandClient,
         assetMbr,
         deviceId,
@@ -314,7 +313,7 @@ export const executeAlgorandSwap = async (
                     registerHandoff({
                         swapIdStr,
                         signRequestId,
-                        network,
+                        scope,
                         multisigAddress,
                         deviceId: deviceId ?? '',
                         msigMetadata: {

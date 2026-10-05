@@ -13,11 +13,15 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 
 const { deviceIDs } = vi.hoisted(() => ({
-    deviceIDs: new Map<string, string>(),
+    deviceIDs: new Map<string, string | null>(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: { getState: () => ({ deviceIDs }) },
+    deviceIdFor: (
+        state: { deviceIDs: Map<string, string | null> },
+        network: string,
+    ) => state.deviceIDs.get(`algorand/${network}`) ?? null,
 }))
 
 import { useCloudBackupStore } from '../store'
@@ -26,7 +30,7 @@ import { resolveBackupDeviceId } from '../resolveBackupDeviceId'
 beforeEach(() => {
     useCloudBackupStore.getState().resetState()
     deviceIDs.clear()
-    deviceIDs.set('mainnet', 'push-device')
+    deviceIDs.set('algorand/mainnet', 'push-device')
 })
 
 describe('resolveBackupDeviceId', () => {

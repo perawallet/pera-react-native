@@ -193,7 +193,7 @@ describe('planner chain adapters', () => {
 })
 
 describe('multisig members of the planner', () => {
-    it('routes the thin classifyHandoffPoll by the handoff network', async () => {
+    it('routes the thin classifyHandoffPoll by the handoff scope', async () => {
         const outcome = { kind: 'keep-polling' } as const
         const adapter = registerFakePlannerAdapter({
             classifyHandoffPoll: vi.fn().mockResolvedValue(outcome),
@@ -204,7 +204,7 @@ describe('multisig members of the planner', () => {
             transaction_lists: [],
         } satisfies HandoffPollDetail
         const context: HandoffAssemblyContext = {
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             multisigAddress: 'MSIG',
             msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
             expectedRawTransactionsBase64: [],

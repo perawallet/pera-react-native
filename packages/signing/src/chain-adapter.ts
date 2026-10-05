@@ -15,6 +15,7 @@ import {
     LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,
     type ChainId,
+    type ChainScope,
     type Arc0001ResolveContext,
     type Arc0001ResolveResult,
     type Arc0001SignTxnsRequest,
@@ -497,7 +498,7 @@ export type TerminalHandoffOutcome = Exclude<
  */
 export type HandoffAssemblyContext = {
     /** Picks the chain whose multisig adapter assembles the envelopes. */
-    network: Network
+    scope: ChainScope
     multisigAddress: string
     msigMetadata: { version: number; threshold: number; addresses: string[] }
     expectedRawTransactionsBase64: string[]
@@ -727,7 +728,11 @@ export const plannerChainAdapters =
 
 // Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
 export const plannerAdapterFor = (network: Network): PlannerChainAdapter =>
-    plannerChainAdapters.get(scopeForLegacyNetwork(network).chainId)
+    plannerAdapterForScope(scopeForLegacyNetwork(network))
+
+export const plannerAdapterForScope = (
+    scope: ChainScope,
+): PlannerChainAdapter => plannerChainAdapters.get(scope.chainId)
 
 // For callers with no network in hand: every legacy network maps to this chain.
 export const legacyPlannerAdapter = (): PlannerChainAdapter =>
@@ -780,7 +785,7 @@ export const classifyHandoffPoll = (
     detail: HandoffPollDetail,
     context: HandoffAssemblyContext,
 ): Promise<HandoffPollOutcome> =>
-    plannerAdapterFor(context.network).classifyHandoffPoll(detail, context)
+    plannerAdapterForScope(context.scope).classifyHandoffPoll(detail, context)
 
 export const completeMultisigHandoff = (
     args: CompleteMultisigHandoffArgs,

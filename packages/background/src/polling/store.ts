@@ -13,6 +13,10 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import {
+    rekeyLegacyNetworkRecord,
+    scopeKeyForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     registerStore,
     type Network,
     type WithPersist,
@@ -25,9 +29,30 @@ const STORE_NAME = 'polling-store'
 
 const initialState = {
     lastRefreshedRound: {
-        mainnet: null,
-        testnet: null,
+        [scopeKeyForLegacyNetwork('mainnet')]: null,
+        [scopeKeyForLegacyNetwork('testnet')]: null,
     } as LastRefreshedRounds,
+}
+
+type PersistedPollingState = {
+    lastRefreshedRound?: Partial<Record<string, Nullable<number>>>
+}
+
+/** v0 keyed `lastRefreshedRound` by the bare network; v1 by ChainScopeKey. */
+export const migratePollingState = (
+    persistedState: unknown,
+    version: number,
+): PersistedPollingState => {
+    let state = (persistedState ?? {}) as PersistedPollingState
+    if (version < 1) {
+        state = {
+            ...state,
+            lastRefreshedRound: rekeyLegacyNetworkRecord(
+                state.lastRefreshedRound,
+            ),
+        }
+    }
+    return state
 }
 
 export const usePollingStore: UseBoundStore<
@@ -43,7 +68,7 @@ export const usePollingStore: UseBoundStore<
                 set(state => ({
                     lastRefreshedRound: {
                         ...state.lastRefreshedRound,
-                        [network]: round,
+                        [scopeKeyForLegacyNetwork(network)]: round,
                     },
                 }))
             },
@@ -52,6 +77,8 @@ export const usePollingStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
+            version: 1,
+            migrate: migratePollingState,
             partialize: state => ({
                 lastRefreshedRound: state.lastRefreshedRound,
             }),

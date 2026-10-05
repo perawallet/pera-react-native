@@ -32,7 +32,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 vi.mock('../polling', () => ({
     usePollingStore: {
         getState: () => ({
-            lastRefreshedRound: { mainnet: 42 },
+            lastRefreshedRound: { 'algorand/mainnet': 42 },
             setLastRefreshedRound: mocks.setLastRefreshedRound,
         }),
     },
