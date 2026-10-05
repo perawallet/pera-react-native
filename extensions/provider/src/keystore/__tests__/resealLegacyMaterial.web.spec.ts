@@ -151,7 +151,8 @@ const opensUnderEngine = async (
     const record = await readMaterial(factory, id)
     if (!record || record.kind !== 'bytes') return false
     try {
-        await open(subtle, await engineKey(), record)
+        // With the id: a migrated record must come out bound to it.
+        await open(subtle, await engineKey(), record, id)
         return true
     } catch {
         return false

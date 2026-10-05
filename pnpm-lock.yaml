@@ -292,7 +292,7 @@ packageExtensionsChecksum: sha256-+jNlaQ2J/EWEnXBumiZ7VW7HDP3EgxkgdV6s+edL7yc=
 
 patchedDependencies:
   '@algorandfoundation/keystore-web@1.0.0-canary.4':
-    hash: d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f
+    hash: 44a01598e645753504a1316217129f2d0ebdd1b0fd51d34bc8eb766e766879fd
     path: patches/@algorandfoundation__keystore-web@1.0.0-canary.4.patch
   '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29':
     hash: 8636bde65d7681ff4c1d002011ec786968da49bd979a73d7578cc071d6e1b585
@@ -1646,7 +1646,7 @@ importers:
         version: 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/keystore-web':
         specifier: 1.0.0-canary.4
-        version: 1.0.0-canary.4(patch_hash=d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)
+        version: 1.0.0-canary.4(patch_hash=44a01598e645753504a1316217129f2d0ebdd1b0fd51d34bc8eb766e766879fd)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)
       '@algorandfoundation/provider-migrations':
         specifier: 'catalog:'
         version: 1.0.0-canary.1(before-after-hook@4.0.0)
@@ -11867,7 +11867,7 @@ snapshots:
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       falcon-1024: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
 
-  '@algorandfoundation/keystore-web@1.0.0-canary.4(patch_hash=d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)':
+  '@algorandfoundation/keystore-web@1.0.0-canary.4(patch_hash=44a01598e645753504a1316217129f2d0ebdd1b0fd51d34bc8eb766e766879fd)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
       '@algorandfoundation/keystore-core': 1.0.0-canary.4(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))

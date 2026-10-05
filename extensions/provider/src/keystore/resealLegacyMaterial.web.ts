@@ -17,6 +17,7 @@ import {
     METADATA_STORE,
     open,
     openDatabase,
+    openWithUnboundFallback,
     seal,
     type KeyStoreDatabase,
     type MaterialRecord,
@@ -33,7 +34,10 @@ const tryOpen = async (
     record: Extract<MaterialRecord, { kind: 'bytes' }>,
 ): Promise<Uint8Array | null> => {
     try {
-        return await open(subtle, key, record)
+        // Either sealing: the engine driver binds a record to its id on first
+        // use, so an already-migrated record may be bound or not.
+        return (await openWithUnboundFallback(subtle, key, record, record.id))
+            .plaintext
     } catch {
         // Did not open under this key. With a valid key this is an
         // AES-GCM authentication failure: sealed under a different key.
@@ -61,10 +65,10 @@ const resealBytes = async (
         return
     }
     try {
-        const sealed = await seal(deps.subtle, engineKey, plaintext)
+        const sealed = await seal(deps.subtle, engineKey, plaintext, record.id)
         // A write that lands but cannot be opened would be treated as
         // authoritative by the next run, so prove it before the put.
-        const check = await open(deps.subtle, engineKey, sealed)
+        const check = await open(deps.subtle, engineKey, sealed, record.id)
         const readsBack = bytesEqual(check, plaintext)
         check.fill(0)
         if (!readsBack) {
