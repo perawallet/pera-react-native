@@ -160,7 +160,9 @@ test.describe.skip('discover tab (web)', () => {
     test('discover iframe gets the bridge interface when the site loads', async () => {
         const frame = page
             .frames()
-            .find(candidate => candidate.url().includes('peraBridgeToken='))
+            // By host: the relay scrubs the bridge token off the frame's URL
+            // once the handshake lands.
+            .find(candidate => candidate.url().includes('discover-mobile'))
         test.skip(
             frame == null,
             'discover frame did not load (networkless run)',

@@ -239,7 +239,9 @@ test.skip('discover hand-off routes an unreachable-bridge WC URI without crashin
 
     const frame = discoverPage
         .frames()
-        .find(candidate => candidate.url().includes('peraBridgeToken='))
+        // By host: the relay scrubs the bridge token off the frame's URL
+        // once the handshake lands.
+        .find(candidate => candidate.url().includes('discover-mobile'))
     // test.skip throws to abort, so discoverPage is left for afterAll to reap.
     test.skip(frame == null, 'discover frame did not load (networkless run)')
 

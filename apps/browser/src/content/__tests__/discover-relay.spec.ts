@@ -116,4 +116,35 @@ describe('discover-relay content script', () => {
         )
         expect(ports[0]?.postMessage).not.toHaveBeenCalled()
     })
+
+    it('scrubs the bridge token off the URL once the handshake lands, keeping the rest', async () => {
+        window.history.replaceState(
+            { route: 'home' },
+            '',
+            `/explore?peraBridgeToken=${TOKEN}&theme=dark#top`,
+        )
+        await loadScript()
+
+        expect(window.location.search).toContain('peraBridgeToken')
+
+        handshake('req-evt', 'res-evt')
+
+        expect(window.location.pathname).toBe('/explore')
+        expect(window.location.search).toBe('?theme=dark')
+        expect(window.location.hash).toBe('#top')
+        expect(window.history.state).toEqual({ route: 'home' })
+    })
+
+    it('keeps relaying after the token is scrubbed', async () => {
+        await loadScript()
+        handshake('req-evt', 'res-evt')
+
+        window.dispatchEvent(
+            new CustomEvent('req-evt', { detail: { method: 'getSettings' } }),
+        )
+
+        expect(ports[0]?.postMessage).toHaveBeenCalledWith({
+            method: 'getSettings',
+        })
+    })
 })

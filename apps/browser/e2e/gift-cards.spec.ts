@@ -183,7 +183,9 @@ test('account selection advances to the webview iframe with the bridge params', 
 test('gift-card iframe gets the bidali provider when the site loads', async () => {
     const frame = page
         .frames()
-        .find(candidate => candidate.url().includes('peraBridgeToken='))
+        // By host: the relay scrubs the bridge token off the frame's URL
+        // once the handshake lands.
+        .find(candidate => candidate.url().includes('bidali.com'))
     test.skip(frame == null, 'bidali frame did not load (networkless run)')
 
     const providerName = await frame!
