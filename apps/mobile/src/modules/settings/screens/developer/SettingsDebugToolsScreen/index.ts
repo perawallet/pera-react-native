@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { SettingsDeveloperMenuScreen } from './SettingsDeveloperMenuScreen'
+export { SettingsDebugToolsScreen } from './SettingsDebugToolsScreen'

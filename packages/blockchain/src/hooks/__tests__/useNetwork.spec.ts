@@ -13,7 +13,10 @@
 import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-vi.mock('@perawallet/wallet-core-config', () => ({
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    isCustomNetworkConfig: (
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    ).isCustomNetworkConfig,
     config: {
         defaultNetwork: 'mainnet',
         mainnetBackendUrl: 'https://mainnet-api.algorand.node',
@@ -22,6 +25,8 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     Networks: {
         testnet: 'testnet',
         mainnet: 'mainnet',
+        betanet: 'betanet',
+        custom: 'custom',
     },
     isMainnet: vi.fn(network => network === 'mainnet'),
     isTestnet: vi.fn(network => network === 'testnet'),
@@ -52,6 +57,38 @@ describe('hooks/useNetwork', () => {
 
         expect(result.current.network).toBe('testnet')
     })
+
+    test.each(['mainnet', 'testnet', 'betanet', 'custom'])(
+        'a persisted v2 %s selection gives the same useNetwork network',
+        async network => {
+            const { getProvider } =
+                await import('@perawallet/wallet-extension-provider')
+            const record = {
+                id: 'custom',
+                algodUrl: 'http://10.0.0.5:4001',
+                indexerUrl: 'http://10.0.0.5:8980',
+                genesisHash: 'HASH',
+                genesisId: 'dockernet-v1',
+            }
+            getProvider().keyValueStorage.setItem(
+                'network-store',
+                JSON.stringify({
+                    state: {
+                        globalNetwork:
+                            network === 'betanet' ? 'testnet' : network,
+                        selectedNetworkByChain: { algorand: network },
+                        customNetworksByChain: { algorand: [record] },
+                    },
+                    version: 2,
+                }),
+            )
+            const { useNetwork } = await import('../useNetwork')
+
+            const { result } = renderHook(() => useNetwork())
+
+            expect(result.current.network).toBe(network)
+        },
+    )
 
     test('should return current network and setter', async () => {
         const { useNetworkStore } = await import('../../store')
@@ -91,7 +128,8 @@ describe('hooks/useNetwork', () => {
         const callsBefore = vi.mocked(getNetworkConfig).mock.calls.length
 
         act(() => {
-            useNetworkStore.getState().setCustomNetwork({
+            useNetworkStore.getState().setCustomNetwork('algorand', {
+                id: 'custom',
                 algodUrl: 'http://10.0.0.5:4001',
                 indexerUrl: 'http://10.0.0.5:8980',
                 genesisHash: 'HASH',

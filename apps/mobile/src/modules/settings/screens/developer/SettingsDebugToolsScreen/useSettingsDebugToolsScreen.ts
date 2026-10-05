@@ -20,15 +20,15 @@ import { areConfigOverridesIgnored } from '@perawallet/wallet-core-remote-config
 import { useWebView } from '@modules/webview/hooks'
 import { routeCapabilities } from '@routes/capabilities'
 
-export type UseSettingsDeveloperMenuScreenResult = {
+export type UseSettingsDebugToolsScreenResult = {
     isGalleryAvailable: boolean
     isFeatureFlagsAvailable: boolean
     handleNavigate: (page: string) => void
     handleOpenTestingDapp: () => void
 }
 
-export const useSettingsDeveloperMenuScreen =
-    (): UseSettingsDeveloperMenuScreenResult => {
+export const useSettingsDebugToolsScreen =
+    (): UseSettingsDebugToolsScreenResult => {
         const navigation =
             useNavigation<NativeStackNavigationProp<ParamListBase>>()
         const { pushWebView } = useWebView()

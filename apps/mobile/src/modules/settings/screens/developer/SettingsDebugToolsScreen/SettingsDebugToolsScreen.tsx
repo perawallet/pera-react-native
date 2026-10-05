@@ -12,16 +12,16 @@
 
 import { PWListItem, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSettingsDeveloperMenuScreen } from './useSettingsDeveloperMenuScreen'
+import { useSettingsDebugToolsScreen } from './useSettingsDebugToolsScreen'
 
-export const SettingsDeveloperMenuScreen = () => {
+export const SettingsDebugToolsScreen = () => {
     const { t } = useLanguage()
     const {
         isGalleryAvailable,
         isFeatureFlagsAvailable,
         handleNavigate,
         handleOpenTestingDapp,
-    } = useSettingsDeveloperMenuScreen()
+    } = useSettingsDebugToolsScreen()
 
     return (
         <PWScreen>
@@ -62,7 +62,7 @@ export const SettingsDeveloperMenuScreen = () => {
                     onPress={() => handleNavigate('Gallery')}
                     icon='dot-stack'
                     title={t('settings.developer.screen_gallery')}
-                    testID='developer_menu_gallery_item'
+                    testID='debug_tools_gallery_item'
                 />
             )}
         </PWScreen>
