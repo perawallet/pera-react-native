@@ -17,6 +17,11 @@ import { fetchTransactionsCsv, CsvExportError } from '../../api/csv-export'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() => true),
+}))
 
 // Mock the API function
 vi.mock('../../api/csv-export', async importOriginal => {
@@ -223,6 +228,7 @@ describe('useCsvExportMutation', () => {
         it.each([Networks.betanet, Networks.custom])(
             'reports isUnavailableOnNetwork and no-ops exportCsv on %s',
             async network => {
+                vi.mocked(useChainCapability).mockReturnValue(false)
                 const { result, rerender } = renderHook(
                     () =>
                         useCsvExportMutation({
@@ -234,6 +240,10 @@ describe('useCsvExportMutation', () => {
                 )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(useChainCapability).toHaveBeenCalledWith(
+                    'algorand',
+                    'csvExport',
+                )
 
                 const firstExportCsv = result.current.exportCsv
                 act(() => {
@@ -252,6 +262,7 @@ describe('useCsvExportMutation', () => {
         it.each([Networks.mainnet, Networks.testnet])(
             'reports isUnavailableOnNetwork as false on %s',
             network => {
+                vi.mocked(useChainCapability).mockReturnValue(true)
                 const { result } = renderHook(
                     () => useCsvExportMutation({ network }),
                     { wrapper: createWrapper() },

@@ -36,7 +36,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 

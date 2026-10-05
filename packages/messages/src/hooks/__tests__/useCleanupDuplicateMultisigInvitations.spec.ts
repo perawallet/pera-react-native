@@ -17,6 +17,11 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useCleanupDuplicateMultisigInvitations } from '../useCleanupDuplicateMultisigInvitations'
 import { fetchInbox } from '../../api/inbox'
 
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() => true),
+    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
+}))
+
 vi.mock('../../api/inbox', () => ({
     fetchInbox: vi.fn(),
 }))
@@ -29,10 +34,6 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
         useDeviceID: vi.fn().mockReturnValue('test-device-id'),
     }
 })
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
-}))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSigningAccounts: vi.fn().mockReturnValue([

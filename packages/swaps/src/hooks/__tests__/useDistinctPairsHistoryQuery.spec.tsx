@@ -17,7 +17,7 @@ import React from 'react'
 import { useDistinctPairsHistoryQuery } from '../useDistinctPairsHistoryQuery'
 import { fetchDistinctPairsHistory } from '../../api'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

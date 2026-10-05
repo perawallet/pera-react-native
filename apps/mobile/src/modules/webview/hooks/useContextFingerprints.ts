@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import type { ContextFingerprints } from './useNotifyWebViewOnContextChange'

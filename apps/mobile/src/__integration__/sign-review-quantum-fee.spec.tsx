@@ -55,7 +55,7 @@ import {
     type QuantumAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/QuantumFeeExplainer'

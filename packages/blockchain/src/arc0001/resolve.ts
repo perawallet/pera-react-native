@@ -14,7 +14,15 @@ import { decodeTransactions } from '../utils/transact'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { ZodError } from 'zod'
 
-import type { PeraTransaction } from '../models'
+import type {
+    PeraTransaction,
+    Arc0001ResolveContext,
+    Arc0001ResolveResult,
+    Arc0001ResolvedTransaction,
+    Arc0001SignTxnsRequest,
+    Arc0001SignerKind,
+    Arc0001WalletTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     encodeAlgorandAddress,
     isValidAlgorandAddress,
@@ -22,15 +30,7 @@ import {
 
 import { Arc0001Error } from './errors'
 import { arc0001SignTxnRequestSchema } from './schema'
-import {
-    Arc0001ErrorCode,
-    type Arc0001ResolveContext,
-    type Arc0001ResolveResult,
-    type Arc0001ResolvedTransaction,
-    type Arc0001SignTxnsRequest,
-    type Arc0001SignerKind,
-    type Arc0001WalletTransaction,
-} from './types'
+import { Arc0001ErrorCode } from './types'
 
 // Algorand's atomic-group max is 16; this cap allows many concatenated
 // groups in one request. Matches pera-android's MAX_TRANSACTION_COUNT.

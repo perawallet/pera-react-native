@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 import { createRampQuote, type CreateRampQuoteParams } from '../api'
 import type { RampQuote } from '../models'

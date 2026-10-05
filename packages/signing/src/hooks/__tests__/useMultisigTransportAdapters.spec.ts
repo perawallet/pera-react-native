@@ -23,7 +23,7 @@ import type { DraftProposeContext } from '../../chain-adapter'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { walletConnectHandoffs } from '../../pipeline/walletConnectHandoffs'
 import type { SigningResult } from '../../pipeline/types'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 
 // Fake signed-transaction node. The transport reads only `txn` (passed to the
 // mocked encoder via its `tag`) and `sig`; the cast bridges the partial literal
@@ -44,10 +44,13 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => mocks.useNetwork(),
     useTransactionEncoder: () => ({
         encodeTransactionRaw: mocks.encodeTransactionRaw,
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => mocks.useNetwork(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

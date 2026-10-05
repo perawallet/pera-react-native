@@ -29,8 +29,8 @@ import {
     formatDatetime,
     type HistoryPeriod,
     type Nullable,
+    percentChange,
 } from '@perawallet/wallet-core-shared'
-import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useCallback, useMemo } from 'react'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'

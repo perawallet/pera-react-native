@@ -30,13 +30,18 @@ vi.mock('@perawallet/wallet-core-background', async importOriginal => {
     return { ...actual, getSyncService: mockGetSyncService }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual = await importOriginal<object>()
-    return {
-        ...actual,
-        useNetwork: () => ({ network: networkState.network }),
-    }
-})
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-blockchain')
+    >()),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: networkState.network }),
+}))
 
 // The global test setup stubs these packages; the release helper needs the
 // real query-key guards for the previous-network cache release.

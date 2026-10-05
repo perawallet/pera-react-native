@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { fetchBanners, type BannerListResponse } from '../api/banners'
 import { getBannersQueryKey } from './querykeys'

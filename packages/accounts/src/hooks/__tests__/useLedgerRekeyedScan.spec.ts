@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@tanstack/react-query', () => ({ useQueries: mocks.useQueries }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: mocks.useNetwork,
 }))
 vi.mock('../useAllAccounts', () => ({ useAllAccounts: mocks.useAllAccounts }))

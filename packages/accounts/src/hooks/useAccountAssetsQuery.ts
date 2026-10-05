@@ -13,7 +13,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { AssetSortMode } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     getAccountHoldingsLite,
     type AccountHoldingsFilters,

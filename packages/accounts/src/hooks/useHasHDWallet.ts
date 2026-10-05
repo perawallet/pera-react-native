@@ -11,7 +11,7 @@
  */
 
 import { useAccountsStore } from '../store'
-import { AccountTypes } from '../models'
+import { isHDWalletAccount } from '../utils'
 
 /**
  * True when the wallet has at least one HD (mnemonic/passphrase-derived)
@@ -20,5 +20,5 @@ import { AccountTypes } from '../models'
  */
 export const useHasHDWallet = (): boolean => {
     const accounts = useAccountsStore(state => state.accounts)
-    return accounts.some(account => account.type === AccountTypes.hdWallet)
+    return accounts.some(isHDWalletAccount)
 }

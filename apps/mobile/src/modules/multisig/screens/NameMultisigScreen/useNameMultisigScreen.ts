@@ -23,7 +23,7 @@ import {
     useCreateMultisigAccountMutation,
 } from '@perawallet/wallet-core-multisig'
 import { trackEvent, MultisigEvent } from '@analytics'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'

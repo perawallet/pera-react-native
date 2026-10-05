@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useToggleAssetPriceAlertMutation } from '@perawallet/wallet-core-assets'
 import {
     PeraServiceUnavailableError,

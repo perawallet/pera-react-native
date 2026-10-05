@@ -15,10 +15,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ExternalTransactionInfoContent } from '@modules/signing'
 import { TransactionIcon } from '@components/TransactionIcon'
-import {
-    classifyDisplayableTransaction,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { classifyDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { GestureResponderEvent } from 'react-native'
 import { useStyles } from './styles'
 import { TxTypeDetails } from './TxTypeDetails'

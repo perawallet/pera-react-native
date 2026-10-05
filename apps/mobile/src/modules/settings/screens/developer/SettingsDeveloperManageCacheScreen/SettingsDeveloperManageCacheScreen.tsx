@@ -14,7 +14,7 @@ import { useState } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useAgeGateStore } from '@perawallet/wallet-core-device'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useBannersStore } from '@perawallet/wallet-core-banners'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 

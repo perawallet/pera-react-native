@@ -78,7 +78,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 
 vi.mock('../../errors', () => ({ toAlgodError: mocks.toAlgodError }))
 
-import { useNetworkStore } from '../../store'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getAlgorandClient } from '../algorandClient'
 
 beforeEach(() => {

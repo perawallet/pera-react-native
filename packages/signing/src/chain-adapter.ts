@@ -16,16 +16,15 @@ import {
     scopeForLegacyNetwork,
     type ChainId,
     type ChainScope,
+    type Arc0001ResolveContext,
+    type Arc0001ResolveResult,
+    type Arc0001SignTxnsRequest,
+    type PeraDisplayableTransaction,
+    type PeraSignedTransaction,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    Arc0001ResolveContext,
-    Arc0001ResolveResult,
-    Arc0001SignTxnsRequest,
-    PeraDisplayableTransaction,
-    PeraSignedTransaction,
-    PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+
 import type { Network } from '@perawallet/wallet-core-config'
 import type { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'

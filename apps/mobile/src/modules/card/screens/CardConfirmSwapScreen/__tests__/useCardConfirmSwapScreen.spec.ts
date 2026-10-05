@@ -48,10 +48,11 @@ const mockSwapParams = vi.hoisted(() => ({
     current: undefined as { enabled: boolean; usdcAssetId: string } | undefined,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: mockNetwork }),
-    baseUnitsToDisplayUnits: (amount: bigint, decimals: number) =>
-        new Decimal(amount.toString()).div(new Decimal(10).pow(decimals)),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

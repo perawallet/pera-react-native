@@ -14,7 +14,10 @@ import { useCallback, useMemo, useState } from 'react'
 import { Linking } from 'react-native'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedChainMode } from '@perawallet/wallet-core-chain-shared'
+import {
+    useSelectedChainMode,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 // Imported from the handlers file directly (not the module barrel) so this
 // hook doesn't drag the whole webview stack into its dependency graph.
@@ -28,7 +31,6 @@ import {
 import { buildBidaliUrl } from './bidali-url'
 import type WebView from 'react-native-webview'
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseBidaliWebViewScreenResult = {

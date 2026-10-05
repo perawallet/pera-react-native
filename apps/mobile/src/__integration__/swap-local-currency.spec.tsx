@@ -13,11 +13,13 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { displayUnitsToBaseUnits } from '@perawallet/wallet-core-blockchain'
+import {
+    displayUnitsToBaseUnits,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useSwapsStore } from '@perawallet/wallet-core-swaps'
 import { useSwapLocalCurrency } from '@modules/swap/hooks'
 import { useSwapAmountSection } from '@modules/swap/components/SwapAmountSection/useSwapAmountSection'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const ALGO_ID = '0'
 const ALGO_DECIMALS = 6

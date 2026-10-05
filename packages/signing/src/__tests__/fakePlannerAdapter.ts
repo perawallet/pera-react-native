@@ -13,9 +13,12 @@
 import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { Transaction, computeGroupID } from 'algosdk'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, bytesToHex } from '@perawallet/wallet-core-shared'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+
 import {
     plannerChainAdapters,
     type PlannerChainAdapter,

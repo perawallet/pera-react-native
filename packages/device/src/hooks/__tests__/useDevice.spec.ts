@@ -65,7 +65,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn().mockReturnValue({
         network: 'mainnet',
         setNetwork: vi.fn(),
@@ -129,7 +129,7 @@ const seedPushToken = async (token: string | null): Promise<void> => {
  * afterwards.
  */
 const importUseDevice = async () => {
-    const { useNetwork } = await import('@perawallet/wallet-core-blockchain')
+    const { useNetwork } = await import('@perawallet/wallet-core-chain-shared')
     vi.mocked(useNetwork).mockReturnValue({
         network: 'mainnet',
         setNetwork: vi.fn(),
@@ -717,7 +717,7 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const useDevice = await importUseDevice()
         const { useNetwork } =
-            await import('@perawallet/wallet-core-blockchain')
+            await import('@perawallet/wallet-core-chain-shared')
 
         vi.mocked(useNetwork).mockReturnValue({
             network: 'mainnet',
@@ -1030,7 +1030,7 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const useDevice = await importUseDevice()
         const { useNetwork } =
-            await import('@perawallet/wallet-core-blockchain')
+            await import('@perawallet/wallet-core-chain-shared')
 
         useDeviceStore.getState().resetState()
         vi.mocked(useNetwork).mockReturnValue({

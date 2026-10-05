@@ -29,8 +29,3 @@ export {
     clearCustomNetwork,
 } from './store/custom-network'
 export type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
-export {
-    useNetworkStore,
-    useSelectedScope,
-    useSelectedNetworkId,
-} from '@perawallet/wallet-core-chain-shared'

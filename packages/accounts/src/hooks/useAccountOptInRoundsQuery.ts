@@ -11,7 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { fetchAssetOptInRounds } from '../chain-adapter'
 import { getAccountOptInRoundsQueryKey } from './querykeys'
 

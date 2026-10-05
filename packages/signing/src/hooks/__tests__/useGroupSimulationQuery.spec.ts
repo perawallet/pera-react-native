@@ -17,18 +17,18 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'
 
 const mockSimulate = vi.fn()
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
-    return { ...actual, useNetwork: () => ({ network: 'mainnet' }) }
-})
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
 
 const wrapper = ({ children }: { children: React.ReactNode }) => {
     const client = new QueryClient({

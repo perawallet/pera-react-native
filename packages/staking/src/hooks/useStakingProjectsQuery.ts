@@ -13,10 +13,7 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import {
-    baseUnitsToDisplayUnits,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     nativeAssetDecimals,
     scopeForLegacyNetwork,
@@ -25,7 +22,11 @@ import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    toError,
+    baseUnitsToDisplayUnits,
+} from '@perawallet/wallet-core-shared'
 import type {
     StakingProject,
     StakingProjectInfo,

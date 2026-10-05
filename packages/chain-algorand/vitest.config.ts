@@ -43,11 +43,17 @@ const CONTRACT_SUITES = {
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
         passWithNoTests: true,
+        typecheck: {
+            enabled: true,
+            include: ['src/**/*.test-d.ts'],
+            tsconfig: './tsconfig.typecheck.json',
+        },
     },
     resolve: {
         conditions: ['default'],
@@ -95,5 +101,4 @@ export default defineConfig({
             ),
         },
     },
-    ...poolConfig,
 })

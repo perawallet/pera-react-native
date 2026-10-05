@@ -16,14 +16,22 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useAssetSearchQuery } from '../useAssetSearchQuery'
 import { registerFakeAssetsAdapter } from '../../__tests__/fakeAssetsChain'
 import { createWrapper } from './test-utils'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(
+            mocks.useNetwork.mock.results.at(-1)?.value?.network ?? 'mainnet',
+        ),
+    ),
+    useNetwork: mocks.useNetwork,
+}))
 
 const mocks = vi.hoisted(() => ({
     searchAssets: vi.fn(),
     useNetwork: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mocks.useNetwork,
 }))
 
 const mainnetScope = { chainId: 'algorand', networkId: 'mainnet' }
@@ -126,6 +134,10 @@ describe('useAssetSearchQuery', () => {
             })
 
             expect(result.current.isUnavailableOnNetwork).toBe(true)
+            expect(useChainCapability).toHaveBeenCalledWith(
+                'algorand',
+                'assetSearch',
+            )
             expect(mocks.searchAssets).not.toHaveBeenCalled()
         },
     )

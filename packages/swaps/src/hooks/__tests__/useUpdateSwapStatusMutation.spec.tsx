@@ -17,7 +17,7 @@ import React from 'react'
 import { useUpdateSwapStatusMutation } from '../useUpdateSwapStatusMutation'
 import { updateSwapStatus } from '../../api'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

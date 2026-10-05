@@ -398,6 +398,9 @@ function buildAppConfig(env) {
             // (react-native-ssl-public-key-pinning requirement). Debug-only
             // tooling — release builds never include it.
             networkInspector: false,
+            // Set by ci/jobs/lib/toolchain.sh only when the host has ccache,
+            // so a local prebuild keeps compiling without it.
+            ccacheEnabled: env.USE_CCACHE === '1',
           },
           android: {
             minSdkVersion: 29,

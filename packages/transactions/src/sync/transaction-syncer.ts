@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Optional } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory } from '../history-adapter'
 import { getLatestTransactionRoundTime, upsertTransactions } from '../db'
@@ -20,9 +21,10 @@ export async function fetchAndPersistTransactions(
     address: string,
     network: Network,
 ): Promise<void> {
+    const scope = scopeForLegacyNetwork(network)
     const latestRoundTime = await getLatestTransactionRoundTime({
         accountAddress: address,
-        network,
+        scope,
     })
 
     let afterTime: Optional<string>
@@ -44,7 +46,7 @@ export async function fetchAndPersistTransactions(
         await upsertTransactions({
             items: result.transactions,
             accountAddress: address,
-            network,
+            scope,
         })
     }
 

@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     getSignerFor,
     isQuantumAccount,
@@ -20,8 +23,8 @@ import {
     calculateMinTxnFee,
     calculatePQFeeSurcharge,
     groupTransactions,
-    type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
+
 import { Transaction } from 'algosdk'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
 import type {

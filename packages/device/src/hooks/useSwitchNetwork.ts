@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { useNetwork, useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import {
+    useNetwork,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import type { Network } from '@perawallet/wallet-core-shared'
 
 type UseSwitchNetworkResult = {

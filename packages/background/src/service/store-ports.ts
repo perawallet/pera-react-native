@@ -12,7 +12,7 @@
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { scopeKeyForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { usePollingStore } from '../polling'
 import type { SyncStorePorts } from '../models'
 

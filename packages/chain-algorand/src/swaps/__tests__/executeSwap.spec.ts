@@ -15,7 +15,7 @@ import { Decimal } from 'decimal.js'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -127,6 +127,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
         Buffer.from(bytes).toString('base64'),
     generateOrderedUniqueId: () => 'mock-id',
     logger: {
+        debug: vi.fn(),
+        info: vi.fn(),
         warn: vi.fn(),
         error: vi.fn(),
     },
@@ -533,7 +535,7 @@ describe('executeAlgorandSwap', () => {
         // Age-bounded: a row the reconciler can never settle must not block
         // every future swap for this sender.
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             sender: 'SWAPPER',
             flows: ['swap', 'cosign'],
             unevaluatableBefore: expect.any(Number),
@@ -614,7 +616,7 @@ describe('executeAlgorandSwap', () => {
 
         expect(result.kind).toBe('success')
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             sender: 'SWAPPER',
             flows: ['swap', 'cosign'],
             unevaluatableBefore: expect.any(Number),

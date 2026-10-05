@@ -14,7 +14,6 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
@@ -33,11 +32,12 @@ const mockResolveMinFeeForSender = vi.fn()
 // these tests verify only that this hook wires the resolver's inputs
 // correctly and applies the override guard on its output.
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => mockUseNetwork(),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
     useSuggestedParametersQuery: () => mockUseSuggestedParametersQuery(),
-    microAlgosToAlgos: (microAlgos: bigint) =>
-        new Decimal(microAlgos.toString()).dividedBy(1_000_000),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => mockUseNetwork(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

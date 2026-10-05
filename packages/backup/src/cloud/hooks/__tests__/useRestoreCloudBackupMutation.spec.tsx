@@ -68,8 +68,10 @@ vi.mock('../../sync/backupSettingsStores', () => ({
 vi.mock('../useResolveSeedEntropyForBackup', () => ({
     useResolveSeedEntropyForBackup: () => vi.fn(),
 }))
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
-    ...(await importOriginal<object>()),
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 vi.mock('@perawallet/wallet-core-device', () => ({

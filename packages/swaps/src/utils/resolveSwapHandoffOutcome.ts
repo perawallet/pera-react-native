@@ -13,6 +13,7 @@
 import {
     LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
 import {
@@ -25,7 +26,7 @@ import type { SwapStatusUpdateRequest } from '../api'
 import type { SwapHandoffRecord } from '../models'
 
 export type CosignSubmissionAttemptParams = {
-    network: string
+    scope: ChainScope
     txIds: string[]
     flow: 'cosign'
     intentKey: { kind: 'cosign'; signRequestId: string; swapId?: string }
@@ -199,7 +200,7 @@ export const resolveSwapHandoffOutcome = async ({
                     let attemptId: string | null = null
                     if (derived.txIds.length > 0) {
                         attemptId = await deps.recordSubmissionAttempt({
-                            network,
+                            scope: record.scope,
                             txIds: derived.txIds,
                             flow: 'cosign',
                             intentKey: {

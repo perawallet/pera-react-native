@@ -17,7 +17,7 @@ import {
     type RampHistoryItem,
 } from '@perawallet/wallet-core-onramp'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
 
 import { useOnrampHistory } from '../useOnrampHistory'
@@ -30,7 +30,10 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: vi.fn(),
 }))
 

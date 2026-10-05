@@ -33,7 +33,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     scopeForLegacyNetwork,
     type LegacyNetwork,

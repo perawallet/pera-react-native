@@ -11,10 +11,8 @@
  */
 
 import { useMemo } from 'react'
-import {
-    useNetwork,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { cardAdapterFor } from '../chain-adapter'
 

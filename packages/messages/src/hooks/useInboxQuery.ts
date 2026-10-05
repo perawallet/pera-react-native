@@ -12,8 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useAllAccounts,
     useSigningAccounts,
@@ -42,7 +45,10 @@ export const useInboxQueryOptions = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network) ?? ''
     const signingAccounts = useSigningAccounts()
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scopeForLegacyNetwork(network).chainId,
+        'notifications',
+    )
 
     const addresses = useMemo(
         () => signingAccounts.map(a => a.address),

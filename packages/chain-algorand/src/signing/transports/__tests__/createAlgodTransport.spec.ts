@@ -23,19 +23,15 @@ import { createAlgodTransport } from '../createAlgodTransport'
 
 const getNetworkMock = vi.fn(() => ({ network: 'testnet' }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        useNetworkStore: {
-            getState: () => getNetworkMock(),
-            subscribe: () => () => {},
-        },
-    }
-})
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetworkStore: {
+        getState: () => getNetworkMock(),
+        subscribe: () => () => {},
+    },
+}))
 
 const transactionResult = {
     signedData: {

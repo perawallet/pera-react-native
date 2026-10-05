@@ -512,6 +512,16 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
     }
 })
 
+// Source-aliased code and the dist-resolved packages (app-integrity,
+// background, projects, card/nfd roots) all reach useNetwork through here.
+// Everything else, including the network store, stays real.
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+}))
+
 // Mock @perawallet/wallet-core-blockchain
 class MockAlgodError extends Error {
     constructor(
@@ -556,33 +566,12 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
         }),
         encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
-        useNetwork: vi.fn(() => ({
-            network: 'mainnet',
-        })),
         useMinimumFeeConfig: vi.fn(() => ({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
             assetMbr: 100_000n,
             baseAccountMbr: 100_000n,
         })),
-        useNetworkStore: Object.assign(
-            vi.fn(() => 'mainnet'),
-            {
-                getState: vi.fn(() => ({
-                    network: 'mainnet',
-                    mode: 'live',
-                    selectedNetworkByChain: {},
-                    customNetworksByChain: { algorand: [] },
-                    setMode: vi.fn(),
-                    setNetwork: vi.fn(),
-                    selectNetwork: vi.fn(),
-                    resetState: vi.fn(),
-                })),
-                // The accounts barrel subscribes at load to mirror per-network
-                // rekey state on switches.
-                subscribe: vi.fn(() => () => {}),
-            },
-        ),
         // Error-translation exports. Tests that need the real parser should use
         // `vi.importActual` in their own file (see useAlgodErrorMessage.spec.ts).
         AlgodError: MockAlgodError,
@@ -604,35 +593,6 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
                     err instanceof Error ? err : undefined,
                 ),
         ),
-        microAlgosToAlgos: vi.fn((microAlgos: bigint | number | string) => {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { Decimal } = require('decimal.js')
-            return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
-        }),
-        toBigInt: vi.fn(
-            (decimal: { toFixed: (dp: number, rm: number) => string }) => {
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-                const { Decimal } = require('decimal.js')
-                return BigInt(decimal.toFixed(0, Decimal.ROUND_DOWN))
-            },
-        ),
-        baseUnitsToDisplayUnits: vi.fn(
-            (baseUnits: bigint | number | string, decimals: number) => {
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-                const { Decimal } = require('decimal.js')
-                return new Decimal(baseUnits.toString()).dividedBy(
-                    new Decimal(10).pow(decimals),
-                )
-            },
-        ),
-        percentChange: vi.fn((first: unknown, last: unknown) => {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { Decimal } = require('decimal.js')
-            const firstDp = new Decimal(String(first))
-            const lastDp = new Decimal(String(last))
-            if (firstDp.isZero()) return new Decimal(0)
-            return lastDp.minus(firstDp).div(firstDp).mul(100)
-        }),
         getCustomNetworkConfig,
         isCustomNetworkConfigured,
         setCustomNetwork,

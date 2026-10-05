@@ -12,7 +12,7 @@
 
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { toError, type Network } from '@perawallet/wallet-core-shared'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
 import {
     isExternalCallbackSource,

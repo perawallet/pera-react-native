@@ -11,10 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import {
-    useNetwork,
-    type Arc0001ResolveResult,
-} from '@perawallet/wallet-core-blockchain'
+import type { Arc0001ResolveResult } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { plannerAdapterFor } from '../chain-adapter'

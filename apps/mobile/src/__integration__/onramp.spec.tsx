@@ -47,8 +47,8 @@ import {
 import {
     encodeTransaction,
     encodeSignedTransaction,
-    useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'

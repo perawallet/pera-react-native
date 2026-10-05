@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     scopeForLegacyNetwork,
     type ChainScope,
@@ -20,7 +21,8 @@ import {
     type Network,
 } from '@perawallet/wallet-core-config'
 import { updateNodeEndpoints } from '@perawallet/wallet-core-shared'
-import { useNetworkStore } from '../store'
+// Side-effect import: registers the saved-node reader getChainConfig uses for `custom`.
+import '../store/custom-network'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
 
 /**

@@ -48,6 +48,12 @@ describe('ChainCapability', () => {
             | 'manageAssets'
             | 'privateKeys'
             | 'contractDecoding'
+            | 'priceHistory'
+            | 'balanceHistory'
+            | 'assetSearch'
+            | 'assetFavorites'
+            | 'priceAlerts'
+            | 'csvExport'
         >()
     })
 })

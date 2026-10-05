@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { logger, toError, type Network } from '@perawallet/wallet-core-shared'
 import {
     NetworkChangedError,

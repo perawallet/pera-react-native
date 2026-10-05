@@ -14,8 +14,8 @@ import { useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SuggestedParams } from 'algosdk'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useAlgorandClient } from './useAlgorandClient'
-import { useNetwork } from './useNetwork'
 import { getSuggestedParametersQueryKey } from './querykeys'
 
 // Suggested params carry a validity window, so a cached copy is only

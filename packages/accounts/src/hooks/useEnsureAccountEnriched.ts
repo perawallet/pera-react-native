@@ -17,7 +17,7 @@ import {
     fetchAndPersistAssets,
     fetchAndPersistPrices,
 } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { getAccountHoldings } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'

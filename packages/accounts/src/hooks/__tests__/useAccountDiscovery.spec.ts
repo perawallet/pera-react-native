@@ -24,7 +24,7 @@ vi.mock('../../account-discovery', () => ({
         mockBaseDiscoverRekeyedAccounts(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 

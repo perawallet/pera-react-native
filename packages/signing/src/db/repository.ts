@@ -23,6 +23,10 @@ import {
 } from 'drizzle-orm'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    networkColumnValue,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { SubmissionAttemptsSchema } from './schema'
 import {
     OPEN_SUBMISSION_STATUSES,
@@ -54,7 +58,7 @@ const serializeIntentKey = (intentKey: IntentKey): string =>
 
 export type RecordSubmissionAttemptParams = {
     db?: Database
-    network: string
+    scope: ChainScope
     txIds: string[]
     flow: SubmissionFlow
     intentKey?: IntentKey
@@ -69,7 +73,7 @@ export type RecordSubmissionAttemptParams = {
  */
 export const recordSubmissionAttempt = async ({
     db = getDatabase(),
-    network,
+    scope,
     txIds,
     flow,
     intentKey,
@@ -81,7 +85,7 @@ export const recordSubmissionAttempt = async ({
         .insert(SubmissionAttemptsSchema)
         .values({
             id,
-            network,
+            network: networkColumnValue(scope),
             txIdsJson: JSON.stringify(txIds),
             intentKeyJson: intentKey ? serializeIntentKey(intentKey) : null,
             flow,
@@ -135,7 +139,7 @@ export const markSubmissionUnknown = async ({
 
 export type GetOpenSubmissionAttemptsParams = {
     db?: Database
-    network?: string
+    scope?: ChainScope
     /** Scopes to one account — history renders per account. */
     sender?: string
     /** Scopes to these flows — the swap guard's sender-wide fallback. */
@@ -151,7 +155,7 @@ export type GetOpenSubmissionAttemptsParams = {
 
 export const getOpenSubmissionAttempts = async ({
     db = getDatabase(),
-    network,
+    scope,
     sender,
     flows,
     unevaluatableBefore,
@@ -160,8 +164,10 @@ export const getOpenSubmissionAttempts = async ({
     const conditions = [
         inArray(SubmissionAttemptsSchema.status, [...OPEN_SUBMISSION_STATUSES]),
     ]
-    if (network !== undefined) {
-        conditions.push(eq(SubmissionAttemptsSchema.network, network))
+    if (scope !== undefined) {
+        conditions.push(
+            eq(SubmissionAttemptsSchema.network, networkColumnValue(scope)),
+        )
     }
     if (sender !== undefined) {
         conditions.push(eq(SubmissionAttemptsSchema.sender, sender))
@@ -191,7 +197,7 @@ export const getOpenSubmissionAttempts = async ({
 
 export type GetOpenSubmissionAttemptsForIntentParams = {
     db?: Database
-    network?: string
+    scope?: ChainScope
     sender: string
     intentKey: IntentKey
     /** See {@link GetOpenSubmissionAttemptsParams.unevaluatableBefore}. */
@@ -205,7 +211,7 @@ export type GetOpenSubmissionAttemptsForIntentParams = {
  */
 export const getOpenSubmissionAttemptsForIntent = async ({
     db = getDatabase(),
-    network,
+    scope,
     sender,
     intentKey,
     unevaluatableBefore,
@@ -218,8 +224,10 @@ export const getOpenSubmissionAttemptsForIntent = async ({
             serializeIntentKey(intentKey),
         ),
     ]
-    if (network !== undefined) {
-        conditions.push(eq(SubmissionAttemptsSchema.network, network))
+    if (scope !== undefined) {
+        conditions.push(
+            eq(SubmissionAttemptsSchema.network, networkColumnValue(scope)),
+        )
     }
     if (unevaluatableBefore !== undefined) {
         conditions.push(

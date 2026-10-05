@@ -51,11 +51,8 @@ import {
     getChainConfig,
     getNetworkConfig,
 } from '@perawallet/wallet-core-config'
-import {
-    setCustomNetwork,
-    clearCustomNetwork,
-    useNetworkStore,
-} from '../../store'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { setCustomNetwork, clearCustomNetwork } from '../../store'
 import { getAlgorandClient } from '../algorandClient'
 import { createTimeoutBoundedAlgorandClient } from '../createAlgorandClient'
 

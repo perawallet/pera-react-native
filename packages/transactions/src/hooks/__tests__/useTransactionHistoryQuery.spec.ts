@@ -29,6 +29,7 @@ import React from 'react'
 
 import { useTransactionHistoryQuery } from '../useTransactionHistoryQuery'
 import * as endpoints from '../../history-adapter'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('../../history-adapter', () => ({
     fetchTransactionHistory: vi.fn(),
@@ -123,7 +124,7 @@ describe('useTransactionHistoryQuery', () => {
         expect(mockGetTransactionHistory).toHaveBeenCalledWith(
             expect.objectContaining({
                 accountAddress: mockAddress,
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
             }),
         )
         // Should NOT call API for first page
@@ -862,7 +863,7 @@ describe('useTransactionHistoryQuery', () => {
             expect(result.current.transactions[0]!.id).toBe('PENDING-TX-1')
             // Scoping happens in SQL, not by post-filtering every account's rows.
             expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 sender: mockAddress,
                 limit: expect.any(Number),
             })

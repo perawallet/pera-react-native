@@ -13,16 +13,17 @@
 import { useCallback } from 'react'
 
 import type { Decimal } from 'decimal.js'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
-    displayUnitsToBaseUnits,
     useFetchSuggestedMinFee,
     useMinimumFeeConfig,
-    useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     resolveMinFeeForSender,
     useSignAndSubmitGroup,
@@ -37,7 +38,7 @@ import {
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
 import { AssetFrozenError, InvalidSendParamsError } from '../errors'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, displayUnitsToBaseUnits } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type BaseSendParams = {

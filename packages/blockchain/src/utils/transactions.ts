@@ -17,7 +17,7 @@ import type {
     PeraDisplayableTransaction,
     PeraTransaction,
     PeraTransactionType,
-} from '../models'
+} from '@perawallet/wallet-core-chain-contract'
 import { encodeAlgorandAddress } from './addresses'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -184,7 +184,7 @@ const transactionTypeMap: Record<
 }
 
 const mapTransactionType = (
-    type: TransactionType,
+    type: PeraTransaction['type'],
 ): 'pay' | 'keyreg' | 'acfg' | 'axfer' | 'afrz' | 'appl' | 'stpf' | 'hb' => {
     return transactionTypeMap[type] ?? 'pay'
 }

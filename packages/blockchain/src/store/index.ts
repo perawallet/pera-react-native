@@ -13,7 +13,6 @@
 export * from './store'
 export * from './custom-network'
 export {
-    useNetworkStore,
     mergePersistedNetwork,
     type CustomNetwork,
 } from '@perawallet/wallet-core-chain-shared'

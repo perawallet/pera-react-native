@@ -20,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { WalletAccount } from '../models'
 import { getAccountSummaryQueryKey } from './querykeys'
 import { readAccountSummary } from './useAccountSummaryQuery'

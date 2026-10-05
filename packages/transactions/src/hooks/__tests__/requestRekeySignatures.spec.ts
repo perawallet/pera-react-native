@@ -18,7 +18,7 @@ import { RekeyError } from '../../errors'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
 // The module under test only needs `compactSignedResults` at runtime;

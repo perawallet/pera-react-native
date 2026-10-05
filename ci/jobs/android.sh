@@ -3,6 +3,7 @@ set -euxo pipefail
 
 source ci/jobs/lib/toolchain.sh
 use_pinned_node
+use_ccache_if_available
 
 # `export VAR=$(cmd)` takes export's own exit status, not cmd's: under set -e
 # a failing java_home would silently leave JAVA_HOME empty instead of aborting

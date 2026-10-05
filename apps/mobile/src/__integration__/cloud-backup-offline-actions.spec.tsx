@@ -24,7 +24,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { onlineManager } from '@tanstack/react-query'
 import { Notifier } from 'react-native-notifier'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import {

@@ -84,7 +84,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [{ address: 'ACCOUNT_A' }, { address: 'ACCOUNT_B' }],
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

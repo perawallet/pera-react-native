@@ -18,7 +18,6 @@ import {
 } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Decimal } from 'decimal.js'
 import { useStakingProjectsQuery } from '../useStakingProjectsQuery'
 
 const VALID_PROJECTS = [
@@ -64,10 +63,8 @@ vi.mock('../endpoints', () => ({
     fetchStakingProjectsInfo: mocks.fetchStakingProjectsInfo,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: mocks.useNetwork,
-    baseUnitsToDisplayUnits: (v: Decimal, decimals: number) =>
-        v.div(new Decimal(10).pow(decimals)),
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({

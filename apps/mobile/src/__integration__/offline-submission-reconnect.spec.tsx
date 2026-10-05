@@ -33,8 +33,11 @@ import {
 } from '@tanstack/react-query'
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodPendingTransaction,
@@ -174,7 +177,7 @@ describe('Flow: offline submission reconnect', () => {
 
         await waitFor(async () => {
             const open = await getOpenSubmissionAttempts({
-                network: NETWORK,
+                scope: scopeForLegacyNetwork(NETWORK),
             })
             expect(open).toHaveLength(1)
             expect(open[0]!.txIds).toContain(txid)
@@ -262,7 +265,7 @@ describe('Flow: offline submission reconnect', () => {
 
         await waitFor(async () => {
             const open = await getOpenSubmissionAttempts({
-                network: NETWORK,
+                scope: scopeForLegacyNetwork(NETWORK),
             })
             expect(open).toHaveLength(0)
         })

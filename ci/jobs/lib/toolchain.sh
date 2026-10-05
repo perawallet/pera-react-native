@@ -65,3 +65,35 @@ resolve_app_version() {
     jq -r '.version | split("-")[0]' apps/mobile/package.json
   fi
 }
+
+# ccache is optional: a host without it builds exactly as before. The job
+# user's PATH may not include Homebrew, and React Native's pod install looks
+# ccache up with `command -v`, so a Homebrew install is put on PATH here.
+# CCACHE_DIR comes from the daemon (one per pipeline). Every run is a fresh
+# checkout at a new path, so without CCACHE_BASEDIR the absolute paths in
+# each compile's key would miss the previous run's cache every time.
+use_ccache_if_available() {
+  local dir
+  if ! command -v ccache >/dev/null; then
+    for dir in /opt/homebrew/bin /usr/local/bin; do
+      if [ -x "$dir/ccache" ]; then
+        export PATH="$dir:$PATH"
+        break
+      fi
+    done
+  fi
+  if ! command -v ccache >/dev/null; then
+    echo "pera-ci: ccache not found; compiling without it"
+    return 0
+  fi
+  echo "pera-ci: compiling through $(command -v ccache)"
+  export CCACHE_BASEDIR="$CI_WORKSPACE"
+  # CMake 3.17+ reads these as defaults, so every native module's
+  # externalNativeBuild compiles through ccache. NDK_CCACHE covers ndk-build.
+  export CMAKE_C_COMPILER_LAUNCHER=ccache
+  export CMAKE_CXX_COMPILER_LAUNCHER=ccache
+  export NDK_CCACHE=ccache
+  # Read by app.config.builder.js to turn on expo-build-properties'
+  # ios.ccacheEnabled at prebuild.
+  export USE_CCACHE=1
+}

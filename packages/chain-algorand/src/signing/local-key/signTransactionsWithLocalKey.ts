@@ -13,13 +13,16 @@
 import { SignedTransaction } from 'algosdk'
 import {
     Address,
+    asAlgosdkTransaction,
     assemblePQSignedTransaction,
     encodeAlgorandAddress,
     pqSigningDigest,
-    type PeraSignedTransaction,
-    type PeraTransaction,
-    type PeraTransactionGroup,
 } from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+    PeraTransactionGroup,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isAlgo25Account,
     isHDWalletAccount,
@@ -49,7 +52,7 @@ export const assembleSignedTransaction = (
     signature?: { sig: Uint8Array; signerAddress: string },
 ): PeraSignedTransaction =>
     new SignedTransaction({
-        txn,
+        txn: asAlgosdkTransaction(txn),
         sig: signature?.sig,
         sgnr:
             signature &&

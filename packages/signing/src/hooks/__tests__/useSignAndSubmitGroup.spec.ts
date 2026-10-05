@@ -20,7 +20,7 @@ import {
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '../../models'
 import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
 

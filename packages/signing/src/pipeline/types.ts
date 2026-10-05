@@ -16,7 +16,7 @@ import type {
     PeraTransaction,
     PeraSignedTransaction,
     PeraTransactionType,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { PeraArbitraryDataMessage } from '../models'
 
 export interface TransactionSignableData {

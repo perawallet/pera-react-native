@@ -1,23 +1,14 @@
 import os from 'node:os'
 
-const cpuCount = Math.max(1, os.cpus().length)
+const cpuCount = Math.max(1, os.availableParallelism?.() ?? os.cpus().length)
 
-const envOverride = Number(process.env.VITEST_MAX_THREADS)
-
-// `turbo run test` spawns ~30 sibling vitest processes. If each used the
-// full cpu_count we'd over-subscribe. Default to half the CPUs (min 2);
-// override with VITEST_MAX_THREADS=N when running a single workspace.
-export const maxThreads =
-    Number.isFinite(envOverride) && envOverride > 0
-        ? envOverride
-        : Math.max(2, Math.floor(cpuCount / 2))
+// `turbo run test` spawns ~30 sibling vitest processes. If each used vitest's
+// default of cpu_count - 1 workers we'd over-subscribe the machine, so default
+// to half the CPUs (min 2). Spread this inside `test`: vitest ignores it at
+// the top level of the config. Vitest itself reads VITEST_MAX_WORKERS=N over
+// this, for a CI runner or a single workspace that wants a different cap.
+export const maxWorkers = Math.max(2, Math.floor(cpuCount / 2))
 
 export const poolConfig = {
-    pool: 'threads',
-    poolOptions: {
-        threads: {
-            maxThreads,
-            minThreads: 1,
-        },
-    },
+    maxWorkers,
 }

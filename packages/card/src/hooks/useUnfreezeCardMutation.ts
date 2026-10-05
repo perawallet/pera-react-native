@@ -11,7 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { unfreezeCard } from '../api/card'
 import { CardStatus, type Card } from '../models/card'
 import { cardMutationKeys, cardQueryKeys } from './querykeys'

@@ -16,9 +16,6 @@ import type { TransactionHistoryItem } from '@perawallet/wallet-core-transaction
 
 // Faithful reimplementation of toBigInt — the real module pulls in
 // react-native-mmkv, which cannot load in the node test environment.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    toBigInt: (d: Decimal) => BigInt(d.toFixed(0)),
-}))
 
 import { mapHistoryItemToDisplayableTransaction } from '../mapHistoryItemToDisplayableTransaction'
 

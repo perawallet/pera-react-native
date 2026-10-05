@@ -138,11 +138,6 @@ vi.mock('../../../hooks', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    // The accounts barrel subscribes to the network store at load.
-    useNetworkStore: {
-        getState: () => ({ network: 'mainnet' }),
-        subscribe: () => () => {},
-    },
     useAlgorandClient: () => ({
         client: {
             algod: {
@@ -150,6 +145,17 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             },
         },
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    // The accounts barrel subscribes to the network store at load.
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+        subscribe: () => () => {},
+    },
 }))
 
 vi.mock('@react-navigation/native', () => ({

@@ -44,7 +44,7 @@ describe('hooks/useNetwork', () => {
         vi.resetModules()
     })
 
-    test('a persisted v1 selection reaches useNetwork through the re-export', async () => {
+    test('a persisted v1 selection reaches useNetwork', async () => {
         const { getProvider } =
             await import('@perawallet/wallet-extension-provider')
         getProvider().keyValueStorage.setItem(
@@ -91,7 +91,7 @@ describe('hooks/useNetwork', () => {
     )
 
     test('should return current network and setter', async () => {
-        const { useNetworkStore } = await import('../../store')
+        const { useNetworkStore } = await import('../../store/network-store')
         const { useNetwork } = await import('../useNetwork')
 
         useNetworkStore.getState().resetState()
@@ -103,7 +103,7 @@ describe('hooks/useNetwork', () => {
     })
 
     test('should update network', async () => {
-        const { useNetworkStore } = await import('../../store')
+        const { useNetworkStore } = await import('../../store/network-store')
         const { useNetwork } = await import('../useNetwork')
 
         useNetworkStore.getState().resetState()
@@ -118,7 +118,7 @@ describe('hooks/useNetwork', () => {
     })
 
     test('recomputes networkConfig when the saved custom node changes', async () => {
-        const { useNetworkStore } = await import('../../store')
+        const { useNetworkStore } = await import('../../store/network-store')
         const { useNetwork } = await import('../useNetwork')
         const { getNetworkConfig } =
             await import('@perawallet/wallet-core-config')

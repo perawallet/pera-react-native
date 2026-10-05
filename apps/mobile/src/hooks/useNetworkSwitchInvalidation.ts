@@ -16,7 +16,7 @@ import {
     getSyncService,
     releaseNetworkScopedQueries,
 } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 /**
  * Single owner of the on-network-switch query invalidation. The imperative

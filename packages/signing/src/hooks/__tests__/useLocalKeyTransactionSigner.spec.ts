@@ -13,7 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const mockSignTransactionsWithKey = vi.fn()
 const mockGetPQSigningInfo = vi.fn()
@@ -34,6 +34,12 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
     useTransactionEncoder: () => ({
         encodeTransaction: encodeTransactionMock,
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => networkMock(),
 }))
 

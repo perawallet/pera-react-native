@@ -35,10 +35,8 @@ import {
     usePollingStore,
 } from '@perawallet/wallet-core-background'
 import { canSignWith, useAccountsStore } from '@perawallet/wallet-core-accounts'
-import {
-    getCustomNetworkConfig,
-    useNetworkStore,
-} from '@perawallet/wallet-core-blockchain'
+import { getCustomNetworkConfig } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 import {
     bootConnections,

@@ -15,7 +15,7 @@ import {
     LEGACY_CHAIN_ID,
     legacyNetworkOf,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     decodeFromBase64,

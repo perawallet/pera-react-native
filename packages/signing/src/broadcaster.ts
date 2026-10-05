@@ -13,8 +13,9 @@
 import {
     createChainAdapterRegistry,
     type ChainId,
+    type PeraSignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { SignRequest } from './models'
 import type { DataTransport } from './pipeline/types'

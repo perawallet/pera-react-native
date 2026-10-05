@@ -318,7 +318,7 @@ jobs:
         shard:
           - name: packages-background
             command: pnpm exec turbo run test --filter=@perawallet/wallet-core-background
-            vitestThreads: 2
+            vitestWorkers: 2
             turboConcurrency: 1
           - name: packages-rest
             command: >-
@@ -327,7 +327,7 @@ jobs:
               --filter='!@perawallet/wallet-core-signing'
               --filter='!@perawallet/wallet-core-card'
               --filter='!@perawallet/wallet-core-accounts'
-            vitestThreads: 2
+            vitestWorkers: 2
             turboConcurrency: 4
           - name: packages-heavy
             command: >-
@@ -335,19 +335,19 @@ jobs:
               --filter=@perawallet/wallet-core-signing
               --filter=@perawallet/wallet-core-card
               --filter=@perawallet/wallet-core-accounts
-            vitestThreads: 2
+            vitestWorkers: 2
             turboConcurrency: 3
           - name: mobile-unit
             command: pnpm --filter mobile test:unit
-            vitestThreads: 4
+            vitestWorkers: 4
             turboConcurrency: 1
           - name: mobile-integration
             command: pnpm --filter mobile test:integration
-            vitestThreads: 4
+            vitestWorkers: 4
             turboConcurrency: 1
           - name: lanekeep
             command: pnpm run test:lanekeep
-            vitestThreads: 2
+            vitestWorkers: 2
             turboConcurrency: 1
     steps:
       - name: Checkout
@@ -396,13 +396,13 @@ jobs:
       - name: Test
         env:
           # GitHub-hosted ubuntu-24.04 runners have 4 cores, so each shard
-          # budgets threads against that. The `packages` shard fans out through
+          # budgets workers against that. The `packages` shard fans out through
           # turbo — without caps each of its ~30 sibling vitest processes would
-          # grab cpu_count threads and over-subscribe wildly. 2 threads × 4
-          # turbo tasks = 8 active threads, which fits 4 cores with headroom.
+          # start cpu_count - 1 workers and over-subscribe wildly. 2 workers × 4
+          # turbo tasks = 8 active workers, which fits 4 cores with headroom.
           # The mobile shards run a single vitest process, so that process
           # gets the whole runner.
-          VITEST_MAX_THREADS: ${{ matrix.shard.vitestThreads }}
+          VITEST_MAX_WORKERS: ${{ matrix.shard.vitestWorkers }}
           TURBO_CONCURRENCY: ${{ matrix.shard.turboConcurrency }}
         # Coverage is deliberately absent: nothing consumed the report on the PR
         # path (no thresholds, no upload), so instrumenting the whole monorepo

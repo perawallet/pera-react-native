@@ -15,7 +15,7 @@ import {
     type FetchStatus,
     type RefetchOptions,
 } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 import { getRampPairs } from '../api'
 import { rampAdapterFor } from '../chain-adapter'

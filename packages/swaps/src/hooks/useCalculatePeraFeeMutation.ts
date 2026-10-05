@@ -13,7 +13,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { calculatePeraFee } from '../api'
 import type { CalculatePeraFeeRequest } from '../api'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 export const useCalculatePeraFeeMutation = () => {
     const { network } = useNetwork()

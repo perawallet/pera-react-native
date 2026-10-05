@@ -17,6 +17,7 @@ import {
     type DeviceAccountType,
 } from '@perawallet/wallet-core-device'
 import type { ACCOUNT_TYPE_RANK, AccountType, WalletAccount } from './models'
+import { accountType } from './utils'
 
 /**
  * The wallet's internal `AccountType` and the device API's `account_type`
@@ -84,7 +85,7 @@ export const buildDeviceAccountRegistrations = (
     const disabled = new Set(disabledAddresses)
     return accounts.map(account => ({
         address: account.address,
-        accountType: toDeviceAccountType(account.type),
+        accountType: toDeviceAccountType(accountType(account)),
         receiveNotifications: !disabled.has(account.address),
     }))
 }

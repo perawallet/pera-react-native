@@ -18,7 +18,7 @@ import React from 'react'
 import { useSwapHistoryInfiniteQuery } from '../useSwapHistoryInfiniteQuery'
 import { fetchSwapHistory } from '../../api'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

@@ -20,7 +20,10 @@ import {
     getAssetConfigType,
 } from '../transactions'
 import { TransactionType, encodeAddress } from 'algosdk'
-import type { PeraTransaction, PeraDisplayableTransaction } from '../../models'
+import type {
+    PeraTransaction,
+    PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 
 // Helper to create mock Address
 const mockAddress = (byteVal = 1) => ({

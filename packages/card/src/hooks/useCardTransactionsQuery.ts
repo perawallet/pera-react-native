@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { fetchCardTransactions } from '../api/transactions'
 import type { CardTransactionFilters } from '../models'
 import { cardQueryKeys } from './querykeys'

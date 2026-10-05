@@ -13,8 +13,8 @@
 import {
     encodeSignedTransactions,
     createWalletAlgorandClient,
-    useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { BroadcasterChainAdapter } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { createAlgodTransport } from './transports/createAlgodTransport'

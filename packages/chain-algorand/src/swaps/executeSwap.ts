@@ -13,11 +13,13 @@
 import { Decimal } from 'decimal.js'
 import {
     mapToDisplayableTransaction,
-    type PeraDisplayableTransaction,
-    type PeraSignedTransaction,
-    type PeraTransaction,
     type getAlgorandClient,
 } from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraDisplayableTransaction,
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isAssetFrozen,
     isMultisigAccount,
@@ -104,7 +106,6 @@ export const executeAlgorandSwap = async (
     }: ExecuteSwapParams,
     {
         scope,
-        network,
         algorandClient,
         assetMbr,
         deviceId,
@@ -230,7 +231,7 @@ export const executeAlgorandSwap = async (
         let blocked: boolean
         try {
             const openAttempts = await getOpenSubmissionAttempts({
-                network,
+                scope,
                 sender: swapSender,
                 flows: ['swap', 'cosign'],
                 unevaluatableBefore,

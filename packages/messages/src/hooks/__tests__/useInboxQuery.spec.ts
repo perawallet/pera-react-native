@@ -14,12 +14,27 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useInboxQuery } from '../useInboxQuery'
 import { fetchInbox } from '../../api/inbox'
 import type { InboxResponse } from '../../api/inbox'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(
+            vi.mocked(useNetwork).mock.results.at(-1)?.value?.network ??
+                'mainnet',
+        ),
+    ),
+    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
+}))
 
 vi.mock('../../api/inbox', () => ({
     fetchInbox: vi.fn(),
@@ -33,10 +48,6 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
         useDeviceID: vi.fn().mockReturnValue('test-device-id'),
     }
 })
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
-}))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSigningAccounts: vi.fn().mockReturnValue([
@@ -459,6 +470,10 @@ describe('useInboxQuery', () => {
                 })
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(useChainCapability).toHaveBeenCalledWith(
+                    'algorand',
+                    'notifications',
+                )
                 expect(fetchInbox).not.toHaveBeenCalled()
             },
         )

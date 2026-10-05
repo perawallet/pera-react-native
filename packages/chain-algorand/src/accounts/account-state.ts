@@ -17,15 +17,13 @@ import type {
     AccountStateReadHint,
     AccountStateSnapshot,
 } from '@perawallet/wallet-core-accounts'
-import {
-    getAlgorandClient,
-    microAlgosToAlgos,
-} from '@perawallet/wallet-core-blockchain'
+import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
     ALGO_ASSET_ID,
     type Network,
     type Nullable,
     type Optional,
+    microAlgosToAlgos,
 } from '@perawallet/wallet-core-shared'
 import { HOLDINGS_PAGE_LIMIT } from './constants'
 

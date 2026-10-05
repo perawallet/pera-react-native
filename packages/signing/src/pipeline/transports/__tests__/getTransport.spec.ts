@@ -26,11 +26,14 @@ import type { DataTransport } from '../../types'
 import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1])),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {
         getState: () => ({ network: 'testnet' }),
         subscribe: () => () => {},
     },
-    encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1])),
 }))
 
 const algo25Account: WalletAccount = {

@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { PeraSignedTransaction, PeraTransaction } from '../models'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 
 import {
     encodeTransaction,

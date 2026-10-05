@@ -39,15 +39,12 @@ const mintedOf = (address: string, seedKeyId = 'SEED1'): MintedAccount => ({
     isNewSeed: true,
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >('@perawallet/wallet-core-blockchain')
-    return {
-        ...actual,
-        useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-    }
-})
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+}))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<

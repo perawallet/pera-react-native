@@ -176,7 +176,8 @@ tests only override the value they're asserting on. Path globs match both algono
 
 `apps/mobile/vitest.integration-setup.ts` then `vi.unmock`s
 `@perawallet/wallet-extension-provider`, `@perawallet/wallet-core-kms`,
-`@perawallet/wallet-core-accounts` and `@perawallet/wallet-core-blockchain` on top of the unit setup,
+`@perawallet/wallet-core-accounts`, `@perawallet/wallet-core-blockchain` and
+`@perawallet/wallet-core-chain-shared` on top of the unit setup,
 so account creation, key management, provider-singleton code and algokit clients all run end-to-end
 against the in-memory implementations and MSW.
 

@@ -80,11 +80,13 @@ const fakeSendFlowAdapter: SendFlowChainAdapter = {
 }
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    displayUnitsToBaseUnits: (val: Decimal, _decimals: number) => val,
-    useNetwork: () => ({ network: 'mainnet' }),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
     useFetchSuggestedMinFee: () => async () =>
         BigInt((await mockGetSuggestedParams()).minFee),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({
@@ -159,7 +161,7 @@ describe('useTransactionSendFlow', () => {
             sender: 'A',
             receiver: 'B',
             assetId: '0',
-            amount: 1n,
+            amount: 1_000_000n,
             note: undefined,
             isCloseAccount: undefined,
             fee: undefined,

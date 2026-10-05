@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { chainModule as algorandChainModule } from '@perawallet/wallet-core-chain-algorand'
 import {
     buildChainSetup,
@@ -25,6 +24,7 @@ import {
 import {
     selectChainMode,
     selectChainNetworkId,
+    useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { kmsCore } from '@perawallet/wallet-core-kms'

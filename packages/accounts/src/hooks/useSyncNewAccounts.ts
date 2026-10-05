@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useAccountsStore } from '../store'
 import { syncAndEnrichNewAccount } from '../sync/account-syncer'

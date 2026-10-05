@@ -21,7 +21,7 @@ import { USD_CURRENCY_ID } from '../constants'
 import { usePreferredCurrencyPriceQuery } from './usePreferredCurrencyPriceQuery'
 import { useAlgoUsdPriceQuery } from './useAlgoUsdPriceQuery'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { Decimal } from 'decimal.js'
 
 export type UseCurrencyResult = {

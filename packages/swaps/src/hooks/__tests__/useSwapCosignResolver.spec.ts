@@ -45,7 +45,7 @@ const mocks = vi.hoisted(() => ({
     handoffs: {} as Record<string, SwapHandoffRecord>,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: mocks.useNetwork,
 }))
 vi.mock('@perawallet/wallet-core-device', () => ({

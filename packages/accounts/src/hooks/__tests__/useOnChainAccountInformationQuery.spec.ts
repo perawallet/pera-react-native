@@ -15,14 +15,17 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
+import type { AccountInformation } from '@perawallet/wallet-core-chain-contract'
 import { useOnChainAccountInformationQuery } from '../useOnChainAccountInformationQuery'
 import {
     fakeAccountsChain,
     MAINNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

@@ -24,16 +24,12 @@ const mocks = vi.hoisted(() => ({
     deriveAddress: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('../useUpdateAccount', () => ({
     useUpdateAccount: () => mocks.updateAccount,
-}))
-
-vi.mock('../../utils', () => ({
-    isMultisigAccount: (account: WalletAccount) => account.type === 'multisig',
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({

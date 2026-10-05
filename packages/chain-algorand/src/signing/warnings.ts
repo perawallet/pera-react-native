@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 

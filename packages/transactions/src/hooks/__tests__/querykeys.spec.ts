@@ -14,11 +14,11 @@ import { describe, test, expect, vi } from 'vitest'
 
 // This package's vitest.setup.ts mocks @perawallet/wallet-extension-platform-driver
 // but not @perawallet/wallet-extension-provider, so importing the real (unmocked)
-// blockchain module below — needed to test against the real
+// chain-shared module below — needed to test against the real
 // NETWORK_PARTITIONED_QUERY_MODULES rather than a fabricated one — would otherwise
 // reach getProvider()'s real implementation and fail resolving react-native-mmkv
 // (a native module vitest can't load). Scoped to this file rather than the shared
-// setup: nothing else in this package's suite imports raw blockchain code.
+// setup: nothing else in this package's suite imports raw chain-shared code.
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: {
@@ -30,7 +30,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 import { QueryClient } from '@tanstack/react-query'
-import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-blockchain'
+import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
 import {
     MODULE_PREFIX,
     transactionQueryKeys,
@@ -229,14 +229,14 @@ describe('invalidateTransactionQueriesForAddresses', () => {
     })
 })
 
-describe('NETWORK_PARTITIONED_QUERY_MODULES (blockchain)', () => {
+describe('NETWORK_PARTITIONED_QUERY_MODULES (chain-shared)', () => {
     test('includes this package MODULE_PREFIX, so clearCustomNetworkCache sweeps its custom-network entries', () => {
-        // blockchain/clearCustomNetworkCache.ts duplicates this package's
+        // chain-shared/clearCustomNetworkCache.ts duplicates this package's
         // MODULE_PREFIX rather than importing it (importing back would cycle
-        // — transactions depends on blockchain). This test is the drift
+        // — transactions depends on chain-shared). This test is the drift
         // guard: if MODULE_PREFIX is ever renamed here, this fails in this
         // package, where the rename is happening, instead of silently going
-        // stale on the blockchain side.
+        // stale on the chain-shared side.
         expect(NETWORK_PARTITIONED_QUERY_MODULES.has(MODULE_PREFIX)).toBe(true)
     })
 })

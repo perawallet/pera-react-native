@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { percentChange } from '../index'
+import { percentChange } from '../percent-change'
 
 describe('percentChange', () => {
     it('returns a positive signed change when last is greater than first', () => {

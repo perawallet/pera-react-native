@@ -48,7 +48,7 @@ import {
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
 import {
