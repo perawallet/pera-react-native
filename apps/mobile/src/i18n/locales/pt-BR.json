@@ -3065,7 +3065,7 @@
             "siwa_not_before": "Não antes de",
             "siwa_resources": "Recursos",
             "siwa_invalid": "Esta solicitação de autenticação está malformada e não pode ser assinada.",
-            "origin_mismatch": "Este site está pedindo que você entre em outro domínio ({{domain}}). Continue somente se você confia nele.",
+            "origin_mismatch": "Este site está pedindo que você entre em outro domínio ({{domain}}). A Pera bloqueou esta solicitação para proteger sua conta.",
             "show_details": "Mostrar detalhes",
             "details_title": "Detalhes da solicitação de autenticação",
             "details_description": "Revise todos os metadados desta solicitação de autenticação antes de aprovar."
