@@ -3048,7 +3048,7 @@
             "siwa_not_before": "Pas avant le",
             "siwa_resources": "Ressources",
             "siwa_invalid": "Cette demande d’authentification est mal formée et ne peut pas être signée.",
-            "origin_mismatch": "Ce site vous demande de vous connecter à un autre domaine ({{domain}}). Ne continuez que si vous lui faites confiance.",
+            "origin_mismatch": "Ce site vous demande de vous connecter à un autre domaine ({{domain}}). Pera a bloqué cette demande pour protéger votre compte.",
             "show_details": "Afficher les détails",
             "details_title": "Détails de la demande d’authentification",
             "details_description": "Examinez toutes les métadonnées de cette demande d’authentification avant de l’approuver."

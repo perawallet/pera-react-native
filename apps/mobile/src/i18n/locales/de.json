@@ -3040,7 +3040,7 @@
             "siwa_not_before": "Nicht vor",
             "siwa_resources": "Ressourcen",
             "siwa_invalid": "Diese Authentifizierungsanfrage ist fehlerhaft und kann nicht signiert werden.",
-            "origin_mismatch": "Diese Website bittet dich, dich bei einer anderen Domain ({{domain}}) anzumelden. Fahre nur fort, wenn du ihr vertraust.",
+            "origin_mismatch": "Diese Website bittet dich, dich bei einer anderen Domain ({{domain}}) anzumelden. Pera hat diese Anfrage zum Schutz deines Kontos blockiert.",
             "show_details": "Details anzeigen",
             "details_title": "Details der Authentifizierungsanfrage",
             "details_description": "Überprüfe die vollständigen Metadaten dieser Authentifizierungsanfrage, bevor du sie genehmigst."

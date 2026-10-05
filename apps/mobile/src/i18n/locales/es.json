@@ -3048,7 +3048,7 @@
             "siwa_not_before": "No válida antes de",
             "siwa_resources": "Recursos",
             "siwa_invalid": "Esta solicitud de autenticación tiene un formato incorrecto y no se puede firmar.",
-            "origin_mismatch": "Este sitio te está pidiendo iniciar sesión en un dominio diferente ({{domain}}). Continúa solo si confías en él.",
+            "origin_mismatch": "Este sitio te está pidiendo iniciar sesión en un dominio diferente ({{domain}}). Pera bloqueó esta solicitud para proteger tu cuenta.",
             "show_details": "Ver detalles",
             "details_title": "Detalles de la solicitud de autenticación",
             "details_description": "Revisa todos los metadatos de esta solicitud de autenticación antes de aprobarla."
