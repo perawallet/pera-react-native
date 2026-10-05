@@ -30,7 +30,6 @@ export const routeCapabilities: RouteCapabilities = {
     // sheet itself stays reachable from in-field scan buttons and the ScanQR
     // expanded tab; this flag only gates those two icon bars.
     qrScanner: false,
-    recoverAccountQr: false,
     deepLinkPaste: true, // paste a WC URI / perawallet:// link instead
     ledgerUsb: true, // WebHID
     pushNotificationSettings: true, // FCM web push via the background SW

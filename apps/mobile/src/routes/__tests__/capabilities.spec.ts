@@ -83,7 +83,6 @@ describe('route capabilities', () => {
             // web (Pera Connect covers the pairing path scanning existed for).
             qrScanner: false,
             deepLinkPaste: true,
-            recoverAccountQr: false,
             // Rekey + Multisig stacks are now registered in WebMainRoutes, so
             // the account-options rows and the SHARED_ACCOUNT_IMPORT deeplink
             // reach real screens instead of no-oping on an unregistered route.
