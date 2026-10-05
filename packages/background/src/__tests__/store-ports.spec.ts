@@ -14,7 +14,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { createSyncStorePorts } from '../service/store-ports'
 
 const mocks = vi.hoisted(() => ({
-    setLastRefreshedRound: vi.fn(),
+    setRefreshRound: vi.fn(),
+    markSynced: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -30,10 +31,17 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 vi.mock('../polling', () => ({
-    usePollingStore: {
+    useSyncCursorStore: {
         getState: () => ({
-            lastRefreshedRound: { 'algorand/mainnet': 42 },
-            setLastRefreshedRound: mocks.setLastRefreshedRound,
+            cursors: {
+                'algorand/mainnet': {
+                    refreshRound: 42,
+                    lastAssetSyncAt: 1000,
+                    lastPriceSyncAt: 2000,
+                },
+            },
+            setRefreshRound: mocks.setRefreshRound,
+            markSynced: mocks.markSynced,
         }),
     },
 }))
@@ -53,9 +61,24 @@ describe('createSyncStorePorts', () => {
         expect(ports.getLastRefreshedRound('testnet')).toBeNull()
     })
 
-    it('writes the checkpoint through the polling store', () => {
+    it('writes the checkpoint through the sync cursor store', () => {
         createSyncStorePorts().setLastRefreshedRound('mainnet', 99)
 
-        expect(mocks.setLastRefreshedRound).toHaveBeenCalledWith('mainnet', 99)
+        expect(mocks.setRefreshRound).toHaveBeenCalledWith('mainnet', 99)
+    })
+
+    it('reads each asset sync timestamp from its own cursor field, null when absent', () => {
+        const ports = createSyncStorePorts()
+
+        expect(ports.getLastSyncAt('mainnet', 'assets')).toBe(1000)
+        expect(ports.getLastSyncAt('mainnet', 'prices')).toBe(2000)
+        expect(ports.getLastSyncAt('testnet', 'assets')).toBeNull()
+        expect(ports.getLastSyncAt('testnet', 'prices')).toBeNull()
+    })
+
+    it('writes an asset sync timestamp through the sync cursor store', () => {
+        createSyncStorePorts().setLastSyncAt('testnet', 'prices', 3000)
+
+        expect(mocks.markSynced).toHaveBeenCalledWith('testnet', 'prices', 3000)
     })
 })

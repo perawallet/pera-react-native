@@ -32,7 +32,7 @@ import {
     createSyncStorePorts,
     getSyncService,
     initializeSyncService,
-    usePollingStore,
+    useSyncCursorStore,
 } from '@perawallet/wallet-core-background'
 import { canSignWith, useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { getCustomNetworkConfig } from '@perawallet/wallet-core-blockchain'
@@ -66,7 +66,7 @@ const REHYDRATE_BY_KEY: Record<
 > = {
     'kv:accounts-store': useAccountsStore,
     'kv:network-store': useNetworkStore,
-    'kv:polling-store': usePollingStore,
+    'kv:polling-store': useSyncCursorStore,
 }
 
 export type OffscreenAppDeps = {
