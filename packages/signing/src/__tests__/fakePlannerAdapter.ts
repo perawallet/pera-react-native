@@ -21,9 +21,12 @@ import { bytesEqual, bytesToHex } from '@perawallet/wallet-core-shared'
 
 import {
     plannerChainAdapters,
+    type FetchSuggestedMinFee,
     type PlannerChainAdapter,
 } from '../chain-adapter'
 import { InvalidSignableDataError } from '../pipeline/errors'
+
+const fetchZeroMinFee: FetchSuggestedMinFee = async () => 0n
 
 const notStubbed = (member: string) => () => {
     throw new Error(`fake planner: ${member} is not stubbed`)
@@ -59,6 +62,17 @@ export const fakePlannerAdapter = (
     resolveDappRequest: vi.fn(notStubbed('resolveDappRequest')),
     enqueueDappRequest: vi.fn(notStubbed('enqueueDappRequest')),
     minFeeForSender: vi.fn(() => 0n),
+    useFeeConfig: vi.fn(() => ({
+        minTxnFee: 0n,
+        pqMultiplier: 1n,
+        assetOptInMinBalance: 0n,
+    })),
+    useSuggestedMinFeeQuery: vi.fn(() => ({
+        suggestedMinFee: undefined,
+        isPending: true,
+        isError: false,
+    })),
+    useFetchSuggestedMinFee: vi.fn(() => fetchZeroMinFee),
     assignGroupFees: vi.fn(async ({ transactions }) => ({
         transactions,
         adjustments: [],

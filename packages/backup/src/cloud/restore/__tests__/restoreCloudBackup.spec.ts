@@ -109,7 +109,6 @@ import { useCloudBackupPasskeyImport } from '../../hooks/useCloudBackupPasskeyIm
 import { useResolveSeedEntropyForBackup } from '../../hooks/useResolveSeedEntropyForBackup'
 import { backupChainAdapters } from '../../../chain-adapter'
 import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const ACCOUNT_KEY = accountItemKey(hashAddress('A'))
@@ -589,8 +588,8 @@ describe('restoreCloudBackup: passkey acceptance', () => {
     // authenticates on device B after restore" actually holds.
     const subtle = webcrypto.subtle as unknown as SubtleCrypto
     const ENTROPY = new Uint8Array(32).fill(9)
-    const SEED_PUBKEY = new Uint8Array(32).fill(5)
-    const SEED_ADDRESS = encodeAlgorandAddress(SEED_PUBKEY)
+    const SEED_ADDRESS =
+        'AUCQKBIFAUCQKBIFAUCQKBIFAUCQKBIFAUCQKBIFAUCQKBIFAUC7CN5SGQ'
 
     const derivePasskey = async () =>
         derivePasskeyCredential({

@@ -1732,9 +1732,6 @@ importers:
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
@@ -2037,9 +2034,6 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../accounts
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
@@ -2079,6 +2073,9 @@ importers:
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider
+      '@scure/base':
+        specifier: 'catalog:'
+        version: 2.4.0
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
@@ -2101,9 +2098,6 @@ importers:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
-      '@scure/base':
-        specifier: 'catalog:'
-        version: 2.4.0
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -3280,9 +3274,6 @@ importers:
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
@@ -3347,6 +3338,9 @@ importers:
       '@perawallet/wallet-extension-connections':
         specifier: workspace:*
         version: link:../../extensions/connections
+      '@scure/base':
+        specifier: 'catalog:'
+        version: 2.4.0
       '@scure/bip39':
         specifier: 'catalog:'
         version: 2.2.0
@@ -4076,9 +4070,6 @@ importers:
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
@@ -4152,9 +4143,6 @@ importers:
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract

@@ -41,11 +41,14 @@ const mockIsAssetFrozen = vi.fn()
 const mockFetchAndPersistAssets = vi.fn()
 const mockInvalidateBalances = vi.fn()
 const mockUseAllAccounts = vi.fn()
-const mockUseMinimumFeeConfig = vi.fn()
+const mockUseFeeConfig = vi.fn()
 const mockResolveMinFeeForSender = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
+    useFeeConfig: () => mockUseFeeConfig(),
+    useFetchSuggestedMinFee: () => async () =>
+        BigInt((await mockGetSuggestedParams()).minFee),
     resolveMinFeeForSender: (...args: unknown[]) =>
         mockResolveMinFeeForSender(...args),
 }))
@@ -78,12 +81,6 @@ const fakeSendFlowAdapter: SendFlowChainAdapter = {
         buildRejectTxs: mockBuildRejectAsset,
     },
 }
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
-    useFetchSuggestedMinFee: () => async () =>
-        BigInt((await mockGetSuggestedParams()).minFee),
-}))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
@@ -132,10 +129,10 @@ describe('useTransactionSendFlow', () => {
         mockAddToAssetHolding.mockResolvedValue(undefined)
         mockFetchAndPersistAssets.mockResolvedValue(undefined)
         mockUseAllAccounts.mockReturnValue([])
-        mockUseMinimumFeeConfig.mockReturnValue({
+        mockUseFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
-            assetMbr: 100000n,
+            assetOptInMinBalance: 100000n,
         })
         // Default: no PQ signer — resolver returns the base fee, which must
         // never be passed on as a fee override (regression-safe default).
@@ -409,10 +406,10 @@ describe('useTransactionSendFlow', () => {
                 amount: 0n,
                 minBalance: 100000n,
             })
-            mockUseMinimumFeeConfig.mockReturnValue({
+            mockUseFeeConfig.mockReturnValue({
                 minTxnFee: 1000n,
                 pqMultiplier: 3n,
-                assetMbr: 200000n,
+                assetOptInMinBalance: 200000n,
             })
             const { result } = renderHook(() => useTransactionSendFlow())
             await act(async () => {

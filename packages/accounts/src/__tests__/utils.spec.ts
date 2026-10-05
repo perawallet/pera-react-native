@@ -58,10 +58,6 @@ vi.mock('tweetnacl', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    encodeAlgorandAddress: vi.fn(() => 'TEST_ADDRESS'),
-}))
-
 describe('services/accounts/utils - canSignViaParticipants', () => {
     const signable = {
         address: 'P1',

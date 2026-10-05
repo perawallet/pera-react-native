@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Address } from 'algosdk'
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { fetchAlgorandAccountState } from './account-state'
@@ -37,6 +38,7 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     hdDerivationType: ALGORAND_HD_DERIVATION_TYPE,
     fetchAccountState: (address, scope, hint) =>
         fetchAlgorandAccountState(address, algorandNetworkOf(scope), hint),
+    toAccountInformationAddress: address => Address.fromString(address),
     fetchAccountInformation: (address, scope) =>
         fetchAccountInformation(address, algorandNetworkOf(scope)),
     fetchAssetOptInRounds: (address, scope) =>

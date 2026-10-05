@@ -37,9 +37,12 @@ export {
     type CreateMultisigStrategyOptions,
     type DappResolveContext,
     type DappResolveResult,
+    type ChainFeeConfig,
     type DappSignRequest,
     type DraftProposeContext,
     type EnqueueDappRequestDeps,
+    type FetchSuggestedMinFee,
+    type FetchSuggestedMinFeeOptions,
     type GetDeviceIdFn,
     type GetMsigMetadataFn,
     type GroupFeeReview,
@@ -65,6 +68,7 @@ export {
     type ResolveMinFeeForSenderParams,
     type ResolverMessages,
     type TerminalHandoffOutcome,
+    type UseSuggestedMinFeeQueryResult,
 } from './chain-adapter'
 
 export {
@@ -107,6 +111,11 @@ export { useHandoffResolver } from './hooks/useHandoffResolver'
 export { useImpactTransactions } from './hooks/useImpactTransactions'
 export { useLastSigningEvent } from './hooks/useLastSigningEvent'
 export { useLocalKeyTransactionSigner } from './hooks/useLocalKeyTransactionSigner'
+export {
+    useFeeConfig,
+    useFetchSuggestedMinFee,
+    useSuggestedMinFeeQuery,
+} from './hooks/chainFees'
 export { useMinFeeForSender } from './hooks/useMinFeeForSender'
 export { useMinimumFeeCalculator } from './hooks/useMinimumFeeCalculator'
 export {

@@ -11,8 +11,10 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     isMultisigAccount,
@@ -20,7 +22,10 @@ import {
     useSignerFor,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import {
+    useFeeConfig,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import { swapAdapterFor, SwapCosignUnsupportedError } from '../chain-adapter'
 import type { ExecuteSwapParams, ExecuteSwapResult } from '../execution'
 import { useSwapHandoffStore } from '../store'
@@ -34,7 +39,7 @@ export const useExecuteSwapMutation = () => {
     const { network } = useNetwork()
     const account = useSelectedAccount()
     const signer = useSignerFor(account?.address)
-    const { assetMbr } = useMinimumFeeConfig()
+    const { assetOptInMinBalance } = useFeeConfig(LEGACY_CHAIN_ID)
     const deviceId = useDeviceID(network)
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const { mutateAsync: prepareTransactions } =
@@ -56,7 +61,7 @@ export const useExecuteSwapMutation = () => {
                 { ...variables, account, signer },
                 {
                     scope,
-                    assetOptInMinBalance: assetMbr,
+                    assetOptInMinBalance,
                     deviceId,
                     addSignRequest,
                     prepareTransactions,

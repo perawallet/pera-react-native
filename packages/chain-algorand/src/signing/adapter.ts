@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { resolveArc0001SignTxnRequest } from '@perawallet/wallet-core-blockchain'
+import {
+    resolveArc0001SignTxnRequest,
+    useFetchSuggestedMinFee,
+} from '@perawallet/wallet-core-blockchain'
 import type {
     LocalKeySignerChainAdapter,
     MessageSignerChainAdapter,
@@ -27,6 +30,10 @@ import {
 } from './classification'
 import { createStandardAnalyzer } from './createStandardAnalyzer'
 import { enqueueArc0001SignRequest } from './enqueueArc0001SignRequest'
+import {
+    useAlgorandFeeConfig,
+    useAlgorandSuggestedMinFeeQuery,
+} from './feeHooks'
 import { calculateTotalFee, detectHighGroupFee } from './fees'
 import {
     getRekeyedUnsignableReason,
@@ -81,6 +88,9 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
     resolveDappRequest: resolveArc0001SignTxnRequest,
     enqueueDappRequest: enqueueArc0001SignRequest,
     minFeeForSender: resolveMinFeeForSender,
+    useFeeConfig: useAlgorandFeeConfig,
+    useSuggestedMinFeeQuery: useAlgorandSuggestedMinFeeQuery,
+    useFetchSuggestedMinFee,
     assignGroupFees: assignFeeToGroup,
     reviewGroupFees: (transactions, signableAddresses) => ({
         totalFee: calculateTotalFee(transactions, signableAddresses),
