@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     completeMultisigHandoff,
@@ -22,7 +26,7 @@ import type { SwapStatusUpdateRequest } from '../api'
 import type { SwapHandoffRecord } from '../models'
 
 export type CosignSubmissionAttemptParams = {
-    network: string
+    scope: ChainScope
     txIds: string[]
     flow: 'cosign'
     intentKey: { kind: 'cosign'; signRequestId: string; swapId?: string }
@@ -195,7 +199,7 @@ export const resolveSwapHandoffOutcome = async ({
                     let attemptId: string | null = null
                     if (derived.txIds.length > 0) {
                         attemptId = await deps.recordSubmissionAttempt({
-                            network,
+                            scope: scopeForLegacyNetwork(network),
                             txIds: derived.txIds,
                             flow: 'cosign',
                             intentKey: {

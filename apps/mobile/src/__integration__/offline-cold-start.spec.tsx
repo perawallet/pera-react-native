@@ -144,7 +144,7 @@ const seedPreviouslySyncedAccount = async () => {
     await upsertTransactions({
         items: [CACHED_TX],
         accountAddress: ACCOUNT.address,
-        network: NETWORK,
+        scope: scopeForLegacyNetwork(NETWORK),
     })
 }
 

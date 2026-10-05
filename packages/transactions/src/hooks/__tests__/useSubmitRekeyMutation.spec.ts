@@ -69,6 +69,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
 import { RekeyError } from '../../errors'
 import { sendFlowChainAdapters } from '../../chain-adapter'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const SIGNING_METADATA = {
     name: 'Source account',
@@ -181,7 +182,7 @@ describe('useSubmitRekeyMutation', () => {
             reason: 'submission_pending',
         })
         expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledWith({
-            network: 'testnet',
+            scope: scopeForLegacyNetwork('testnet'),
             sender: 'SRC',
             intentKey: { kind: 'rekey', address: 'SRC' },
             // Bounded like the swap guard: a row with no decodable validity

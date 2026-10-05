@@ -11,11 +11,13 @@
  */
 
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { decimalColumn } from '@perawallet/wallet-core-database'
 
+// Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
 export const TransactionsSchema = sqliteTable('transactions', {
     id: text('id').primaryKey(),
-    network: text('network').notNull(),
+    network: text('network').notNull().$type<ChainScopeKey>(),
     txType: text('tx_type').notNull(),
     sender: text('sender').notNull(),
     assetSender: text('asset_sender'),
@@ -41,7 +43,7 @@ export const AccountTransactionsSchema = sqliteTable(
     {
         accountAddress: text('account_address').notNull(),
         transactionId: text('transaction_id').notNull(),
-        network: text('network').notNull(),
+        network: text('network').notNull().$type<ChainScopeKey>(),
         assetId: decimalColumn('asset_id'),
         roundTime: integer('round_time').notNull(),
     },

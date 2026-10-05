@@ -535,7 +535,7 @@ describe('executeAlgorandSwap', () => {
         // Age-bounded: a row the reconciler can never settle must not block
         // every future swap for this sender.
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             sender: 'SWAPPER',
             flows: ['swap', 'cosign'],
             unevaluatableBefore: expect.any(Number),
@@ -616,7 +616,7 @@ describe('executeAlgorandSwap', () => {
 
         expect(result.kind).toBe('success')
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             sender: 'SWAPPER',
             flows: ['swap', 'cosign'],
             unevaluatableBefore: expect.any(Number),

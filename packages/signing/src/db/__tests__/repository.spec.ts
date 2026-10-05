@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import {
     runMigrations,
     migrations,
@@ -28,6 +28,7 @@ import {
     pruneResolvedSubmissionAttempts,
 } from '..'
 import { SubmissionAttemptsSchema } from '../schema'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 describe('submission ledger repository', () => {
     let db: Database
@@ -58,7 +59,7 @@ describe('submission ledger repository', () => {
     ) =>
         recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: ['TXID-REKEY-1'],
             flow: 'rekey',
             intentKey: { kind: 'rekey', address: 'SENDER_A' },
@@ -120,14 +121,36 @@ describe('submission ledger repository', () => {
 
     it('filters open rows by network', async () => {
         await recordRekey()
-        await recordRekey({ network: 'testnet', txIds: ['TXID-TESTNET'] })
+        await recordRekey({
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: ['TXID-TESTNET'],
+        })
 
         const mainnet = await getOpenSubmissionAttempts({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         expect(mainnet).toHaveLength(1)
         expect(mainnet[0]!.network).toBe('mainnet')
+    })
+
+    it('returns every network when no scope is given', async () => {
+        await recordRekey()
+        await recordRekey({
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: ['TXID-TESTNET'],
+        })
+
+        expect(await getOpenSubmissionAttempts({ db })).toHaveLength(2)
+    })
+
+    it('stores the bare legacy network so existing rows still match', async () => {
+        await recordRekey({ scope: scopeForLegacyNetwork('testnet') })
+
+        const rows = (await db.all(
+            sql.raw('select network from submission_attempts'),
+        )) as Array<[string]>
+        expect(rows.map(([network]) => network)).toEqual(['testnet'])
     })
 
     it('filters open rows by sender', async () => {
@@ -263,7 +286,7 @@ describe('submission ledger repository', () => {
         await recordRekey()
         await recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: ['TXID-GROUP-2'],
             flow: 'generic',
         })

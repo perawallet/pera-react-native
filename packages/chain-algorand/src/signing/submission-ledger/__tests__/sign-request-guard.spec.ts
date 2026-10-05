@@ -30,6 +30,7 @@ import {
     resolveSubmissionAttempt,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const makeTestAddress = (fill: number): Address =>
     new Address(new Uint8Array(32).fill(fill))
@@ -135,7 +136,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         await recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds,
             flow: 'generic',
         })
@@ -152,7 +153,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         const id = await recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds,
             flow: 'generic',
         })
@@ -170,7 +171,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         const id = await recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds,
             flow: 'generic',
         })

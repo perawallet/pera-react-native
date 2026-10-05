@@ -44,7 +44,8 @@ export async function fetchAndPersistNfds(
     // every requested address commits as a fresh negative-cache row for no reason.
     if (!isPeraBackedNetwork(network)) return
 
-    const adapter = nameServiceAdapterFor(scopeForLegacyNetwork(network))
+    const scope = scopeForLegacyNetwork(network)
+    const adapter = nameServiceAdapterFor(scope)
     const dedup = Array.from(
         new Set(addresses.filter(addr => adapter.isValidAddress(addr))),
     )
@@ -52,7 +53,7 @@ export async function fetchAndPersistNfds(
 
     const toFetch = await getStaleOrMissingAddresses({
         addresses: dedup,
-        network,
+        scope,
         ttlMs: NFD_CACHE_TTL_MS,
     })
     if (toFetch.length === 0) return
@@ -77,6 +78,6 @@ export async function fetchAndPersistNfds(
             name: hitMap.get(address) ?? null,
         }))
 
-        await upsertNfdEntries({ network, entries })
+        await upsertNfdEntries({ scope, entries })
     })
 }

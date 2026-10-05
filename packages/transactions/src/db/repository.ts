@@ -31,6 +31,10 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
+import {
+    networkColumnValue,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '../models/types'
 import { TransactionsSchema, AccountTransactionsSchema } from './schema'
 import { deserializeSwapGroupDetail, fromDb, toDb } from './mappers'
@@ -39,15 +43,16 @@ type UpsertTransactionsParams = {
     db?: Database
     items: TransactionHistoryItem[]
     accountAddress: string
-    network: string
+    scope: ChainScope
 }
 
 export async function upsertTransactions({
     db = getDatabase(),
     items,
     accountAddress,
-    network,
+    scope,
 }: UpsertTransactionsParams): Promise<void> {
+    const network = networkColumnValue(scope)
     if (items.length === 0) return
 
     const now = Date.now()
@@ -121,7 +126,7 @@ export async function upsertTransactions({
 type GetTransactionHistoryParams = {
     db?: Database
     accountAddress: string
-    network: string
+    scope: ChainScope
     assetId?: string
     limit?: number
     /**
@@ -162,13 +167,14 @@ const involvesAsset = (assetId: string): SQL =>
 export async function getTransactionHistory({
     db = getDatabase(),
     accountAddress,
-    network,
+    scope,
     assetId,
     limit = 25,
     atOrBeforeRoundTime,
     afterTime,
     beforeTime,
 }: GetTransactionHistoryParams): Promise<TransactionHistoryItem[]> {
+    const network = networkColumnValue(scope)
     const conditions = [
         eq(AccountTransactionsSchema.accountAddress, accountAddress),
         eq(AccountTransactionsSchema.network, network),
@@ -248,7 +254,7 @@ export async function getTransactionHistory({
 
 type GetCloseRowsMissingCloseAmountParams = {
     db?: Database
-    network: string
+    scope: ChainScope
     /** Bounded per pass — survivors keep matching and retry next sync. */
     limit?: number
 }
@@ -261,9 +267,10 @@ type GetCloseRowsMissingCloseAmountParams = {
  */
 export async function getCloseRowsMissingCloseAmount({
     db = getDatabase(),
-    network,
+    scope,
     limit = 20,
 }: GetCloseRowsMissingCloseAmountParams): Promise<Array<{ id: string }>> {
+    const network = networkColumnValue(scope)
     return db
         .select({ id: TransactionsSchema.id })
         .from(TransactionsSchema)
@@ -280,7 +287,7 @@ export async function getCloseRowsMissingCloseAmount({
 
 type GetSwapRowsMissingAssetFactsParams = {
     db?: Database
-    network: string
+    scope: ChainScope
     accountAddress: string
     limit?: number
 }
@@ -299,12 +306,13 @@ type GetSwapRowsMissingAssetFactsParams = {
  */
 export async function getSwapRowsMissingAssetFacts({
     db = getDatabase(),
-    network,
+    scope,
     accountAddress,
     limit = 20,
 }: GetSwapRowsMissingAssetFactsParams): Promise<
     Array<{ id: string; roundTime: number }>
 > {
+    const network = networkColumnValue(scope)
     return db
         .select({
             id: TransactionsSchema.id,
@@ -338,7 +346,7 @@ export async function getSwapRowsMissingAssetFacts({
 
 type PersistResolvedSwapAssetFactsParams = {
     db?: Database
-    network: string
+    scope: ChainScope
     ids: string[]
 }
 
@@ -350,9 +358,10 @@ type PersistResolvedSwapAssetFactsParams = {
  */
 export async function persistResolvedSwapAssetFacts({
     db = getDatabase(),
-    network,
+    scope,
     ids,
 }: PersistResolvedSwapAssetFactsParams): Promise<void> {
+    const network = networkColumnValue(scope)
     for (const id of ids) {
         const [row] = await db
             .select({ json: TransactionsSchema.swapGroupDetailJson })
@@ -384,16 +393,17 @@ export async function persistResolvedSwapAssetFacts({
 type UpdateTransactionCloseAmountParams = {
     db?: Database
     id: string
-    network: string
+    scope: ChainScope
     closeAmount: Decimal
 }
 
 export async function updateTransactionCloseAmount({
     db = getDatabase(),
     id,
-    network,
+    scope,
     closeAmount,
 }: UpdateTransactionCloseAmountParams): Promise<void> {
+    const network = networkColumnValue(scope)
     await db
         .update(TransactionsSchema)
         .set({ closeAmount })
@@ -409,14 +419,15 @@ export async function updateTransactionCloseAmount({
 type GetLatestTransactionRoundTimeParams = {
     db?: Database
     accountAddress: string
-    network: string
+    scope: ChainScope
 }
 
 export async function getLatestTransactionRoundTime({
     db = getDatabase(),
     accountAddress,
-    network,
+    scope,
 }: GetLatestTransactionRoundTimeParams): Promise<Nullable<number>> {
+    const network = networkColumnValue(scope)
     const rows = await db
         .select({
             maxRoundTime: sql<number>`MAX(${AccountTransactionsSchema.roundTime})`,

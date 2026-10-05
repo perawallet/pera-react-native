@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
+import {
+    scopeForLegacyNetwork,
+    toScopeKey,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     runMigrations,
     migrations,
@@ -105,7 +110,7 @@ describe('submission reconciler', () => {
     ) =>
         recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: ['TXID-1'],
             flow: 'cosign',
             lastValid: 100,
@@ -283,6 +288,52 @@ describe('submission reconciler', () => {
 
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows[0]).toMatchObject({ status: 'confirmed' })
+    })
+
+    it('settles an attempt stored under a scope key', async () => {
+        await record({ txIds: ['TXID-LEGACY'] })
+        const keyedId = await record({ txIds: ['TXID-KEYED'] })
+        await db
+            .update(SubmissionAttemptsSchema)
+            .set({ network: toScopeKey(scopeForLegacyNetwork('mainnet')) })
+            .where(eq(SubmissionAttemptsSchema.id, keyedId))
+            .run()
+        const handled: string[] = []
+        setSubmissionSettledHandler('cosign', (_txIds, network) => {
+            handled.push(network)
+        })
+        const getClient = vi.fn(() =>
+            makeClient({ pending: { 'confirmed-round': 42 } }),
+        )
+
+        const summary = await reconcileOpenSubmissions({ db, getClient })
+
+        expect(getClient).toHaveBeenCalledTimes(1)
+        expect(getClient).toHaveBeenCalledWith({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
+        expect(summary).toEqual({ probed: 2, confirmed: 2, failed: 0 })
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows.map(row => row.status)).toEqual(['confirmed', 'confirmed'])
+        expect(handled).toEqual(['mainnet', 'mainnet'])
+    })
+
+    it('leaves an attempt whose stored network cannot be decoded open', async () => {
+        const id = await record()
+        await db
+            .update(SubmissionAttemptsSchema)
+            .set({ network: 'not-a-network' as ChainScopeKey })
+            .where(eq(SubmissionAttemptsSchema.id, id))
+            .run()
+        const getClient = vi.fn(() => makeClient())
+
+        const summary = await reconcileOpenSubmissions({ db, getClient })
+
+        expect(getClient).not.toHaveBeenCalled()
+        expect(summary).toEqual({ probed: 0, confirmed: 0, failed: 0 })
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows[0]).toMatchObject({ status: 'submitted' })
     })
 
     it('resolves unknown-status rows too (left open by a lost-ack submit)', async () => {
