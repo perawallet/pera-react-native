@@ -29,6 +29,7 @@ type UseLockScreenResult = {
     isLockedOut: boolean
     remainingSeconds: number
     isDuressWipeInProgress: boolean
+    isBiometricUnlockInProgress: boolean
     handlePinComplete: (pin: string) => Promise<void>
     handleErrorAnimationComplete: () => void
 }
@@ -51,6 +52,8 @@ export const useLockScreen = ({
     const [hasError, setHasError] = useState(false)
     const [remainingSeconds, setRemainingSeconds] = useState(0)
     const [isDuressWipeInProgress, setIsDuressWipeInProgress] = useState(false)
+    const [isBiometricUnlockInProgress, setIsBiometricUnlockInProgress] =
+        useState(false)
 
     useEffect(() => {
         if (!isLockedOut || !lockoutEndTime) {
@@ -140,15 +143,23 @@ export const useLockScreen = ({
             // Lockout can begin while waiting (failed PIN attempts on the pad).
             if (promptRef.current.isLockedOut) return
             hasLeftForeground = false
-            const outcome = await promptRef.current.unlockWithBiometrics({
-                title: promptRef.current.t(
-                    'security.biometric.unlock_prompt_title',
-                ),
-                cancelLabel: promptRef.current.t(
-                    'security.biometric.cancel_label',
-                ),
-            })
+            const outcome = await promptRef.current.unlockWithBiometrics(
+                {
+                    title: promptRef.current.t(
+                        'security.biometric.unlock_prompt_title',
+                    ),
+                    cancelLabel: promptRef.current.t(
+                        'security.biometric.cancel_label',
+                    ),
+                },
+                {
+                    onAuthenticated: () => {
+                        if (!cancelled) setIsBiometricUnlockInProgress(true)
+                    },
+                },
+            )
             if (cancelled) return
+            setIsBiometricUnlockInProgress(false)
             if (outcome.kind === 'ok') {
                 void promptRef.current.resetFailedAttempts()
                 promptRef.current.onUnlock()
@@ -200,6 +211,7 @@ export const useLockScreen = ({
 
         return () => {
             cancelled = true
+            setIsBiometricUnlockInProgress(false)
             subscription?.remove()
             subscription = null
             foregroundSubscription.remove()
@@ -247,6 +259,7 @@ export const useLockScreen = ({
         isLockedOut,
         remainingSeconds,
         isDuressWipeInProgress,
+        isBiometricUnlockInProgress,
         handlePinComplete,
         handleErrorAnimationComplete,
     }

@@ -1467,6 +1467,39 @@ describe('useBiometrics', () => {
             expect(session.finish).toHaveBeenCalledTimes(1)
         })
 
+        test('reports a passed ceremony before the unlock checks settle', async () => {
+            const reads = pending<void>()
+            kmsMocks.withSecret.mockImplementation(
+                async (_id: string, handler: (b: Uint8Array) => unknown) => {
+                    await reads.promise
+                    return handler(framed('ct'))
+                },
+            )
+            const token = new Uint8Array([4, 2])
+            kmsMocks.getSecretMetadata.mockReturnValue({
+                biometricTokenHash: sha256Hex(token),
+            })
+            const session = releasing(token)
+            const onAuthenticated = vi.fn()
+
+            const { result } = renderHook(() => useBiometrics())
+            let unlock: Promise<BiometricUnlockOutcome> | undefined
+            act(() => {
+                unlock = result.current.unlockWithBiometrics(PROMPT, {
+                    onAuthenticated,
+                })
+            })
+            await waitFor(() => {
+                expect(onAuthenticated).toHaveBeenCalledTimes(1)
+            })
+            expect(session.finish).not.toHaveBeenCalled()
+
+            reads.release()
+            const outcome = await act(() => unlock!)
+            expect(outcome).toEqual({ kind: 'ok' })
+            expect(onAuthenticated).toHaveBeenCalledTimes(1)
+        })
+
         test('joins a reconcile already in flight rather than queueing a second', async () => {
             const token = new Uint8Array([4, 2])
             storedBlob(sha256Hex(token))
@@ -1745,6 +1778,21 @@ describe('useBiometrics', () => {
             },
         )
 
+        test('does not report a ceremony the user did not pass', async () => {
+            storedBlob('deadbeef')
+            unlockSession({ success: false, reason: 'user-cancel' })
+            const onAuthenticated = vi.fn()
+
+            const { result } = renderHook(() => useBiometrics())
+            await act(() =>
+                result.current.unlockWithBiometrics(PROMPT, {
+                    onAuthenticated,
+                }),
+            )
+
+            expect(onAuthenticated).not.toHaveBeenCalled()
+        })
+
         test('preserves the opt-in and releases the key when the keystore read itself fails', async () => {
             // hasSecret stays true (the record exists) but the read resolves
             // null — ambiguous, unlike a decode failure on bytes that came
@@ -1905,6 +1953,20 @@ describe('useBiometrics', () => {
             expect(useSecurityStore.getState().isBiometricRearmPending).toBe(
                 false,
             )
+        })
+
+        test('reports the recovery ceremony once the token is released', async () => {
+            const { result } = await renderAndSettle()
+            const onAuthenticated = vi.fn()
+
+            const outcome = await act(() =>
+                result.current.unlockWithBiometrics(PROMPT, {
+                    onAuthenticated,
+                }),
+            )
+
+            expect(outcome).toEqual({ kind: 'ok' })
+            expect(onAuthenticated).toHaveBeenCalledTimes(1)
         })
 
         test('never re-enters the recovery once the migration is done', async () => {
