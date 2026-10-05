@@ -11,9 +11,14 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { PWView, PWText, PWButton, PWFlatList } from '@components/core'
+import {
+    PWView,
+    PWText,
+    PWButton,
+    PWFlatList,
+    PWLoadingIndicator,
+} from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
@@ -157,7 +162,7 @@ export const LedgerAccountInfoContent = ({
                     style={styles.centerState}
                     testID='ledger_account_info_loading'
                 >
-                    <ActivityIndicator />
+                    <PWLoadingIndicator />
                 </PWView>
             )}
 

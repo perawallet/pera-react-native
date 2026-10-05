@@ -11,11 +11,12 @@
  */
 
 import { useCallback, useLayoutEffect } from 'react'
-import { ActivityIndicator, SectionList } from 'react-native'
+import { SectionList } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import {
     PWButton,
     PWIcon,
+    PWLoadingIndicator,
     PWScreen,
     PWTouchableOpacity,
     PWView,
@@ -87,7 +88,7 @@ export const CardTransactionsScreen = () => {
         if (!isFetchingNextPage) return null
         return (
             <PWView style={styles.loadingFooter}>
-                <ActivityIndicator size='small' />
+                <PWLoadingIndicator size='sm' />
             </PWView>
         )
     }, [isFetchingNextPage, styles.loadingFooter])

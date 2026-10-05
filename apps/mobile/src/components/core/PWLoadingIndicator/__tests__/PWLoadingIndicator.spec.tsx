@@ -10,23 +10,14 @@
  limitations under the License
  */
 
-import { PWLoadingIndicator, PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
+import { render, screen } from '@test-utils/render'
+import { describe, it, expect } from 'vitest'
+import { PWLoadingIndicator } from '../PWLoadingIndicator'
 
-export const PasskeysLoadingState = () => {
-    const styles = useStyles()
-    const { t } = useLanguage()
+describe('PWLoadingIndicator', () => {
+    it('renders under the shared loading test id by default', () => {
+        render(<PWLoadingIndicator />)
 
-    return (
-        <PWView style={styles.centered}>
-            <PWLoadingIndicator />
-            <PWText
-                variant='h3'
-                style={styles.centeredText}
-            >
-                {t('settings.passkeys.loading')}
-            </PWText>
-        </PWView>
-    )
-}
+        expect(screen.getByTestId('activity-indicator')).toBeTruthy()
+    })
+})

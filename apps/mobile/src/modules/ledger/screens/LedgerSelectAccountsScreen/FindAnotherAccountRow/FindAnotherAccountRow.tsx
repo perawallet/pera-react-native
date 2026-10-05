@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWLoadingIndicator,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useStyles } from './styles'
 
 export type FindAnotherAccountRowProps = {
@@ -38,9 +43,9 @@ export const FindAnotherAccountRow = ({
         >
             <PWView style={styles.iconContainer}>
                 {isLoading ? (
-                    <ActivityIndicator
+                    <PWLoadingIndicator
                         testID={testID ? `${testID}-spinner` : undefined}
-                        size='small'
+                        size='sm'
                     />
                 ) : (
                     <PWIcon

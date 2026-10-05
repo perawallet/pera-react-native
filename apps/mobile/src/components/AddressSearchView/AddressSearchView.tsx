@@ -11,10 +11,15 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
 import type { AccountType } from '@perawallet/wallet-core-accounts'
 import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWLoadingIndicator,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { SearchableList } from '@components/SearchableList'
@@ -195,7 +200,7 @@ export const AddressSearchView = ({
 
     const listEmptyComponent = isNfdLoading ? (
         <PWView style={styles.loadingContainer}>
-            <ActivityIndicator />
+            <PWLoadingIndicator />
         </PWView>
     ) : (
         emptyComponent()

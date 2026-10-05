@@ -11,11 +11,9 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
 import { useIsFocused } from '@react-navigation/native'
-import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import { PWView } from '@components/core'
+import { PWLoadingIndicator, PWView } from '@components/core'
 import { CapabilityGuard } from '@components/CapabilityGuard'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
@@ -42,7 +40,6 @@ const TAB_PAGES: OnrampTab[] = ['fund', 'history']
 export const OnrampScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { theme } = useTheme()
     const {
         isReady,
         pairsState,
@@ -132,10 +129,7 @@ export const OnrampScreen = () => {
                                 onRetry={handleRetryPairs}
                             >
                                 <PWView style={styles.loadingWrapper}>
-                                    <ActivityIndicator
-                                        size='large'
-                                        color={theme.colors.textMain}
-                                    />
+                                    <PWLoadingIndicator size='lg' />
                                 </PWView>
                             </OfflineTolerantView>
                         )}
