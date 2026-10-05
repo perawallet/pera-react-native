@@ -66,16 +66,25 @@ export const scopeKeyForLegacyNetwork = (
     network: LegacyNetwork,
 ): ChainScopeKey => toScopeKey(scopeForLegacyNetwork(network))
 
+// A Record so that adding a chain id stops this compiling. A new chain has no
+// legacy networks, so its entry returns undefined.
+const LEGACY_NETWORK_OF: Record<
+    ChainId,
+    (scope: ChainScope) => LegacyNetwork | undefined
+> = {
+    algorand: scope =>
+        isLegacyNetwork(scope.networkId) ? scope.networkId : undefined,
+}
+
 // The inverse, for the backend and algod clients that are still keyed by the
 // legacy network.
 export const legacyNetworkOf = (scope: ChainScope): LegacyNetwork => {
-    if (
-        scope.chainId !== LEGACY_CHAIN_ID ||
-        !isLegacyNetwork(scope.networkId)
-    ) {
+    assertValidScope(scope)
+    const network = LEGACY_NETWORK_OF[scope.chainId](scope)
+    if (network === undefined) {
         throw new InvalidScopeKeyError(joinScope(scope))
     }
-    return scope.networkId
+    return network
 }
 
 // A Record so that adding a chain id stops this compiling. A new chain has no
