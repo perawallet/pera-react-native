@@ -371,7 +371,10 @@ describe('restoreCloudBackup', () => {
 
         const { syncState } = await restoreCloudBackup(params())
 
-        expect(importAccounts).toHaveBeenCalledWith(pull.accounts)
+        expect(importAccounts).toHaveBeenCalledWith(
+            pull.accounts,
+            expect.any(Function),
+        )
         expect(syncState.items[unknownKey]).toMatchObject({
             knownVer: 4,
             status: 'ACTIVE',
