@@ -11,11 +11,17 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { buildAccount } from '../credentials'
 import {
     buildDeviceAccountRegistrations,
     toDeviceAccountType,
 } from '../device-accounts'
-import { AccountTypes, type WalletAccount } from '../models'
+import {
+    AccountTypes,
+    DerivationTypes,
+    type AccountCredentials,
+    type WalletAccount,
+} from '../models'
 
 const account = (address: string, type: WalletAccount['type']): WalletAccount =>
     ({ id: address, address, type, keyPairId: 'kp' }) as WalletAccount
@@ -75,5 +81,136 @@ describe('buildDeviceAccountRegistrations', () => {
 
     it('returns an empty array for an empty account list', () => {
         expect(buildDeviceAccountRegistrations([], ['ADDR_A'])).toEqual([])
+    })
+
+    it('registers credential-bearing accounts exactly as their legacy-shaped twins', () => {
+        // A credential a later chain adds must not change what the devices API
+        // is told. It isn't a `ChainId` member, hence the widening cast.
+        const fixtureChainCredential = (
+            keyPairId: string,
+        ): AccountCredentials =>
+            ({
+                'fixture-chain': { keyPairId: `fixture-${keyPairId}` },
+            }) as unknown as AccountCredentials
+        const credentials = (keyPairId: string) => ({
+            ...fixtureChainCredential(keyPairId),
+            algorand: { keyPairId },
+        })
+        const hd = {
+            account: 0,
+            change: 0,
+            keyIndex: 1,
+            derivationType: DerivationTypes.Peikert,
+        }
+        const ledger = {
+            manufacturer: 'ledger',
+            deviceId: 'ble-1',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        } as const
+        const credentialBearing: WalletAccount[] = [
+            buildAccount({
+                address: 'ALGO25ADDR',
+                provenance: { kind: 'local', seed: 'algo25' },
+                credentials: credentials('algo25-key'),
+            }),
+            buildAccount({
+                address: 'HDADDR',
+                provenance: { kind: 'local', seed: 'bip39', hd },
+                credentials: credentials('hd-key'),
+            }),
+            buildAccount({
+                address: 'LEDGERADDR',
+                provenance: {
+                    kind: 'hardware',
+                    device: ledger,
+                    accountIndex: 0,
+                },
+            }),
+            buildAccount({
+                address: 'MSIGADDR',
+                provenance: {
+                    kind: 'multisig',
+                    threshold: 1,
+                    members: ['MEMBERA', 'MEMBERB'],
+                    version: 1,
+                },
+            }),
+            buildAccount({
+                address: 'WATCHADDR',
+                provenance: { kind: 'watch' },
+                credentials: fixtureChainCredential('watch'),
+            }),
+            buildAccount({
+                address: 'QUANTUMADDR',
+                provenance: { kind: 'local', seed: 'quantum' },
+                credentials: credentials('quantum-key'),
+            }),
+        ]
+        const legacyShaped: WalletAccount[] = [
+            account('ALGO25ADDR', AccountTypes.algo25),
+            {
+                ...account('HDADDR', AccountTypes.hdWallet),
+                hdWalletDetails: hd,
+            } as WalletAccount,
+            {
+                id: 'LEDGERADDR',
+                address: 'LEDGERADDR',
+                type: AccountTypes.hardware,
+                hardwareDetails: { ...ledger, accountIndex: 0 },
+            },
+            {
+                id: 'MSIGADDR',
+                address: 'MSIGADDR',
+                type: AccountTypes.multisig,
+                multisigDetails: {
+                    threshold: 1,
+                    addresses: ['MEMBERA', 'MEMBERB'],
+                    version: 1,
+                },
+            },
+            { id: 'WATCHADDR', address: 'WATCHADDR', type: AccountTypes.watch },
+            account('QUANTUMADDR', AccountTypes.quantum),
+        ]
+
+        const result = buildDeviceAccountRegistrations(credentialBearing, [
+            'WATCHADDR',
+        ])
+
+        expect(result).toEqual(
+            buildDeviceAccountRegistrations(legacyShaped, ['WATCHADDR']),
+        )
+        expect(result).toEqual([
+            {
+                address: 'ALGO25ADDR',
+                accountType: 'algo25',
+                receiveNotifications: true,
+            },
+            {
+                address: 'HDADDR',
+                accountType: 'hdWallet',
+                receiveNotifications: true,
+            },
+            {
+                address: 'LEDGERADDR',
+                accountType: 'hardware',
+                receiveNotifications: true,
+            },
+            {
+                address: 'MSIGADDR',
+                accountType: 'multisig',
+                receiveNotifications: true,
+            },
+            {
+                address: 'WATCHADDR',
+                accountType: 'watch',
+                receiveNotifications: false,
+            },
+            {
+                address: 'QUANTUMADDR',
+                accountType: 'quantum',
+                receiveNotifications: true,
+            },
+        ])
     })
 })
