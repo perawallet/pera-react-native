@@ -28,7 +28,7 @@ type UseLockScreenResult = {
     hasError: boolean
     isLockedOut: boolean
     remainingSeconds: number
-    isDuressWipeInProgress: boolean
+    isPinUnlockInProgress: boolean
     isBiometricUnlockInProgress: boolean
     handlePinComplete: (pin: string) => Promise<void>
     handleErrorAnimationComplete: () => void
@@ -51,7 +51,7 @@ export const useLockScreen = ({
 
     const [hasError, setHasError] = useState(false)
     const [remainingSeconds, setRemainingSeconds] = useState(0)
-    const [isDuressWipeInProgress, setIsDuressWipeInProgress] = useState(false)
+    const [isPinUnlockInProgress, setIsPinUnlockInProgress] = useState(false)
     const [isBiometricUnlockInProgress, setIsBiometricUnlockInProgress] =
         useState(false)
 
@@ -223,29 +223,34 @@ export const useLockScreen = ({
 
     const handlePinComplete = useCallback(
         async (pin: string) => {
-            const result = await verifyPin(pin)
-            if (result.kind === 'ok') {
-                onUnlock()
-                return
-            }
-            if (result.kind === 'duress') {
-                // Silent on this branch: no haptic, no error, no toast
-                // useDuressWipe wipes data, provisions a decoy account, and
-                // leaves us with a fresh "empty wallet" state. On any
-                // internal failure, the wipe path still drops to onboarding.
-                //
-                // The wipe is slow; show a "logging in" overlay so it reads as
-                // a normal (if sluggish) unlock rather than a frozen app.
-                setIsDuressWipeInProgress(true)
-                try {
-                    await performDuressWipe()
-                } finally {
+            // Verifying hashes the PIN against both slots and reads the record,
+            // which takes seconds on a slow keystore; the pad must not look idle.
+            setIsPinUnlockInProgress(true)
+            try {
+                const result = await verifyPin(pin)
+                if (result.kind === 'ok') {
                     onUnlock()
-                    setIsDuressWipeInProgress(false)
+                    return
                 }
-                return
+                if (result.kind === 'duress') {
+                    // Silent on this branch: no haptic, no error, no toast
+                    // useDuressWipe wipes data, provisions a decoy account, and
+                    // leaves us with a fresh "empty wallet" state. On any
+                    // internal failure, the wipe path still drops to onboarding.
+                    //
+                    // The wipe is slow; the overlay stays up so it reads as a
+                    // normal (if sluggish) unlock rather than a frozen app.
+                    try {
+                        await performDuressWipe()
+                    } finally {
+                        onUnlock()
+                    }
+                    return
+                }
+                setHasError(true)
+            } finally {
+                setIsPinUnlockInProgress(false)
             }
-            setHasError(true)
         },
         [verifyPin, onUnlock, performDuressWipe],
     )
@@ -258,7 +263,7 @@ export const useLockScreen = ({
         hasError,
         isLockedOut,
         remainingSeconds,
-        isDuressWipeInProgress,
+        isPinUnlockInProgress,
         isBiometricUnlockInProgress,
         handlePinComplete,
         handleErrorAnimationComplete,
