@@ -28,11 +28,11 @@ import {
     BIOMETRIC_TOKEN_HASH_METADATA_KEY,
     LEGACY_BIOMETRIC_BLOB_KEY_ID,
     MAX_BIOMETRIC_UNWRAP_FAILURES,
-    PIN_RECORD_KEY_ID,
 } from '../constants'
 import { decodeBiometricBlob, encodeBiometricBlob } from '../biometricBlob'
+import { hydrateLockoutState } from '../lockoutHydration'
 import type { BiometricsDisabledReason } from '../models'
-import { constantTimeEqual, parsePinRecord } from '../pinRecord'
+import { constantTimeEqual } from '../pinRecord'
 import { useSecurityStore } from '../store'
 
 /**
@@ -447,13 +447,16 @@ export const useBiometrics = (): UseBiometricsResult => {
     const readLockoutEndTime = useCallback(async (): Promise<
         Nullable<number>
     > => {
-        // Only the timestamp leaves the read; the record's hashes stay inside it.
-        const endTime = await withSecret(
-            PIN_RECORD_KEY_ID,
-            bytes => parsePinRecord(bytes)?.lockoutEndTime ?? null,
-        )
+        // Joins the lock screen's hydration instead of decrypting the record a
+        // second time on a cold start.
+        const lockout = await hydrateLockoutState({
+            withSecret,
+            commitSecret,
+            removeSecret,
+        })
+        const endTime = lockout?.lockoutEndTime
         return endTime != null && endTime > Date.now() ? endTime : null
-    }, [withSecret])
+    }, [withSecret, commitSecret, removeSecret])
 
     // Only a pre-binding opt-in swept by the reconcile and never re-armed; a
     // blob under the current id means the migration is done, and every path
