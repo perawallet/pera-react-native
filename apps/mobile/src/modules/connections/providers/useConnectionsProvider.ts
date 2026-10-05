@@ -23,6 +23,7 @@ import {
 import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconnect'
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the composition root is the one place the app names a handler
 import { createWalletConnectV2Handler } from '@perawallet/wallet-core-walletconnect/v2'
+import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     clearActiveWalletConnectV1Delivery,
@@ -31,6 +32,21 @@ import {
 import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import { useProposalQueue } from './useProposalQueue'
+
+// Resolves once the lock screen is gone. `isAppLockActive` starts true and
+// stays so until the guard has settled, so this never resolves early.
+const whenAppUnlocked = (): Promise<void> =>
+    new Promise(resolve => {
+        if (!useSecurityStore.getState().isAppLockActive) {
+            resolve()
+            return
+        }
+        const unsubscribe = useSecurityStore.subscribe(state => {
+            if (state.isAppLockActive) return
+            unsubscribe()
+            resolve()
+        })
+    })
 
 /**
  * The handler factories run synchronously during render, before
@@ -62,6 +78,9 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
                 // failing the boot.
                 projectId: config.reownProjectId,
                 keyValueStorage: getProvider().keyValueStorage,
+                // Loading the v2 SDK holds the JS thread for seconds; at boot
+                // that delayed the PIN pad and the biometric prompt.
+                startWhen: whenAppUnlocked,
             }),
         )
         registryRef.current = registry

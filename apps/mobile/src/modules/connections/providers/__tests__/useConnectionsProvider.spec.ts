@@ -21,6 +21,7 @@ import {
 } from 'vitest'
 import { cleanup, renderHook, waitFor } from '@testing-library/react'
 import { config } from '@perawallet/wallet-core-config'
+import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { FeeAdjustmentDeliveryError } from '@perawallet/wallet-core-signing'
 import type { Connection } from '@perawallet/wallet-extension-connections'
@@ -361,6 +362,22 @@ describe('useConnectionsProvider', () => {
         // One injection point shared by both, so neither reaches for a store
         // default and pulls the blockchain package into a consumer's graph.
         expect(v2.getNetwork).toBe(mockCreateV1.mock.calls[0][0].getNetwork)
+    })
+
+    it('holds the v2 start until the lock screen is gone', async () => {
+        useSecurityStore.getState().setAppLockActive(true)
+        renderHook(() => useConnectionsProvider())
+        const { startWhen } = mockCreateV2.mock.calls[0][0]
+        let isStarted = false
+        void startWhen().then(() => {
+            isStarted = true
+        })
+        await Promise.resolve()
+        expect(isStarted).toBe(false)
+
+        useSecurityStore.getState().setAppLockActive(false)
+
+        await waitFor(() => expect(isStarted).toBe(true))
     })
 
     describe('proposal subscription', () => {

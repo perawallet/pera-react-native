@@ -347,15 +347,14 @@ const waitForWalletKit = (): Promise<FakeWalletKit> =>
 
 /**
  * The v2 counterpart of `pairAndHandshake`: pairs on a `wc:…@2` URI and
- * delivers the proposal the relay would. The client only exists once the boot
- * sequence has reached `registry.initialize()`, and v2 has no session before
- * then — unlike v1, whose connector is built by `pair` itself.
+ * delivers the proposal the relay would. With no v2 session stored, the
+ * client is only started by that first pairing, so it is read after `pair`.
  */
 const pairAndProposeV2 = async (): Promise<FakeWalletKit> => {
-    const walletKit = await waitForWalletKit()
     await act(async () => {
         await captured.registry!.pair(V2_URI, { origin: IN_APP_ORIGIN })
     })
+    const walletKit = await waitForWalletKit()
     act(() => {
         walletKit.emit('session_proposal', makeProposal())
     })
@@ -430,9 +429,9 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         // requires one turns the whole handler into unreachable code and
         // the user into an invalid-URL toast.
         await mountProvider()
-        const walletKit = await waitForWalletKit()
 
         const dispatched = captured.handleDeepLink!(V2_URI, false, 'qr')
+        const walletKit = await waitForWalletKit()
         await waitFor(() => {
             expect(walletKit.pair).toHaveBeenCalledTimes(1)
         })
