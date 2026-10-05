@@ -53,7 +53,7 @@ export const useSharedAccountDetailsContent = (
     const handleEditContact = useCallback(
         (address: string) => {
             const existingContact =
-                contacts.find(c => c.address === address) ?? null
+                contacts.find(c => c.addresses.algorand === address) ?? null
             dismiss()
             if (existingContact) {
                 // EditContactScreen reads the contact via the contacts store

@@ -133,7 +133,12 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...actual,
-        logger: { error: vi.fn() },
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        },
     }
 })
 

@@ -15,6 +15,7 @@ import { create } from 'zustand'
 export type CameraTabResult =
     | 'account-imported'
     | 'backup-restored'
+    | 'backup-enabled'
     | 'import-failed'
 
 type CameraTabResultState = {

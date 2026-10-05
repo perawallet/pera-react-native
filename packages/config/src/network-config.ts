@@ -83,6 +83,34 @@ export type CustomNetworkEndpoints = Pick<
     | 'genesisId'
 >
 
+/**
+ * The node as the user saved it; the tokens are optional there. Saved as a
+ * single unit, never merged: a half-updated config (new host, stale genesis
+ * hash) would fail every signing attempt with a confusing cross-network
+ * mismatch rather than anything pointing at the real cause.
+ */
+export type CustomNetworkConfig = Omit<
+    CustomNetworkEndpoints,
+    'algodToken' | 'indexerToken'
+> & {
+    algodToken?: string
+    indexerToken?: string
+}
+
+/** Persisted configs are untyped; one missing a required field is not a usable node. */
+export const isCustomNetworkConfig = (
+    value: unknown,
+): value is CustomNetworkConfig => {
+    if (typeof value !== 'object' || value === null) return false
+    const entry = value as Record<string, unknown>
+    return (
+        typeof entry.algodUrl === 'string' &&
+        typeof entry.indexerUrl === 'string' &&
+        typeof entry.genesisHash === 'string' &&
+        typeof entry.genesisId === 'string'
+    )
+}
+
 export type CustomNetworkSource = (
     scope: ChainScope,
 ) => CustomNetworkEndpoints | undefined

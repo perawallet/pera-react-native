@@ -37,6 +37,8 @@ describe('useFinishCameraTab (web)', () => {
     test.each([
         ['scan', 'account-imported'],
         ['backup-restore-scan', 'backup-restored'],
+        ['backup-setup', 'backup-enabled'],
+        ['recover-qr', 'account-imported'],
     ])('in a %s tab, shows the %s result', (flow, expected) => {
         consumedFlow.current = flow
         const { result } = renderHook(() => useFinishCameraTab())
@@ -46,7 +48,7 @@ describe('useFinishCameraTab (web)', () => {
         expect(useCameraTabResultStore.getState().result).toBe(expected)
     })
 
-    test.each([['scan'], ['backup-restore-scan']])(
+    test.each([['scan'], ['backup-restore-scan'], ['recover-qr']])(
         'in a %s tab, reports a failed import as one',
         flow => {
             consumedFlow.current = flow

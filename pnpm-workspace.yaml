@@ -149,6 +149,11 @@ auditConfig:
     # @expo/code-signing-certificates, dev/build tooling that never ships to a
     # device. Drop this entry and bump the node-forge@1 override once a fix lands.
     - GHSA-86w9-cpqp-85rv # node-forge: lax RSA PKCS#1 v1.5 signature verification
+    # braces has no patched release (first_patched_version: null; npm's latest
+    # is 3.0.3). Its only consumer is micromatch under metro-file-map and
+    # @expo/metro-file-map, which match our own build globs, never user input,
+    # and never ship to a device. Drop this entry once braces publishes a fix.
+    - GHSA-vfj7-8cjw-p6xm # braces: stack exhaustion via deeply nested patterns
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the

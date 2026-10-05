@@ -49,6 +49,9 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     >(
         '../../../../../../../../../packages/chain-shared/src/store/network-store',
     )
+    const customNetwork = await vi.importActual<
+        typeof import('../../../../../../../../../packages/blockchain/src/store/custom-network')
+    >('../../../../../../../../../packages/blockchain/src/store/custom-network')
     const { shouldClearCustomCache } = await vi.importActual<
         typeof import('../../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache')
     >(
@@ -57,9 +60,9 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
 
     return {
         useNetworkStore: store.useNetworkStore,
-        getCustomNetworkConfig: store.getCustomNetworkConfig,
-        isCustomNetworkConfigured: store.isCustomNetworkConfigured,
-        setCustomNetwork: store.setCustomNetwork,
+        getCustomNetworkConfig: customNetwork.getCustomNetworkConfig,
+        isCustomNetworkConfigured: customNetwork.isCustomNetworkConfigured,
+        setCustomNetwork: customNetwork.setCustomNetwork,
         shouldClearCustomCache,
         fetchGenesisFromNode,
         clearCustomNetworkCache,

@@ -47,6 +47,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
     >('../../../../../../../packages/shared/src/utils/strings')),
 }))
 
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, options?: { date?: string }) =>
+            options?.date ? `${key}|${options.date}` : key,
+    }),
+}))
+
 vi.mock('../useBackupSync', () => ({
     useBackupSync: () => ({
         syncNow: vi.fn(),
@@ -146,5 +153,26 @@ describe('useBackupSyncStatus', () => {
 
         expect(result.current.lastSyncedLabel).not.toBe('—')
         expect(result.current.lastSyncedLabel).toMatch(/2026/)
+    })
+
+    test('labels the time as the last success once a sync has failed', () => {
+        storeMock.syncState = {
+            lastSyncResult: 'FAILED',
+            lastSyncedAt: Date.UTC(2026, 9, 2, 9, 30),
+        }
+
+        const { result } = renderHook(() => useBackupSyncStatus())
+
+        expect(result.current.lastSyncedLabel).toMatch(
+            /^cloud_backup\.overview\.last_successful_sync\|.*2026/,
+        )
+    })
+
+    test('shows a placeholder when no sync has ever succeeded', () => {
+        storeMock.syncState = { lastSyncResult: 'FAILED', lastSyncedAt: null }
+
+        const { result } = renderHook(() => useBackupSyncStatus())
+
+        expect(result.current.lastSyncedLabel).toBe('—')
     })
 })

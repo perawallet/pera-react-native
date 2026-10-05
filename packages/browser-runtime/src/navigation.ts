@@ -17,6 +17,8 @@ export type ExpandedFlow =
     | 'ledger-ble'
     | 'asb-import'
     | 'backup-restore-scan'
+    | 'backup-setup'
+    | 'recover-qr'
     | 'camera-access'
     | 'resume'
 
@@ -27,6 +29,8 @@ const FLOWS: readonly string[] = [
     'ledger-ble',
     'asb-import',
     'backup-restore-scan',
+    'backup-setup',
+    'recover-qr',
     'camera-access',
     'resume',
 ]
@@ -48,8 +52,8 @@ const findExpandedTab = async (): Promise<chrome.tabs.Tab | undefined> => {
 /**
  * Opens (or deep-links into) the full-tab surface, for the flows the 360x600
  * toolbar popup can't host: the QR scanner, the Ledger WebHID/Web Bluetooth
- * device pickers and the backup-file dialog, all of which take focus and so
- * close the popup. Chrome auto-closes the popup when the created tab takes
+ * device pickers and the backup-file open/save dialogs, all of which take
+ * focus and so close the popup. Chrome auto-closes the popup when the created tab takes
  * focus, which is the intended hand-off.
  *
  * If an expanded tab is already open, it's focused and re-pointed at the new

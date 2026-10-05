@@ -21,6 +21,7 @@ import {
     useDebouncedValue,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { useLanguage } from '@hooks/useLanguage'
 import { useBackupSync } from './useBackupSync'
 
 export type SyncBadge = 'success' | 'failed' | 'syncing'
@@ -63,11 +64,21 @@ export const useBackupSyncStatus = (): UseBackupSyncStatusResult => {
         lastSyncResult: syncState?.lastSyncResult ?? null,
     })
 
+    const { t } = useLanguage()
+    const syncStatus = STATUS_TO_BADGE[status]
     const lastSyncedAt = syncState?.lastSyncedAt ?? null
-    const lastSyncedLabel = useMemo(
-        () => formatSyncedAt(lastSyncedAt),
-        [lastSyncedAt],
-    )
+    // The time only moves on success, so beside FAILED it has to say so or it
+    // reads as the moment of the failure.
+    const isFailedSinceLastSuccess =
+        syncStatus === 'failed' && lastSyncedAt != null
+    const lastSyncedLabel = useMemo(() => {
+        const formatted = formatSyncedAt(lastSyncedAt)
+        return isFailedSinceLastSuccess
+            ? t('cloud_backup.overview.last_successful_sync', {
+                  date: formatted,
+              })
+            : formatted
+    }, [lastSyncedAt, isFailedSinceLastSuccess, t])
 
-    return { syncStatus: STATUS_TO_BADGE[status], lastSyncedLabel }
+    return { syncStatus, lastSyncedLabel }
 }

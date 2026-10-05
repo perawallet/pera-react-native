@@ -845,6 +845,10 @@ workflows:
             # regenerates android/ without BUILD_NUMBER, so prebuild the build's
             # project again afterwards or the release ships the base versionCode.
             pnpm --filter mobile verify:android-identity
+            # Drop the check's project along with its native build output.
+            # `gradlew clean` in the build step otherwise runs the CMake clean
+            # against codegen directories it has just deleted, and fails.
+            rm -rf apps/mobile/android
             export APP_ENV=$ENVIRONMENT
             pnpm --filter mobile expo:prebuild
     - script@1:

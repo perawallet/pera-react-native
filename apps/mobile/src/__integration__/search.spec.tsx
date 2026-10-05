@@ -59,7 +59,7 @@ const SEARCH_ACCOUNT: WalletAccount = {
 
 const addTestContact = (name: string, address: string) => {
     const { result } = renderHook(() => useContacts())
-    result.current.addContact({ name, address })
+    result.current.addContact({ name, addresses: { algorand: address } })
 }
 
 const resetTestContacts = () => {
@@ -159,7 +159,7 @@ describe('Flow: Global search', () => {
 
         await waitFor(() => {
             const { result } = renderHook(() => useContacts())
-            expect(result.current.selectedContact?.address).toBe(
+            expect(result.current.selectedContact?.addresses.algorand).toBe(
                 HD_TEST_ADDRESS,
             )
         })

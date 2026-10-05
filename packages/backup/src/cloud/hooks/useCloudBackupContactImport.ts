@@ -33,7 +33,7 @@ export const useCloudBackupContactImport =
                 const store = useContactsStore.getState()
                 try {
                     store.addContact({
-                        address: payload.address,
+                        addresses: { algorand: payload.address },
                         name: payload.name,
                     })
                 } catch (error) {
@@ -52,16 +52,24 @@ export const useCloudBackupContactImport =
                         continue
                     }
                     // Last-write-wins already picked the incoming record, so it
-                    // is authoritative. `image` is device-local and `nfd` is
-                    // re-resolvable, so both are carried over rather than lost.
+                    // is authoritative. `image` is device-local, `nfd` is
+                    // re-resolvable and the payload carries no other family's
+                    // address, so all three are carried over rather than lost.
                     const existing = store.contacts.find(
-                        contact => contact.address === payload.address,
+                        contact =>
+                            contact.addresses.algorand === payload.address,
                     )
-                    store.editContact(payload.address, {
-                        ...existing,
-                        address: payload.address,
-                        name: payload.name,
-                    })
+                    store.editContact(
+                        { family: 'algorand', address: payload.address },
+                        {
+                            ...existing,
+                            addresses: {
+                                ...existing?.addresses,
+                                algorand: payload.address,
+                            },
+                            name: payload.name,
+                        },
+                    )
                 }
                 summary.imported += 1
             }

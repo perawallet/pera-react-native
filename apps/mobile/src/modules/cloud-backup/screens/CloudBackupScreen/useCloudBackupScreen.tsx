@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, CloudBackupEvent } from '@analytics'
+import { useTabHandoff } from '@hooks/useTabHandoff'
 import { useRestoreBackupOptions } from '../../hooks/useRestoreBackupOptions'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
@@ -29,10 +30,19 @@ export const useCloudBackupScreen = (): UseCloudBackupScreenResult => {
     const { chooseRestoreRoute, isReadingCredentials } =
         useRestoreBackupOptions()
 
+    const { shouldHandOff, openTab: openSetupTab } =
+        useTabHandoff('backup-setup')
+
+    // The encryption-key download can open a Save dialog, which closes the
+    // popup and drops the in-memory draft, so setup starts in the tab.
     const handleSetUpBackup = useCallback(() => {
         trackEvent(CloudBackupEvent.SetUpNew)
+        if (shouldHandOff) {
+            void openSetupTab()
+            return
+        }
         navigation.navigate('CloudBackupSetup')
-    }, [navigation])
+    }, [navigation, shouldHandOff, openSetupTab])
 
     const handleRestoreBackup = useCallback(async () => {
         trackEvent(CloudBackupEvent.Restore)

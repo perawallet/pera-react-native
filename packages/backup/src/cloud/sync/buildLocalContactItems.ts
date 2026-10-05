@@ -19,20 +19,25 @@ import type { LocalItem } from './types'
 /** Kept separate from `buildLocalItems` so the account builder's `skipped`
  *  count stays account-only: a contact has no key material and can never fail
  *  to serialize. `updatedAt` is epoch millis; `pushDirty` overwrites it with
- *  the tracked `localUpdatedAt` before encrypting. */
+ *  the tracked `localUpdatedAt` before encrypting. The payload carries one
+ *  Algorand address, so a contact without one is not backed up. */
 export const buildLocalContactItems = (
     contacts: readonly Contact[],
     updatedAt: number,
     hashAddress: ItemKeyHasher,
 ): LocalItem[] =>
-    contacts.map(contact =>
-        withContentHash({
-            key: contactItemKey(hashAddress(contact.address)),
-            type: BackupItemType.CONTACT,
-            payload: {
-                address: contact.address,
-                name: contact.name,
-                updatedAt,
-            },
-        }),
-    )
+    contacts.flatMap(contact => {
+        const address = contact.addresses.algorand
+        if (!address) return []
+        return [
+            withContentHash({
+                key: contactItemKey(hashAddress(address)),
+                type: BackupItemType.CONTACT,
+                payload: {
+                    address,
+                    name: contact.name,
+                    updatedAt,
+                },
+            }),
+        ]
+    })

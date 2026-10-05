@@ -230,6 +230,26 @@ describe('useBackupSyncLifecycle', () => {
         expect(managerMock.start).toHaveBeenCalledTimes(1)
     })
 
+    it('keeps syncing through an inactive spell such as a Face ID prompt', () => {
+        renderHook(() => useBackupSyncLifecycle())
+
+        emitAppState('inactive')
+        emitAppState('active')
+
+        expect(managerMock.stop).not.toHaveBeenCalled()
+    })
+
+    it('stops in the background and starts again on return', () => {
+        renderHook(() => useBackupSyncLifecycle())
+        managerMock.start.mockClear()
+
+        emitAppState('background')
+        expect(managerMock.stop).toHaveBeenCalledTimes(1)
+
+        emitAppState('active')
+        expect(managerMock.start).toHaveBeenCalledTimes(1)
+    })
+
     it('initializes once across re-renders so the live socket survives', () => {
         const { rerender } = renderHook(() => useBackupSyncLifecycle())
 

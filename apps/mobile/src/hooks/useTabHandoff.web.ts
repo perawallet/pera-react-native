@@ -13,17 +13,14 @@
 import { useCallback } from 'react'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import { openExpandedTab } from '@perawallet/wallet-core-browser-runtime'
-import type { ScanTabFlow, UseScanTabHandoffResult } from './useScanTabHandoff'
+import type { TabHandoffFlow, UseTabHandoffResult } from './useTabHandoff'
 
-// The popup can only scan once camera permission is already granted: the
-// permission prompt takes focus and Chrome closes the popup. Scanners whose
-// result feeds the current flow can't use the scanner's own tab hand-off
-// either, since the value can't round-trip back into the closed popup. So the
-// whole scan step moves to the expanded tab, like the ASB file pick.
-export const useScanTabHandoff = (
-    flow: ScanTabFlow,
-): UseScanTabHandoffResult => {
-    const openScanTab = useCallback(() => openExpandedTab(flow), [flow])
+// A camera permission prompt or a Save dialog takes focus, and Chrome closes
+// the popup along with whatever the flow held in memory. Nothing can
+// round-trip back into the closed popup, so the whole step moves to the
+// expanded tab before it starts, like the ASB file pick.
+export const useTabHandoff = (flow: TabHandoffFlow): UseTabHandoffResult => {
+    const openTab = useCallback(() => openExpandedTab(flow), [flow])
 
-    return { shouldHandOff: getSurface() === 'popup', openScanTab }
+    return { shouldHandOff: getSurface() === 'popup', openTab }
 }

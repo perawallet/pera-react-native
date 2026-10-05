@@ -67,12 +67,12 @@ export const SettingsDeveloperScreen = () => {
                 />
             )}
 
-            {getPreference(UserPreferences.developerMenuEnabled) && (
+            {getPreference(UserPreferences.debugToolsEnabled) && (
                 <PWListItem
-                    onPress={() => handleTapEvent('DevMenu')}
+                    onPress={() => handleTapEvent('DebugTools')}
                     icon='sliders'
-                    title={t('screens.developer_menu')}
-                    testID='developer_settings_menu_item'
+                    title={t('screens.debug_tools')}
+                    testID='developer_settings_debug_tools_item'
                 />
             )}
         </PWScreen>

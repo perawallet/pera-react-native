@@ -83,6 +83,15 @@ const buildServices = (): PlatformServices => {
         async unwrapBiometricToken() {
             return { success: true, token: new Uint8Array(32) } as const
         },
+        beginBiometricUnwrap() {
+            return {
+                authenticated: Promise.resolve({ success: true } as const),
+                async finish() {
+                    return { success: true, token: new Uint8Array(32) } as const
+                },
+                async cancel() {},
+            }
+        },
     }
 
     const analytics: AnalyticsService = {

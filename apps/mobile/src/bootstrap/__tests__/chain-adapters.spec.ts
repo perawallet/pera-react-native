@@ -25,7 +25,11 @@ import {
 } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 const mocks = vi.hoisted(() => ({
-    provider: { chains: null as unknown as ChainRegistry },
+    // The network store resolves its shim through the registry as it loads,
+    // before beforeEach installs the real one.
+    provider: {
+        chains: { has: () => false } as unknown as ChainRegistry,
+    },
     config: {
         chains: { enabled: ['algorand'], capabilities: {} } as ChainSetupConfig,
     },
@@ -81,7 +85,9 @@ describe('registerChainAdapters', () => {
         mocks.config.chains = { enabled: ['algorand'], capabilities: {} }
         mocks.readCapabilityOverrides.mockReturnValue({})
         mocks.networkGetState.mockReturnValue({
-            selectedNetworkByChain: { algorand: 'mainnet' },
+            mode: 'live',
+            selectedNetworkByChain: {},
+            customNetworksByChain: { algorand: [] },
         })
     })
 
@@ -167,7 +173,9 @@ describe('registerChainAdapters', () => {
 
             const before = context.getScope()
             mocks.networkGetState.mockReturnValue({
-                selectedNetworkByChain: { algorand: 'testnet' },
+                mode: 'developer',
+                selectedNetworkByChain: { algorand: 'betanet' },
+                customNetworksByChain: { algorand: [] },
             })
             const after = context.getScope()
 
@@ -175,14 +183,15 @@ describe('registerChainAdapters', () => {
                 chainId: 'algorand',
                 networkId: 'mainnet',
             })
-            expect(after).toEqual({ chainId: 'algorand', networkId: 'testnet' })
+            expect(after).toEqual({ chainId: 'algorand', networkId: 'betanet' })
         })
 
-        it('resolves a chain with no stored entry from the global selection', () => {
+        it('resolves a chain with no override to its default test network in developer mode', () => {
             registerChainAdapters()
             mocks.networkGetState.mockReturnValue({
-                globalNetwork: 'testnet',
+                mode: 'developer',
                 selectedNetworkByChain: {},
+                customNetworksByChain: { algorand: [] },
             })
 
             expect(contextGivenToModule().getScope()).toEqual({

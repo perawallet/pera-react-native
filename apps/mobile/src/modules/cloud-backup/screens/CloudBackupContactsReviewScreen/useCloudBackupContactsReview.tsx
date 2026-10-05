@@ -11,16 +11,18 @@
  */
 
 import { useCallback, useState } from 'react'
-import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { BackupContactReview } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { DeleteFromBackupSheet } from '../../components/DeleteFromBackupSheet'
-import { useBackupContactReview } from '../../hooks/useBackupContactReview'
+import {
+    useBackupContactReview,
+    type BackupContact,
+} from '../../hooks/useBackupContactReview'
 
 type UseCloudBackupContactsReviewResult = {
     availableFromBackup: BackupContactReview['availableFromBackup']
-    notBackedUpContacts: Contact[]
+    notBackedUpContacts: BackupContact[]
     isExpanded: boolean
     isBusy: (address: string) => boolean
     onToggleExpanded: () => void

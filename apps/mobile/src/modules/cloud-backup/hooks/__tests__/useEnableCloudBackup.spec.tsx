@@ -19,16 +19,21 @@ type MutationCallbacks = {
     onSuccess?: () => void
     onError?: (error: Error) => void
 }
-const { showToastMock, resetMock, mutateMock, capturedOptions } = vi.hoisted(
-    () => ({
-        showToastMock: vi.fn(),
-        resetMock: vi.fn(),
-        mutateMock: vi.fn(),
-        capturedOptions: {
-            value: null as MutationCallbacks | null,
-        },
-    }),
-)
+const {
+    showToastMock,
+    resetMock,
+    mutateMock,
+    finishCameraTabMock,
+    capturedOptions,
+} = vi.hoisted(() => ({
+    showToastMock: vi.fn(),
+    finishCameraTabMock: vi.fn(),
+    resetMock: vi.fn(),
+    mutateMock: vi.fn(),
+    capturedOptions: {
+        value: null as MutationCallbacks | null,
+    },
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ reset: resetMock }),
@@ -46,6 +51,10 @@ vi.mock('@hooks/useToast', () => ({
 }))
 
 vi.mock('@hooks/useLanguage')
+
+vi.mock('@hooks/useFinishCameraTab', () => ({
+    useFinishCameraTab: () => ({ finishCameraTab: finishCameraTabMock }),
+}))
 
 import { useEnableCloudBackup } from '../useEnableCloudBackup'
 
@@ -74,6 +83,16 @@ describe('useEnableCloudBackup', () => {
         })
     })
 
+    // In the extension's hand-off tab this swaps in the "close this tab"
+    // result; everywhere else it is a no-op.
+    test('finishes the hand-off tab once enabled', () => {
+        renderHook(() => useEnableCloudBackup())
+
+        act(() => capturedOptions.value?.onSuccess?.())
+
+        expect(finishCameraTabMock).toHaveBeenCalledOnce()
+    })
+
     test('shows an error toast and stays put on failure', () => {
         renderHook(() => useEnableCloudBackup())
 
@@ -86,5 +105,6 @@ describe('useEnableCloudBackup', () => {
             }),
         )
         expect(resetMock).not.toHaveBeenCalled()
+        expect(finishCameraTabMock).not.toHaveBeenCalled()
     })
 })

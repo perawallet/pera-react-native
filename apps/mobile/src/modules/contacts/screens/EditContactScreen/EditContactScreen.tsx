@@ -113,7 +113,7 @@ export const EditContactScreen = () => {
                 address={
                     nfd.isNfdResolved
                         ? nfd.resolvedAddress
-                        : (contact?.address ?? '')
+                        : (contact?.addresses.algorand ?? '')
                 }
                 nameLabel={t('contacts.edit_contact.name_label')}
                 addressLabel={t('contacts.edit_contact.address_label')}

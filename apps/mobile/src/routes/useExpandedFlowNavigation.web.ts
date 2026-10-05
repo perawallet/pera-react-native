@@ -25,6 +25,7 @@ export type OnboardingFlowScreen =
     | 'LedgerScan'
     | 'AsbImportBackup'
     | 'CloudBackupRestoreScan'
+    | 'ImportAccountOptions'
 
 /**
  * Parses the one-shot `?flow=` deep-link param the popup passed to
@@ -71,6 +72,18 @@ export const useExpandedFlowNavigation = (
                 screen: 'CloudBackupSettings',
                 params: { screen: 'CloudBackupRestoreScan' },
             })
+        } else if (flow === 'backup-setup') {
+            // `initial: false` keeps the stack's own first screen underneath,
+            // so backing out of setup lands on the backup home.
+            navigate('Settings', {
+                screen: 'CloudBackupSettings',
+                params: { screen: 'CloudBackupSetup', initial: false },
+            })
+        } else if (flow === 'recover-qr') {
+            navigate('AddAccount', {
+                screen: 'ImportAccountOptions',
+                params: { isScannerOpen: true },
+            })
         } else if (flow === 'camera-access') {
             navigate('CameraAccess')
         }
@@ -84,8 +97,9 @@ export const useExpandedFlowNavigation = (
  * `consumeInitialExpandedFlow` source: the two shell states are exclusive, so
  * only one of these ever consumes the param.
  *
- * `add-account`/`scan`/`camera-access` are deliberately unhandled — they
- * only exist in the main shell and are unreachable with no account.
+ * `add-account`/`scan`/`camera-access`/`backup-setup` are deliberately
+ * unhandled — they only exist in the main shell and are unreachable with no
+ * account.
  */
 export const useOnboardingExpandedFlowNavigation = (
     navigate: (screen: OnboardingFlowScreen, params?: object) => void,
@@ -98,7 +112,8 @@ export const useOnboardingExpandedFlowNavigation = (
             flow !== 'ledger-usb' &&
             flow !== 'ledger-ble' &&
             flow !== 'asb-import' &&
-            flow !== 'backup-restore-scan'
+            flow !== 'backup-restore-scan' &&
+            flow !== 'recover-qr'
         ) {
             return
         }
@@ -113,6 +128,8 @@ export const useOnboardingExpandedFlowNavigation = (
             navigate('AsbImportBackup')
         } else if (flow === 'backup-restore-scan') {
             navigate('CloudBackupRestoreScan')
+        } else if (flow === 'recover-qr') {
+            navigate('ImportAccountOptions', { isScannerOpen: true })
         } else {
             navigate('LedgerScan', {
                 transportType: flow === 'ledger-usb' ? 'usb' : 'ble',

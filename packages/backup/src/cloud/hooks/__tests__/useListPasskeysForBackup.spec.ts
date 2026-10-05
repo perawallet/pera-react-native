@@ -238,9 +238,9 @@ describe('useListPasskeysForBackup', () => {
         expect(passkeys).toEqual([])
     })
 
-    // A KMS read that throws for one seed is an expected failure, and the
-    // keys other credentials already produced must not outlive it.
-    it('zeroes every key already read when another credential fails', async () => {
+    // A KMS read that throws for one seed is an expected failure; every
+    // other credential still syncs this run.
+    it('keeps the other credentials when one fails', async () => {
         keystoreKeys.mockReturnValue([{ id: 'a' }, { id: 'b' }])
         const stored = new Uint8Array(32).fill(2)
         readPrivateKeyMock.mockImplementation(async id =>
@@ -254,10 +254,23 @@ describe('useListPasskeysForBackup', () => {
         inputsFor.mockRejectedValue(new Error('KMS session denied'))
 
         const { result } = renderHook(() => useListPasskeysForBackup())
+        const passkeys = await result.current()
 
-        await expect(result.current()).rejects.toThrow('KMS session denied')
-        expect(zeroBytesMock).toHaveBeenCalledWith(stored)
+        expect(passkeys.map(passkey => passkey.credentialId)).toEqual(['a'])
         expect(disposeReaderMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('drops and zeroes a credential whose seed reference fails', async () => {
+        keystoreKeys.mockReturnValue([{ id: 'a' }])
+        const derived = derivedInputs()
+        inputsFor.mockResolvedValue(derived)
+        backupSeedReferenceMock.mockRejectedValue(new Error('seed locked'))
+
+        const { result } = renderHook(() => useListPasskeysForBackup())
+        const passkeys = await result.current()
+
+        expect(passkeys).toEqual([])
+        expect(zeroBytesMock).toHaveBeenCalledWith(derived.privateKey)
     })
 
     it('hands metadata-only callers no keys and zeroes them before resolving', async () => {

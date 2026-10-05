@@ -14,7 +14,6 @@ import React from 'react'
 import { PWListItem, PWSheetLayout } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useTranslation } from 'react-i18next'
-import { routeCapabilities } from '@routes/capabilities'
 
 export type ImportAccountSupportOptionsContentResult =
     | 'paste'
@@ -43,15 +42,11 @@ export const ImportAccountSupportOptionsContent = () => {
                 )}
                 onPress={() => resolve('paste')}
             />
-            {routeCapabilities.recoverAccountQr && (
-                <PWListItem
-                    icon='camera'
-                    title={t(
-                        'onboarding.import_account.support_options.scan_qr',
-                    )}
-                    onPress={() => resolve('scan')}
-                />
-            )}
+            <PWListItem
+                icon='camera'
+                title={t('onboarding.import_account.support_options.scan_qr')}
+                onPress={() => resolve('scan')}
+            />
             <PWListItem
                 icon='info'
                 title={t(

@@ -19,12 +19,17 @@ Surface:
   random 32-byte token, wraps it and returns the ciphertext plus the token's
   SHA-256 as lowercase hex. Requires no ceremony, because the legacy migration
   path arms with no user present.
-- `unwrapToken(blob, prompt)` → the token bytes, or a rejection whose `code` is
-  one of `invalidated`, `decrypt-failed`, `no-binding`, `user-cancel`,
-  `system-cancel`, `lockout`, `unavailable`, `failed`. Only the native side can
-  tell a destroyed key from a declined prompt, so it classifies and JS only maps.
-  `prompt.title` and `prompt.cancelLabel` are the caller's translated copy; the
-  module holds no fallback copy of its own.
+- `beginUnwrap(prompt)` → resolves once the ceremony passes, holding the
+  authorised key; `finishUnwrap(blob)` → the token bytes, released with that key.
+  The split lets the prompt go up before the blob's keystore read lands, which
+  on a slow keystore queues behind every other caller. `cancelUnwrap()`
+  dismisses a prompt still up (its `beginUnwrap` rejects `system-cancel`) and
+  drops a held key. One session at a time: a new `beginUnwrap` cancels the last.
+  Rejections carry a `code` of `invalidated`, `decrypt-failed`, `no-binding`,
+  `user-cancel`, `system-cancel`, `lockout`, `unavailable` or `failed`. Only the
+  native side can tell a destroyed key from a declined prompt, so it classifies
+  and JS only maps. `prompt.title` and `prompt.cancelLabel` are the caller's
+  translated copy; the module holds no fallback copy of its own.
 - `checkBinding()` → `'valid' | 'changed' | 'absent' | 'unavailable'`. Never
   prompts; it runs on every mount of `useBiometrics`. Only `'changed'` is an
   affirmative report that the set was modified.
@@ -46,12 +51,14 @@ between does not reset the count), and every other code keeps it.
 - Wrapping uses the public half
   (`eciesEncryptionCofactorVariableIVX963SHA256AESGCM`), which is why arming
   needs no authentication at all.
-- Unwrapping evaluates the `LAContext` policy first and then hands that same
-  context to the Keychain lookup via `kSecUseAuthenticationContext`, so there is
-  one ceremony and the key is released against that evaluation. The `LAContext`
-  must be kept alive (`withExtendedLifetime`) across the decrypt: a Release
-  build otherwise releases it at its last use, and the failure surfaces as a
-  declined ceremony that no Debug run can reproduce.
+- `beginUnwrap` evaluates the `LAContext` policy and keeps the context;
+  `finishUnwrap` hands that same context to the Keychain lookup via
+  `kSecUseAuthenticationContext`, so there is one ceremony and the key is
+  released against that evaluation. The hand-over must release the context, not
+  `invalidate()` it, and the `LAContext` must be kept alive
+  (`withExtendedLifetime`) across the decrypt: a Release build otherwise
+  releases it at its last use, and the failure surfaces as a declined ceremony
+  that no Debug run can reproduce.
 - `checkBinding` answers `'valid'` or `'absent'`, never `'changed'`: the OS
   removes a key whose biometric set changed rather than marking it unusable, so
   a re-enrollment is indistinguishable from a restore or a device upgrade. The
@@ -117,6 +124,12 @@ the key it stands for.
   `BiometricPrompt.authenticateInternal` returns without firing any callback, so
   without that guard the unwrap hangs for the whole unlock cycle and leaks the
   KeyMint operation.
+- `cancelUnwrap` rejects the pending `beginUnwrap` itself rather than waiting
+  for `cancelAuthentication()` to fire the error callback, which a cancel from
+  the app is not guaranteed to do. The prompt callbacks therefore settle only a
+  session they still own (`generation`), and the stale-session check and the
+  registration of the prompt happen in one locked step, so a cancel that lands
+  first stops the prompt going up.
 - The OS carries the invalidation on both:
   `setInvalidatedByBiometricEnrollment(true)` destroys them when a biometric is
   enrolled or all are removed. Auth-per-use is what binds them to the set rather
@@ -133,7 +146,7 @@ everything below only exists as behavior on real hardware. Run
 incremental build — and run the iOS pass at least once on a **Release** build,
 not just Debug (see the `LAContext` trap above; Debug hides it by construction).
 The Simulator has no real Secure Enclave, so a Simulator pass proves nothing
-about `armBinding` or `unwrapToken`; every step below needs physical hardware.
+about `armBinding` or an unwrap; every step below needs physical hardware.
 
 **Enrollment change, both platforms**
 
@@ -184,8 +197,11 @@ about `armBinding` or `unwrapToken`; every step below needs physical hardware.
     the negative button — the user must stay on the PIN pad with no second
     sheet.
 13. PIN lockout on a cold start: lock the app, fail the PIN until it locks out,
-    kill the app and reopen it. No biometric sheet may appear, and the pad must
-    show the countdown rather than silently refusing input.
+    kill the app and reopen it. The lockout is not known until the PIN record is
+    read, which the prompt no longer waits for, so a sheet may appear; it must be
+    dismissed by itself as soon as the record is read, must never unlock even if
+    the user authenticates first, and the pad must show the countdown rather than
+    silently refusing input.
 
 **Upgrade and legacy paths**
 

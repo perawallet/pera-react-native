@@ -1720,3 +1720,29 @@ describe('SINGLE_USE_POST_RETRY', () => {
         ).toBe(false)
     })
 })
+
+describe('BACKUP_RETRY', () => {
+    it('retries a backup request that never got a response', async () => {
+        const { BACKUP_RETRY } = await import('../query-client')
+
+        expect(
+            await BACKUP_RETRY.shouldRetry?.({
+                error: new Error('Network request failed'),
+                retryCount: 1,
+            }),
+        ).toBe(true)
+    })
+
+    // The server has already accepted the signed nonce by the time it answers,
+    // so a replayed 5xx comes back 401 and reads as bad credentials.
+    it('refuses to replay a request the server answered', async () => {
+        const { BACKUP_RETRY } = await import('../query-client')
+
+        expect(
+            await BACKUP_RETRY.shouldRetry?.({
+                error: new MockHTTPError(503),
+                retryCount: 1,
+            }),
+        ).toBe(false)
+    })
+})

@@ -59,8 +59,8 @@ vi.mock('../../components/RestoreBackupSheet', () => ({
     RestoreBackupSheet: () => null,
 }))
 vi.mock('../../storage', () => ({ readBackupCredentials }))
-vi.mock('@hooks/useScanTabHandoff', () => ({
-    useScanTabHandoff: mockHandoff,
+vi.mock('@hooks/useTabHandoff', () => ({
+    useTabHandoff: mockHandoff,
 }))
 
 const mockOpenScanTab = vi.fn()
@@ -80,7 +80,7 @@ beforeEach(() => {
     mockIsFocused.mockReturnValue(true)
     mockHandoff.mockReturnValue({
         shouldHandOff: false,
-        openScanTab: mockOpenScanTab,
+        openTab: mockOpenScanTab,
     })
     readBackupCredentials.mockResolvedValue({ status: 'read', key: KEY })
 })
@@ -115,7 +115,7 @@ describe('useRestoreBackupOptions', () => {
     test('hands the scan off to the expanded tab from the extension popup', async () => {
         mockHandoff.mockReturnValue({
             shouldHandOff: true,
-            openScanTab: mockOpenScanTab,
+            openTab: mockOpenScanTab,
         })
         mockRequest.mockResolvedValueOnce('scan')
 

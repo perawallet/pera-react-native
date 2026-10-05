@@ -12,13 +12,17 @@
 
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import { BackupItemType, contactItemKey } from '../../models'
 import { buildLocalContactItems } from '../buildLocalContactItems'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
-const contact = (address: string, name: string) => ({ address, name })
+const contact = (address: string, name: string) => ({
+    addresses: { algorand: address },
+    name,
+})
 
 describe('buildLocalContactItems', () => {
     it('emits one CONTACT item per contact, keyed by the hashed address', () => {
@@ -59,7 +63,7 @@ describe('buildLocalContactItems', () => {
         const [item] = buildLocalContactItems(
             [
                 {
-                    address: 'A',
+                    addresses: { algorand: 'A' },
                     name: 'Alice',
                     image: 'file:///tmp/a.png',
                     nfd: 'alice.algo',
@@ -89,5 +93,23 @@ describe('buildLocalContactItems', () => {
         )
 
         expect(before.contentHash).not.toBe(after.contentHash)
+    })
+
+    it('skips a contact without an Algorand address', () => {
+        const items = buildLocalContactItems(
+            [
+                contact('A', 'Alice'),
+                {
+                    addresses: { ['other' as ChainFamily]: 'B' },
+                    name: 'Bob',
+                },
+            ],
+            1000,
+            hashAddress,
+        )
+
+        expect(items.map(item => item.key)).toEqual([
+            contactItemKey(hashAddress('A')),
+        ])
     })
 })

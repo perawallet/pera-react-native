@@ -55,7 +55,7 @@ registerPreview({
                             size='xs'
                             contact={{
                                 name: 'Alice',
-                                address: 'AAAA',
+                                addresses: { algorand: 'AAAA' },
                                 image: undefined,
                             }}
                         />
@@ -68,7 +68,7 @@ registerPreview({
                             size='md'
                             contact={{
                                 name: 'Alice',
-                                address: 'AAAA',
+                                addresses: { algorand: 'AAAA' },
                                 image: undefined,
                             }}
                         />
@@ -82,7 +82,7 @@ registerPreview({
                             variant='highlighted'
                             contact={{
                                 name: 'Bob',
-                                address: 'BBBB',
+                                addresses: { algorand: 'BBBB' },
                                 image: undefined,
                             }}
                         />

@@ -18,7 +18,9 @@ import type { CredentialsFileSource } from './types'
 const DEVICE_ONLY: CredentialsFileSource[] = ['device']
 const NONE: CredentialsFileSource[] = []
 
-// Saving hands the file to a download, which the popup survives.
+// Saving is a download, but with "Ask where to save" on the browser opens a
+// Save dialog that closes the popup, so setup is handed to the expanded tab
+// before it starts (`useCloudBackupScreen`).
 export const getCredentialsFileSaveSources = (): CredentialsFileSource[] =>
     DEVICE_ONLY
 

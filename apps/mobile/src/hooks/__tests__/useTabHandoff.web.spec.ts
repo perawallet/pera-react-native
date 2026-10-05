@@ -12,7 +12,7 @@
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useScanTabHandoff } from '../useScanTabHandoff.web'
+import { useTabHandoff } from '../useTabHandoff.web'
 
 const { getSurfaceMock, openExpandedTabMock } = vi.hoisted(() => ({
     getSurfaceMock: vi.fn(),
@@ -30,7 +30,7 @@ beforeEach(() => {
     vi.clearAllMocks()
 })
 
-describe('useScanTabHandoff (web)', () => {
+describe('useTabHandoff (web)', () => {
     test.each([
         ['popup', true],
         ['expanded', false],
@@ -38,7 +38,7 @@ describe('useScanTabHandoff (web)', () => {
         getSurfaceMock.mockReturnValue(surface)
 
         const { result } = renderHook(() =>
-            useScanTabHandoff('backup-restore-scan'),
+            useTabHandoff('backup-restore-scan'),
         )
 
         expect(result.current.shouldHandOff).toBe(shouldHandOff)
@@ -47,10 +47,10 @@ describe('useScanTabHandoff (web)', () => {
     test('opens the expanded tab on the given flow', async () => {
         getSurfaceMock.mockReturnValue('popup')
         const { result } = renderHook(() =>
-            useScanTabHandoff('backup-restore-scan'),
+            useTabHandoff('backup-restore-scan'),
         )
 
-        await result.current.openScanTab()
+        await result.current.openTab()
 
         expect(openExpandedTabMock).toHaveBeenCalledWith('backup-restore-scan')
     })

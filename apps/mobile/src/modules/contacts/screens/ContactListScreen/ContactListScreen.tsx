@@ -77,7 +77,10 @@ export const ContactListScreen = () => {
         [selectContact, showQR],
     )
 
-    const keyExtractor = useCallback((c: Contact) => c.address, [])
+    const keyExtractor = useCallback(
+        (c: Contact, index: number) => c.addresses.algorand ?? String(index),
+        [],
+    )
 
     if (isEmpty) {
         return (

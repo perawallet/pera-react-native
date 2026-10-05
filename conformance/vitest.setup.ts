@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
 import './src/harness/registerAlgorandAccounts'
 
 // The submission chokepoint (packages/chain-algorand/src/signing/submission) reaches
@@ -62,8 +63,13 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
+// The real provider always carries a chain registry, and the network store
+// resolves its `network` shim through it on every write.
+const chains = createChainRegistry()
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
+        chains,
         keyValueStorage: {
             getItem: (key: string) => store.get(key) ?? null,
             setItem: (key: string, value: string) => store.set(key, value),

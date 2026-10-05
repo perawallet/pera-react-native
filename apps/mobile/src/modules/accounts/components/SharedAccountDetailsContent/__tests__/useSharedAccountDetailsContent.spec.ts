@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useSharedAccountDetailsContent } from '../useSharedAccountDetailsContent'
 
-type StoredContact = { address: string; name: string }
+type StoredContact = { addresses: { algorand: string }; name: string }
 
 const mockAccounts = vi.fn<() => { address: string }[]>(() => [])
 const mockContacts = vi.fn<() => StoredContact[]>(() => [])
@@ -100,7 +100,10 @@ describe('useSharedAccountDetailsContent', () => {
     })
 
     it('handleEditContact dismisses the sheet and opens EditContact when a contact exists', () => {
-        const contact: StoredContact = { address: 'ADDR1', name: 'Alice' }
+        const contact: StoredContact = {
+            addresses: { algorand: 'ADDR1' },
+            name: 'Alice',
+        }
         mockContacts.mockReturnValue([contact])
 
         const { result } = renderHook(() =>

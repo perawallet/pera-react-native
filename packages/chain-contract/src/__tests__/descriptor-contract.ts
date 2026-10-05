@@ -49,7 +49,7 @@ const collectViolations = (
         network => network.id !== CUSTOM_NETWORK_ID,
     )
 
-    // Every tier, declared or not: the global selection maps onto each one.
+    // Every tier, declared or not: each mode resolves to one tier's default.
     for (const tier of NETWORK_TIERS) {
         const defaults = descriptor.networks.filter(
             n => n.tier === tier && n.isDefaultForTier,

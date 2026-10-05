@@ -90,6 +90,7 @@ export const SelectDestinationScreen = () => {
         >
             <AddressSearchView
                 onSelected={handleSelected}
+                chainFamily='algorand'
                 showClipboardPaste
             />
         </PWScreen>

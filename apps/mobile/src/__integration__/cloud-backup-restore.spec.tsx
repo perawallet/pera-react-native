@@ -346,7 +346,7 @@ describe('Flow: Cloud backup → Restore', () => {
         await waitFor(
             () => {
                 expect(useContactsStore.getState().contacts).toEqual([
-                    { address: 'CONTACT_A', name: 'Alice' },
+                    { addresses: { algorand: 'CONTACT_A' }, name: 'Alice' },
                 ])
             },
             { timeout: 10_000 },

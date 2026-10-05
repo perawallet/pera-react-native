@@ -12,11 +12,13 @@
 
 import type { Contact } from '@perawallet/wallet-core-contacts'
 
-/** Address and name are the only fields the contact payload carries. `image`
- *  and `nfd` are deliberately absent: reacting to a re-resolved NFD would sync
- *  on a timer the user never touched. */
+/** The Algorand address and name are the only fields the contact payload
+ *  carries. `image` and `nfd` are deliberately absent: reacting to a
+ *  re-resolved NFD would sync on a timer the user never touched. */
 export const contactsFingerprint = (contacts: readonly Contact[]): string =>
     contacts
-        .map(contact => `${contact.address} ${contact.name}`)
+        .flatMap(({ addresses, name }) =>
+            addresses.algorand ? [`${addresses.algorand} ${name}`] : [],
+        )
         .sort()
         .join('')

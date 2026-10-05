@@ -11,12 +11,11 @@
  */
 
 import type { ChainDescriptor } from './models/descriptor'
-import {
-    CUSTOM_NETWORK_ID,
-    type ChainNetwork,
-    type GlobalNetwork,
-    type NetworkId,
-    type NetworkTier,
+import type {
+    ChainNetwork,
+    NetworkId,
+    NetworkTier,
+    WalletMode,
 } from './models/identity'
 
 export const defaultNetworkForTier = (
@@ -40,20 +39,18 @@ const defaultForTier = (
     return network.id
 }
 
+export const networkTierForMode = (mode: WalletMode): NetworkTier =>
+    mode === 'live' ? 'mainnet' : 'testnet'
+
 /**
- * A chain without custom networks follows Custom onto its testnet: a custom
- * node is a test setup, and leaving that chain on mainnet beside it would mix
- * real and test funds in one wallet.
+ * The caller validates `override`: custom networks are user data the
+ * descriptor doesn't list.
  */
-export const networkIdForGlobal = (
+export const networkIdForMode = (
     descriptor: ChainDescriptor,
-    globalNetwork: GlobalNetwork,
-    hasCustomNetworks: boolean,
-): NetworkId => {
-    if (globalNetwork !== 'custom') {
-        return defaultForTier(descriptor, globalNetwork)
-    }
-    return hasCustomNetworks
-        ? CUSTOM_NETWORK_ID
-        : defaultForTier(descriptor, 'testnet')
-}
+    mode: WalletMode,
+    override?: NetworkId,
+): NetworkId =>
+    mode === 'live'
+        ? defaultForTier(descriptor, 'mainnet')
+        : (override ?? defaultForTier(descriptor, 'testnet'))

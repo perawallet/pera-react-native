@@ -56,6 +56,71 @@ internal final class UnwrapException: Exception, @unchecked Sendable {
   override var reason: String { "Biometric unwrap failed" }
 }
 
+/// One unwrap at a time, split around the ceremony so the prompt does not wait
+/// for the blob. Static rather than on the module so the `@Sendable` closures
+/// the async functions need never capture the module itself. A cancel or a newer
+/// `begin` bumps `generation`, which is how an evaluation that finishes late
+/// learns it no longer owns the session.
+private final class UnwrapSession: @unchecked Sendable {
+  static let shared = UnwrapSession()
+
+  private let lock = NSLock()
+  private var generation = 0
+  private var context: LAContext?
+  private var isEvaluated = false
+
+  /// Ends any session in progress and makes `context` the current one.
+  func begin(_ context: LAContext) -> Int {
+    lock.lock()
+    defer { lock.unlock() }
+    endLocked()
+    self.context = context
+    return generation
+  }
+
+  /// Marks the evaluation passed, or reports that it was cancelled meanwhile.
+  func markEvaluated(_ session: Int) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    guard session == generation, context != nil else { return false }
+    isEvaluated = true
+    return true
+  }
+
+  func fail(_ session: Int) {
+    lock.lock()
+    defer { lock.unlock() }
+    if session == generation { context = nil }
+  }
+
+  /// The evaluated context, handed over once; nil without a passed ceremony.
+  /// Released rather than invalidated: the caller is about to use it.
+  func take() -> LAContext? {
+    lock.lock()
+    defer { lock.unlock() }
+    let evaluated = isEvaluated ? context : nil
+    generation += 1
+    context = nil
+    isEvaluated = false
+    return evaluated
+  }
+
+  func cancel() {
+    lock.lock()
+    defer { lock.unlock() }
+    endLocked()
+  }
+
+  /// `invalidate()` dismisses an evaluation still on screen, which then fails
+  /// with `appCancel`, and voids a credential it already holds.
+  private func endLocked() {
+    generation += 1
+    context?.invalidate()
+    context = nil
+    isEvaluated = false
+  }
+}
+
 /// The token the wallet needs is wrapped to a Secure Enclave key that only a
 /// successful biometric evaluation can use and that the OS destroys when the
 /// enrolled set changes.
@@ -131,11 +196,9 @@ public class PeraBiometricBindingModule: Module {
       ]
     }
 
-    AsyncFunction("unwrapToken") {
-      (blob: String, prompt: [String: String]) async throws -> Data in
-      guard let ciphertext = Data(base64Encoded: blob) else {
-        throw UnwrapException(.failed)
-      }
+    // The ceremony alone: the prompt goes up without waiting for the blob, and
+    // a passed evaluation is held for `finishUnwrap`.
+    AsyncFunction("beginUnwrap") { (prompt: [String: String]) async throws -> Void in
       // The copy is translated by the caller. An empty reason makes
       // `evaluatePolicy` raise an NSInvalidArgumentException, which is a crash
       // rather than a rejection.
@@ -147,22 +210,37 @@ public class PeraBiometricBindingModule: Module {
       if let cancelLabel = prompt["cancelLabel"], !cancelLabel.isEmpty {
         context.localizedCancelTitle = cancelLabel
       }
-      // Evaluate first, then hand the same context to the Keychain, so the user
-      // sees one ceremony and the key is released against that evaluation.
+      let session = UnwrapSession.shared.begin(context)
       do {
         _ = try await context.evaluatePolicy(
           .deviceOwnerAuthenticationWithBiometrics,
           localizedReason: reason
         )
       } catch let error as LAError {
+        UnwrapSession.shared.fail(session)
         throw UnwrapException(UnwrapError(from: error))
       } catch {
+        UnwrapSession.shared.fail(session)
+        throw UnwrapException(.failed)
+      }
+      guard UnwrapSession.shared.markEvaluated(session) else {
+        throw UnwrapException(.systemCancel)
+      }
+    }
+
+    AsyncFunction("finishUnwrap") { (blob: String) throws -> Data in
+      guard let context = UnwrapSession.shared.take() else {
+        throw UnwrapException(.failed)
+      }
+      guard let ciphertext = Data(base64Encoded: blob) else {
         throw UnwrapException(.failed)
       }
 
-      // `withExtendedLifetime` is load-bearing: `context` has no use after the
-      // lookup, an optimised build releases it there, and `LAContext.deinit`
-      // invalidates the evaluated credential. Debug hides this by construction.
+      // The evaluated context reaches the Keychain, so the key is released
+      // against the ceremony the user already passed. `withExtendedLifetime`
+      // is load-bearing: `context` has no use after the lookup, an optimised
+      // build releases it there, and `LAContext.deinit` invalidates the
+      // evaluated credential. Debug hides this by construction.
       return try withExtendedLifetime(context) { () -> Data in
         // Named rather than `Self`, which would capture the module in a closure
         // the concurrent overload requires to be @Sendable.
@@ -191,6 +269,12 @@ public class PeraBiometricBindingModule: Module {
         }
         return token
       }
+    }
+
+    // A prompt still up is dismissed, rejecting its `beginUnwrap` with
+    // 'system-cancel'.
+    AsyncFunction("cancelUnwrap") { () -> Void in
+      UnwrapSession.shared.cancel()
     }
 
     AsyncFunction("checkBinding") { () -> String in

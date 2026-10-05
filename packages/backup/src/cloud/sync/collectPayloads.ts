@@ -19,7 +19,8 @@ import type {
     FetchedItem,
     SyncItemState,
 } from '../models'
-import { canonicalJson, contentHash } from './canonicalize'
+import { contentHash } from './canonicalize'
+import { itemContentHash } from './itemContentHash'
 
 export type CollectPayloadsDeps = {
     network: Network
@@ -82,13 +83,12 @@ export const keepLocalEdit = (
     lastRemoteHash: item.hash,
 })
 
-const contentHashSansUpdatedAt = (plaintext: string): string => {
+const remoteContentHash = (key: BackupItemKey, plaintext: string): string => {
     try {
-        const { updatedAt: _drop, ...rest } = JSON.parse(plaintext) as Record<
-            string,
-            unknown
-        >
-        return contentHash(canonicalJson(rest))
+        return itemContentHash(
+            key,
+            JSON.parse(plaintext) as Record<string, unknown>,
+        )
     } catch {
         return contentHash(plaintext)
     }
@@ -105,6 +105,6 @@ export const adoptRemote = (
     baseVer: item.ver,
     isDirty: false,
     lastRemoteHash: item.hash,
-    localContentHash: contentHashSansUpdatedAt(plaintext),
+    localContentHash: remoteContentHash(item.key, plaintext),
     localUpdatedAt: null,
 })

@@ -72,7 +72,10 @@ describe('useAccountActions', () => {
     })
 
     it('reports the existing contact when the address matches', () => {
-        const existing: Contact = { name: 'Alice', address: ADDRESS }
+        const existing: Contact = {
+            name: 'Alice',
+            addresses: { algorand: ADDRESS },
+        }
         contactsRef.contacts = [existing]
 
         const { result } = renderHook(() =>
@@ -100,7 +103,10 @@ describe('useAccountActions', () => {
     })
 
     it('openContact navigates to EditContact when contact already exists', () => {
-        const existing: Contact = { name: 'Alice', address: ADDRESS }
+        const existing: Contact = {
+            name: 'Alice',
+            addresses: { algorand: ADDRESS },
+        }
         contactsRef.contacts = [existing]
 
         const { result } = renderHook(() =>
