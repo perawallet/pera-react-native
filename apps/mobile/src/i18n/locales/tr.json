@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera kararını siteye iletemedi. Bu pencere açıkken uzantı uyku moduna geçti. Bu pencereyi kapat ve isteği siteden tekrar gönder.",
             "request_origin": "İstek {{origin}} adresinden geldi",
-            "requester_verified_label": "Doğrulanmış sekme",
+            "requester_verified_label": "Doğrulanmış sekme: {{origin}}",
+            "requester_mismatch": "Bu istek {{claimed}} değil, {{origin}} adresinden geldi.",
             "requester_verified_a11y_origin": "Doğrulandı: bu istek {{origin}} adresindeki tarayıcı sekmenden geldi"
         }
     },

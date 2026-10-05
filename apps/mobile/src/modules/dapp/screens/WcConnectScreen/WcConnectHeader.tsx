@@ -14,23 +14,37 @@
 // and no requester-origin row. Fidelity comes from importing its stylesheet
 // (see __tests__/visualFidelity.spec.ts).
 import React from 'react'
-import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWIcon,
+    PWImage,
+    PWRoundIcon,
+    PWText,
+    PWView,
+} from '@components/core'
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
-import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
+import {
+    resolveDisplayableVerificationTier,
+    useProjectByUrlQuery,
+} from '@perawallet/wallet-core-projects'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects'
-import { PermissionItem } from '@modules/walletconnect'
+import { getPreferredDappIcon, PermissionItem } from '@modules/walletconnect'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useRequesterStyles } from './styles'
 
 export type WcConnectHeaderProps = {
     peer: ConnectionPeer
+    /** `peer.name` cleaned and clamped for display. */
+    peerName: string
     permissions: string[]
     /** Browser-verified origin of the requesting tab; `peer.url` is forgeable. */
     requesterOrigin?: string
-    /** When true the badge alone cannot vouch for `peer.url`, so the origin is named. */
+    /** `requesterOrigin` as its host, for display. */
+    requesterOriginLabel?: string
+    /** When true `peer.url` is not the requesting tab, so the header warns instead. */
     isRequesterOriginDistinct?: boolean
     peerUrlLabel?: string
     canOpenPeerUrl: boolean
@@ -39,8 +53,10 @@ export type WcConnectHeaderProps = {
 
 export const WcConnectHeader = ({
     peer,
+    peerName,
     permissions,
     requesterOrigin,
+    requesterOriginLabel,
     isRequesterOriginDistinct = false,
     peerUrlLabel,
     canOpenPeerUrl,
@@ -50,20 +66,20 @@ export const WcConnectHeader = ({
     const requesterStyles = useRequesterStyles()
     const { t } = useLanguage()
 
-    // The peer-asserted url resolves to a Pera-curated verification tier, so
-    // a spoofed name/icon still can't claim the checkmark.
     const { data: project } = useProjectByUrlQuery({
         url: peer.url ?? '',
         isEnabled: !!peer.url,
     })
 
-    const preferredIcon =
-        peer.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? peer.icons?.at(0)
+    // The registry is keyed by the peer-asserted url, so a positive tier only
+    // shows when the browser-verified tab is that same site. A page asserting
+    // someone else's url never inherits their checkmark.
+    const verificationTier = resolveDisplayableVerificationTier(
+        project,
+        isRequesterOriginDistinct ? undefined : requesterOrigin,
+    )
+
+    const preferredIcon = getPreferredDappIcon(peer.icons)
 
     return (
         <PWView style={styles.headerContainer}>
@@ -88,70 +104,92 @@ export const WcConnectHeader = ({
                     <PWText
                         variant='h3'
                         style={styles.title}
+                        numberOfLines={3}
                         testID='wc-connect-peer-name'
                     >
                         {t('walletconnect.request.title', {
-                            name: peer.name,
+                            name: peerName,
                         })}
                     </PWText>
-                    {!!project?.verificationTier && (
+                    {!!verificationTier && (
                         <ProjectVerificationIcon
-                            tier={project.verificationTier}
+                            tier={verificationTier}
                             size='sm'
                         />
                     )}
                 </PWView>
-                {!!peerUrlLabel &&
-                    (canOpenPeerUrl ? (
-                        <PWButton
-                            variant='link'
-                            onPress={onPressUrl}
-                            title={peerUrlLabel}
+                {/* A page CAN pair while asserting someone else's url. Then the
+                    asserted url is not shown as a link at all: the warning names
+                    the real (browser-stamped) origin and the claimed one. */}
+                {!!requesterOriginLabel && isRequesterOriginDistinct ? (
+                    <PWView
+                        style={requesterStyles.mismatchWarning}
+                        testID='wc-connect-requester-mismatch'
+                    >
+                        <PWRoundIcon
+                            icon='warning'
+                            size='sm'
+                            variant='error'
                         />
-                    ) : (
                         <PWText
-                            variant='caption'
-                            style={styles.peerUrlText}
-                            testID='wc-connect-peer-url-text'
+                            variant='body'
+                            style={requesterStyles.mismatchWarningText}
                         >
-                            {peerUrlLabel}
+                            {peerUrlLabel
+                                ? t('dapp.approval.requester_mismatch', {
+                                      origin: requesterOriginLabel,
+                                      claimed: peerUrlLabel,
+                                  })
+                                : t('dapp.approval.request_origin', {
+                                      origin: requesterOriginLabel,
+                                  })}
                         </PWText>
-                    ))}
-                {!!requesterOrigin && (
-                    <PWView style={requesterStyles.verifiedRow}>
-                        {/* A page CAN pair while asserting someone else's url; the badge
-                            alone would then vouch for the forged one, so the real
-                            (browser-stamped) origin is named. */}
-                        {isRequesterOriginDistinct && (
-                            <PWText
-                                variant='caption'
-                                style={requesterStyles.requesterOrigin}
-                                testID='wc-connect-requester-origin'
-                            >
-                                {t('dapp.approval.request_origin', {
-                                    origin: requesterOrigin,
-                                })}
-                            </PWText>
-                        )}
-                        <PWView style={requesterStyles.verifiedBadge}>
-                            <PWIcon
-                                name='assets/verified'
-                                size='sm'
-                            />
-                            <PWText
-                                variant='caption'
-                                style={requesterStyles.verifiedBadgeText}
-                                accessibilityLabel={t(
-                                    // The visible text drops the origin; assistive tech keeps it.
-                                    'dapp.approval.requester_verified_a11y_origin',
-                                    { origin: requesterOrigin },
-                                )}
-                                testID='wc-connect-requester-verified-badge'
-                            >
-                                {t('dapp.approval.requester_verified_label')}
-                            </PWText>
-                        </PWView>
                     </PWView>
+                ) : (
+                    <>
+                        {!!peerUrlLabel &&
+                            (canOpenPeerUrl ? (
+                                <PWButton
+                                    variant='link'
+                                    onPress={onPressUrl}
+                                    title={peerUrlLabel}
+                                />
+                            ) : (
+                                <PWText
+                                    variant='caption'
+                                    style={styles.peerUrlText}
+                                    numberOfLines={1}
+                                    testID='wc-connect-peer-url-text'
+                                >
+                                    {peerUrlLabel}
+                                </PWText>
+                            ))}
+                        {!!requesterOriginLabel && (
+                            <PWView style={requesterStyles.verifiedBadge}>
+                                <PWIcon
+                                    name='assets/verified'
+                                    size='sm'
+                                />
+                                <PWText
+                                    variant='caption'
+                                    style={requesterStyles.verifiedBadgeText}
+                                    numberOfLines={1}
+                                    accessibilityLabel={t(
+                                        'dapp.approval.requester_verified_a11y_origin',
+                                        { origin: requesterOriginLabel },
+                                    )}
+                                    testID='wc-connect-requester-verified-badge'
+                                >
+                                    {t(
+                                        'dapp.approval.requester_verified_label',
+                                        {
+                                            origin: requesterOriginLabel,
+                                        },
+                                    )}
+                                </PWText>
+                            </PWView>
+                        )}
+                    </>
                 )}
             </PWView>
 

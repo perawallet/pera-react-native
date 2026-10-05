@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera n’a pas pu transmettre votre décision au site. L’extension s’est mise en veille pendant que cette fenêtre était ouverte. Fermez cette fenêtre et relancez la demande depuis le site.",
             "request_origin": "La demande provient de {{origin}}",
-            "requester_verified_label": "Onglet vérifié",
+            "requester_verified_label": "Onglet vérifié : {{origin}}",
+            "requester_mismatch": "Cette demande provient de {{origin}}, et non de {{claimed}}.",
             "requester_verified_a11y_origin": "Vérifié : cette demande provient de votre onglet de navigateur sur {{origin}}"
         }
     },

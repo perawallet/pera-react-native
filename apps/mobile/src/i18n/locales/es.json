@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera no ha podido enviar tu decisión al sitio. La extensión se suspendió mientras esta ventana estaba abierta. Cierra esta ventana y vuelve a hacer la solicitud desde el sitio.",
             "request_origin": "La solicitud proviene de {{origin}}",
-            "requester_verified_label": "Pestaña verificada",
+            "requester_verified_label": "Pestaña verificada: {{origin}}",
+            "requester_mismatch": "Esta solicitud vino de {{origin}}, no de {{claimed}}.",
             "requester_verified_a11y_origin": "Verificado: esta solicitud proviene de tu pestaña del navegador en {{origin}}"
         }
     },
