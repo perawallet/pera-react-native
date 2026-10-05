@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { buildApprovedNamespaces, getSdkError } from '@walletconnect/utils'
 import {
     scopeForLegacyNetwork,
     type NetworkId,
@@ -53,7 +52,6 @@ import {
 import { parseCaip10AccountIn } from './caip'
 import {
     createWalletKitClient,
-    EXPIRER_EXPIRED_EVENT,
     type ExpirerExpiredEvent,
     type WalletKitClient,
     type WalletKitEvent,
@@ -71,6 +69,7 @@ import {
     WALLET_CONNECT_V2_KIND,
     type WalletConnectV2Connection,
 } from './connection'
+import { loadWalletConnectSdk, type WalletConnectSdk } from './sdk'
 import { createWalletConnectV2Storage } from './storage'
 
 /**
@@ -221,6 +220,15 @@ export type CreateWalletConnectV2HandlerOptions = {
     keyValueStorage: KeyValueStorageService
     /** Overridden by the spec so a fake WalletKit drives the handler. */
     createWalletKit?: WalletKitFactory
+    /**
+     * Moves the boot start off `initialize`: the client starts once this
+     * resolves, and only for a wallet that already has v2 sessions; any other
+     * loads the SDK on its first pairing, which never waits for this. Loading
+     * the SDK costs seconds of JS time on a mid-range phone, so the app holds
+     * it until the lock screen is gone. Without it, `initialize` starts the
+     * client itself.
+     */
+    startWhen?: () => Promise<void>
 }
 
 const dedupe = (values: string[]): string[] => [...new Set(values)]
@@ -238,6 +246,7 @@ export const createWalletConnectV2Handler = (
         projectId,
         keyValueStorage,
         createWalletKit = createWalletKitClient,
+        startWhen,
     } = options
 
     const kit = createHandlerKit(WALLET_CONNECT_V2_KIND, {
@@ -258,6 +267,15 @@ export const createWalletConnectV2Handler = (
         pendingOrigins,
     } = kit
     let client: Nullable<WalletKitClient> = null
+    // Loaded in `initialize`, before `client`; whatever reaches `client`
+    // reaches this too.
+    let sdk: Nullable<WalletConnectSdk> = null
+    let starting: Nullable<Promise<WalletKitClient>> = null
+    // The boot start is waiting on `startWhen` or still loading; until it
+    // lands, the store is the only record of the sessions.
+    let isBootStartPending = false
+    // Bumped by teardown, so a start that lands afterwards drops its client.
+    let generation = 0
     let unbinders: (() => void)[] = []
     // Proposal id to pairing topic, and the once-only ledger: a proposal
     // missing from here has been approved, rejected or expired.
@@ -275,6 +293,13 @@ export const createWalletConnectV2Handler = (
             throw new WalletConnectError('WalletConnect v2 is unavailable')
         }
         return client
+    }
+
+    const requireSdk = (): WalletConnectSdk => {
+        if (!sdk) {
+            throw new WalletConnectError('WalletConnect v2 is unavailable')
+        }
+        return sdk
     }
 
     const bind = <E extends WalletKitEvent>(
@@ -355,13 +380,10 @@ export const createWalletConnectV2Handler = (
                 })
             })
         }
-        walletKit.core.expirer.on(EXPIRER_EXPIRED_EVENT, listener)
+        const expiredEvent = requireSdk().expirerExpiredEvent
+        walletKit.core.expirer.on(expiredEvent, listener)
         unbinders.push(
-            () =>
-                void walletKit.core.expirer.off(
-                    EXPIRER_EXPIRED_EVENT,
-                    listener,
-                ),
+            () => void walletKit.core.expirer.off(expiredEvent, listener),
         )
     }
 
@@ -505,18 +527,24 @@ export const createWalletConnectV2Handler = (
         key: 'UNSUPPORTED_METHODS' | 'UNSUPPORTED_CHAINS' | 'USER_DISCONNECTED',
         error: Error,
     ): void => {
-        void client
-            ?.respondSessionRequest({
-                topic,
-                response: { id, jsonrpc: '2.0', error: getSdkError(key) },
-            })
-            .catch((deliveryError: unknown) => {
-                logger.warn('[WC v2] refusal delivery failed', {
-                    connectionId: topic,
-                    correlationId: String(id),
-                    error: deliveryError,
+        if (client && sdk) {
+            void client
+                .respondSessionRequest({
+                    topic,
+                    response: {
+                        id,
+                        jsonrpc: '2.0',
+                        error: sdk.getSdkError(key),
+                    },
                 })
-            })
+                .catch((deliveryError: unknown) => {
+                    logger.warn('[WC v2] refusal delivery failed', {
+                        connectionId: topic,
+                        correlationId: String(id),
+                        error: deliveryError,
+                    })
+                })
+        }
         reportError(error, connectionScope(topic))
     }
 
@@ -584,7 +612,7 @@ export const createWalletConnectV2Handler = (
             const chainId = support.caip2ChainIdFor(network)
             return chainId === null ? [] : [chainId]
         })
-        const namespaces = buildApprovedNamespaces({
+        const namespaces = requireSdk().buildApprovedNamespaces({
             proposal: input.proposal,
             supportedNamespaces: {
                 [support.namespace]: {
@@ -673,8 +701,8 @@ export const createWalletConnectV2Handler = (
         reason: string | undefined,
         pairingId: string,
     ): Promise<void> => {
-        const sdkError = getSdkError(key)
         try {
+            const sdkError = requireSdk().getSdkError(key)
             await requireClient().rejectSession({
                 id,
                 reason: reason ? { ...sdkError, message: reason } : sdkError,
@@ -699,9 +727,12 @@ export const createWalletConnectV2Handler = (
      */
     const endSession = async (topic: string): Promise<void> => {
         try {
-            await requireClient().disconnectSession({
+            // Started if need be: a session ended only in the store would be
+            // restored from the relay the moment the client starts.
+            const walletKit = await ensureClient()
+            await walletKit.disconnectSession({
                 topic,
-                reason: getSdkError('USER_DISCONNECTED'),
+                reason: requireSdk().getSdkError('USER_DISCONNECTED'),
             })
         } catch (error) {
             logger.warn('[WC v2] disconnecting a session failed', {
@@ -895,6 +926,8 @@ export const createWalletConnectV2Handler = (
      * settings forever.
      */
     const restore = async (): Promise<WalletConnectV2Connection[]> => {
+        // Reporting no sessions here would read as "prune every v2 row".
+        if (isBootStartPending) return [...(await storedById()).values()]
         const walletKit = client
         // No client means v2 is unavailable, so it claims no connections and
         // reconciliation prunes whatever v2 rows are left over.
@@ -936,7 +969,10 @@ export const createWalletConnectV2Handler = (
         unbinders = []
         const walletKit = client
         client = null
-        if (!walletKit) return
+        if (walletKit) await closeClient(walletKit)
+    }
+
+    const closeClient = async (walletKit: WalletKitClient): Promise<void> => {
         try {
             await walletKit.core.relayer.transportClose()
         } catch (error) {
@@ -947,6 +983,62 @@ export const createWalletConnectV2Handler = (
         // Closing the transport leaves the heartbeat pulsing, and the expirer
         // it drives persists into the same namespace the next client owns.
         walletKit.core.heartbeat.stop()
+    }
+
+    const startClient = (): Promise<WalletKitClient> => {
+        if (client) return Promise.resolve(client)
+        if (!starting) {
+            const startedIn = generation
+            starting = (async () => {
+                sdk = await loadWalletConnectSdk()
+                const walletKit = await createWalletKit({
+                    projectId,
+                    storage: createWalletConnectV2Storage(keyValueStorage),
+                })
+                if (startedIn !== generation) {
+                    await closeClient(walletKit)
+                    throw new WalletConnectError(
+                        'WalletConnect v2 was torn down while starting',
+                    )
+                }
+                client = walletKit
+                bindEvents(walletKit)
+                return walletKit
+            })().finally(() => {
+                starting = null
+            })
+        }
+        return starting
+    }
+
+    // For a user action, which never waits on `startWhen`.
+    const ensureClient = (): Promise<WalletKitClient> =>
+        projectId.length === 0
+            ? Promise.resolve(requireClient())
+            : startClient()
+
+    // What the registry's reconcile would have done at boot, had `restore()`
+    // not answered from the store while the start was pending.
+    const reconcileStored = async (): Promise<void> => {
+        const live = await restore()
+        const liveIds = new Set(live.map(connection => connection.id))
+        for (const id of (await storedById()).keys()) {
+            if (!liveIds.has(id)) await store().remove(id)
+        }
+        for (const connection of live) await store().upsert(connection)
+    }
+
+    const startAtBoot = async (startedIn: number): Promise<void> => {
+        try {
+            await startWhen?.()
+            if (startedIn !== generation) return
+            // A wallet with no v2 sessions loads the SDK on its first pairing.
+            if ((await storedById()).size === 0) return
+            await startClient()
+        } finally {
+            if (startedIn === generation) isBootStartPending = false
+        }
+        if (startedIn === generation && client) await reconcileStored()
     }
 
     // The record goes whatever the relay says: a dApp the user removed must
@@ -975,7 +1067,8 @@ export const createWalletConnectV2Handler = (
             // The topic comes from the pairing WalletKit built, not from the
             // URI: they agree, but only one of them is what the relay
             // subscribed to.
-            const { topic } = await requireClient().core.pairing.pair({ uri })
+            const walletKit = await ensureClient()
+            const { topic } = await walletKit.core.pairing.pair({ uri })
             abandonedPairings.delete(topic)
             // Cleared, not left: a re-pairing of the same topic from another
             // entry point would otherwise inherit the first one's origin.
@@ -1012,15 +1105,20 @@ export const createWalletConnectV2Handler = (
                 )
                 return
             }
-            const walletKit = await createWalletKit({
-                projectId,
-                storage: createWalletConnectV2Storage(keyValueStorage),
+            if (!startWhen) {
+                await startClient()
+                return
+            }
+            isBootStartPending = true
+            const startedIn = generation
+            void startAtBoot(startedIn).catch((error: unknown) => {
+                logger.error('[WC v2] starting the client failed', { error })
             })
-            client = walletKit
-            bindEvents(walletKit)
         },
 
         teardown: async () => {
+            generation += 1
+            isBootStartPending = false
             kit.detach()
             pendingProposals.clear()
             pendingRequests.clear()

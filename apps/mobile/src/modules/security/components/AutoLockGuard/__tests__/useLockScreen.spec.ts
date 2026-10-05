@@ -129,6 +129,29 @@ describe('useLockScreen', () => {
     })
 
     describe('unlockWithBiometrics outcome handling', () => {
+        it('holds the pad between a passed fingerprint and the outcome', async () => {
+            let settle: (outcome: { kind: string }) => void = () => undefined
+            mockUnlockWithBiometrics.mockImplementation(
+                (_prompt, options?: { onAuthenticated?: () => void }) => {
+                    options?.onAuthenticated?.()
+                    return new Promise(resolve => {
+                        settle = resolve
+                    })
+                },
+            )
+
+            const { result } = renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+            await vi.waitFor(() =>
+                expect(result.current.isBiometricUnlockInProgress).toBe(true),
+            )
+            await act(async () => settle({ kind: 'mismatch' }))
+
+            expect(result.current.isBiometricUnlockInProgress).toBe(false)
+            expect(mockOnUnlock).not.toHaveBeenCalled()
+        })
+
         it('unlocks only when the token unwrap succeeds', async () => {
             mockUnlockWithBiometrics.mockResolvedValue({ kind: 'ok' })
 
