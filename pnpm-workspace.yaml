@@ -232,6 +232,12 @@ patchedDependencies:
   #   anything, and one credential's sealed `m/` material is opened only after
   #   the user selects it. Upstream lists flat records by opening each one.
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.29.patch
+  # Some StrongBox chips take about a second per AES operation, and every
+  # master-key read costs two, so a slow read gets a TEE-held copy of the same
+  # master key that later reads prefer; the StrongBox copy is never removed.
+  # Needs the react-native-keychain patch's TEE storage. Drop once upstream can
+  # keep a key out of StrongBox.
+  "@algorandfoundation/react-native-keystore@1.0.0-canary.20": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.20.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
@@ -242,6 +248,11 @@ patchedDependencies:
   # only seeds a script-directory lookup the inlined WASM never uses; guard it
   # with `typeof`. Drop once upstream's build stops emitting the bare read.
   "falcon-1024@0.2.0": patches/falcon-1024@0.2.0.patch
+  # Android: adds the `KeystoreAESGCM_NoAuth_TEE` storage, whose key is never
+  # generated in StrongBox; upstream always prefers StrongBox when the device
+  # has it (oblador/react-native-keychain#817). Only chosen by name, never by
+  # default.
+  "react-native-keychain@10.0.0": patches/react-native-keychain@10.0.0.patch
   # Android: ScreenFragment.onDestroy never clears Screen.fragmentWrapper, and
   # Fabric's tagToViewState keeps the Screen view alive for the surface's
   # lifetime, so every dismissed screen's fragment (plus its view subtree) is
