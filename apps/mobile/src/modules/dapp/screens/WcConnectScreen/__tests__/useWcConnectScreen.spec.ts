@@ -198,12 +198,26 @@ describe('useWcConnectScreen', () => {
         expect(mocks.approve).not.toHaveBeenCalled()
     })
 
-    it('surfaces the browser-verified requester origin untouched', () => {
+    it('surfaces the browser-verified requester origin untouched, with its host as the label', () => {
         const { result } = render(
             proposalApproval({ requesterOrigin: 'https://real-tab.example' }),
         )
 
         expect(result.current.requesterOrigin).toBe('https://real-tab.example')
+        expect(result.current.requesterOriginLabel).toBe('real-tab.example')
+    })
+
+    it('cleans the peer-asserted name of bidi controls and clamps its length', () => {
+        const { result } = render(
+            proposalApproval({
+                peer: { ...PEER, name: `Pera\u202E${'x'.repeat(200)}` },
+            }),
+        )
+
+        expect(result.current.peerName).not.toContain('\u202E')
+        expect(Array.from(result.current.peerName).length).toBeLessThanOrEqual(
+            60,
+        )
     })
 
     describe('requester origin vs the peer’s own url claim', () => {
@@ -335,6 +349,16 @@ describe('useWcConnectScreen', () => {
 
             expect(result.current.peerUrlLabel).toBe('dapp.example')
             expect(result.current.canOpenPeerUrl).toBe(true)
+        })
+
+        it('labels only the host, in punycode, so a homoglyph or a long path cannot pass for the real site', () => {
+            const { result } = render(
+                proposalApproval({
+                    peer: { ...PEER, url: 'https://\u0430pple.com/login/x' },
+                }),
+            )
+
+            expect(result.current.peerUrlLabel).toBe('xn--pple-43d.com')
         })
     })
 })

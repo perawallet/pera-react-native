@@ -16,23 +16,27 @@ import {
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { stripUrlScheme } from '@perawallet/wallet-core-shared'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import {
     openValidatedBrowserUrl,
     toValidatedBrowserUrl,
 } from '@modules/webview'
 import { useApprovalArming } from '@hooks/useApprovalArming.web'
+import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseWcConnectScreenResult = {
     /** `null` until a `connection-proposal` approval has loaded. */
     peer: ConnectionPeer | null
+    /** The dApp-asserted name, cleaned and clamped for display. */
+    peerName: string
     /** The methods the peer asked for; never defaulted to a full set. */
     permissions: string[]
     /** Browser-verified origin of the requesting tab, the ONE trustworthy origin here; absent for paste/QR. */
     requesterOrigin?: string
-    /** True when the badge cannot vouch for the peer-asserted url, so the origin is named. */
+    /** `requesterOrigin` as its host, for display. */
+    requesterOriginLabel?: string
+    /** True when the peer-asserted url is not the requesting tab, so the screen warns. */
     isRequesterOriginDistinct: boolean
     accounts: WalletAccount[]
     selected: Set<string>
@@ -42,7 +46,7 @@ type UseWcConnectScreenResult = {
     isConnecting: boolean
     handleConnect: () => void
     handleCancel: () => void
-    /** The dApp-asserted url without its scheme; rendered as text, never trusted. */
+    /** The dApp-asserted url's host (punycode); rendered as text, never trusted. */
     peerUrlLabel?: string
     /** False when the peer url fails the https gate, so it renders unlinked. */
     canOpenPeerUrl: boolean
@@ -134,8 +138,10 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
 
     return {
         peer: proposal?.peer ?? null,
+        peerName: toPeerDisplayText(proposal?.peer.name),
         permissions: proposal?.requested.methods ?? [],
         requesterOrigin: proposal?.requesterOrigin,
+        requesterOriginLabel: toPeerHostLabel(proposal?.requesterOrigin),
         isRequesterOriginDistinct: isDistinctFromPeerUrl(
             proposal?.requesterOrigin,
             proposal?.origin ?? '',
@@ -148,7 +154,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         isConnecting,
         handleConnect,
         handleCancel,
-        peerUrlLabel: stripUrlScheme(proposal?.peer.url),
+        peerUrlLabel: toPeerHostLabel(proposal?.peer.url),
         canOpenPeerUrl: toValidatedBrowserUrl(proposal?.peer.url) !== null,
         handlePressUrl,
         deliveryError,

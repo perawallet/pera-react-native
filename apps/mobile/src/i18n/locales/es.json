@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera no ha podido enviar tu decisión al sitio. La extensión se suspendió mientras esta ventana estaba abierta. Cierra esta ventana y vuelve a hacer la solicitud desde el sitio.",
             "request_origin": "La solicitud proviene de {{origin}}",
-            "requester_verified_label": "Pestaña verificada",
+            "requester_verified_label": "Pestaña verificada: {{origin}}",
+            "requester_mismatch": "Esta solicitud vino de {{origin}}, no de {{claimed}}.",
             "requester_verified_a11y_origin": "Verificado: esta solicitud proviene de tu pestaña del navegador en {{origin}}"
         }
     },
@@ -3048,7 +3049,7 @@
             "siwa_not_before": "No válida antes de",
             "siwa_resources": "Recursos",
             "siwa_invalid": "Esta solicitud de autenticación tiene un formato incorrecto y no se puede firmar.",
-            "origin_mismatch": "Este sitio te está pidiendo iniciar sesión en un dominio diferente ({{domain}}). Continúa solo si confías en él.",
+            "origin_mismatch": "Este sitio te está pidiendo iniciar sesión en un dominio diferente ({{domain}}). Pera bloqueó esta solicitud para proteger tu cuenta.",
             "show_details": "Ver detalles",
             "details_title": "Detalles de la solicitud de autenticación",
             "details_description": "Revisa todos los metadatos de esta solicitud de autenticación antes de aprobarla."

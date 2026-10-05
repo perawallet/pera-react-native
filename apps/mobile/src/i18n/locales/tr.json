@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera kararını siteye iletemedi. Bu pencere açıkken uzantı uyku moduna geçti. Bu pencereyi kapat ve isteği siteden tekrar gönder.",
             "request_origin": "İstek {{origin}} adresinden geldi",
-            "requester_verified_label": "Doğrulanmış sekme",
+            "requester_verified_label": "Doğrulanmış sekme: {{origin}}",
+            "requester_mismatch": "Bu istek {{claimed}} değil, {{origin}} adresinden geldi.",
             "requester_verified_a11y_origin": "Doğrulandı: bu istek {{origin}} adresindeki tarayıcı sekmenden geldi"
         }
     },
@@ -3048,7 +3049,7 @@
             "siwa_not_before": "Geçerlilik başlangıcı",
             "siwa_resources": "Kaynaklar",
             "siwa_invalid": "Bu kimlik doğrulama isteği hatalı biçimlendirilmiş ve imzalanamaz.",
-            "origin_mismatch": "Bu site, farklı bir alan adına giriş yapmanı istiyor ({{domain}}). Yalnızca güveniyorsan devam et.",
+            "origin_mismatch": "Bu site, farklı bir alan adına giriş yapmanı istiyor ({{domain}}). Pera, hesabını korumak için bu isteği engelledi.",
             "show_details": "Detayları göster",
             "details_title": "Kimlik doğrulama isteği detayları",
             "details_description": "Onaylamadan önce bu kimlik doğrulama isteğinin tüm metadata’sını incele."

@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera couldn't deliver your decision to the site. The extension went to sleep while this window was open. Close this window and try the request again from the site.",
             "request_origin": "Request came from {{origin}}",
-            "requester_verified_label": "Verified tab",
+            "requester_verified_label": "Verified tab: {{origin}}",
+            "requester_mismatch": "This request came from {{origin}}, not {{claimed}}.",
             "requester_verified_a11y_origin": "Verified: this request came from your browser tab at {{origin}}"
         }
     },
@@ -3048,7 +3049,7 @@
             "siwa_not_before": "Not Before",
             "siwa_resources": "Resources",
             "siwa_invalid": "This authentication request is malformed and cannot be signed.",
-            "origin_mismatch": "This site is asking you to sign in to a different domain ({{domain}}). Only continue if you trust it.",
+            "origin_mismatch": "This site is asking you to sign in to a different domain ({{domain}}). Pera blocked this request to protect your account.",
             "show_details": "Show Details",
             "details_title": "Athentication Request Details",
             "details_description": "Review the full metadata of this authentication request before approving."

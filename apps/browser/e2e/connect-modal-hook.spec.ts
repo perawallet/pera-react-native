@@ -449,18 +449,17 @@ test('the injected row pairs a real WC session, and approving it surfaces the ve
         'Fake Connect-Modal DApp wants to connect to your account',
     )
 
-    // The browser-verified requester: the fixture page's REAL origin, scheme
-    // included, plus its verified marker.
-    const requesterLine = approvalPage.getByTestId(
-        'wc-connect-requester-origin',
+    // The browser-verified requester (the fixture page's REAL host) differs
+    // from the peer's asserted url, so the header warns and names both, and
+    // the verified badge is not drawn for the asserted one.
+    const mismatch = approvalPage.getByTestId('wc-connect-requester-mismatch')
+    await expect(mismatch).toBeVisible({ timeout: 20_000 })
+    await expect(mismatch).toHaveText(
+        `This request came from ${new URL(originA).host}, not fake-connect-modal-dapp.test.`,
     )
-    await expect(requesterLine).toBeVisible({ timeout: 20_000 })
-    await expect(requesterLine).toHaveText(`Request came from ${originA}`)
-    const verifiedBadge = approvalPage.getByTestId(
-        'wc-connect-requester-verified-badge',
-    )
-    await expect(verifiedBadge).toBeVisible()
-    await expect(verifiedBadge).toHaveText('Verified tab')
+    await expect(
+        approvalPage.getByTestId('wc-connect-requester-verified-badge'),
+    ).toHaveCount(0)
 
     await ensureAccountSelected(approvalPage)
 
@@ -529,13 +528,13 @@ test('a fabricated modal on a different origin is stamped with THAT origin, not 
         await approvalPage.getByTestId('unlock-submit').click()
     }
 
-    const requesterLine = approvalPage.getByTestId(
-        'wc-connect-requester-origin',
-    )
-    await expect(requesterLine).toBeVisible({ timeout: 20_000 })
+    const mismatch = approvalPage.getByTestId('wc-connect-requester-mismatch')
+    await expect(mismatch).toBeVisible({ timeout: 20_000 })
     // originB here rules out both originA and the dApp's identical peerMeta.url
     // claim, so no separate `.not.toHaveText(originA)` is needed.
-    await expect(requesterLine).toHaveText(`Request came from ${originB}`)
+    await expect(mismatch).toHaveText(
+        `This request came from ${new URL(originB).host}, not fake-connect-modal-dapp.test.`,
+    )
 
     // Reject: the proof is complete once the requester line is verified.
     await clickThroughPinPrompt(

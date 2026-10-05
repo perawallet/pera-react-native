@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera n’a pas pu transmettre votre décision au site. L’extension s’est mise en veille pendant que cette fenêtre était ouverte. Fermez cette fenêtre et relancez la demande depuis le site.",
             "request_origin": "La demande provient de {{origin}}",
-            "requester_verified_label": "Onglet vérifié",
+            "requester_verified_label": "Onglet vérifié : {{origin}}",
+            "requester_mismatch": "Cette demande provient de {{origin}}, et non de {{claimed}}.",
             "requester_verified_a11y_origin": "Vérifié : cette demande provient de votre onglet de navigateur sur {{origin}}"
         }
     },
@@ -3048,7 +3049,7 @@
             "siwa_not_before": "Pas avant le",
             "siwa_resources": "Ressources",
             "siwa_invalid": "Cette demande d’authentification est mal formée et ne peut pas être signée.",
-            "origin_mismatch": "Ce site vous demande de vous connecter à un autre domaine ({{domain}}). Ne continuez que si vous lui faites confiance.",
+            "origin_mismatch": "Ce site vous demande de vous connecter à un autre domaine ({{domain}}). Pera a bloqué cette demande pour protéger votre compte.",
             "show_details": "Afficher les détails",
             "details_title": "Détails de la demande d’authentification",
             "details_description": "Examinez toutes les métadonnées de cette demande d’authentification avant de l’approuver."

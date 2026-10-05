@@ -10,25 +10,26 @@
  limitations under the License
  */
 
-// Only the verified-requester row lives here; everything shared with
+// Only the requester rows live here; everything shared with
 // ConnectionApprovalView comes from its stylesheet so the two cannot drift.
 // Mobile pairs by QR or deeplink, so it has no requesting tab to attribute.
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    // Column, not row: normally the badge alone sits centred under the dApp
-    // url, and in the mismatch case the origin line stacks above it. Centring
-    // is what makes the badge read as qualifying the url directly above.
-    verifiedRow: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
+    // The requesting tab is not the site the peer claims: a warning box,
+    // shaped like the ARC-60 sign-in origin warning, in place of the url link.
+    mismatchWarning: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: theme.spacing.sm,
+        backgroundColor: theme.colors.negativeLighter,
+        borderRadius: theme.borderRadius.md,
+        padding: theme.spacing.md,
+        marginTop: theme.spacing.sm,
     },
-    // `textMain`, NOT `verifiedBannerContent`: at `caption` (11px) that colour
-    // only clears 3.82:1 against the light background, below WCAG AA's 4.5:1.
-    // It stays reserved for the badge below.
-    requesterOrigin: {
-        color: theme.colors.textMain,
+    mismatchWarningText: {
+        flex: 1,
+        color: theme.colors.negative,
     },
     verifiedBadge: {
         flexDirection: 'row',
