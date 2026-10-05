@@ -104,6 +104,7 @@ type V1Options = { getNetwork: () => string }
 type V2Options = V1Options & {
     projectId: string
     keyValueStorage: object
+    startWhen: () => Promise<void>
 }
 
 const mockCreateV1 = vi.fn((options: V1Options) => ({
