@@ -12,17 +12,33 @@
 
 import type { Optional } from '@perawallet/wallet-core-shared'
 
+// Icons are fetched as soon as the approval renders, so only https sources
+// are kept: no plain-http beacon and no data: payload drawn as a brand logo.
+const isHttpsUrl = (icon: string): boolean => {
+    try {
+        return new URL(icon).protocol === 'https:'
+    } catch {
+        return false
+    }
+}
+
 /**
  * The dApp icon to show for a WC peer: raster formats first (expo-image
  * renders them reliably everywhere; dApp svg icons are a coin flip), else
- * whatever the dApp listed first.
+ * whatever https icon the dApp listed first.
  */
 export const getPreferredDappIcon = (
     icons: Optional<string[]>,
-): Optional<string> =>
-    icons?.find(
-        icon =>
-            icon.endsWith('.png') ||
-            icon.endsWith('.jpg') ||
-            icon.endsWith('.jpeg'),
-    ) ?? icons?.at(0)
+): Optional<string> => {
+    const httpsIcons = icons?.filter(
+        icon => typeof icon === 'string' && isHttpsUrl(icon),
+    )
+    return (
+        httpsIcons?.find(
+            icon =>
+                icon.endsWith('.png') ||
+                icon.endsWith('.jpg') ||
+                icon.endsWith('.jpeg'),
+        ) ?? httpsIcons?.at(0)
+    )
+}

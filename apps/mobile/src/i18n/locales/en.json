@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera couldn't deliver your decision to the site. The extension went to sleep while this window was open. Close this window and try the request again from the site.",
             "request_origin": "Request came from {{origin}}",
-            "requester_verified_label": "Verified tab",
+            "requester_verified_label": "Verified tab: {{origin}}",
+            "requester_mismatch": "This request came from {{origin}}, not {{claimed}}.",
             "requester_verified_a11y_origin": "Verified: this request came from your browser tab at {{origin}}"
         }
     },

@@ -16,7 +16,6 @@ import {
     AppError,
     generateOrderedUniqueId,
     logger,
-    stripUrlScheme,
     toError,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -29,6 +28,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
+import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
 
 export type UseConnectionApprovalViewResult = {
     selectedAccounts: string[]
@@ -36,7 +36,9 @@ export type UseConnectionApprovalViewResult = {
     handleAccountPress: (address: string) => void
     handleConnect: () => Promise<void>
     handleCancel: () => Promise<void>
-    /** The dApp-asserted url without its scheme; rendered as text, never trusted. */
+    /** The dApp-asserted name, cleaned and clamped for display. */
+    peerName: string
+    /** The dApp-asserted url's host; rendered as text, never trusted. */
     peerUrlLabel?: string
     /** False when the peer url fails the https gate, so it renders unlinked. */
     canOpenPeerUrl: boolean
@@ -173,7 +175,8 @@ export const useConnectionApprovalView = (
         handleAccountPress,
         handleConnect,
         handleCancel,
-        peerUrlLabel: stripUrlScheme(proposal.peer.url),
+        peerName: toPeerDisplayText(proposal.peer.name),
+        peerUrlLabel: toPeerHostLabel(proposal.peer.url),
         canOpenPeerUrl: toValidatedBrowserUrl(proposal.peer.url) !== null,
         handlePressUrl,
     }

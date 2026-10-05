@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera konnte deine Entscheidung nicht an die Website übermitteln. Die Erweiterung wurde in den Ruhezustand versetzt, während dieses Fenster geöffnet war. Schließe dieses Fenster und starte die Anfrage erneut über die Website.",
             "request_origin": "Anfrage kam von {{origin}}",
-            "requester_verified_label": "Verifizierter Tab",
+            "requester_verified_label": "Verifizierter Tab: {{origin}}",
+            "requester_mismatch": "Diese Anfrage kam von {{origin}}, nicht von {{claimed}}.",
             "requester_verified_a11y_origin": "Verifiziert: Diese Anfrage kam aus deinem Browser-Tab unter {{origin}}"
         }
     },

@@ -55,6 +55,7 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
                 <PWText
                     variant='body'
                     style={styles.rpId}
+                    numberOfLines={1}
                     testID='dapp-passkey-rp-id'
                 >
                     {rpId}
@@ -63,6 +64,7 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
                     <PWText
                         variant='body'
                         style={styles.userName}
+                        numberOfLines={1}
                         testID='dapp-passkey-user-name'
                     >
                         {userName}
