@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { isSqlStatementTimeout } from '@perawallet/wallet-extension-platform-chrome'
 import { createWorkerExecutor } from '../worker-executor'
 
 type Listener = (event: Event) => void
@@ -74,6 +75,22 @@ describe('createWorkerExecutor', () => {
             error: 'syntax error',
         })
         await expect(call).rejects.toThrow('syntax error')
+    })
+
+    it('rejects an unanswered request with a recognisable statement timeout', async () => {
+        vi.useFakeTimers()
+        try {
+            const fake = createFakeWorker()
+            const executor = createWorkerExecutor(fake.worker)
+            const call = executor.exec('pera.db', 'UPDATE t', [], 'run')
+            const settled = call.catch((error: unknown) => error)
+
+            await vi.advanceTimersByTimeAsync(30_000)
+
+            expect(isSqlStatementTimeout(await settled)).toBe(true)
+        } finally {
+            vi.useRealTimers()
+        }
     })
 
     it('rejects all pending calls when worker crashes', async () => {

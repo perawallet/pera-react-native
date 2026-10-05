@@ -4111,6 +4111,10 @@
             "confirm_button": "Restablecer wallet",
             "error": "No se pudo restablecer la wallet. Inténtalo de nuevo."
         },
+        "database_reset": {
+            "title": "Datos de la wallet actualizados",
+            "body": "Reconstruimos los saldos y el historial guardados en este navegador. Se volverán a cargar en un momento. Tus cuentas no se ven afectadas."
+        },
         "security": {
             "autolock_title": "Bloqueo automático tras",
             "autolock_minutes": "{{minutes}} minutos",

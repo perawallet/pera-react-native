@@ -32,7 +32,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '../models/types'
@@ -52,7 +52,7 @@ export async function upsertTransactions({
     accountAddress,
     scope,
 }: UpsertTransactionsParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (items.length === 0) return
 
     const now = Date.now()
@@ -174,7 +174,7 @@ export async function getTransactionHistory({
     afterTime,
     beforeTime,
 }: GetTransactionHistoryParams): Promise<TransactionHistoryItem[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const conditions = [
         eq(AccountTransactionsSchema.accountAddress, accountAddress),
         eq(AccountTransactionsSchema.network, network),
@@ -270,7 +270,7 @@ export async function getCloseRowsMissingCloseAmount({
     scope,
     limit = 20,
 }: GetCloseRowsMissingCloseAmountParams): Promise<Array<{ id: string }>> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     return db
         .select({ id: TransactionsSchema.id })
         .from(TransactionsSchema)
@@ -312,7 +312,7 @@ export async function getSwapRowsMissingAssetFacts({
 }: GetSwapRowsMissingAssetFactsParams): Promise<
     Array<{ id: string; roundTime: number }>
 > {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     return db
         .select({
             id: TransactionsSchema.id,
@@ -361,7 +361,7 @@ export async function persistResolvedSwapAssetFacts({
     scope,
     ids,
 }: PersistResolvedSwapAssetFactsParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     for (const id of ids) {
         const [row] = await db
             .select({ json: TransactionsSchema.swapGroupDetailJson })
@@ -403,7 +403,7 @@ export async function updateTransactionCloseAmount({
     scope,
     closeAmount,
 }: UpdateTransactionCloseAmountParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     await db
         .update(TransactionsSchema)
         .set({ closeAmount })
@@ -427,7 +427,7 @@ export async function getLatestTransactionRoundTime({
     accountAddress,
     scope,
 }: GetLatestTransactionRoundTimeParams): Promise<Nullable<number>> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({
             maxRoundTime: sql<number>`MAX(${AccountTransactionsSchema.roundTime})`,

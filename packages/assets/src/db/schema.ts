@@ -15,8 +15,6 @@ import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { decimalColumn } from '@perawallet/wallet-core-database'
 
-// Every `network` column here holds the bare legacy network until the
-// backfill: decode with scopeFromNetworkColumn.
 export const AssetsNodeSchema = sqliteTable(
     'assets_node',
     {

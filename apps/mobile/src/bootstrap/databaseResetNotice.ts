@@ -10,21 +10,15 @@
  limitations under the License
  */
 
-export {
-    initializeDatabase,
-    getDatabase,
-    resetDatabase,
-    deleteDatabase,
-    clearDatabase,
-    type Database,
-    type InitializeDatabaseOptions,
-} from './database'
-export {
-    runMigrations,
-    type MigrationConfig,
-    type MigrationRecovery,
-    type RunMigrationsOptions,
-} from './migrator'
-export { migrations } from './migrations'
-export { decimalColumn, decimalSum, decimalMax, decimalMin } from './columns'
-export { DB_WRITE_CHUNK_SIZE, forEachWriteChunk } from './chunkedWrite'
+import { useSettingsStore } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
+
+// The offscreen document never re-reads the settings store, and a write
+// persists the whole store, so re-read first or the flag would undo settings a
+// popup changed since offscreen booted.
+export const markDatabaseResetNoticePending = async (): Promise<void> => {
+    await useSettingsStore.persist.rehydrate()
+    useSettingsStore
+        .getState()
+        .setPreference(UserPreferences.databaseResetNoticePending, true)
+}

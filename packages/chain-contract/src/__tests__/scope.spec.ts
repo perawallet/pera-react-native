@@ -20,10 +20,9 @@ import {
 } from '../models/identity'
 import {
     LEGACY_SCOPES,
-    legacyColumnValue,
     legacyNetworkOf,
-    networkColumnValue,
     parseScopeKey,
+    queryKeyNetworkValue,
     queryKeyReferencesScope,
     rekeyLegacyNetworkRecord,
     scopeForLegacyNetwork,
@@ -118,18 +117,18 @@ describe('scopeForLegacyNetwork', () => {
     })
 })
 
-describe('legacyColumnValue', () => {
+describe('queryKeyNetworkValue', () => {
     it.each(['mainnet', 'testnet', 'betanet', 'custom'] as const)(
         'is the bare legacy value for %s',
         network => {
-            const value = legacyColumnValue(scopeForLegacyNetwork(network))
+            const value = queryKeyNetworkValue(scopeForLegacyNetwork(network))
 
             expect(value).toBe(network)
         },
     )
 
     it('is the bare network id for any other network of the legacy chain', () => {
-        const value = legacyColumnValue({
+        const value = queryKeyNetworkValue({
             chainId: 'algorand',
             networkId: 'custom-9f3a',
         })
@@ -143,11 +142,11 @@ describe('legacyColumnValue', () => {
             networkId: 'Not Valid',
         }
 
-        expect(() => legacyColumnValue(scope)).toThrow(InvalidScopeKeyError)
+        expect(() => queryKeyNetworkValue(scope)).toThrow(InvalidScopeKeyError)
     })
 
     it('rejects a chain id this build does not know', () => {
-        expect(() => legacyColumnValue(UNKNOWN_CHAIN_SCOPE)).toThrow(
+        expect(() => queryKeyNetworkValue(UNKNOWN_CHAIN_SCOPE)).toThrow(
             InvalidScopeKeyError,
         )
     })
@@ -155,10 +154,10 @@ describe('legacyColumnValue', () => {
 
 describe('network column encoding', () => {
     it.each(LEGACY_NETWORKS)(
-        'stores the Algorand %s scope as the bare network',
+        'stores the Algorand %s scope as its scope key',
         network => {
-            expect(networkColumnValue(scopeForLegacyNetwork(network))).toBe(
-                network,
+            expect(toScopeKey(scopeForLegacyNetwork(network))).toBe(
+                `algorand/${network}`,
             )
         },
     )

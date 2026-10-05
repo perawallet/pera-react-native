@@ -4111,6 +4111,10 @@
             "confirm_button": "Reset Wallet",
             "error": "Couldn't reset the wallet. Please try again."
         },
+        "database_reset": {
+            "title": "Wallet data refreshed",
+            "body": "We rebuilt the balances and history saved in this browser. They'll reload in a moment. Your accounts aren't affected."
+        },
         "security": {
             "autolock_title": "Auto-lock after",
             "autolock_minutes": "{{minutes}} minutes",

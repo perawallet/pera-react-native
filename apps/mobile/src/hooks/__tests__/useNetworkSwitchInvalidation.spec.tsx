@@ -60,7 +60,7 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => {
 
 import { getAssetsQueryKey } from '@perawallet/wallet-core-assets'
 import {
-    legacyColumnValue,
+    queryKeyNetworkValue,
     legacyNetworkOf,
     scopeForLegacyNetwork,
     type ChainScope,
@@ -134,7 +134,7 @@ describe('useNetworkSwitchInvalidation', () => {
         const balanceKey = (scope: ChainScope) => [
             'accounts',
             'balance',
-            { address: 'A1', network: legacyColumnValue(scope) },
+            { address: 'A1', network: queryKeyNetworkValue(scope) },
         ]
         const departedKeys = [
             balanceKey(MAINNET),
@@ -149,7 +149,7 @@ describe('useNetworkSwitchInvalidation', () => {
                 {
                     period: 'one-week',
                     addresses: ['A1'],
-                    network: legacyColumnValue(MAINNET),
+                    network: queryKeyNetworkValue(MAINNET),
                 },
             ],
             [
@@ -159,7 +159,7 @@ describe('useNetworkSwitchInvalidation', () => {
                 {
                     assetID: '1',
                     period: 'one-week',
-                    network: legacyColumnValue(MAINNET),
+                    network: queryKeyNetworkValue(MAINNET),
                 },
             ],
         ]

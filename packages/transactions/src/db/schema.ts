@@ -10,33 +10,42 @@
  limitations under the License
  */
 
-import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import {
+    sqliteTable,
+    text,
+    integer,
+    primaryKey,
+    index,
+} from 'drizzle-orm/sqlite-core'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { decimalColumn } from '@perawallet/wallet-core-database'
 
-// Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
-export const TransactionsSchema = sqliteTable('transactions', {
-    id: text('id').primaryKey(),
-    network: text('network').notNull().$type<ChainScopeKey>(),
-    txType: text('tx_type').notNull(),
-    sender: text('sender').notNull(),
-    assetSender: text('asset_sender'),
-    receiver: text('receiver'),
-    confirmedRound: integer('confirmed_round').notNull(),
-    roundTime: integer('round_time').notNull(),
-    fee: decimalColumn('fee').notNull(),
-    groupId: text('group_id'),
-    amount: decimalColumn('amount'),
-    closeTo: text('close_to'),
-    closeAmount: decimalColumn('close_amount'),
-    applicationId: decimalColumn('application_id'),
-    innerTransactionCount: integer('inner_transaction_count'),
-    assetJson: text('asset_json'),
-    swapGroupDetailJson: text('swap_group_detail_json'),
-    interpretedMeaningJson: text('interpreted_meaning_json'),
-    balanceImpactsJson: text('balance_impacts_json'),
-    updatedAt: integer('updated_at').notNull(),
-})
+export const TransactionsSchema = sqliteTable(
+    'transactions',
+    {
+        id: text('id').primaryKey(),
+        network: text('network').notNull().$type<ChainScopeKey>(),
+        txType: text('tx_type').notNull(),
+        sender: text('sender').notNull(),
+        assetSender: text('asset_sender'),
+        receiver: text('receiver'),
+        confirmedRound: integer('confirmed_round').notNull(),
+        roundTime: integer('round_time').notNull(),
+        fee: decimalColumn('fee').notNull(),
+        groupId: text('group_id'),
+        amount: decimalColumn('amount'),
+        closeTo: text('close_to'),
+        closeAmount: decimalColumn('close_amount'),
+        applicationId: decimalColumn('application_id'),
+        innerTransactionCount: integer('inner_transaction_count'),
+        assetJson: text('asset_json'),
+        swapGroupDetailJson: text('swap_group_detail_json'),
+        interpretedMeaningJson: text('interpreted_meaning_json'),
+        balanceImpactsJson: text('balance_impacts_json'),
+        updatedAt: integer('updated_at').notNull(),
+    },
+    table => [index('transactions_network_idx').on(table.network)],
+)
 
 export const AccountTransactionsSchema = sqliteTable(
     'account_transactions',

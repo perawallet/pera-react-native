@@ -13,7 +13,7 @@
 import { eq, and, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
@@ -56,7 +56,7 @@ export async function getAccountPortfolioTotals({
     accountAddress: string
     scope: ChainScope
 }): Promise<AccountPortfolioTotals> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({
             algoAmount: sql<Nullable<number>>`COALESCE(SUM(
