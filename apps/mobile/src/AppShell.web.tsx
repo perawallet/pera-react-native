@@ -34,9 +34,11 @@ import { AppProviders } from '@providers/AppProviders'
 import {
     VaultGate,
     CreatePasswordScreen,
+    useAppLockFromVault,
     useAutoLockActivity,
     useVaultLockState,
 } from '@modules/vault'
+import { useBackupSyncLifecycle } from '@modules/cloud-backup'
 import { OnboardingStackNavigator } from '@modules/onboarding/routes'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
@@ -120,6 +122,15 @@ const NetworkSwitchInvalidation = (): null => {
     return null
 }
 
+// Native runs the backup sync from RootComponent, which the web shell
+// replaces. Main surface only (popup or expanded tab): an approval window
+// running its own manager would open a second sync and socket beside it.
+const MainSurfaceLifecycle = (): null => {
+    useAppLockFromVault()
+    useBackupSyncLifecycle()
+    return null
+}
+
 const ShellRouter = (): React.JSX.Element => {
     const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
@@ -191,7 +202,12 @@ const ShellRouter = (): React.JSX.Element => {
         case 'main': {
             // WebMainRoutes mounts its own BottomSheetManager inside its
             // NavigationContainer (native parity) — do not add another here.
-            return <WebMainRoutes fcmToken={fcmToken} />
+            return (
+                <>
+                    <MainSurfaceLifecycle />
+                    <WebMainRoutes fcmToken={fcmToken} />
+                </>
+            )
         }
         case 'error': {
             return (
