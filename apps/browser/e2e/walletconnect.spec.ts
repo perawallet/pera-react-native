@@ -22,6 +22,7 @@ import {
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { findDiscoverFrame } from './bridge-frames'
 import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
 import {
     expectApprovalSurfaceUrl,
@@ -237,11 +238,7 @@ test.skip('discover hand-off routes an unreachable-bridge WC URI without crashin
     )
     await passAgeGateIfOffered(discoverPage)
 
-    const frame = discoverPage
-        .frames()
-        // By host: the relay scrubs the bridge token off the frame's URL
-        // once the handshake lands.
-        .find(candidate => candidate.url().includes('discover-mobile'))
+    const frame = findDiscoverFrame(discoverPage)
     // test.skip throws to abort, so discoverPage is left for afterAll to reap.
     test.skip(frame == null, 'discover frame did not load (networkless run)')
 
