@@ -17,7 +17,7 @@ import {
     usePinEditView,
 } from './usePinEditView'
 import { useStyles } from './styles'
-import { PWView } from '@components/core'
+import { PWLoadingOverlay, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export type PinEditViewProps = {
@@ -46,6 +46,7 @@ export const PinEditView = ({
         title,
         hasError,
         isDisabled,
+        isBiometricUnlockInProgress,
         handlePinComplete,
         handleErrorAnimationComplete,
     } = usePinEditView({
@@ -68,6 +69,7 @@ export const PinEditView = ({
                 hasError={hasError}
                 onErrorAnimationComplete={handleErrorAnimationComplete}
             />
+            <PWLoadingOverlay isVisible={isBiometricUnlockInProgress} />
         </PWView>
     )
 }

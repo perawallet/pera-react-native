@@ -46,6 +46,7 @@ type UsePinEditViewResult = {
     title: string
     hasError: boolean
     isDisabled: boolean
+    isBiometricUnlockInProgress: boolean
     handlePinComplete: (pin: string) => void
     handleErrorAnimationComplete: () => void
 }
@@ -70,6 +71,8 @@ export const usePinEditView = ({
     const [currentMode, setCurrentMode] = useState<PinEntryMode>(mode)
     const [storedPin, setStoredPin] = useState<string>('')
     const [hasError, setHasError] = useState(false)
+    const [isBiometricUnlockInProgress, setIsBiometricUnlockInProgress] =
+        useState(false)
 
     const title = useMemo(() => {
         switch (currentMode) {
@@ -147,15 +150,24 @@ export const usePinEditView = ({
         let cancelled = false
         try {
             void (async () => {
-                const outcome = await promptRef.current.unlockWithBiometrics({
-                    title: promptRef.current.t(
-                        'security.biometric.unlock_prompt_title',
-                    ),
-                    cancelLabel: promptRef.current.t(
-                        'security.biometric.cancel_label',
-                    ),
-                })
-                if (cancelled || outcome.kind !== 'ok') return
+                const outcome = await promptRef.current.unlockWithBiometrics(
+                    {
+                        title: promptRef.current.t(
+                            'security.biometric.unlock_prompt_title',
+                        ),
+                        cancelLabel: promptRef.current.t(
+                            'security.biometric.cancel_label',
+                        ),
+                    },
+                    {
+                        onAuthenticated: () => {
+                            if (!cancelled) setIsBiometricUnlockInProgress(true)
+                        },
+                    },
+                )
+                if (cancelled) return
+                setIsBiometricUnlockInProgress(false)
+                if (outcome.kind !== 'ok') return
                 void promptRef.current.resetFailedAttempts()
                 setHasError(false)
                 if (currentMode === 'verify') {
@@ -169,6 +181,7 @@ export const usePinEditView = ({
         }
         return () => {
             cancelled = true
+            setIsBiometricUnlockInProgress(false)
         }
     }, [currentMode, hasSeenBiometricsEnabled])
 
@@ -238,7 +251,8 @@ export const usePinEditView = ({
     return {
         title,
         hasError,
-        isDisabled: isLockedOut,
+        isDisabled: isLockedOut || isBiometricUnlockInProgress,
+        isBiometricUnlockInProgress,
         handlePinComplete: (pin: string) => void handlePinComplete(pin),
         handleErrorAnimationComplete,
     }

@@ -53,6 +53,15 @@ export type EnableBiometricsResult =
     | { ok: true }
     | { ok: false; reason: EnableBiometricsFailureReason }
 
+export type BiometricUnlockOptions = {
+    /**
+     * Fires once the user passes the ceremony, before the checks that turn it
+     * into an unlock, so the caller can stop offering the PIN pad meanwhile.
+     * The outcome still decides: it can be anything but `ok` after this.
+     */
+    onAuthenticated?: () => void
+}
+
 export type BiometricUnlockOutcome =
     | { kind: 'ok' }
     | { kind: 'locked'; lockoutEndTime: number }
@@ -78,6 +87,7 @@ type UseBiometricsResult = {
     disableBiometrics: () => Promise<void>
     unlockWithBiometrics: (
         prompt: BiometricsAuthenticatePrompt,
+        options?: BiometricUnlockOptions,
     ) => Promise<BiometricUnlockOutcome>
     /**
      * Finishes the upgrade the reconcile started: arms a fresh binding for a
@@ -462,6 +472,7 @@ export const useBiometrics = (): UseBiometricsResult => {
     const recoverPendingRearm = useCallback(
         async (
             prompt: BiometricsAuthenticatePrompt,
+            options?: BiometricUnlockOptions,
         ): Promise<BiometricUnlockOutcome> => {
             const lockoutEndTime = await readLockoutEndTime()
             if (lockoutEndTime !== null) {
@@ -485,6 +496,7 @@ export const useBiometrics = (): UseBiometricsResult => {
                 await biometricsService.clearEnrollmentBinding()
                 return { kind: 'failed', reason: released.reason }
             }
+            options?.onAuthenticated?.()
 
             try {
                 if (!matchesHash(released.token, armed.tokenHash)) {
@@ -553,6 +565,7 @@ export const useBiometrics = (): UseBiometricsResult => {
     const unlockWithBiometrics = useCallback(
         async (
             prompt: BiometricsAuthenticatePrompt,
+            options?: BiometricUnlockOptions,
         ): Promise<BiometricUnlockOutcome> => {
             let session: Nullable<BiometricUnwrapSession> = null
             let isFinishing = false
@@ -572,7 +585,7 @@ export const useBiometrics = (): UseBiometricsResult => {
                     enabled = reconcile()
                     if (!(await enabled)) {
                         if (isPendingRearmRecoverable()) {
-                            return await recoverPendingRearm(prompt)
+                            return await recoverPendingRearm(prompt, options)
                         }
                         return { kind: 'failed', reason: 'unavailable' }
                     }
@@ -634,6 +647,9 @@ export const useBiometrics = (): UseBiometricsResult => {
                 ])
                 if ('refused' in first) return first.refused
                 const { ceremony } = first
+                // Before the refusal check, which on a slow keystore can still
+                // be reading for seconds after the user has authenticated.
+                if (ceremony.success) options?.onAuthenticated?.()
                 const refused = await refusal
                 if (refused) return refused
                 if (!ceremony.success) {

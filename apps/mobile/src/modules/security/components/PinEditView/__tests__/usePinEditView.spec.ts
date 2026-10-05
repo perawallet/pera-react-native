@@ -165,6 +165,30 @@ describe('usePinEditView biometric auto-prompt (verify)', () => {
         expect(mocks.resetFailedAttempts).toHaveBeenCalledTimes(1)
     })
 
+    it('disables the pad between a passed fingerprint and the outcome', async () => {
+        let settle: (outcome: { kind: string }) => void = () => undefined
+        mocks.unlockWithBiometrics.mockImplementation(
+            (_prompt, options?: { onAuthenticated?: () => void }) => {
+                options?.onAuthenticated?.()
+                return new Promise(resolve => {
+                    settle = resolve
+                })
+            },
+        )
+
+        const { result } = renderHook(() =>
+            usePinEditView({ mode: 'verify', onSuccess: vi.fn() }),
+        )
+        await flush()
+        expect(result.current.isDisabled).toBe(true)
+        expect(result.current.isBiometricUnlockInProgress).toBe(true)
+
+        await act(async () => settle({ kind: 'mismatch' }))
+
+        expect(result.current.isDisabled).toBe(false)
+        expect(result.current.isBiometricUnlockInProgress).toBe(false)
+    })
+
     it('does not call onSuccess when the token unwrap does not succeed', async () => {
         mocks.unlockWithBiometrics.mockResolvedValue({ kind: 'mismatch' })
 
