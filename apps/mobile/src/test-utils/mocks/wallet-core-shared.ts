@@ -55,6 +55,11 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const unitConversion = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
+    // json.ts imports only base64-js and decimal.js, and signing's real store
+    // persists through these tags.
+    const { stringifyTypedJson, parseTypedJson } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/json')
+    >('@packages/shared/src/utils/json')
     const { percentChange } = await vi.importActual<
         typeof import('@packages/shared/src/utils/percent-change')
     >('@packages/shared/src/utils/percent-change')
@@ -290,6 +295,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ALGO_DECIMALS: 6,
         ...unitConversion,
         percentChange,
+        stringifyTypedJson,
+        parseTypedJson,
         isAlgoAssetId: (assetId: string | number | bigint) =>
             String(assetId) === '0',
         isAlgoAssetName: (value: string) => value === 'ALGO',

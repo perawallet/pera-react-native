@@ -28,9 +28,9 @@ import {
 } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import {
-    algorandSafeQueryParse,
-    algorandSafeQuerySerialize,
-} from '@perawallet/wallet-core-blockchain'
+    parseTypedJson,
+    stringifyTypedJson,
+} from '@perawallet/wallet-core-shared'
 import { shouldDehydrateQuery } from '../query-persistence'
 
 const asQuery = (
@@ -227,10 +227,8 @@ describe('persisted Decimal query data', () => {
         const restored = new QueryClient()
         hydrate(
             restored,
-            algorandSafeQueryParse(
-                algorandSafeQuerySerialize(
-                    dehydrate(source, { shouldDehydrateQuery }),
-                ),
+            parseTypedJson(
+                stringifyTypedJson(dehydrate(source, { shouldDehydrateQuery })),
             ),
         )
 
