@@ -119,6 +119,14 @@ describe('PWWebView.web', () => {
         ])
     })
 
+    it('sends no Referer on the iframe load', () => {
+        const { container } = renderDiscover()
+
+        expect(
+            container.querySelector('iframe')?.getAttribute('referrerpolicy'),
+        ).toBe('no-referrer')
+    })
+
     // M8: Bidali mounts trust both the configured commerce origin and its
     // giftcards.-prefixed 302-redirect twin (trusted-iframe-origins.web.ts).
     it('creates the host with the commerce + giftcards origin pair for a Bidali mount', () => {

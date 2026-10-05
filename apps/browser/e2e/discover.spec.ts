@@ -25,6 +25,7 @@ import {
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { findDiscoverFrame } from './bridge-frames'
 import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
 
 const dist = path.resolve(
@@ -158,9 +159,7 @@ test.describe.skip('discover tab (web)', () => {
     // networkless CI stays green. The manual checklist owns the full
     // round-trip.
     test('discover iframe gets the bridge interface when the site loads', async () => {
-        const frame = page
-            .frames()
-            .find(candidate => candidate.url().includes('peraBridgeToken='))
+        const frame = findDiscoverFrame(page)
         test.skip(
             frame == null,
             'discover frame did not load (networkless run)',

@@ -82,6 +82,7 @@ const DISCONNECT_QUIET_WINDOW_MS = 10_000
 const IFrame = 'iframe' as unknown as React.ComponentType<{
     src: string
     sandbox?: string
+    referrerPolicy?: 'no-referrer'
     title: string
     style?: Record<string, string | number>
     // Coarse load signals — a cross-origin frame exposes nothing finer.
@@ -325,6 +326,11 @@ export const PWWebView = ({
                 key={`${bridgeToken}:${reloadNonce}`}
                 src={src}
                 sandbox='allow-same-origin allow-scripts allow-forms allow-popups'
+                // Otherwise the frame's load request names the embedding
+                // extension page (its origin carries the extension id). A
+                // native webview's first load sends no Referer either. The
+                // token in the src is scrubbed by the content-script relay.
+                referrerPolicy='no-referrer'
                 // oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the frame's name for assistive tech, not visible copy
                 title='pera-webview'
                 onLoad={handleLoad}
