@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import {
-    getTransactionType,
-} from '@perawallet/wallet-core-blockchain'
+import { getTransactionType } from '@perawallet/wallet-core-blockchain'
 import {
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,

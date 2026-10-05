@@ -21,9 +21,7 @@ import {
     algosToMicroAlgosBigInt,
     toBigInt,
 } from '@perawallet/wallet-core-shared'
-import {
-    Address,
-} from '@perawallet/wallet-core-blockchain'
+import { Address } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 import { getAccountBalance, getAccountHoldings } from '../db'

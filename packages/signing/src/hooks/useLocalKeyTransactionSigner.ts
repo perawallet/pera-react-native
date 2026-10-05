@@ -12,9 +12,7 @@
 
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
-import {
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+import { useTransactionEncoder } from '@perawallet/wallet-core-blockchain'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
