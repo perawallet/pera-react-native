@@ -24,6 +24,7 @@ const mockAddAssetTransfer = vi.fn()
 // Mutable so the "fallback network" providerJS test below can switch away
 // from mainnet without a new vi.mock factory.
 let mockNetwork = 'mainnet'
+let mockChainMode = 'live'
 const mockBuildTransactions = vi.fn().mockResolvedValue({
     transactions: [{ fake: 'txn' }],
 })
@@ -48,7 +49,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-api-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     }),
-    isMainnet: (network: string) => network === 'mainnet',
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedChainMode: () => mockChainMode,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -131,6 +135,7 @@ describe('useBidaliTransport', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockNetwork = 'mainnet'
+        mockChainMode = 'live'
     })
 
     // -- providerJS --------------------------------------------------------
@@ -152,11 +157,22 @@ describe('useBidaliTransport', () => {
             expect(result.current.providerJS).toContain('"usdcalgorand"')
         })
 
-        // computeBidaliBalances's isMainnetCatalogue branch: custom has no
-        // Bidali catalogue of its own, so it must select the same
-        // testusdcalgorand balance key as testnet, not usdcalgorand.
-        it('selects the testusdcalgorand balance key for a fallback network (custom)', () => {
+        it('selects the usdcalgorand balance key in live mode', () => {
+            const { result } = renderHook(() =>
+                useBidaliTransport(mockAccount, emptyBalances),
+            )
+
+            expect(result.current.providerJS).toContain('"usdcalgorand":')
+            expect(result.current.providerJS).not.toContain(
+                '"testusdcalgorand":',
+            )
+        })
+
+        // Custom has no Bidali catalogue of its own, so developer-override must
+        // select the same testusdcalgorand balance key as the default test network.
+        it('selects the testusdcalgorand balance key in developer-override mode', () => {
             mockNetwork = 'custom'
+            mockChainMode = 'developer-override'
 
             const { result } = renderHook(() =>
                 useBidaliTransport(mockAccount, emptyBalances),

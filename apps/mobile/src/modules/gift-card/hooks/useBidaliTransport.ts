@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useRef } from 'react'
 import { Linking } from 'react-native'
-import { getNetworkConfig, isMainnet } from '@perawallet/wallet-core-config'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import type {
     AccountBalances,
     WalletAccount,
@@ -28,7 +28,12 @@ import {
     useNativeAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+    type ChainMode,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedChainMode } from '@perawallet/wallet-core-chain-shared'
 import {
     useSigningRequest,
     type TransactionSignRequest,
@@ -93,6 +98,7 @@ export const computeBidaliBalances = (
     account: Optional<WalletAccount>,
     balances: AccountBalances,
     network: Network,
+    chainMode: ChainMode,
 ): Record<string, string> => {
     const balance = balances.get(account?.address ?? '')
 
@@ -108,12 +114,11 @@ export const computeBidaliBalances = (
             getKnownAssetId('USDC', scopeForLegacyNetwork(network)),
     )?.amount
 
-    // Bidali only has mainnet and testnet catalogues; everything that is not
-    // mainnet uses the testnet one.
-    const isMainnetCatalogue = isMainnet(network)
+    // Bidali only has live and test catalogues; every developer mode uses the test one.
+    const isLiveCatalogue = chainMode === 'live'
     return {
         algorand: algoBalance?.toString() ?? '0',
-        [isMainnetCatalogue ? 'usdcalgorand' : 'testusdcalgorand']:
+        [isLiveCatalogue ? 'usdcalgorand' : 'testusdcalgorand']:
             usdcBalance?.toString() ?? '0',
     }
 }
@@ -189,6 +194,7 @@ export const useBidaliTransport = (
     balances: AccountBalances,
 ): UseBidaliTransportResult => {
     const { network } = useNetwork()
+    const chainMode = useSelectedChainMode(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const algokit = useAlgorandClient()
@@ -196,13 +202,18 @@ export const useBidaliTransport = (
     const webviewRef = useRef<Nullable<WebView>>(null)
 
     const providerJS = useMemo(() => {
-        const balanceMap = computeBidaliBalances(account, balances, network)
+        const balanceMap = computeBidaliBalances(
+            account,
+            balances,
+            network,
+            chainMode,
+        )
 
         return buildBidaliProviderJS(
             getNetworkConfig(network).bidaliApiKey,
             JSON.stringify(balanceMap),
         )
-    }, [network, account, balances])
+    }, [network, chainMode, account, balances])
 
     const handlePaymentRequest = useCallback(
         async (params: Record<string, unknown>) => {
