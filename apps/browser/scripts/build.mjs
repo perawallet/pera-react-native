@@ -24,10 +24,7 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
-import {
-    assertExtensionPagesCsp,
-    buildExtensionPagesCsp,
-} from './csp.mjs'
+import { assertExtensionPagesCsp, buildExtensionPagesCsp } from './csp.mjs'
 import {
     assertReleaseEnv,
     assertStampedManifest,
@@ -353,9 +350,8 @@ rmSync(path.join(dist, 'index.html'))
 // 4. Manifest. The CSP is generated rather than committed so each build only
 // trusts its own environment's frame origins. Imported here, not at the top,
 // because packages/config is rebuilt against the fresh generated-env above.
-const { config, getIframeOrigins, getNetworkConfig, Networks } = await import(
-    '@perawallet/wallet-core-config'
-)
+const { config, getIframeOrigins, getNetworkConfig, Networks } =
+    await import('@perawallet/wallet-core-config')
 const frameUrls = [
     config.discoverBaseUrl,
     config.integrityCheckOrigin,
@@ -432,20 +428,41 @@ const readAll = dir =>
 const uiCode = readAll(uiBundleDir)
 const workerCode = readFileSync(path.join(dist, 'background.js'), 'utf8')
 
-const bakedBackend = generatedEnv.match(/mainnetBackendUrl:\s*"([^"]+)"/)?.[1]
-if (bakedBackend && !workerCode.includes(bakedBackend)) {
+// The whole generated object, not just one URL: a stale dist can differ in
+// any entry (a flag, an API key) and still carry the right backend. Matched as
+// one object literal, entries in order and nothing else, because a single key
+// can also appear with its schema default elsewhere in the bundle. Only key
+// names are reported, since the values include credentials.
+const bakedEntries = [...generatedEnv.matchAll(/^ {2}(\w+): (.+),$/gm)].map(
+    ([, key, literal]) => [key, JSON.parse(literal)],
+)
+const escapeRegExp = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+// esbuild keeps `key: "value"`; Metro's minifier rewrites it to `key:'value'`
+// and booleans to `!0` / `!1`.
+const bakedValuePattern = value => {
+    if (value === true) return '(?:true|!0)'
+    if (value === false) return '(?:false|!1)'
+    if (typeof value === 'number') return escapeRegExp(String(value))
+    const forms = [...new Set([value, JSON.stringify(value).slice(1, -1)])]
+    return `(?:${forms.map(form => `"${escapeRegExp(form)}"|'${escapeRegExp(form)}'`).join('|')})`
+}
+const bakedObjectPattern = new RegExp(
+    `\\{\\s*${bakedEntries
+        .map(([key, value]) => `${key}\\s*:\\s*${bakedValuePattern(value)}`)
+        .join('\\s*,\\s*')}\\s*,?\\s*\\}`,
+)
+const assertBakedConfig = (code, surface) => {
+    if (bakedEntries.length === 0 || bakedObjectPattern.test(code)) return
     throw new Error(
-        `background.js does not contain the configured backend (${bakedBackend}) — ` +
-            'the esbuild surfaces were bundled against a stale packages/*/dist. ' +
-            'Most likely a turbo cache hit restored dist/** over the freshly ' +
-            'built config (see globalEnv in turbo.json).',
+        `${surface} does not contain the generated config ` +
+            `(${bakedEntries.map(([key]) => key).join(', ')}): the esbuild ` +
+            'surfaces were bundled against a stale packages/*/dist. Most likely ' +
+            'a turbo cache hit restored dist/** over the freshly built config ' +
+            '(see globalEnv and the config build inputs in turbo.json).',
     )
 }
-if (bakedBackend && !uiCode.includes(bakedBackend)) {
-    throw new Error(
-        `the exported UI bundle does not contain the configured backend (${bakedBackend}).`,
-    )
-}
+assertBakedConfig(workerCode, 'background.js')
+assertBakedConfig(uiCode, 'the exported UI bundle')
 // The UI bundle must point dotlottie at the wasm shipped in step 1c — the
 // exact call in configureLottieWasm.web.ts survives minification because
 // `chrome.runtime.getURL` is a global member expression and its string
@@ -465,8 +482,8 @@ if (!/getURL\(["']dotlottie-player\.wasm["']\)/.test(uiCode)) {
 // Deliberately NOT asserting "no staging host appears anywhere": the committed
 // staging defaults in packages/config/src/main.ts are schema defaults, so their
 // string literals are compiled into every bundle even when an override wins at
-// runtime. Presence proves nothing; the two checks above — that the *configured*
-// backend reached both bundles — are the ones with signal.
+// runtime. Presence proves nothing; the checks above (that every *configured*
+// entry reached both bundles) are the ones with signal.
 
 // The content scripts and the service worker exist to stay small and
 // dependency-free: they run on every https page (content) or wake on every

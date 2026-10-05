@@ -1,9 +1,10 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "//": "globalEnv lists every variable tools/dev/generate-config.sh reads. packages/config/src/generated-env.ts is gitignored, so $TURBO_DEFAULT$ never hashed it: a dist built from staging secrets and one built from production secrets shared the SAME task hash. `turbo run build` then restored the stale dist/** over the copy apps/browser/scripts/build.mjs had just rebuilt, and the esbuild surfaces (background service worker, content scripts, db-worker) shipped the committed staging defaults while the Metro UI bundle — which resolves packages/*/src directly — shipped the real values. Hashing the inputs to the generated file restores the invariant that differing config can never reuse an artifact.",
+  "//": "globalEnv lists every variable tools/dev/generate-config.sh reads. packages/config/src/generated-env.ts is gitignored, so $TURBO_DEFAULT$ never hashed it: a dist built from staging secrets and one built from production secrets shared the SAME task hash. `turbo run build` then restored the stale dist/** over the copy apps/browser/scripts/build.mjs had just rebuilt, and the esbuild surfaces (background service worker, content scripts, db-worker) shipped the committed staging defaults while the Metro UI bundle — which resolves packages/*/src directly — shipped the real values. Hashing the inputs to the generated file restores the invariant that differing config can never reuse an artifact. The config package's build also takes generated-env.ts itself as an input: values read from the repo-root .env or a PERA_ENV_OVERLAY file never reach the process environment turbo hashes, so only the generated file's contents can tell two such builds apart.",
   "globalEnv": [
     "APP_ENV",
     "PERA_ENV_OVERLAY",
+    "CONFIG_ALLOWLIST",
     "PERA_DEFAULT_NETWORK",
     "DEFAULT_NETWORK",
     "MAINNET_*",
@@ -54,6 +55,19 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         ".env*"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "@perawallet/wallet-core-config#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*",
+        "src/generated-env.ts"
       ],
       "outputs": [
         "dist/**"
