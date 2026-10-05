@@ -97,6 +97,31 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystore: () => keystoreMock,
 }))
 
+// The migration step has its own spec; here the hydration is just the record read.
+vi.mock('../../lockoutHydration', async () => {
+    const { parsePinRecord } = await import('../../pinRecord')
+    const { PIN_RECORD_KEY_ID: id } = await import('../../constants')
+    return {
+        hydrateLockoutState: ({
+            withSecret,
+        }: {
+            withSecret: <T>(
+                id: string,
+                handler: (bytes: Uint8Array) => T,
+            ) => Promise<T | null>
+        }) =>
+            withSecret(id, bytes => {
+                const record = parsePinRecord(bytes)
+                return record
+                    ? {
+                          failedAttempts: record.failedAttempts,
+                          lockoutEndTime: record.lockoutEndTime,
+                      }
+                    : null
+            }),
+    }
+})
+
 import {
     useBiometrics,
     type BiometricUnlockOutcome,
