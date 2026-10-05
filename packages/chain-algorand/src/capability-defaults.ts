@@ -21,7 +21,18 @@ export const algorandCapabilityDefaults = Object.fromEntries(
     CHAIN_CAPABILITIES.map(capability => [capability, true]),
 ) as ChainCapabilities
 
-// onramp buys real ALGO and USDC, so live only.
+// These need the Pera backend, which BetaNet and custom nodes don't have.
+const PERA_BACKED = ['developer-override'] as const
+
 export const algorandCapabilityRestrictions: ChainCapabilityRestrictions = {
+    // onramp buys real ALGO and USDC, so live only.
     onramp: ['developer', 'developer-override'],
+    priceHistory: PERA_BACKED,
+    balanceHistory: PERA_BACKED,
+    assetSearch: PERA_BACKED,
+    assetFavorites: PERA_BACKED,
+    priceAlerts: PERA_BACKED,
+    csvExport: PERA_BACKED,
+    notifications: PERA_BACKED,
+    assetInbox: PERA_BACKED,
 }

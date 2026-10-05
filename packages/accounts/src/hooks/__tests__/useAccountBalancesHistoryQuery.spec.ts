@@ -18,6 +18,15 @@ import { getAccountBalancesHistoryQueryKey } from '../querykeys'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
+    ),
+}))
 
 // Mock endpoints
 const mocks = vi.hoisted(() => ({
@@ -198,6 +207,10 @@ describe('useAccountBalancesHistoryQuery', () => {
                 )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(useChainCapability).toHaveBeenCalledWith(
+                    'algorand',
+                    'balanceHistory',
+                )
                 expect(mocks.fetchAccountsBalanceHistory).not.toHaveBeenCalled()
             },
         )

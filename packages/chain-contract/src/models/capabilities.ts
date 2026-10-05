@@ -51,6 +51,13 @@ export const CHAIN_CAPABILITIES = [
     'privateKeys',
     // Decoding dApp contract calls with bundled ABIs and warning on approvals.
     'contractDecoding',
+    // Pera-backed slices of broader features whose base data comes from the node.
+    'priceHistory',
+    'balanceHistory',
+    'assetSearch',
+    'assetFavorites',
+    'priceAlerts',
+    'csvExport',
 ] as const
 
 /**

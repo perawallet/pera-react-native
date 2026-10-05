@@ -22,6 +22,18 @@ import {
 } from '../../api/notifications'
 import { useInboxQuery } from '../useInboxQuery'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(
+            vi.mocked(useNetwork).mock.results.at(-1)?.value?.network ??
+                'mainnet',
+        ),
+    ),
+}))
 
 vi.mock('../../api/notifications', () => ({
     fetchMessageStatus: vi.fn(),
@@ -210,6 +222,10 @@ describe('useInboxStatus', () => {
                 expect(result.current.hasUnreadNotifications).toBe(false)
                 expect(result.current.unreadInboxCount).toBe(0)
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(useChainCapability).toHaveBeenCalledWith(
+                    'algorand',
+                    'notifications',
+                )
             },
         )
     })

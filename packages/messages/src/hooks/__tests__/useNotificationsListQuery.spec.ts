@@ -19,6 +19,18 @@ import { Networks } from '@perawallet/wallet-core-config'
 import { useNotificationsListQuery } from '../useNotificationsListQuery'
 import { fetchNotificationList } from '../../api/notifications'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(
+            vi.mocked(useNetwork).mock.results.at(-1)?.value?.network ??
+                'mainnet',
+        ),
+    ),
+}))
 
 vi.mock('../../api/notifications', () => ({
     fetchNotificationList: vi.fn(),
@@ -315,6 +327,10 @@ describe('useNotificationsListQuery', () => {
                 )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(useChainCapability).toHaveBeenCalledWith(
+                    'algorand',
+                    'notifications',
+                )
                 // Network unavailability outranks the missing-device state:
                 // this can never succeed, so it must not read as "unregistered".
                 expect(result.current.isDeviceUnregistered).toBe(false)

@@ -14,7 +14,9 @@ import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { config, isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { config } from '@perawallet/wallet-core-config'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     fetchMessageStatus,
     fetchNotificationStatus,
@@ -43,7 +45,10 @@ const ERROR_PROBE_INTERVAL_MULTIPLIER = 10
 export const useInboxStatus = (): UseInboxStatusResult => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scopeForLegacyNetwork(network).chainId,
+        'notifications',
+    )
 
     // Primary source of truth: the unified v3 message-status endpoint returns
     // both the unread flags and the inbox count in a single call.
