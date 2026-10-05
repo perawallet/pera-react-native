@@ -24,6 +24,10 @@ import { useModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { BackupCodeSheet } from '../../components/BackupCodeSheet'
+import {
+    useCloudBackupRestoreProgress,
+    type UseCloudBackupRestoreProgressResult,
+} from '../../hooks/useCloudBackupRestoreProgress'
 import { useRestoreOutcome } from '../../hooks/useRestoreOutcome'
 
 type Translate = ReturnType<typeof useLanguage>['t']
@@ -49,6 +53,7 @@ export type UseCloudBackupRestoreScanScreenParams = {
 export type UseCloudBackupRestoreScanScreenResult = {
     isScannerVisible: boolean
     isRestoring: boolean
+    restoreProgress: UseCloudBackupRestoreProgressResult
     handleScanned: (raw: string, restartScanning: () => void) => Promise<void>
     handleScanSuccess: (raw: string, restartScanning: () => void) => void
     handleOpenScanner: () => void
@@ -83,6 +88,7 @@ export const useCloudBackupRestoreScanScreen = ({
     const outcome = useRestoreOutcome({ clearDraft, onDone })
     const { mutate: restore, isPending: isRestoring } =
         useRestoreCloudBackupMutation(outcome)
+    const restoreProgress = useCloudBackupRestoreProgress()
 
     const handleScanned = useCallback(
         async (raw: string, restartScanning: () => void) => {
@@ -153,6 +159,7 @@ export const useCloudBackupRestoreScanScreen = ({
     return {
         isScannerVisible,
         isRestoring,
+        restoreProgress,
         handleScanned,
         handleScanSuccess,
         handleOpenScanner,

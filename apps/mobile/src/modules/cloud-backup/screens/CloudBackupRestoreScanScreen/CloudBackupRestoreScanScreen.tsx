@@ -15,7 +15,7 @@ import React from 'react'
 import { LoadingView } from '@components/LoadingView'
 import { QRScannerView } from '@components/QRScannerView'
 import { ScreenHeader } from '@components/ScreenHeader'
-import { PWButton, PWScreen, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 
 import { useCloudBackupRestoreScanScreen } from './useCloudBackupRestoreScanScreen'
@@ -34,6 +34,7 @@ export const CloudBackupRestoreScanScreen = ({
     const {
         isScannerVisible,
         isRestoring,
+        restoreProgress,
         handleScanSuccess,
         handleOpenScanner,
         handleCloseScanner,
@@ -50,7 +51,18 @@ export const CloudBackupRestoreScanScreen = ({
                         )}
                     />
                     {isRestoring ? (
-                        <LoadingView variant='circle' />
+                        <PWView style={styles.progress}>
+                            <LoadingView variant='circle' />
+                            <PWText style={styles.progressTitle}>
+                                {restoreProgress.title}
+                            </PWText>
+                            <PWText
+                                variant='caption'
+                                style={styles.progressDescription}
+                            >
+                                {restoreProgress.description}
+                            </PWText>
+                        </PWView>
                     ) : (
                         <PWButton
                             variant='primary'

@@ -17,6 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
     CloudBackupRestoreError,
     restoreErrorCategoryOf,
+    type RestoreProgress,
 } from '../../restore/restoreCloudBackup'
 
 const {
@@ -79,6 +80,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 import { applyBackupSettings } from '../../sync/backupSettingsStores'
+import { useCloudBackupRestoreProgressStore } from '../../store/restoreProgressStore'
 import { useRestoreCloudBackupMutation } from '../useRestoreCloudBackupMutation'
 
 const SALT = 'c2FsdA=='
@@ -121,6 +123,7 @@ describe('useRestoreCloudBackupMutation', () => {
         deviceIdMock.value = 'device-123'
         readMnemonicMock.mockReturnValue(MNEMONIC)
         restoreCloudBackupMock.mockResolvedValue(RESULT)
+        useCloudBackupRestoreProgressStore.getState().resetState()
     })
 
     test('runs the restore with the retained phrase and commits both stores', async () => {
@@ -139,6 +142,7 @@ describe('useRestoreCloudBackupMutation', () => {
             importContacts: expect.any(Function),
             importPasskeys: importPasskeysMock,
             importSettings: applyBackupSettings,
+            onProgress: expect.any(Function),
         })
         expect(setConfiguredMock).toHaveBeenCalledWith({
             backupId: 'did:pera:abc',
@@ -242,5 +246,60 @@ describe('useRestoreCloudBackupMutation', () => {
 
         await act(async () => finish())
         await waitFor(() => expect(result.current.isPending).toBe(false))
+    })
+
+    test('publishes restore progress while it runs and clears it once settled', async () => {
+        let report!: (progress: RestoreProgress) => void
+        let finish!: () => void
+        restoreCloudBackupMock.mockImplementation(
+            ({
+                onProgress,
+            }: {
+                onProgress: (progress: RestoreProgress) => void
+            }) =>
+                new Promise(resolve => {
+                    report = onProgress
+                    finish = () => resolve(RESULT)
+                }),
+        )
+        const { result } = renderRestore()
+
+        act(() => result.current.mutate({ salt: SALT }))
+        await waitFor(() => expect(restoreCloudBackupMock).toHaveBeenCalled())
+        act(() => report({ phase: 'importing', done: 12, total: 60 }))
+
+        expect(useCloudBackupRestoreProgressStore.getState().progress).toEqual({
+            phase: 'importing',
+            done: 12,
+            total: 60,
+        })
+
+        await act(async () => finish())
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(
+            useCloudBackupRestoreProgressStore.getState().progress,
+        ).toBeNull()
+    })
+
+    test('clears restore progress when the restore fails', async () => {
+        restoreCloudBackupMock.mockImplementation(
+            async ({
+                onProgress,
+            }: {
+                onProgress: (progress: RestoreProgress) => void
+            }) => {
+                onProgress({ phase: 'downloading' })
+                throw new CloudBackupRestoreError('NOT_FOUND')
+            },
+        )
+        const onError = vi.fn()
+        const { result } = renderRestore({ onError })
+
+        act(() => result.current.mutate({ salt: SALT }))
+
+        await waitFor(() => expect(onError).toHaveBeenCalled())
+        expect(
+            useCloudBackupRestoreProgressStore.getState().progress,
+        ).toBeNull()
     })
 })
