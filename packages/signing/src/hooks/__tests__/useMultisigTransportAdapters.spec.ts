@@ -38,15 +38,9 @@ const mocks = vi.hoisted(() => ({
     proposeSignRequest: vi.fn(),
     addSignature: vi.fn(),
     useNetwork: vi.fn(),
-    encodeTransactionRaw: vi.fn(),
+    encodeUnsignedTransaction: vi.fn(),
     useAllAccounts: vi.fn(),
     useDeviceID: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useTransactionEncoder: () => ({
-        encodeTransactionRaw: mocks.encodeTransactionRaw,
-    }),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -156,10 +150,13 @@ describe('useMultisigTransportAdapters', () => {
         ])
         mocks.useDeviceID.mockReturnValue('device-1')
         // Encode each txn to a deterministic, distinguishable byte sequence
-        mocks.encodeTransactionRaw.mockImplementation(
+        mocks.encodeUnsignedTransaction.mockImplementation(
             (txn: { tag: string }) =>
                 new Uint8Array([txn.tag === 'TXN_1' ? 0xa1 : 0xa2]),
         )
+        registerFakePlannerAdapter({
+            encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+        })
     })
 
     describe('proposeSignRequest', () => {
@@ -546,7 +543,10 @@ describe('useMultisigTransportAdapters', () => {
                 draftProposeContexts.delete(draftLocalId)
                 return context
             })
-            registerFakePlannerAdapter({ takeDraftProposeContext })
+            registerFakePlannerAdapter({
+                takeDraftProposeContext,
+                encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+            })
         })
 
         test('registers the sync handoff under the real id and fires onProposed', async () => {

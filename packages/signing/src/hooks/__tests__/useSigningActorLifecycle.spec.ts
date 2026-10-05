@@ -71,23 +71,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...original,
-        useTransactionEncoder: vi.fn(() => ({
-            encodeSignedTransactions: vi.fn(),
-            encodeTransactionRaw: vi.fn(),
-        })),
-        useAlgorandClient: vi.fn(() => ({
-            client: { algod: { sendRawTransaction: vi.fn() } },
-        })),
-    }
-})
-
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
@@ -134,6 +117,7 @@ import { createSigningMachine } from '../../machine/createSigningMachine'
 import { flushQueue } from '../../test-utils/queue'
 import type { SignRequest, TransactionSignRequest } from '../../models'
 import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 
 type MockActor = {
     id: string
@@ -247,6 +231,25 @@ describe('useSigningActorLifecycle', () => {
         expect(createSigningMachine).toHaveBeenCalledTimes(1)
         expect(actor.start).toHaveBeenCalled()
         expect(actor.subscribe).toHaveBeenCalled()
+    })
+
+    test("hands the machine an encoder that returns the planner's unsigned bytes", async () => {
+        const bytes = new Uint8Array([9, 9])
+        const encodeUnsignedTransaction = vi.fn(() => bytes)
+        registerFakePlannerAdapter({ encodeUnsignedTransaction })
+        const actor = makeMockActor('tx-1')
+        vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+
+        renderHook(() => useSigningActorLifecycle())
+        act(() => {
+            useSigningStore.getState().addSignRequest(makeTxRequest())
+        })
+        await flushQueue()
+
+        const deps = vi.mocked(createSigningMachine).mock.calls[0][2]
+        const txn = { tag: 'TXN' } as never
+        expect(deps.encodeTransaction(txn)).toBe(bytes)
+        expect(encodeUnsignedTransaction).toHaveBeenCalledWith(txn)
     })
 
     test('suppresses a re-presented request whose group is already submitted', async () => {

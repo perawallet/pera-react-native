@@ -93,6 +93,11 @@ export interface MessageSignerChainAdapter {
     parseAuthDataForDisplay(data: string, encoding: string): ParsedAuthData
     isAuthDataWirePayload(params: unknown): boolean
     parseAuthDataWireRequest(rawParams: unknown): AuthDataPayload
+    /**
+     * The public key a hardware device signs auth data against.
+     * @throws when `address` is invalid on the chain.
+     */
+    signerPublicKey(address: string): Uint8Array
     /** Ready to sign: `signer` is the address, with domain, scope and encoding filled in. */
     buildSiwxAuthData(args: BuildSiwxAuthDataArgs): AuthDataPayload
 }

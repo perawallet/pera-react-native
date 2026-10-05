@@ -21,6 +21,7 @@ import { bytesEqual, bytesToHex } from '@perawallet/wallet-core-shared'
 
 import {
     plannerChainAdapters,
+    type AssignFeeToGroup,
     type FetchSuggestedMinFee,
     type PlannerChainAdapter,
 } from '../chain-adapter'
@@ -55,6 +56,13 @@ const recomputeGroupIds = (transactions: PeraTransaction[]): void => {
     }
 }
 
+// Module-level so its identity is stable across renders, as the real hook's
+// `useCallback` result is.
+const passThroughAssignFee: AssignFeeToGroup = async ({ transactions }) => ({
+    transactions,
+    adjustments: [],
+})
+
 export const fakePlannerAdapter = (
     overrides: Partial<PlannerChainAdapter> = {},
 ): PlannerChainAdapter => ({
@@ -73,10 +81,9 @@ export const fakePlannerAdapter = (
         isError: false,
     })),
     useFetchSuggestedMinFee: vi.fn(() => fetchZeroMinFee),
-    assignGroupFees: vi.fn(async ({ transactions }) => ({
-        transactions,
-        adjustments: [],
-    })),
+    useMinFeeForSender: vi.fn(() => ({ minFee: undefined, isPending: false })),
+    useAssignFeeToGroup: vi.fn(() => passThroughAssignFee),
+    encodeUnsignedTransaction: vi.fn(() => new Uint8Array()),
     reviewGroupFees: vi.fn(() => ({
         totalFee: new Decimal(0),
         highFeeWarning: null,

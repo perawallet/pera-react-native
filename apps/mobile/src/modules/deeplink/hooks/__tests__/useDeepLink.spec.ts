@@ -115,7 +115,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     UserRejectedSigningError: class UserRejectedSigningError extends Error {},
     // Non-quantum sender in every fixture here — the calculator's real fast
     // path is a passthrough no-op. Real fee behavior is covered by
-    // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
+    // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
     // and apps/mobile/src/modules/deeplink/handlers/__tests__/useKeyregDeeplink.spec.ts.
     useMinimumFeeCalculator: () => ({
         assignFeeToGroup: async ({

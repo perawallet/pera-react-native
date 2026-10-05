@@ -58,6 +58,7 @@ export {
     type LocalKeySigningDeps,
     type LocalKeyStrategyOptions,
     type LocalSigningFunction,
+    type MinFeeForSenderResult,
     type MsigMetadata,
     type MultisigHandoffCompletionDeps,
     type MultisigSignerInput,

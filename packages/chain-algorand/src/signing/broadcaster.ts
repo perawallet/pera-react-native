@@ -11,6 +11,7 @@
  */
 
 import {
+    AlgodError,
     encodeSignedTransactions,
     createWalletAlgorandClient,
 } from '@perawallet/wallet-core-blockchain'
@@ -47,4 +48,10 @@ export const algorandBroadcasterAdapter: BroadcasterChainAdapter = {
     deriveSubmissionAttemptFromBytes,
     setOnConfirmedHandler,
     setSubmissionSettledHandler,
+    submitTimeoutError: timeoutMs =>
+        new AlgodError(
+            'network_unavailable',
+            {},
+            new Error(`Transaction submit timed out after ${timeoutMs}ms`),
+        ),
 }
