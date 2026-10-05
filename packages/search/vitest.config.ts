@@ -20,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
@@ -38,5 +39,4 @@ export default defineConfig({
             ),
         },
     },
-    ...poolConfig,
 })

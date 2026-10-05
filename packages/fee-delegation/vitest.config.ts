@@ -15,8 +15,8 @@ import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         environment: 'node',
         passWithNoTests: true,
     },
-    ...poolConfig,
 })
