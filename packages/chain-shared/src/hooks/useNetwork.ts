@@ -12,16 +12,22 @@
 
 import { useMemo } from 'react'
 import {
+    CUSTOM_NETWORK_ID,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     getNetworkConfig,
     isMainnet as isMainnetHelper,
     isTestnet as isTestnetHelper,
 } from '@perawallet/wallet-core-config'
-import { selectAlgorandCustomNetwork, useNetworkStore } from '../store'
+import { selectCustomNetwork, useNetworkStore } from '../store/network-store'
 
 export const useNetwork = () => {
     const network = useNetworkStore(state => state.network)
     const setNetwork = useNetworkStore(state => state.setNetwork)
-    const customNetwork = useNetworkStore(selectAlgorandCustomNetwork)
+    const customNetwork = useNetworkStore(state =>
+        selectCustomNetwork(state, LEGACY_CHAIN_ID, CUSTOM_NETWORK_ID),
+    )
 
     const isMainnet = isMainnetHelper(network)
     const isTestnet = isTestnetHelper(network)

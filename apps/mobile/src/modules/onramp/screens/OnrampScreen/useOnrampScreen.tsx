@@ -22,7 +22,7 @@ import {
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type {
     Network,
     Nullable,

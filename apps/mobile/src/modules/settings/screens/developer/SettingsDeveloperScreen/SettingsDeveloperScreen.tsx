@@ -13,7 +13,7 @@
 import { Linking } from 'react-native'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'

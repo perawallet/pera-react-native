@@ -17,7 +17,7 @@ import React from 'react'
 import { OnboardingStep } from '../../models'
 
 const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: mockUseNetwork,
 }))
 

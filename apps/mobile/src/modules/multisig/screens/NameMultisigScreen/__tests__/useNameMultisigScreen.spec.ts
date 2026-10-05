@@ -85,15 +85,18 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
-    return {
-        ...actual,
-        useNetwork: () => ({ network: 'mainnet' }),
-    }
-})
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-blockchain')
+    >()),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     logEvent: vi.fn(),

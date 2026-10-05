@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     useAccountBalancesQuery,
     type WalletAccount,

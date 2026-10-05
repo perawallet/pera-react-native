@@ -45,6 +45,9 @@ const {
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useMinimumFeeConfig: () => ({ assetMbr: 100_000n }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
 }))
 

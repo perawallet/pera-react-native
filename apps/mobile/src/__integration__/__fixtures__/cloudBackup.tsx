@@ -28,7 +28,7 @@ import {
     entropyChildIdOf,
     withSecret,
 } from '@perawallet/wallet-core-kms'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     derivePasskeyCredential,

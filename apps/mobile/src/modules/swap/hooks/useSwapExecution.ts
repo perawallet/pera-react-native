@@ -11,7 +11,6 @@
  */
 
 import { useState, useCallback, useRef } from 'react'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import {
     useExecuteSwapMutation,
     type ExecuteSwapResult,
@@ -23,6 +22,7 @@ import {
     formatNumber,
     isPeraNetworkError,
     type Nullable,
+    microAlgosToAlgos,
 } from '@perawallet/wallet-core-shared'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useIsQuantumSwapEnabled } from '@hooks/useIsQuantumSwapEnabled'

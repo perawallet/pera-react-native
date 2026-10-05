@@ -11,7 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { closeSpotBanner } from '../api/spot-banners'
 import type { SpotBannerListResponse } from '../api/spot-banners'

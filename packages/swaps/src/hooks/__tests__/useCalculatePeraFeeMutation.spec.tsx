@@ -17,7 +17,7 @@ import React from 'react'
 import { useCalculatePeraFeeMutation } from '../useCalculatePeraFeeMutation'
 import { calculatePeraFee } from '../../api'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

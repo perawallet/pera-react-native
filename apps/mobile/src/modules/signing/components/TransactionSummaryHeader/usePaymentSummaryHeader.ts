@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 
 export const usePaymentSummaryHeader = (

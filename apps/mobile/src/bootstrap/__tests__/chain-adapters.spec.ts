@@ -54,7 +54,10 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
     readCapabilityOverrides: mocks.readCapabilityOverrides,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetworkStore: { getState: mocks.networkGetState },
 }))
 

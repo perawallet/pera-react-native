@@ -53,11 +53,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         encodeTransaction: mockEncodeTransaction,
         decodeTransaction: mockDecodeTransaction,
     }),
+    getExpectedGenesisHash: (network: string) => `hash-${network}`,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({
         network: mockNetwork.current,
         networkConfig: { genesisId: `${mockNetwork.current}-v1.0` },
     }),
-    getExpectedGenesisHash: (network: string) => `hash-${network}`,
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({

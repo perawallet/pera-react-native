@@ -29,7 +29,7 @@ import type {
     WalletAccount,
 } from '../models'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
     getAccountBalance,

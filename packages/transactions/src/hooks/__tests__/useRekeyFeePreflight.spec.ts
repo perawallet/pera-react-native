@@ -24,10 +24,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 // Faithful reimplementation — the real module pulls in react-native-mmkv,
 // which cannot load in the node test environment.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    algosToMicroAlgosBigInt: (algos: Decimal) =>
-        BigInt(algos.mul(1_000_000).toFixed(0)),
-}))
 
 const SOURCE_ADDRESS = 'SOURCE'.padEnd(58, 'A')
 const FEE_ALGOS = new Decimal('0.001')

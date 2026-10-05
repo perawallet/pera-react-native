@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { Linking } from 'react-native'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     generateUniqueId,
     truncateAlgorandAddress,

@@ -26,6 +26,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
         ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
     ),
+    useNetwork: () => mockNetwork,
 }))
 
 // Mock endpoints
@@ -39,9 +40,6 @@ vi.mock('../endpoints', () => ({
 
 // Mock network extension
 const mockNetwork = { network: 'mainnet' }
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => mockNetwork,
-}))
 
 // Mock currencies
 const mockUsdToPreferred = vi.fn((amount: Decimal) => amount.mul(2))

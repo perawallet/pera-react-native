@@ -99,9 +99,15 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
         useAlgorandClient: vi.fn(() => ({
             client: { algod: { sendRawTransaction: vi.fn() } },
         })),
-        useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     }
 })
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+}))
 
 vi.mock('../../machine/createSigningMachine')
 

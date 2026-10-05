@@ -63,14 +63,20 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    AccountSigTypes: { sig: 'sig', msig: 'msig', lsig: 'lsig', pqsig: 'pqsig' },
+    useAccountSigTypeQuery: () => sigTypeCheckState,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
     useNetwork: () => ({ network: 'testnet' }),
-    AccountSigTypes: { sig: 'sig', msig: 'msig', lsig: 'lsig', pqsig: 'pqsig' },
-    useAccountSigTypeQuery: () => sigTypeCheckState,
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', async () => {

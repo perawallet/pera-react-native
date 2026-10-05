@@ -26,15 +26,12 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
             mocks.useNetwork.mock.results.at(-1)?.value?.network ?? 'mainnet',
         ),
     ),
+    useNetwork: mocks.useNetwork,
 }))
 
 const mocks = vi.hoisted(() => ({
     searchAssets: vi.fn(),
     useNetwork: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mocks.useNetwork,
 }))
 
 const mainnetScope = { chainId: 'algorand', networkId: 'mainnet' }

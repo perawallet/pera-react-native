@@ -17,7 +17,7 @@ import {
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { setRefreshHandler } from '../api/transport'
 import { refreshTokenRequest } from '../api/auth'

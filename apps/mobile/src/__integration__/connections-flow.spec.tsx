@@ -43,8 +43,8 @@ import {
     encodeTransaction,
     encodeTransactionRaw,
     rawTransactionsMatch,
-    useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,

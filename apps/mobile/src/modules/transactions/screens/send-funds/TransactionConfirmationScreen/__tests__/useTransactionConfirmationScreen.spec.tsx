@@ -108,22 +108,27 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         ),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    displayUnitsToBaseUnits: (value: Decimal, decimals: number) =>
-        new Decimal(value).mul(new Decimal(10).pow(decimals)),
-}))
-
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    ALGO_ASSET_ID: '0',
-    isAlgoAssetId: (assetId: string | number | bigint) =>
-        String(assetId) === '0',
-    DEFAULT_PRECISION: 2,
-    formatCurrency: vi.fn(() => '10.00'),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
+
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { displayUnitsToBaseUnits } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+    return {
+        ALGO_ASSET_ID: '0',
+        isAlgoAssetId: (assetId: string | number | bigint) =>
+            String(assetId) === '0',
+        DEFAULT_PRECISION: 2,
+        formatCurrency: vi.fn(() => '10.00'),
+        displayUnitsToBaseUnits,
+    }
+})
 
 vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(),

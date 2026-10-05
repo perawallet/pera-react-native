@@ -27,12 +27,12 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
     ALGO_ASSET_NAME,
     DEFAULT_PRECISION,
     formatCurrency,
     type Nullable,
+    baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 
 type UseAssetClaimDetailScreenResult = {

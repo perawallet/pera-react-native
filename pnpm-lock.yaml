@@ -398,6 +398,9 @@ importers:
       '@perawallet/wallet-core-chain-algorand':
         specifier: workspace:*
         version: link:../../packages/chain-algorand
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../../packages/chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -1105,6 +1108,9 @@ importers:
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../packages/kms
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../packages/shared
       '@perawallet/wallet-core-signing':
         specifier: workspace:*
         version: link:../packages/signing
@@ -1811,9 +1817,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-blockchain':
+      '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
-        version: link:../blockchain
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -1885,9 +1891,6 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
@@ -1964,12 +1967,12 @@ importers:
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2043,6 +2046,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2131,9 +2137,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-blockchain':
+      '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
-        version: link:../blockchain
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2207,9 +2213,6 @@ importers:
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
-      '@perawallet/wallet-core-database':
-        specifier: workspace:*
-        version: link:../database
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
@@ -2231,9 +2234,6 @@ importers:
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
-      drizzle-orm:
-        specifier: 'catalog:'
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -2341,6 +2341,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2587,6 +2590,9 @@ importers:
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../database
       '@perawallet/wallet-core-remote-config':
         specifier: workspace:*
         version: link:../remote-config
@@ -2596,6 +2602,12 @@ importers:
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.2.3)
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -2783,9 +2795,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-blockchain':
+      '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
-        version: link:../blockchain
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2946,9 +2958,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-blockchain':
+      '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
-        version: link:../blockchain
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -3183,9 +3195,6 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../accounts
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
@@ -3408,12 +3417,12 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -3466,12 +3475,12 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -3585,9 +3594,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-blockchain':
+      '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
-        version: link:../blockchain
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -3918,6 +3927,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -3997,12 +4009,12 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-remote-config':
         specifier: workspace:*
         version: link:../remote-config
@@ -4064,6 +4076,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-device':
         specifier: workspace:*
         version: link:../device
@@ -15762,7 +15777,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+      vitest: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@vitest/expect@4.1.11':
     dependencies:

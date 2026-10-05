@@ -15,13 +15,14 @@ import {
     scopeForLegacyNetwork,
     type AccountInformation,
 } from '@perawallet/wallet-core-chain-contract'
-import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
 import {
-    useNetwork,
-    Address,
+    isAlgoAssetId,
+    type Optional,
     algosToMicroAlgosBigInt,
     toBigInt,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-shared'
+import { Address } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 import { getAccountBalance, getAccountHoldings } from '../db'
 

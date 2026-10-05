@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     ALGO_ASSET_NAME,
     isAlgoAssetName,

@@ -31,6 +31,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
             mockUseNetwork.mock.results.at(-1)?.value?.network ?? 'mainnet',
         ),
     ),
+    useNetwork: mockUseNetwork,
 }))
 
 const buildAsset = (isPriceAlertEnabled: boolean): PeraAsset => ({
@@ -55,10 +56,6 @@ vi.mock('../../db', () => ({
 }))
 
 const mockUseNetwork = vi.hoisted(() => vi.fn())
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mockUseNetwork,
-}))
 
 const mockToggleResponse = {
     is_enabled: true,

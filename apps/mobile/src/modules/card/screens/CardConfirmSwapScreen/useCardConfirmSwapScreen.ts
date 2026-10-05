@@ -18,10 +18,7 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import {
-    baseUnitsToDisplayUnits,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useAccountBalancesInvalidator } from '@perawallet/wallet-core-accounts'
 import {
     formatAssetAmount,
@@ -36,6 +33,7 @@ import {
     logger,
     type Maybe,
     type Nullable,
+    baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, CardEvent } from '@analytics'

@@ -33,13 +33,16 @@ const mockZeroBytes = vi.fn()
 let storeAccounts: WalletAccount[] = []
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    isValidAlgorandAddress: (...args: unknown[]) =>
+        mockIsValidAlgorandAddress(...args),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    isValidAlgorandAddress: (...args: unknown[]) =>
-        mockIsValidAlgorandAddress(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({

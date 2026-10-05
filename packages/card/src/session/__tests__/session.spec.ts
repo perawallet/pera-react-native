@@ -56,7 +56,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     withSecret,
     zeroBytes,
 }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
 }))
 vi.mock('../../api/auth', () => ({ refreshTokenRequest }))

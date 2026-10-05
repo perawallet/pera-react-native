@@ -70,6 +70,10 @@ vi.mock('../../parser', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { microAlgosToAlgos } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+
     // Real enum rather than a hand-copied literal — see the note in
     // vitest.setup.ts. base.ts has no runtime imports.
     const { ErrorCategory } = await vi.importActual<
@@ -90,6 +94,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             Uint8Array.from(Buffer.from(b64, 'base64')),
         ),
         ErrorCategory,
+        microAlgosToAlgos,
     }
 })
 
@@ -154,15 +159,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         if (!address) return false
         return /^[0-9a-zA-Z]{58}$/.test(address)
     },
-    microAlgosToAlgos: (microAlgos: bigint | number | string) => {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { Decimal } = require('decimal.js')
-        return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
-    },
-    useNetwork: () => ({
-        network: 'mainnet',
-        networkConfig: { genesisId: 'mainnet-v1.0' },
-    }),
     getExpectedGenesisHash: () => 'mainnet-hash',
     // Identity encode/decode pair for the keyreg shape-normalization
     // step. Real impl encodes to msgpack bytes then decodes back to a
@@ -170,6 +166,13 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useTransactionEncoder: () => ({
         encodeTransaction: (tx: unknown) => tx,
         decodeTransaction: (tx: unknown) => tx,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => ({
+        network: 'mainnet',
+        networkConfig: { genesisId: 'mainnet-v1.0' },
     }),
 }))
 

@@ -47,7 +47,7 @@ import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/routes'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodSendRawTransaction,

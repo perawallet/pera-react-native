@@ -24,13 +24,14 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import {
-    displayUnitsToBaseUnits,
-    useAlgorandClient,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useMinimumFeeCalculator } from '@perawallet/wallet-core-signing'
-import { assertOnline, toError } from '@perawallet/wallet-core-shared'
+import {
+    assertOnline,
+    toError,
+    displayUnitsToBaseUnits,
+} from '@perawallet/wallet-core-shared'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
 
 /**

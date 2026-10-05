@@ -12,7 +12,8 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { Networks, getNetworkConfig } from '@perawallet/wallet-core-config'
-import { setCustomNetwork, useNetworkStore } from '../../store'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { setCustomNetwork } from '../../store'
 import { getExpectedGenesisHash } from '../resolveGenesisHash'
 
 describe('getExpectedGenesisHash', () => {

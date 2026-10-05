@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { HardwareWalletDerivedAccount } from '@perawallet/wallet-core-hardware-wallet'
 import { fetchRekeyedAddresses } from '../chain-adapter'
 import { getRekeyedAddressesQueryKey } from './querykeys'

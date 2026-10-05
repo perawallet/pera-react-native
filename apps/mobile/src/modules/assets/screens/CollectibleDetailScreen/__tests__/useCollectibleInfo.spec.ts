@@ -48,13 +48,18 @@ vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual = (await importOriginal()) as Record<string, unknown>
-    return {
-        ...actual,
-        useNetwork: () => ({ network: 'mainnet' }),
-    }
-})
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-blockchain')
+    >()),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
 
 // Mutable for the same reason as `mockCapabilities`: `custom` has an empty
 // explorerUrl by design, and that case needs to be reachable per-test.

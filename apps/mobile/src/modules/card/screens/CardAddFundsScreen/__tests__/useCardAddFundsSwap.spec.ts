@@ -22,15 +22,6 @@ const mockQuotes = vi.hoisted(() => ({
     isQuoteFetching: false,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const { Decimal: D } =
-        await vi.importActual<typeof import('decimal.js')>('decimal.js')
-    return {
-        baseUnitsToDisplayUnits: (a: unknown, d: number) =>
-            new D(String(a)).div(D.pow(10, d)),
-    }
-})
-
 vi.mock('@modules/swap/hooks', () => ({
     useSwapExecution: () => ({
         execute: mockExecute,

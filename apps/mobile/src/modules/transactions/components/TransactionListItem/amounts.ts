@@ -12,13 +12,11 @@
 
 import type { Decimal } from 'decimal.js'
 import {
-    microAlgosToAlgos,
-    baseUnitsToDisplayUnits,
-} from '@perawallet/wallet-core-blockchain'
-import {
     ALGO_ASSET_ID,
     ALGO_ASSET_NAME,
     type Nullable,
+    microAlgosToAlgos,
+    baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 import type { TransactionBalanceImpact } from '@perawallet/wallet-core-transactions'
 

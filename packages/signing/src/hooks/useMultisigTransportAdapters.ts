@@ -12,10 +12,8 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import {
-    useNetwork,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+import { useTransactionEncoder } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     isMultisigAccount,
     useAllAccounts,

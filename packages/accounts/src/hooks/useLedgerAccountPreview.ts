@@ -19,10 +19,11 @@ import {
     PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
 import {
+    ALGO_ASSET_ID,
+    ALGO_ASSET_NAME,
     baseUnitsToDisplayUnits,
     microAlgosToAlgos,
-} from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID, ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+} from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
     LedgerAccountPreview,

@@ -18,7 +18,7 @@ import React from 'react'
 import { useCreateQuotesMutation } from '../useCreateQuotesMutation'
 import { createQuotes, fetchProviders } from '../../api'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

@@ -24,6 +24,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
         ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
     ),
+    useNetwork: () => mockNetwork,
 }))
 
 const mocks = vi.hoisted(() => ({
@@ -35,9 +36,6 @@ vi.mock('../../api', () => ({
 }))
 
 const mockNetwork = { network: 'mainnet' }
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => mockNetwork,
-}))
 
 describe('useArc59AssetRequestsQuery', () => {
     let queryClient: QueryClient

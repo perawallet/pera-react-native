@@ -25,7 +25,10 @@ const mocks = vi.hoisted(() => ({
     useNetwork: vi.fn(),
 }))
 
-vi.mock('../useNetwork', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: mocks.useNetwork,
 }))
 

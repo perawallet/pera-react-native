@@ -20,7 +20,10 @@ import {
     useLedgerDeviceGroups,
     useAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
+import {
+    microAlgosToAlgos,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { navigationRef } from '@routes/navigationRef'
 import type { Decimal } from 'decimal.js'
@@ -28,7 +31,6 @@ import {
     useAccountTypeLabel,
     type AccountTypeLabel,
 } from '@hooks/useAccountTypeLabel'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 
 type UseAccountInfoCardParams = {

@@ -30,7 +30,7 @@ import {
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 

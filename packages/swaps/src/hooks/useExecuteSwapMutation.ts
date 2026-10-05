@@ -12,10 +12,8 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import {
-    useMinimumFeeConfig,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     isMultisigAccount,
     useSelectedAccount,

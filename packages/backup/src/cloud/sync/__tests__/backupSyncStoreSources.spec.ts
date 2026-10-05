@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
     unsubscribe: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: { getState: () => ({ network: 'testnet' }) },
 }))
 

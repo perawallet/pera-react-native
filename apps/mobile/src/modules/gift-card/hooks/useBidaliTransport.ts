@@ -20,8 +20,6 @@ import type {
 import {
     isValidAlgorandAddress,
     useAlgorandClient,
-    useNetwork,
-    displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-blockchain'
 import {
     getKnownAssetId,
@@ -33,7 +31,10 @@ import {
     scopeForLegacyNetwork,
     type ChainMode,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedChainMode } from '@perawallet/wallet-core-chain-shared'
+import {
+    useSelectedChainMode,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     useSigningRequest,
     type TransactionSignRequest,
@@ -45,6 +46,7 @@ import {
     type Optional,
     type Nullable,
     type Network,
+    displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'

@@ -11,7 +11,7 @@
  */
 
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { swapAdapterFor } from '../chain-adapter'
 import { useSwapsStore } from '../store'

@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     IN_FLIGHT_SIGN_REQUEST_STATUSES,

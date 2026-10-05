@@ -13,8 +13,10 @@
 import { sql } from 'drizzle-orm'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import { Networks } from '@perawallet/wallet-core-config'
-import type { CustomNetworkConfig } from '../store'
+import {
+    Networks,
+    type CustomNetworkConfig,
+} from '@perawallet/wallet-core-config'
 
 /**
  * Keyed on genesis hash, NOT URL: the same chain behind a new host (LAN address
@@ -30,7 +32,7 @@ export const shouldClearCustomCache = (
 
 // Every table partitioned by a `network` column, across the four domain packages
 // that own them. Named as literal SQL rather than imported Drizzle schemas:
-// those packages all depend on `blockchain`, so importing back would cycle.
+// those packages all depend on `chain-shared`, so importing back would cycle.
 const CUSTOM_NETWORK_PARTITIONED_TABLES = [
     'account_asset_holdings',
     'account_balances',

@@ -33,8 +33,8 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 const { mockWaitForConfirmation } = vi.hoisted(() => ({
     mockWaitForConfirmation: vi.fn(),

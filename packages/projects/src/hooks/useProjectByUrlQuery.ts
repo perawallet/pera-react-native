@@ -14,7 +14,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { fetchProjectByUrl } from '../api/projects'
 import { projectQueryKeys } from './querykeys'
 import type { PeraProject } from '../models/types'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 export type UseProjectByUrlQueryParams = {
     url?: string

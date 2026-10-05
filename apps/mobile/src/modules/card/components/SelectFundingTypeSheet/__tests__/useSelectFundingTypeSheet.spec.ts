@@ -54,8 +54,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-blockchain')
+    >()),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'testnet' }),
 }))
 

@@ -13,8 +13,10 @@
 import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { updateLastSeenNotification } from '../api/notifications'
 import { useInboxInvalidator } from './useInboxInvalidator'

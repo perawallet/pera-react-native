@@ -28,7 +28,7 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
         // Without these, Vite's dependency pre-bundling resolves
-        // @perawallet/wallet-core-blockchain's real
+        // @perawallet/wallet-core-chain-shared's real
         // @perawallet/wallet-extension-provider import to its installed dist,
         // whose graph reaches react-native-mmkv (a native module vitest can't
         // load) at resolution time — before any vi.mock has a chance to
@@ -36,7 +36,7 @@ export default defineConfig({
         // packages/accounts/vitest.config.ts and
         // packages/assets/vitest.config.ts) avoids that path. Needed as of
         // the querykeys.spec.ts drift-detection test, the first test in this
-        // package to import real (unmocked) blockchain code.
+        // package to import real (unmocked) chain-shared code.
         alias: {
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,

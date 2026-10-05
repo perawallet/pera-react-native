@@ -16,12 +16,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
-    return { ...actual, useNetwork: mockUseNetwork }
-})
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: mockUseNetwork,
+}))
 
 const { createCard, postDelegationApproval, fetchUser } = vi.hoisted(() => ({
     createCard: vi.fn(),

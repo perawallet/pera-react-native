@@ -44,10 +44,13 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => mocks.useNetwork(),
     useTransactionEncoder: () => ({
         encodeTransactionRaw: mocks.encodeTransactionRaw,
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => mocks.useNetwork(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

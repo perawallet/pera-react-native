@@ -12,7 +12,7 @@
 
 import { useAccountsStore } from '../store'
 import { AccountTypes, type WalletAccount } from '../models'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,

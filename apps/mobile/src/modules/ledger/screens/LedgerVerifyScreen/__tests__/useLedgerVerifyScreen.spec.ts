@@ -125,13 +125,19 @@ vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
 }))
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    isValidAlgorandAddress: (address?: string) =>
+        typeof address === 'string' && !address.startsWith('!!'),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    isValidAlgorandAddress: (address?: string) =>
-        typeof address === 'string' && !address.startsWith('!!'),
 }))
 
 // Route params carry the serialized (JSON-safe) shape; the hook decodes it.

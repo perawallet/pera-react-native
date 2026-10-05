@@ -11,7 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { getAccountFundedNetworks } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountFundedNetworksQueryKey } from './querykeys'

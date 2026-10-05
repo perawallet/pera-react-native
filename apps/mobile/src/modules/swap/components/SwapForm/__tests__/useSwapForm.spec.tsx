@@ -159,13 +159,9 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
-    baseUnitsToDisplayUnits: (amount: Decimal, decimals: number) =>
-        amount.div(Decimal.pow(10, decimals)),
-    displayUnitsToBaseUnits: (amount: Decimal, decimals: number) =>
-        amount.mul(Decimal.pow(10, decimals)),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -203,18 +199,26 @@ vi.mock('../../SwapProviderContent', () => ({
     SwapProviderContent: () => null,
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    ALGO_ASSET_ID: '0',
-    ALGO_ASSET_NAME: 'ALGO',
-    isAlgoAssetName: (value: string) => value === 'ALGO',
-    isDecimalEqual: (a: Nullable<Decimal>, b: Nullable<Decimal>) => {
-        if (a === b) return true
-        if (a === null || b === null) return false
-        return a.equals(b)
-    },
-    useDebouncedValue: (value: unknown) => value,
-    uint64IdToNumber: (id: string | number) => Number(id),
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { baseUnitsToDisplayUnits, displayUnitsToBaseUnits } =
+        await vi.importActual<
+            typeof import('@packages/shared/src/utils/unit-conversion')
+        >('@packages/shared/src/utils/unit-conversion')
+    return {
+        ALGO_ASSET_ID: '0',
+        ALGO_ASSET_NAME: 'ALGO',
+        isAlgoAssetName: (value: string) => value === 'ALGO',
+        isDecimalEqual: (a: Nullable<Decimal>, b: Nullable<Decimal>) => {
+            if (a === b) return true
+            if (a === null || b === null) return false
+            return a.equals(b)
+        },
+        useDebouncedValue: (value: unknown) => value,
+        uint64IdToNumber: (id: string | number) => Number(id),
+        baseUnitsToDisplayUnits,
+        displayUnitsToBaseUnits,
+    }
+})
 
 vi.mock('../../SwapConfirmationContent', () => ({
     SwapConfirmationContent: () => null,
