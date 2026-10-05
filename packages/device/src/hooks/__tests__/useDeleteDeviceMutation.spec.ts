@@ -66,8 +66,8 @@ const mockDefaultDeviceStore = () => {
         const state = {
             pushToken: 'test-push-token',
             deviceIDs: new Map([
-                ['testnet', 'testnet-device-id'],
-                ['mainnet', 'mainnet-device-id'],
+                ['algorand/testnet', 'testnet-device-id'],
+                ['algorand/mainnet', 'mainnet-device-id'],
             ]),
         }
         return selector(state as never)
@@ -134,8 +134,8 @@ describe('useDeleteDeviceMutation', () => {
             const state = {
                 pushToken: null,
                 deviceIDs: new Map([
-                    ['testnet', 'testnet-device-id'],
-                    ['mainnet', 'mainnet-device-id'],
+                    ['algorand/testnet', 'testnet-device-id'],
+                    ['algorand/mainnet', 'mainnet-device-id'],
                 ]),
             }
             return selector(state as never)

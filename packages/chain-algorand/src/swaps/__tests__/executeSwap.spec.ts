@@ -1121,7 +1121,7 @@ describe('executeAlgorandSwap', () => {
             expect(record).toMatchObject({
                 swapIdStr: '12345',
                 signRequestId: 'sign-req-1',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 multisigAddress: 'JOINT_ADDR',
                 deviceId: 'device-1',
                 msigMetadata: {

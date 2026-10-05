@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
 import {
     completeMultisigHandoff,
     deriveSubmissionAttemptFromBytes,
@@ -68,7 +71,7 @@ export type SwapHandoffResolutionDeps = {
     }) => Promise<unknown>
     /** Best-effort: tell the backend the wallet submitted, so it won't broadcast. */
     markConfirmed: (input: {
-        network: SwapHandoffRecord['network']
+        network: Network
         deviceId: string
         signRequestIds: string[]
     }) => Promise<void>
@@ -166,7 +169,8 @@ export const resolveSwapHandoffOutcome = async ({
     record: SwapHandoffRecord
     deps: SwapHandoffResolutionDeps
 }): Promise<void> => {
-    const { signRequestId, swapIdStr, network, deviceId, plan } = record
+    const { signRequestId, swapIdStr, deviceId, plan } = record
+    const network = legacyNetworkOf(record.scope)
 
     await completeMultisigHandoff({
         outcome,

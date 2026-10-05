@@ -43,7 +43,7 @@ const makeRecord = (
 ): SwapHandoffRecord => ({
     swapIdStr: '42',
     signRequestId: 'req-1',
-    network: 'mainnet',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     multisigAddress: 'JOINT_ADDR',
     deviceId: 'device-1',
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },

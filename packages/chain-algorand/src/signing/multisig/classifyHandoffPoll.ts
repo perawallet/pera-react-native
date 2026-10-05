@@ -27,6 +27,7 @@ import {
     type ResolveHandoffOutcomeArgs,
     type ResolverMessages,
 } from '@perawallet/wallet-core-signing'
+import { algorandNetworkOf } from '../../legacy-network'
 import { buildWalletConnectSignResult } from './buildWalletConnectSignResult'
 
 /**
@@ -111,7 +112,7 @@ const classifyReadyPoll = async (
 
     // Assemble one composite SignedTransaction per item, in canonical order:
     // by list, then by position within the list.
-    const multisig = multisigAdapterFor(handoff.network)
+    const multisig = multisigAdapterFor(algorandNetworkOf(handoff.scope))
     const assembledBytes: Uint8Array[] = []
     for (const list of lists) {
         const result = await multisig.assembleSignedTransactions({
@@ -356,7 +357,7 @@ const deliverReady = async (
     // dApp already has the signed bytes — but worth logging.
     try {
         await markConfirmed({
-            network: handoff.network,
+            network: algorandNetworkOf(handoff.scope),
             deviceId: handoff.deviceId,
             signRequestIds: [handoff.signRequestId],
         })

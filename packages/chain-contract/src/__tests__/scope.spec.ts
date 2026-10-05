@@ -20,10 +20,13 @@ import {
 } from '../models/identity'
 import {
     legacyColumnValue,
+    legacyNetworkOf,
     networkColumnValue,
     parseScopeKey,
+    rekeyLegacyNetworkRecord,
     scopeForLegacyNetwork,
     scopeFromNetworkColumn,
+    scopeKeyForLegacyNetwork,
     toScopeKey,
 } from '../scope'
 
@@ -184,5 +187,63 @@ describe('network column encoding', () => {
         expect(() => scopeFromNetworkColumn('ethereum/mainnet')).toThrow(
             InvalidScopeKeyError,
         )
+    })
+})
+
+describe('scopeKeyForLegacyNetwork', () => {
+    it.each(LEGACY_NETWORKS)('keys %s under the Algorand chain', network => {
+        expect(scopeKeyForLegacyNetwork(network)).toBe(`algorand/${network}`)
+    })
+})
+
+describe('legacyNetworkOf', () => {
+    it.each(LEGACY_NETWORKS)('round-trips the Algorand %s scope', network => {
+        expect(legacyNetworkOf(scopeForLegacyNetwork(network))).toBe(network)
+    })
+
+    it('rejects a network of the legacy chain that has no legacy value', () => {
+        expect(() =>
+            legacyNetworkOf({ chainId: 'algorand', networkId: 'custom-9f3a' }),
+        ).toThrow(InvalidScopeKeyError)
+    })
+
+    it('rejects another chain', () => {
+        expect(() => legacyNetworkOf(UNKNOWN_CHAIN_SCOPE)).toThrow(
+            InvalidScopeKeyError,
+        )
+    })
+})
+
+describe('rekeyLegacyNetworkRecord', () => {
+    it('re-keys bare legacy networks to scope keys, values unchanged', () => {
+        const rekeyed = rekeyLegacyNetworkRecord({
+            mainnet: 'id-main',
+            testnet: null,
+        })
+
+        expect(rekeyed).toEqual({
+            'algorand/mainnet': 'id-main',
+            'algorand/testnet': null,
+        })
+    })
+
+    it('passes keys that already are scope keys through', () => {
+        const migrated = { 'algorand/testnet': 42 }
+
+        expect(rekeyLegacyNetworkRecord(migrated)).toEqual(migrated)
+    })
+
+    it('drops keys it cannot read instead of throwing', () => {
+        const rekeyed = rekeyLegacyNetworkRecord({
+            mainnet: 1,
+            devnet: 2,
+            'ethereum/mainnet': 3,
+        })
+
+        expect(rekeyed).toEqual({ 'algorand/mainnet': 1 })
+    })
+
+    it('treats a missing record as empty', () => {
+        expect(rekeyLegacyNetworkRecord(undefined)).toEqual({})
     })
 })

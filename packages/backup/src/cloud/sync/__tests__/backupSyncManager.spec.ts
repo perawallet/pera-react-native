@@ -116,8 +116,14 @@ vi.mock('../webSocketClient', () => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: {
-        getState: () => ({ deviceIDs: new Map([['mainnet', 'dev-id']]) }),
+        getState: () => ({
+            deviceIDs: new Map([['algorand/mainnet', 'dev-id']]),
+        }),
     },
+    deviceIdFor: (
+        state: { deviceIDs: Map<string, string | null> },
+        network: string,
+    ) => state.deviceIDs.get(`algorand/${network}`) ?? null,
 }))
 
 vi.mock('../../store', () => ({

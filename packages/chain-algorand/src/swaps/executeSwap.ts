@@ -312,7 +312,7 @@ export const executeAlgorandSwap = async (
                     registerHandoff({
                         swapIdStr,
                         signRequestId,
-                        network,
+                        scope,
                         multisigAddress,
                         deviceId: deviceId ?? '',
                         msigMetadata: {

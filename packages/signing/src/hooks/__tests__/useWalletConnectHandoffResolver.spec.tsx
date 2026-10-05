@@ -69,7 +69,7 @@ const makeHandoff = (
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] },
     expectedRawTransactionsBase64: [btoa('raw-tx-1')],
     deviceId: 'device-1',
-    network: 'testnet',
+    scope: { chainId: 'algorand', networkId: 'testnet' },
     callbacks: {},
     sourceType: 'walletconnect',
     registeredAt: Date.now(),

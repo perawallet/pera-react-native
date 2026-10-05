@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 import type { DevicePlatform } from '@perawallet/wallet-extension-platform'
@@ -135,10 +136,11 @@ export type DeviceIdOrigin = 'migrated' | 'recreated'
 
 export type DeviceState = BaseStoreState & {
     pushToken: Nullable<string>
-    deviceIDs: Map<Network, Nullable<string>>
+    /** Read through `deviceIdFor`; the setters take a `Network`. */
+    deviceIDs: Map<ChainScopeKey, Nullable<string>>
     /** Networks whose last registration attempt failed and awaits a retry. */
     pendingRegistrationNetworks: Network[]
-    deviceIdOrigins: Partial<Record<Network, DeviceIdOrigin>>
+    deviceIdOrigins: Partial<Record<ChainScopeKey, DeviceIdOrigin>>
     setPushToken: (token: Nullable<string>) => void
     setDeviceID: (network: Network, id: Nullable<string>) => void
     setRegistrationPending: (network: Network, isPending: boolean) => void

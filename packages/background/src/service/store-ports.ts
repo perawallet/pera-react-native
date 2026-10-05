@@ -11,6 +11,7 @@
  */
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { scopeKeyForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { usePollingStore } from '../polling'
 import type { SyncStorePorts } from '../models'
@@ -23,7 +24,9 @@ export const createSyncStorePorts = (): SyncStorePorts => ({
     // never-synced (null), not as undefined — which `!== null` would treat
     // as already synced and skip the force-sync.
     getLastRefreshedRound: network =>
-        usePollingStore.getState().lastRefreshedRound[network] ?? null,
+        usePollingStore.getState().lastRefreshedRound[
+            scopeKeyForLegacyNetwork(network)
+        ] ?? null,
     setLastRefreshedRound: (network, round) =>
         usePollingStore.getState().setLastRefreshedRound(network, round),
 })

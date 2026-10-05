@@ -54,8 +54,8 @@ describe('services/polling/store', () => {
         const { result } = renderHook(() => usePollingStore())
 
         expect(result.current.lastRefreshedRound).toEqual({
-            mainnet: null,
-            testnet: null,
+            'algorand/mainnet': null,
+            'algorand/testnet': null,
         })
     })
 
@@ -69,8 +69,8 @@ describe('services/polling/store', () => {
         })
 
         expect(result.current.lastRefreshedRound).toEqual({
-            mainnet: 100,
-            testnet: null,
+            'algorand/mainnet': 100,
+            'algorand/testnet': null,
         })
 
         act(() => {
@@ -78,8 +78,8 @@ describe('services/polling/store', () => {
         })
 
         expect(result.current.lastRefreshedRound).toEqual({
-            mainnet: 100,
-            testnet: 200,
+            'algorand/mainnet': 100,
+            'algorand/testnet': 200,
         })
 
         act(() => {
@@ -87,8 +87,8 @@ describe('services/polling/store', () => {
         })
 
         expect(result.current.lastRefreshedRound).toEqual({
-            mainnet: null,
-            testnet: 200,
+            'algorand/mainnet': null,
+            'algorand/testnet': 200,
         })
     })
 
@@ -105,8 +105,8 @@ describe('services/polling/store', () => {
         })
 
         expect(result.current.lastRefreshedRound).toEqual({
-            mainnet: null,
-            testnet: null,
+            'algorand/mainnet': null,
+            'algorand/testnet': null,
         })
     })
 
@@ -127,9 +127,54 @@ describe('services/polling/store', () => {
         })
         act(() => registration.resetState())
         expect(usePollingStore.getState().lastRefreshedRound).toEqual({
-            mainnet: null,
-            testnet: null,
+            'algorand/mainnet': null,
+            'algorand/testnet': null,
         })
         expect(() => registration.clearStorage()).not.toThrow()
+    })
+
+    test('hydrates an unversioned store keyed by bare network under scope keys', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        const { usePollingStore } = await import('../store')
+        getProvider().keyValueStorage.setItem(
+            'polling-store',
+            JSON.stringify({
+                state: { lastRefreshedRound: { mainnet: 100, testnet: null } },
+                version: 0,
+            }),
+        )
+
+        await usePollingStore.persist.rehydrate()
+
+        expect(usePollingStore.getState().lastRefreshedRound).toEqual({
+            'algorand/mainnet': 100,
+            'algorand/testnet': null,
+        })
+    })
+})
+
+describe('services/polling/store - migratePollingState', () => {
+    test('re-keys v0 rounds by scope key, values unchanged', async () => {
+        const { migratePollingState } = await import('../store')
+
+        expect(
+            migratePollingState(
+                { lastRefreshedRound: { mainnet: 100, testnet: 200 } },
+                0,
+            ),
+        ).toEqual({
+            lastRefreshedRound: {
+                'algorand/mainnet': 100,
+                'algorand/testnet': 200,
+            },
+        })
+    })
+
+    test('leaves v1 state untouched', async () => {
+        const { migratePollingState } = await import('../store')
+        const state = { lastRefreshedRound: { 'algorand/mainnet': 7 } }
+
+        expect(migratePollingState(state, 1)).toEqual(state)
     })
 })

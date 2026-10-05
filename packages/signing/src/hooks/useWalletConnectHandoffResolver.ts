@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
 import {
     addSignature,
     getSignRequestsWithSignatures,
@@ -19,7 +20,7 @@ import {
     type SignRequestResponse,
 } from '@perawallet/wallet-core-multisig'
 import {
-    plannerAdapterFor,
+    plannerAdapterForScope,
     type HandoffPeerDelivery,
     type HandoffPollOutcome,
     type ResolverMessages,
@@ -119,11 +120,11 @@ export const useWalletConnectHandoffResolver = ({
     const poll = useCallback(
         (handoff: PendingWalletConnectHandoff) => ({
             queryKey: getSignRequestsWithSignaturesQueryKey(
-                handoff.network,
+                legacyNetworkOf(handoff.scope),
                 handoff.signRequestId,
             ),
             queryFn: () =>
-                getSignRequestsWithSignatures(handoff.network, {
+                getSignRequestsWithSignatures(legacyNetworkOf(handoff.scope), {
                     device_id: handoff.deviceId,
                     proposed_sign_request_ids: [handoff.signRequestId],
                 }),
@@ -153,7 +154,7 @@ export const useWalletConnectHandoffResolver = ({
                     reason: { kind: 'session-disconnected' },
                 })
             }
-            return plannerAdapterFor(handoff.network).classifyHandoffPoll(
+            return plannerAdapterForScope(handoff.scope).classifyHandoffPoll(
                 detail,
                 handoff,
             )
@@ -192,7 +193,7 @@ export const useWalletConnectHandoffResolver = ({
                 onUndeliverable?.(handoff.signRequestId)
             }
 
-            return plannerAdapterFor(handoff.network).resolveHandoffOutcome({
+            return plannerAdapterForScope(handoff.scope).resolveHandoffOutcome({
                 outcome,
                 handoff,
                 messages,
@@ -203,13 +204,17 @@ export const useWalletConnectHandoffResolver = ({
                 // sitting orphaned when the dApp session is gone.
                 cancelRequest: async () => {
                     if (!proposerAddress || hasReachedThreshold) return
-                    await addSignature(handoff.network, handoff.signRequestId, [
-                        {
-                            address: proposerAddress,
-                            response: 'declined',
-                            device_id: handoff.deviceId,
-                        },
-                    ])
+                    await addSignature(
+                        legacyNetworkOf(handoff.scope),
+                        handoff.signRequestId,
+                        [
+                            {
+                                address: proposerAddress,
+                                response: 'declined',
+                                device_id: handoff.deviceId,
+                            },
+                        ],
+                    )
                 },
             })
         },

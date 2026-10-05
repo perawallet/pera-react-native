@@ -603,7 +603,10 @@ describe('useMultisigTransportAdapters', () => {
             expect(handoff?.expectedRawTransactionsBase64).toEqual(['cmF3MQ=='])
             // The hook's live device id wins; the stashed one is the fallback.
             expect(handoff?.deviceId).toBe('device-1')
-            expect(handoff?.network).toBe('testnet')
+            expect(handoff?.scope).toEqual({
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
             expect(handoff?.sourceType).toBe('walletconnect')
             expect(handoff?.proposerAddress).toBe('A')
             expect(handoff?.callbacks?.approveSignedBytes).toBe(

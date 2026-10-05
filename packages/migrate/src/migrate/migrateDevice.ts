@@ -11,7 +11,11 @@
  */
 
 import { Networks } from '@perawallet/wallet-core-config'
-import { useDeviceStore } from '@perawallet/wallet-core-device'
+import {
+    deviceIdFor,
+    deviceIdOriginFor,
+    useDeviceStore,
+} from '@perawallet/wallet-core-device'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 
 import type { Network } from '@perawallet/wallet-core-shared'
@@ -38,8 +42,8 @@ export const migrateDeviceIdentifiers = (
     // id was already replaced. Otherwise write it and let the next PUT resolve
     // or 404 into recreate, which reports the loss via telemetry.
     const applyMigratedDeviceId = (network: Network, migratedId: string) => {
-        const currentId = device.deviceIDs.get(network)
-        const origin = device.deviceIdOrigins[network]
+        const currentId = deviceIdFor(device, network)
+        const origin = deviceIdOriginFor(device, network)
         if (currentId != null && currentId !== migratedId) {
             if (origin === 'recreated') {
                 return

@@ -100,7 +100,7 @@ vi.mock('../polling', () => ({
         mockSendShouldRefreshRequest(...args),
     usePollingStore: {
         getState: () => ({
-            lastRefreshedRound: { mainnet: null, testnet: null },
+            lastRefreshedRound: { 'algorand/mainnet': null, 'algorand/testnet': null },
             setLastRefreshedRound: mockSetLastRefreshedRound,
         }),
     },
@@ -759,7 +759,7 @@ describe('SyncService', () => {
         // tick goes through checkShouldRefresh. lastRefreshedRound must be
         // null so `neverSynced` is true when shouldRefresh throws.
         vi.mocked(usePollingStore.getState).mockReturnValueOnce?.({
-            lastRefreshedRound: { mainnet: null, testnet: null },
+            lastRefreshedRound: { 'algorand/mainnet': null, 'algorand/testnet': null },
             setLastRefreshedRound: mockSetLastRefreshedRound,
         } as never)
 
@@ -909,7 +909,7 @@ describe('SyncService', () => {
 
         // Simulate the network becoming synced (lastRefreshedRound no longer null).
         usePollingStore.getState = vi.fn(() => ({
-            lastRefreshedRound: { mainnet: 100, testnet: null },
+            lastRefreshedRound: { 'algorand/mainnet': 100, 'algorand/testnet': null },
             setLastRefreshedRound: mockSetLastRefreshedRound,
         }))
         vi.mocked(logger.warn).mockClear()
@@ -944,7 +944,7 @@ describe('SyncService', () => {
         // explicit null.
         useNetworkStore.getState = vi.fn(() => ({ network: 'testnet' }))
         usePollingStore.getState = vi.fn(() => ({
-            lastRefreshedRound: { mainnet: 100 },
+            lastRefreshedRound: { 'algorand/mainnet': 100 },
             setLastRefreshedRound: mockSetLastRefreshedRound,
         }))
         // Backend says "no work needed" — if the absent key were wrongly read
@@ -985,7 +985,7 @@ describe('SyncService', () => {
             // this file) into whatever test runs next.
             useNetworkStore.getState = () => ({ network: 'mainnet' })
             usePollingStore.getState = () => ({
-                lastRefreshedRound: { mainnet: null, testnet: null },
+                lastRefreshedRound: { 'algorand/mainnet': null, 'algorand/testnet': null },
                 setLastRefreshedRound: mockSetLastRefreshedRound,
             })
         }
@@ -1464,9 +1464,9 @@ describe('SyncService', () => {
             // the pre-fix code path reaches sendShouldRefreshRequest here.
             usePollingStore.getState = vi.fn(() => ({
                 lastRefreshedRound: {
-                    mainnet: null,
-                    testnet: null,
-                    custom: 100,
+                    'algorand/mainnet': null,
+                    'algorand/testnet': null,
+                    'algorand/custom': 100,
                 },
                 setLastRefreshedRound: mockSetLastRefreshedRound,
             }))
@@ -1493,7 +1493,7 @@ describe('SyncService', () => {
                 expect(fetchAndPersistAccount).toHaveBeenCalled()
             } finally {
                 usePollingStore.getState = () => ({
-                    lastRefreshedRound: { mainnet: null, testnet: null },
+                    lastRefreshedRound: { 'algorand/mainnet': null, 'algorand/testnet': null },
                     setLastRefreshedRound: mockSetLastRefreshedRound,
                 })
             }
@@ -1503,7 +1503,7 @@ describe('SyncService', () => {
             const { usePollingStore } = await import('../polling')
 
             usePollingStore.getState = vi.fn(() => ({
-                lastRefreshedRound: { mainnet: 100, testnet: null },
+                lastRefreshedRound: { 'algorand/mainnet': 100, 'algorand/testnet': null },
                 setLastRefreshedRound: mockSetLastRefreshedRound,
             }))
             mockSendShouldRefreshRequest.mockResolvedValue({
@@ -1528,7 +1528,7 @@ describe('SyncService', () => {
                 )
             } finally {
                 usePollingStore.getState = () => ({
-                    lastRefreshedRound: { mainnet: null, testnet: null },
+                    lastRefreshedRound: { 'algorand/mainnet': null, 'algorand/testnet': null },
                     setLastRefreshedRound: mockSetLastRefreshedRound,
                 })
             }
@@ -1678,7 +1678,7 @@ describe('SyncService', () => {
             const { usePollingStore } = await import('../polling')
             const originalGetState = usePollingStore.getState
             usePollingStore.getState = (() => ({
-                lastRefreshedRound: { mainnet: 42, testnet: null },
+                lastRefreshedRound: { 'algorand/mainnet': 42, 'algorand/testnet': null },
                 setLastRefreshedRound: mockSetLastRefreshedRound,
             })) as typeof usePollingStore.getState
 
