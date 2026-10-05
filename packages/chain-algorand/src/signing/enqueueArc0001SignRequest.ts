@@ -13,10 +13,12 @@
 import {
     encodeSignedTransaction,
     encodeTransactionRaw,
-    type Arc0001ResolveResult,
-    type PeraSignedTransaction,
-    type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import type {
+    Arc0001ResolveResult,
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     encodeToBase64,
     generateOrderedUniqueId,

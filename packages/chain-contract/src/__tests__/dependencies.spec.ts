@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 // Every package may depend on this one for chain types, so a chain SDK or a
@@ -65,5 +65,24 @@ describe('chain-contract package.json', () => {
         )
 
         expect(workspaceDependencies).toEqual([])
+    })
+})
+
+// A type-only import resolves through hoisting without a manifest entry, so
+// the manifest test alone would not catch it.
+describe('chain-contract sources', () => {
+    it('imports no chain SDK', () => {
+        const srcDir = new URL('../', import.meta.url)
+        const sdkImport =
+            /(?:from|import\s*\()\s*['"](?:algosdk|@algorandfoundation\/)/
+
+        const offenders = readdirSync(srcDir, { recursive: true })
+            .map(String)
+            .filter(file => file.endsWith('.ts') && !file.includes('__tests__'))
+            .filter(file =>
+                sdkImport.test(readFileSync(new URL(file, srcDir), 'utf8')),
+            )
+
+        expect(offenders).toEqual([])
     })
 })

@@ -16,7 +16,7 @@ import { describe, it, expect, vi } from 'vitest'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionGroup } from '@perawallet/wallet-core-swaps'
 import { buildGroupPlans, scatterSigned } from '../swapGroupPlan'
 

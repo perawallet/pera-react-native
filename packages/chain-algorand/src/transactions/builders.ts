@@ -11,11 +11,12 @@
  */
 
 import { microAlgo } from '@algorandfoundation/algokit-utils'
-import {
-    createWalletAlgorandClient,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { createWalletAlgorandClient } from '@perawallet/wallet-core-blockchain'
+
+import type {
+    ChainScope,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import type {
     AssetOptInTxsParams,

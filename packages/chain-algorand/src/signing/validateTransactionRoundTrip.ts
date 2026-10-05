@@ -13,8 +13,8 @@
 import {
     encodeTransactionRaw,
     stripTxPrefix,
-    type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 
 import { TransactionRoundTripError } from '@perawallet/wallet-core-signing'

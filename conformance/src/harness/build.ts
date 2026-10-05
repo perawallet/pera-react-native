@@ -11,13 +11,13 @@
  */
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import algosdk, {
-    encodeMsgpack,
-    type modelsv2,
-    type Transaction,
-} from 'algosdk'
+import algosdk, { type modelsv2, type Transaction } from 'algosdk'
 
-import { encodeTransaction } from '@perawallet/wallet-core-blockchain/utils/transact'
+import {
+    encodeSignedTransaction,
+    encodeTransaction,
+} from '@perawallet/wallet-core-blockchain/utils/transact'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { resolvePQSigningInfo } from '@perawallet/wallet-core-kms/crypto/pq/resolvePQSigningInfo'
 import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-chain-algorand/signing/local-key/signTransactionsWithLocalKey'
 import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
@@ -75,7 +75,7 @@ export const buildGroup = async (
 }
 
 /** Unwraps a one-transaction group, failing on any other length. */
-export const onlyTxn = (transactions: Transaction[]): Transaction => {
+export const onlyTxn = <T extends PeraTransaction>(transactions: T[]): T => {
     if (transactions.length !== 1) {
         throw new Error(
             `expected exactly one transaction, got ${transactions.length}`,
@@ -118,7 +118,7 @@ export const localKeySigningDeps = (
 export const signWithKeystore = async (
     keyStore: ConformanceKeyStore,
     account: ConformanceAccount,
-    txn: Transaction,
+    txn: PeraTransaction,
 ): Promise<Uint8Array> => {
     const [signed] = await signTransactionsWithLocalKey(
         localKeySigningDeps(keyStore),
@@ -126,7 +126,7 @@ export const signWithKeystore = async (
         [0],
         account.walletAccount,
     )
-    return encodeMsgpack(signed)
+    return encodeSignedTransaction(signed)
 }
 
 /**
@@ -136,7 +136,7 @@ export const signWithKeystore = async (
 export const signGroupWithKeystore = async (
     keyStore: ConformanceKeyStore,
     account: ConformanceAccount,
-    txns: Transaction[],
+    txns: PeraTransaction[],
 ): Promise<Uint8Array[]> => {
     const signed = await signTransactionsWithLocalKey(
         localKeySigningDeps(keyStore),
@@ -144,7 +144,7 @@ export const signGroupWithKeystore = async (
         txns.map((_, index) => index),
         account.walletAccount,
     )
-    return signed.map(encodeMsgpack)
+    return signed.map(encodeSignedTransaction)
 }
 
 export type SubmissionResult = {

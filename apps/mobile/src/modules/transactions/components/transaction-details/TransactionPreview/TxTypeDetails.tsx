@@ -11,11 +11,11 @@
  */
 
 import {
-    type PeraDisplayableTransaction,
     getTransactionType,
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import {

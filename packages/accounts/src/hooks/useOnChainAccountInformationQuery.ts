@@ -11,10 +11,8 @@
  */
 
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
-import {
-    useNetwork,
-    type AccountInformation,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { AccountInformation } from '@perawallet/wallet-core-chain-contract'
 import { fetchAccountInformation } from '../chain-adapter'
 import { getOnChainAccountInformationQueryKey } from './querykeys'
 

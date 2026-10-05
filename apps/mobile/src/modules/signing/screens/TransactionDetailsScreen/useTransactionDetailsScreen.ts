@@ -23,8 +23,8 @@ import {
     useTransactionDetailQuery,
     useGroupTransactionsQuery,
     useNetwork,
-    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'
 import { mapHistoryItemToDisplayableTransaction } from '@perawallet/wallet-core-transactions'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'

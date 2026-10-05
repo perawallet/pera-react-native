@@ -20,8 +20,9 @@ import {
     type ChainId,
     type ChainScope,
     type DeriveOpts,
+    type AccountInformation,
 } from '@perawallet/wallet-core-chain-contract'
-import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
+
 import {
     kmsCore,
     type QuantumChainDerivation,

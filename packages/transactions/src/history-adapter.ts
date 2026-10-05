@@ -15,8 +15,9 @@ import {
     scopeForLegacyNetwork,
     type ChainId,
     type ChainScope,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     TransactionHistoryItem,

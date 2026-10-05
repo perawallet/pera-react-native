@@ -13,11 +13,13 @@
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import {
-    type PeraSignedTransaction,
-    type PeraTransaction,
     useNetwork,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { localKeySignerAdapterFor } from '../chain-adapter'

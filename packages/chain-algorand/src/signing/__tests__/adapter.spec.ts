@@ -17,7 +17,7 @@ import { groupTransactions } from '@perawallet/wallet-core-blockchain'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import {
     InvalidSignableDataError,
     type SigningResult,

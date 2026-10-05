@@ -15,9 +15,11 @@ import {
     decodeTransaction,
     encodeSignedTransactions,
     getAlgorandClient,
-    type PeraSignedTransaction,
-    type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../chain-id'

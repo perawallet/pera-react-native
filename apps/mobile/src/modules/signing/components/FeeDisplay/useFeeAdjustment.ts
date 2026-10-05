@@ -12,11 +12,11 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import {
-    microAlgosToAlgos,
-    type PeraDisplayableTransaction,
-    type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraDisplayableTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     useSigningPipeline,
     type FeeAdjustment,

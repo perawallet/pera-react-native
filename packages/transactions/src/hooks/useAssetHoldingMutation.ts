@@ -15,6 +15,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     scopeForLegacyNetwork,
     type ChainScope,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     useMinimumFeeCalculator,
@@ -24,7 +25,6 @@ import {
 import { invalidateAccountQueriesForAddresses } from '@perawallet/wallet-core-accounts'
 import { mutationDefaults, toError } from '@perawallet/wallet-core-shared'
 
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 
 export type AssetHoldingMutationContext = {

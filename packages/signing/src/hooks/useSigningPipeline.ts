@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { AnyActorRef } from 'xstate'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
 import { mapToDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     canSignWith,

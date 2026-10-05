@@ -13,7 +13,10 @@
 import { useCallback } from 'react'
 
 import type { Decimal } from 'decimal.js'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -22,7 +25,7 @@ import {
     useMinimumFeeConfig,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+
 import {
     resolveMinFeeForSender,
     useSignAndSubmitGroup,

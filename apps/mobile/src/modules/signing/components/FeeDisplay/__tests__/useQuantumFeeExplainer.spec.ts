@@ -17,10 +17,8 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    encodeAlgorandAddress,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'

@@ -16,7 +16,7 @@ import {
     classifyRequestStructure,
     createTransactionListItems,
 } from '../classification'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const createTx = (id: string, group?: Uint8Array): PeraDisplayableTransaction =>
     ({

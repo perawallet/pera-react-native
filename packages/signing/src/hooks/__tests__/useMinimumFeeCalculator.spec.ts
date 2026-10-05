@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useMinimumFeeCalculator } from '../useMinimumFeeCalculator'

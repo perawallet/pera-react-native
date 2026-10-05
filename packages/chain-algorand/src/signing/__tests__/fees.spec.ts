@@ -16,7 +16,7 @@ import {
     detectHighGroupFee,
     maxReasonableGroupFee,
 } from '../fees'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { Decimal } from 'decimal.js'
 
 const makeTx = (

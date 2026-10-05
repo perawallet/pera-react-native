@@ -11,11 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import {
-    useNetwork,
-    type Arc0001ResolveResult,
-    type Arc0001SignTxnsRequest,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type {
+    Arc0001ResolveResult,
+    Arc0001SignTxnsRequest,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isMultisigAccount,
     useAllAccounts,

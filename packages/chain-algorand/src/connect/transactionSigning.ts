@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import type { Arc0001WalletTransaction } from '@perawallet/wallet-core-blockchain'
+import type { Arc0001WalletTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { EnqueueTransactionSigning } from '@perawallet/wallet-core-connections'
 import {
     useArc0001Resolver,

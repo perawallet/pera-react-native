@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { SubmissionError } from '@perawallet/wallet-core-signing'
 import { submitSignedTransactionGroup } from '../submitSignedTransactionGroup'
 import type { AlgokitClientInterface } from '../types'

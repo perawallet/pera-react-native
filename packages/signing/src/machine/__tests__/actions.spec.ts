@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { SignableGroup } from '../../pipeline/types'
 import { buildGroupSignerTypeMap, resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'

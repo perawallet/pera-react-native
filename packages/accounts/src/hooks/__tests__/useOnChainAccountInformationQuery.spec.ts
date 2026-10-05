@@ -15,7 +15,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
+import type { AccountInformation } from '@perawallet/wallet-core-chain-contract'
 import { useOnChainAccountInformationQuery } from '../useOnChainAccountInformationQuery'
 import {
     fakeAccountsChain,

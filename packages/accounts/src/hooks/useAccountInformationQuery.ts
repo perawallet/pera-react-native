@@ -11,14 +11,16 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type AccountInformation,
+} from '@perawallet/wallet-core-chain-contract'
 import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
 import {
     useNetwork,
     Address,
     algosToMicroAlgosBigInt,
     toBigInt,
-    type AccountInformation,
 } from '@perawallet/wallet-core-blockchain'
 
 import { getAccountBalance, getAccountHoldings } from '../db'

@@ -10,14 +10,17 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type PeraTransactionGroup,
+} from '@perawallet/wallet-core-chain-contract'
 import { getChainConfig, type Network } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     PeraEncodedTransactionSigner,
-    PeraTransactionGroup,
     PeraTransactionSigner,
 } from '../models'
+
 import { encodeSignedTransactions } from './transact'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
 

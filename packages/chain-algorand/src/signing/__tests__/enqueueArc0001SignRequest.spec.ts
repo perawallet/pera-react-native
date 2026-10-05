@@ -24,7 +24,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { Arc0001ResolveResult } from '@perawallet/wallet-core-blockchain'
+import type { Arc0001ResolveResult } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeFromBase64,
     encodeToBase64,

@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { Arc0001ResolveResult } from '@perawallet/wallet-core-blockchain'
+import type { Arc0001ResolveResult } from '@perawallet/wallet-core-chain-contract'
 
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useArc0001Resolver } from '../useArc0001Resolver'
