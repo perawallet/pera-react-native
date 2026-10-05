@@ -29,7 +29,7 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
         hasError,
         isLockedOut,
         remainingSeconds,
-        isDuressWipeInProgress,
+        isPinUnlockInProgress,
         isBiometricUnlockInProgress,
         handlePinComplete,
         handleErrorAnimationComplete,
@@ -89,12 +89,11 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
                     )}
                 </PWView>
             )}
-            {/* A passed fingerprint can still take seconds to unlock on a slow
-                keystore; the PIN pad must not look like it is waiting for input. */}
+            {/* A passed fingerprint or a submitted PIN can still take seconds to
+                unlock on a slow keystore; the PIN pad must not look like it is
+                waiting for input. */}
             <PWLoadingOverlay
-                isVisible={
-                    isDuressWipeInProgress || isBiometricUnlockInProgress
-                }
+                isVisible={isPinUnlockInProgress || isBiometricUnlockInProgress}
                 title={t('security.pin.logging_in')}
             />
         </>

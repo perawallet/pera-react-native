@@ -79,7 +79,7 @@ describe('useLockScreen', () => {
         expect(result.current.hasError).toBe(false)
         expect(result.current.isLockedOut).toBe(false)
         expect(result.current.remainingSeconds).toBe(0)
-        expect(result.current.isDuressWipeInProgress).toBe(false)
+        expect(result.current.isPinUnlockInProgress).toBe(false)
         expect(typeof result.current.handlePinComplete).toBe('function')
         expect(typeof result.current.handleErrorAnimationComplete).toBe(
             'function',
@@ -238,7 +238,7 @@ describe('useLockScreen', () => {
             expect(mockOnUnlock).toHaveBeenCalled()
         })
 
-        it('flags a duress wipe in progress while wiping, then unlocks and clears it', async () => {
+        it('keeps the unlock flag up through a duress wipe, then unlocks and clears it', async () => {
             mockVerifyPin.mockResolvedValue({ kind: 'duress' })
             let resolveWipe: (() => void) | undefined
             mockPerformDuressWipe.mockReturnValue(
@@ -259,7 +259,7 @@ describe('useLockScreen', () => {
             })
 
             // Overlay should be up while the (slow) wipe runs; not yet unlocked.
-            expect(result.current.isDuressWipeInProgress).toBe(true)
+            expect(result.current.isPinUnlockInProgress).toBe(true)
             expect(mockPerformDuressWipe).toHaveBeenCalledTimes(1)
             expect(mockOnUnlock).not.toHaveBeenCalled()
 
@@ -271,10 +271,10 @@ describe('useLockScreen', () => {
             })
 
             expect(mockOnUnlock).toHaveBeenCalledTimes(1)
-            expect(result.current.isDuressWipeInProgress).toBe(false)
+            expect(result.current.isPinUnlockInProgress).toBe(false)
         })
 
-        it('unlocks and clears the duress flag even if the wipe throws', async () => {
+        it('unlocks and clears the unlock flag even if the wipe throws', async () => {
             mockVerifyPin.mockResolvedValue({ kind: 'duress' })
             mockPerformDuressWipe.mockRejectedValue(new Error('boom'))
 
@@ -293,7 +293,33 @@ describe('useLockScreen', () => {
             })
 
             expect(mockOnUnlock).toHaveBeenCalledTimes(1)
-            expect(result.current.isDuressWipeInProgress).toBe(false)
+            expect(result.current.isPinUnlockInProgress).toBe(false)
+        })
+
+        it('flags the unlock in progress while the PIN is verified', async () => {
+            let resolveVerify: ((value: { kind: 'fail' }) => void) | undefined
+            mockVerifyPin.mockReturnValue(
+                new Promise(resolve => {
+                    resolveVerify = resolve
+                }),
+            )
+
+            const { result } = renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+
+            act(() => {
+                void result.current.handlePinComplete('1234')
+            })
+
+            expect(result.current.isPinUnlockInProgress).toBe(true)
+
+            await act(async () => {
+                resolveVerify?.({ kind: 'fail' })
+            })
+
+            expect(result.current.isPinUnlockInProgress).toBe(false)
+            expect(result.current.hasError).toBe(true)
         })
 
         it('surfaces the error and stays locked when the PIN is invalid', async () => {
