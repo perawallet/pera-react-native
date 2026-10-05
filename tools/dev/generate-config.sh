@@ -90,6 +90,26 @@ cat <<EOF > "$OUTPUT_FILE"
 export const generatedEnv = {
 EOF
 
+# A value is emitted as a TypeScript string literal, never pasted in raw: a
+# `"`, a backslash or a newline in an env value would otherwise end the literal
+# and run as code in generated-env.ts, which is compiled into every bundle.
+# Only those values pay for a node call; JSON.stringify output is a valid TS
+# string literal, control characters included.
+ts_string_literal() {
+  local value="$1"
+  case "$value" in
+    *[\\\"]*|*[[:cntrl:]]*)
+      # Passed through the environment so a value starting with `-` can't
+      # read as a node option.
+      TS_LITERAL_VALUE="$value" node -e \
+        'process.stdout.write(JSON.stringify(process.env.TS_LITERAL_VALUE))'
+      ;;
+    *)
+      printf '"%s"' "$value"
+      ;;
+  esac
+}
+
 # Function to append config if variable exists
 # Usage: append_config "ENV_VAR_NAME" "configKey" "type"
 append_config() {
@@ -108,15 +128,19 @@ append_config() {
   
   if [ -n "$value" ]; then
     if [ "$type" == "string" ]; then
-      echo "  $config_key: \"$value\"," >> "$OUTPUT_FILE"
+      printf '  %s: %s,\n' "$config_key" "$(ts_string_literal "$value")" >> "$OUTPUT_FILE"
     elif [ "$type" == "boolean" ]; then
       if [ "$value" == "true" ]; then
-        echo "  $config_key: true," >> "$OUTPUT_FILE"
+        printf '  %s: true,\n' "$config_key" >> "$OUTPUT_FILE"
       else
-        echo "  $config_key: false," >> "$OUTPUT_FILE"
+        printf '  %s: false,\n' "$config_key" >> "$OUTPUT_FILE"
       fi
     elif [ "$type" == "number" ]; then
-      echo "  $config_key: $value," >> "$OUTPUT_FILE"
+      if ! [[ "$value" =~ ^-?[0-9]+(\.[0-9]+)?$ ]]; then
+        echo "ERROR: $env_var must be a number, got: $value" >&2
+        exit 1
+      fi
+      printf '  %s: %s,\n' "$config_key" "$value" >> "$OUTPUT_FILE"
     fi
   fi
 }
