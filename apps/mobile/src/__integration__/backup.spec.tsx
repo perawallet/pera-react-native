@@ -453,9 +453,9 @@ describe('Flow: Account backup', () => {
         const account = await seedAlgo25Account()
 
         // Configure the PIN before navigating to the screen.
-        // `BackupReminderMnemonicScreen` reads `checkPinEnabled()` on
-        // mount and shows the PinEditView before pulling the mnemonic
-        // into memory — defense-in-depth that doesn't rely on the
+        // `BackupReminderMnemonicScreen` asks for the PIN through the
+        // shared PIN gate before pulling the mnemonic into memory, as a
+        // defense-in-depth that doesn't rely on the
         // upstream WriteDown step having gated first.
         const TEST_PIN = '123456'
         const { result: pinHook } = renderHook(() => usePinCode())
