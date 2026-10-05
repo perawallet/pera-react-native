@@ -43,10 +43,13 @@ vi.mock('@perawallet/wallet-core-passkeys', () => ({
     useRemovePasskeyMutation: () => ({ removePasskey: mocks.removePasskey }),
 }))
 
+// What the extension's biometrics stub reports: a browser can't see the
+// computer's screen lock.
 vi.mock('@perawallet/wallet-core-security', () => ({
     useBiometricSecurityLevel: () => ({
         isLoading: false,
-        hasStrongBiometricOrCredential: true,
+        securityLevel: 'none',
+        hasStrongBiometricOrCredential: false,
         refresh: vi.fn(),
     }),
 }))
@@ -146,6 +149,24 @@ describe('useSettingsPasskeysScreen (web)', () => {
 
         expect(result.current.isInterceptionEnabled).toBe(true)
         expect(result.current.state).toBe('empty')
+    })
+
+    it('raises no screen-lock notice, since the vault password verifies the user', () => {
+        mocks.passkeys = [{ id: 'cred-1' }]
+        mocks.preferences[UserPreferences.webauthnInterceptionEnabled] = true
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.state).toBe('populated')
+        expect(result.current.notice).toBeNull()
+    })
+
+    it('offers no FIDO QR scanner, which needs the mobile OS credential provider', () => {
+        mocks.preferences[UserPreferences.webauthnInterceptionEnabled] = true
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canScan).toBe(false)
     })
 
     it('persists the toggle via setPreference under the shared preference key', () => {
