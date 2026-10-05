@@ -23,6 +23,7 @@ import type {
     BiometricType,
     BiometricsService,
     BiometricUnwrapResult,
+    BiometricUnwrapSession,
     CloudFileReadResult,
     CloudFileSaveResult,
     CloudFileStorageService,
@@ -65,6 +66,14 @@ export class ChromeBiometricsService implements BiometricsService {
     }
     async unwrapBiometricToken(): Promise<BiometricUnwrapResult> {
         return { success: false, reason: 'unavailable' }
+    }
+    beginBiometricUnwrap(): BiometricUnwrapSession {
+        const unavailable = { success: false, reason: 'unavailable' } as const
+        return {
+            authenticated: Promise.resolve(unavailable),
+            finish: async () => unavailable,
+            cancel: async () => undefined,
+        }
     }
 }
 

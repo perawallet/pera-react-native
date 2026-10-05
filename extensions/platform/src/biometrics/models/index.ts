@@ -105,7 +105,7 @@ export type BiometricAvailability =
 /**
  * The wrapped unlock token and the SHA-256 of its plaintext, hex-encoded. The
  * token itself is minted natively and never crosses the bridge on the way in —
- * only `unwrapBiometricToken` returns it, during an unlock.
+ * only an unwrap returns it, during an unlock.
  */
 export type BiometricArmResult = {
     blob: string
@@ -140,6 +140,29 @@ export type BiometricUnwrapFailureReason =
 export type BiometricUnwrapResult =
     | { success: true; token: Uint8Array }
     | { success: false; reason: BiometricUnwrapFailureReason }
+
+export type BiometricCeremonyResult =
+    | { success: true }
+    | { success: false; reason: BiometricUnwrapFailureReason }
+
+/**
+ * One unwrap split around the ceremony, so the prompt does not wait for the
+ * keystore read that produces the blob. A passed ceremony holds the authorised
+ * key natively until `finish` or `cancel`; only one session exists at a time,
+ * and beginning another cancels the last.
+ */
+export type BiometricUnwrapSession = {
+    /** Settles when the ceremony ends. Never rejects. */
+    authenticated: Promise<BiometricCeremonyResult>
+    /** Releases the token from `blob` with the key the ceremony authorised. */
+    finish(blob: string): Promise<BiometricUnwrapResult>
+    /**
+     * Dismisses the prompt if it is still up and drops an authorised key. A
+     * dismissal settles `authenticated` with `system-cancel`. Safe to call at
+     * any point, including after `finish`.
+     */
+    cancel(): Promise<void>
+}
 
 export interface BiometricsService {
     getSupportedBiometricType(): Promise<BiometricType>
@@ -180,4 +203,11 @@ export interface BiometricsService {
         blob: string,
         prompt: BiometricsAuthenticatePrompt,
     ): Promise<BiometricUnwrapResult>
+    /**
+     * {@link unwrapBiometricToken} without the blob up front: the prompt goes
+     * up now, and the caller supplies the blob once its read lands.
+     */
+    beginBiometricUnwrap(
+        prompt: BiometricsAuthenticatePrompt,
+    ): BiometricUnwrapSession
 }
