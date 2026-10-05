@@ -35,6 +35,7 @@ export const CloudBackupRestoreEncryptionKeyScreen = ({
         t,
         encryptionKey,
         isRestoring,
+        restoreProgress,
         canRestore,
         handleKeyChange,
         handleRestore,
@@ -71,7 +72,8 @@ export const CloudBackupRestoreEncryptionKeyScreen = ({
 
             <PWLoadingOverlay
                 isVisible={isRestoring}
-                title={t('cloud_backup.restore.restoring')}
+                title={restoreProgress.title}
+                description={restoreProgress.description}
             />
         </>
     )

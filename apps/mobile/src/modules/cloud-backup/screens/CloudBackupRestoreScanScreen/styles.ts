@@ -16,4 +16,15 @@ export const useStyles = makeStyles(theme => ({
     container: {
         gap: theme.spacing.lg,
     },
+    progress: {
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
+    progressTitle: {
+        textAlign: 'center',
+    },
+    progressDescription: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
+    },
 }))

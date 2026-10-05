@@ -163,7 +163,13 @@ export type ImportSummary = {
     failed: { address: string; reason: string }[]
 }
 
-export type SyncImportFn = (accounts: PulledAccount[]) => Promise<ImportSummary>
+/** Failures and duplicates count as done, so `done` always reaches `total`. */
+export type ImportProgressFn = (done: number, total: number) => void
+
+export type SyncImportFn = (
+    accounts: PulledAccount[],
+    onProgress?: ImportProgressFn,
+) => Promise<ImportSummary>
 
 /** A contact import never reports duplicates: an address already held is
  *  updated in place, because last-write-wins settled the winner upstream. */

@@ -20,6 +20,10 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
+import {
+    useCloudBackupRestoreProgress,
+    type UseCloudBackupRestoreProgressResult,
+} from '../../hooks/useCloudBackupRestoreProgress'
 import { useRestoreOutcome } from '../../hooks/useRestoreOutcome'
 
 type Translate = ReturnType<typeof useLanguage>['t']
@@ -71,6 +75,7 @@ type UseCloudBackupRestoreEncryptionKeyScreenResult = {
     t: Translate
     encryptionKey: string
     isRestoring: boolean
+    restoreProgress: UseCloudBackupRestoreProgressResult
     canRestore: boolean
     handleKeyChange: (value: string) => void
     handleRestore: () => void
@@ -90,6 +95,7 @@ export const useCloudBackupRestoreEncryptionKeyScreen = ({
     const outcome = useRestoreOutcome({ clearDraft, onDone })
     const mutation = useRestoreCloudBackupMutation(outcome)
     const isRestoring = mutation.isPending
+    const restoreProgress = useCloudBackupRestoreProgress()
     const handleRestore = useRestoreRunner(
         mutation.mutate,
         hasMnemonic,
@@ -106,6 +112,7 @@ export const useCloudBackupRestoreEncryptionKeyScreen = ({
         t,
         encryptionKey,
         isRestoring,
+        restoreProgress,
         canRestore: encryptionKey.length > 0 && !isRestoring,
         handleKeyChange,
         handleRestore,
