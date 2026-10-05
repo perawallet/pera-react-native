@@ -12,11 +12,15 @@
 
 import { sql } from 'drizzle-orm'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
-import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
-    Networks,
-    type CustomNetworkConfig,
-} from '@perawallet/wallet-core-config'
+    CUSTOM_NETWORK_ID,
+    LEGACY_CHAIN_ID,
+    networkColumnValue,
+    queryKeyReferencesScope,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { getDatabase, type Database } from '@perawallet/wallet-core-database'
+import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
 
 /**
  * Keyed on genesis hash, NOT URL: the same chain behind a new host (LAN address
@@ -30,18 +34,26 @@ export const shouldClearCustomCache = (
 ): boolean =>
     previous !== undefined && previous.genesisHash !== next.genesisHash
 
-// Every table partitioned by a `network` column, across the four domain packages
-// that own them. Named as literal SQL rather than imported Drizzle schemas:
-// those packages all depend on `chain-shared`, so importing back would cycle.
-const CUSTOM_NETWORK_PARTITIONED_TABLES = [
+const CUSTOM_SCOPE: ChainScope = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: CUSTOM_NETWORK_ID,
+}
+
+// Every table partitioned by a `network` column, across the domain packages that
+// own them. Named as literal SQL rather than imported Drizzle schemas: those
+// packages all depend on `chain-shared`, so importing back would cycle. A spec
+// compares this list against the migrated schema, so a new table fails a test.
+export const NETWORK_PARTITIONED_TABLES = [
     'account_asset_holdings',
     'account_balances',
     'assets_node',
     'assets_pera',
     'asset_prices',
+    'asset_price_misses',
     'transactions',
     'account_transactions',
     'nfd_cache',
+    'submission_attempts',
 ] as const
 
 /**
@@ -62,10 +74,6 @@ export const NETWORK_PARTITIONED_QUERY_MODULES: ReadonlySet<string> = new Set([
     'nfd',
 ])
 
-/**
- * Mirrors how those domains' key factories all embed `{ ..., network, ... }`
- * somewhere in the key.
- */
 const queryKeyTargetsCustomNetwork = (queryKey: QueryKey): boolean => {
     const [modulePrefix] = queryKey
     if (
@@ -75,10 +83,7 @@ const queryKeyTargetsCustomNetwork = (queryKey: QueryKey): boolean => {
         return false
     }
 
-    return queryKey.some(part => {
-        if (typeof part !== 'object' || part === null) return false
-        return (part as Record<string, unknown>).network === Networks.custom
-    })
+    return queryKeyReferencesScope(queryKey, CUSTOM_SCOPE)
 }
 
 /**
@@ -91,9 +96,10 @@ export const clearCustomNetworkCache = async (
     queryClient: QueryClient,
     db: Database = getDatabase(),
 ): Promise<void> => {
-    for (const table of CUSTOM_NETWORK_PARTITIONED_TABLES) {
+    const network = networkColumnValue(CUSTOM_SCOPE)
+    for (const table of NETWORK_PARTITIONED_TABLES) {
         await db.run(
-            sql`DELETE FROM ${sql.raw(table)} WHERE network = ${Networks.custom}`,
+            sql`DELETE FROM ${sql.raw(table)} WHERE network = ${network}`,
         )
     }
 

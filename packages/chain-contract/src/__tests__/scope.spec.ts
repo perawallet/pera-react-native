@@ -19,10 +19,12 @@ import {
     type ChainScope,
 } from '../models/identity'
 import {
+    LEGACY_SCOPES,
     legacyColumnValue,
     legacyNetworkOf,
     networkColumnValue,
     parseScopeKey,
+    queryKeyReferencesScope,
     rekeyLegacyNetworkRecord,
     scopeForLegacyNetwork,
     scopeFromNetworkColumn,
@@ -187,6 +189,42 @@ describe('network column encoding', () => {
         expect(() => scopeFromNetworkColumn('ethereum/mainnet')).toThrow(
             InvalidScopeKeyError,
         )
+    })
+})
+
+describe('LEGACY_SCOPES', () => {
+    it('holds the Algorand scope of every legacy network', () => {
+        expect(LEGACY_SCOPES).toEqual(
+            LEGACY_NETWORKS.map(scopeForLegacyNetwork),
+        )
+    })
+})
+
+describe('queryKeyReferencesScope', () => {
+    const testnet = scopeForLegacyNetwork('testnet')
+
+    it('matches the scope in the network field of an object element', () => {
+        const key = ['assets', { assetId: '1', network: 'testnet' }]
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(true)
+    })
+
+    it('matches the scope as a bare element', () => {
+        const key = ['accounts', 'history', 'testnet']
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(true)
+    })
+
+    it('does not match a key for another scope', () => {
+        const key = ['assets', { assetId: '1', network: 'mainnet' }, 'mainnet']
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(false)
+    })
+
+    it('does not match a key that carries no network', () => {
+        const key = ['assets', null, { assetId: '1' }]
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(false)
     })
 })
 

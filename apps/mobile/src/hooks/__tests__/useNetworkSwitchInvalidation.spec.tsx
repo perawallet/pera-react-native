@@ -58,6 +58,14 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => {
     return { ...actual }
 })
 
+import { getAssetsQueryKey } from '@perawallet/wallet-core-assets'
+import {
+    legacyColumnValue,
+    legacyNetworkOf,
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { transactionQueryKeys } from '@perawallet/wallet-core-transactions'
 import { useNetworkSwitchInvalidation } from '../useNetworkSwitchInvalidation'
 
 // The hook must act on the client it is rendered under (useQueryClient), not a
@@ -119,87 +127,72 @@ describe('useNetworkSwitchInvalidation', () => {
         // old network's arrays in the cache — the heap ratchets up per switch
         // until GC pauses dominate. SQLite is the source of truth
         // for these, so dropping them on switch loses nothing.
+
+        // Keys derive from each scope; the factories that are public build them.
+        const MAINNET = scopeForLegacyNetwork('mainnet')
+        const TESTNET = scopeForLegacyNetwork('testnet')
+        const balanceKey = (scope: ChainScope) => [
+            'accounts',
+            'balance',
+            { address: 'A1', network: legacyColumnValue(scope) },
+        ]
+        const departedKeys = [
+            balanceKey(MAINNET),
+            getAssetsQueryKey(['1'], MAINNET),
+            transactionQueryKeys.history('A1', legacyNetworkOf(MAINNET)),
+        ]
+        const currentKey = balanceKey(TESTNET)
+        const chartKeys = [
+            [
+                'accounts',
+                'balance-history',
+                {
+                    period: 'one-week',
+                    addresses: ['A1'],
+                    network: legacyColumnValue(MAINNET),
+                },
+            ],
+            [
+                'assets',
+                'prices',
+                'history',
+                {
+                    assetID: '1',
+                    period: 'one-week',
+                    network: legacyColumnValue(MAINNET),
+                },
+            ],
+        ]
+
         const seed = (client: QueryClient) => {
-            client.setQueryData(
-                ['accounts', 'balance', { address: 'A1', network: 'mainnet' }],
-                { holdings: ['big'] },
-            )
-            client.setQueryData(
-                ['assets', { assetIDs: 'h', network: 'mainnet' }],
-                ['rows'],
-            )
-            client.setQueryData(
-                [
-                    'transactions',
-                    'history',
-                    { accountAddress: 'A1', network: 'mainnet' },
-                ],
-                ['txs'],
-            )
-            client.setQueryData(
-                ['accounts', 'balance', { address: 'A1', network: 'testnet' }],
-                { holdings: ['keep'] },
-            )
-            client.setQueryData(
-                [
-                    'accounts',
-                    'balance-history',
-                    { period: '1W', addresses: ['A1'], network: 'mainnet' },
-                ],
-                ['chart'],
-            )
+            for (const key of [...departedKeys, currentKey, ...chartKeys]) {
+                client.setQueryData(key, ['rows'])
+            }
         }
 
-        it("drops the previous network's DB-backed queries on switch", () => {
+        it("drops the previous scope's DB-backed queries on switch", () => {
             const { client, rerender } = renderWithClient()
             seed(client)
 
             networkState.network = 'testnet'
             rerender()
 
-            expect(
-                client.getQueryData([
-                    'accounts',
-                    'balance',
-                    { address: 'A1', network: 'mainnet' },
-                ]),
-            ).toBeUndefined()
-            expect(
-                client.getQueryData([
-                    'assets',
-                    { assetIDs: 'h', network: 'mainnet' },
-                ]),
-            ).toBeUndefined()
-            expect(
-                client.getQueryData([
-                    'transactions',
-                    'history',
-                    { accountAddress: 'A1', network: 'mainnet' },
-                ]),
-            ).toBeUndefined()
+            for (const key of departedKeys) {
+                expect(client.getQueryData(key)).toBeUndefined()
+            }
         })
 
-        it("keeps the new network's queries and persisted chart history", () => {
+        it("keeps the new scope's queries and persisted chart history", () => {
             const { client, rerender } = renderWithClient()
             seed(client)
 
             networkState.network = 'testnet'
             rerender()
 
-            expect(
-                client.getQueryData([
-                    'accounts',
-                    'balance',
-                    { address: 'A1', network: 'testnet' },
-                ]),
-            ).toEqual({ holdings: ['keep'] })
-            expect(
-                client.getQueryData([
-                    'accounts',
-                    'balance-history',
-                    { period: '1W', addresses: ['A1'], network: 'mainnet' },
-                ]),
-            ).toEqual(['chart'])
+            expect(client.getQueryData(currentKey)).toEqual(['rows'])
+            for (const key of chartKeys) {
+                expect(client.getQueryData(key)).toEqual(['rows'])
+            }
         })
     })
 })
