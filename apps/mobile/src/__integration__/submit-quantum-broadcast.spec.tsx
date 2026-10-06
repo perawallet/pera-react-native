@@ -69,7 +69,6 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
-    enableQuantumFlag,
 } from './__fixtures__/quantum'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
@@ -137,7 +136,6 @@ describe('submit from quantum account over algod transport', () => {
     })
 
     it('Given a real quantum sender, when a payment is signed over the algod transport, then the Falcon group is broadcast to algod through the ordinary submission path', async () => {
-        await enableQuantumFlag()
         await seedQuantumSender()
 
         const payment = buildPaymentTransaction({

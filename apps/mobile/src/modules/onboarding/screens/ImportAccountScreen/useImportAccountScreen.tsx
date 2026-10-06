@@ -137,11 +137,14 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     // A quantum passphrase is also 25 words, so importing one as a standard
     // account would mint a different, empty account. Null means import nothing.
+    // Without platform quantum support there is no Falcon to derive with.
     const resolveImportType = useCallback(
         async (
             mnemonicIndices: Uint16Array,
         ): Promise<Nullable<ImportAccountType>> => {
-            if (accountType !== 'algo25') return accountType
+            if (accountType !== 'algo25' || !isQuantumAccountsEnabled) {
+                return accountType
+            }
             const quantumAddress = await findQuantumAccount(mnemonicIndices)
             if (!quantumAddress) return accountType
 
@@ -151,9 +154,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                         contents: (
                             <QuantumPassphraseDetectedContent
                                 address={quantumAddress}
-                                isQuantumImportAvailable={
-                                    isQuantumAccountsEnabled
-                                }
                             />
                         ),
                         options: {
@@ -163,9 +163,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                         },
                     },
                 )
-            return choice === 'import-quantum' && isQuantumAccountsEnabled
-                ? 'quantum'
-                : null
+            return choice === 'import-quantum' ? 'quantum' : null
         },
         [
             accountType,

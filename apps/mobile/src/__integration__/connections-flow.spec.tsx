@@ -654,10 +654,6 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
     })
 
     it('Given a quantum account is selected, when the user taps Connect, then the warning sheet appears once even on a double tap, and Cancel rejects the session without persisting it', async () => {
-        await useRemoteConfigStore.persist.rehydrate()
-        useRemoteConfigStore
-            .getState()
-            .setConfigOverride('enable_quantum_accounts', true)
         // The acknowledgement is a persisted preference on a singleton
         // store, so a prior test's Continue would hide the warning here.
         useSettingsStore

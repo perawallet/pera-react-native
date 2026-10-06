@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-// End-to-end proof that, with the quantum-accounts flag ON, a user can CREATE a
-// brand-new Quantum account from the Add Account screen. Unlike the import flow,
-// create runs a fresh mock-Falcon keygen (buildQuantumWalletAccount), so the
-// derived address is non-deterministic — we assert on the persisted account
-// *type* (AccountTypes.quantum), not a pinned address.
+// End-to-end proof that a user can CREATE a brand-new Quantum account from the
+// Add Account screen. Unlike the import flow, create runs a fresh mock-Falcon
+// keygen (buildQuantumWalletAccount), so the derived address is
+// non-deterministic — we assert on the persisted account *type*
+// (AccountTypes.quantum), not a pinned address.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
@@ -30,7 +30,6 @@ import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen/A
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
-import { enableQuantumFlag } from './__fixtures__/quantum'
 
 const renderAddAccount = () =>
     renderWithNavigation(AddAccountScreen, 'AddAccountHome', {
@@ -52,8 +51,6 @@ describe('create quantum account', () => {
     })
 
     it('Given the flag is on, when the user creates a Quantum account and names it, then a quantum account is persisted', async () => {
-        await enableQuantumFlag()
-
         renderAddAccount()
 
         // The Quantum create option is gated on the flag — with it on the

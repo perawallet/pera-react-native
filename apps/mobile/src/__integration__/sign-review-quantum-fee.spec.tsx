@@ -59,7 +59,7 @@ import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/QuantumFeeExplainer'
-import { QUANTUM_TEST_ADDRESS, enableQuantumFlag } from './__fixtures__/quantum'
+import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
@@ -186,7 +186,6 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
 
     it('renders the quantum-fee explainer when the resolved signer is a Quantum account', async () => {
         // Flag is off by default in tests (__DEV__ === false); enable it.
-        await enableQuantumFlag()
         await seedQuantumSigner()
         const { request } = buildTransactionSignRequest()
 
@@ -206,7 +205,6 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
     })
 
     it('does not render the quantum-fee explainer for a standard (algo25) signer', async () => {
-        await enableQuantumFlag()
         await seedAlgo25Signer()
         const { request } = buildTransactionSignRequest()
 
@@ -228,7 +226,6 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
     // the quantum boundary. The fee follows the rekeyed-to signer, so the
     // explainer has to follow the same hop or it describes the wrong signer.
     it('does not render the quantum-fee explainer when the Quantum sender is rekeyed to a standard account', async () => {
-        await enableQuantumFlag()
         await seedQuantumRekeyedToStandard()
         server.use(
             mockAlgodAccountInformation({
@@ -257,7 +254,6 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
     })
 
     it('renders the quantum-fee explainer when a standard sender is rekeyed to a Quantum account', async () => {
-        await enableQuantumFlag()
         await seedStandardRekeyedToQuantum()
         server.use(
             mockAlgodAccountInformation({

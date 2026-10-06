@@ -94,10 +94,7 @@ type Wallet = {
 }
 
 // A fresh profile past the password and terms, on the import options screen.
-const openImportOptions = async (
-    chainState: ChainState,
-    { isQuantumEnabled = true }: { isQuantumEnabled?: boolean } = {},
-): Promise<Wallet> => {
+const openImportOptions = async (chainState: ChainState): Promise<Wallet> => {
     const context = await chromium.launchPersistentContext('', {
         channel: 'chromium',
         args: [
@@ -131,8 +128,7 @@ const openImportOptions = async (
         serviceWorker = await context.waitForEvent('serviceworker')
     }
     const extensionId = new URL(serviceWorker.url()).host
-    // Explicit either way: the bundle's own default depends on the build env.
-    await serviceWorker.evaluate(async isEnabled => {
+    await serviceWorker.evaluate(async () => {
         await chrome.storage.local.set({
             'kv:settings-store': JSON.stringify({
                 state: {
@@ -143,14 +139,8 @@ const openImportOptions = async (
                 },
                 version: 1,
             }),
-            'kv:remote-config-store': JSON.stringify({
-                state: {
-                    configOverrides: { enable_quantum_accounts: isEnabled },
-                },
-                version: 1,
-            }),
         })
-    }, isQuantumEnabled)
+    })
 
     const page = await context.newPage()
     await page.goto(`chrome-extension://${extensionId}/expanded.html`)
@@ -303,35 +293,6 @@ test('Recover a wallet with quantum words offers the quantum account instead', a
         const accounts = await readAccounts()
         expect(quantumAddressesOf(accounts)).toEqual([CANONICAL_ADDRESS])
         expect(accounts).toHaveLength(1)
-    } finally {
-        await context.close()
-    }
-})
-
-test('Recover a wallet with quantum words imports nothing while quantum accounts are off', async () => {
-    const { context, page, readAccounts } = await openImportOptions('legacy', {
-        isQuantumEnabled: false,
-    })
-    try {
-        await enterQuantumWordsAsStandard(page)
-        await expect(
-            page.getByTestId('quantum_passphrase_detected_sheet'),
-        ).toBeVisible({ timeout: 30_000 })
-        await expect(
-            page.getByTestId('quantum_passphrase_detected_sheet_address'),
-        ).toHaveText(LEGACY_ADDRESS)
-        await expect(
-            page.getByTestId(
-                'quantum_passphrase_detected_sheet_import_quantum',
-            ),
-        ).toHaveCount(0)
-
-        await page.getByTestId('quantum_passphrase_detected_sheet_back').click()
-
-        await expect(
-            page.getByTestId('import_account_import_button'),
-        ).toBeEnabled()
-        expect(await readAccounts()).toEqual([])
     } finally {
         await context.close()
     }

@@ -26,12 +26,10 @@ export type QuantumPassphraseDetectedContentResult = 'import-quantum'
 
 export type QuantumPassphraseDetectedContentProps = {
     address: string
-    isQuantumImportAvailable: boolean
 }
 
 export const QuantumPassphraseDetectedContent = ({
     address,
-    isQuantumImportAvailable,
 }: QuantumPassphraseDetectedContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -51,23 +49,17 @@ export const QuantumPassphraseDetectedContent = ({
             }
             footer={
                 <PWView style={styles.actions}>
-                    {isQuantumImportAvailable && (
-                        <PWButton
-                            variant='primary'
-                            title={t(
-                                'onboarding.import_account.quantum_detected.import_button',
-                            )}
-                            onPress={() => resolve('import-quantum')}
-                            testID={`${testID}_import_quantum`}
-                        />
-                    )}
+                    <PWButton
+                        variant='primary'
+                        title={t(
+                            'onboarding.import_account.quantum_detected.import_button',
+                        )}
+                        onPress={() => resolve('import-quantum')}
+                        testID={`${testID}_import_quantum`}
+                    />
                     <PWButton
                         variant='secondary'
-                        title={t(
-                            isQuantumImportAvailable
-                                ? 'common.cancel.label'
-                                : 'common.go_back.label',
-                        )}
+                        title={t('common.cancel.label')}
                         onPress={dismiss}
                         testID={`${testID}_back`}
                     />
@@ -84,11 +76,7 @@ export const QuantumPassphraseDetectedContent = ({
                     variant='body'
                     style={styles.description}
                 >
-                    {t(
-                        isQuantumImportAvailable
-                            ? 'onboarding.import_account.quantum_detected.body'
-                            : 'onboarding.import_account.quantum_detected.body_unavailable',
-                    )}
+                    {t('onboarding.import_account.quantum_detected.body')}
                 </PWText>
                 <PWText
                     variant='caption'

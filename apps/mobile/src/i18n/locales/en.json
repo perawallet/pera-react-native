@@ -2011,7 +2011,6 @@
             "quantum_detected": {
                 "title": "This is a Quantum account passphrase",
                 "body": "These words belong to a Quantum account that already exists. Importing them as a regular account would add a different, empty account.",
-                "body_unavailable": "These words belong to a Quantum account that already exists. Quantum accounts aren't available here yet, and importing them as a regular account would add a different, empty account.",
                 "import_button": "Import Quantum Account"
             }
         },

@@ -20,12 +20,6 @@ import {
     derivePQKeygenSeed,
 } from '@perawallet/wallet-core-blockchain'
 import {
-    RemoteConfigKeys,
-    useRemoteConfigStore,
-} from '@perawallet/wallet-core-remote-config'
-import {
-    disableQuantumFlag,
-    enableQuantumFlag,
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_CANONICAL_ADDRESS,
     QUANTUM_TEST_MNEMONIC,
@@ -69,20 +63,5 @@ describe('quantumAccountFixtures', () => {
             new Uint8Array(QUANTUM_TEST_PUBLIC_KEY),
         )
         expect(deriveQuantumAddress(publicKey)).toBe(QUANTUM_TEST_ADDRESS)
-    })
-})
-
-describe('quantum flag helpers', () => {
-    const flag = () =>
-        useRemoteConfigStore.getState().configOverrides[
-            RemoteConfigKeys.enable_quantum_accounts
-        ]
-
-    it('turns the quantum-accounts override on and off', async () => {
-        await enableQuantumFlag()
-        expect(flag()).toBe(true)
-
-        await disableQuantumFlag()
-        expect(flag()).toBe(false)
     })
 })

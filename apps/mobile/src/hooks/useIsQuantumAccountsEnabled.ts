@@ -10,27 +10,8 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
-import {
-    RemoteConfigKeys,
-    useRemoteConfig,
-} from '@perawallet/wallet-core-remote-config'
 import { routeCapabilities } from '@routes/capabilities'
 
-/**
- * Quantum Accounts ships dark: fully built but hidden in production until the
- * Algorand node release lands. Defaults visible in dev & staging so the team
- * can keep testing; Firebase Remote Config can override. Additionally gated
- * by routeCapabilities.quantum, the per-platform switch.
- */
-export const useIsQuantumAccountsEnabled = (): boolean => {
-    const remoteConfig = useRemoteConfig()
-    const fallback = __DEV__ || config.appEnvironment === 'staging'
-    return (
-        routeCapabilities.quantum &&
-        remoteConfig.getBooleanValue(
-            RemoteConfigKeys.enable_quantum_accounts,
-            fallback,
-        )
-    )
-}
+// No remote flag: quantum accounts are on wherever the platform can run Falcon.
+export const useIsQuantumAccountsEnabled = (): boolean =>
+    routeCapabilities.quantum

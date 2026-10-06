@@ -2011,7 +2011,6 @@
             "quantum_detected": {
                 "title": "Esta es la passphrase de una cuenta Quantum",
                 "body": "Estas palabras pertenecen a una cuenta Quantum que ya existe. Si las importas como una cuenta normal, se añadirá otra cuenta vacía.",
-                "body_unavailable": "Estas palabras pertenecen a una cuenta Quantum que ya existe. Las cuentas Quantum aún no están disponibles aquí y, si las importas como una cuenta normal, se añadirá otra cuenta vacía.",
                 "import_button": "Importar cuenta Quantum"
             }
         },

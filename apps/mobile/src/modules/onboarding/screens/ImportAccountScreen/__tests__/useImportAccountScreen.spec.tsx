@@ -715,7 +715,6 @@ describe('useImportAccountScreen', () => {
             const sheetProps = () =>
                 mockRequestBottomSheet.mock.calls[0][0].contents.props as {
                     address: string
-                    isQuantumImportAvailable: boolean
                 }
 
             beforeEach(() => {
@@ -730,10 +729,7 @@ describe('useImportAccountScreen', () => {
 
                 await submit25Words()
 
-                expect(sheetProps()).toEqual({
-                    address: 'QUANTUMADDRESS',
-                    isQuantumImportAvailable: true,
-                })
+                expect(sheetProps()).toEqual({ address: 'QUANTUMADDRESS' })
                 expect(mockImportAccount).toHaveBeenCalledTimes(1)
                 expect(mockImportAccount).toHaveBeenCalledWith({
                     mnemonicIndices: expect.any(Uint16Array),
@@ -752,14 +748,18 @@ describe('useImportAccountScreen', () => {
                 expect(result.current.processing).toBe(false)
             })
 
-            it('blocks the import when quantum accounts are off here', async () => {
+            it('imports the standard account without checking where the platform has no quantum support', async () => {
                 mockIsQuantumEnabled.value = false
-                mockRequestBottomSheet.mockResolvedValue('import-quantum')
+                mockImportAccount.mockResolvedValue({ type: 'algo25' })
 
                 await submit25Words()
 
-                expect(sheetProps().isQuantumImportAvailable).toBe(false)
-                expect(mockImportAccount).not.toHaveBeenCalled()
+                expect(mockFindQuantumAccount).not.toHaveBeenCalled()
+                expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+                expect(mockImportAccount).toHaveBeenCalledWith({
+                    mnemonicIndices: expect.any(Uint16Array),
+                    type: 'algo25',
+                })
             })
         })
     })
