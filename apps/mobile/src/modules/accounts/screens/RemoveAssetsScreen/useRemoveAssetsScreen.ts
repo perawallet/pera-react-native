@@ -16,13 +16,17 @@ import {
     useAccountBalancesQuery,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    useIsNativeAssetId,
+    useAssetsQuery,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type UseRemoveAssetsScreenProps = {
     onAfterRemove?: () => void
@@ -48,6 +52,7 @@ export const useRemoveAssetsScreen = ({
     onAfterRemove,
 }: UseRemoveAssetsScreenProps = {}): UseRemoveAssetsScreenResult => {
     const { t } = useLanguage()
+    const isNativeAssetId = useIsNativeAssetId()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(
@@ -75,12 +80,12 @@ export const useRemoveAssetsScreen = ({
             return []
         }
         return balanceData.assetBalances.filter(item => {
-            if (isAlgoAssetId(item.assetId) || !item.amount.isZero()) {
+            if (isNativeAssetId(item.assetId) || !item.amount.isZero()) {
                 return false
             }
             return true
         })
-    }, [balanceData])
+    }, [isNativeAssetId, balanceData])
 
     const assetIDs = useMemo(
         () => removableAssets.map(b => b.assetId),

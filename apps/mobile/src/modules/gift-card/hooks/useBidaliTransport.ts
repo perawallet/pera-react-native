@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     getKnownAssetId,
+    isNativeAssetId,
     useNativeAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
@@ -40,7 +41,6 @@ import {
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
-    isAlgoAssetId,
     generateOrderedUniqueId,
     logger,
     type Optional,
@@ -105,7 +105,7 @@ export const computeBidaliBalances = (
     const balance = balances.get(account?.address ?? '')
 
     const algoBalance = balance?.assetBalances.find(a =>
-        isAlgoAssetId(a.assetId),
+        isNativeAssetId(scopeForLegacyNetwork(network).chainId, a.assetId),
     )?.amount
     // A null id (no known USDC on this network) simply never matches an
     // asset id here — the existing "user holds no USDC" path. No branch
@@ -276,7 +276,7 @@ export const useBidaliTransport = (
             try {
                 const composer = algokit.newGroup()
 
-                if (isAlgoAssetId(currencyInfo.assetId)) {
+                if (currencyInfo.assetId === nativeAsset.assetId) {
                     composer.addPayment({
                         sender,
                         receiver: address,

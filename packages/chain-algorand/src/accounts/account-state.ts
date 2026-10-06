@@ -19,12 +19,12 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import { getAlgorandClient } from '../blockchain'
 import {
-    ALGO_ASSET_ID,
     type Network,
     type Nullable,
     type Optional,
     microAlgosToAlgos,
 } from '@perawallet/wallet-core-shared'
+import { algorandDescriptor } from '../descriptor'
 import { HOLDINGS_PAGE_LIMIT } from './constants'
 
 // algod rejects a full account read with HTTP 400 once total resources exceed
@@ -134,7 +134,7 @@ export async function fetchAlgorandAccountState(
     // synthetic-row union in the hot path. Its metadata is seeded at startup and
     // its price syncs under id '0', so the join resolves it like any asset.
     holdings.unshift({
-        assetId: ALGO_ASSET_ID,
+        assetId: algorandDescriptor.nativeAsset.ref.assetId,
         amount: new Decimal(info.amount.toString()),
         isFrozen: false,
     })

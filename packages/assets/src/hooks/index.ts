@@ -21,6 +21,7 @@ export * from './useToggleAssetFavoriteMutation'
 export * from './useToggleAssetPriceAlertMutation'
 export * from './useAssetSearchQuery'
 export * from './useNativeAsset'
+export * from './useIsNativeAssetId'
 
 export {
     invalidateAssetQueries,

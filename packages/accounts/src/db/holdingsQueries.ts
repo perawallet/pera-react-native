@@ -197,13 +197,13 @@ export async function getAccountHoldingsPage(
 ): Promise<AccountHoldingsPageRow[]> {
     const rows = await queryHoldingRows(params)
     return rows.map(r => ({
-        assetId: r.assetId.toString(),
+        assetId: r.assetId,
         amount: r.amount,
         isFrozen: r.isFrozen,
         asset:
             r.decimals !== null && r.totalSupply !== null
                 ? peraAssetFromColumns({
-                      assetId: r.assetId.toString(),
+                      assetId: r.assetId,
                       decimals: r.decimals,
                       creatorAddress: r.creatorAddress ?? '',
                       totalSupply: new Decimal(r.totalSupply),
@@ -249,7 +249,7 @@ export async function getAccountHoldingsLite(
 ): Promise<AccountHoldingsLiteRow[]> {
     const rows = await queryHoldingRows(params)
     return rows.map(r => ({
-        assetId: r.assetId.toString(),
+        assetId: r.assetId,
         amount: r.amount,
         decimals: r.decimals,
         creatorAddress: r.creatorAddress,
@@ -368,19 +368,11 @@ export async function getAccountCollectiblesLite({
     const collectionNameExpr = sql<
         Nullable<string>
     >`json_extract(${AssetsPeraSchema.peraMetadataJson}, '$.collectible.collection.name')`
-    // Asset ids are uint64 stored as TEXT (see `decimalColumn`), so a plain
-    // ORDER BY compares them lexicographically — '10' before '9'. Ordering by
-    // length first fixes that exactly: for non-negative integers with no
-    // leading zeros a shorter string is always the smaller number, and equal
-    // lengths compare correctly as text.
-    //
-    // Deliberately not `CAST(... AS INTEGER)`: SQLite integers are *signed*
-    // 64-bit, and a cast past 2^63-1 saturates silently rather than erroring —
-    // every id above it would compare equal and sort arbitrarily. Ids are only
-    // ~10 digits today, so that's unreachable in practice, but this costs
-    // nothing and removes the cliff. Safe on the string form because
-    // `Decimal#toString` only switches to exponential notation at 1e21, two
-    // digits beyond uint64's maximum.
+    // Asset ids are TEXT, so a plain ORDER BY puts '10' before '9'. Length first
+    // gives numeric order for chain ids written without leading zeros, and
+    // still a stable order for non-numeric ids. Not `CAST(... AS INTEGER)`:
+    // SQLite integers are signed 64-bit, and a cast past 2^63-1 saturates
+    // silently, so every larger uint64 id would compare equal.
     const assetIdOrderExprs = [
         sql`length(${AccountAssetHoldingsSchema.assetId})`,
         sql`${AccountAssetHoldingsSchema.assetId}`,
@@ -485,7 +477,7 @@ export async function getAccountCollectiblesLite({
         .all()
 
     return rows.map(row => ({
-        assetId: row.assetId.toString(),
+        assetId: row.assetId,
         amount: row.amount,
         decimals: row.decimals,
         creatorAddress: row.creatorAddress,

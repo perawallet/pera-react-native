@@ -12,14 +12,11 @@
 
 import { useCallback } from 'react'
 import {
+    useIsNativeAssetId,
     PeraAssetType,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    isAlgoAssetId,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
@@ -47,8 +44,9 @@ export const useAssetItemView = (
     options?: UseAssetItemViewOptions,
 ): UseAssetItemViewResult => {
     const { copyToClipboard } = useClipboard()
+    const isNativeAssetId = useIsNativeAssetId()
     const meta = asset.peraMetadata
-    const isAlgo = isAlgoAssetId(asset.assetId)
+    const isAlgo = isNativeAssetId(asset.assetId)
     const isCollectible = meta?.type === PeraAssetType.collectible
     const tier = meta?.verificationTier
     const isSuspicious = tier === 'suspicious'

@@ -116,7 +116,7 @@ describe('cleanupRemovedAccountData', () => {
             .insert(AccountAssetHoldingsSchema)
             .values({
                 accountAddress: 'ADDR1',
-                assetId: new Decimal('200'),
+                assetId: '200',
                 network: 'ethereum/devnet' as ChainScopeKey,
                 updatedAt: Date.now(),
             })

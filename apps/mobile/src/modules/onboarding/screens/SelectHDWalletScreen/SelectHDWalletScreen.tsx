@@ -11,7 +11,6 @@
  */
 
 import React from 'react'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import {
     PWView,
     PWText,
@@ -97,7 +96,7 @@ export const SelectHDWalletScreen = () => {
                             variant='h4'
                         />
                         <PreferredAmount
-                            sourceAssetId={ALGO_ASSET_ID}
+                            sourceAssetId={nativeAsset.assetId}
                             sourceAmount={groupAlgoValue}
                             density='compact'
                             style={styles.fiatBalance}

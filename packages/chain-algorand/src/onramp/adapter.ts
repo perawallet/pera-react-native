@@ -12,12 +12,11 @@
 
 import type { RampChainAdapter } from '@perawallet/wallet-core-onramp'
 import {
-    ALGO_ASSET_ID,
     ALGO_ASSET_NAME,
-    isAlgoAssetId,
     isAlgoAssetName,
 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
 import { useEnsureDestinationOptIn } from './useEnsureDestinationOptIn'
 
 // A numeric id is an on-chain id and wins; the ticker is trusted only when the
@@ -26,7 +25,7 @@ import { useEnsureDestinationOptIn } from './useEnsureDestinationOptIn'
 // for an on-chain unit name.
 const isNativeToken: RampChainAdapter['isNativeToken'] = token =>
     /^\d+$/.test(token.id)
-        ? isAlgoAssetId(token.id)
+        ? isAlgorandNativeAssetId(token.id)
         : isAlgoAssetName(token.id) || isAlgoAssetName(token.symbol)
 
 const useEnsureCanReceive = () => useEnsureDestinationOptIn().ensureOptIn
@@ -35,6 +34,9 @@ export const algorandRampAdapter: RampChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     destinationTokenIds: [ALGO_ASSET_NAME, 'USDC_ALGORAND'],
     isNativeToken,
-    toAssetId: token => (isNativeToken(token) ? ALGO_ASSET_ID : token.id),
+    toAssetId: token =>
+        isNativeToken(token)
+            ? algorandDescriptor.nativeAsset.ref.assetId
+            : token.id,
     useEnsureCanReceive,
 }

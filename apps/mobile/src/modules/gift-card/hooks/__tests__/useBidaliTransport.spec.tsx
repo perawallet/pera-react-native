@@ -87,9 +87,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
     return {
-        ALGO_ASSET_ID: '0',
-        isAlgoAssetId: (assetId: string | number | bigint) =>
-            String(assetId) === '0',
         generateOrderedUniqueId: () => 'test-id-123',
         logger: {
             warn: vi.fn(),

@@ -11,7 +11,6 @@
  */
 
 import React from 'react'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import {
     PWButton,
     PWRoundIcon,
@@ -97,7 +96,7 @@ export const RekeyedAccountInfoContent = ({
                     />
                     <PreferredAmount
                         sourceAmount={rekeyedAccountAlgoValue}
-                        sourceAssetId={ALGO_ASSET_ID}
+                        sourceAssetId={nativeAsset.assetId}
                         density='compact'
                         showSymbol
                         style={styles.secondaryBalance}
@@ -162,7 +161,7 @@ export const RekeyedAccountInfoContent = ({
                             />
                             <PreferredAmount
                                 sourceAmount={authAccountAlgoValue}
-                                sourceAssetId={ALGO_ASSET_ID}
+                                sourceAssetId={nativeAsset.assetId}
                                 density='compact'
                                 showSymbol
                                 style={styles.secondaryBalance}

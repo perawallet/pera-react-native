@@ -19,7 +19,6 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    isAlgoAssetId,
     logger,
     pow10,
     useStableIdList,
@@ -184,8 +183,8 @@ export const useAccountBalancesQuery = (
             // ALGO is itself a holding row now; its joined price is the ALGO/USD
             // rate used to express every holding's value in ALGO terms.
             const usdAlgoPrice =
-                holdings.find(h => isAlgoAssetId(h.assetId))?.usdPrice ??
-                new Decimal(0)
+                holdings.find(h => h.assetId === nativeAsset.assetId)
+                    ?.usdPrice ?? new Decimal(0)
 
             let algoValue = new Decimal(0)
             // Accumulated in the same pass as `algoValue`: the portfolio
@@ -194,7 +193,7 @@ export const useAccountBalancesQuery = (
             let usdValue = new Decimal(0)
             const assetBalances: AssetWithAccountBalance[] = holdings.map(
                 holding => {
-                    const isAlgo = isAlgoAssetId(holding.assetId)
+                    const isAlgo = holding.assetId === nativeAsset.assetId
                     // ALGO metadata is seeded, but fall back defensively so the
                     // native balance always renders even mid-sync.
                     const asset = holding.asset ?? (isAlgo ? nativeAsset : null)

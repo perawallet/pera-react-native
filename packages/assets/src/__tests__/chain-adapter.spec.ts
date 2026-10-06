@@ -18,6 +18,7 @@ import {
 import {
     assetsAdapterFor,
     assetsChainAdapters,
+    displayCurrencyToAssetId,
     fetchAndPersistAssets,
     fetchOnChainAsset,
     isNativeAssetId,
@@ -41,6 +42,16 @@ describe('assetsAdapterFor / nativeAssetFor', () => {
             true,
         )
         expect(isNativeAssetId('algorand', '31566704')).toBe(false)
+    })
+
+    it('displayCurrencyToAssetId maps only the exact ALGO ticker to the native id', () => {
+        registerFakeAssetsAdapter()
+
+        expect(displayCurrencyToAssetId('ALGO', 'algorand')).toBe(
+            FAKE_NATIVE_ASSET.assetId,
+        )
+        expect(displayCurrencyToAssetId('USD', 'algorand')).toBeNull()
+        expect(displayCurrencyToAssetId('algo', 'algorand')).toBeNull()
     })
 })
 

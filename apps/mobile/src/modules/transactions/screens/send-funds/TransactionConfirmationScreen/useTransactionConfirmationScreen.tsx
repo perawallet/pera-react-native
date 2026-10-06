@@ -28,6 +28,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    useIsNativeAssetId,
     useNativeAsset,
     isCollectible,
     toWholeUnits,
@@ -40,7 +41,6 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useLanguage } from '@hooks/useLanguage'
 import {
-    isAlgoAssetId,
     type Maybe,
     type Nullable,
     type Optional,
@@ -73,6 +73,7 @@ type useTransactionConfirmationScreenResult = {
 export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
         const nativeAsset = useNativeAsset()
+        const isNativeAssetId = useIsNativeAssetId()
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const { selectedAssetId, amount, destination, note, isCloseAccount } =
@@ -124,7 +125,7 @@ export const useTransactionConfirmationScreen =
                 selectedAssetId,
             )
 
-        const isAlgoSend = isAlgoAssetId(selectedAssetId)
+        const isAlgoSend = isNativeAssetId(selectedAssetId)
         const {
             data: recipientAccountInfo,
             isPending: recipientAccountInfoPending,
