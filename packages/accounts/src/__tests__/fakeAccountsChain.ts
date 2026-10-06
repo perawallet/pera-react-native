@@ -22,6 +22,8 @@ import {
     accountsChainAdapters,
     type AccountsChainAdapter,
 } from '../chain-adapter'
+import { AccountError } from '../errors'
+import { DerivationTypes } from '../models'
 import { canSignDirectly } from '../utils'
 
 // Every legacy `Network` resolves to this id, so the fakes register under it.
@@ -87,6 +89,23 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     createPublicKeyGetter: vi.fn(() => async () => new Uint8Array(32)),
     hdKeyPairId: vi.fn(fakeHdKeyPairId),
     assertHdPathMatches: vi.fn(),
+    legacyDetails: (custody, entry) => {
+        if (custody.kind === 'local' && custody.seed === 'bip39') {
+            return {
+                hdWalletDetails: {
+                    ...custody.hd,
+                    change: 0,
+                    derivationType: DerivationTypes.Peikert,
+                },
+            }
+        }
+        if (custody.kind === 'multisig') {
+            const multisig = entry.native?.multisig
+            if (!multisig) throw new AccountError('multisig missing')
+            return { multisigDetails: { ...multisig } }
+        }
+        return {}
+    },
     quantum: {
         deriveKeygenSeed: vi.fn((entropy: Uint8Array) => entropy.slice()),
         addressFromPublicKey: vi.fn((publicKey: Uint8Array) =>

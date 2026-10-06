@@ -29,8 +29,8 @@ import {
     type WithPersist,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { accountsAdapterFor } from '../chain-adapter'
 import { buildAccount, withCustody } from '../credentials'
 import { rebuildCustody } from '../credentials/backfill'
 import { accountType, isHardwareWalletAccount, isWatchAccount } from '../utils'
@@ -312,12 +312,14 @@ export const useAccountsStore: UseBoundStore<
                 const activeNetwork = get().activeRekeyNetwork
                 const isActiveNetwork =
                     activeNetwork === null || activeNetwork === network
+                const { chainId } = accountsAdapterFor(network)
                 const watchAccounts = addresses
                     .filter(addr => !currentAddresses.has(addr))
                     .map(address =>
                         buildAccount({
                             custody: { kind: 'watch' },
-                            chains: { [LEGACY_CHAIN_ID]: { address } },
+                            chainId,
+                            chains: { [chainId]: { address } },
                             ...(isActiveNetwork
                                 ? { rekeyAddress: sourceAddress }
                                 : {}),

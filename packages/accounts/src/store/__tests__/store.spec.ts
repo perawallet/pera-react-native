@@ -35,6 +35,9 @@ describe('services/accounts/store', () => {
 
     beforeEach(async () => {
         vi.resetModules()
+        const { registerFakeAccountsChain } =
+            await import('../../__tests__/fakeAccountsChain')
+        registerFakeAccountsChain()
         const module = await import('../store')
         useAccountsStore = module.useAccountsStore
     })

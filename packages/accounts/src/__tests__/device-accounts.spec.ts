@@ -106,6 +106,7 @@ describe('buildDeviceAccountRegistrations', () => {
         const credentialBearing: WalletAccount[] = [
             buildAccount({
                 custody: { kind: 'local', seed: 'algo25' },
+                chainId: 'algorand',
                 chains: {
                     ...withOtherChain('ALGO25ADDR', 'algo25-key'),
                     algorand: {
@@ -116,6 +117,7 @@ describe('buildDeviceAccountRegistrations', () => {
             }),
             buildAccount({
                 custody: { kind: 'local', seed: 'bip39', hd },
+                chainId: 'algorand',
                 chains: {
                     ...withOtherChain('HDADDR', 'hd-key'),
                     algorand: { address: 'HDADDR', keyPairId: 'hd-key' },
@@ -127,10 +129,12 @@ describe('buildDeviceAccountRegistrations', () => {
                     device: ledger,
                     accountIndex: 0,
                 },
+                chainId: 'algorand',
                 chains: { algorand: { address: 'LEDGERADDR' } },
             }),
             buildAccount({
                 custody: { kind: 'multisig' },
+                chainId: 'algorand',
                 chains: {
                     algorand: {
                         address: 'MSIGADDR',
@@ -147,6 +151,7 @@ describe('buildDeviceAccountRegistrations', () => {
             }),
             buildAccount({
                 custody: { kind: 'watch' },
+                chainId: 'algorand',
                 chains: {
                     ...withOtherChain('WATCHADDR'),
                     algorand: { address: 'WATCHADDR' },
@@ -154,6 +159,7 @@ describe('buildDeviceAccountRegistrations', () => {
             }),
             buildAccount({
                 custody: { kind: 'local', seed: 'quantum' },
+                chainId: 'algorand',
                 chains: {
                     ...withOtherChain('QUANTUMADDR', 'quantum-key'),
                     algorand: {

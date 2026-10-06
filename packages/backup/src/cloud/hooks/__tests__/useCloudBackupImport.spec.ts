@@ -70,6 +70,13 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     const { buildAccount } = await vi.importActual<
         Pick<typeof import('@perawallet/wallet-core-accounts'), 'buildAccount'>
     >('@perawallet/wallet-core-accounts/build-account')
+    // Same source module as `buildAccount`, so they share one registry.
+    const { accountsChainAdapters } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-accounts')
+    >('@perawallet/wallet-core-accounts/chain-adapter')
+    const { stubAccountsAdapter } =
+        await import('../../../__tests__/stubAccountsAdapter')
+    accountsChainAdapters.register(stubAccountsAdapter)
     const useAccountsStore = (selector?: (s: unknown) => unknown) => {
         const state = {
             accounts: storeState.accounts,

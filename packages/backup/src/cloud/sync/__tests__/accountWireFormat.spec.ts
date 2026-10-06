@@ -14,6 +14,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+    accountsChainAdapters,
     AccountTypes,
     buildAccount,
     DerivationTypes,
@@ -36,6 +37,9 @@ import {
     GOLDEN_UPDATED_AT,
     type GoldenItem,
 } from './accountWireFormat.golden'
+import { stubAccountsAdapter } from '../../../__tests__/stubAccountsAdapter'
+
+accountsChainAdapters.register(stubAccountsAdapter)
 
 type AccountKind = keyof typeof GOLDEN_ACCOUNT_ITEMS
 
@@ -71,6 +75,7 @@ const credentialBearing: Record<AccountKind, WalletAccount> = {
         id: 'algo25',
         name: 'Main',
         custody: { kind: 'local', seed: 'algo25' },
+        chainId: 'algorand',
         chains: {
             ...fixtureChain('ALGO25ADDR', 'algo25-key'),
             algorand: { address: 'ALGO25ADDR', keyPairId: 'algo25-key' },
@@ -80,6 +85,7 @@ const credentialBearing: Record<AccountKind, WalletAccount> = {
         id: 'quantum',
         name: 'Quantum',
         custody: { kind: 'local', seed: 'quantum' },
+        chainId: 'algorand',
         chains: {
             ...fixtureChain('QUANTUMADDR', 'quantum-key'),
             algorand: { address: 'QUANTUMADDR', keyPairId: 'quantum-key' },
@@ -88,6 +94,7 @@ const credentialBearing: Record<AccountKind, WalletAccount> = {
     watch: buildAccount({
         id: 'watch',
         custody: { kind: 'watch' },
+        chainId: 'algorand',
         chains: {
             ...fixtureChain('WATCHADDR'),
             algorand: { address: 'WATCHADDR' },
@@ -97,12 +104,14 @@ const credentialBearing: Record<AccountKind, WalletAccount> = {
         id: 'hardware',
         name: 'Ledger',
         custody: { kind: 'hardware', device: LEDGER, accountIndex: 2 },
+        chainId: 'algorand',
         chains: { algorand: { address: 'LEDGERADDR' } },
     }),
     multisig: buildAccount({
         id: 'multisig',
         name: 'Shared',
         custody: { kind: 'multisig' },
+        chainId: 'algorand',
         chains: {
             algorand: {
                 address: 'MSIGADDR',
@@ -125,6 +134,7 @@ const credentialBearing: Record<AccountKind, WalletAccount> = {
             seed: 'bip39',
             hd: { account: 0, keyIndex: 1 },
         },
+        chainId: 'algorand',
         chains: {
             ...fixtureChain('HDCHILDADDR', 'hd-key'),
             algorand: { address: 'HDCHILDADDR', keyPairId: 'hd-key' },

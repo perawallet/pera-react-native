@@ -16,10 +16,12 @@ import type { AccountType, WalletAccount } from '../models'
 const inputs = (address: string): Record<AccountType, BuildAccountInput> => ({
     algo25: {
         custody: { kind: 'local', seed: 'algo25' },
+        chainId: 'algorand',
         chains: { algorand: { address, keyPairId: 'algo25-key' } },
     },
     quantum: {
         custody: { kind: 'local', seed: 'quantum' },
+        chainId: 'algorand',
         chains: { algorand: { address, keyPairId: 'quantum-key' } },
     },
     hdWallet: {
@@ -28,6 +30,7 @@ const inputs = (address: string): Record<AccountType, BuildAccountInput> => ({
             seed: 'bip39',
             hd: { account: 0, keyIndex: 0 },
         },
+        chainId: 'algorand',
         chains: { algorand: { address, keyPairId: 'hd-key' } },
     },
     hardware: {
@@ -41,10 +44,12 @@ const inputs = (address: string): Record<AccountType, BuildAccountInput> => ({
             },
             accountIndex: 0,
         },
+        chainId: 'algorand',
         chains: { algorand: { address } },
     },
     multisig: {
         custody: { kind: 'multisig' },
+        chainId: 'algorand',
         chains: {
             algorand: {
                 address,
@@ -61,6 +66,7 @@ const inputs = (address: string): Record<AccountType, BuildAccountInput> => ({
     },
     watch: {
         custody: { kind: 'watch' },
+        chainId: 'algorand',
         chains: { algorand: { address } },
     },
 })

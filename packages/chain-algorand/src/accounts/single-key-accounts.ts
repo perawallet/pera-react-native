@@ -19,10 +19,7 @@ import {
     type SingleKeyAccountOps,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     algo25PublicKeyFromSeed,
     algo25SignKeyId,
@@ -37,6 +34,7 @@ import {
     generateOrderedUniqueId,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../legacy-network'
 import { algorandAddressCodec } from './address-codec'
 import { algorandAccountExists } from './discovery'
@@ -74,8 +72,9 @@ const createAlgo25 = async (
         return {
             account: buildAccount({
                 custody: { kind: 'local', seed: 'algo25' },
+                chainId: ALGORAND_CHAIN_ID,
                 chains: {
-                    [LEGACY_CHAIN_ID]: {
+                    [ALGORAND_CHAIN_ID]: {
                         address: ed25519Address(publicKey, scope),
                         keyPairId: algo25SignKeyId(seedKeyId),
                     },
@@ -107,8 +106,9 @@ const createQuantum = async (
         return {
             account: buildAccount({
                 custody: { kind: 'local', seed: 'quantum' },
+                chainId: ALGORAND_CHAIN_ID,
                 chains: {
-                    [LEGACY_CHAIN_ID]: {
+                    [ALGORAND_CHAIN_ID]: {
                         address: result.address,
                         keyPairId: result.signKeyId,
                     },
@@ -195,8 +195,9 @@ const importQuantum = async (
         const minted: MintedAccount = {
             account: buildAccount({
                 custody: { kind: 'local', seed: 'quantum' },
+                chainId: ALGORAND_CHAIN_ID,
                 chains: {
-                    [LEGACY_CHAIN_ID]: {
+                    [ALGORAND_CHAIN_ID]: {
                         address: result.address,
                         keyPairId:
                             candidate.derivation === PQ_DERIVATION_CANONICAL
@@ -230,8 +231,9 @@ const importAlgo25 = async (
     const minted: MintedAccount = {
         account: buildAccount({
             custody: { kind: 'local', seed: 'algo25' },
+            chainId: ALGORAND_CHAIN_ID,
             chains: {
-                [LEGACY_CHAIN_ID]: {
+                [ALGORAND_CHAIN_ID]: {
                     address: ed25519Address(publicKey, scope),
                     keyPairId: algo25SignKeyId(seedKey.id),
                 },

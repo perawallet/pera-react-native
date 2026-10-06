@@ -103,6 +103,7 @@ const buildHardwareAccount = (
             },
             accountIndex: payload.accountIndex,
         },
+        chainId: context.adapter.chainId,
         chains: { [context.adapter.chainId]: { address: payload.address } },
         ...nameField(payload.customName),
     })
@@ -115,6 +116,7 @@ const buildWatchAccount = (
     assertValidAddress(context, payload.address)
     return buildAccount({
         custody: { kind: 'watch' },
+        chainId: context.adapter.chainId,
         chains: { [context.adapter.chainId]: { address: payload.address } },
         ...nameField(payload.customName),
     })
@@ -136,6 +138,7 @@ const buildMultisigAccount = (
     }
     return buildAccount({
         custody: { kind: 'multisig' },
+        chainId: adapter.chainId,
         chains: {
             [adapter.chainId]: {
                 address: payload.address,
@@ -183,6 +186,7 @@ const buildHdWalletAccount = async (
             seed: 'bip39',
             hd: { account: payload.account, keyIndex: payload.keyIndex },
         },
+        chainId: adapter.chainId,
         chains: {
             [adapter.chainId]: {
                 address: payload.address,

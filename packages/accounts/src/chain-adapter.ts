@@ -35,9 +35,12 @@ import {
     SingleKeyAccountsUnsupportedError,
 } from './errors'
 import type {
+    AccountCustody,
     AccountTypes,
+    ChainAccount,
     HdIndex,
     HDWalletDetails,
+    MultiSigDetails,
     WalletAccount,
 } from './models'
 import type { SignerResolution } from './signer-resolution'
@@ -197,6 +200,18 @@ export interface AccountsChainAdapter {
     hdKeyPairId(seedKeyId: string, index: HdIndex): string
     /** Throws `InvalidBip44PathError` when `hdPath` is malformed or names other coordinates. */
     assertHdPathMatches(hdPath: string, details: HDWalletDetails): void
+    /**
+     * The legacy detail objects this chain's account records still carry for
+     * `custody`: HD and multisig only, empty otherwise. Throws `AccountError`
+     * when the custody needs data `entry` lacks.
+     */
+    legacyDetails(
+        custody: AccountCustody,
+        entry: ChainAccount,
+    ): {
+        hdWalletDetails?: HDWalletDetails
+        multisigDetails?: MultiSigDetails
+    }
     /** Absent on a chain with no post-quantum accounts. */
     readonly quantum?: QuantumChainDerivation
     /** Absent on a chain whose only software accounts are HD. */
