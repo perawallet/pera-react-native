@@ -11,6 +11,7 @@
  */
 
 import { createHash } from 'crypto'
+import nacl from 'tweetnacl'
 import { ALGO25_SEED_LENGTH } from '../constants'
 import {
     BITS_PER_BYTE,
@@ -131,4 +132,15 @@ export const indicesToAlgo25Seed = (indices: Uint16Array): Uint8Array => {
         throw new Error('Invalid algo25 mnemonic checksum')
     }
     return seed
+}
+
+/**
+ * The Ed25519 public key an algo25 seed signs with, derived in memory without
+ * minting a keystore entry, for probing whether the account exists on chain.
+ * The caller owns zeroing `seed`.
+ */
+export const algo25PublicKeyFromSeed = (seed: Uint8Array): Uint8Array => {
+    const { publicKey, secretKey } = nacl.sign.keyPair.fromSeed(seed)
+    zeroBytes(secretKey)
+    return publicKey
 }

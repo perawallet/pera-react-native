@@ -122,7 +122,6 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
-    enableQuantumFlag,
 } from './__fixtures__/quantum'
 
 const ADJUSTED_LABEL_KEY = 'transactions.quantum_fee.adjusted_label'
@@ -398,7 +397,6 @@ describe('Flow: connections quantum fee override end-to-end', () => {
     })
 
     it('Given a quantum signer and a dApp fee below the PQ minimum, when the request is reviewed and confirmed, then the fee is raised to 3000 µAlgo with a regrouped grp, the review shows the Adjusted marker + explainer, and the delivered result carries pqsig bytes at the quantum slot and null at the external slot', async () => {
-        await enableQuantumFlag()
         const signer = await seedQuantumSender()
         await mountProviderWithSigning()
         const { result: signReq } = renderHook(() => useSigningRequest(), {
@@ -476,7 +474,6 @@ describe('Flow: connections quantum fee override end-to-end', () => {
     })
 
     it('Given a non-quantum (algo25) signer, when the same 2-txn group is signed over the connection, then no fee is adjusted, no Adjusted marker is shown, only the external slot wears the Other signer pill, and the delivered transaction is byte-identical to the request', async () => {
-        await enableQuantumFlag()
         const account = await seedAlgo25Signer()
         await mountProviderWithSigning()
         const { result: signReq } = renderHook(() => useSigningRequest(), {
@@ -542,7 +539,6 @@ describe('Flow: connections quantum fee override end-to-end', () => {
     })
 
     it('Given a quantum signer whose dApp warning is unacknowledged, when a sign request is opened and confirmed, then the warning sheet appears before signing', async () => {
-        await enableQuantumFlag()
         const signer = await seedQuantumSender()
         await mountProviderWithSigning()
 
@@ -725,7 +721,6 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
     })
 
     it('Given a session paired from a surface that has since unmounted, when a rekey pointing the sender at a held quantum auth address lands and the dApp then requests a signature, then the request is signable and its fee is raised to the post-quantum minimum', async () => {
-        await enableQuantumFlag()
         const sender = await seedAlgo25Signer()
         const quantumAuth = await seedQuantumSigner()
         await mountProviderWithTransientSurface()
@@ -760,7 +755,6 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
     })
 
     it("Given a session paired from a surface that has since unmounted, when a rekey to a held quantum auth address is undone back to the sender's own standard key, then the still-signable request's fee drops from the post-quantum minimum back to the ordinary minimum", async () => {
-        await enableQuantumFlag()
         const sender = await seedAlgo25Signer()
         const quantumAuth = await seedQuantumSigner()
         // Rekeyed to a HELD quantum auth address from the start: signable

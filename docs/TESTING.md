@@ -297,9 +297,7 @@ Fixture data (named scenarios like `USD_EUR_GBP`, `JPY_ONLY`) lives in
 describes, not the test that uses it, so it stays reusable.
 
 Shared setup helpers live there too: `registerFakeLedgerProvider` (`ledger.ts`) registers a Ledger
-BLE transport, with an optional blocking signer for tests that assert the awaiting-approval UI, and
-`enableQuantumFlag` / `disableQuantumFlag` (`quantum.ts`) set the quantum-accounts override after
-awaiting the persisted store's rehydration.
+BLE transport, with an optional blocking signer for tests that assert the awaiting-approval UI.
 
 ## Locale tour (i18n screenshot QA)
 

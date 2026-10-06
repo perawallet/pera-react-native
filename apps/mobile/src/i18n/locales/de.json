@@ -1999,6 +1999,11 @@
                 "paste_passphrase": "Vollständige Passphrase einfügen",
                 "scan_qr": "QR-Code scannen",
                 "learn_more": "Mehr erfahren"
+            },
+            "quantum_detected": {
+                "title": "Das ist die Passphrase eines Quantum-Kontos",
+                "body": "Diese Wörter gehören zu einem bereits bestehenden Quantum-Konto. Als reguläres Konto importiert, würden sie ein anderes, leeres Konto hinzufügen.",
+                "import_button": "Quantum-Konto importieren"
             }
         },
         "searching_accounts": {

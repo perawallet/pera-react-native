@@ -10,8 +10,24 @@
  limitations under the License
  */
 
-import { routeCapabilities } from '@routes/capabilities'
+import { makeStyles } from '@rneui/themed'
 
-// No remote flag: quantum accounts are on wherever the platform can run Falcon.
-export const useIsQuantumAccountsEnabled = (): boolean =>
-    routeCapabilities.quantum
+export const useStyles = makeStyles(theme => ({
+    body: {
+        alignItems: 'center',
+        gap: theme.spacing.md,
+    },
+    icon: {
+        marginBottom: theme.spacing.sm,
+    },
+    description: {
+        textAlign: 'center',
+        color: theme.colors.textGray,
+    },
+    address: {
+        textAlign: 'center',
+    },
+    actions: {
+        gap: theme.spacing.sm,
+    },
+}))

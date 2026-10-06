@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { routeCapabilities } from '@routes/capabilities'
-
-// No remote flag: quantum accounts are on wherever the platform can run Falcon.
-export const useIsQuantumAccountsEnabled = (): boolean =>
-    routeCapabilities.quantum
+export {
+    QuantumPassphraseDetectedContent,
+    type QuantumPassphraseDetectedContentProps,
+    type QuantumPassphraseDetectedContentResult,
+} from './QuantumPassphraseDetectedContent'

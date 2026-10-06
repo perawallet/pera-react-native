@@ -76,7 +76,6 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
-    enableQuantumFlag,
 } from './__fixtures__/quantum'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
@@ -161,8 +160,7 @@ describe('send from quantum account', () => {
         )
     })
 
-    it('Given the quantum flag is on and a real quantum sender, when the send confirmation screen settles, then it shows the 0.003 ALGO quantum fee and the quantum-fee explainer', async () => {
-        await enableQuantumFlag()
+    it('Given a real quantum sender, when the send confirmation screen settles, then it shows the 0.003 ALGO quantum fee and the quantum-fee explainer', async () => {
         await seedQuantumSender()
 
         useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
@@ -191,7 +189,6 @@ describe('send from quantum account', () => {
     })
 
     it('Given a real quantum sender, when a local payment is signed, then the machine signs it via the ordinary local-key path into a pqsig-bearing SignedTransaction and delivers it via the callback transport with no algod broadcast', async () => {
-        await enableQuantumFlag()
         await seedQuantumSender()
 
         // A real payment from the quantum sender. Enqueued as a LOCAL

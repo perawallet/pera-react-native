@@ -2007,6 +2007,11 @@
                 "paste_passphrase": "Coller la passphrase complète",
                 "scan_qr": "Scanner le QR code",
                 "learn_more": "En savoir plus"
+            },
+            "quantum_detected": {
+                "title": "Il s’agit de la passphrase d’un compte Quantum",
+                "body": "Ces mots appartiennent à un compte Quantum qui existe déjà. Si vous les importez comme compte standard, un autre compte, vide, sera ajouté.",
+                "import_button": "Importer un compte Quantum"
             }
         },
         "searching_accounts": {

@@ -18,12 +18,11 @@ import {
 import { routeCapabilities } from '@routes/capabilities'
 
 /**
- * Gates swapping FROM a quantum (or rekeyed-to-quantum) account. Separate
- * from `enable_quantum_accounts` because it depends on the backend pricing
- * the pqsig fee surcharge into prepared swap groups — the flag is the kill
- * switch if that pricing regresses. Same rollout shape as the accounts flag:
- * defaults on in dev & staging for testing, off in production until Firebase
- * enables it, and gated by routeCapabilities.quantum.
+ * Gates swapping FROM a quantum (or rekeyed-to-quantum) account. It depends on
+ * the backend pricing the pqsig fee surcharge into prepared swap groups — the
+ * flag is the kill switch if that pricing regresses. Defaults on in dev &
+ * staging for testing, off in production until Firebase enables it, and gated
+ * by routeCapabilities.quantum.
  */
 export const useIsQuantumSwapEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()

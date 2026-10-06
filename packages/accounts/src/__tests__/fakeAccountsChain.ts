@@ -99,7 +99,11 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
             fakeEncode(publicKey),
         ),
     },
-    singleKeyAccounts: { create: vi.fn(), importMnemonic: vi.fn() },
+    singleKeyAccounts: {
+        create: vi.fn(),
+        importMnemonic: vi.fn(),
+        findQuantumAccountForAlgo25Mnemonic: vi.fn(),
+    },
     fetchRekeyedAddresses: vi.fn(async () => []),
     resolveSigner: vi.fn((account, _accounts) =>
         canSignDirectly(account)
