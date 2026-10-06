@@ -188,6 +188,10 @@ minimumReleaseAgeExclude:
   - expo-*
   - '@expo/*'
   - babel-preset-expo
+  # 1.2.2 is the GHSA-68fv-2mgg-jv7q fix and is younger than the 7-day gate.
+  # Same sole maintainer and publisher (7rulnik) as 1.2.1, no install scripts,
+  # and the code diff is the fix. Scoped to that version; drop once it ages out.
+  - source-map-js@1.2.2
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -333,6 +337,9 @@ overrides:
   brace-expansion@3: 5.0.12
   brace-expansion@4: 5.0.12
   brace-expansion@5: 5.0.12
+  # GHSA-vc2v-76pw-4v95 (memory DoS: zlib streams outlive a disconnected
+  # client). Dev-server only, via @expo/cli.
+  compression@<1.8.2: 1.8.2
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
@@ -390,6 +397,9 @@ overrides:
   react-native-quick-base64: ^3.0.0
   react-native-quick-crypto: ^1.0.17
   shell-quote@<1.9.0: 1.9.0
+  # GHSA-68fv-2mgg-jv7q (event-loop DoS). Build tooling only, via postcss,
+  # css-tree and magicast.
+  source-map-js@<1.2.2: 1.2.2
   # Stay on the v3 line: @svgr/plugin-svgo declares svgo ^3.0.2 and configures
   # `removeViewBox`, which svgo v4 dropped from preset-default. An open
   # `>=3.3.4` here resolved to 4.x and made every SVG import log a
