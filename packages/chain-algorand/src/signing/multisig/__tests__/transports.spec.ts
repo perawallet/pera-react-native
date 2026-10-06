@@ -24,11 +24,8 @@ import { draftProposeContexts } from '../draftProposeContexts'
 
 const getNetworkMock = vi.fn(() => ({ network: 'testnet' }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
+vi.mock('../../../blockchain', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../../blockchain')>()
     return {
         ...actual,
         encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1, 0xa2])),

@@ -201,6 +201,28 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         }
     }
 
+    // Mirrors packages/shared/src/errors/blockchain.ts. The real AlgodError
+    // extends it, so app specs that load AlgodError need it on this mock.
+    class BlockchainError extends AppError {
+        constructor(
+            message: string,
+            originalError?: Error,
+            metadata: Partial<AppErrorMetadata> = {},
+        ) {
+            super(
+                message,
+                {
+                    severity: 'high',
+                    category: 'blockchain',
+                    retryable: false,
+                    messageKey: 'errors.blockchain.generic',
+                    ...metadata,
+                },
+                originalError,
+            )
+        }
+    }
+
     const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
         error instanceof PeraNetworkError
 
@@ -488,6 +510,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             return e.name === 'HTTPError' && (e.response?.status ?? 0) >= 500
         },
         AppError,
+        BlockchainError,
         PeraNetworkError,
         isPeraNetworkError,
         PeraServiceUnavailableError,

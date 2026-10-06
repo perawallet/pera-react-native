@@ -44,15 +44,13 @@ import {
     mockAlgodSendRawTransaction,
     mockAlgodStatus,
     mockAlgodTransactionParams,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+    mockTransactionHistory,
+    type MockTransactionHistoryParams,
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import {
     fetchAndPersistTransactions,
     useTransactionHistoryQuery,
 } from '@perawallet/wallet-core-transactions'
-import {
-    mockTransactionHistory,
-    type MockTransactionHistoryParams,
-} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import {
     getOpenSubmissionAttempts,
     reconcileOpenSubmissions,

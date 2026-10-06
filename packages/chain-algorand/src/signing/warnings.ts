@@ -11,7 +11,7 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { encodeAlgorandAddress } from '../blockchain'
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 
 export const aggregateTransactionWarnings = (

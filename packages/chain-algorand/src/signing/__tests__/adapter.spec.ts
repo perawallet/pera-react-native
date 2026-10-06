@@ -18,7 +18,7 @@ import {
     encodeTransactionRaw,
     groupTransactions,
     useFetchSuggestedMinFee,
-} from '@perawallet/wallet-core-blockchain'
+} from '../../blockchain'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,

@@ -14,7 +14,7 @@ import {
     AlgodError,
     encodeSignedTransactions,
     createWalletAlgorandClient,
-} from '@perawallet/wallet-core-blockchain'
+} from '../blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { BroadcasterChainAdapter } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'

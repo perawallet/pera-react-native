@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { AlgodError } from '../../../blockchain'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =

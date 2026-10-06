@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { getAssetTransferType } from '@perawallet/wallet-core-blockchain'
+import { getAssetTransferType } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'

@@ -32,7 +32,7 @@ const mockZeroBytes = vi.fn()
 
 let storeAccounts: WalletAccount[] = []
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../../blockchain', () => ({
     isValidAlgorandAddress: (...args: unknown[]) =>
         mockIsValidAlgorandAddress(...args),
 }))

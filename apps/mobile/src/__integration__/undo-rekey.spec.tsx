@@ -63,7 +63,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { UndoRekeyConfirmScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeyConfirmScreen'
 import { UndoRekeySuccessScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeySuccessScreen'

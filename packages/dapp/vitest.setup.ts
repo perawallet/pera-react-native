@@ -33,10 +33,6 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
             wire.parseArc60WireRequest(...args),
     }
 })
-vi.mock(
-    '@perawallet/wallet-core-blockchain',
-    async () => await import('../blockchain/src/arc0001'),
-)
 // Reached only by `signing/src/constants`, for one string. Its own barrel is
 // the mmkv wall a third time over, and its constants module has no imports.
 vi.mock(

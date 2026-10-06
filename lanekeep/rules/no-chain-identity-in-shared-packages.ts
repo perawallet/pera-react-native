@@ -13,7 +13,6 @@ export const CHAIN_IDS = ['algorand'] as const
 
 const SHARED_PACKAGES = [
     'chain-contract',
-    'blockchain',
     'accounts',
     'assets',
     'transactions',

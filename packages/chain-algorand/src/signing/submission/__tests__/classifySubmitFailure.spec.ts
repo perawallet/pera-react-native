@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { AlgodError } from '../../../blockchain'
 import { SubmissionError } from '@perawallet/wallet-core-signing'
 import { classifySubmitFailure } from '../classifySubmitFailure'
 

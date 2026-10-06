@@ -17,7 +17,7 @@ import type {
     AccountStateReadHint,
     AccountStateSnapshot,
 } from '@perawallet/wallet-core-accounts'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { getAlgorandClient } from '../blockchain'
 import {
     ALGO_ASSET_ID,
     type Network,

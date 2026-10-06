@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { compactSignedResults } from '@perawallet/wallet-core-blockchain'
+import { compactSignedResults } from '../blockchain'
 import type {
     PeraSignedTransaction,
     PeraTransaction,

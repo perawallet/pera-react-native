@@ -146,7 +146,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         persist: { rehydrate: vi.fn() },
     },
 }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     getCustomNetworkConfig,
 }))
 

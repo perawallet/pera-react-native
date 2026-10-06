@@ -15,13 +15,12 @@ import {
     ErrorCategory,
     type ErrorMetadata,
     ErrorSeverity,
-} from '@perawallet/wallet-core-shared'
+} from './base'
 
 /**
- * Base blockchain error.
- *
- * Never constructed directly — it exists as the base for {@link AlgodError},
- * which is why its `errors.blockchain.generic` key must stay in en.json.
+ * Base for errors a chain's node returns. Never constructed directly;
+ * subclasses resolve their own copy, so `errors.blockchain.generic` stays in
+ * en.json as the fallback.
  */
 export class BlockchainError extends AppError {
     constructor(

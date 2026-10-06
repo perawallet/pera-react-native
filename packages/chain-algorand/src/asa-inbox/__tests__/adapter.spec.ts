@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
     buildArc59RejectTxs: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../blockchain', () => ({
     createWalletAlgorandClient: mocks.createWalletAlgorandClient,
 }))
 vi.mock('../builders', () => ({

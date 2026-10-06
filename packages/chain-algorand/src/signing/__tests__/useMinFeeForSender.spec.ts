@@ -29,10 +29,8 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
+vi.mock('../../blockchain', async () => {
+    const actual = await vi.importActual<object>('../../blockchain')
     return {
         ...actual,
         useSuggestedParametersQuery: () => mockUseSuggestedParametersQuery(),

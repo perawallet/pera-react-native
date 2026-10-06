@@ -16,7 +16,7 @@ import {
     useUpdateAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '../blockchain'
 import {
     ALGO25_SEED_LENGTH,
     algo25SeedToIndices,

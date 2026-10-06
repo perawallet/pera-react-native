@@ -51,7 +51,7 @@ import {
     type MultiSigAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 import { REKEY_TARGET_ADDRESS } from './__fixtures__/onboarding'

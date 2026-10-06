@@ -12,10 +12,7 @@
 
 import { useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import {
-    useMinimumFeeConfig,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
+import { useMinimumFeeConfig, useSuggestedParametersQuery } from '../blockchain'
 import type { MinFeeForSenderResult } from '@perawallet/wallet-core-signing'
 import { resolveMinFeeForSender } from './minFeeResolver'
 

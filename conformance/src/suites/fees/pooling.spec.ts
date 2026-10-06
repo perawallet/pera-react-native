@@ -16,12 +16,12 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import {
     FALLBACK_MIN_TXN_FEE,
     FALLBACK_PQ_MULTIPLIER,
-} from '@perawallet/wallet-core-blockchain/constants'
+} from '@perawallet/wallet-core-chain-algorand/blockchain/constants'
 import {
     AlgodErrorCode,
     toAlgodError,
-} from '@perawallet/wallet-core-blockchain/errors'
-import { calculateMinTxnFee } from '@perawallet/wallet-core-blockchain/fees/feeCalculator'
+} from '@perawallet/wallet-core-chain-algorand/blockchain/errors'
+import { calculateMinTxnFee } from '@perawallet/wallet-core-chain-algorand/blockchain/fees/feeCalculator'
 import {
     assignMinimumFeesToGroup,
     groupHasQuantumSigner,

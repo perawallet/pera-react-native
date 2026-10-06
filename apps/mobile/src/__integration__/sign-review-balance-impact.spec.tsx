@@ -41,7 +41,7 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 describe('Flow: balance-impact summary in the review sheet', () => {
     beforeAll(async () => {

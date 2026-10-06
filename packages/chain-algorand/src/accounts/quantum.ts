@@ -11,10 +11,7 @@
  */
 
 import type { QuantumChainDerivation } from '@perawallet/wallet-core-kms'
-import {
-    derivePQKeygenSeed,
-    deriveQuantumAddress,
-} from '@perawallet/wallet-core-blockchain'
+import { derivePQKeygenSeed, deriveQuantumAddress } from '../blockchain'
 
 export const algorandQuantumDerivation: QuantumChainDerivation = {
     deriveKeygenSeed: entropy => derivePQKeygenSeed(entropy),

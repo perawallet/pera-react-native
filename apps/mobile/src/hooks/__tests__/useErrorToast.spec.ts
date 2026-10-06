@@ -18,7 +18,10 @@ import {
     PeraNetworkError,
     logger,
 } from '@perawallet/wallet-core-shared'
-import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
+import {
+    AlgodError,
+    toAlgodError,
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '../useErrorToast'

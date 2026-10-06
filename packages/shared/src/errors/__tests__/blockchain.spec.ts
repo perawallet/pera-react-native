@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { BlockchainError } from '../BlockchainError'
+import { BlockchainError } from '../blockchain'
 
 describe('blockchain error copy', () => {
     test('BlockchainError defaults to the generic blockchain key', () => {
@@ -21,9 +21,8 @@ describe('blockchain error copy', () => {
     })
 
     test('subclass metadata overrides the base key', () => {
-        // AlgodError is the only real subclass and resolves its copy through
-        // getAlgodMessage instead; this guards the override path the base
-        // class exists to provide.
+        // Subclasses resolve their own copy; this guards the override path
+        // the base class exists to provide.
         const error = new BlockchainError('internal detail', undefined, {
             messageKey: 'errors.general.body',
         })

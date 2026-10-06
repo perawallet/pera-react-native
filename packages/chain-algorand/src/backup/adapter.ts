@@ -12,7 +12,7 @@
 
 import { HdDerivationTypeUnsupportedError } from '@perawallet/wallet-core-accounts'
 import type { BackupChainAdapter } from '@perawallet/wallet-core-backup'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { encodeAlgorandAddress } from '../blockchain'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
 import { ALGORAND_HD_DERIVATION_TYPE } from '../accounts/constants'
 import { algorandHdDerivationRequest } from '../accounts/hd-derivation'

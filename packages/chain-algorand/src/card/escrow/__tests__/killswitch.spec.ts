@@ -16,8 +16,8 @@ import { generateAccount } from 'algosdk'
 const { getAlgorandClient } = vi.hoisted(() => ({
     getAlgorandClient: vi.fn(),
 }))
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock('../../../blockchain', async () => ({
+    ...(await vi.importActual<object>('../../../blockchain')),
     getAlgorandClient,
     FALLBACK_MIN_TXN_FEE: 1000n,
 }))

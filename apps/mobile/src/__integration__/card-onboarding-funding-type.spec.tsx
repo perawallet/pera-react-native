@@ -111,7 +111,7 @@ import {
     mockPostAlgorandDelegationApproval,
     mockPostDelegatorLsig,
 } from '@perawallet/wallet-core-card/test-handlers'
-import { mockAlgodTealCompile } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockAlgodTealCompile } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 

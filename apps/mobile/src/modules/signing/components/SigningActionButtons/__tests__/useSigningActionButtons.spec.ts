@@ -66,8 +66,12 @@ vi.mock('@hooks/useLanguage')
 
 // The global setup stubs toAlgodError to always return unknown_node_error;
 // the classification cases below need the real parser.
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal =>
-    importOriginal<typeof import('@perawallet/wallet-core-blockchain')>(),
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal =>
+        importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >(),
 )
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

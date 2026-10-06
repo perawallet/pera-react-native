@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => ({
     zeroBytes: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../blockchain', () => ({
     isValidAlgorandAddress: mocks.isValidAlgorandAddress,
 }))
 

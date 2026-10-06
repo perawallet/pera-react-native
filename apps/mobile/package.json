@@ -53,7 +53,6 @@
     "@perawallet/wallet-core-background": "workspace:*",
     "@perawallet/wallet-core-backup": "workspace:*",
     "@perawallet/wallet-core-banners": "workspace:*",
-    "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-browser-runtime": "workspace:*",
     "@perawallet/wallet-core-card": "workspace:*",
     "@perawallet/wallet-core-chain-algorand": "workspace:*",

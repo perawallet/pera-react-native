@@ -55,7 +55,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'

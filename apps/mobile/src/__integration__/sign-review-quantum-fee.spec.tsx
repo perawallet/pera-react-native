@@ -63,7 +63,7 @@ import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 /**
  * Seed the real algo25 signer (mints the key + registers the account exactly as

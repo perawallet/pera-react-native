@@ -21,7 +21,7 @@ import {
     encodeTransactionRaw,
     groupTransactions,
     rawTransactionsMatch,
-} from '@perawallet/wallet-core-blockchain'
+} from '../../blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, encodeToBase64 } from '@perawallet/wallet-core-shared'
 

@@ -43,14 +43,14 @@ import {
     encodeTransaction,
     encodeTransactionRaw,
     rawTransactionsMatch,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'

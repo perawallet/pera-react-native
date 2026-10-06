@@ -32,7 +32,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { mockAlgodTransactionParams } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockAlgodTransactionParams } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { BidaliAccountSelectionScreen } from '@modules/gift-card/screens/BidaliAccountSelectionScreen'
 import { useBidali } from '@modules/gift-card/hooks/useBidali'
 import { useBidaliTransport } from '@modules/gift-card/hooks/useBidaliTransport'

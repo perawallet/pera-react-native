@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
+import {
+    AlgodError,
+    toAlgodError,
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useLanguage } from './useLanguage'
 
 type UseAlgodErrorMessageResult = {

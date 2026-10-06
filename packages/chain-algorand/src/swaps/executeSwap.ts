@@ -14,7 +14,7 @@ import { Decimal } from 'decimal.js'
 import {
     mapToDisplayableTransaction,
     type getAlgorandClient,
-} from '@perawallet/wallet-core-blockchain'
+} from '../blockchain'
 import type {
     PeraDisplayableTransaction,
     PeraSignedTransaction,

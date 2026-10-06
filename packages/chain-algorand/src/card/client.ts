@@ -13,7 +13,7 @@
 import {
     getAlgorandClient,
     type PeraEncodedTransactionSigner,
-} from '@perawallet/wallet-core-blockchain'
+} from '../blockchain'
 import type { Network } from '@perawallet/wallet-core-shared'
 
 // The card flows build groups a Ledger holder may have to confirm on-device;

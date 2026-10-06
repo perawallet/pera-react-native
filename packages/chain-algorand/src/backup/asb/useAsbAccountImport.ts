@@ -17,7 +17,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '../../blockchain'
 import { useImportAlgo25FromSeed } from '../useImportAlgo25FromSeed'
 import {
     AsbAccountKind,
