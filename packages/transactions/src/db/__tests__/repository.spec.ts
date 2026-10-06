@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { eq, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
@@ -30,6 +30,7 @@ import {
     updateTransactionCloseAmount,
 } from '../repository'
 import { TransactionsSchema } from '../schema'
+import { historyChainAdapters } from '../../history-adapter'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 describe('transaction repository', () => {
@@ -45,7 +46,24 @@ describe('transaction repository', () => {
 
     afterEach(() => {
         teardown()
+        historyChainAdapters.reset()
     })
+
+    // Stands in for the chain's own repair (chain-algorand's
+    // resolveAlgorandAssetFacts); the repository only has to apply it.
+    const registerPlaceholderRepair = () => {
+        historyChainAdapters.reset()
+        historyChainAdapters.register({
+            chainId: 'algorand',
+            fetchHistory: vi.fn(),
+            fetchMoreHistory: vi.fn(),
+            toDisplayable: vi.fn(),
+            resolveAssetFacts: (assetId, facts) =>
+                String(assetId) === '0'
+                    ? { unitName: 'ALGO', decimals: 6 }
+                    : facts,
+        })
+    }
 
     const makeTx = (
         overrides: Partial<TransactionHistoryItem> = {},
@@ -93,6 +111,7 @@ describe('transaction repository', () => {
     // so a row that captured the backend's `asset(0)` placeholder is never
     // refetched — the read path is the only place it can be repaired.
     it('overrides a cached ALGO balance-impact placeholder on read', async () => {
+        registerPlaceholderRepair()
         await upsertTransactions({
             db,
             items: [
@@ -127,6 +146,7 @@ describe('transaction repository', () => {
     })
 
     it('overrides a cached ALGO asset-summary placeholder on read', async () => {
+        registerPlaceholderRepair()
         await upsertTransactions({
             db,
             items: [
