@@ -566,6 +566,9 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
         }),
         encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
+        // Referenced eagerly by the chain-algorand signing adapter's member table.
+        encodeTransactionRaw: vi.fn(),
+        mapToDisplayableTransaction: vi.fn(),
         useMinimumFeeConfig: vi.fn(() => ({
             minTxnFee: 1000n,
             pqMultiplier: 3n,

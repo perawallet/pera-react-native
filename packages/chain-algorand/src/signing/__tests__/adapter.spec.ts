@@ -14,6 +14,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { Address } from 'algosdk'
 import { Decimal } from 'decimal.js'
 import {
+    encodeAlgorandAddress,
+    encodeTransactionRaw,
     groupTransactions,
     useFetchSuggestedMinFee,
 } from '@perawallet/wallet-core-blockchain'
@@ -37,7 +39,11 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     },
 }))
 
-import { algorandPlannerAdapter } from '../adapter'
+import {
+    algorandMessageSignerAdapter,
+    algorandPlannerAdapter,
+    algorandReviewerAdapter,
+} from '../adapter'
 import {
     useAlgorandFeeConfig,
     useAlgorandSuggestedMinFeeQuery,
@@ -152,5 +158,49 @@ describe('algorandPlannerAdapter.takeDraftProposeContext', () => {
         expect(
             algorandPlannerAdapter.takeDraftProposeContext('draft-1'),
         ).toBeUndefined()
+    })
+})
+
+describe('algorandPlannerAdapter.encodeUnsignedTransaction', () => {
+    test('is the wire encoding without the signing-domain prefix', () => {
+        const tx = makeTestPaymentTx(senderA, { receiver: senderB })
+
+        const bytes = algorandPlannerAdapter.encodeUnsignedTransaction(tx)
+
+        expect(bytes).toEqual(encodeTransactionRaw(tx))
+        expect(new TextDecoder().decode(bytes.slice(0, 2))).not.toBe('TX')
+    })
+})
+
+describe('algorandReviewerAdapter.toDisplayableTransaction', () => {
+    test('maps a payment to its review model', () => {
+        const tx = makeTestPaymentTx(senderA, {
+            receiver: senderB,
+            amount: 5n,
+        })
+
+        const display = algorandReviewerAdapter.toDisplayableTransaction(tx)
+
+        expect(display?.txType).toBe('pay')
+        expect(display?.sender).toBe(senderA.toString())
+        expect(display?.paymentTransaction?.receiver).toBe(senderB.toString())
+        expect(display?.paymentTransaction?.amount).toBe(5n)
+    })
+})
+
+describe('algorandMessageSignerAdapter.signerPublicKey', () => {
+    test('decodes an address to the 32-byte key it encodes', () => {
+        const key = algorandMessageSignerAdapter.signerPublicKey(
+            senderA.toString(),
+        )
+
+        expect(key).toHaveLength(32)
+        expect(encodeAlgorandAddress(key)).toBe(senderA.toString())
+    })
+
+    test('throws on an invalid address', () => {
+        expect(() =>
+            algorandMessageSignerAdapter.signerPublicKey('not-an-address'),
+        ).toThrow()
     })
 })

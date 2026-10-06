@@ -101,7 +101,7 @@ export const resolveErrorCopy = (
                 body: t('errors.submission.unknown_outcome.body'),
             }
         }
-        return getAlgodMessage(error.algodError)
+        return getAlgodMessage(error.nodeError)
     }
 
     if (error instanceof NoConnectionError) {

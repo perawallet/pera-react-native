@@ -136,7 +136,7 @@ describe('submitSignedTransactionGroup', () => {
             const error = await promise.catch((e: SubmissionError) => e)
             expect(error.classification).toBe('rejected-by-node')
             expect(error.txIds).toEqual(['COMPUTED_A'])
-            expect(error.algodError.code).toBe('overspend')
+            expect(error.nodeError.code).toBe('overspend')
             expect(error.metadata.retryable).toBe(false)
         })
 

@@ -228,7 +228,7 @@ export const resolveSwapHandoffOutcome = async ({
                             throw new SubmissionError(
                                 [...new Set([...txIds, ...error.txIds])],
                                 error.classification,
-                                error.algodError,
+                                error.nodeError,
                             )
                         }
                         throw error

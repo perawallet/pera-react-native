@@ -114,6 +114,10 @@ export interface ReviewerChainAdapter {
     ): DelegatedUnsignableReason | null
     /** Never throws; anything that isn't cleanly printable comes back as hex. */
     decodeArbitraryDataForDisplay(data: string): ArbitraryDataDisplay
+    /** The review model of one unsigned transaction. */
+    toDisplayableTransaction(
+        transaction: PeraTransaction,
+    ): Nullable<PeraDisplayableTransaction>
 }
 
 export const reviewerChainAdapters =
@@ -184,6 +188,12 @@ export type AssignMinimumFeesToGroupResult = {
     transactions: PeraTransaction[]
     /** Empty when nothing was adjusted */
     adjustments: FeeAdjustment[]
+}
+
+export type MinFeeForSenderResult = {
+    /** Native base units; undefined while fee parameters load or when there is no sender. */
+    minFee: bigint | undefined
+    isPending: boolean
 }
 
 export type AssignFeeToGroup = (
@@ -286,7 +296,6 @@ export type LocalKeySigningDeps = {
      * selection and signer selection must never be able to disagree.
      */
     getPQSigningInfo: (keyPairId: string) => PQSigningInfo | null
-    encodeTransaction: (txn: PeraTransaction) => Uint8Array
     /**
      * Yields to the event loop between batches. Injectable so a headless
      * caller can run the batching logic without React's scheduling in play.
@@ -673,14 +682,23 @@ export interface PlannerChainAdapter {
     useSuggestedMinFeeQuery: () => UseSuggestedMinFeeQueryResult
     useFetchSuggestedMinFee: () => FetchSuggestedMinFee
     /**
-     * Raises underfunded fees on the signable slots and returns the group
-     * unchanged, by reference, when nothing needs raising.
+     * A React hook giving the minimum fee for a transaction `senderAddress`
+     * sends, from live network fee parameters and remote config.
+     */
+    useMinFeeForSender(senderAddress: string | undefined): MinFeeForSenderResult
+    /**
+     * A React hook giving the group fee assigner. It reads accounts at call
+     * time, and its network fee fetch never throws. The assigner raises
+     * underfunded fees on the signable slots and returns the group unchanged,
+     * by reference, when nothing needs raising.
      * @throws InvalidSignableDataError when a fee must be raised but the group is invalid as received.
      */
-    assignGroupFees(
-        params: AssignFeeToGroupParams,
-        deps: AssignFeeToGroupDeps,
-    ): Promise<AssignMinimumFeesToGroupResult>
+    useAssignFeeToGroup(): AssignFeeToGroup
+    /**
+     * Wire bytes without the signing-domain prefix. A hardware device signs
+     * these, adding the prefix itself, and the multisig backend stores them.
+     */
+    encodeUnsignedTransaction(transaction: PeraTransaction): Uint8Array
     reviewGroupFees(
         transactions: PeraDisplayableTransaction[],
         signableAddresses: Set<string>,

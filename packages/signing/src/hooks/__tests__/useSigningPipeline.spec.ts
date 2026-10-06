@@ -12,8 +12,8 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '../../models'
-import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
 
 const mockSigningRequest = {
     currentRequest: undefined as unknown,
@@ -50,22 +50,17 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 const mockMapToDisplayable = vi.fn((tx: unknown) => tx)
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
-    return {
-        ...actual,
-        mapToDisplayableTransaction: (tx: unknown) => mockMapToDisplayable(tx),
-    }
-})
-
+import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
 import {
     useSigningPipeline,
     __resetDisplayDataCacheForTests,
 } from '../useSigningPipeline'
 
 beforeEach(() => {
+    registerFakeReviewerAdapter({
+        toDisplayableTransaction: tx =>
+            mockMapToDisplayable(tx) as PeraDisplayableTransaction,
+    })
     mockSigningRequest.currentRequest = undefined
     mockSigningRequest.currentActorRef = null
     mockSigningRequest.signAndSendRequest.mockReset()

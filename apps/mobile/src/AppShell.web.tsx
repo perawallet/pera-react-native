@@ -23,9 +23,9 @@ import {
 } from '@react-navigation/native'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import {
-    algorandSafeQuerySerialize,
-    algorandSafeQueryParse,
-} from '@perawallet/wallet-core-blockchain'
+    parseTypedJson,
+    stringifyTypedJson,
+} from '@perawallet/wallet-core-shared'
 import {
     getProvider,
     PeraWalletProvider,
@@ -72,8 +72,8 @@ import { useIntegrityTokenSync } from './useIntegrityTokenSync.web'
 // rest of the post-hydration setup is bootstrap/preReact.web.ts.
 const persister = createAsyncStoragePersister({
     storage: getProvider().keyValueStorage,
-    serialize: algorandSafeQuerySerialize,
-    deserialize: algorandSafeQueryParse,
+    serialize: stringifyTypedJson,
+    deserialize: parseTypedJson,
 })
 
 // Theme-aware paint for the whole app area, below ThemeProvider so it sees

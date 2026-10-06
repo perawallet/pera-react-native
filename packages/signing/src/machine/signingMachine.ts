@@ -18,7 +18,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type {
     SigningMachineContext,
     SigningMachineEvent,
@@ -38,6 +38,7 @@ import type { HardwareSigningOutput } from './children/hardwareSigningMachine.co
 import { resolveInitialContext, makeFailedContext } from './actions'
 import { resolveHardwareDeviceName } from './utils/resolveHardwareDeviceName'
 import { SigningError } from '../pipeline/errors'
+import { broadcasterChainAdapters } from '../broadcaster'
 import {
     localKeySignerAdapterFor,
     plannerAdapterFor,
@@ -229,18 +230,14 @@ export const signingMachine = setup({
                 toError((event as unknown as { error: unknown }).error),
             failedDuringState: () => 'transporting' as const,
         }),
-        // An `after` transition carries no `event.error`, so synthesize a
-        // retryable `network_unavailable` AlgodError — that's what makes the
-        // `failed` state's RETRY route back to `transporting`.
+        // An `after` transition carries no `event.error`, so the chain
+        // synthesizes a retryable one — that's what makes the `failed`
+        // state's RETRY route back to `transporting`.
         setTransportTimeoutError: assign({
-            error: () =>
-                new AlgodError(
-                    'network_unavailable',
-                    {},
-                    new Error(
-                        `Transaction submit timed out after ${config.signingTransportTimeout}ms`,
-                    ),
-                ),
+            error: ({ context }) =>
+                broadcasterChainAdapters
+                    .get(scopeForLegacyNetwork(context.deps.network).chainId)
+                    .submitTimeoutError(config.signingTransportTimeout),
             failedDuringState: () => 'transporting' as const,
         }),
 

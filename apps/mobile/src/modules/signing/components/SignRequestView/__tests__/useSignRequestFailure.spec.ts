@@ -80,7 +80,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         constructor(
             readonly txIds: string[],
             readonly classification: string,
-            readonly algodError: unknown,
+            readonly nodeError: unknown,
         ) {
             super(`Submission ${classification}`)
         }
@@ -244,7 +244,7 @@ describe('useSignRequestFailure', () => {
         const error = new (SubmissionError as unknown as new (
             txIds: string[],
             classification: string,
-            algodError: unknown,
+            nodeError: unknown,
         ) => Error)(
             ['TXID'],
             'unknown-outcome',
@@ -269,7 +269,7 @@ describe('useSignRequestFailure', () => {
         const error = new (SubmissionError as unknown as new (
             txIds: string[],
             classification: string,
-            algodError: unknown,
+            nodeError: unknown,
         ) => Error)(['TXID'], 'rejected-by-node', new Error('overspend'))
 
         const { result } = renderHook(() =>
@@ -286,7 +286,7 @@ describe('useSignRequestFailure', () => {
         const error = new (SubmissionError as unknown as new (
             txIds: string[],
             classification: string,
-            algodError: unknown,
+            nodeError: unknown,
         ) => Error)(
             ['TXID'],
             'unknown-outcome',
