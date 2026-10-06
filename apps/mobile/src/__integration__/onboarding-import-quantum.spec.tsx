@@ -43,6 +43,7 @@ import {
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_LEGACY_ADDRESS,
+    disableQuantumFlag,
     enableQuantumFlag,
 } from './__fixtures__/quantum'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
@@ -294,5 +295,91 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
         expect(accounts).toHaveLength(1)
         expect(accounts[0].type).toBe(AccountTypes.algo25)
         expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
+    })
+
+    describe('Given quantum words entered through the Recover-a-wallet (algo25) flow, and the quantum account they control exists on chain', () => {
+        beforeEach(() => {
+            server.use(
+                mockAlgodAccountInformation({
+                    address: ALGO25_TEST_ADDRESS,
+                    response: {},
+                }),
+            )
+        })
+
+        it('when quantum accounts are enabled, then the user is offered the quantum account and importing it persists only that account', async () => {
+            await enableQuantumFlag()
+            server.use(
+                mockAlgodAccountInformation({
+                    address: QUANTUM_TEST_ADDRESS,
+                    response: { amount: 5_000_000 },
+                }),
+            )
+
+            await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
+
+            await waitFor(
+                () =>
+                    screen.getByTestId(
+                        'quantum_passphrase_detected_sheet_import_quantum',
+                    ),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(
+                screen.getByTestId('quantum_passphrase_detected_sheet_address')
+                    .textContent,
+            ).toBe(QUANTUM_TEST_ADDRESS)
+            fireEvent.click(
+                screen.getByTestId(
+                    'quantum_passphrase_detected_sheet_import_quantum',
+                ),
+            )
+
+            await waitFor(
+                () => screen.getByTestId('name_account_finish_button'),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            const accounts = useAccountsStore.getState().accounts
+            expect(accounts).toHaveLength(1)
+            expect(accounts[0].type).toBe(AccountTypes.quantum)
+            expect(accounts[0].address).toBe(QUANTUM_TEST_ADDRESS)
+        })
+
+        it('when quantum accounts are disabled, then the import is blocked and no account is persisted', async () => {
+            await disableQuantumFlag()
+            server.use(
+                mockAlgodAccountInformation({
+                    address: QUANTUM_TEST_LEGACY_ADDRESS,
+                    response: { amount: 5_000_000 },
+                }),
+            )
+
+            await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
+
+            await waitFor(
+                () =>
+                    screen.getByTestId(
+                        'quantum_passphrase_detected_sheet_back',
+                    ),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(
+                screen.queryByTestId(
+                    'quantum_passphrase_detected_sheet_import_quantum',
+                ),
+            ).toBeNull()
+            fireEvent.click(
+                screen.getByTestId('quantum_passphrase_detected_sheet_back'),
+            )
+
+            await waitFor(() => {
+                expect(
+                    isElementDisabled(
+                        screen.getByTestId('import_account_import_button'),
+                    ),
+                ).toBe(false)
+            })
+            expect(useAccountsStore.getState().accounts).toEqual([])
+        })
     })
 })

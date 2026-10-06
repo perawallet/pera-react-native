@@ -38,6 +38,7 @@ import {
     INVALID_ALGO25_MNEMONIC_WORDS,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
 const typeWordsIndividually = (words: string[]) => {
     words.forEach((word, idx) => {
@@ -152,7 +153,11 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         // SearchAccounts even runs. SearchAccounts then checks for rekeyed
         // accounts and, finding none, routes to NameAccount for the user to
         // confirm/customize the name before finishing.
-        await waitFor(() => screen.getByTestId('name_account_finish_button'))
+        // Before importing, an empty algo25 address triggers the quantum
+        // passphrase probe, which runs real Falcon keygen.
+        await waitFor(() => screen.getByTestId('name_account_finish_button'), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
         fireEvent.click(screen.getByTestId('name_account_finish_button'))
 
         await waitFor(

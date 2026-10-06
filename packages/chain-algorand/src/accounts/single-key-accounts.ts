@@ -24,6 +24,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    algo25PublicKeyFromSeed,
     algo25SignKeyId,
     indicesToAlgo25Seed,
     PQ_DERIVATION_CANONICAL,
@@ -32,7 +33,10 @@ import {
     zeroBytes,
     type QuantumAddressCandidate,
 } from '@perawallet/wallet-core-kms'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { algorandNetworkOf } from '../legacy-network'
 import { algorandAddressCodec } from './address-codec'
 import { algorandAccountExists } from './discovery'
@@ -248,6 +252,47 @@ const importAlgo25 = async (
     return minted.account
 }
 
+// Each step re-derives the entropy from the indices and zeroes it before its
+// probe, so no seed is held across a network round trip. The algo25 address is
+// probed first so a standard account with history never pays for two Falcon
+// keygens. Any failure, Falcon unavailable included, reads as "nothing found".
+const withAlgo25Entropy = <T>(
+    mnemonicIndices: Uint16Array,
+    derive: (entropy: Uint8Array) => T,
+): T => {
+    const entropy = indicesToAlgo25Seed(mnemonicIndices)
+    try {
+        return derive(entropy)
+    } finally {
+        zeroBytes(entropy)
+    }
+}
+
+const findQuantumAccountForAlgo25Mnemonic = async (
+    mnemonicIndices: Uint16Array,
+    scope: ChainScope,
+): Promise<Nullable<string>> => {
+    const network = algorandNetworkOf(scope)
+    try {
+        const algo25Address = withAlgo25Entropy(mnemonicIndices, entropy =>
+            ed25519Address(algo25PublicKeyFromSeed(entropy), scope),
+        )
+        if (await algorandAccountExists(algo25Address, network)) return null
+
+        const candidates = withAlgo25Entropy(mnemonicIndices, entropy =>
+            quantumAddressCandidates(entropy, algorandQuantumDerivation),
+        )
+        const existence = await Promise.all(
+            candidates.map(candidate =>
+                algorandAccountExists(candidate.address, network),
+            ),
+        )
+        return candidates.find((_, index) => existence[index])?.address ?? null
+    } catch {
+        return null
+    }
+}
+
 export const algorandSingleKeyAccounts: SingleKeyAccountOps = {
     create: (keystore, { kind, id }, scope) =>
         kind === AccountTypes.algo25
@@ -262,4 +307,5 @@ export const algorandSingleKeyAccounts: SingleKeyAccountOps = {
         kind === AccountTypes.algo25
             ? importAlgo25(keystore, mnemonicIndices, scope, save)
             : importQuantum(keystore, mnemonicIndices, isHeld, scope, save),
+    findQuantumAccountForAlgo25Mnemonic,
 }

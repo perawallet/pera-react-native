@@ -2007,6 +2007,12 @@
                 "paste_passphrase": "Passphrase’in tamamını yapıştır",
                 "scan_qr": "QR kodu tara",
                 "learn_more": "Daha fazla bilgi"
+            },
+            "quantum_detected": {
+                "title": "Bu bir Quantum hesabının passphrase’i",
+                "body": "Bu kelimeler zaten var olan bir Quantum hesabına ait. Normal bir hesap olarak içe aktarırsan farklı, boş bir hesap eklenir.",
+                "body_unavailable": "Bu kelimeler zaten var olan bir Quantum hesabına ait. Quantum hesapları burada henüz kullanılamıyor ve normal bir hesap olarak içe aktarırsan farklı, boş bir hesap eklenir.",
+                "import_button": "Quantum hesabı içe aktar"
             }
         },
         "searching_accounts": {
