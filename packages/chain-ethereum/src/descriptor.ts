@@ -35,7 +35,7 @@ const networks: readonly ChainNetwork[] = [
         displayName: 'Sepolia',
         isDefaultForTier: true,
         caip2: 'eip155:11155111',
-        nativeRef: { kind: 'evm', eip155ChainId: 11155111 },
+        nativeRef: { kind: 'evm', eip155ChainId: 11_155_111 },
         status: 'active',
     },
 ]
