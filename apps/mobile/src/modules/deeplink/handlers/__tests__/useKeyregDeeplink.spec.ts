@@ -427,7 +427,7 @@ describe('useKeyregDeeplink', () => {
     describe('PQ fee floor', () => {
         // assignFeeToGroup is mocked at the signing-package boundary (its
         // own quantum/rekey/congestion logic is covered by
-        // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
+        // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
         // and .../sources/__tests__/assignMinimumFeesToGroup.spec.ts). These
         // tests only verify this hook builds with the dApp fee verbatim,
         // runs the built txn through the calculator, and surfaces the delta

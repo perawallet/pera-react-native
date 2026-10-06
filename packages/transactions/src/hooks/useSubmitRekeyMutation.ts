@@ -18,16 +18,14 @@ import {
     type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import {
-    useFetchSuggestedMinFee,
-    useMinimumFeeConfig,
-} from '@perawallet/wallet-core-blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     getOpenSubmissionAttemptsForIntent,
     STALE_OPEN_ATTEMPT_MS,
     resolveMinFeeForSender,
     submitAndAutoRefresh,
+    useFeeConfig,
+    useFetchSuggestedMinFee,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { assertOnline } from '@perawallet/wallet-core-shared'
@@ -86,8 +84,8 @@ export const useSubmitRekeyMutation = ({
 }: UseSubmitRekeyMutationOptions): UseSubmitRekeyMutationResult => {
     const { addSignRequest } = useSigningRequest()
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
-    const fetchSuggestedMinFee = useFetchSuggestedMinFee()
+    const { minTxnFee, pqMultiplier } = useFeeConfig(LEGACY_CHAIN_ID)
+    const fetchSuggestedMinFee = useFetchSuggestedMinFee(LEGACY_CHAIN_ID)
 
     const mutation = useMutation({
         // `mutationDefaults` (@perawallet/wallet-core-shared) already sets

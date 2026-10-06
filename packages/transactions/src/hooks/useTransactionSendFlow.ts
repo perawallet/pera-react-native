@@ -14,18 +14,17 @@ import { useCallback } from 'react'
 
 import type { Decimal } from 'decimal.js'
 import {
+    LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,
     type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import {
-    useFetchSuggestedMinFee,
-    useMinimumFeeConfig,
-} from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     resolveMinFeeForSender,
+    useFeeConfig,
+    useFetchSuggestedMinFee,
     useSignAndSubmitGroup,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -97,8 +96,9 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
     const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier, assetMbr } = useMinimumFeeConfig()
-    const fetchSuggestedMinFee = useFetchSuggestedMinFee()
+    const { minTxnFee, pqMultiplier, assetOptInMinBalance } =
+        useFeeConfig(LEGACY_CHAIN_ID)
+    const fetchSuggestedMinFee = useFetchSuggestedMinFee(LEGACY_CHAIN_ID)
 
     /**
      * Express send has two signers with independent PQ-aware rates: the sender
@@ -138,11 +138,11 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 pqMultiplier,
             })
 
-            // After opt-in the receiver's MBR increases by assetMbr. The
+            // After opt-in the receiver's MBR increases by assetOptInMinBalance. The
             // opt-in tx fee is paid from the receiver's balance at the
             // receiver's own (PQ-aware) rate, so reserve exactly that
             // instead of the flat network minimum.
-            const mbrAfterOptIn = currentMbr + assetMbr
+            const mbrAfterOptIn = currentMbr + assetOptInMinBalance
             const balanceNeeded = mbrAfterOptIn + receiverFee
             const funding =
                 balanceNeeded > currentBalance
@@ -166,7 +166,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             fetchSuggestedMinFee,
             minTxnFee,
             pqMultiplier,
-            assetMbr,
+            assetOptInMinBalance,
             network,
         ],
     )

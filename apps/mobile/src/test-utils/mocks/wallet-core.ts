@@ -570,12 +570,17 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
         }),
         encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
+        // Referenced eagerly by the chain-algorand signing adapter's member table.
+        encodeTransactionRaw: vi.fn(),
+        mapToDisplayableTransaction: vi.fn(),
         useMinimumFeeConfig: vi.fn(() => ({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
             assetMbr: 100_000n,
             baseAccountMbr: 100_000n,
         })),
+        // The Algorand planner adapter binds this member at module load.
+        useFetchSuggestedMinFee: vi.fn(() => async () => 1000n),
         // Error-translation exports. Tests that need the real parser should use
         // `vi.importActual` in their own file (see useAlgodErrorMessage.spec.ts).
         AlgodError: MockAlgodError,

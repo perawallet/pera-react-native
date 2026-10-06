@@ -86,22 +86,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...original,
-        useTransactionEncoder: vi.fn(() => ({
-            encodeSignedTransactions: vi.fn(),
-        })),
-        useAlgorandClient: vi.fn(() => ({
-            client: { algod: { sendRawTransaction: vi.fn() } },
-        })),
-    }
-})
-
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')

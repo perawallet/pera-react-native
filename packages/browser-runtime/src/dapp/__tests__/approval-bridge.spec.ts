@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
+    APPROVAL_KEEPALIVE_INTERVAL_MS,
+    APPROVAL_KEEPALIVE_MAX_MS,
     APPROVAL_WITHDRAWN,
     ApprovalWindowBridge,
     DAPP_APPROVAL_SCOPE,
@@ -27,6 +29,8 @@ import {
 // resolveOpenPopup/rejectOpenPopup, to observe the gap while the bridge is
 // still awaiting tryOpenActionPopup. Omitted entirely simulates older Chrome
 // where chrome.action.openPopup doesn't exist.
+const getPlatformInfoMock = vi.fn(async () => ({}))
+
 const makeChrome = (
     idOverrides?: number[],
     actionOpenPopup?: 'resolve' | 'reject' | 'manual',
@@ -55,6 +59,7 @@ const makeChrome = (
             runtime: {
                 id: 'ext-id',
                 getURL: (p: string) => `chrome-extension://ext-id/${p}`,
+                getPlatformInfo: getPlatformInfoMock,
                 onMessage: { addListener: (fn: Function) => (onMessage = fn) },
             },
             windows: {
@@ -161,6 +166,58 @@ describe('ApprovalWindowBridge', () => {
 
             expect(opts.left).toBeUndefined()
             expect(opts.top).toBeUndefined()
+        })
+    })
+
+    describe('worker keepalive', () => {
+        beforeEach(() => {
+            vi.useFakeTimers()
+            getPlatformInfoMock.mockClear()
+        })
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        it('calls an extension API on each interval while an approval is pending, and stops once it settles', async () => {
+            const { chromeLike, closeWindow } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            const decision = bridge.openConnectionProposal(
+                proposalCtx('k1', 'https://k.com'),
+            )
+            await vi.advanceTimersByTimeAsync(0)
+
+            await vi.advanceTimersByTimeAsync(
+                APPROVAL_KEEPALIVE_INTERVAL_MS * 3,
+            )
+            expect(getPlatformInfoMock).toHaveBeenCalledTimes(3)
+
+            closeWindow(100)
+            expect(await decision).toBeNull()
+            await vi.advanceTimersByTimeAsync(
+                APPROVAL_KEEPALIVE_INTERVAL_MS * 3,
+            )
+            expect(getPlatformInfoMock).toHaveBeenCalledTimes(3)
+        })
+
+        it('lets the worker idle out once an approval has been pending past the cap', async () => {
+            const { chromeLike } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+            void bridge.openConnectionProposal(
+                proposalCtx('k2', 'https://k.com'),
+            )
+            await vi.advanceTimersByTimeAsync(0)
+
+            await vi.advanceTimersByTimeAsync(APPROVAL_KEEPALIVE_MAX_MS)
+            const callsAtCap = getPlatformInfoMock.mock.calls.length
+            await vi.advanceTimersByTimeAsync(
+                APPROVAL_KEEPALIVE_INTERVAL_MS * 4,
+            )
+
+            expect(getPlatformInfoMock.mock.calls.length).toBeLessThanOrEqual(
+                callsAtCap + 1,
+            )
         })
     })
 

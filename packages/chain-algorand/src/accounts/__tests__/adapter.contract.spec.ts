@@ -12,6 +12,7 @@
 
 // @vitest-environment node
 // XHD's noble checks reject jsdom's Uint8Array realm.
+import { describe, expect, test } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
 import {
@@ -150,4 +151,22 @@ accountsContractTests(() => algorandAccountsAdapter, {
             }),
         ],
     },
+})
+
+describe('algorandAccountsAdapter.toAccountInformationAddress', () => {
+    test('builds the address an AccountInformation carries', () => {
+        const address =
+            algorandAccountsAdapter.toAccountInformationAddress(FUNDED)
+
+        expect(address.toString()).toBe(FUNDED)
+        expect(address.publicKey).toHaveLength(32)
+    })
+
+    test('throws for an address that is not valid', () => {
+        expect(() =>
+            algorandAccountsAdapter.toAccountInformationAddress(
+                'not-an-address',
+            ),
+        ).toThrow()
+    })
 })

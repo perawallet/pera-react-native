@@ -30,18 +30,10 @@ const mockGetSuggestedParams = vi.fn()
 const mockAddSignRequest = vi.fn()
 const mockSubmitAndAutoRefresh = vi.fn()
 const mockUseAllAccounts = vi.fn()
-const mockUseMinimumFeeConfig = vi.fn()
+const mockUseFeeConfig = vi.fn()
 const mockResolveMinFeeForSender = vi.fn()
 const mockNetworkStoreGetState = vi.fn()
 const mockGetOpenSubmissionAttemptsForIntent = vi.fn()
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
-    useFetchSuggestedMinFee: () => async () =>
-        BigInt((await mockGetSuggestedParams()).minFee),
-    compactSignedResults: (signed: unknown[]) =>
-        signed.filter(tx => tx !== null),
-}))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: { getState: () => mockNetworkStoreGetState() },
@@ -59,6 +51,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    useFeeConfig: () => mockUseFeeConfig(),
+    useFetchSuggestedMinFee: () => async () =>
+        BigInt((await mockGetSuggestedParams()).minFee),
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     submitAndAutoRefresh: (...args: unknown[]) =>
         mockSubmitAndAutoRefresh(...args),
@@ -113,7 +108,7 @@ describe('useSubmitRekeyMutation', () => {
             buildTransferTxs: vi.fn(),
             rekey: { buildTx: mockBuildRekeyTx },
         })
-        mockUseMinimumFeeConfig.mockReturnValue({
+        mockUseFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
         })

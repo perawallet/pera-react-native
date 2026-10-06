@@ -18,7 +18,7 @@ import { migrations } from '../migrations'
 import { createTestDatabase } from '../test-utils'
 import { initializeDatabase, resetDatabase, type Database } from '../database'
 
-const REBUILD_TAG = '0009_text_asset_ids'
+const REBUILD_TAG = '0010_text_asset_ids'
 
 const REBUILT_TABLES = [
     'account_asset_holdings',

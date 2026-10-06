@@ -15,6 +15,7 @@ import {
     Address,
     asAlgosdkTransaction,
     assemblePQSignedTransaction,
+    encodeTransaction,
     encodeAlgorandAddress,
     pqSigningDigest,
 } from '@perawallet/wallet-core-blockchain'
@@ -98,7 +99,7 @@ const signSingleAccountTransactions = async (
         const batch = txns.slice(start, start + SIGN_BATCH_SIZE)
         const payloads = pqInfo
             ? batch.map(txn => pqSigningDigest(txn))
-            : batch.map(txn => deps.encodeTransaction(txn))
+            : batch.map(txn => encodeTransaction(txn))
         const signatures = await deps.signPayloads(account.keyPairId, payloads)
 
         batch.forEach((txn, idx) => {

@@ -12,11 +12,13 @@
 
 import { Decimal } from 'decimal.js'
 import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
-import type {
-    TransactionHistoryItem,
-    TransactionBalanceImpact,
-    TransactionAssetSummary,
-    TransactionSwapGroupDetail,
+import {
+    TransactionHistoryStatuses,
+    type TransactionHistoryItem,
+    type TransactionHistoryStatus,
+    type TransactionBalanceImpact,
+    type TransactionAssetSummary,
+    type TransactionSwapGroupDetail,
 } from '../models/types'
 import type { AssetFactsResolver } from '../history-adapter'
 
@@ -126,8 +128,9 @@ export function toDb(item: TransactionHistoryItem) {
         txType: item.txType,
         sender: item.sender,
         receiver: item.receiver,
-        confirmedRound: item.confirmedRound,
+        confirmedRound: item.confirmedRound ?? null,
         roundTime: item.roundTime,
+        status: item.status ?? TransactionHistoryStatuses.CONFIRMED,
         fee: item.fee,
         groupId: item.groupId,
         amount: item.amount,
@@ -156,8 +159,9 @@ export function fromDb(
         sender: string
         assetSender: Nullable<string>
         receiver: Nullable<string>
-        confirmedRound: number
-        roundTime: number
+        confirmedRound: Nullable<number>
+        roundTime: Nullable<number>
+        status: TransactionHistoryStatus
         fee: Decimal
         groupId: Nullable<string>
         amount: Nullable<Decimal>
@@ -178,8 +182,10 @@ export function fromDb(
         sender: row.sender,
         assetSender: row.assetSender,
         receiver: row.receiver,
-        confirmedRound: row.confirmedRound,
-        roundTime: row.roundTime,
+        confirmedRound: row.confirmedRound ?? undefined,
+        status: row.status,
+        // Only a chain that can't time a pending transaction leaves this NULL.
+        roundTime: row.roundTime ?? 0,
         fee: row.fee,
         groupId: row.groupId,
         amount: row.amount,

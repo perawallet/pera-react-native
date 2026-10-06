@@ -65,8 +65,6 @@ const NATIVE_ASSET_ID = '0'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
-const QUANTUM_FLAG_KEY = 'enable_quantum_accounts'
-
 // Mint a real algo25 key in the in-memory keystore from the pinned
 // mnemonic and register the matching account in the accounts store.
 // Returns the populated account so callers can wire the send-funds
@@ -172,14 +170,7 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
         )
     })
 
-    it('Given the quantum flag is on and a quantum sender, when the confirmation screen settles, then the quantum-fee explainer renders in the fee row', async () => {
-        // Enable the flag through the real remote-config override so the
-        // whole useIsQuantumAccountsEnabled → useSignerFor chain is
-        // exercised, not a mocked hook.
-        useRemoteConfigStore
-            .getState()
-            .setConfigOverride(QUANTUM_FLAG_KEY, true)
-
+    it('Given a quantum sender, when the confirmation screen settles, then the quantum-fee explainer renders in the fee row', async () => {
         seedQuantumSender()
         useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
@@ -203,13 +194,9 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
         ).toBeTruthy()
     })
 
-    it('Given a standard algo25 sender, when the confirmation screen settles with the quantum flag on, then the quantum-fee explainer is absent', async () => {
-        // Flag on to prove the account type — not the flag alone — gates
-        // the explainer: a standard signer must never surface it.
-        useRemoteConfigStore
-            .getState()
-            .setConfigOverride(QUANTUM_FLAG_KEY, true)
-
+    it('Given a standard algo25 sender, when the confirmation screen settles, then the quantum-fee explainer is absent', async () => {
+        // The account type gates the explainer: a standard signer must never
+        // surface it.
         await seedAlgo25Sender()
         useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))

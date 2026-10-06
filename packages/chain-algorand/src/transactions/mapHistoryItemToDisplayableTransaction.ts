@@ -43,7 +43,10 @@ export const mapHistoryItemToDisplayableTransaction = (
         fee: toBigInt(item.fee),
         firstValid: 0n,
         lastValid: 0n,
-        confirmedRound: BigInt(item.confirmedRound),
+        confirmedRound:
+            item.confirmedRound === undefined
+                ? undefined
+                : BigInt(item.confirmedRound),
         roundTime: item.roundTime,
         roundTimeMillis: item.roundTime * 1000,
     }

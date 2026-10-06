@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { compactSignedResults } from '@perawallet/wallet-core-blockchain'
 import {
     LEGACY_CHAIN_ID,
     type PeraSignedTransaction,
@@ -101,7 +100,10 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                             // filters slots (unlike the ARC-0001 enqueue
                             // path), so every entry is expected to be
                             // present — the null guard is defensive only.
-                            const signedTxns = compactSignedResults(signed)
+                            const signedTxns = signed.filter(
+                                (tx): tx is PeraSignedTransaction =>
+                                    tx !== null,
+                            )
                             const txIds = await submitAndAutoRefresh(
                                 LEGACY_CHAIN_ID,
                                 signedTxns,

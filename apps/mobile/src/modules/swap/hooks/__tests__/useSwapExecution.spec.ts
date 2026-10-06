@@ -50,7 +50,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         constructor(
             readonly txIds: string[],
             readonly classification: string,
-            readonly algodError: unknown,
+            readonly nodeError: unknown,
         ) {
             super(`Submission ${classification}`)
         }
@@ -491,7 +491,7 @@ describe('useSwapExecution', () => {
             error: new (SubmissionError as unknown as new (
                 txIds: string[],
                 classification: string,
-                algodError: unknown,
+                nodeError: unknown,
             ) => Error)(
                 ['TXID'],
                 'unknown-outcome',

@@ -20,10 +20,10 @@ import {
     algosToMicroAlgosBigInt,
     toBigInt,
 } from '@perawallet/wallet-core-shared'
-import { Address } from '@perawallet/wallet-core-blockchain'
 import { isNativeAssetId } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
+import { accountsChainAdapters } from '../chain-adapter'
 import { getAccountBalance, getAccountHoldings } from '../db'
 
 const getAccountInformationQueryKey = (address: string, network: string) => [
@@ -65,7 +65,9 @@ export const useAccountInformationQuery = (
                 amount: balance
                     ? algosToMicroAlgosBigInt(balance.algoBalance)
                     : 0n,
-                address: Address.fromString(address),
+                address: accountsChainAdapters
+                    .get(scope.chainId)
+                    .toAccountInformationAddress(address),
                 status: balance?.status ?? 'Offline',
                 rewards: 0n,
                 // ALGO is persisted as a holding row for the home-screen reads,

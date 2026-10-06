@@ -20,6 +20,7 @@ import {
 import {
     algo25SignKeyId,
     mnemonicWordsToIndices,
+    quantumAddressCandidates,
     PQ_DERIVATION_CANONICAL,
     PQ_DERIVATION_LEGACY,
 } from '@perawallet/wallet-core-kms'
@@ -28,6 +29,15 @@ import { algorandAddressCodec } from '../address-codec'
 import { algorandAccountExists } from '../discovery'
 import { algorandQuantumDerivation } from '../quantum'
 import { algorandSingleKeyAccounts } from '../single-key-accounts'
+
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-kms')>()
+    return {
+        ...actual,
+        quantumAddressCandidates: vi.fn(actual.quantumAddressCandidates),
+    }
+})
 
 vi.mock('../discovery', async importOriginal => ({
     ...(await importOriginal<object>()),
@@ -45,6 +55,9 @@ const CANONICAL_ADDRESS =
     'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
 const LEGACY_ADDRESS =
     'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
+// The same words read as a standard (algo25) passphrase.
+const ALGO25_ADDRESS =
+    'T2A7FPKQ3YON2JT5A5CSN4JWNDMUGJY6WX4H6HEH2UPKWSPSPBG5O7X4UM'
 
 const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }
 const ALGO25_PUBLIC_KEY = new Uint8Array(32).fill(7)
@@ -337,6 +350,69 @@ describe('algorandSingleKeyAccounts', () => {
             const second = await importQuantum()
 
             expect(second[0].address).toBe(first[0].address)
+        })
+    })
+
+    describe('findQuantumAccountForAlgo25Mnemonic', () => {
+        const find = () =>
+            algorandSingleKeyAccounts.findQuantumAccountForAlgo25Mnemonic(
+                MNEMONIC_INDICES,
+                scope,
+            )
+
+        it('returns null when the algo25 account exists', async () => {
+            mockOnChain({ [ALGO25_ADDRESS]: true, [CANONICAL_ADDRESS]: true })
+
+            await expect(find()).resolves.toBeNull()
+            expect(algorandAccountExists).toHaveBeenCalledTimes(1)
+            expect(algorandAccountExists).toHaveBeenCalledWith(
+                ALGO25_ADDRESS,
+                'mainnet',
+            )
+        })
+
+        it('returns the canonical quantum address when it exists on chain', async () => {
+            mockOnChain({ [CANONICAL_ADDRESS]: true, [LEGACY_ADDRESS]: true })
+
+            await expect(find()).resolves.toBe(CANONICAL_ADDRESS)
+        })
+
+        it('returns the legacy quantum address when only it exists on chain', async () => {
+            mockOnChain({ [LEGACY_ADDRESS]: true })
+
+            await expect(find()).resolves.toBe(LEGACY_ADDRESS)
+        })
+
+        it('returns null when no account for these words exists on chain', async () => {
+            await expect(find()).resolves.toBeNull()
+        })
+
+        it('returns null when a probe fails rather than blocking the import', async () => {
+            mockOnChain({ [ALGO25_ADDRESS]: 'error' })
+            await expect(find()).resolves.toBeNull()
+
+            mockOnChain({
+                [CANONICAL_ADDRESS]: 'error',
+                [LEGACY_ADDRESS]: true,
+            })
+            await expect(find()).resolves.toBeNull()
+        })
+
+        it('returns null when Falcon keygen is unavailable rather than blocking the import', async () => {
+            vi.mocked(quantumAddressCandidates).mockImplementationOnce(() => {
+                throw new Error('falcon-1024 failed to load')
+            })
+            mockOnChain({ [CANONICAL_ADDRESS]: true })
+
+            await expect(find()).resolves.toBeNull()
+        })
+
+        it('does not derive quantum keys when the algo25 account exists', async () => {
+            mockOnChain({ [ALGO25_ADDRESS]: true })
+
+            await find()
+
+            expect(quantumAddressCandidates).not.toHaveBeenCalled()
         })
     })
 })

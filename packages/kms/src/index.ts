@@ -37,6 +37,7 @@ export {
     deriveLiquidAuthMainKey,
 } from './crypto/hdwallet-utils'
 export {
+    algo25PublicKeyFromSeed,
     algo25SecretKeyToIndices,
     algo25SeedToIndices,
     indicesToAlgo25Seed,

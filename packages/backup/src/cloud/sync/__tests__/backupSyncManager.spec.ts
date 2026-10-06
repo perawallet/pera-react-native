@@ -157,7 +157,6 @@ vi.mock('../../store', () => ({
 // manager reaches their state only through the injected sources.
 vi.mock('@perawallet/wallet-core-accounts', () => ({}))
 vi.mock('@perawallet/wallet-core-contacts', () => ({}))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({}))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { backupBaseUrl: 'https://backup.example.com' },

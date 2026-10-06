@@ -27,7 +27,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 import type { Network } from '@perawallet/wallet-core-config'
 import type { Decimal } from 'decimal.js'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
@@ -114,6 +114,10 @@ export interface ReviewerChainAdapter {
     ): DelegatedUnsignableReason | null
     /** Never throws; anything that isn't cleanly printable comes back as hex. */
     decodeArbitraryDataForDisplay(data: string): ArbitraryDataDisplay
+    /** The review model of one unsigned transaction. */
+    toDisplayableTransaction(
+        transaction: PeraTransaction,
+    ): Nullable<PeraDisplayableTransaction>
 }
 
 export const reviewerChainAdapters =
@@ -184,6 +188,12 @@ export type AssignMinimumFeesToGroupResult = {
     transactions: PeraTransaction[]
     /** Empty when nothing was adjusted */
     adjustments: FeeAdjustment[]
+}
+
+export type MinFeeForSenderResult = {
+    /** Native base units; undefined while fee parameters load or when there is no sender. */
+    minFee: bigint | undefined
+    isPending: boolean
 }
 
 export type AssignFeeToGroup = (
@@ -286,7 +296,6 @@ export type LocalKeySigningDeps = {
      * selection and signer selection must never be able to disagree.
      */
     getPQSigningInfo: (keyPairId: string) => PQSigningInfo | null
-    encodeTransaction: (txn: PeraTransaction) => Uint8Array
     /**
      * Yields to the event loop between batches. Injectable so a headless
      * caller can run the batching logic without React's scheduling in play.
@@ -619,6 +628,34 @@ export type CompleteMultisigHandoffArgs = {
 }
 
 /**
+ * `minTxnFee` and `assetOptInMinBalance` are in the native asset's base units.
+ * `pqMultiplier` multiplies the fee when the effective signer is post-quantum.
+ * `assetOptInMinBalance` is the extra balance an account must hold per asset
+ * it opts into.
+ */
+export type ChainFeeConfig = {
+    minTxnFee: bigint
+    pqMultiplier: bigint
+    assetOptInMinBalance: bigint
+}
+
+export type UseSuggestedMinFeeQueryResult = {
+    /** Native base units; `undefined` until the first successful load, kept when a later refetch fails. */
+    suggestedMinFee: Optional<bigint>
+    isPending: boolean
+    isError: boolean
+}
+
+export type FetchSuggestedMinFeeOptions = {
+    /** Returned instead of throwing when the fetch fails. */
+    fallback?: bigint
+}
+
+export type FetchSuggestedMinFee = (
+    options?: FetchSuggestedMinFeeOptions,
+) => Promise<bigint>
+
+/**
  * The chain-specific legs of planning a signature request; registered by the
  * chain package.
  */
@@ -638,14 +675,30 @@ export interface PlannerChainAdapter {
 
     minFeeForSender(params: ResolveMinFeeForSenderParams): bigint
     /**
-     * Raises underfunded fees on the signable slots and returns the group
-     * unchanged, by reference, when nothing needs raising.
+     * React hooks, run in the caller's render; the imperative fetch shares the
+     * query's cache and staleness.
+     */
+    useFeeConfig: () => ChainFeeConfig
+    useSuggestedMinFeeQuery: () => UseSuggestedMinFeeQueryResult
+    useFetchSuggestedMinFee: () => FetchSuggestedMinFee
+    /**
+     * A React hook giving the minimum fee for a transaction `senderAddress`
+     * sends, from live network fee parameters and remote config.
+     */
+    useMinFeeForSender(senderAddress: string | undefined): MinFeeForSenderResult
+    /**
+     * A React hook giving the group fee assigner. It reads accounts at call
+     * time, and its network fee fetch never throws. The assigner raises
+     * underfunded fees on the signable slots and returns the group unchanged,
+     * by reference, when nothing needs raising.
      * @throws InvalidSignableDataError when a fee must be raised but the group is invalid as received.
      */
-    assignGroupFees(
-        params: AssignFeeToGroupParams,
-        deps: AssignFeeToGroupDeps,
-    ): Promise<AssignMinimumFeesToGroupResult>
+    useAssignFeeToGroup(): AssignFeeToGroup
+    /**
+     * Wire bytes without the signing-domain prefix. A hardware device signs
+     * these, adding the prefix itself, and the multisig backend stores them.
+     */
+    encodeUnsignedTransaction(transaction: PeraTransaction): Uint8Array
     reviewGroupFees(
         transactions: PeraDisplayableTransaction[],
         signableAddresses: Set<string>,

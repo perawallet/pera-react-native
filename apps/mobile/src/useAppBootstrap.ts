@@ -12,11 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import * as SplashScreen from 'expo-splash-screen'
-import {
-    algorandSafeQuerySerialize,
-    algorandSafeQueryParse,
-    derivePQKeygenSeed,
-} from '@perawallet/wallet-core-blockchain'
+import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain'
 import { seedNativeAssets } from '@perawallet/wallet-core-assets'
 import {
     createSyncStorePorts,
@@ -26,7 +22,12 @@ import {
     initializeDatabase,
     getDatabase,
 } from '@perawallet/wallet-core-database'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    parseTypedJson,
+    stringifyTypedJson,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     readRemoteConfigWithOverrides,
     RemoteConfigKeys,
@@ -240,8 +241,8 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
                 const reactQueryPersistor = createAsyncStoragePersister({
                     storage: provider.keyValueStorage,
-                    serialize: algorandSafeQuerySerialize,
-                    deserialize: algorandSafeQueryParse,
+                    serialize: stringifyTypedJson,
+                    deserialize: parseTypedJson,
                 })
 
                 setPersister(reactQueryPersistor)

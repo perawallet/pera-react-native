@@ -19,7 +19,9 @@ import {
     consumePendingImportMnemonic,
     DuplicateAccountError,
     MNEMONIC_WORD_COUNT,
+    useFindQuantumAccountForMnemonic,
     useImportAccount,
+    type ImportAccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
@@ -30,8 +32,13 @@ import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
+import {
+    deferToNextCycle,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
+import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { useModalState } from '@hooks/useModalState'
 import { useTabHandoff } from '@hooks/useTabHandoff'
 import { useDeepLink, DeeplinkType } from '@modules/deeplink'
@@ -41,6 +48,10 @@ import {
     ImportAccountSupportOptionsContent,
     type ImportAccountSupportOptionsContentResult,
 } from './ImportAccountSupportOptionsContent'
+import {
+    QuantumPassphraseDetectedContent,
+    type QuantumPassphraseDetectedContentResult,
+} from './QuantumPassphraseDetectedContent'
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
     const {
@@ -48,6 +59,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportAccount'>>()
     const navigation = useAppNavigation()
     const importAccount = useImportAccount()
+    const findQuantumAccount = useFindQuantumAccountForMnemonic()
+    const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
     const markBackupComplete = useMarkMnemonicBackupComplete()
     const { showToast, errorToast } = useToast()
     const { t } = useLanguage()
@@ -122,6 +135,44 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    // A quantum passphrase is also 25 words, so importing one as a standard
+    // account would mint a different, empty account. Null means import nothing.
+    // Without platform quantum support there is no Falcon to derive with.
+    const resolveImportType = useCallback(
+        async (
+            mnemonicIndices: Uint16Array,
+        ): Promise<Nullable<ImportAccountType>> => {
+            if (accountType !== 'algo25' || !isQuantumAccountsEnabled) {
+                return accountType
+            }
+            const quantumAddress = await findQuantumAccount(mnemonicIndices)
+            if (!quantumAddress) return accountType
+
+            const choice =
+                await requestBottomSheet<QuantumPassphraseDetectedContentResult>(
+                    {
+                        contents: (
+                            <QuantumPassphraseDetectedContent
+                                address={quantumAddress}
+                            />
+                        ),
+                        options: {
+                            size: 'auto',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
+                    },
+                )
+            return choice === 'import-quantum' ? 'quantum' : null
+        },
+        [
+            accountType,
+            findQuantumAccount,
+            isQuantumAccountsEnabled,
+            requestBottomSheet,
+        ],
+    )
+
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
         void deferToNextCycle(async () => {
@@ -140,9 +191,12 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             }
 
             try {
+                const importType = await resolveImportType(mnemonicIndices)
+                if (!importType) return
+
                 const result = await importAccount({
                     mnemonicIndices,
-                    type: accountType,
+                    type: importType,
                 })
 
                 if (Array.isArray(result)) {
@@ -193,9 +247,9 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         })
     }, [
         importAccount,
+        resolveImportType,
         markBackupComplete,
         getMnemonicIndices,
-        accountType,
         navigation,
         showToast,
         errorToast,

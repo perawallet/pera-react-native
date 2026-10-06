@@ -337,12 +337,12 @@ describe('asset sync queries', () => {
                     sql`insert into assets_pera (asset_id, network, asset_type, updated_at) values ('1', 'mainnet', 'standard_asset', ${cachedAt})`,
                 )
 
-                // Stops before 0009, which rebuilds the asset caches.
+                // Stops before 0010, which rebuilds the asset caches.
                 await runMigrations(
                     upgrading.db,
                     Object.fromEntries(
                         Object.entries(migrations).filter(
-                            ([tag]) => Number(tag.slice(0, 4)) < 9,
+                            ([tag]) => Number(tag.slice(0, 4)) < 10,
                         ),
                     ),
                 )

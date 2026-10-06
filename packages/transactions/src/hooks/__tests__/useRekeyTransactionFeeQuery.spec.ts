@@ -20,8 +20,8 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 const mockBuildRekeyTx = vi.fn()
 const mockUseNetwork = vi.fn(() => ({ network: 'mainnet' }))
 const mockUseAllAccounts = vi.fn()
-const mockUseMinimumFeeConfig = vi.fn()
-const mockUseSuggestedParametersQuery = vi.fn()
+const mockUseFeeConfig = vi.fn()
+const mockUseSuggestedMinFeeQuery = vi.fn()
 const mockResolveMinFeeForSender = vi.fn()
 
 // Full replacement (not importActual): the real barrels pull in
@@ -31,11 +31,6 @@ const mockResolveMinFeeForSender = vi.fn()
 // packages/chain-algorand/src/signing/__tests__/minFeeResolver.spec.ts —
 // these tests verify only that this hook wires the resolver's inputs
 // correctly and applies the override guard on its output.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
-    useSuggestedParametersQuery: () => mockUseSuggestedParametersQuery(),
-}))
-
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => mockUseNetwork(),
 }))
@@ -45,6 +40,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    useFeeConfig: () => mockUseFeeConfig(),
+    useSuggestedMinFeeQuery: () => mockUseSuggestedMinFeeQuery(),
     resolveMinFeeForSender: (...args: unknown[]) =>
         mockResolveMinFeeForSender(...args),
 }))
@@ -94,11 +91,12 @@ beforeEach(() => {
         buildTransferTxs: vi.fn(),
         rekey: { buildTx: mockBuildRekeyTx },
     })
-    mockUseSuggestedParametersQuery.mockReturnValue({
-        data: { minFee: 1000n },
+    mockUseSuggestedMinFeeQuery.mockReturnValue({
+        suggestedMinFee: 1000n,
         isPending: false,
+        isError: false,
     })
-    mockUseMinimumFeeConfig.mockReturnValue({
+    mockUseFeeConfig.mockReturnValue({
         minTxnFee: 1000n,
         pqMultiplier: 3n,
     })
@@ -147,9 +145,10 @@ describe('useRekeyTransactionFeeQuery', () => {
     })
 
     it('stays pending until the shared suggested-params query resolves', async () => {
-        mockUseSuggestedParametersQuery.mockReturnValue({
-            data: undefined,
+        mockUseSuggestedMinFeeQuery.mockReturnValue({
+            suggestedMinFee: undefined,
             isPending: true,
+            isError: false,
         })
         const { wrapper } = buildWrapper()
 
@@ -166,8 +165,8 @@ describe('useRekeyTransactionFeeQuery', () => {
         // Offline / algod down: the shared query rejects fast (networkMode
         // 'always'). The fee query must still settle — a permanently pending
         // fee leaves the confirm CTA disabled with no error and no retry.
-        mockUseSuggestedParametersQuery.mockReturnValue({
-            data: undefined,
+        mockUseSuggestedMinFeeQuery.mockReturnValue({
+            suggestedMinFee: undefined,
             isPending: false,
             isError: true,
         })
@@ -205,7 +204,7 @@ describe('useRekeyTransactionFeeQuery', () => {
     it('follows the resolved minimum fee when the built transaction has no fee', async () => {
         // Non-default config: the resolver floors at the 2000 µAlgo config
         // minimum, so the displayed fee is 0.002 ALGO.
-        mockUseMinimumFeeConfig.mockReturnValue({
+        mockUseFeeConfig.mockReturnValue({
             minTxnFee: 2000n,
             pqMultiplier: 3n,
         })

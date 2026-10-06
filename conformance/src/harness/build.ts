@@ -13,10 +13,7 @@
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import algosdk, { type modelsv2, type Transaction } from 'algosdk'
 
-import {
-    encodeSignedTransaction,
-    encodeTransaction,
-} from '@perawallet/wallet-core-blockchain/utils/transact'
+import { encodeSignedTransaction } from '@perawallet/wallet-core-blockchain/utils/transact'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { resolvePQSigningInfo } from '@perawallet/wallet-core-kms/crypto/pq/resolvePQSigningInfo'
 import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-chain-algorand/signing/local-key/signTransactionsWithLocalKey'
@@ -105,7 +102,6 @@ export const localKeySigningDeps = (
         Promise.all(payloads.map(payload => keyStore.sign(keyPairId, payload))),
     getPQSigningInfo: keyPairId =>
         resolvePQSigningInfo(keyStore.store.state.keys, keyPairId),
-    encodeTransaction,
 })
 
 /**

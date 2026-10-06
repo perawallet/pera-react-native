@@ -92,6 +92,7 @@ describe('submission ledger repository', () => {
         // Terminal rows are not open — the txid query only surfaces open ones.
         const byTxId = await getSubmissionAttemptsByTxIds({
             db,
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: ['TXID-REKEY-1'],
         })
         expect(byTxId).toHaveLength(0)
@@ -293,16 +294,40 @@ describe('submission ledger repository', () => {
 
         const matches = await getSubmissionAttemptsByTxIds({
             db,
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: ['TXID-GROUP-2', 'UNRELATED'],
         })
         expect(matches).toHaveLength(1)
         expect(matches[0]!.txIds).toEqual(['TXID-GROUP-2'])
     })
 
+    it('finds only the attempts recorded under the queried scope', async () => {
+        await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+            txIds: ['TXID-SHARED'],
+            flow: 'generic',
+        })
+        const testnetId = await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: ['TXID-SHARED'],
+            flow: 'generic',
+        })
+
+        const matches = await getSubmissionAttemptsByTxIds({
+            db,
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: ['TXID-SHARED'],
+        })
+        expect(matches.map(match => match.id)).toEqual([testnetId])
+    })
+
     it('returns nothing for an empty txid query', async () => {
         await recordRekey()
         const matches = await getSubmissionAttemptsByTxIds({
             db,
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: [],
         })
         expect(matches).toHaveLength(0)

@@ -22,17 +22,6 @@ import type {
 
 const getNetworkMock = vi.fn(() => ({ network: 'testnet' }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1, 0xa2])),
-    }
-})
-
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')

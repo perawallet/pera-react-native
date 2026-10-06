@@ -43,7 +43,7 @@ describe('holdings across the asset cache rebuild', () => {
         const result = createTestDatabase()
         db = result.db
         teardown = result.teardown
-        await runMigrations(db, migrationsBefore('0009_text_asset_ids'))
+        await runMigrations(db, migrationsBefore('0010_text_asset_ids'))
         await upsertAccountBalance({
             db,
             accountAddress: 'ADDR1',

@@ -30,6 +30,7 @@ import type { NativeStoredCredential } from '@perawallet/wallet-extension-passke
 import {
     credentialToPasskey,
     keyToPasskey,
+    normalizeTimestamp,
     PASSKEY_MIGRATION_NEEDED,
 } from '../passkey'
 import { fromStandardBase64 } from '../../native/nativeProviderRecord'
@@ -188,5 +189,23 @@ describe('credentialToPasskey', () => {
         )
 
         expect(passkey?.displayName).toBe('Alice Smith')
+    })
+})
+
+describe('normalizeTimestamp', () => {
+    it('converts fractional seconds to whole milliseconds', () => {
+        expect(normalizeTimestamp(1_700_000_000.123456)).toBe(1_700_000_000_123)
+    })
+
+    it('truncates a fractional milliseconds value', () => {
+        expect(normalizeTimestamp(1_700_000_000_123.9)).toBe(1_700_000_000_123)
+    })
+
+    it('leaves whole milliseconds unchanged', () => {
+        expect(normalizeTimestamp(1_700_000_000_123)).toBe(1_700_000_000_123)
+    })
+
+    it('returns undefined when there is no timestamp', () => {
+        expect(normalizeTimestamp(undefined)).toBeUndefined()
     })
 })

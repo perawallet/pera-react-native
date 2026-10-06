@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { AlgodError } from '@perawallet/wallet-core-blockchain'
 import {
     AppError,
     ErrorCategory,
@@ -163,33 +162,31 @@ export type SubmissionErrorClassification =
     | 'rejected-by-node'
     | 'unknown-outcome'
 
+export type NodeSubmitError = Error & { readonly code: string }
+
 /**
  * A broadcast failure that keeps the evidence needed to be honest about it:
- * the locally derived txIds (computable before the POST) and the structured
- * algod error. `retryable` is false only for `rejected-by-node` — resending
+ * the locally derived txIds (computable before the POST) and the node's
+ * structured error. `retryable` is false only for `rejected-by-node` — resending
  * identical bytes a node already refused cannot succeed.
  */
 export class SubmissionError extends PipelineError {
     readonly txIds: string[]
     readonly classification: SubmissionErrorClassification
-    readonly algodError: AlgodError
+    readonly nodeError: NodeSubmitError
 
     constructor(
         txIds: string[],
         classification: SubmissionErrorClassification,
-        algodError: AlgodError,
+        nodeError: NodeSubmitError,
     ) {
-        super(
-            `Submission ${classification}: ${algodError.message}`,
-            algodError,
-            {
-                retryable: classification !== 'rejected-by-node',
-                params: { txIds, classification, code: algodError.code },
-            },
-        )
+        super(`Submission ${classification}: ${nodeError.message}`, nodeError, {
+            retryable: classification !== 'rejected-by-node',
+            params: { txIds, classification, code: nodeError.code },
+        })
         this.txIds = txIds
         this.classification = classification
-        this.algodError = algodError
+        this.nodeError = nodeError
     }
 }
 

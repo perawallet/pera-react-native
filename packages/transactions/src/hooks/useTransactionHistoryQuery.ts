@@ -404,6 +404,8 @@ export const useTransactionHistoryQuery = (
                 beforeRound !== undefined
                     ? result.transactions.filter(
                           tx =>
+                              // A row with no round can't overlap the cursor.
+                              tx.confirmedRound === undefined ||
                               tx.confirmedRound < beforeRound ||
                               (tx.confirmedRound === beforeRound &&
                                   !beforeRoundTxIds.has(tx.id)),

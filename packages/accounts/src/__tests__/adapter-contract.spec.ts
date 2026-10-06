@@ -68,6 +68,9 @@ const fixtureAdapter: AccountsChainAdapter = {
             observedRound: null,
         }
     },
+    toAccountInformationAddress: () => {
+        throw new Error('read deferred with the chain state model')
+    },
     fetchAccountInformation: () =>
         Promise.reject(new Error('read deferred with the chain state model')),
     accountExists: async address => (await getAccount(address)) !== null,

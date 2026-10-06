@@ -13,7 +13,6 @@
 import { useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useTransactionEncoder } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     isMultisigAccount,
@@ -100,7 +99,6 @@ const buildResponses = (
 export const useMultisigTransportAdapters =
     (): UseMultisigTransportAdaptersResult => {
         const { network } = useNetwork()
-        const { encodeTransactionRaw } = useTransactionEncoder()
         const queryClient = useQueryClient()
         const allAccounts = useAllAccounts()
         const deviceId = useDeviceID(network)
@@ -153,11 +151,14 @@ export const useMultisigTransportAdapters =
                 // the wire pattern the backend was tested against and isolates
                 // per-signer failures from the already-succeeded propose.
                 const [proposer, ...cosigners] = signers
-                // No "TX" domain-separation prefix — the backend re-applies it
-                // when verifying, so the wire payload must be unprefixed. Same
-                // as Ledger, which adds the prefix on-device.
+                // Unprefixed: the backend re-applies the signing-domain prefix
+                // when verifying, as a hardware device does on-device.
                 const rawTransactionsBase64 = signedData.signed.map(stx =>
-                    encodeToBase64(encodeTransactionRaw(stx.txn)),
+                    encodeToBase64(
+                        plannerAdapterFor(network).encodeUnsignedTransaction(
+                            stx.txn,
+                        ),
+                    ),
                 )
 
                 const proposeParams: ProposeSignRequest = {
@@ -220,7 +221,7 @@ export const useMultisigTransportAdapters =
                     proposerAddress: proposer.address,
                 }
             },
-            [encodeTransactionRaw, network, queryClient],
+            [network, queryClient],
         )
 
         const addSignatures = useCallback<AddSignaturesFn>(
@@ -367,7 +368,12 @@ export const useMultisigTransportAdapters =
                     )
                 }
                 const rawTransactionsBase64 = input.signedTransactions.map(
-                    stx => encodeToBase64(encodeTransactionRaw(stx.txn)),
+                    stx =>
+                        encodeToBase64(
+                            plannerAdapterFor(
+                                network,
+                            ).encodeUnsignedTransaction(stx.txn),
+                        ),
                 )
                 return useDraftSignRequestStore.getState().createDraft({
                     network,
@@ -381,7 +387,7 @@ export const useMultisigTransportAdapters =
                     proposeType: input.proposeType,
                 })
             },
-            [encodeTransactionRaw, msigByAddress, network],
+            [msigByAddress, network],
         )
 
         return {
