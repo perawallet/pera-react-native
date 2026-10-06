@@ -114,6 +114,9 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
     return {
         ...actual,
+        useIsNativeAssetId: () => (id: unknown) =>
+            id != null && String(id) === '0',
+        isNativeAssetId: (_chainId: string, id: string) => id === '0',
         useNativeAsset: () => NATIVE_ASSET,
         nativeAssetFor: () => NATIVE_ASSET,
         isNativeAssetId: (_chainId: string, assetId: string) =>

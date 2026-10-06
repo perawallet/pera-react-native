@@ -29,8 +29,8 @@ import {
     STALE_OPEN_ATTEMPT_MS,
 } from '@perawallet/wallet-core-signing'
 import { submitAndAutoRefresh } from '../signing/submission/submitAndAutoRefresh'
+import { isAlgorandNativeAssetId } from '../descriptor'
 import {
-    ALGO_ASSET_ID,
     encodeToBase64,
     logger,
     type Network,
@@ -169,7 +169,7 @@ export const executeAlgorandSwap = async (
                 .accountInformation(account.address)
                 .do()
             const holdsAssetOut =
-                quote.assetOut.assetId === ALGO_ASSET_ID ||
+                isAlgorandNativeAssetId(quote.assetOut.assetId) ||
                 (info.assets ?? []).some(
                     holding =>
                         String(holding.assetId) === quote.assetOut.assetId,

@@ -16,12 +16,12 @@ import {
     type AccountInformation,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    isAlgoAssetId,
     type Optional,
     algosToMicroAlgosBigInt,
     toBigInt,
 } from '@perawallet/wallet-core-shared'
 import { Address } from '@perawallet/wallet-core-blockchain'
+import { isNativeAssetId } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 import { getAccountBalance, getAccountHoldings } from '../db'
@@ -72,7 +72,7 @@ export const useAccountInformationQuery = (
                 // but AccountInformation.assets is ASAs-only — the algo balance
                 // is carried separately in `amount` above.
                 assets: holdings
-                    .filter(h => !isAlgoAssetId(h.assetId))
+                    .filter(h => !isNativeAssetId(scope.chainId, h.assetId))
                     .map(h => ({
                         assetId: BigInt(h.assetId),
                         amount: toBigInt(h.amount),

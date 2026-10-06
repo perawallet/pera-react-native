@@ -78,6 +78,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 const NATIVE_ASSET = vi.hoisted(() => ({ decimals: 6 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useNativeAsset: () => NATIVE_ASSET,
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane.
     getKnownAssetId: (
@@ -98,9 +100,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
     return {
-        ALGO_ASSET_ID: '0',
-        isAlgoAssetId: (assetId: string | number | bigint) =>
-            String(assetId) === '0',
         generateOrderedUniqueId: () => 'id',
         logger: {
             warn: vi.fn(),

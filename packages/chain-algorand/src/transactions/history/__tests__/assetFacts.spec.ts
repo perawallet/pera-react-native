@@ -11,40 +11,45 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { resolveAssetFacts } from '../algoAssetFacts'
+import { resolveAlgorandAssetFacts } from '../assetFacts'
 
 const PLACEHOLDER = { unitName: 'asset(0)', decimals: 0 }
 
-describe('resolveAssetFacts', () => {
+describe('resolveAlgorandAssetFacts', () => {
     it('overrides the supplied facts for ALGO', () => {
-        expect(resolveAssetFacts('0', PLACEHOLDER)).toEqual({
+        expect(resolveAlgorandAssetFacts('0', PLACEHOLDER)).toEqual({
             unitName: 'ALGO',
             decimals: 6,
         })
     })
 
-    it('recognizes the numeric id that pre-migration rows still hold', () => {
-        expect(resolveAssetFacts(0, PLACEHOLDER)).toEqual({
-            unitName: 'ALGO',
-            decimals: 6,
-        })
-    })
+    it.each([0, 0n])(
+        'recognizes the %p id that cached and indexer rows can hold',
+        id => {
+            expect(resolveAlgorandAssetFacts(id, PLACEHOLDER)).toEqual({
+                unitName: 'ALGO',
+                decimals: 6,
+            })
+        },
+    )
 
     it('leaves a non-ALGO asset untouched', () => {
         const facts = { unitName: 'asset(31566704)', decimals: 0 }
 
-        expect(resolveAssetFacts('31566704', facts)).toEqual(facts)
+        expect(resolveAlgorandAssetFacts('31566704', facts)).toEqual(facts)
     })
 
     it('leaves an id above 2^53 untouched', () => {
         const facts = { unitName: 'BIG', decimals: 2 }
 
-        expect(resolveAssetFacts('18446744073709551615', facts)).toEqual(facts)
+        expect(
+            resolveAlgorandAssetFacts('18446744073709551615', facts),
+        ).toEqual(facts)
     })
 
     it.each([null, undefined, ''])('treats %p as not ALGO', id => {
         const facts = { unitName: '', decimals: 6 }
 
-        expect(resolveAssetFacts(id, facts)).toEqual(facts)
+        expect(resolveAlgorandAssetFacts(id, facts)).toEqual(facts)
     })
 })

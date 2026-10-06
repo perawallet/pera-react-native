@@ -25,6 +25,7 @@ const TOKEN = '887406851'
 // test. Ids are inlined rather than read from the constants below because a
 // vi.mock factory is hoisted above them.
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    nativeAssetFor: () => ({ assetId: '0' }),
     getKnownAssetId: (
         _key: string,
         { networkId: network }: { networkId: string },

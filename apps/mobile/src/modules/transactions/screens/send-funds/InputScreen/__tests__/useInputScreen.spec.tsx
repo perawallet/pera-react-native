@@ -86,6 +86,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 const NATIVE_ASSET = vi.hoisted(() => ({ id: '0', decimals: 6 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
     useNativeAsset: () => NATIVE_ASSET,

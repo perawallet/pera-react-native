@@ -337,7 +337,15 @@ describe('asset sync queries', () => {
                     sql`insert into assets_pera (asset_id, network, asset_type, updated_at) values ('1', 'mainnet', 'standard_asset', ${cachedAt})`,
                 )
 
-                await runMigrations(upgrading.db, migrations)
+                // Stops before 0009, which rebuilds the asset caches.
+                await runMigrations(
+                    upgrading.db,
+                    Object.fromEntries(
+                        Object.entries(migrations).filter(
+                            ([tag]) => Number(tag.slice(0, 4)) < 9,
+                        ),
+                    ),
+                )
 
                 const result = await getStaleOrMissingAssetIds({
                     db: upgrading.db,

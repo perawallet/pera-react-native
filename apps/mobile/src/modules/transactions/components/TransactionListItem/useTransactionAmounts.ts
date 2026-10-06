@@ -13,7 +13,10 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import {
+    useNativeAsset,
+    useSingleAssetDetailsQuery,
+} from '@perawallet/wallet-core-assets'
 import {
     isOutgoingFor,
     type TransactionHistoryItem,
@@ -72,6 +75,7 @@ export const useTransactionAmounts = (
 ): UseTransactionAmountsResult => {
     const account = useSelectedAccount()
     const userAddress = account?.address ?? ''
+    const nativeAssetId = useNativeAsset().assetId
     const assetId = transaction.asset?.assetId?.toString() ?? ''
     const { data: assetDetails } = useSingleAssetDetailsQuery(assetId)
     const isOutgoing = isOutgoingFor(transaction, userAddress)
@@ -107,6 +111,7 @@ export const useTransactionAmounts = (
                 createAlgoAmount(
                     netTransferAmount(transaction, userAddress, isOutgoing),
                     isOutgoing,
+                    nativeAssetId,
                 ),
             )
         }
@@ -143,7 +148,7 @@ export const useTransactionAmounts = (
         }
 
         return result
-    }, [transaction, userAddress, isOutgoing, assetDetails])
+    }, [transaction, userAddress, isOutgoing, assetDetails, nativeAssetId])
 
     const amounts = useMemo(
         () => allAmounts.slice(0, MAX_VISIBLE_AMOUNTS),

@@ -63,7 +63,6 @@ import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/routes'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 
 import {
@@ -78,6 +77,8 @@ import {
     QUANTUM_TEST_MNEMONIC_INDICES,
     enableQuantumFlag,
 } from './__fixtures__/quantum'
+
+const NATIVE_ASSET_ID = '0'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
@@ -165,7 +166,7 @@ describe('send from quantum account', () => {
         await enableQuantumFlag()
         await seedQuantumSender()
 
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

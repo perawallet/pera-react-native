@@ -17,7 +17,6 @@ import type {
     ChainScope,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import type {
     AssetOptInTxsParams,
     AssetOptOutTxsParams,
@@ -26,6 +25,7 @@ import type {
     RekeyTxParams,
     TransferTxsParams,
 } from '@perawallet/wallet-core-transactions'
+import { isAlgorandNativeAssetId } from '../descriptor'
 import { algorandNetworkOf } from '../legacy-network'
 
 // Built per call so a custom-network edit is picked up, as useAlgorandClient's
@@ -55,7 +55,7 @@ export const buildTransferTxs = ({
     fee,
 }: TransferTxsParams): Promise<PeraTransaction[]> => {
     const composer = clientFor(scope).newGroup()
-    if (isAlgoAssetId(assetId)) {
+    if (isAlgorandNativeAssetId(assetId)) {
         composer.addPayment({
             sender,
             receiver,

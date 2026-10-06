@@ -22,10 +22,9 @@ import {
     useAccountAssetBalanceQuery,
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
-import { getKnownAssetId } from '@perawallet/wallet-core-assets'
+import { getKnownAssetId, useNativeAsset } from '@perawallet/wallet-core-assets'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { USDC_RAMP_TOKEN_ID } from '@modules/onramp'
@@ -76,6 +75,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // so it needs the app-wide navigation type rather than one param list.
     const navigation = useAppNavigation()
     const { network } = useNetwork()
+    const nativeAsset = useNativeAsset()
     const isAutoFunding = useIsCardAutoFundingActive()
     const { transactions, isLoading } = useCardTransactionsQuery()
 
@@ -106,7 +106,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // Add Funds can swap into USDC or has to buy it.
     const { data: linkedAlgo } = useAccountAssetBalanceQuery(
         isAutoFunding ? (fundingAccount ?? undefined) : undefined,
-        ALGO_ASSET_ID,
+        nativeAsset.assetId,
     )
     const hasLinkedAlgo =
         canReadLinkedBalance && (linkedAlgo?.amount.gt(0) ?? false)
@@ -165,7 +165,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
             navigation.navigate('TabBar', {
                 screen: 'Swap',
                 params: {
-                    assetInId: ALGO_ASSET_ID,
+                    assetInId: nativeAsset.assetId,
                     assetOutId: usdcAssetId ?? undefined,
                 },
             })
@@ -178,6 +178,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     }, [
         fundingAccount,
         hasLinkedAlgo,
+        nativeAsset.assetId,
         usdcAssetId,
         setSelectedAccountAddress,
         navigation,

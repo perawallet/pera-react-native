@@ -13,8 +13,8 @@
 import { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import { isAlgorandNativeAssetId } from '../descriptor'
 
-const ALGO_ASSET_ID = '0'
 const ZERO = new Decimal(0)
 
 export type SwapAlgoShortfallInput = {
@@ -54,11 +54,11 @@ export const computeSwapAlgoShortfall = ({
     const amountOut = quote.amountOutWithSlippage ?? quote.amountOut ?? ZERO
     const peraFee = quote.peraFeeAmount ?? ZERO
 
-    const isAlgoIn = quote.assetIn.assetId === ALGO_ASSET_ID
-    const isAlgoOut = quote.assetOut.assetId === ALGO_ASSET_ID
+    const isAlgoIn = isAlgorandNativeAssetId(quote.assetIn.assetId)
+    const isAlgoOut = isAlgorandNativeAssetId(quote.assetOut.assetId)
     const isPeraFeeInAlgo =
         quote.peraFeeAsset == null ||
-        quote.peraFeeAsset.assetId === ALGO_ASSET_ID
+        isAlgorandNativeAssetId(quote.peraFeeAsset.assetId)
 
     const required = minBalance.plus(optInMbr ?? ZERO)
 

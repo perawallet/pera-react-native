@@ -201,6 +201,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     nativeAssetFor: () => nativeAsset,
     isNativeAssetId: (_chainId: string, assetId: string) =>
         assetId === nativeAsset.assetId,
+    useIsNativeAssetId:
+        () => (assetId: string | number | bigint | null | undefined) =>
+            assetId != null && String(assetId) === nativeAsset.assetId,
+    displayCurrencyToAssetId: (code: string) =>
+        code === 'ALGO' ? nativeAsset.assetId : null,
     PeraAssetType: {
         algo: 'algo',
         standard_asset: 'standard_asset',
@@ -412,7 +417,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useArbitraryDataSigner: vi.fn(() => ({
             signArbitraryData: vi.fn().mockResolvedValue([]),
         })),
-        ALGO_ASSET_ID: '0',
         AccountTypes: {
             algo25: 'algo25',
             hdWallet: 'hdWallet',

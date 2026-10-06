@@ -41,6 +41,10 @@ const INSERT_CHUNK = 500
 const migrationsBefore = (tag: string): MigrationConfig =>
     Object.fromEntries(Object.entries(migrations).filter(([t]) => t < tag))
 
+// Later migrations rebuild some of these tables, so the assertions stop here.
+const migrationsThrough = (tag: string): MigrationConfig =>
+    Object.fromEntries(Object.entries(migrations).filter(([t]) => t <= tag))
+
 const seedLegacyRows = async (db: Database): Promise<void> => {
     for (const network of LEGACY_NETWORKS) {
         for (
@@ -137,7 +141,7 @@ describe('scope key backfill migration', () => {
     it('rewrites every legacy network of every table to its scope key', async () => {
         const db = await createLegacyDatabase()
 
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(BACKFILL_TAG))
 
         for (const table of NETWORK_TABLES) {
             const expectedPerNetwork =
@@ -156,7 +160,7 @@ describe('scope key backfill migration', () => {
     it('leaves every other column as it was', async () => {
         const db = await createLegacyDatabase()
 
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(BACKFILL_TAG))
 
         const [[amount]] = await db.values<[string]>(sql`
             SELECT amount FROM account_asset_holdings
@@ -176,7 +180,7 @@ describe('scope key backfill migration', () => {
     it('indexes the transactions network column', async () => {
         const db = await createLegacyDatabase()
 
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(BACKFILL_TAG))
 
         const indexes = await db.values<[string]>(sql`
             SELECT name FROM sqlite_master
@@ -187,7 +191,7 @@ describe('scope key backfill migration', () => {
 
     it('changes zero rows when its statements run a second time', async () => {
         const db = await createLegacyDatabase()
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(BACKFILL_TAG))
         const before = await totalChanges(db)
 
         for (const statement of backfillStatements()) {

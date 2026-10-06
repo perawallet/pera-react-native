@@ -36,7 +36,9 @@ import {
     parseQueryParams,
 } from './utils'
 import { PERAWALLET_SCHEME } from './constants'
-import { ALGO_ASSET_ID, type Nullable } from '@perawallet/wallet-core-shared'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Perawallet old-style URIs: perawallet://ADDRESS?params
@@ -79,7 +81,7 @@ export const parsePerawalletUri = (
             type: DeeplinkType.ASSET_TRANSACTIONS,
             sourceUrl: url,
             address: params.account || '',
-            assetId: params.asset || ALGO_ASSET_ID,
+            assetId: params.asset || nativeAssetFor(LEGACY_CHAIN_ID).assetId,
         } as AssetTransactionsDeeplink
     }
 
