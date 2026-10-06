@@ -39,18 +39,20 @@ export const isNativeAsset = (
     ref.chainId === descriptor.id &&
     ref.assetId === descriptor.nativeAsset.ref.assetId
 
-export type SigningScheme = 'ed25519' | 'falcon-1024'
+export type SigningScheme = 'ed25519' | 'falcon-1024' | 'secp256k1'
 
-export type AccountChainState = {
-    family: 'algorand'
-    authAddress?: string
-    /** microAlgos. */
-    minBalance: Decimal
-    status: 'Offline' | 'Online' | 'NotParticipating'
-    totalAssetsOptedIn: number
-    totalCreatedAssets: number
-    totalAppsOptedIn: number
-}
+export type AccountChainState =
+    | {
+          family: 'algorand'
+          authAddress?: string
+          /** microAlgos. */
+          minBalance: Decimal
+          status: 'Offline' | 'Online' | 'NotParticipating'
+          totalAssetsOptedIn: number
+          totalCreatedAssets: number
+          totalAppsOptedIn: number
+      }
+    | { family: 'evm' }
 
 export interface AccountState {
     address: string
@@ -104,13 +106,15 @@ export interface TransactionSummary {
     icon: TransactionIconKind
 }
 
-export type ChainTransactionData = {
-    family: 'algorand'
-    /** Base64. */
-    groupId?: string
-    rekeyTo?: string
-    closeRemainderTo?: string
-}
+export type ChainTransactionData =
+    | {
+          family: 'algorand'
+          /** Base64. */
+          groupId?: string
+          rekeyTo?: string
+          closeRemainderTo?: string
+      }
+    | { family: 'evm' }
 
 export interface UnsignedTransaction {
     scope: ChainScope

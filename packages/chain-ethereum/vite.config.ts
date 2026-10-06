@@ -10,15 +10,14 @@
  limitations under the License
  */
 
-import type { ChainId } from './models/identity'
+import { defineConfig } from 'vite'
+import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-// A Record so that adding a chain id stops this compiling. Must agree with the
-// chain's ChainDescriptor.nativeAsset.decimals.
-const NATIVE_ASSET_DECIMALS: Record<ChainId, number> = {
-    algorand: 6,
-    ethereum: 18,
-}
-
-/** Base units per display unit of the chain's native asset, as a power of ten. */
-export const nativeAssetDecimals = (chainId: ChainId): number =>
-    NATIVE_ASSET_DECIMALS[chainId]
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: resolve(__dirname, 'src/index.ts'),
+        fileName: () => 'index.js',
+    }),
+)

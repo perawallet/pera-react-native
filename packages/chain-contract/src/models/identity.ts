@@ -11,12 +11,12 @@
  */
 
 /** A chain package adds its own id here in the change that creates it. */
-export const CHAIN_IDS = ['algorand'] as const
+export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
 export type ChainId = (typeof CHAIN_IDS)[number]
 
 /** Grown the same way as `ChainId`. */
-export type ChainFamily = 'algorand'
+export type ChainFamily = 'algorand' | 'evm'
 
 export const NETWORK_TIERS = ['mainnet', 'testnet'] as const
 
@@ -49,12 +49,18 @@ export type DeveloperChainMode = Exclude<ChainMode, 'live'>
  * The network as its own chain identifies it. A chain package adds its own
  * member, discriminated by `kind`.
  */
-export type NativeNetworkRef = {
-    kind: 'algorand'
-    genesisId: string
-    /** Base64, as algod reports it. */
-    genesisHash: string
-}
+export type NativeNetworkRef =
+    | {
+          kind: 'algorand'
+          genesisId: string
+          /** Base64, as algod reports it. */
+          genesisHash: string
+      }
+    | {
+          kind: 'evm'
+          /** EIP-155 chain id. */
+          eip155ChainId: number
+      }
 
 export interface ChainNetwork {
     id: NetworkId

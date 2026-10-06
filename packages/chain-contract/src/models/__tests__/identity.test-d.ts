@@ -11,7 +11,14 @@
  */
 
 import { assertType, describe, expectTypeOf, it } from 'vitest'
-import type { ChainScopeKey } from '../identity'
+import type { ChainFamily, ChainId, ChainScopeKey } from '../identity'
+
+describe('ChainId', () => {
+    it('is exactly the shipped chains', () => {
+        expectTypeOf<ChainId>().toEqualTypeOf<'algorand' | 'ethereum'>()
+        expectTypeOf<ChainFamily>().toEqualTypeOf<'algorand' | 'evm'>()
+    })
+})
 
 describe('ChainScopeKey', () => {
     it('is not assignable from a string literal that matches its shape', () => {

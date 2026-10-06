@@ -41,6 +41,8 @@ export interface ChainProtocolFacts {
     supportsReplacement: boolean
     supportsNativeMultisig: boolean
     supportsRekey: boolean
+    /** An account can grant a contract an allowance over its tokens. */
+    hasTokenApproval: boolean
     multipleAddressesPerAccount: boolean
 }
 
