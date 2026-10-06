@@ -84,6 +84,11 @@ export const WEB_CONFIG_ALLOWLIST = [
     'mainnetCardUsdcAssetId',
     'testnetCardUsdcAssetId',
     'defaultNetwork',
+    // Read by the Metro chain gate and by config.chains, so a build whose
+    // CHAINS lists ethereum ships it and every other build stays viem-free.
+    'chainIds',
+    'chainAlgorandCapabilities',
+    'chainEthereumCapabilities',
 ]
 
 const generatedKeys = generatedEnvSource =>
