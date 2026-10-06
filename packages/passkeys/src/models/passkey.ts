@@ -220,10 +220,12 @@ export const credentialToPasskey = (
     }
 }
 
-/** Some native implementations emit `createdAt` in seconds, others in ms. */
+/** Some native implementations emit `createdAt` in seconds, others in ms.
+ *  iOS writes fractional seconds (`timeIntervalSince1970`); truncate to whole
+ *  ms, since the backup payload schema rejects a non-integer `createdAt`. */
 export const normalizeTimestamp = (
     value: number | undefined,
 ): number | undefined => {
     if (typeof value !== 'number') return undefined
-    return value < 10_000_000_000 ? value * 1000 : value
+    return Math.trunc(value < 10_000_000_000 ? value * 1000 : value)
 }
