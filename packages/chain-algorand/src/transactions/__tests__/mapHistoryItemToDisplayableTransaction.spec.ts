@@ -57,6 +57,15 @@ describe('mapHistoryItemToDisplayableTransaction', () => {
         })
     })
 
+    it('leaves the round unset for a transaction not yet in a block', () => {
+        const result = mapHistoryItemToDisplayableTransaction({
+            ...baseItem,
+            confirmedRound: undefined,
+        })
+
+        expect(result?.confirmedRound).toBeUndefined()
+    })
+
     it('carries closeAmount into the displayable asset-transfer leg', () => {
         const result = mapHistoryItemToDisplayableTransaction({
             ...baseItem,
