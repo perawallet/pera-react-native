@@ -11,7 +11,6 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     const actual =
@@ -34,6 +33,11 @@ import {
     resolveSwapHandoffOutcome,
     type SwapHandoffResolutionDeps,
 } from '../resolveSwapHandoffOutcome'
+
+const nodeError = (code: string) =>
+    Object.assign(new Error(code), { code }) as ConstructorParameters<
+        typeof SubmissionError
+    >[2]
 
 const PRESIGNED_BYTES = new Uint8Array([1, 1, 1])
 const ASSEMBLED_BYTES = new Uint8Array([2, 2, 2])
@@ -239,7 +243,7 @@ describe('resolveSwapHandoffOutcome', () => {
             new SubmissionError(
                 ['TXID'],
                 'unknown-outcome',
-                new AlgodError('network_unavailable', {}),
+                nodeError('network_unavailable'),
             ),
         )
         const completionDeps = await resolve()
@@ -268,7 +272,7 @@ describe('resolveSwapHandoffOutcome', () => {
                 new SubmissionError(
                     ['second-group'],
                     'unknown-outcome',
-                    new AlgodError('network_unavailable', {}),
+                    nodeError('network_unavailable'),
                 ),
             )
         const completionDeps = await resolve(record)
@@ -285,7 +289,7 @@ describe('resolveSwapHandoffOutcome', () => {
         const rejected = new SubmissionError(
             ['TXID'],
             'rejected-by-node',
-            new AlgodError('overspend', {}),
+            nodeError('overspend'),
         )
         deps.submitGroup.mockRejectedValueOnce(rejected)
         const completionDeps = await resolve()

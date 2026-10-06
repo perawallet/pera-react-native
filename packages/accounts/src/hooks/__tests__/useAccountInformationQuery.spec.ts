@@ -16,6 +16,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import React from 'react'
 
+import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 import { useAccountInformationQuery } from '../useAccountInformationQuery'
 
 const mockGetAccountBalance = vi.hoisted(() => vi.fn())
@@ -24,12 +25,6 @@ const mockGetAccountHoldings = vi.hoisted(() => vi.fn())
 vi.mock('../../db', () => ({
     getAccountBalance: mockGetAccountBalance,
     getAccountHoldings: mockGetAccountHoldings,
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    Address: {
-        fromString: (addr: string) => addr,
-    },
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
@@ -94,6 +89,9 @@ describe('useAccountInformationQuery', () => {
             assets: [{ assetId: 123n, amount: 500n, isFrozen: true }],
         })
 
+        expect(
+            fakeAccountsChain().adapter.toAccountInformationAddress,
+        ).toHaveBeenCalledWith(mockAddress)
         expect(mockGetAccountBalance).toHaveBeenCalledWith({
             accountAddress: mockAddress,
             scope: { chainId: 'algorand', networkId: 'mainnet' },

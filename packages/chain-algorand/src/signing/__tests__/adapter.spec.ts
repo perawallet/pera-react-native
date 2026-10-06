@@ -13,7 +13,10 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { Address } from 'algosdk'
 import { Decimal } from 'decimal.js'
-import { groupTransactions } from '@perawallet/wallet-core-blockchain'
+import {
+    groupTransactions,
+    useFetchSuggestedMinFee,
+} from '@perawallet/wallet-core-blockchain'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
@@ -35,12 +38,26 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 import { algorandPlannerAdapter } from '../adapter'
+import {
+    useAlgorandFeeConfig,
+    useAlgorandSuggestedMinFeeQuery,
+} from '../feeHooks'
 import { draftProposeContexts } from '../multisig/draftProposeContexts'
 import { makeTestAddress, makeTestPaymentTx } from './transactions'
 
 const senderA = makeTestAddress(1)
 const senderB = makeTestAddress(2)
 describe('algorandPlannerAdapter', () => {
+    test('wires the fee hooks to the Algorand implementations', () => {
+        expect(algorandPlannerAdapter.useFeeConfig).toBe(useAlgorandFeeConfig)
+        expect(algorandPlannerAdapter.useSuggestedMinFeeQuery).toBe(
+            useAlgorandSuggestedMinFeeQuery,
+        )
+        expect(algorandPlannerAdapter.useFetchSuggestedMinFee).toBe(
+            useFetchSuggestedMinFee,
+        )
+    })
+
     test('reviewGroupFees reports the total fee and no warning for a cheap group', () => {
         const txs = [
             { fee: 1000n, txType: 'pay', sender: 'ADDR1' },

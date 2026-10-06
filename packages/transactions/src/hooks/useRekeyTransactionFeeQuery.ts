@@ -12,14 +12,17 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import {
-    useMinimumFeeConfig,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { resolveMinFeeForSender } from '@perawallet/wallet-core-signing'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    resolveMinFeeForSender,
+    useFeeConfig,
+    useSuggestedMinFeeQuery,
+} from '@perawallet/wallet-core-signing'
 import { sendFlowFeatureFor } from '../chain-adapter'
 
 import type { Decimal } from 'decimal.js'
@@ -49,19 +52,21 @@ export const useRekeyTransactionFeeQuery = (
 ): UseRekeyTransactionFeeQueryResult => {
     const { network } = useNetwork()
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
+    const { minTxnFee, pqMultiplier } = useFeeConfig(LEGACY_CHAIN_ID)
     // Shared cached query instead of a private getSuggestedParams() fetch —
     // the send flow has usually populated it already.
-    const { data: suggestedParams, isError: isParamsError } =
-        useSuggestedParametersQuery()
+    const {
+        suggestedMinFee: loadedSuggestedMinFee,
+        isError: isSuggestedMinFeeError,
+    } = useSuggestedMinFeeQuery(LEGACY_CHAIN_ID)
     // Fall back to the config floor when the shared query errors (offline /
     // algod down — it fails fast, networkMode 'always'): staying disabled
     // would leave this query pending forever and the confirm CTA dead.
     // resolveMinFeeForSender already guards with max(suggested, config).
     const suggestedMinFee =
-        suggestedParams !== undefined
-            ? BigInt(suggestedParams.minFee)
-            : isParamsError
+        loadedSuggestedMinFee !== undefined
+            ? loadedSuggestedMinFee
+            : isSuggestedMinFeeError
               ? minTxnFee
               : null
 

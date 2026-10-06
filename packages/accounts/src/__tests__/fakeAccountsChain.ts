@@ -79,6 +79,10 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     chainId: FAKE_CHAIN_ID,
     hdDerivationType: DerivationTypes.Peikert,
     fetchAccountState: vi.fn(),
+    toAccountInformationAddress: vi.fn(
+        ((address: string) =>
+            address) as unknown as AccountsChainAdapter['toAccountInformationAddress'],
+    ),
     fetchAccountInformation: vi.fn(),
     fetchAssetOptInRounds: vi.fn(async () => new Map<string, number>()),
     accountExists: vi.fn(async () => false),

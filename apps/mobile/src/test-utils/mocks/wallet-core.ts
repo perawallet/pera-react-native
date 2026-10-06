@@ -572,6 +572,8 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             assetMbr: 100_000n,
             baseAccountMbr: 100_000n,
         })),
+        // The Algorand planner adapter binds this member at module load.
+        useFetchSuggestedMinFee: vi.fn(() => async () => 1000n),
         // Error-translation exports. Tests that need the real parser should use
         // `vi.importActual` in their own file (see useAlgodErrorMessage.spec.ts).
         AlgodError: MockAlgodError,

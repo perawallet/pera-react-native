@@ -27,7 +27,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 import type { Network } from '@perawallet/wallet-core-config'
 import type { Decimal } from 'decimal.js'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
@@ -619,6 +619,34 @@ export type CompleteMultisigHandoffArgs = {
 }
 
 /**
+ * `minTxnFee` and `assetOptInMinBalance` are in the native asset's base units.
+ * `pqMultiplier` multiplies the fee when the effective signer is post-quantum.
+ * `assetOptInMinBalance` is the extra balance an account must hold per asset
+ * it opts into.
+ */
+export type ChainFeeConfig = {
+    minTxnFee: bigint
+    pqMultiplier: bigint
+    assetOptInMinBalance: bigint
+}
+
+export type UseSuggestedMinFeeQueryResult = {
+    /** Native base units; `undefined` until the first successful load, kept when a later refetch fails. */
+    suggestedMinFee: Optional<bigint>
+    isPending: boolean
+    isError: boolean
+}
+
+export type FetchSuggestedMinFeeOptions = {
+    /** Returned instead of throwing when the fetch fails. */
+    fallback?: bigint
+}
+
+export type FetchSuggestedMinFee = (
+    options?: FetchSuggestedMinFeeOptions,
+) => Promise<bigint>
+
+/**
  * The chain-specific legs of planning a signature request; registered by the
  * chain package.
  */
@@ -637,6 +665,13 @@ export interface PlannerChainAdapter {
     ): Promise<Nullable<TransactionSignRequest>>
 
     minFeeForSender(params: ResolveMinFeeForSenderParams): bigint
+    /**
+     * React hooks, run in the caller's render; the imperative fetch shares the
+     * query's cache and staleness.
+     */
+    useFeeConfig: () => ChainFeeConfig
+    useSuggestedMinFeeQuery: () => UseSuggestedMinFeeQueryResult
+    useFetchSuggestedMinFee: () => FetchSuggestedMinFee
     /**
      * Raises underfunded fees on the signable slots and returns the group
      * unchanged, by reference, when nothing needs raising.

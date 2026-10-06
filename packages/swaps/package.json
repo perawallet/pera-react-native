@@ -21,7 +21,6 @@
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
-    "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-chain-shared": "workspace:*",
     "@perawallet/wallet-core-device": "workspace:*",
     "@perawallet/wallet-core-multisig": "workspace:*",

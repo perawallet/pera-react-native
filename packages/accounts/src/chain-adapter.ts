@@ -158,6 +158,11 @@ export interface AccountsChainAdapter {
         scope: ChainScope,
         hint: AccountStateReadHint,
     ): Promise<AccountStateSnapshot>
+    /**
+     * The `address` an `AccountInformation` carries for `address`; throws when
+     * `address` isn't valid on this chain.
+     */
+    toAccountInformationAddress(address: string): AccountInformation['address']
     fetchAccountInformation(
         address: string,
         scope: ChainScope,
