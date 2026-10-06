@@ -399,7 +399,7 @@ overrides:
   react-native-nitro-modules: 0.36.5
   react-native-quick-base64: ^3.0.0
   react-native-quick-crypto: ^1.0.17
-  shell-quote@<1.9.0: 1.9.0
+  shell-quote@<1.11.0: 1.11.0
   # GHSA-68fv-2mgg-jv7q (event-loop DoS). Build tooling only, via postcss,
   # css-tree and magicast.
   source-map-js@<1.2.2: 1.2.2
