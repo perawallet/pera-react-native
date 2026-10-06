@@ -182,10 +182,7 @@ describe('shouldDehydrateQuery', () => {
     it('persists a module catalog sub-key without persisting its address-keyed siblings', () => {
         expect(
             shouldDehydrateQuery(
-                asQuery(
-                    ['swaps', 'providers', { scope: MAINNET }],
-                    'success',
-                ),
+                asQuery(['swaps', 'providers', { scope: MAINNET }], 'success'),
             ),
         ).toBe(true)
         expect(
@@ -281,7 +278,11 @@ describe('PERSISTED_CACHE_BUSTER', () => {
     }
 
     it('discards a cache persisted under the bare-network key shape', async () => {
-        const legacyKey: QueryKey = ['swaps', 'providers', { network: 'mainnet' }]
+        const legacyKey: QueryKey = [
+            'swaps',
+            'providers',
+            { network: 'mainnet' },
+        ]
         const persister = persisterHolding('prefix-allowlist', legacyKey)
 
         const restored = await restore(persister)

@@ -180,14 +180,20 @@ describe('clearCustomNetworkCache', () => {
         const customTransactionKey = [
             'transactions',
             'history',
-            { accountAddress: 'ADDR', scope: scopeForLegacyNetwork(Networks.custom) },
+            {
+                accountAddress: 'ADDR',
+                scope: scopeForLegacyNetwork(Networks.custom),
+            },
         ]
         const customNfdKey = [
             'nfd',
             'address',
             { address: 'ADDR', scope: scopeForLegacyNetwork(Networks.custom) },
         ]
-        const unrelatedDomainKey = ['card', { scope: scopeForLegacyNetwork(Networks.custom) }]
+        const unrelatedDomainKey = [
+            'card',
+            { scope: scopeForLegacyNetwork(Networks.custom) },
+        ]
 
         queryClient.setQueryData(customAccountKey, { value: 1 })
         queryClient.setQueryData(testnetAccountKey, { value: 2 })
