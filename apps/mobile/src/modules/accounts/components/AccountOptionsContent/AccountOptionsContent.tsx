@@ -63,7 +63,6 @@ const OptionRow = ({
                 <PWText
                     variant='h4'
                     style={isDestructive ? styles.dangerText : undefined}
-                    truncate
                 >
                     {option.title}
                 </PWText>
