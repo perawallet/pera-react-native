@@ -33,7 +33,7 @@ vi.mock('../../sync/account-syncer', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 const mockAlgoPrices = new Map<string, { usdPrice: Decimal }>()

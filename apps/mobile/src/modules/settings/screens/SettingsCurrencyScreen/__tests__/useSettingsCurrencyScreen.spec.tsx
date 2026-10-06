@@ -14,6 +14,7 @@ import type { ReactNode } from 'react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { useNetworkStatusStore } from '@modules/network'
 import { useSettingsCurrencyScreen } from '../useSettingsCurrencyScreen'
@@ -29,9 +30,9 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: mockUseCurrency,
     useCurrenciesQuery: mockUseCurrenciesQuery,
     currencyQueryKeys: {
-        price: (network: string, preferredFiatCurrency: string) => [
+        price: (scope: object, preferredFiatCurrency: string) => [
             'currencies',
-            { network, preferredFiatCurrency },
+            { scope, preferredFiatCurrency },
         ],
     },
 }))
@@ -40,7 +41,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: 'mainnet',
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -71,7 +75,10 @@ const seedCachedRate = (currencyId: string) => {
     queryClient.setQueryData(
         [
             'currencies',
-            { network: 'mainnet', preferredFiatCurrency: currencyId },
+            {
+                scope: scopeForLegacyNetwork('mainnet'),
+                preferredFiatCurrency: currencyId,
+            },
         ],
         { id: currencyId, usdPrice: '1.1' },
     )

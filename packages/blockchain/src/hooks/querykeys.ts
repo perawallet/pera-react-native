@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { QueryKey } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'blockchain'
@@ -18,23 +18,23 @@ const MODULE_PREFIX = 'blockchain'
 export const isBlockchainQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX
 
-export const getSuggestedParametersQueryKey = (network: Network) => [
+export const getSuggestedParametersQueryKey = (scope: ChainScope) => [
     MODULE_PREFIX,
     'suggested-parameters',
-    { network },
+    { scope },
 ]
 
 export const getTransactionDetailQueryKey = (
     transactionId: string,
-    network: Network,
-) => [MODULE_PREFIX, 'transaction-detail', { transactionId, network }]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'transaction-detail', { transactionId, scope }]
 
 export const getAccountSigTypeQueryKey = (
     address: string,
-    network: Network,
-) => [MODULE_PREFIX, 'account-sig-type', { address, network }]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'account-sig-type', { address, scope }]
 
 export const getGroupTransactionsQueryKey = (
     groupId: string,
-    network: Network,
-) => [MODULE_PREFIX, 'group-transactions', { groupId, network }]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'group-transactions', { groupId, scope }]

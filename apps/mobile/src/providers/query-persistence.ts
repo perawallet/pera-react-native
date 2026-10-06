@@ -20,7 +20,9 @@ import { isAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
 // discarded instead of rehydrated.
 // Bump it when the persistence policy narrows too: caches written under a
 // laxer policy otherwise rehydrate for up to `reactQueryPersistenceAge`.
-export const PERSISTED_CACHE_BUSTER = 'prefix-allowlist'
+// And when a query key changes shape: entries are stored by key hash, so ones
+// written under the old shape are never read again yet outlive that same age.
+export const PERSISTED_CACHE_BUSTER = 'chain-scope-keys'
 
 /**
  * What each query-key prefix may write to the persisted cache, which is

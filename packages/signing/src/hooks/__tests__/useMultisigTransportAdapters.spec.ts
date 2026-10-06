@@ -23,7 +23,12 @@ import type { DraftProposeContext } from '../../chain-adapter'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { walletConnectHandoffs } from '../../pipeline/walletConnectHandoffs'
 import type { SigningResult } from '../../pipeline/types'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type PeraSignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+
+const TESTNET = scopeForLegacyNetwork('testnet')
 
 // Fake signed-transaction node. The transport reads only `txn` (passed to the
 // mocked encoder via its `tag`) and `sig`; the cast bridges the partial literal
@@ -314,7 +319,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-1' },
+                    { scope: TESTNET, signRequestId: 'sr-1' },
                 ],
                 // The adapter backfills `proposer_address` from the
                 // proposer we just sent in case the backend response omits
@@ -344,7 +349,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-1' },
+                    { scope: TESTNET, signRequestId: 'sr-1' },
                 ],
                 {
                     ...baseSignRequestResponse,
@@ -457,7 +462,7 @@ describe('useMultisigTransportAdapters', () => {
                     'multisig',
                     'sign-request-detail',
                     {
-                        network: 'testnet',
+                        scope: TESTNET,
                         signRequestId: 'sr-99',
                     },
                 ],
@@ -477,7 +482,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-99' },
+                    { scope: TESTNET, signRequestId: 'sr-99' },
                 ],
                 {
                     ...baseSignRequestResponse,
@@ -495,7 +500,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-99' },
+                    { scope: TESTNET, signRequestId: 'sr-99' },
                 ],
                 {
                     ...baseSignRequestResponse,

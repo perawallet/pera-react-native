@@ -237,7 +237,7 @@ export const useTransactionHistoryQuery = (
 
     const queryKey = transactionQueryKeys.historyWithFilters(
         accountAddress,
-        network,
+        scope,
         {
             assetId,
             afterTime,

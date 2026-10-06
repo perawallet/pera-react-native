@@ -12,6 +12,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-config'
 import { useAccountBalancesHistoryQuery } from '../useAccountBalancesHistoryQuery'
 import { getAccountBalancesHistoryQueryKey } from '../querykeys'
@@ -26,7 +27,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
         ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
     ),
-    useNetwork: () => mockNetwork,
+    useSelectedScope: () => ({
+        chainId: 'algorand',
+        networkId: mockNetwork.network,
+    }),
 }))
 
 // Mock endpoints
@@ -38,7 +42,6 @@ vi.mock('../endpoints', () => ({
     fetchAccountsBalanceHistory: mocks.fetchAccountsBalanceHistory,
 }))
 
-// Mock network extension
 const mockNetwork = { network: 'mainnet' }
 
 // Mock currencies
@@ -78,16 +81,16 @@ describe('useAccountBalancesHistoryQuery', () => {
         it('generates correct query key', () => {
             const addresses = ['ADDR1', 'ADDR2']
             const period = 'one-day'
-            const network = 'mainnet'
+            const scope = scopeForLegacyNetwork('mainnet')
             const key = getAccountBalancesHistoryQueryKey(
                 addresses,
                 period,
-                network,
+                scope,
             )
             expect(key).toEqual([
                 'accounts',
                 'balance-history',
-                { period, addresses, network },
+                { period, addresses, scope },
             ])
         })
     })
@@ -176,7 +179,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             expect(result.current.error).toEqual(new Error('Network error'))
         })
 
-        it('uses correct network from useNetwork hook', async () => {
+        it('fetches with the legacy network of the selected scope', async () => {
             mockNetwork.network = 'testnet'
             mocks.fetchAccountsBalanceHistory.mockResolvedValue({ results: [] })
 

@@ -92,34 +92,26 @@ export const legacyNetworkOf = (scope: ChainScope): LegacyNetwork => {
     return network
 }
 
-// Query keys still carry the bare network the stores hold, unlike the database
-// network column, which holds the scope key. A Record so that adding a chain id
-// stops this compiling: a new chain has no bare-network keys, so its entry must
-// return its scope key, or it would collide with the legacy chain's entries.
-const QUERY_KEY_NETWORK_VALUE: Record<ChainId, (scope: ChainScope) => string> =
-    {
-        algorand: scope => scope.networkId,
-    }
+const isScopeOf = (part: unknown, scope: ChainScope): boolean =>
+    typeof part === 'object' &&
+    part !== null &&
+    (part as Partial<ChainScope>).chainId === scope.chainId &&
+    (part as Partial<ChainScope>).networkId === scope.networkId
 
-export const queryKeyNetworkValue = (scope: ChainScope): string => {
-    assertValidScope(scope)
-    return QUERY_KEY_NETWORK_VALUE[scope.chainId](scope)
-}
-
-// Every network-partitioned query key embeds queryKeyNetworkValue(scope), either
-// as a bare element or as the `network` field of an object element. Typed
-// without TanStack's QueryKey so this package keeps depending on nothing.
+// Every network-partitioned query key embeds its ChainScope, either as a bare
+// element or as the `scope` field of an object element. Typed without
+// TanStack's QueryKey so this package keeps depending on nothing.
 export const queryKeyReferencesScope = (
     queryKey: readonly unknown[],
     scope: ChainScope,
 ): boolean => {
-    const value = queryKeyNetworkValue(scope)
+    assertValidScope(scope)
     return queryKey.some(
         part =>
-            part === value ||
+            isScopeOf(part, scope) ||
             (typeof part === 'object' &&
                 part !== null &&
-                (part as { network?: unknown }).network === value),
+                isScopeOf((part as { scope?: unknown }).scope, scope)),
     )
 }
 

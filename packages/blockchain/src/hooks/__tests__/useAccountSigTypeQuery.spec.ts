@@ -14,6 +14,7 @@ import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { useAccountSigTypeQuery } from '../useAccountSigTypeQuery'
 import { useAlgorandClient } from '../useAlgorandClient'
@@ -21,14 +22,14 @@ import { useAlgorandClient } from '../useAlgorandClient'
 vi.mock('../useAlgorandClient')
 
 const mocks = vi.hoisted(() => ({
-    useNetwork: vi.fn(),
+    useSelectedScope: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: mocks.useNetwork,
+    useSelectedScope: mocks.useSelectedScope,
 }))
 
 const ADDRESS = 'A'.repeat(58)
@@ -41,7 +42,7 @@ describe('useAccountSigTypeQuery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+        mocks.useSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
 
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
@@ -119,7 +120,7 @@ describe('useAccountSigTypeQuery', () => {
             queryClient.getQueryState([
                 'blockchain',
                 'account-sig-type',
-                { address: ADDRESS, network: 'testnet' },
+                { address: ADDRESS, scope: scopeForLegacyNetwork('testnet') },
             ])?.status,
         ).toBe('success')
     })

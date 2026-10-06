@@ -20,7 +20,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { WalletAccount } from '../models'
 import { getAccountSummaryQueryKey } from './querykeys'
 import { readAccountSummary } from './useAccountSummaryQuery'
@@ -75,7 +79,8 @@ export const useAccountValueTotalsQuery = (
     accounts: WalletAccount[],
     enabled?: boolean,
 ): UseAccountValueTotalsQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     // See the usdValue derivation: only a Pera-backed network can be missing a
     // price it ought to have.
     const isPricedNetwork = isPeraBackedNetwork(network)
@@ -89,7 +94,7 @@ export const useAccountValueTotalsQuery = (
     const queries = useMemo(() => {
         return addresses.map(address => {
             return {
-                queryKey: getAccountSummaryQueryKey(address, network),
+                queryKey: getAccountSummaryQueryKey(address, scope),
                 enabled: !!address && enabled !== false,
                 staleTime: Infinity,
                 // SQLite is the source of truth; run the queryFn even while
@@ -103,7 +108,7 @@ export const useAccountValueTotalsQuery = (
                 queryFn: () => readAccountSummary(address, network),
             }
         })
-    }, [addresses, enabled, network])
+    }, [addresses, enabled, scope, network])
 
     const results = useQueries({ queries })
     const { data: algoPrices } = useAssetPricesQuery([ALGO_ASSET_ID])

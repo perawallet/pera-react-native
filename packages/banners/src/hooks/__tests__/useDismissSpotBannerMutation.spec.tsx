@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { closeSpotBanner } from '../../api/spot-banners'
 import { useDismissSpotBannerMutation } from '../useDismissSpotBannerMutation'
 import { getSpotBannersQueryKey } from '../querykeys'
@@ -28,7 +29,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 const buildWrapper = (qc: QueryClient) => {
@@ -48,7 +49,10 @@ describe('useDismissSpotBannerMutation', () => {
         const qc = new QueryClient({
             defaultOptions: { mutations: { retry: false } },
         })
-        const key = getSpotBannersQueryKey('mainnet', 'dev-1')
+        const key = getSpotBannersQueryKey(
+            scopeForLegacyNetwork('mainnet'),
+            'dev-1',
+        )
         qc.setQueryData(key, [
             { id: 1, text: 'a', image: 'x', url: 'y' },
             { id: 2, text: 'b', image: 'x', url: 'y' },
@@ -78,7 +82,10 @@ describe('useDismissSpotBannerMutation', () => {
         const qc = new QueryClient({
             defaultOptions: { mutations: { retry: false } },
         })
-        const key = getSpotBannersQueryKey('mainnet', 'dev-1')
+        const key = getSpotBannersQueryKey(
+            scopeForLegacyNetwork('mainnet'),
+            'dev-1',
+        )
         const initial = [
             { id: 1, text: 'a', image: 'x', url: 'y' },
             { id: 2, text: 'b', image: 'x', url: 'y' },
@@ -127,7 +134,10 @@ describe('useDismissSpotBannerMutation', () => {
         act(() => result.current.mutate(7))
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        const key = getSpotBannersQueryKey('mainnet', 'dev-1')
+        const key = getSpotBannersQueryKey(
+            scopeForLegacyNetwork('mainnet'),
+            'dev-1',
+        )
         expect(qc.getQueryData(key)).toBeUndefined()
     })
 

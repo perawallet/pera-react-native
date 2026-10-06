@@ -36,7 +36,13 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
-import { MODULE_PREFIX } from '../querykeys'
+import {
+    queryKeyReferencesScope,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import { MODULE_PREFIX, nfdQueryKeys } from '../querykeys'
+
+const MAINNET = scopeForLegacyNetwork('mainnet')
 
 describe('NETWORK_PARTITIONED_QUERY_MODULES (chain-shared)', () => {
     test('includes this package MODULE_PREFIX, so clearCustomNetworkCache sweeps its custom-network entries', () => {
@@ -47,5 +53,32 @@ describe('NETWORK_PARTITIONED_QUERY_MODULES (chain-shared)', () => {
         // where the rename is happening, instead of silently going stale on
         // the chain-shared side.
         expect(NETWORK_PARTITIONED_QUERY_MODULES.has(MODULE_PREFIX)).toBe(true)
+    })
+})
+
+describe('nfdQueryKeys', () => {
+    test('carries the scope object in place of the network', () => {
+        expect(nfdQueryKeys.forAddress('ADDR1', MAINNET)).toEqual([
+            'nfd',
+            'address',
+            { address: 'ADDR1', scope: MAINNET },
+        ])
+        expect(nfdQueryKeys.search('bruno.algo', MAINNET)).toEqual([
+            'nfd',
+            'search',
+            { name: 'bruno.algo', scope: MAINNET },
+        ])
+    })
+
+    test('every key references its scope', () => {
+        for (const key of [
+            nfdQueryKeys.forAddress('ADDR1', MAINNET),
+            nfdQueryKeys.search('bruno.algo', MAINNET),
+        ]) {
+            expect(queryKeyReferencesScope(key, MAINNET)).toBe(true)
+            expect(
+                queryKeyReferencesScope(key, scopeForLegacyNetwork('testnet')),
+            ).toBe(false)
+        }
     })
 })

@@ -11,15 +11,19 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     getArc59SendSummaryQueryKey,
     getArc59AssetRequestsQueryKey,
 } from '../querykeys'
 
+const MAINNET = scopeForLegacyNetwork('mainnet')
+const TESTNET = scopeForLegacyNetwork('testnet')
+
 describe('querykeys', () => {
     describe('getArc59SendSummaryQueryKey', () => {
-        test('includes the receiver, asset id and network in the key', () => {
-            const key = getArc59SendSummaryQueryKey('ADDR1', '123', 'mainnet')
+        test('includes the receiver, asset id and scope object in the key', () => {
+            const key = getArc59SendSummaryQueryKey('ADDR1', '123', MAINNET)
 
             expect(key).toEqual([
                 'asa-inbox',
@@ -27,33 +31,36 @@ describe('querykeys', () => {
                 {
                     receiverAddress: 'ADDR1',
                     assetId: '123',
-                    network: 'mainnet',
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
                 },
             ])
         })
 
-        test('produces different keys for different networks', () => {
-            const key1 = getArc59SendSummaryQueryKey('ADDR1', '123', 'mainnet')
-            const key2 = getArc59SendSummaryQueryKey('ADDR1', '123', 'testnet')
+        test('produces different keys for different scopes', () => {
+            const key1 = getArc59SendSummaryQueryKey('ADDR1', '123', MAINNET)
+            const key2 = getArc59SendSummaryQueryKey('ADDR1', '123', TESTNET)
 
             expect(key1).not.toEqual(key2)
         })
     })
 
     describe('getArc59AssetRequestsQueryKey', () => {
-        test('includes the address and network in the key', () => {
-            const key = getArc59AssetRequestsQueryKey('ADDR1', 'mainnet')
+        test('includes the address and scope object in the key', () => {
+            const key = getArc59AssetRequestsQueryKey('ADDR1', MAINNET)
 
             expect(key).toEqual([
                 'asa-inbox',
                 'arc59-asset-requests',
-                { address: 'ADDR1', network: 'mainnet' },
+                {
+                    address: 'ADDR1',
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                },
             ])
         })
 
-        test('produces different keys for different networks', () => {
-            const key1 = getArc59AssetRequestsQueryKey('ADDR1', 'mainnet')
-            const key2 = getArc59AssetRequestsQueryKey('ADDR1', 'testnet')
+        test('produces different keys for different scopes', () => {
+            const key1 = getArc59AssetRequestsQueryKey('ADDR1', MAINNET)
+            const key2 = getArc59AssetRequestsQueryKey('ADDR1', TESTNET)
 
             expect(key1).not.toEqual(key2)
         })

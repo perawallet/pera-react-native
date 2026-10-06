@@ -12,12 +12,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
-import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
-} from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     resolveMinFeeForSender,
     useFeeConfig,
@@ -50,7 +47,7 @@ export const useRekeyTransactionFeeQuery = (
     sourceAddress: string,
     rekeyToAddress: string,
 ): UseRekeyTransactionFeeQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accounts = useAllAccounts()
     const { minTxnFee, pqMultiplier } = useFeeConfig(LEGACY_CHAIN_ID)
     // Shared cached query instead of a private getSuggestedParams() fetch —
@@ -71,13 +68,13 @@ export const useRekeyTransactionFeeQuery = (
               : null
 
     const query = useQuery({
-        // Network is part of the key — feePerByte differs between mainnet
+        // Scope is part of the key — feePerByte differs between mainnet
         // and testnet, so a cached fee from one must not satisfy the other.
         // suggestedMinFee too: the queryFn reads it from the closure, so a
         // refreshed value must produce a new cache entry.
         queryKey: [
             'rekey-transaction-fee',
-            network,
+            scope,
             sourceAddress,
             rekeyToAddress,
             String(suggestedMinFee),
@@ -98,7 +95,6 @@ export const useRekeyTransactionFeeQuery = (
             })
             // Built through the same adapter call the submit mutation uses,
             // so the fee shown is the fee paid.
-            const scope = scopeForLegacyNetwork(network)
             const txn = await sendFlowFeatureFor(scope, 'rekey').buildTx({
                 scope,
                 sourceAddress,

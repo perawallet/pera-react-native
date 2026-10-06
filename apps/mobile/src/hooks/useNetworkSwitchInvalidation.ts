@@ -16,8 +16,11 @@ import {
     getSyncService,
     releaseNetworkScopedQueries,
 } from '@perawallet/wallet-core-background'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    toScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 /**
  * Single owner of the on-network-switch query invalidation. The imperative
@@ -29,22 +32,19 @@ import { useNetwork } from '@perawallet/wallet-core-chain-shared'
  * changed.
  */
 export const useNetworkSwitchInvalidation = (): void => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const queryClient = useQueryClient()
-    const previousNetwork = useRef(network)
+    const previousScope = useRef(scope)
 
     useEffect(() => {
-        if (previousNetwork.current === network) return
-        const departed = previousNetwork.current
-        previousNetwork.current = network
-        releaseNetworkScopedQueries(
-            queryClient,
-            scopeForLegacyNetwork(departed),
-        )
+        if (toScopeKey(previousScope.current) === toScopeKey(scope)) return
+        const departed = previousScope.current
+        previousScope.current = scope
+        releaseNetworkScopedQueries(queryClient, departed)
         try {
             getSyncService().invalidateQueries()
         } catch {
             // SyncService not yet initialized
         }
-    }, [network, queryClient])
+    }, [scope, queryClient])
 }

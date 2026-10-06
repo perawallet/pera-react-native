@@ -21,7 +21,10 @@ import type { PeraApplication } from '../../models/types'
 vi.mock('../../api/applications/endpoints')
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet', setNetwork: vi.fn() })),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: 'mainnet',
+    }),
 }))
 
 const mockApplication: PeraApplication = {

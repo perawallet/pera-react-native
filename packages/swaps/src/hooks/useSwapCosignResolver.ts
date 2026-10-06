@@ -198,7 +198,7 @@ export const useSwapCosignResolver = ({
     const poll = useCallback(
         (handoff: SwapHandoffRecord) => ({
             queryKey: getSignRequestsWithSignaturesQueryKey(
-                handoffNetwork(handoff),
+                handoff.scope,
                 handoff.signRequestId,
             ),
             queryFn: () =>

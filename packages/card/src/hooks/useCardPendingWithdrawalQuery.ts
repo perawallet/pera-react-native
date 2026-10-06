@@ -12,7 +12,8 @@
 
 import { useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { CardEscrowNotConfiguredError } from '../api/escrow'
@@ -42,16 +43,13 @@ const EMPTY_STATE: PendingWithdrawalState = {
 
 export const useCardPendingWithdrawalQuery =
     (): UseCardPendingWithdrawalQueryResult => {
-        const { network } = useNetwork()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const queryClient = useQueryClient()
         const escrowCardOwner = useCardStore(state => state.escrowCardOwner)
         const { getPendingWithdrawal, getWaitTimeSeconds } =
             useEscrowWithdrawal()
 
-        const queryKey = cardQueryKeys.pendingWithdrawal(
-            network,
-            escrowCardOwner,
-        )
+        const queryKey = cardQueryKeys.pendingWithdrawal(scope, escrowCardOwner)
 
         const query = useQuery({
             queryKey,

@@ -51,7 +51,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -59,9 +59,9 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
-    getSignRequestDetailQueryKey: (network: string, id: string) => [
+    getSignRequestDetailQueryKey: (scope: unknown, id: string) => [
         'signRequestDetail',
-        network,
+        scope,
         id,
     ],
     useSignRequestDetailQuery: (params: unknown) =>
@@ -174,7 +174,11 @@ describe('useSignRequestFailure', () => {
         )
 
         expect(mocks.invalidateQueries).toHaveBeenCalledWith({
-            queryKey: ['signRequestDetail', 'mainnet', 'sr-1'],
+            queryKey: [
+                'signRequestDetail',
+                { chainId: 'algorand', networkId: 'mainnet' },
+                'sr-1',
+            ],
         })
     })
 

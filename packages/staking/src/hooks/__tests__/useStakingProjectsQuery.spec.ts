@@ -56,7 +56,7 @@ const VALID_PROJECTS_CONFIG = JSON.stringify({ en: VALID_PROJECTS })
 const mocks = vi.hoisted(() => ({
     fetchStakingProjectsInfo: vi.fn(),
     getStringValue: vi.fn(),
-    useNetwork: vi.fn(),
+    useSelectedScope: vi.fn(),
 }))
 
 vi.mock('../endpoints', () => ({
@@ -64,7 +64,7 @@ vi.mock('../endpoints', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mocks.useNetwork,
+    useSelectedScope: mocks.useSelectedScope,
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -92,7 +92,10 @@ describe('useStakingProjectsQuery', () => {
                 },
             },
         })
-        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         mockRemoteConfig(VALID_PROJECTS_CONFIG)
     })
 
@@ -292,7 +295,10 @@ describe('useStakingProjectsQuery', () => {
     })
 
     it('uses the active network when fetching', async () => {
-        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         renderHook(() => useStakingProjectsQuery(), {
@@ -306,8 +312,11 @@ describe('useStakingProjectsQuery', () => {
         )
     })
 
-    it('keys the query by the chain scope of the active network', async () => {
-        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+    it('keys the query by the selected chain scope', async () => {
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         renderHook(() => useStakingProjectsQuery(), {
@@ -319,7 +328,7 @@ describe('useStakingProjectsQuery', () => {
                 queryClient.getQueryData([
                     'staking',
                     'projects',
-                    { scope: 'algorand/testnet' },
+                    { scope: { chainId: 'algorand', networkId: 'testnet' } },
                 ]),
             ).toEqual({}),
         )

@@ -22,7 +22,7 @@ import {
 } from '../../__tests__/fakeAccountsChain'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 const fetchAssetOptInRounds = () =>

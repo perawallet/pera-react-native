@@ -15,7 +15,11 @@ import {
     type FetchStatus,
     type RefetchOptions,
 } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 import { getRampPairs } from '../api'
 import { rampAdapterFor } from '../chain-adapter'
@@ -36,12 +40,13 @@ const NO_RESULTS: RampPair[] = []
 export const useRampPairsQuery = (
     enabled: boolean = true,
 ): UseRampPairsQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const destinationTokenIds = [...rampAdapterFor(network).destinationTokenIds]
 
     const query = useQuery({
-        queryKey: onrampQueryKeys.pairs(destinationTokenIds, network),
+        queryKey: onrampQueryKeys.pairs(destinationTokenIds, scope),
         queryFn: () => getRampPairs(destinationTokenIds, network),
         enabled,
     })

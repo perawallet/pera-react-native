@@ -18,9 +18,10 @@ import { Networks } from '@perawallet/wallet-core-config'
 import { useNotificationsListQuery } from '../useNotificationsListQuery'
 import { fetchNotificationList } from '../../api/notifications'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useChainCapability,
-    useNetwork,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
@@ -28,11 +29,13 @@ import {
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
         ['mainnet', 'testnet'].includes(
-            vi.mocked(useNetwork).mock.results.at(-1)?.value?.network ??
+            vi.mocked(useSelectedScope).mock.results.at(-1)?.value?.networkId ??
                 'mainnet',
         ),
     ),
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
+    useSelectedScope: vi
+        .fn()
+        .mockReturnValue({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('../../api/notifications', () => ({
@@ -49,9 +52,9 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
 })
 
 beforeEach(() => {
-    vi.mocked(useNetwork).mockReturnValue({
-        network: 'mainnet',
-    } as ReturnType<typeof useNetwork>)
+    vi.mocked(useSelectedScope).mockReturnValue(
+        scopeForLegacyNetwork('mainnet'),
+    )
 })
 
 describe('useNotificationsListQuery', () => {
@@ -314,9 +317,9 @@ describe('useNotificationsListQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'disables the query, flags isUnavailableOnNetwork and returns [] on %s',
             network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
+                vi.mocked(useSelectedScope).mockReturnValue(
+                    scopeForLegacyNetwork(network),
+                )
 
                 const { result } = renderHook(
                     () => useNotificationsListQuery(),
@@ -342,9 +345,9 @@ describe('useNotificationsListQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'no-ops fetchNextPage on %s',
             async network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
+                vi.mocked(useSelectedScope).mockReturnValue(
+                    scopeForLegacyNetwork(network),
+                )
 
                 const { result } = renderHook(
                     () => useNotificationsListQuery(),

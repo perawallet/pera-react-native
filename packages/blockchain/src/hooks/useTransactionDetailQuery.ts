@@ -12,11 +12,14 @@
 
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getTransactionDetailQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 
 type UseTransactionDetailQueryParams = {
     transactionId: string
@@ -40,10 +43,10 @@ export const useTransactionDetailQuery = ({
     isEnabled = true,
 }: UseTransactionDetailQueryParams): UseTransactionDetailQueryResult => {
     const algokit = useAlgorandClient()
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     const query = useQuery({
-        queryKey: getTransactionDetailQueryKey(transactionId, network),
+        queryKey: getTransactionDetailQueryKey(transactionId, scope),
         queryFn: async () => {
             const response = await algokit.client.indexer
                 .lookupTransactionByID(transactionId)
