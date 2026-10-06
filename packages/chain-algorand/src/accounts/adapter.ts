@@ -35,7 +35,6 @@ import {
 
 export const algorandAccountsAdapter: AccountsChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    hdDerivationType: ALGORAND_HD_DERIVATION_TYPE,
     fetchAccountState: (address, scope, hint) =>
         fetchAlgorandAccountState(address, algorandNetworkOf(scope), hint),
     toAccountInformationAddress: address => Address.fromString(address),
@@ -48,8 +47,13 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     checkActivity: (addresses, scope) =>
         checkAlgorandActivity(addresses, algorandNetworkOf(scope)),
     createPublicKeyGetter: createXHDGetPublicKey,
-    hdKeyPairId: (seedKeyId, { account, keyIndex, derivationType }) =>
-        hdDerivedKeyId(seedKeyId, account, keyIndex, derivationType),
+    hdKeyPairId: (seedKeyId, { account, keyIndex }) =>
+        hdDerivedKeyId(
+            seedKeyId,
+            account,
+            keyIndex,
+            ALGORAND_HD_DERIVATION_TYPE,
+        ),
     assertHdPathMatches: assertAlgorandBip44PathMatches,
     quantum: algorandQuantumDerivation,
     singleKeyAccounts: algorandSingleKeyAccounts,

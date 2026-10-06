@@ -23,10 +23,7 @@ import {
     type WalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import {
     hexToBytes,
     kmsCore,
@@ -96,8 +93,7 @@ const buildHardwareAccount = (
 ): HardwareWalletAccount => {
     assertValidAddress(context, payload.address)
     return buildAccount({
-        address: payload.address,
-        provenance: {
+        custody: {
             kind: 'hardware',
             device: {
                 manufacturer: payload.manufacturer,
@@ -107,6 +103,7 @@ const buildHardwareAccount = (
             },
             accountIndex: payload.accountIndex,
         },
+        chains: { [context.adapter.chainId]: { address: payload.address } },
         ...nameField(payload.customName),
     })
 }
@@ -117,8 +114,8 @@ const buildWatchAccount = (
 ): WatchAccount => {
     assertValidAddress(context, payload.address)
     return buildAccount({
-        address: payload.address,
-        provenance: { kind: 'watch' },
+        custody: { kind: 'watch' },
+        chains: { [context.adapter.chainId]: { address: payload.address } },
         ...nameField(payload.customName),
     })
 }
@@ -138,12 +135,19 @@ const buildMultisigAccount = (
         )
     }
     return buildAccount({
-        address: payload.address,
-        provenance: {
-            kind: 'multisig',
-            threshold: payload.threshold,
-            members: payload.participantAddresses,
-            version: payload.version,
+        custody: { kind: 'multisig' },
+        chains: {
+            [adapter.chainId]: {
+                address: payload.address,
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        version: payload.version,
+                        threshold: payload.threshold,
+                        addresses: payload.participantAddresses,
+                    },
+                },
+            },
         },
         ...nameField(payload.customName),
     })
@@ -174,10 +178,16 @@ const buildHdWalletAccount = async (
         )
     }
     return buildAccount({
-        address: payload.address,
-        provenance: { kind: 'local', seed: 'bip39', hd: hdWalletDetails },
-        credentials: {
-            [LEGACY_CHAIN_ID]: { keyPairId: derived.keyPairId },
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: payload.account, keyIndex: payload.keyIndex },
+        },
+        chains: {
+            [adapter.chainId]: {
+                address: payload.address,
+                keyPairId: derived.keyPairId,
+            },
         },
         ...nameField(payload.customName),
     })

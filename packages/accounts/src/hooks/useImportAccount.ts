@@ -17,7 +17,6 @@ import { useCreateAccount } from './useCreateAccount'
 import { useHDImportSession } from './useHDImportSession'
 import { useAccountsStore } from '../store'
 import {
-    type DerivationType,
     type ImportAccountType,
     type WalletAccount,
 } from '../models'
@@ -27,7 +26,6 @@ import { accountsAdapterFor, requireSingleKeyAccounts } from '../chain-adapter'
 export type ImportHDPendingResult = {
     type: 'hdWallet'
     walletKeyId: string
-    derivationType: DerivationType
 }
 
 export type ImportAccountResult =
@@ -84,10 +82,10 @@ export const useImportAccount = () => {
         type: ImportAccountType
     }): Promise<ImportAccountResult> => {
         if (type === 'hdWallet') {
-            const { walletKeyId, derivationType } = await prepareImport({
+            const { walletKeyId } = await prepareImport({
                 mnemonicIndices,
             })
-            return { type: 'hdWallet', walletKeyId, derivationType }
+            return { type: 'hdWallet', walletKeyId }
         }
 
         return requireSingleKeyAccounts(

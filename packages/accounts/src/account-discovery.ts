@@ -15,11 +15,7 @@ import {
     LEGACY_CHAIN_ID,
     scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
-import type {
-    DerivationType,
-    HDWalletAccount,
-    WalletAccount,
-} from './models/accounts'
+import type { HDWalletAccount, WalletAccount } from './models/accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { buildAccount } from './credentials'
 import {
@@ -35,7 +31,6 @@ const KEY_INDEX_GAP_LIMIT = 5
 
 type DiscoverAccountsParams = {
     getPublicKey: GetPublicKey
-    derivationType: DerivationType
     walletKeyId: string
     accountGapLimit?: number
     keyIndexGapLimit?: number
@@ -46,7 +41,6 @@ type ScanAccountKeysParams = {
     keyIndexGapLimit: number
     getPublicKey: GetPublicKey
     walletKeyId: string
-    derivationType: DerivationType
 }
 
 type ScanResult = {
@@ -59,7 +53,6 @@ async function scanAccountKeys({
     keyIndexGapLimit,
     getPublicKey,
     walletKeyId,
-    derivationType,
 }: ScanAccountKeysParams): Promise<ScanResult> {
     const network = useNetworkStore.getState().network
     const adapter = accountsAdapterFor(network)
@@ -79,32 +72,16 @@ async function scanAccountKeys({
             const currentKeyIdx = keyIdx + i
             keyIndices.push(currentKeyIdx)
 
-            const addressBytes = await getPublicKey({
-                account: accountIdx,
-                keyIndex: currentKeyIdx,
-                derivationType,
-            })
+            const hd = { account: accountIdx, keyIndex: currentKeyIdx }
+            const addressBytes = await getPublicKey(hd)
             const address = codec.fromPublicKey(addressBytes, deriveOpts)
 
             const accountData = buildAccount({
-                address,
-                provenance: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: {
-                        account: accountIdx,
-                        change: 0,
-                        keyIndex: currentKeyIdx,
-                        derivationType,
-                    },
-                },
-                credentials: {
+                custody: { kind: 'local', seed: 'bip39', hd },
+                chains: {
                     [LEGACY_CHAIN_ID]: {
-                        keyPairId: adapter.hdKeyPairId(walletKeyId, {
-                            account: accountIdx,
-                            keyIndex: currentKeyIdx,
-                            derivationType,
-                        }),
+                        address,
+                        keyPairId: adapter.hdKeyPairId(walletKeyId, hd),
                     },
                 },
             })
@@ -144,7 +121,6 @@ async function scanAccountKeys({
 
 export async function discoverAccounts({
     getPublicKey,
-    derivationType,
     walletKeyId,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
@@ -166,7 +142,6 @@ export async function discoverAccounts({
                     keyIndexGapLimit,
                     getPublicKey,
                     walletKeyId,
-                    derivationType,
                 }),
             )
         }
@@ -239,8 +214,8 @@ export async function discoverRekeyedAccounts({
 
         return rekeyedAddresses.map((rekeyedAddress): WalletAccount =>
             buildAccount({
-                address: rekeyedAddress,
-                provenance: { kind: 'watch' },
+                custody: { kind: 'watch' },
+                chains: { [LEGACY_CHAIN_ID]: { address: rekeyedAddress } },
                 rekeyAddress: address,
             }),
         )

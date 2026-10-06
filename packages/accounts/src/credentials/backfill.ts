@@ -13,14 +13,14 @@
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     AccountTypes,
-    type AccountCredentials,
-    type AccountProvenance,
+    type AccountChains,
+    type AccountCustody,
     type WalletAccount,
 } from '../models'
 
-export type AccountCustody = {
-    provenance: AccountProvenance
-    credentials: AccountCredentials
+export type CustodyFields = {
+    custody: AccountCustody
+    chains: AccountChains
 }
 
 /**
@@ -31,28 +31,36 @@ export type AccountCustody = {
  */
 export const custodyFromLegacy = (
     account: WalletAccount,
-): AccountCustody | undefined => {
+): CustodyFields | undefined => {
+    const { address } = account
     switch (account.type) {
         case AccountTypes.algo25:
         case AccountTypes.quantum: {
             if (!account.keyPairId) return undefined
             return {
-                provenance: { kind: 'local', seed: account.type },
-                credentials: {
-                    [LEGACY_CHAIN_ID]: { keyPairId: account.keyPairId },
+                custody: { kind: 'local', seed: account.type },
+                chains: {
+                    [LEGACY_CHAIN_ID]: {
+                        address,
+                        keyPairId: account.keyPairId,
+                    },
                 },
             }
         }
         case AccountTypes.hdWallet: {
             if (!account.keyPairId || !account.hdWalletDetails) return undefined
+            const { account: hdAccount, keyIndex } = account.hdWalletDetails
             return {
-                provenance: {
+                custody: {
                     kind: 'local',
                     seed: 'bip39',
-                    hd: { ...account.hdWalletDetails },
+                    hd: { account: hdAccount, keyIndex },
                 },
-                credentials: {
-                    [LEGACY_CHAIN_ID]: { keyPairId: account.keyPairId },
+                chains: {
+                    [LEGACY_CHAIN_ID]: {
+                        address,
+                        keyPairId: account.keyPairId,
+                    },
                 },
             }
         }
@@ -60,25 +68,35 @@ export const custodyFromLegacy = (
             if (!account.hardwareDetails) return undefined
             const { accountIndex, ...device } = account.hardwareDetails
             return {
-                provenance: { kind: 'hardware', device, accountIndex },
-                credentials: {},
+                custody: { kind: 'hardware', device, accountIndex },
+                chains: { [LEGACY_CHAIN_ID]: { address } },
             }
         }
         case AccountTypes.multisig: {
             if (!account.multisigDetails) return undefined
             const { threshold, addresses, version } = account.multisigDetails
             return {
-                provenance: {
-                    kind: 'multisig',
-                    threshold,
-                    members: [...addresses],
-                    version,
+                custody: { kind: 'multisig' },
+                chains: {
+                    [LEGACY_CHAIN_ID]: {
+                        address,
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                version,
+                                threshold,
+                                addresses: [...addresses],
+                            },
+                        },
+                    },
                 },
-                credentials: {},
             }
         }
         case AccountTypes.watch: {
-            return { provenance: { kind: 'watch' }, credentials: {} }
+            return {
+                custody: { kind: 'watch' },
+                chains: { [LEGACY_CHAIN_ID]: { address } },
+            }
         }
         default: {
             return undefined
@@ -86,11 +104,11 @@ export const custodyFromLegacy = (
     }
 }
 
-/** Idempotent: an account that already has a provenance is returned as-is. */
+/** Idempotent: an account that already has a custody is returned as-is. */
 export const withCustody = <T extends WalletAccount>(account: T): T => {
-    if (account.provenance) return account
-    const custody = custodyFromLegacy(account)
-    return custody ? { ...account, ...custody } : account
+    if (account.custody) return account
+    const fields = custodyFromLegacy(account)
+    return fields ? { ...account, ...fields } : account
 }
 
 /**
@@ -98,10 +116,10 @@ export const withCustody = <T extends WalletAccount>(account: T): T => {
  * account as it was is dropped and derived again.
  */
 export const rebuildCustody = <T extends WalletAccount>(account: T): T => {
-    const custody = custodyFromLegacy(account)
-    if (custody) return { ...account, ...custody }
+    const fields = custodyFromLegacy(account)
+    if (fields) return { ...account, ...fields }
     const rest = { ...account }
-    delete rest.provenance
-    delete rest.credentials
+    delete rest.custody
+    delete rest.chains
     return rest
 }

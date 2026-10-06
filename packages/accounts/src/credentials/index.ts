@@ -10,10 +10,21 @@
  limitations under the License
  */
 
-export { withCustody, type AccountCustody } from './backfill'
+export { withCustody, type CustodyFields } from './backfill'
+export {
+    addressOn,
+    authorityOf,
+    chainAccountOf,
+    custodyOf,
+    hardwareDeviceOf,
+    hasCustody,
+    hdIndexOf,
+    seedOf,
+    signingKeyOn,
+} from './accessors'
 export {
     buildAccount,
-    type AccountForProvenance,
+    type AccountForCustody,
     type BuildAccountInput,
 } from './buildAccount'
 export { credentialScheme, type SchemeChain } from './credentialScheme'
