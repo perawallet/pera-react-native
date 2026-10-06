@@ -21,8 +21,10 @@ const fs = require('fs');
 const buildGates = require('./metro-build-gates');
 const {
     DEVELOPER_GALLERY_MODULES,
+    ETHEREUM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
     readBakedAppEnvironment,
+    readBakedChainIds,
     toStubMap,
 } = buildGates;
 
@@ -205,11 +207,25 @@ console.log(
     `[metro] developer gallery: ${developerGalleryIncluded ? 'included' : 'stubbed'} (appEnvironment=${bakedAppEnvironment ?? 'unset'}, APP_ENV=${process.env.APP_ENV ?? 'unset'})`,
 );
 
+// viem ships only in a build whose baked CHAINS lists ethereum. The baked file
+// is the same source config.chains reads at runtime; a bundle started before
+// generate-config.sh rewrote it fails loudly in buildChainSetup instead of
+// silently running Algorand-only.
+const bakedChainIds = readBakedChainIds(
+    path.resolve(monorepoRoot, 'packages/config/src/generated-env.ts'),
+);
+const ethereumIncluded = bakedChainIds?.includes('ethereum') ?? false;
+
+console.log(
+    `[metro] ethereum chain: ${ethereumIncluded ? 'included' : 'stubbed'} (chainIds=${bakedChainIds?.join(',') ?? 'unset'})`,
+);
+
 const buildStubs = {
     ...(localeTourEnabled ? {} : localeTourStubs),
     ...(developerGalleryIncluded
         ? {}
         : toStubMap(projectRoot, DEVELOPER_GALLERY_MODULES)),
+    ...(ethereumIncluded ? {} : toStubMap(projectRoot, ETHEREUM_CHAIN_MODULES)),
 };
 
 // AsyncStorage is not a Pera dependency and must never become one: it would
@@ -479,6 +495,27 @@ const customResolveRequest = (context, moduleName, platform) => {
             return {
                 type: 'sourceFile',
                 filePath: resolved.filePath.replace(/index\.js$/, 'index.cjs'),
+            };
+        }
+        return resolved;
+    }
+
+    // viem ships stub accounts/ and chains/ package.json files whose `main`
+    // points at _cjs, and native Metro's mainFields pick them over viem's exports
+    // map. Two copies then load and `instanceof BaseError` fails across entry
+    // points, so swap the resolved _cjs path for its _esm twin.
+    if (moduleName === 'viem' || moduleName.startsWith('viem/')) {
+        const resolved = context.resolveRequest(context, moduleName, platform);
+        if (
+            resolved?.type === 'sourceFile' &&
+            /[\\/]viem[\\/]_cjs[\\/]/.test(resolved.filePath)
+        ) {
+            return {
+                type: 'sourceFile',
+                filePath: resolved.filePath.replace(
+                    /([\\/]viem[\\/])_cjs([\\/])/,
+                    '$1_esm$2',
+                ),
             };
         }
         return resolved;
