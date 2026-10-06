@@ -25,6 +25,7 @@ catalog:
   "@ledgerhq/react-native-hid": ^6.39.1
   "@noble/ciphers": ^2.2.0
   "@noble/hashes": ^2.3.0
+  "@noble/secp256k1": ^3.2.0
   "@notifee/react-native": ^9.1.8
   "@perawallet/walletconnect": 1.0.3
   "@playwright/test": ^1.53.0
@@ -38,6 +39,11 @@ catalog:
   # a core it was never built against. Bump the two together.
   "@reown/walletkit": 1.6.0
   "@scure/base": 2.4.0
+  # Pinned exactly: 2.3.0 pins @noble/hashes 2.3.0, the version the tree
+  # already resolves. 2.4.0 pins hashes 2.4.0, which moves jsdom's optional
+  # peer, renames vitest's store path and flips which @types/react copy the
+  # mobile typecheck picks for jsx-runtime.
+  "@scure/bip32": 2.3.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
   "@tanstack/query-async-storage-persister": ^5.99.0
