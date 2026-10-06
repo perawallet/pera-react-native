@@ -122,6 +122,16 @@ const POPUP_CLAIM_TIMEOUT_MS = 5000
 // a cold popup boot so a slow-but-working popup is not pre-empted; a late resolve is ignored.
 export const POPUP_OPEN_TIMEOUT_MS = 4000
 
+// Chrome stops an idle extension worker after 30 s, and every pending
+// approval's state lives here in memory: a user who reads a request (or
+// confirms on a Ledger) for longer would approve into a worker that no longer
+// knows it. Any extension API call resets the idle timer, so one runs on this
+// cadence while an approval is pending.
+export const APPROVAL_KEEPALIVE_INTERVAL_MS = 25_000
+// Backstop for an approval that is never settled: past this since the last
+// one opened, the worker is left to idle out as it would without the keepalive.
+export const APPROVAL_KEEPALIVE_MAX_MS = 15 * 60_000
+
 export const APPROVAL_WINDOW_WIDTH = 360
 export const APPROVAL_WINDOW_HEIGHT = 600
 
@@ -184,6 +194,8 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
     // routes to the window. Deliberately separate from `surface: 'popup'`, which
     // must only ever mean the popup genuinely opened: get-current-approval trusts it.
     private popupAttemptRequestId: string | null = null
+    private keepAliveTimer: ReturnType<typeof setInterval> | null = null
+    private keepAliveSince = 0
 
     constructor(private readonly chromeLike: typeof chrome = chrome) {}
 
@@ -306,7 +318,29 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                 approval,
                 settle: resolve as Settle,
             })
+            this.startKeepAlive()
         })
+    }
+
+    private startKeepAlive(): void {
+        this.keepAliveSince = Date.now()
+        if (this.keepAliveTimer !== null) return
+        this.keepAliveTimer = setInterval(() => {
+            if (
+                this.pending.size === 0 ||
+                Date.now() - this.keepAliveSince > APPROVAL_KEEPALIVE_MAX_MS
+            ) {
+                this.stopKeepAlive()
+                return
+            }
+            void this.chromeLike.runtime.getPlatformInfo().catch(() => {})
+        }, APPROVAL_KEEPALIVE_INTERVAL_MS)
+    }
+
+    private stopKeepAlive(): void {
+        if (this.keepAliveTimer === null) return
+        clearInterval(this.keepAliveTimer)
+        this.keepAliveTimer = null
     }
 
     // Every pending approval past the first becomes a real OS window and a
@@ -579,6 +613,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         const entry = this.pending.get(requestId)
         if (!entry) return
         this.pending.delete(requestId)
+        if (this.pending.size === 0) this.stopKeepAlive()
         // Settled by any route; the unclaimed timer has nothing left to guard.
         if (entry.unclaimedTimer !== undefined) {
             clearTimeout(entry.unclaimedTimer)
