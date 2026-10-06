@@ -61,6 +61,10 @@ export {
     type SqlExecutor,
 } from './database/host'
 export {
+    SqlStatementTimeoutError,
+    isSqlStatementTimeout,
+} from './database/errors'
+export {
     STORAGE_PROXY_SCOPE,
     STORAGE_EVENT_SCOPE,
     startStorageProxyHost,

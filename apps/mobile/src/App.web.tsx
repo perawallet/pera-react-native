@@ -106,12 +106,20 @@ export const App = (): React.JSX.Element => {
             if (isOffscreen) {
                 // Headless surface; store-bearing imports stay behind these dynamic
                 // imports (same boot-order contract as AppShell).
-                const [mod, { registerChainAdapters }] = await Promise.all([
+                const [
+                    mod,
+                    { registerChainAdapters },
+                    { markDatabaseResetNoticePending },
+                ] = await Promise.all([
                     import('@browser/offscreen/runOffscreenApp'),
                     import('./bootstrap/chain-adapters'),
+                    import('./bootstrap/databaseResetNotice'),
                 ])
                 await registerTransports()
-                await mod.runOffscreenApp({ registerChainAdapters })
+                await mod.runOffscreenApp({
+                    registerChainAdapters,
+                    onDatabaseReset: markDatabaseResetNoticePending,
+                })
                 setShell(() => OffscreenStatus)
                 return
             }

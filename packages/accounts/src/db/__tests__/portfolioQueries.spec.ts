@@ -199,7 +199,7 @@ describe('account portfolio queries', () => {
                 accountAddress: 'ADDR1',
             })
 
-            expect(funded).toEqual(['testnet'])
+            expect(funded).toEqual(['algorand/testnet'])
         })
 
         it('ignores ASA holdings and other accounts', async () => {

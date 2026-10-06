@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     LEGACY_CHAIN_ID,
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -79,7 +79,7 @@ async function queryHoldingRows({
     limit,
     offset,
 }: GetAccountHoldingsPageParams) {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const conditions = [
         eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
         eq(AccountAssetHoldingsSchema.network, network),
@@ -353,7 +353,7 @@ export async function getAccountCollectiblesLite({
     search,
     includeOptedInOnly = true,
 }: GetAccountCollectiblesLiteParams): Promise<AccountCollectibleLiteRow[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     // Built here, not at module scope: a top-level `sql` template dereferences
     // the imported schema at import time, which breaks every consumer that
     // mocks the assets package.

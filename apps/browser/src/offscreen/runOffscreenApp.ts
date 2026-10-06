@@ -54,6 +54,7 @@ import {
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
+import { createDatabaseRecovery } from './databaseRecovery'
 import { createWorkerExecutor } from './worker-executor'
 
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000
@@ -72,10 +73,12 @@ const REHYDRATE_BY_KEY: Record<
 export type OffscreenAppDeps = {
     // Handed over by the web shell: apps/browser imports no apps/mobile code but the query client.
     registerChainAdapters: () => void
+    onDatabaseReset: () => Promise<void>
 }
 
 export const runOffscreenApp = async ({
     registerChainAdapters,
+    onDatabaseReset,
 }: OffscreenAppDeps): Promise<void> => {
     const services = getPlatformServices()
 
@@ -102,7 +105,9 @@ export const runOffscreenApp = async ({
     registerChainAdapters()
 
     // Migrations run before the host answers ready to anyone.
-    await initializeDatabase(services.database)
+    await initializeDatabase(services.database, {
+        recovery: createDatabaseRecovery(onDatabaseReset),
+    })
     await seedNativeAssets(getDatabase())
     host.setReady()
 

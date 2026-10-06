@@ -92,31 +92,28 @@ export const legacyNetworkOf = (scope: ChainScope): LegacyNetwork => {
     return network
 }
 
-// A Record so that adding a chain id stops this compiling. A new chain has no
-// rows from before scope keys, so its entry must return its scope key: a bare
-// network id would collide with the legacy chain's rows.
-const LEGACY_COLUMN_VALUE: Record<ChainId, (scope: ChainScope) => string> = {
-    algorand: scope => scope.networkId,
-}
+// Query keys still carry the bare network the stores hold, unlike the database
+// network column, which holds the scope key. A Record so that adding a chain id
+// stops this compiling: a new chain has no bare-network keys, so its entry must
+// return its scope key, or it would collide with the legacy chain's entries.
+const QUERY_KEY_NETWORK_VALUE: Record<ChainId, (scope: ChainScope) => string> =
+    {
+        algorand: scope => scope.networkId,
+    }
 
-export const legacyColumnValue = (scope: ChainScope): string => {
+export const queryKeyNetworkValue = (scope: ChainScope): string => {
     assertValidScope(scope)
-    return LEGACY_COLUMN_VALUE[scope.chainId](scope)
+    return QUERY_KEY_NETWORK_VALUE[scope.chainId](scope)
 }
 
-// Until the column is backfilled to scope keys it still holds the bare legacy
-// network, so this cast is the one place the column's type runs ahead of its rows.
-export const networkColumnValue = (scope: ChainScope): ChainScopeKey =>
-    legacyColumnValue(scope) as ChainScopeKey
-
-// Every network-partitioned query key embeds legacyColumnValue(scope), either as a
-// bare element or as the `network` field of an object element. Typed without
-// TanStack's QueryKey so this package keeps depending on nothing.
+// Every network-partitioned query key embeds queryKeyNetworkValue(scope), either
+// as a bare element or as the `network` field of an object element. Typed
+// without TanStack's QueryKey so this package keeps depending on nothing.
 export const queryKeyReferencesScope = (
     queryKey: readonly unknown[],
     scope: ChainScope,
 ): boolean => {
-    const value = legacyColumnValue(scope)
+    const value = queryKeyNetworkValue(scope)
     return queryKey.some(
         part =>
             part === value ||
@@ -126,7 +123,8 @@ export const queryKeyReferencesScope = (
     )
 }
 
-// Never parseScopeKey a stored value directly: legacy rows hold a bare network.
+// Never parseScopeKey a persisted value directly: state written before scope
+// keys holds a bare network.
 export const scopeFromNetworkColumn = (value: string): ChainScope => {
     if (value.includes(SCOPE_KEY_SEPARATOR)) {
         return parseScopeKey(value)

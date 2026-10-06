@@ -13,7 +13,7 @@
 import { eq, and, inArray, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -39,7 +39,7 @@ export async function upsertAssetPrices({
     prices,
     scope,
 }: UpsertAssetPricesParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (prices.length === 0) return
 
     const now = Date.now()
@@ -76,7 +76,7 @@ export async function getAssetPricesByIds({
     assetIds,
     scope,
 }: GetAssetPricesByIdsParams): Promise<AssetPriceRow[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return []
 
     const decimalIds = assetIds.map(id => new Decimal(id))
@@ -113,7 +113,7 @@ export async function recordPriceMisses({
     assetIds,
     scope,
 }: PriceMissesParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     const now = Date.now()
@@ -144,7 +144,7 @@ export async function clearPriceMisses({
     assetIds,
     scope,
 }: PriceMissesParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     const decimalIds = assetIds.map(id => new Decimal(id))
@@ -174,7 +174,7 @@ export async function deleteAssetPrices({
     assetIds,
     scope,
 }: DeleteAssetPricesParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     const decimalIds = assetIds.map(id => new Decimal(id))

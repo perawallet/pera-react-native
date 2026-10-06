@@ -51,6 +51,7 @@ import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useAppTheme } from '@hooks/useAppTheme'
 import { useCrashReporterBinding } from '@hooks/useCrashReporterBinding'
+import { useDatabaseResetNotice } from '@hooks/useDatabaseResetNotice'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { getNavigationTheme } from '@theme/theme'
@@ -128,6 +129,7 @@ const NetworkSwitchInvalidation = (): null => {
 const MainSurfaceLifecycle = (): null => {
     useAppLockFromVault()
     useBackupSyncLifecycle()
+    useDatabaseResetNotice()
     return null
 }
 

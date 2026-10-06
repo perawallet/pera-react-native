@@ -21,7 +21,7 @@ import {
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { Networks } from '@perawallet/wallet-core-config'
 import {
-    networkColumnValue,
+    toScopeKey,
     scopeForLegacyNetwork,
     type LegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
@@ -84,7 +84,7 @@ describe('clearCustomNetworkCache', () => {
     })
 
     const storedValue = (network: LegacyNetwork) =>
-        networkColumnValue(scopeForLegacyNetwork(network))
+        toScopeKey(scopeForLegacyNetwork(network))
 
     test('lists every table that has a network column', async () => {
         const rows = await db.values<[string]>(sql`

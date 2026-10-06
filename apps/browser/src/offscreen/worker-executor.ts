@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import type {
-    DbMethod,
-    SqlExecutor,
+import {
+    SqlStatementTimeoutError,
+    type DbMethod,
+    type SqlExecutor,
 } from '@perawallet/wallet-extension-platform-chrome'
 
 type WorkerResponse =
@@ -106,11 +107,7 @@ export const createWorkerExecutor = (worker: Worker): SqlExecutor => {
             // here means the host never reports ready and nothing recovers.
             const timer = setTimeout(() => {
                 if (!pending.delete(id)) return
-                reject(
-                    new Error(
-                        `db worker request timed out after ${REQUEST_TIMEOUT_MS}ms`,
-                    ),
-                )
+                reject(new SqlStatementTimeoutError(REQUEST_TIMEOUT_MS))
             }, REQUEST_TIMEOUT_MS)
             const settle = {
                 resolve: (rows: unknown[][]) => {

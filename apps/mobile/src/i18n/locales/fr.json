@@ -4111,6 +4111,10 @@
             "confirm_button": "Réinitialiser le wallet",
             "error": "Impossible de réinitialiser le wallet. Veuillez réessayer."
         },
+        "database_reset": {
+            "title": "Données du wallet actualisées",
+            "body": "Nous avons reconstruit les soldes et l’historique enregistrés dans ce navigateur. Ils seront rechargés dans un instant. Vos comptes ne sont pas concernés."
+        },
         "security": {
             "autolock_title": "Verrouillage automatique après",
             "autolock_minutes": "{{minutes}} minutes",

@@ -211,7 +211,7 @@ describe('nfd repository', () => {
 
     // Every other test writes and reads through the same encoder, so only a raw
     // read catches a writer that stops storing what existing installs hold.
-    it('stores the bare legacy network in nfd_cache', async () => {
+    it('stores the scope key in nfd_cache', async () => {
         await upsertNfdEntries({
             db,
             scope: scopeForLegacyNetwork('testnet'),
@@ -221,7 +221,7 @@ describe('nfd repository', () => {
         const rows = (await db.all(
             sql.raw('select network from nfd_cache'),
         )) as Array<[string]>
-        expect(rows.map(([network]) => network)).toEqual(['testnet'])
+        expect(rows.map(([network]) => network)).toEqual(['algorand/testnet'])
     })
 
     describe('getNfdsByAddresses', () => {
