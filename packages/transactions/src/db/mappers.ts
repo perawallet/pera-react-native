@@ -13,6 +13,10 @@
 import { Decimal } from 'decimal.js'
 import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
 import {
+    assetRefKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     TransactionHistoryStatuses,
     type TransactionHistoryItem,
     type TransactionHistoryStatus,
@@ -119,24 +123,86 @@ export function deserializeSwapGroupDetail(
     }
 }
 
-export function toDb(item: TransactionHistoryItem) {
+type StoredSwapGroupDetail = Omit<
+    TransactionSwapGroupDetail,
+    'amountIn' | 'amountOut'
+> & {
+    /** Base units, as a decimal string. */
+    // lanekeep-ignore-next-line pera/amount-types reason: serialized shape of the stored chain_data column
+    amountIn: string
+    /** Base units, as a decimal string. */
+    // lanekeep-ignore-next-line pera/amount-types reason: serialized shape of the stored chain_data column
+    amountOut: string
+}
+
+/**
+ * The `algorand` entry of a `transactions.chain_data` document. Absent values
+ * are `null` rather than omitted, so every row has the same keys.
+ */
+type StoredAlgorandChainData = {
+    confirmedRound: Nullable<number>
+    /** Unix seconds. */
+    roundTime: Nullable<number>
+    innerTransactionCount: Nullable<number>
+    /** Decimal string: a uint64 id never lives in a JS number. */
+    applicationId: Nullable<string>
+    closeTo: Nullable<string>
+    swapGroupDetail: Nullable<StoredSwapGroupDetail>
+    groupId: Nullable<string>
+    /** Base units, as a decimal string. */
+    // lanekeep-ignore-next-line pera/amount-types reason: serialized shape of the stored chain_data column
+    closeAmount: Nullable<string>
+}
+
+// Built from the converted columns, so the two shapes can't drift apart.
+function serializeAlgorandChainData(
+    columns: ReturnType<typeof toAlgorandColumns>,
+    swap: Nullable<TransactionSwapGroupDetail>,
+): string {
+    const algorand: StoredAlgorandChainData = {
+        confirmedRound: columns.confirmedRound,
+        roundTime: columns.roundTime,
+        innerTransactionCount: columns.innerTransactionCount,
+        applicationId: columns.applicationId?.toString() ?? null,
+        closeTo: columns.closeTo,
+        swapGroupDetail: swap
+            ? {
+                  ...swap,
+                  amountIn: swap.amountIn.toString(),
+                  amountOut: swap.amountOut.toString(),
+              }
+            : null,
+        groupId: columns.groupId,
+        closeAmount: columns.closeAmount?.toString() ?? null,
+    }
+    return JSON.stringify({ algorand })
+}
+
+function toAlgorandColumns(item: TransactionHistoryItem) {
     return {
-        id: item.id,
-        txType: item.txType,
-        sender: item.sender,
-        receiver: item.receiver,
         confirmedRound: item.confirmedRound ?? null,
         roundTime: item.roundTime,
-        status: item.status ?? TransactionHistoryStatuses.CONFIRMED,
-        fee: item.fee,
         groupId: item.groupId,
-        amount: item.amount,
         closeTo: item.closeTo,
         closeAmount: item.closeAmount,
         applicationId: item.applicationId
             ? new Decimal(item.applicationId)
             : null,
         innerTransactionCount: item.innerTransactionCount,
+    }
+}
+
+export function toDb(item: TransactionHistoryItem, scope: ChainScope) {
+    const algorandColumns = toAlgorandColumns(item)
+    return {
+        ...algorandColumns,
+        id: item.id,
+        txType: item.txType,
+        sender: item.sender,
+        receiver: item.receiver,
+        status: item.status ?? TransactionHistoryStatuses.CONFIRMED,
+        fee: item.fee,
+        amount: item.amount,
         assetSender: item.assetSender,
         assetJson: item.asset ? JSON.stringify(item.asset) : null,
         swapGroupDetailJson: item.swapGroupDetail
@@ -146,6 +212,16 @@ export function toDb(item: TransactionHistoryItem) {
             ? JSON.stringify(item.interpretedMeaning)
             : null,
         balanceImpactsJson: serializeBalanceImpacts(item.balanceImpacts),
+        chainData: serializeAlgorandChainData(
+            algorandColumns,
+            item.swapGroupDetail,
+        ),
+        assetRef: item.asset
+            ? assetRefKey({
+                  chainId: scope.chainId,
+                  assetId: item.asset.assetId,
+              })
+            : null,
     }
 }
 
