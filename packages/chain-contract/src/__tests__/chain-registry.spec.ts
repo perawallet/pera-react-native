@@ -76,6 +76,7 @@ const descriptor: ChainDescriptor = {
         supportsReplacement: false,
         supportsNativeMultisig: true,
         supportsRekey: true,
+        hasTokenApproval: false,
         multipleAddressesPerAccount: false,
     },
     explorer: {
@@ -393,7 +394,9 @@ describe('buildChainSetup', () => {
         const other = moduleWith({
             descriptor: { ...descriptor, id: 'other' as ChainId },
         })
-        const modules = { algorand, other } as Record<ChainId, ChainModule>
+        const modules = { algorand, other } as Partial<
+            Record<ChainId, ChainModule>
+        >
 
         const setup = buildChainSetup(
             { enabled: ['algorand'], capabilities: {} },
@@ -438,9 +441,24 @@ describe('buildChainSetup', () => {
 
     it('throws when an enabled chain has no module', () => {
         expect(() =>
+            buildChainSetup({ enabled: ['algorand'], capabilities: {} }, {}),
+        ).toThrow(/no chain module/)
+    })
+
+    it('skips a chain whose module is undefined', () => {
+        const setup = buildChainSetup(
+            { enabled: ['algorand'], capabilities: {} },
+            { algorand: moduleWith(), ethereum: undefined },
+        )
+
+        expect(setup.map(entry => entry.chainId)).toEqual(['algorand'])
+    })
+
+    it('throws when an enabled chain maps to an undefined module', () => {
+        expect(() =>
             buildChainSetup(
-                { enabled: ['algorand'], capabilities: {} },
-                {} as Record<ChainId, ChainModule>,
+                { enabled: ['algorand', 'ethereum'], capabilities: {} },
+                { algorand: moduleWith(), ethereum: undefined },
             ),
         ).toThrow(/no chain module/)
     })

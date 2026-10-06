@@ -117,7 +117,7 @@ describe('cleanupRemovedAccountData', () => {
             .values({
                 accountAddress: 'ADDR1',
                 assetId: '200',
-                network: 'ethereum/devnet' as ChainScopeKey,
+                network: 'unknown/devnet' as ChainScopeKey,
                 updatedAt: Date.now(),
             })
             .run()

@@ -136,6 +136,15 @@ describe('queryKeyNetworkValue', () => {
         expect(value).toBe('custom-9f3a')
     })
 
+    it('is the scope key for a chain with no bare-network keys', () => {
+        const value = queryKeyNetworkValue({
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        })
+
+        expect(value).toBe('ethereum/mainnet')
+    })
+
     it('rejects a network id that is not valid', () => {
         const scope: ChainScope = {
             chainId: 'algorand',
@@ -185,7 +194,7 @@ describe('network column encoding', () => {
     })
 
     it('rejects a scope key for an unknown chain', () => {
-        expect(() => scopeFromNetworkColumn('ethereum/mainnet')).toThrow(
+        expect(() => scopeFromNetworkColumn('unknown/mainnet')).toThrow(
             InvalidScopeKeyError,
         )
     })
@@ -249,6 +258,12 @@ describe('legacyNetworkOf', () => {
             InvalidScopeKeyError,
         )
     })
+
+    it('rejects a chain that has no legacy networks', () => {
+        expect(() =>
+            legacyNetworkOf({ chainId: 'ethereum', networkId: 'mainnet' }),
+        ).toThrow(InvalidScopeKeyError)
+    })
 })
 
 describe('rekeyLegacyNetworkRecord', () => {
@@ -274,7 +289,7 @@ describe('rekeyLegacyNetworkRecord', () => {
         const rekeyed = rekeyLegacyNetworkRecord({
             mainnet: 1,
             devnet: 2,
-            'ethereum/mainnet': 3,
+            'unknown/mainnet': 3,
         })
 
         expect(rekeyed).toEqual({ 'algorand/mainnet': 1 })

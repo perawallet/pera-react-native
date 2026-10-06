@@ -103,6 +103,7 @@ export const algorandDescriptor: ChainDescriptor = {
         supportsReplacement: false,
         supportsNativeMultisig: true,
         supportsRekey: true,
+        hasTokenApproval: false,
         multipleAddressesPerAccount: false,
     },
     explorer: {

@@ -79,6 +79,7 @@ const LEGACY_NETWORK_OF: Record<
 > = {
     algorand: scope =>
         isLegacyNetwork(scope.networkId) ? scope.networkId : undefined,
+    ethereum: () => undefined,
 }
 
 // The inverse, for the backend and algod clients that are still keyed by the
@@ -99,6 +100,7 @@ export const legacyNetworkOf = (scope: ChainScope): LegacyNetwork => {
 const QUERY_KEY_NETWORK_VALUE: Record<ChainId, (scope: ChainScope) => string> =
     {
         algorand: scope => scope.networkId,
+        ethereum: scope => toScopeKey(scope),
     }
 
 export const queryKeyNetworkValue = (scope: ChainScope): string => {
