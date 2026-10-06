@@ -13,7 +13,7 @@
 import { eq, and, inArray, notInArray, ne, or, isNull, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -57,7 +57,7 @@ export async function refreshAccountHoldings({
     holdings,
     scope,
 }: UpsertAccountHoldingsParams): Promise<boolean> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const now = Date.now()
 
     const existingRows = await db
@@ -166,7 +166,7 @@ export async function insertAssetHolding({
     amount,
     isFrozen,
 }: InsertAssetHoldingParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     await db
         .insert(AccountAssetHoldingsSchema)
         .values({
@@ -203,7 +203,7 @@ export async function addToAssetHolding({
     scope,
     amount,
 }: AddToAssetHoldingParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const conditions = and(
         eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
         eq(AccountAssetHoldingsSchema.network, network),
@@ -261,7 +261,7 @@ export async function getAccountHoldings({
     hideOptedInNfts,
     excludeAssetTypes,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const needsAssetJoin =
         hideNfts === true ||
         hideOptedInNfts === true ||
@@ -381,7 +381,7 @@ export async function isAssetFrozen({
     assetId,
     scope,
 }: IsAssetFrozenParams): Promise<boolean> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({ isFrozen: AccountAssetHoldingsSchema.isFrozen })
         .from(AccountAssetHoldingsSchema)
@@ -410,7 +410,7 @@ export async function deleteAssetHoldings({
     assetIds,
     scope,
 }: DeleteAssetHoldingsParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     const assetIdDecimals = assetIds.map(id => new Decimal(id))
@@ -436,7 +436,7 @@ export async function getAllHeldAssetIdsForNetwork({
     db = getDatabase(),
     scope,
 }: GetAllHeldAssetIdsForNetworkParams): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .selectDistinct({
             assetId: AccountAssetHoldingsSchema.assetId,
@@ -468,7 +468,7 @@ export async function getAssetHolderAddresses({
     assetId,
     scope,
 }: GetAssetHolderAddressesParams): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({
             accountAddress: AccountAssetHoldingsSchema.accountAddress,

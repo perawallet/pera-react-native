@@ -75,7 +75,7 @@ describe('submission ledger repository', () => {
         expect(open).toHaveLength(1)
         expect(open[0]).toMatchObject({
             id,
-            network: 'mainnet',
+            network: 'algorand/mainnet',
             txIds: ['TXID-REKEY-1'],
             intentKey: { kind: 'rekey', address: 'SENDER_A' },
             flow: 'rekey',
@@ -131,7 +131,7 @@ describe('submission ledger repository', () => {
             scope: scopeForLegacyNetwork('mainnet'),
         })
         expect(mainnet).toHaveLength(1)
-        expect(mainnet[0]!.network).toBe('mainnet')
+        expect(mainnet[0]!.network).toBe('algorand/mainnet')
     })
 
     it('returns every network when no scope is given', async () => {
@@ -144,13 +144,13 @@ describe('submission ledger repository', () => {
         expect(await getOpenSubmissionAttempts({ db })).toHaveLength(2)
     })
 
-    it('stores the bare legacy network so existing rows still match', async () => {
+    it('stores the scope key the backfill migration wrote', async () => {
         await recordRekey({ scope: scopeForLegacyNetwork('testnet') })
 
         const rows = (await db.all(
             sql.raw('select network from submission_attempts'),
         )) as Array<[string]>
-        expect(rows.map(([network]) => network)).toEqual(['testnet'])
+        expect(rows.map(([network]) => network)).toEqual(['algorand/testnet'])
     })
 
     it('filters open rows by sender', async () => {

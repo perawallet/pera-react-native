@@ -4144,6 +4144,10 @@
             "confirm_button": "Redefinir wallet",
             "error": "Não foi possível redefinir a wallet. Tente novamente."
         },
+        "database_reset": {
+            "title": "Dados da wallet atualizados",
+            "body": "Reconstruímos os saldos e o histórico salvos neste navegador. Eles vão carregar de novo em instantes. Suas contas não foram afetadas."
+        },
         "security": {
             "autolock_title": "Bloqueio automático após",
             "autolock_minutes": "{{minutes}} minutos",

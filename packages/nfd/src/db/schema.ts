@@ -13,7 +13,6 @@
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 
-// Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
 export const NfdCacheSchema = sqliteTable(
     'nfd_cache',
     {

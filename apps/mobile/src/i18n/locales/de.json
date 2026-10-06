@@ -4108,6 +4108,10 @@
             "confirm_button": "Wallet zurücksetzen",
             "error": "Die Wallet konnte nicht zurückgesetzt werden. Bitte versuche es erneut."
         },
+        "database_reset": {
+            "title": "Wallet-Daten aktualisiert",
+            "body": "Wir haben die in diesem Browser gespeicherten Guthaben und Verläufe neu aufgebaut. Sie werden gleich neu geladen. Deine Konten sind nicht betroffen."
+        },
         "security": {
             "autolock_title": "Automatisch sperren nach",
             "autolock_minutes": "{{minutes}} Minuten",

@@ -4116,6 +4116,10 @@
             "confirm_button": "Cüzdanı sıfırla",
             "error": "Cüzdan sıfırlanamadı. Lütfen tekrar dene."
         },
+        "database_reset": {
+            "title": "Cüzdan verileri yenilendi",
+            "body": "Bu tarayıcıda kayıtlı bakiyeleri ve geçmişi yeniden oluşturduk. Birazdan yeniden yüklenecek. Hesapların etkilenmedi."
+        },
         "security": {
             "autolock_title": "Otomatik kilitleme süresi",
             "autolock_minutes": "{{minutes}} dakika",

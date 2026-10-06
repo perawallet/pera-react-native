@@ -15,7 +15,7 @@ import type {
     Database,
     DatabaseService,
 } from '@perawallet/wallet-extension-platform'
-import { runMigrations } from './migrator'
+import { runMigrations, type MigrationRecovery } from './migrator'
 import { migrations } from './migrations'
 
 export type { Database }
@@ -24,13 +24,30 @@ const DATABASE_NAME = 'pera.db'
 
 let instance: Database | null = null
 
+// The submission ledger is the only table not rebuilt by a resync: losing it
+// strands in-flight broadcasts the reconciler would otherwise settle.
+const RESET_PRESERVED_TABLES = ['submission_attempts'] as const
+
+export type InitializeDatabaseOptions = {
+    // Opt-in per platform: only a host with a per-statement timeout can fail a
+    // migration that a retry never outlasts.
+    recovery?: Omit<MigrationRecovery, 'clear'>
+}
+
 export const initializeDatabase = async (
     database: DatabaseService,
+    { recovery }: InitializeDatabaseOptions = {},
 ): Promise<void> => {
     const db = await database.getDatabase(DATABASE_NAME)
 
     instance = db
-    await runMigrations(db, migrations)
+    await runMigrations(db, migrations, {
+        recovery: recovery && {
+            ...recovery,
+            clear: target =>
+                clearDatabase(target, { keep: RESET_PRESERVED_TABLES }),
+        },
+    })
 }
 
 export const getDatabase = (): Database => {
@@ -69,6 +86,7 @@ export const deleteDatabase = async (
  */
 export const clearDatabase = async (
     db: Database = getDatabase(),
+    { keep = [] }: { keep?: readonly string[] } = {},
 ): Promise<void> => {
     const tables = await db.values<[string]>(sql`
         SELECT name FROM sqlite_master
@@ -78,6 +96,7 @@ export const clearDatabase = async (
     `)
 
     for (const [name] of tables) {
+        if (keep.includes(name)) continue
         await db.run(sql.raw(`DELETE FROM "${name}"`))
     }
 }

@@ -13,7 +13,7 @@
 import { and, eq, gte, inArray } from 'drizzle-orm'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { NfdName } from '../models'
@@ -61,7 +61,7 @@ export async function upsertNfdEntries({
     scope,
     entries,
 }: UpsertNfdEntriesParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (entries.length === 0) return
 
     const now = Date.now()
@@ -103,7 +103,7 @@ export async function getNfdByAddress({
     address,
     scope,
 }: GetNfdByAddressParams): Promise<Nullable<NfdCacheRow>> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({
             address: NfdCacheSchema.address,
@@ -135,7 +135,7 @@ export async function getNfdsByAddresses({
     addresses,
     scope,
 }: GetNfdsByAddressesParams): Promise<NfdCacheRow[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (addresses.length === 0) return []
 
     const rows = await db
@@ -179,7 +179,7 @@ export async function getStaleOrMissingAddresses({
     scope,
     ttlMs,
 }: GetStaleOrMissingAddressesParams): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (addresses.length === 0) return []
 
     const freshThreshold = Date.now() - ttlMs

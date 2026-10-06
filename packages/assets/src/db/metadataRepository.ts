@@ -13,7 +13,7 @@
 import { eq, and, inArray, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -111,7 +111,7 @@ export async function upsertNodeAssets({
     items,
     scope,
 }: UpsertNodeAssetsParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (items.length === 0) return
 
     const now = Date.now()
@@ -164,7 +164,7 @@ export async function upsertPeraAssets({
     items,
     scope,
 }: UpsertPeraAssetsParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (items.length === 0) return
 
     const now = Date.now()
@@ -275,7 +275,7 @@ export async function getAssetsByIds({
     assetIds,
     scope,
 }: GetAssetsByIdsParams): Promise<PeraAsset[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return []
 
     const decimalIds = assetIds.map(id => new Decimal(id))
@@ -337,7 +337,7 @@ export async function getAssetPeraMetadata({
     assetId,
     scope,
 }: GetAssetPeraMetadataParams): Promise<Nullable<PeraAssetMetadata>> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({ peraMetadataJson: AssetsPeraSchema.peraMetadataJson })
         .from(AssetsPeraSchema)
@@ -366,7 +366,7 @@ export async function updateAssetPeraMetadata({
     scope,
     updates,
 }: UpdateAssetPeraMetadataParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const decimalId = new Decimal(assetId)
     const now = Date.now()
 
@@ -429,7 +429,7 @@ export async function deleteAssets({
     assetIds,
     scope,
 }: DeleteAssetsParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     const decimalIds = assetIds.map(id => new Decimal(id))

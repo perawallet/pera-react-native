@@ -24,7 +24,7 @@ import {
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { SubmissionAttemptsSchema } from './schema'
@@ -85,7 +85,7 @@ export const recordSubmissionAttempt = async ({
         .insert(SubmissionAttemptsSchema)
         .values({
             id,
-            network: networkColumnValue(scope),
+            network: toScopeKey(scope),
             txIdsJson: JSON.stringify(txIds),
             intentKeyJson: intentKey ? serializeIntentKey(intentKey) : null,
             flow,
@@ -165,9 +165,7 @@ export const getOpenSubmissionAttempts = async ({
         inArray(SubmissionAttemptsSchema.status, [...OPEN_SUBMISSION_STATUSES]),
     ]
     if (scope !== undefined) {
-        conditions.push(
-            eq(SubmissionAttemptsSchema.network, networkColumnValue(scope)),
-        )
+        conditions.push(eq(SubmissionAttemptsSchema.network, toScopeKey(scope)))
     }
     if (sender !== undefined) {
         conditions.push(eq(SubmissionAttemptsSchema.sender, sender))
@@ -225,9 +223,7 @@ export const getOpenSubmissionAttemptsForIntent = async ({
         ),
     ]
     if (scope !== undefined) {
-        conditions.push(
-            eq(SubmissionAttemptsSchema.network, networkColumnValue(scope)),
-        )
+        conditions.push(eq(SubmissionAttemptsSchema.network, toScopeKey(scope)))
     }
     if (unevaluatableBefore !== undefined) {
         conditions.push(

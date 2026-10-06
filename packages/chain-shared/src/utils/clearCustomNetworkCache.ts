@@ -15,7 +15,7 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import {
     CUSTOM_NETWORK_ID,
     LEGACY_CHAIN_ID,
-    networkColumnValue,
+    toScopeKey,
     queryKeyReferencesScope,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -96,7 +96,7 @@ export const clearCustomNetworkCache = async (
     queryClient: QueryClient,
     db: Database = getDatabase(),
 ): Promise<void> => {
-    const network = networkColumnValue(CUSTOM_SCOPE)
+    const network = toScopeKey(CUSTOM_SCOPE)
     for (const table of NETWORK_PARTITIONED_TABLES) {
         await db.run(
             sql`DELETE FROM ${sql.raw(table)} WHERE network = ${network}`,

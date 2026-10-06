@@ -23,8 +23,6 @@ export const SubmissionAttemptsSchema = sqliteTable(
     'submission_attempts',
     {
         id: text('id').primaryKey(),
-        // Holds the bare legacy network until the backfill: decode with
-        // scopeFromNetworkColumn.
         network: text('network').notNull().$type<ChainScopeKey>(),
         /** JSON array of txids — the on-chain dedupe identity of the group. */
         txIdsJson: text('tx_ids_json').notNull(),

@@ -26,7 +26,7 @@ import {
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
@@ -254,7 +254,7 @@ export async function getCollectibleIdsMissingUrl({
     /** Bounds one backfill pass; the remainder converges on later passes. */
     limit?: number
 }): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return []
 
     const query = db
@@ -303,7 +303,7 @@ export async function getStaleOrMissingAssetIds({
     recheckUnclassified?: UnclassifiedRecheck
     recheckArc19?: Arc19Recheck
 }): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
         table: AssetsNodeSchema,
@@ -357,7 +357,7 @@ export async function getStaleOrMissingPriceAssetIds({
     ttlMs,
     missRetryMs,
 }: GetStaleOrMissingPriceAssetIdsParams): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
         table: AssetPricesSchema,

@@ -71,7 +71,7 @@ describe('transaction repository', () => {
 
     // Every other test writes and reads through the same encoder, so only a raw
     // read catches a writer that stops storing what existing installs hold.
-    it('stores the bare legacy network in both tables', async () => {
+    it('stores the scope key in both tables', async () => {
         await upsertTransactions({
             db,
             items: [makeTx()],
@@ -83,7 +83,9 @@ describe('transaction repository', () => {
             const rows = (await db.all(
                 sql.raw(`select network from ${table}`),
             )) as Array<[string]>
-            expect(rows.map(([network]) => network)).toEqual(['testnet'])
+            expect(rows.map(([network]) => network)).toEqual([
+                'algorand/testnet',
+            ])
         }
     })
 
