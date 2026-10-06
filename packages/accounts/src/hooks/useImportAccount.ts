@@ -16,10 +16,7 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { useHDImportSession } from './useHDImportSession'
 import { useAccountsStore } from '../store'
-import {
-    type ImportAccountType,
-    type WalletAccount,
-} from '../models'
+import { type ImportAccountType, type WalletAccount } from '../models'
 import { DuplicateAccountError } from '../errors'
 import { accountsAdapterFor, requireSingleKeyAccounts } from '../chain-adapter'
 

@@ -622,8 +622,8 @@ describe('services/accounts/store', () => {
                 rekeyAddress: 'AUTH',
                 rekeyAddressByNetwork: { mainnet: 'AUTH' },
                 hardwareDetails,
-                provenance: expect.objectContaining({ kind: 'hardware' }),
-                credentials: {},
+                custody: expect.objectContaining({ kind: 'hardware' }),
+                chains: { algorand: { address: 'WATCHED' } },
             })
         })
 
@@ -944,6 +944,60 @@ describe('services/accounts/store', () => {
             expect(migrateAccountsState(structuredClone(once), 0)).toEqual(once)
         })
 
+        const v1Accounts = legacyAccounts.map(account => ({
+            ...withCustody(account),
+            provenance: { kind: 'stale' },
+            credentials: { algorand: { keyPairId: 'stale' } },
+        }))
+
+        test('v0 and v1 state migrate to the same v2 accounts, without the v1 fields', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            const fromV0 = migrateAccountsState(structuredClone(v0State), 0)
+            const fromV1 = migrateAccountsState(
+                structuredClone({ ...v0State, accounts: v1Accounts }),
+                1,
+            )
+
+            expect(fromV1.accounts).toEqual(fromV0.accounts)
+            for (const account of fromV1.accounts) {
+                expect(account).not.toHaveProperty('provenance')
+                expect(account).not.toHaveProperty('credentials')
+            }
+        })
+
+        test('a malformed v1 record keeps its legacy fields and gets no custody', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const malformed = {
+                id: 'm',
+                type: 'multisig',
+                address: 'MSIG-ADDR',
+                provenance: { kind: 'multisig' },
+                credentials: {},
+            }
+
+            const [account] = migrateAccountsState(
+                { ...v0State, accounts: [malformed] },
+                1,
+            ).accounts
+
+            expect(account).toEqual({
+                id: 'm',
+                type: 'multisig',
+                address: 'MSIG-ADDR',
+            })
+        })
+
+        test('persisted v2 state is not migrated again', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const v2State = {
+                ...v0State,
+                accounts: legacyAccounts.map(withCustody),
+            }
+
+            expect(migrateAccountsState(v2State, 2)).toBe(v2State)
+        })
+
         test('hydrating a v0 payload twice yields identical state', async () => {
             getProvider().keyValueStorage.setItem(
                 'accounts-store',
@@ -971,12 +1025,9 @@ describe('services/accounts/store', () => {
             useAccountsStore.getState().setAccounts([legacyAccounts[0]])
 
             const [account] = useAccountsStore.getState().accounts
-            expect(account.provenance).toEqual({
-                kind: 'local',
-                seed: 'algo25',
-            })
-            expect(account.credentials).toEqual({
-                algorand: { keyPairId: 'seed-ed25519' },
+            expect(account.custody).toEqual({ kind: 'local', seed: 'algo25' })
+            expect(account.chains).toEqual({
+                algorand: { address: 'ALGO25-ADDR', keyPairId: 'seed-ed25519' },
             })
         })
 
@@ -997,19 +1048,20 @@ describe('services/accounts/store', () => {
             expect(useAccountsStore.getState().accounts).toEqual(accounts)
         })
 
-        test('addRekeyedWatchAccounts writes a watch provenance', () => {
+        test('addRekeyedWatchAccounts writes a watch custody with just the address', () => {
             useAccountsStore.getState().setAccounts([])
 
             useAccountsStore
                 .getState()
-                .addRekeyedWatchAccounts('SRC', ['R1'], 'mainnet')
+                .addRekeyedWatchAccounts('SRC', ['R1'], 'testnet')
 
-            expect(useAccountsStore.getState().accounts[0].provenance).toEqual({
-                kind: 'watch',
-            })
+            const [account] = useAccountsStore.getState().accounts
+            expect(account.custody).toEqual({ kind: 'watch' })
+            expect(account.chains).toEqual({ algorand: { address: 'R1' } })
+            expect(account.rekeyAddressByNetwork).toEqual({ testnet: 'SRC' })
         })
 
-        test('upgrading a watch account replaces its watch provenance with a hardware one', () => {
+        test('upgrading a watch account replaces its watch custody with a hardware one', () => {
             useAccountsStore
                 .getState()
                 .setAccounts([{ id: 'w', type: 'watch', address: 'WATCHED' }])
@@ -1024,7 +1076,8 @@ describe('services/accounts/store', () => {
                     transportType: 'ble',
                 })
 
-            expect(useAccountsStore.getState().accounts[0].provenance).toEqual({
+            const [account] = useAccountsStore.getState().accounts
+            expect(account.custody).toEqual({
                 kind: 'hardware',
                 device: {
                     manufacturer: 'ledger',
@@ -1034,9 +1087,10 @@ describe('services/accounts/store', () => {
                 },
                 accountIndex: 3,
             })
+            expect(account.chains).toEqual({ algorand: { address: 'WATCHED' } })
         })
 
-        test('re-binding hardware details updates the hardware provenance', () => {
+        test('re-binding hardware details updates the hardware custody', () => {
             const details = {
                 manufacturer: 'ledger' as const,
                 deviceId: 'old-device',
@@ -1057,7 +1111,7 @@ describe('services/accounts/store', () => {
                 .getState()
                 .updateHardwareDetails('HW', { ...details, deviceId: 'new' })
 
-            expect(useAccountsStore.getState().accounts[0].provenance).toEqual({
+            expect(useAccountsStore.getState().accounts[0].custody).toEqual({
                 kind: 'hardware',
                 device: {
                     manufacturer: 'ledger',

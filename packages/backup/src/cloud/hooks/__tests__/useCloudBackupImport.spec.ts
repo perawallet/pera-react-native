@@ -371,8 +371,8 @@ describe('useCloudBackupImport', () => {
             expect.objectContaining({
                 address: 'WATCH_ADDR',
                 type: 'watch',
-                provenance: { kind: 'watch' },
-                credentials: {},
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'WATCH_ADDR' } },
             }),
         )
         expect(summary.imported).toBe(1)
@@ -411,7 +411,7 @@ describe('useCloudBackupImport', () => {
                     accountIndex: 3,
                     transportType: 'ble',
                 },
-                provenance: {
+                custody: {
                     kind: 'hardware',
                     device: {
                         manufacturer: 'ledger',
@@ -421,7 +421,7 @@ describe('useCloudBackupImport', () => {
                     },
                     accountIndex: 3,
                 },
-                credentials: {},
+                chains: { algorand: { address: 'LEDGER_ADDR' } },
             }),
         )
         expect(summary.imported).toBe(1)
@@ -456,13 +456,20 @@ describe('useCloudBackupImport', () => {
                     addresses: ['A', 'B'],
                     version: 1,
                 },
-                provenance: {
-                    kind: 'multisig',
-                    threshold: 2,
-                    members: ['A', 'B'],
-                    version: 1,
+                custody: { kind: 'multisig' },
+                chains: {
+                    algorand: {
+                        address: 'MSIG_ADDR',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                version: 1,
+                                threshold: 2,
+                                addresses: ['A', 'B'],
+                            },
+                        },
+                    },
                 },
-                credentials: {},
             }),
         )
         expect(summary.imported).toBe(1)
@@ -620,18 +627,16 @@ describe('useCloudBackupImport', () => {
                 address: 'HD_KEY_ADDR',
                 type: 'hdWallet',
                 name: 'HD One',
-                provenance: {
+                custody: {
                     kind: 'local',
                     seed: 'bip39',
-                    hd: {
-                        account: 0,
-                        change: 0,
-                        keyIndex: 1,
-                        derivationType: 9,
-                    },
+                    hd: { account: 0, keyIndex: 1 },
                 },
-                credentials: {
-                    algorand: { keyPairId: expect.any(String) },
+                chains: {
+                    algorand: {
+                        address: 'HD_KEY_ADDR',
+                        keyPairId: expect.any(String),
+                    },
                 },
             }),
         )

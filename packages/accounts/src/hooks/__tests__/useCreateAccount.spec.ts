@@ -214,16 +214,19 @@ describe('useCreateAccount', () => {
 
         expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
         // keyPairId is the deterministic derived child id of the existing
-        // seed at (account=1, keyIndex=0, derivationType=9).
+        // seed at (account=1, keyIndex=0), derived with the chain's Peikert type.
         expect(created.keyPairId).toBe('EXISTING_WALLET-acc1-idx0-dt9')
         expect(created.hdWalletDetails.account).toBe(1)
-        expect(created.provenance).toEqual({
+        expect(created.custody).toEqual({
             kind: 'local',
             seed: 'bip39',
-            hd: { account: 1, change: 0, keyIndex: 0, derivationType: 9 },
+            hd: { account: 1, keyIndex: 0 },
         })
-        expect(created.credentials).toEqual({
-            algorand: { keyPairId: 'EXISTING_WALLET-acc1-idx0-dt9' },
+        expect(created.chains).toEqual({
+            algorand: {
+                address: created.address,
+                keyPairId: 'EXISTING_WALLET-acc1-idx0-dt9',
+            },
         })
     })
 

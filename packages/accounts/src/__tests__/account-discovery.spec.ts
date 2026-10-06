@@ -13,7 +13,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { discoverAccounts, discoverRekeyedAccounts } from '../account-discovery'
 import type { GetPublicKey } from '../chain-adapter'
-import { DerivationTypes } from '../models'
 import { fakeAccountsChain, TESTNET_SCOPE } from './fakeAccountsChain'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -54,8 +53,6 @@ const createMockGetPublicKey = (): GetPublicKey =>
     )
 
 describe('discoverAccounts', () => {
-    const derivationType = DerivationTypes.Peikert
-
     beforeEach(() => {
         vi.clearAllMocks()
         installFakeChain()
@@ -81,7 +78,6 @@ describe('discoverAccounts', () => {
 
         const accounts = await discoverAccounts({
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             keyIndexGapLimit: 2,
             accountGapLimit: 1,
@@ -107,7 +103,6 @@ describe('discoverAccounts', () => {
 
         const accounts = await discoverAccounts({
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             keyIndexGapLimit: 5,
             accountGapLimit: 5,
@@ -135,7 +130,6 @@ describe('discoverAccounts', () => {
 
         const accounts = await discoverAccounts({
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             accountGapLimit: 5,
             keyIndexGapLimit: 1,
@@ -151,7 +145,6 @@ describe('discoverAccounts', () => {
 
         const accounts = await discoverAccounts({
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             accountGapLimit: 2,
             keyIndexGapLimit: 2,
@@ -163,26 +156,28 @@ describe('discoverAccounts', () => {
         expect(accounts[0].hdWalletDetails.keyIndex).toBe(0)
     })
 
-    it('stamps discovered accounts with a bip39 provenance and their Algorand key', async () => {
+    it('stamps discovered accounts with a bip39 custody and their Algorand entry', async () => {
         mockFetchAccountFastLookup.mockResolvedValue([
             { address: 'ADDRESS_0_0', accountExists: false },
         ])
 
         const [account] = await discoverAccounts({
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             accountGapLimit: 2,
             keyIndexGapLimit: 2,
         })
 
-        expect(account.provenance).toEqual({
+        expect(account.custody).toEqual({
             kind: 'local',
             seed: 'bip39',
-            hd: { account: 0, change: 0, keyIndex: 0, derivationType },
+            hd: { account: 0, keyIndex: 0 },
         })
-        expect(account.credentials).toEqual({
-            algorand: { keyPairId: account.keyPairId },
+        expect(account.chains).toEqual({
+            algorand: {
+                address: account.address,
+                keyPairId: account.keyPairId,
+            },
         })
     })
 
@@ -198,7 +193,6 @@ describe('discoverAccounts', () => {
 
         await discoverAccounts({
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             accountGapLimit: 2,
             keyIndexGapLimit: 3,
@@ -230,7 +224,10 @@ describe('discoverRekeyedAccounts', () => {
         expect(accounts[0].address).toBe('REKEYED_FROM_EXPLICIT')
         expect(accounts[0].type).toBe('watch')
         expect(accounts[0].rekeyAddress).toBe('EXPLICIT_ADDRESS')
-        expect(accounts[0].provenance).toEqual({ kind: 'watch' })
+        expect(accounts[0].custody).toEqual({ kind: 'watch' })
+        expect(accounts[0].chains).toEqual({
+            algorand: { address: 'REKEYED_FROM_EXPLICIT' },
+        })
         expect(fetchRekeyedAddresses.mock.calls).toEqual([
             ['EXPLICIT_ADDRESS', TESTNET_SCOPE],
             ['OTHER_ADDRESS', TESTNET_SCOPE],

@@ -22,7 +22,6 @@ import {
     accountsChainAdapters,
     type AccountsChainAdapter,
 } from '../chain-adapter'
-import { DerivationTypes } from '../models'
 import { canSignDirectly } from '../utils'
 
 // Every legacy `Network` resolves to this id, so the fakes register under it.
@@ -36,8 +35,8 @@ export const fakeEncode = (publicKey: Uint8Array): string =>
 
 const fakeHdKeyPairId: AccountsChainAdapter['hdKeyPairId'] = (
     seedKeyId,
-    { account, keyIndex, derivationType },
-) => `${seedKeyId}-acc${account}-idx${keyIndex}-dt${derivationType}`
+    { account, keyIndex },
+) => `${seedKeyId}-acc${account}-idx${keyIndex}-dt9`
 
 const BASE32_ADDRESS = /^[A-Z2-7]{58}$/
 
@@ -62,11 +61,7 @@ const createFakeKeyDerivation = (): KeyDerivation => ({
     deriveAccount: vi.fn(async (_kms, seedRef, account, keyIndex) => {
         const publicKey = new Uint8Array([account, keyIndex, 0xfa, 0xce])
         return {
-            keyPairId: fakeHdKeyPairId(seedRef, {
-                account,
-                keyIndex,
-                derivationType: DerivationTypes.Peikert,
-            }),
+            keyPairId: fakeHdKeyPairId(seedRef, { account, keyIndex }),
             publicKey,
             address: fakeEncode(publicKey),
         }
@@ -77,7 +72,6 @@ const createFakeKeyDerivation = (): KeyDerivation => ({
 
 const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     chainId: FAKE_CHAIN_ID,
-    hdDerivationType: DerivationTypes.Peikert,
     fetchAccountState: vi.fn(),
     toAccountInformationAddress: vi.fn(
         ((address: string) =>

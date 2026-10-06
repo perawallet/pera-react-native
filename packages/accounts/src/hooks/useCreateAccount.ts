@@ -67,7 +67,11 @@ export const useCreateAccount = () => {
         if (!derived.publicKey) throw new NoHDWalletError(seedKeyId)
 
         return buildAccount({
-            custody: { kind: 'local', seed: 'bip39', hd: { account, keyIndex } },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account, keyIndex },
+            },
             chains: {
                 [LEGACY_CHAIN_ID]: {
                     address: derived.address,

@@ -45,7 +45,6 @@ const HD_PATH = /^m\/44'\/9999'\/(\d+)'\/0\/(\d+)$/
 
 const fixtureAdapter: AccountsChainAdapter = {
     chainId: FIXTURE_CHAIN_ID,
-    hdDerivationType: DerivationTypes.Peikert,
     fetchAccountState: async address => {
         const account = await getAccount(address)
         if (!account) throw new Error('no such account')
@@ -93,8 +92,8 @@ const fixtureAdapter: AccountsChainAdapter = {
         rootKey =>
         async ({ account, keyIndex }) =>
             Uint8Array.from([account, keyIndex, ...rootKey.subarray(0, 30)]),
-    hdKeyPairId: (seedKeyId, { account, keyIndex, derivationType }) =>
-        `${seedKeyId}-fx-${account}-${keyIndex}-${derivationType}`,
+    hdKeyPairId: (seedKeyId, { account, keyIndex }) =>
+        `${seedKeyId}-fx-${account}-${keyIndex}`,
     resolveSigner: (account, _accounts) =>
         canSignDirectly(account)
             ? { kind: 'ok', signer: account }

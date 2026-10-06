@@ -161,14 +161,8 @@ const legacyFieldsOf = (
 export const buildAccount = <C extends AccountCustody>(
     input: BuildAccountInput<C>,
 ): AccountForCustody<C> => {
-    const {
-        id,
-        name,
-        custody,
-        chains,
-        rekeyAddress,
-        rekeyAddressByNetwork,
-    } = input
+    const { id, name, custody, chains, rekeyAddress, rekeyAddressByNetwork } =
+        input
     const algorand: ChainAccount = chains[LEGACY_CHAIN_ID]
     return {
         id: id ?? generateOrderedUniqueId(),

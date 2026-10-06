@@ -17,7 +17,7 @@ import {
     AccountTypes,
     buildAccount,
     DerivationTypes,
-    type AccountCredentials,
+    type AccountChains,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -41,18 +41,16 @@ type AccountKind = keyof typeof GOLDEN_ACCOUNT_ITEMS
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
-// Stands in for a credential a later chain adds to an account, which must never
+// Stands in for an entry a later chain adds to an account, which must never
 // reach the Algorand backup payload. It isn't a `ChainId` member, hence the
 // widening cast.
-const fixtureChainCredential = (keyPairId: string): AccountCredentials =>
+const fixtureChain = (address: string, keyPairId?: string): AccountChains =>
     ({
-        'fixture-chain': { keyPairId: `fixture-${keyPairId}` },
-    }) as unknown as AccountCredentials
-
-const credentialsFor = (keyPairId: string) => ({
-    ...fixtureChainCredential(keyPairId),
-    algorand: { keyPairId },
-})
+        'fixture-chain': {
+            address: `fixture-${address}`,
+            ...(keyPairId ? { keyPairId: `fixture-${keyPairId}` } : {}),
+        },
+    }) as unknown as AccountChains
 
 const HD_PATH = {
     account: 0,
@@ -72,46 +70,65 @@ const credentialBearing: Record<AccountKind, WalletAccount> = {
     algo25: buildAccount({
         id: 'algo25',
         name: 'Main',
-        address: 'ALGO25ADDR',
-        provenance: { kind: 'local', seed: 'algo25' },
-        credentials: credentialsFor('algo25-key'),
+        custody: { kind: 'local', seed: 'algo25' },
+        chains: {
+            ...fixtureChain('ALGO25ADDR', 'algo25-key'),
+            algorand: { address: 'ALGO25ADDR', keyPairId: 'algo25-key' },
+        },
     }),
     quantum: buildAccount({
         id: 'quantum',
         name: 'Quantum',
-        address: 'QUANTUMADDR',
-        provenance: { kind: 'local', seed: 'quantum' },
-        credentials: credentialsFor('quantum-key'),
+        custody: { kind: 'local', seed: 'quantum' },
+        chains: {
+            ...fixtureChain('QUANTUMADDR', 'quantum-key'),
+            algorand: { address: 'QUANTUMADDR', keyPairId: 'quantum-key' },
+        },
     }),
     watch: buildAccount({
         id: 'watch',
-        address: 'WATCHADDR',
-        provenance: { kind: 'watch' },
-        credentials: fixtureChainCredential('watch'),
+        custody: { kind: 'watch' },
+        chains: {
+            ...fixtureChain('WATCHADDR'),
+            algorand: { address: 'WATCHADDR' },
+        },
     }),
     hardware: buildAccount({
         id: 'hardware',
         name: 'Ledger',
-        address: 'LEDGERADDR',
-        provenance: { kind: 'hardware', device: LEDGER, accountIndex: 2 },
+        custody: { kind: 'hardware', device: LEDGER, accountIndex: 2 },
+        chains: { algorand: { address: 'LEDGERADDR' } },
     }),
     multisig: buildAccount({
         id: 'multisig',
         name: 'Shared',
-        address: 'MSIGADDR',
-        provenance: {
-            kind: 'multisig',
-            threshold: 1,
-            members: ['MEMBERA', 'MEMBERB'],
-            version: 1,
+        custody: { kind: 'multisig' },
+        chains: {
+            algorand: {
+                address: 'MSIGADDR',
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        version: 1,
+                        threshold: 1,
+                        addresses: ['MEMBERA', 'MEMBERB'],
+                    },
+                },
+            },
         },
     }),
     hdWallet: buildAccount({
         id: 'hdWallet',
         name: 'Child 1',
-        address: 'HDCHILDADDR',
-        provenance: { kind: 'local', seed: 'bip39', hd: HD_PATH },
-        credentials: credentialsFor('hd-key'),
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 1 },
+        },
+        chains: {
+            ...fixtureChain('HDCHILDADDR', 'hd-key'),
+            algorand: { address: 'HDCHILDADDR', keyPairId: 'hd-key' },
+        },
     }),
 }
 

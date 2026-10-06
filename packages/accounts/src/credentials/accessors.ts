@@ -37,8 +37,9 @@ export const custodyOf = (account: WalletAccount): AccountCustody | undefined =>
 export const hasCustody = <K extends AccountCustody['kind']>(
     account: WalletAccount,
     kind: K,
-): account is WalletAccount & { custody: Extract<AccountCustody, { kind: K }> } =>
-    account.custody?.kind === kind
+): account is WalletAccount & {
+    custody: Extract<AccountCustody, { kind: K }>
+} => account.custody?.kind === kind
 
 export const chainAccountOf = (
     account: WalletAccount,
