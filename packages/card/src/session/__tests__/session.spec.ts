@@ -20,6 +20,7 @@ const {
     withSecret,
     refreshTokenRequest,
     setRefreshHandler,
+    setSessionLostHandler,
     zeroBytes,
 } = vi.hoisted(() => {
     const secretStore = new Map<string, string>()
@@ -45,6 +46,7 @@ const {
         ),
         refreshTokenRequest: vi.fn(),
         setRefreshHandler: vi.fn(),
+        setSessionLostHandler: vi.fn(),
         zeroBytes: vi.fn(),
     }
 })
@@ -60,7 +62,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
 }))
 vi.mock('../../api/auth', () => ({ refreshTokenRequest }))
-vi.mock('../../api/transport', () => ({ setRefreshHandler }))
+vi.mock('../../api/transport', () => ({
+    setRefreshHandler,
+    setSessionLostHandler,
+}))
 
 import {
     setCardSession,
@@ -69,6 +74,11 @@ import {
     hasCardSession,
 } from '../session'
 import { useCardSessionStore } from '../../store/session-store'
+
+// Registered when the module loads, so it has to be captured before the
+// per-test clearAllMocks wipes the call record.
+const sessionLostHandler = setSessionLostHandler.mock
+    .calls[0][0] as () => Promise<void>
 
 describe('card session', () => {
     beforeEach(() => {
@@ -173,6 +183,16 @@ describe('card session', () => {
         const refreshed = await refreshSession()
 
         expect(refreshed).toBe(false)
+        expect(useCardSessionStore.getState().isAuthenticated).toBe(false)
+    })
+
+    it('clears the session when the transport reports a rejected refreshed token', async () => {
+        await setCardSession({ accessToken: 'a', refreshToken: 'r' })
+
+        await sessionLostHandler()
+
+        expect(hasCardSession()).toBe(false)
+        expect(secretStore.has('baanx-refresh-token')).toBe(false)
         expect(useCardSessionStore.getState().isAuthenticated).toBe(false)
     })
 })

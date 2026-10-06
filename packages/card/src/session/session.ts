@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
-import { setRefreshHandler } from '../api/transport'
+import { setRefreshHandler, setSessionLostHandler } from '../api/transport'
 import { refreshTokenRequest } from '../api/auth'
 import { useCardSessionStore } from '../store/session-store'
 import type { CardSessionTokens } from '../models'
@@ -111,3 +111,7 @@ export const refreshSession = async (): Promise<boolean> => {
 // transport → session import cycle, and removes the need for an app-startup
 // bootstrap that reads the keystore).
 setRefreshHandler(refreshSession)
+setSessionLostHandler(async () => {
+    logger.warn('Baanx rejected a freshly refreshed session token')
+    await clearCardSession()
+})
