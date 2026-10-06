@@ -106,17 +106,24 @@ export const groupHasQuantumSigner = ({
  * so the new `grp` is what algod will verify. Untouched partitions and
  * ungrouped transactions keep their original object references.
  *
- * Pooled fees: the surcharge is ADDED to the fee the dApp set, never clamped
- * to the PQ minimum. Fees pool across a group, so a fee above the base minimum
- * is budget for something else — most often an app call's inner transactions —
- * and clamping spends it on the signature instead, leaving the inner
- * transactions unfunded (`itxn_submit` then fails with "group fee too small").
- * Adding the premium keeps the dApp's own budget intact for every group shape.
+ * Prepaid fees are left alone: a quantum-signed transaction whose fee is
+ * already at or above the PQ minimum is returned untouched. A dApp that
+ * prices the PQ signature itself (ARC-0001 lets it set any fee) must not be
+ * raised again, because raising changes the group ID, and a dApp that
+ * co-signs part of the group (logic sigs, its own keys) only ever receives
+ * `null` for those slots and would submit them with the old `grp`.
+ *
+ * Below the PQ minimum, the surcharge is ADDED to the fee the dApp set, never
+ * clamped to the minimum. Fees pool across a group, so a fee above the base
+ * minimum is budget for something else — most often an app call's inner
+ * transactions — and clamping spends it on the signature instead, leaving the
+ * inner transactions unfunded (`itxn_submit` then fails with "group fee too
+ * small"). Adding the premium keeps the dApp's own budget intact.
  *
  * Underfunded groups are out of scope: a group whose fees don't cover its
  * pre-quantum cost already fails for an Ed25519 signer, and the wallet can't
  * know a group's true cost offline (inner-transaction count is only knowable
- * from `simulate` —).
+ * from `simulate`).
  *
  * ARC-0001 `groupContext` consumers see the modified group: the returned
  * array replaces the original payload for everything downstream (display,
@@ -158,10 +165,10 @@ export const assignMinimumFeesToGroup = ({
         )
         const signer = getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
         if (signer === null || !isQuantumAccount(signer)) continue
+        // Already prices the PQ signature: leave it, and the group ID, alone.
+        if (tx.fee >= minFee) continue
         // Add the premium to what the dApp set, then floor at the PQ minimum
-        // for a fee that wouldn't even cover a plain transaction. The floor
-        // makes this pointwise ≥ the fee any given group carries today, so no
-        // group that currently submits can start failing.
+        // for a fee that wouldn't even cover a plain transaction.
         const withSurcharge = tx.fee + surcharge
         const adjustedFee = withSurcharge > minFee ? withSurcharge : minFee
         if (adjustedFee <= tx.fee) continue

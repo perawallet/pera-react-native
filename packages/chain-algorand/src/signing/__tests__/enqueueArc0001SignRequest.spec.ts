@@ -398,8 +398,8 @@ describe('enqueueArc0001SignRequest', () => {
             ])
 
             const req = mockAddSignRequest.mock.calls[0][0]
-            // Every quantum txn pays the surcharge: the 3000 µAlgo one was
-            // pooling a fee for an inner txn, not sitting at its own minimum.
+            // Only the underpaid txn is raised; the one already at the PQ
+            // minimum is left alone.
             expect(req.feeAdjustments).toEqual([
                 {
                     index: 0,
@@ -407,13 +407,8 @@ describe('enqueueArc0001SignRequest', () => {
                     adjustedFee: 3000n,
                     reason: 'quantum-minimum',
                 },
-                {
-                    index: 1,
-                    originalFee: 3000n,
-                    adjustedFee: 5000n,
-                    reason: 'quantum-minimum',
-                },
             ])
+            expect(req.txs[1].fee).toBe(3000n)
             const g0 = req.txs[0].group
             expect(g0).toBeDefined()
             expect(bytesEqual(g0, req.txs[1].group)).toBe(true)

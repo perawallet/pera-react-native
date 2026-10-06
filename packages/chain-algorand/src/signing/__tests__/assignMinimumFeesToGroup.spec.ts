@@ -123,34 +123,63 @@ describe('assignMinimumFeesToGroup', () => {
         ])
     })
 
-    test('adds the surcharge to a fee already at the PQ minimum', () => {
-        // Fixed-output swap: 3000 µAlgo pools two inner-transaction fees, and
-        // coincidentally equals the PQ minimum — the old skip left it unfunded.
-        const tx = makePayment(quantumAddress, 3000n)
+    test('leaves a fee already at the PQ minimum untouched', () => {
+        // A dApp that prices the PQ signature itself must not be raised
+        // again: a raise changes the group ID, which breaks any group the
+        // dApp co-signs.
+        const transactions = [makePayment(quantumAddress, 3000n)]
 
         const result = assignMinimumFeesToGroup({
             ...baseParams,
-            transactions: [tx],
+            transactions,
             signableIndices: [0],
             accounts: [quantum()],
         })
 
-        expect(result.transactions[0].fee).toBe(5000n)
+        expect(result.transactions).toBe(transactions)
+        expect(result.transactions[0].fee).toBe(3000n)
+        expect(result.adjustments).toEqual([])
     })
 
-    test('adds the surcharge to a fee far above the PQ minimum', () => {
-        // Tinyman's router puts the whole pooled fee on one transaction
-        // (7 inner txns here) and zeroes the rest.
-        const tx = makePayment(quantumAddress, 9000n)
+    test('leaves a fee above the PQ minimum untouched', () => {
+        const transactions = [makePayment(quantumAddress, 9000n)]
 
         const result = assignMinimumFeesToGroup({
             ...baseParams,
-            transactions: [tx],
+            transactions,
             signableIndices: [0],
             accounts: [quantum()],
         })
 
-        expect(result.transactions[0].fee).toBe(11000n)
+        expect(result.transactions).toBe(transactions)
+        expect(result.transactions[0].fee).toBe(9000n)
+        expect(result.adjustments).toEqual([])
+    })
+
+    test('keeps the group ID of a co-signed group whose quantum fees are prepaid', () => {
+        // Folks Finance "Create Loan": two quantum payments at 3000 and
+        // 4000 µAlgo plus a zero-fee app call signed by the dApp's logic
+        // sig. Pera only sees null slots for what it doesn't sign, so any
+        // re-group here would leave the dApp submitting the old grp.
+        const grouped = groupTransactions([
+            makePayment(quantumAddress, 3000n),
+            makePayment(quantumAddress, 4000n),
+            makePayment(externalAddress, 0n),
+        ])
+        const originalGroup = grouped[0].group as Uint8Array
+
+        const result = assignMinimumFeesToGroup({
+            ...baseParams,
+            transactions: grouped,
+            signableIndices: [0, 1],
+            accounts: [quantum()],
+        })
+
+        expect(result.transactions).toBe(grouped)
+        expect(result.adjustments).toEqual([])
+        for (const tx of result.transactions) {
+            expect(bytesEqual(tx.group as Uint8Array, originalGroup)).toBe(true)
+        }
     })
 
     test('floors at the PQ minimum when the dApp fee is under the base minimum', () => {
