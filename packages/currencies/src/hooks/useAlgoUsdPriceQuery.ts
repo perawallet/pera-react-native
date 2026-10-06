@@ -12,18 +12,20 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { getAssetPricesByIds } from '@perawallet/wallet-core-assets'
+import {
+    getAssetPricesByIds,
+    nativeAssetFor,
+} from '@perawallet/wallet-core-assets'
 import {
     LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { currencyQueryKeys } from './querykeys'
 
 async function getAlgoPriceFromDb(scope: ChainScope): Promise<Decimal> {
     const [price] = await getAssetPricesByIds({
-        assetIds: [ALGO_ASSET_ID],
+        assetIds: [nativeAssetFor(scope.chainId).assetId],
         scope,
     })
     return price?.usdPrice ?? new Decimal(0)

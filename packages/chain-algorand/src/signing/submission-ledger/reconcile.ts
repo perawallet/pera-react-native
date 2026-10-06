@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { getAlgorandClient } from '../../blockchain'
 import {
     scopeFromNetworkColumn,
     toScopeKey,
@@ -48,7 +48,7 @@ const defaultProbeClient = (scope: ChainScope): SubmissionProbeClient =>
 
 /**
  * Client surface the reconciler probes. Structured so unit tests can inject
- * fakes without touching the blockchain package.
+ * fakes without touching the Algorand runtime.
  */
 export type SubmissionProbeClient = {
     client: {
@@ -75,7 +75,7 @@ export type ReconcileOpenSubmissionsParams = {
     retentionMs?: number
     /**
      * Injectable client factory (tests); defaults to the scope-resolved
-     * AlgorandClient from the blockchain package.
+     * AlgorandClient from the Algorand runtime.
      */
     getClient?: (scope: ChainScope) => SubmissionProbeClient
 }

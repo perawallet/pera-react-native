@@ -30,7 +30,7 @@ const {
     requestFeeDelegationMock: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../../blockchain', () => ({
     useAlgorandClient: () => ({ kind: 'algokit-client' }),
     compactSignedResults: (signed: unknown[]) =>
         signed.filter(tx => tx !== null),

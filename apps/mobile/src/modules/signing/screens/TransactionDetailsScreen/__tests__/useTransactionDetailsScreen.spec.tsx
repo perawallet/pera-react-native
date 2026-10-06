@@ -35,21 +35,24 @@ vi.mock('@react-navigation/native', () => ({
 const mockUseTransactionDetailQuery = vi.fn()
 const mockUseGroupTransactionsQuery = vi.fn()
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        useTransactionDetailQuery: (
-            ...args: Parameters<typeof actual.useTransactionDetailQuery>
-        ) => mockUseTransactionDetailQuery(...args),
-        useGroupTransactionsQuery: (
-            ...args: Parameters<typeof actual.useGroupTransactionsQuery>
-        ) => mockUseGroupTransactionsQuery(...args),
-    }
-})
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => {
+        const actual =
+            await importOriginal<
+                typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+            >()
+        return {
+            ...actual,
+            useTransactionDetailQuery: (
+                ...args: Parameters<typeof actual.useTransactionDetailQuery>
+            ) => mockUseTransactionDetailQuery(...args),
+            useGroupTransactionsQuery: (
+                ...args: Parameters<typeof actual.useGroupTransactionsQuery>
+            ) => mockUseGroupTransactionsQuery(...args),
+        }
+    },
+)
 
 const historyItem: TransactionHistoryItem = {
     id: 'TX123',

@@ -15,7 +15,7 @@ import {
     getSignerFor,
     isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
-import { calculateMinTxnFee } from '@perawallet/wallet-core-blockchain'
+import { calculateMinTxnFee } from '../blockchain'
 import type { ResolveMinFeeForSenderParams } from '@perawallet/wallet-core-signing'
 
 /**

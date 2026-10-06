@@ -56,7 +56,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: mockNetwork }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (addr: string) => /^[A-Z2-7]{58}$/.test(addr ?? ''),
     useAlgorandClient: () => ({
         newGroup: () => mockComposer,
@@ -87,9 +87,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
     return {
-        ALGO_ASSET_ID: '0',
-        isAlgoAssetId: (assetId: string | number | bigint) =>
-            String(assetId) === '0',
         generateOrderedUniqueId: () => 'test-id-123',
         logger: {
             warn: vi.fn(),

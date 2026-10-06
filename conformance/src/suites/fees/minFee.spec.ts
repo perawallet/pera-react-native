@@ -13,8 +13,8 @@
 import { microAlgo } from '@algorandfoundation/algokit-utils'
 import { beforeAll, describe, it } from 'vitest'
 
-import { FALLBACK_PQ_MULTIPLIER } from '@perawallet/wallet-core-blockchain/constants'
-import { calculateMinTxnFee } from '@perawallet/wallet-core-blockchain/fees/feeCalculator'
+import { FALLBACK_PQ_MULTIPLIER } from '@perawallet/wallet-core-chain-algorand/blockchain/constants'
+import { calculateMinTxnFee } from '@perawallet/wallet-core-chain-algorand/blockchain/fees/feeCalculator'
 
 import {
     createAlgo25Account,

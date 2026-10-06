@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { decodeTransaction } from '@perawallet/wallet-core-blockchain'
+import { decodeTransaction } from '../blockchain'
 import type {
     MultisigSignRequest,
     MultisigSignRequestValidation,

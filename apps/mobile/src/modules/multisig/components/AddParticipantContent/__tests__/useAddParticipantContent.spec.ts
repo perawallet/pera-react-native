@@ -62,7 +62,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     AccountSigTypes: { sig: 'sig', msig: 'msig', lsig: 'lsig', pqsig: 'pqsig' },
     useAccountSigTypeQuery: () => sigTypeCheckState,
 }))

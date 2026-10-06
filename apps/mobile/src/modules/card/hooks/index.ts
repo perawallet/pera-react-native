@@ -65,6 +65,7 @@ export {
     type UseAutoDrawSwitchResult,
 } from './useAutoDrawSwitch'
 export { useOpenCardSupport } from './useOpenCardSupport'
+export { useCardSessionGuard } from './useCardSessionGuard'
 export { useCardOwnerAccount } from './useCardOwnerAccount'
 export { useCardWithdraw, type UseCardWithdrawResult } from './useCardWithdraw'
 // useReportSuspiciousFlow is intentionally NOT re-exported here: it is a flow

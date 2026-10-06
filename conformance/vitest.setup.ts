@@ -15,7 +15,7 @@ import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
 import './src/harness/registerAlgorandAccounts'
 
 // The submission chokepoint (packages/chain-algorand/src/signing/submission) reaches
-// `@perawallet/wallet-core-blockchain`'s network/accounts stores for their
+// `@perawallet/wallet-core-chain-algorand/blockchain`'s network/accounts stores for their
 // persisted state, and those stores resolve storage through
 // `getProvider().keyValueStorage`. The real provider pulls in RN-native
 // modules (react-native-mmkv) that cannot load under Node, so — same as

@@ -10,17 +10,10 @@
  limitations under the License
  */
 
-import {
-    ALGO_ASSET_NAME,
-    ALGO_DECIMALS,
-    isAlgoAssetId,
-} from '@perawallet/wallet-core-shared'
+import type { AssetFactsResolver } from '@perawallet/wallet-core-transactions'
+import { algorandDescriptor, isAlgorandNativeAssetId } from '../../descriptor'
 
-/** Unit name and decimals as an amount renderer needs them. */
-export type AssetDisplayFacts = {
-    unitName: string
-    decimals: number
-}
+const { nativeAsset } = algorandDescriptor
 
 /**
  * ALGO's ticker and decimals are chain invariants, so they outrank whatever a
@@ -30,12 +23,10 @@ export type AssetDisplayFacts = {
  * placeholder for any other id has to stand, since only the backend knows
  * that asset's real facts.
  */
-export const resolveAssetFacts = (
-    // Same id shapes `isAlgoAssetId` accepts: rows persisted before the
-    // uint64-string migration still hold the id as a number.
-    assetId: string | number | bigint | null | undefined,
-    facts: AssetDisplayFacts,
-): AssetDisplayFacts =>
-    isAlgoAssetId(assetId)
-        ? { unitName: ALGO_ASSET_NAME, decimals: ALGO_DECIMALS }
+export const resolveAlgorandAssetFacts: AssetFactsResolver = (
+    assetId,
+    facts,
+) =>
+    isAlgorandNativeAssetId(assetId)
+        ? { unitName: nativeAsset.symbol, decimals: nativeAsset.decimals }
         : facts

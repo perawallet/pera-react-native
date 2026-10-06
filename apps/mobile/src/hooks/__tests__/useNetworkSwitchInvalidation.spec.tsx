@@ -30,11 +30,14 @@ vi.mock('@perawallet/wallet-core-background', async importOriginal => {
     return { ...actual, getSyncService: mockGetSyncService }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >()),
-}))
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<

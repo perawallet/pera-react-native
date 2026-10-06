@@ -64,7 +64,7 @@ export const AccountTransactionsSchema = sqliteTable(
         accountAddress: text('account_address').notNull(),
         transactionId: text('transaction_id').notNull(),
         network: text('network').notNull().$type<ChainScopeKey>(),
-        assetId: decimalColumn('asset_id'),
+        assetId: text('asset_id'),
         roundTime: integer('round_time'),
     },
     table => [

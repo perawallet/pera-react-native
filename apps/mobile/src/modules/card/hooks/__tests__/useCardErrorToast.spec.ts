@@ -32,10 +32,10 @@ const mocks = vi.hoisted(() => ({ errorToast: vi.fn() }))
 
 // The suite-wide stub short-circuits toAlgodError to `unknown_node_error`;
 // this file asserts on the real parser's codes.
-vi.mock('@perawallet/wallet-core-blockchain', async () =>
-    vi.importActual<typeof import('@perawallet/wallet-core-blockchain')>(
-        '@perawallet/wallet-core-blockchain',
-    ),
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () =>
+    vi.importActual<
+        typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+    >('@perawallet/wallet-core-chain-algorand/blockchain'),
 )
 
 vi.mock('@hooks/useToast', () => ({

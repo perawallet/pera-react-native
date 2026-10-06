@@ -11,7 +11,7 @@
  */
 
 import { logger } from '@perawallet/wallet-core-shared'
-import { resolveAssetFacts } from '@perawallet/wallet-core-transactions'
+import { resolveAlgorandAssetFacts } from '../assetFacts'
 import { computeBalanceImpacts } from './balance-impacts'
 import {
     indexerTransactionSchema,
@@ -124,7 +124,7 @@ const transformRow = (
         inner_transaction_count: tx['inner-txns']?.length ?? null,
         balance_impacts: computeBalanceImpacts(tx, address).map(impact => {
             const known = assets.get(impact.assetId)
-            const facts = resolveAssetFacts(impact.assetId, {
+            const facts = resolveAlgorandAssetFacts(impact.assetId, {
                 unitName: known?.unitName ?? '',
                 decimals: known?.decimals ?? 0,
             })

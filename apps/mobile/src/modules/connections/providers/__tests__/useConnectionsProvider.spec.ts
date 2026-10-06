@@ -359,7 +359,7 @@ describe('useConnectionsProvider', () => {
         expect(v2.projectId).toBe(config.reownProjectId)
         expect(v2.keyValueStorage).toBe(keyValueStorage)
         // One injection point shared by both, so neither reaches for a store
-        // default and pulls the blockchain package into a consumer's graph.
+        // default and pulls the Algorand runtime into a consumer's graph.
         expect(v2.getNetwork).toBe(mockCreateV1.mock.calls[0][0].getNetwork)
     })
 

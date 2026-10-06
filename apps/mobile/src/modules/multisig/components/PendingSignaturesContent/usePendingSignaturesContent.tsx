@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { trackEvent, MultisigEvent } from '@analytics'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useTransactionEncoder } from '@perawallet/wallet-core-blockchain'
+import { useTransactionEncoder } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {

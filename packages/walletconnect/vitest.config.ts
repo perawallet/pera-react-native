@@ -88,16 +88,8 @@ export default defineConfig({
                 __dirname,
                 '../accounts/src/index.ts',
             ),
-            '@perawallet/wallet-core-blockchain/arc0001/limits': path.resolve(
-                __dirname,
-                '../blockchain/src/arc0001/limits.ts',
-            ),
-            '@perawallet/wallet-core-blockchain': path.resolve(
-                __dirname,
-                '../blockchain/src/index.ts',
-            ),
-            // Blockchain source re-exports chain-shared; its dist would reach a
-            // second getProvider() instance the mocks here never see.
+            // Source, not dist: the dist reaches a second getProvider()
+            // instance the mocks here never see.
             '@perawallet/wallet-core-chain-shared': path.resolve(
                 __dirname,
                 '../chain-shared/src/index.ts',

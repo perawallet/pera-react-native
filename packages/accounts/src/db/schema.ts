@@ -19,7 +19,7 @@ export const AccountAssetHoldingsSchema = sqliteTable(
     'account_asset_holdings',
     {
         accountAddress: text('account_address').notNull(),
-        assetId: decimalColumn('asset_id').notNull(),
+        assetId: text('asset_id').notNull(),
         network: text('network').notNull().$type<ChainScopeKey>(),
         /** Asset amount in base units (smallest indivisible unit of the asset) */
         amount: decimalColumn('amount').notNull().default(new Decimal(0)),

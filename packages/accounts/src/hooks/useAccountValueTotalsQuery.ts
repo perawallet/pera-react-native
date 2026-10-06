@@ -13,12 +13,11 @@
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
+import { useStableIdList, type Nullable } from '@perawallet/wallet-core-shared'
 import {
-    ALGO_ASSET_ID,
-    useStableIdList,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
-import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
+    useAssetPricesQuery,
+    useNativeAsset,
+} from '@perawallet/wallet-core-assets'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     LEGACY_CHAIN_ID,
@@ -111,9 +110,10 @@ export const useAccountValueTotalsQuery = (
     }, [addresses, enabled, scope, network])
 
     const results = useQueries({ queries })
-    const { data: algoPrices } = useAssetPricesQuery([ALGO_ASSET_ID])
+    const nativeAssetId = useNativeAsset().assetId
+    const { data: algoPrices } = useAssetPricesQuery([nativeAssetId])
     const usdAlgoPrice =
-        algoPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0)
+        algoPrices?.get(nativeAssetId)?.usdPrice ?? new Decimal(0)
     const usdAlgoPriceKey = usdAlgoPrice.toString()
 
     // Stable stand-in for `results`, whose array identity churns per render.

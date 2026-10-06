@@ -16,7 +16,11 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Decimal } from 'decimal.js'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetName,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { AssetPriceRow } from './db/pricesRepository'
 import type { DisplayableAsset, PeraAsset } from './models'
 
@@ -84,6 +88,20 @@ export const nativeAssetFor = (chainId: ChainId): PeraAsset =>
 /** @throws ChainAdapterNotRegisteredError */
 export const isNativeAssetId = (chainId: ChainId, assetId: string): boolean =>
     nativeAssetFor(chainId).assetId === assetId
+
+/**
+ * Asset id for a *trusted* display-currency code (a settings/backend value,
+ * never an on-chain unit name): the native id when the code is the ALGO ticker,
+ * else null (a fiat code). Bridges name-keyed trusted sources into the
+ * id-keyed identity that amount renderers require.
+ *
+ * @throws ChainAdapterNotRegisteredError
+ */
+export const displayCurrencyToAssetId = (
+    code: string,
+    chainId: ChainId,
+): Nullable<string> =>
+    isAlgoAssetName(code) ? nativeAssetFor(chainId).assetId : null
 
 // The wrappers below are async so a missing adapter rejects instead of
 // throwing synchronously past a caller's `.catch`.

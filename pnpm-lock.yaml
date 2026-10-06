@@ -391,9 +391,6 @@ importers:
       '@perawallet/wallet-core-background':
         specifier: workspace:*
         version: link:../../packages/background
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../../packages/blockchain
       '@perawallet/wallet-core-browser-runtime':
         specifier: workspace:*
         version: link:../../packages/browser-runtime
@@ -557,9 +554,6 @@ importers:
       '@perawallet/wallet-core-banners':
         specifier: workspace:*
         version: link:../../packages/banners
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../../packages/blockchain
       '@perawallet/wallet-core-browser-runtime':
         specifier: workspace:*
         version: link:../../packages/browser-runtime
@@ -1095,9 +1089,6 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../packages/accounts
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../packages/blockchain
       '@perawallet/wallet-core-chain-algorand':
         specifier: workspace:*
         version: link:../packages/chain-algorand
@@ -2189,88 +2180,6 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
-  packages/blockchain:
-    dependencies:
-      '@algorandfoundation/algokit-utils':
-        specifier: 'catalog:'
-        version: 9.2.2(algosdk@3.7.0)
-      '@babel/runtime':
-        specifier: 'catalog:'
-        version: 7.29.7
-      '@noble/hashes':
-        specifier: 'catalog:'
-        version: 2.3.0
-      '@perawallet/wallet-core-chain-contract':
-        specifier: workspace:*
-        version: link:../chain-contract
-      '@perawallet/wallet-core-chain-shared':
-        specifier: workspace:*
-        version: link:../chain-shared
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../config
-      '@perawallet/wallet-core-kms':
-        specifier: workspace:*
-        version: link:../kms
-      '@perawallet/wallet-core-remote-config':
-        specifier: workspace:*
-        version: link:../remote-config
-      '@perawallet/wallet-core-shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@perawallet/wallet-extension-provider':
-        specifier: workspace:*
-        version: link:../../extensions/provider
-      '@tanstack/react-query':
-        specifier: 'catalog:'
-        version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
-      decimal.js:
-        specifier: 'catalog:'
-        version: 10.6.0
-      react:
-        specifier: 19.2.3
-        version: 19.2.3
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
-      zustand:
-        specifier: 'catalog:'
-        version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.7.0(react@19.2.3))
-    devDependencies:
-      '@perawallet/wallet-core-devtools':
-        specifier: workspace:*
-        version: link:../devtools
-      '@testing-library/react':
-        specifier: 'catalog:'
-        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@types/node':
-        specifier: 'catalog:'
-        version: 20.19.43
-      '@types/react':
-        specifier: ~19.2.14
-        version: 19.2.17
-      falcon-1024:
-        specifier: 'catalog:'
-        version: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@20.19.43)(typescript@7.0.2)
-      react-dom:
-        specifier: 19.2.3
-        version: 19.2.3(react@19.2.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vite:
-        specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
-
   packages/browser-runtime:
     dependencies:
       '@perawallet/wallet-core-chain-contract':
@@ -2331,9 +2240,6 @@ importers:
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
@@ -2428,9 +2334,6 @@ importers:
       '@perawallet/wallet-core-backup':
         specifier: workspace:*
         version: link:../backup
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
       '@perawallet/wallet-core-card':
         specifier: workspace:*
         version: link:../card
@@ -2467,6 +2370,9 @@ importers:
       '@perawallet/wallet-core-onramp':
         specifier: workspace:*
         version: link:../onramp
+      '@perawallet/wallet-core-remote-config':
+        specifier: workspace:*
+        version: link:../remote-config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -2488,6 +2394,9 @@ importers:
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
@@ -2512,6 +2421,9 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.4.3
+      zustand:
+        specifier: 'catalog:'
+        version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.7.0(react@19.2.3))
     devDependencies:
       '@algorandfoundation/algokit-client-generator':
         specifier: 6.0.1
@@ -2540,6 +2452,9 @@ importers:
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))
+      falcon-1024:
+        specifier: 'catalog:'
+        version: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@20.19.43)(typescript@7.0.2)

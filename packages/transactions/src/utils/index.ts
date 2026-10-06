@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { resolveAssetFacts, type AssetDisplayFacts } from './algoAssetFacts'
 export { getDebitedAddress, isOutgoingFor } from './direction'

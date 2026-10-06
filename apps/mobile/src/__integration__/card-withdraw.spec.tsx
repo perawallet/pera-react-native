@@ -47,7 +47,7 @@ import {
     mockAlgodStatus,
     mockAlgodStatusAfterBlock,
     mockAlgodTransactionParams,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 import { CardWithdrawScreen } from '@modules/card/screens/CardWithdrawScreen'
 import { CardWithdrawStatusScreen } from '@modules/card/screens/CardWithdrawStatusScreen'

@@ -91,6 +91,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 const NATIVE_ASSET = vi.hoisted(() => ({ id: '0', decimals: 6 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
     useNativeAsset: () => NATIVE_ASSET,
@@ -121,9 +123,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
     return {
-        ALGO_ASSET_ID: '0',
-        isAlgoAssetId: (assetId: string | number | bigint) =>
-            String(assetId) === '0',
         DEFAULT_PRECISION: 2,
         formatCurrency: vi.fn(() => '10.00'),
         displayUnitsToBaseUnits,

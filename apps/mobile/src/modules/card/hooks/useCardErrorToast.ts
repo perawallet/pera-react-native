@@ -23,7 +23,7 @@ import {
     getCardApiError,
     type CardApiError,
 } from '@perawallet/wallet-core-card'
-import { toAlgodError } from '@perawallet/wallet-core-blockchain'
+import { toAlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     isConnectivityError,
     isPeraNetworkError,

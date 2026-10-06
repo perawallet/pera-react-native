@@ -87,7 +87,7 @@ describe('optional-field construction conformance', () => {
     })
 
     // No app builder sets `lease` today — the only hit for the field
-    // (packages/blockchain/src/utils/transactions.ts:54) only reads it for
+    // (packages/chain-algorand/src/blockchain/utils/transactions.ts:54) only reads it for
     // display. This case pins the harness's round-trip handling of the field
     // for the day a builder starts setting one, not an existing app path.
     it('lease: survives to the confirmed transaction', async () => {

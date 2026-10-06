@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
+import {
+    AlgodError,
+    toAlgodError,
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { SubmissionError } from '@perawallet/wallet-core-signing'
 import {
     AppError,

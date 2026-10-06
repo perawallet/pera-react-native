@@ -13,11 +13,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { server } from '@test-utils/msw-server'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { getAlgorandClient } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 // Smoke test answering the question: does MSW intercept the HTTP calls
 // that algokit-utils makes? If yes, integration tests can mock algod/

@@ -17,7 +17,7 @@ import { describe, it, expect, vi } from 'vitest'
 // real predicates, not the hook stubs.
 vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-assets')
-vi.unmock('@perawallet/wallet-core-blockchain')
+vi.unmock('@perawallet/wallet-core-chain-algorand/blockchain')
 
 import {
     QueryClient,

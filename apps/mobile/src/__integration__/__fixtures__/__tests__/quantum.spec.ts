@@ -18,7 +18,7 @@ import { getPQProvider } from '@perawallet/wallet-core-kms'
 import {
     deriveQuantumAddress,
     derivePQKeygenSeed,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_CANONICAL_ADDRESS,

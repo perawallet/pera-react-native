@@ -22,6 +22,7 @@ import m0006 from './0006_add_submission_attempts.sql?raw'
 import m0007 from './0007_add_asset_sender.sql?raw'
 import m0008 from './0008_scope_key_network.sql?raw'
 import m0009 from './0009_transaction_identity.sql?raw'
+import m0010 from './0010_text_asset_ids.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (packages/transactions sync/close-amount-backfill.ts) — no
@@ -52,4 +53,8 @@ export const migrations: MigrationConfig = {
     // SQLite can't change a primary key or drop NOT NULL in place, so both
     // tables are rebuilt by copy. Existing rows default to 'confirmed'.
     '0009_transaction_identity': m0009,
+    // Rebuilds the five asset caches so every asset_id is written by a text
+    // column: a decimal-mapped id parsed `0x…` as hex. The first-tick force sync
+    // refills them; account_balances and account_transactions are kept.
+    '0010_text_asset_ids': m0010,
 }

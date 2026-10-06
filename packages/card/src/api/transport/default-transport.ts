@@ -33,6 +33,17 @@ export const setRefreshHandler = (handler: RefreshHandler | null): void => {
     refreshHandler = handler
 }
 
+/** Drops the stored session once a freshly refreshed token is still rejected. */
+type SessionLostHandler = () => Promise<void>
+
+let sessionLostHandler: SessionLostHandler | null = null
+
+export const setSessionLostHandler = (
+    handler: SessionLostHandler | null,
+): void => {
+    sessionLostHandler = handler
+}
+
 const isUnauthorized = (error: unknown): boolean =>
     isHTTPError(error) && error.response?.status === 401
 
@@ -88,7 +99,17 @@ export const defaultTransport: CardTransport = {
             ) {
                 const refreshed = await refreshHandler()
                 if (refreshed) {
-                    return await dispatch<TData, TVars>(req)
+                    try {
+                        return await dispatch<TData, TVars>(req)
+                    } catch (retryError) {
+                        // The refresh "succeeded" yet Baanx still rejects the
+                        // token: keeping it would leave every screen stuck on
+                        // 401s, so drop it and let the UI route to sign-in.
+                        if (isUnauthorized(retryError)) {
+                            await sessionLostHandler?.()
+                        }
+                        throw retryError
+                    }
                 }
             }
             throw error

@@ -137,7 +137,7 @@ vi.mock('../../../hooks', () => ({
     REKEY_SCAN_UNAVAILABLE: 'rekey-scan-unavailable',
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     useAlgorandClient: () => ({
         client: {
             algod: {

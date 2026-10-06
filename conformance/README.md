@@ -51,14 +51,14 @@ reachable at `http://localhost:4001`.
 ## `dist/` dependency (CI-relevant)
 
 Every workspace package this suite imports is aliased in `vitest.config.ts`'s
-`resolve.alias`. `@perawallet/wallet-core-blockchain` maps to
-`packages/blockchain/src`, and Vite's prefix replacement means both the bare
-specifier and any deep import hit `src`, never `dist`. That is not where the
+`resolve.alias`. `@perawallet/wallet-core-chain-algorand` maps to `packages/chain-algorand/src`,
+and Vite's prefix replacement means the bare specifier, `/blockchain` and any
+deep import under it hit `src`, never `dist`. That is not where the
 problem is.
 
 `src/suites/submission/chokepoint.spec.ts` imports `submitAndAutoRefreshCore`
 from `@perawallet/wallet-core-chain-algorand`'s signing module, and that file also imports the full
-`@perawallet/wallet-core-blockchain` barrel (for real `toAlgodError`
+`@perawallet/wallet-core-chain-algorand/blockchain` barrel (for real `toAlgodError`
 classification logic the suite exercises). The barrel itself resolves fine, but
 its own source has non-aliased dependencies one level out:
 `fees/useMinimumFeeConfig.ts` imports `@perawallet/wallet-core-remote-config`,
@@ -251,7 +251,7 @@ an open follow-up, not an oversight this doc is hiding.
 
 ## Shape-based algod error parsing
 
-`packages/blockchain/src/errors/parseAlgodMessage.ts` matches rejection messages on their _shape_,
+`packages/chain-algorand/src/blockchain/errors/parseAlgodMessage.ts` matches rejection messages on their _shape_,
 never on how algod renders the numbers in them. Algod changes those renderings between versions, and
 a regex written against one rendering silently stops matching: overspend has been rendered both as
 `MicroAlgos:{Raw:300000}` and as `MicroAlgos:300mA`, an expired-transaction round range has used both

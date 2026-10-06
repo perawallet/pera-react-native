@@ -51,11 +51,9 @@ import {
 } from './utils'
 import { PERAWALLET_SCHEME } from './constants'
 import { parsePeraWebImportFields } from '@perawallet/wallet-core-backup'
-import {
-    isAlgoAssetId,
-    ALGO_ASSET_ID,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Perawallet new-style URIs: perawallet://app/path?params
@@ -145,9 +143,10 @@ export function parsePerawalletAppUri(
         // numeric (ARC-90 uint64) or the link is unrecognized.
         if (params.assetId && !isValidAssetId(params.assetId)) return null
 
-        const assetId = params.assetId || ALGO_ASSET_ID
+        const nativeAssetId = nativeAssetFor(LEGACY_CHAIN_ID).assetId
+        const assetId = params.assetId || nativeAssetId
 
-        if (isAlgoAssetId(assetId)) {
+        if (assetId === nativeAssetId) {
             return {
                 type: DeeplinkType.ALGO_TRANSFER,
                 sourceUrl: url,

@@ -66,7 +66,7 @@ catalog:
   # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
   # and type-checks, it just silently cannot sign a quantum account — so
   # tools/check-single-algosdk.mjs enforces this range against the *resolved*
-  # version, and packages/blockchain/src/pq/__tests__/algosdkPqSupport.spec.ts
+  # version, and packages/chain-algorand/src/blockchain/pq/__tests__/algosdkPqSupport.spec.ts
   # asserts the surface itself.
   algosdk: ^3.7.0
   before-after-hook: ^4.0.0

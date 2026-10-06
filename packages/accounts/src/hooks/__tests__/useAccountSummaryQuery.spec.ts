@@ -39,6 +39,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 const mockAlgoPrices = new Map<string, { usdPrice: Decimal }>()
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPricesQuery: () => ({ data: mockAlgoPrices }),
+    useNativeAsset: () => ({ assetId: '0' }),
 }))
 
 const wrapper = () => {

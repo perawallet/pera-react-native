@@ -205,7 +205,7 @@ const screenRequiredNamespaces = (
 export type CreateWalletConnectV2HandlerOptions = {
     /**
      * The injection point for anything chain-shaped, mirroring v1: a store
-     * default would drag the blockchain package into every importer's module
+     * default would drag the Algorand runtime into every importer's module
      * graph, `apps/browser` included. A v2 session is approved for every chain
      * the dApp asked for that the wallet knows, so this is what decides which
      * of them may sign: a request naming any other chain is refused to the

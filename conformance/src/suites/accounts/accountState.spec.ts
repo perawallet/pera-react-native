@@ -17,7 +17,7 @@ import { fetchAccountAssetOptInRounds } from '@perawallet/wallet-core-chain-algo
 import {
     FALLBACK_ASSET_MBR,
     FALLBACK_BASE_ACCOUNT_MBR,
-} from '@perawallet/wallet-core-blockchain/constants'
+} from '@perawallet/wallet-core-chain-algorand/blockchain/constants'
 import {
     baseUnitsToDisplayUnits,
     microAlgosToAlgos,

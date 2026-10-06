@@ -29,7 +29,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../executeSwap', () => ({
     executeAlgorandSwap: mocks.executeAlgorandSwap,
 }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../blockchain', () => ({
     getAlgorandClient: mocks.getAlgorandClient,
     decodeTransaction: vi.fn(),
     decodeSignedTransaction: vi.fn(),

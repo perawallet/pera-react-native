@@ -51,7 +51,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     useTransactionEncoder: () => ({ decodeTransaction: decodeTransactionMock }),
 }))
 

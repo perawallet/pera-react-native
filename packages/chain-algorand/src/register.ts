@@ -60,6 +60,11 @@ import {
 } from './accounts'
 import { startNetworkRekeySync } from './accounts/network-rekey-sync'
 
+// These registrations must not depend on which barrel loads first.
+import './blockchain/store/store'
+import './blockchain/store/custom-network'
+import './blockchain/utils/algorandClient'
+
 // Adapters must be module-level instances, not built in here: the registries
 // ignore a repeat of the same instance but reject a new one, which is what
 // keeps a second call harmless.

@@ -20,7 +20,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 
 import { Decimal } from 'decimal.js'
-import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 
 type UseRekeyedAccountInfoContentParams = {
     account: WalletAccount
@@ -39,6 +40,7 @@ export function useRekeyedAccountInfoContent({
 }: UseRekeyedAccountInfoContentParams): UseRekeyedAccountInfoContentResult {
     const { accountBalances: rekeyedBalances, isPending: isRekeyedPending } =
         useAccountBalancesQuery([account], true)
+    const isNativeAssetId = useIsNativeAssetId()
 
     const authAccount = useMemo<Optional<WatchAccount>>(() => {
         if (!account.rekeyAddress) return undefined
@@ -63,8 +65,8 @@ export function useRekeyedAccountInfoContent({
         }
 
         const sorted = [...balanceData.assetBalances].sort((a, b) => {
-            if (isAlgoAssetId(a.assetId)) return -1
-            if (isAlgoAssetId(b.assetId)) return 1
+            if (isNativeAssetId(a.assetId)) return -1
+            if (isNativeAssetId(b.assetId)) return 1
             return 0
         })
 
@@ -72,7 +74,7 @@ export function useRekeyedAccountInfoContent({
             balances: sorted,
             algoValue: balanceData.algoValue,
         }
-    }, [rekeyedBalances, account.address])
+    }, [isNativeAssetId, rekeyedBalances, account.address])
 
     const authAccountAlgoValue = useMemo(() => {
         if (!authAccount) return new Decimal(0)

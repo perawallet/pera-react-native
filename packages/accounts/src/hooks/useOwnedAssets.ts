@@ -12,7 +12,6 @@
 
 import { useMemo } from 'react'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import {
     useAssetsQuery,
@@ -66,7 +65,7 @@ export const useOwnedAssets = (
             assetsMap.get(nativeAsset.assetId) ?? nativeAsset,
         ]
         for (const id of ownedAssetIds) {
-            if (isAlgoAssetId(id)) continue
+            if (id === nativeAsset.assetId) continue
             const asset = assetsMap.get(id)
             if (asset) list.push(asset)
         }

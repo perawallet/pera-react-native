@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { ErrorSeverity } from '@perawallet/wallet-core-shared'
-import { BlockchainError } from './BlockchainError'
+import { BlockchainError, ErrorSeverity } from '@perawallet/wallet-core-shared'
 import type { AlgodErrorCode, AlgodErrorParamsByCode } from './algodErrorCodes'
 
 /**

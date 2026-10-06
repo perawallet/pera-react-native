@@ -32,7 +32,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
-import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { closestPressable, isElementDisabled } from '@test-utils/rnw'
 import {
