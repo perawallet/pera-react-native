@@ -19,18 +19,26 @@ import {
 } from 'drizzle-orm/sqlite-core'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { decimalColumn } from '@perawallet/wallet-core-database'
+import {
+    TransactionHistoryStatuses,
+    type TransactionHistoryStatus,
+} from '../models/types'
 
 export const TransactionsSchema = sqliteTable(
     'transactions',
     {
-        id: text('id').primaryKey(),
+        id: text('id').notNull(),
         network: text('network').notNull().$type<ChainScopeKey>(),
         txType: text('tx_type').notNull(),
         sender: text('sender').notNull(),
         assetSender: text('asset_sender'),
         receiver: text('receiver'),
-        confirmedRound: integer('confirmed_round').notNull(),
-        roundTime: integer('round_time').notNull(),
+        confirmedRound: integer('confirmed_round'),
+        roundTime: integer('round_time'),
+        status: text('status')
+            .notNull()
+            .default(TransactionHistoryStatuses.CONFIRMED)
+            .$type<TransactionHistoryStatus>(),
         fee: decimalColumn('fee').notNull(),
         groupId: text('group_id'),
         amount: decimalColumn('amount'),
@@ -44,7 +52,10 @@ export const TransactionsSchema = sqliteTable(
         balanceImpactsJson: text('balance_impacts_json'),
         updatedAt: integer('updated_at').notNull(),
     },
-    table => [index('transactions_network_idx').on(table.network)],
+    table => [
+        primaryKey({ columns: [table.network, table.id] }),
+        index('transactions_network_idx').on(table.network),
+    ],
 )
 
 export const AccountTransactionsSchema = sqliteTable(
@@ -54,7 +65,7 @@ export const AccountTransactionsSchema = sqliteTable(
         transactionId: text('transaction_id').notNull(),
         network: text('network').notNull().$type<ChainScopeKey>(),
         assetId: decimalColumn('asset_id'),
-        roundTime: integer('round_time').notNull(),
+        roundTime: integer('round_time'),
     },
     table => [
         primaryKey({

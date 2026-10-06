@@ -11,7 +11,12 @@
  */
 
 import { computeGroupID, Transaction } from 'algosdk'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
@@ -74,7 +79,12 @@ export const deriveRequestGroupTxIds = (
  */
 export const isRequestGroupAlreadySubmitted = async (
     request: SignRequest,
-    { db }: { db?: Database } = {},
+    {
+        db,
+        // Ledger rows carry the network active when they were written, so a
+        // request restored after a network switch is re-presented.
+        scope = scopeForLegacyNetwork(useNetworkStore.getState().network),
+    }: { db?: Database; scope?: ChainScope } = {},
 ): Promise<boolean> => {
     if (!isTransactionRequest(request)) return false
 
@@ -90,6 +100,7 @@ export const isRequestGroupAlreadySubmitted = async (
         // never right.
         const matches = await getSubmissionAttemptsByTxIds({
             db,
+            scope,
             txIds,
             statuses: LANDABLE_SUBMISSION_STATUSES,
         })

@@ -68,13 +68,14 @@ export async function upsertTransactions({
                 updatedAt: now,
             })
             .onConflictDoUpdate({
-                target: TransactionsSchema.id,
+                target: [TransactionsSchema.network, TransactionsSchema.id],
                 set: {
                     txType: row.txType,
                     sender: row.sender,
                     receiver: row.receiver,
                     confirmedRound: row.confirmedRound,
                     roundTime: row.roundTime,
+                    status: row.status,
                     fee: row.fee,
                     groupId: row.groupId,
                     amount: row.amount,
@@ -118,7 +119,16 @@ export async function upsertTransactions({
                 assetId: assetId ? new Decimal(assetId) : null,
                 roundTime: item.roundTime,
             })
-            .onConflictDoNothing()
+            // History sorts and pages on the link's time, so it follows a
+            // pending row to its confirmed time.
+            .onConflictDoUpdate({
+                target: [
+                    AccountTransactionsSchema.accountAddress,
+                    AccountTransactionsSchema.transactionId,
+                    AccountTransactionsSchema.network,
+                ],
+                set: { roundTime: item.roundTime },
+            })
             .run()
     }
 }
@@ -217,6 +227,7 @@ export async function getTransactionHistory({
             receiver: TransactionsSchema.receiver,
             confirmedRound: TransactionsSchema.confirmedRound,
             roundTime: TransactionsSchema.roundTime,
+            status: TransactionsSchema.status,
             fee: TransactionsSchema.fee,
             groupId: TransactionsSchema.groupId,
             amount: TransactionsSchema.amount,
@@ -316,7 +327,8 @@ export async function getSwapRowsMissingAssetFacts({
     return db
         .select({
             id: TransactionsSchema.id,
-            roundTime: TransactionsSchema.roundTime,
+            // The NOT NULL filter below makes the narrowed type true.
+            roundTime: sql<number>`${TransactionsSchema.roundTime}`,
         })
         .from(TransactionsSchema)
         .innerJoin(
@@ -337,6 +349,8 @@ export async function getSwapRowsMissingAssetFacts({
                 eq(TransactionsSchema.network, network),
                 eq(AccountTransactionsSchema.accountAddress, accountAddress),
                 isNotNull(TransactionsSchema.swapGroupDetailJson),
+                // The refetch is windowed by round time.
+                isNotNull(TransactionsSchema.roundTime),
                 sql`json_extract(CASE WHEN json_valid(${TransactionsSchema.swapGroupDetailJson}) THEN ${TransactionsSchema.swapGroupDetailJson} END, '$.assetInDecimals') IS NULL`,
             ),
         )

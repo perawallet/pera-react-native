@@ -345,6 +345,123 @@ describe('transaction repository', () => {
         expect(result[0].amount).toEqual(new Decimal(200))
     })
 
+    it('keeps one row per scope for the same transaction id', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx({ amount: new Decimal(100) })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        await upsertTransactions({
+            db,
+            items: [makeTx({ amount: new Decimal(200) })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('testnet'),
+        })
+        await upsertTransactions({
+            db,
+            items: [makeTx({ amount: new Decimal(300) })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('testnet'),
+        })
+
+        const mainnet = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        const testnet = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('testnet'),
+        })
+
+        expect(mainnet.map(tx => [tx.id, tx.amount])).toEqual([
+            ['TX001', new Decimal(100)],
+        ])
+        expect(testnet.map(tx => [tx.id, tx.amount])).toEqual([
+            ['TX001', new Decimal(300)],
+        ])
+    })
+
+    it('stores a pending transaction that has no round yet', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx({ status: 'pending', confirmedRound: undefined })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        const [pending] = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        expect(pending.status).toBe('pending')
+        expect(pending.confirmedRound).toBeUndefined()
+    })
+
+    it('confirms a pending row when the transaction is synced with its round', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx({ status: 'pending', confirmedRound: undefined })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        await upsertTransactions({
+            db,
+            items: [makeTx({ confirmedRound: 777 })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        const [confirmed] = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        expect(confirmed.status).toBe('confirmed')
+        expect(confirmed.confirmedRound).toBe(777)
+    })
+
+    it('moves the account link to the confirmed round time', async () => {
+        await upsertTransactions({
+            db,
+            items: [
+                makeTx({
+                    status: 'pending',
+                    confirmedRound: undefined,
+                    roundTime: 1700000000,
+                }),
+            ],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        await upsertTransactions({
+            db,
+            items: [makeTx({ confirmedRound: 777, roundTime: 1700000042 })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        const latest = await getLatestTransactionRoundTime({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        const beforeConfirmation = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+            atOrBeforeRoundTime: 1700000041,
+        })
+
+        expect(latest).toBe(1700000042)
+        expect(beforeConfirmation).toEqual([])
+    })
+
     it('filters by assetId', async () => {
         const asset = {
             assetId: 31566704,
@@ -836,6 +953,33 @@ describe('transaction repository', () => {
             })
 
             expect(rows).toEqual([{ id: 'STALE', roundTime: 1700000000 }])
+        })
+
+        it('skips rows with no round time, which a time-windowed refetch cannot reach', async () => {
+            await upsertTransactions({
+                db,
+                items: [
+                    makeTx({
+                        id: 'UNTIMED',
+                        swapGroupDetail: legacySwapDetail,
+                    }),
+                ],
+                accountAddress: 'ACCT1',
+                scope: scopeForLegacyNetwork('mainnet'),
+            })
+            await db
+                .update(TransactionsSchema)
+                .set({ roundTime: null })
+                .where(eq(TransactionsSchema.id, 'UNTIMED'))
+                .run()
+
+            const rows = await getSwapRowsMissingAssetFacts({
+                db,
+                scope: scopeForLegacyNetwork('mainnet'),
+                accountAddress: 'ACCT1',
+            })
+
+            expect(rows).toEqual([])
         })
 
         it('ignores rows that already carry decimals', async () => {

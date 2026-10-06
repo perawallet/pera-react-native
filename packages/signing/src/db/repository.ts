@@ -245,6 +245,7 @@ export const getOpenSubmissionAttemptsForIntent = async ({
 
 export type GetSubmissionAttemptsByTxIdsParams = {
     db?: Database
+    scope: ChainScope
     txIds: string[]
     /** Defaults to the open set; pass a wider set to include terminal rows. */
     statuses?: readonly SubmissionStatus[]
@@ -253,12 +254,10 @@ export type GetSubmissionAttemptsByTxIdsParams = {
 /**
  * Attempts whose group shares any of the given txids. Used to suppress
  * re-presented sign requests whose group already hit the chain.
- *
- * Deliberately not scoped by network, unlike the queries above: a txid digests
- * the genesis hash, so the same id cannot occur on two networks.
  */
 export const getSubmissionAttemptsByTxIds = async ({
     db = getDatabase(),
+    scope,
     txIds,
     statuses = OPEN_SUBMISSION_STATUSES,
 }: GetSubmissionAttemptsByTxIdsParams): Promise<SubmissionAttempt[]> => {
@@ -269,6 +268,7 @@ export const getSubmissionAttemptsByTxIds = async ({
         .from(SubmissionAttemptsSchema)
         .where(
             and(
+                eq(SubmissionAttemptsSchema.network, toScopeKey(scope)),
                 inArray(SubmissionAttemptsSchema.status, [...statuses]),
                 // JSON1: a row matches when any element of its txid array
                 // equals one of the queried txids.
