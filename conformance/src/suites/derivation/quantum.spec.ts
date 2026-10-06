@@ -13,7 +13,7 @@
 import algosdk from 'algosdk'
 import { describe, expect, it } from 'vitest'
 
-import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain/pq/derivation'
+import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/blockchain/pq/derivation'
 import { getPQProvider } from '@perawallet/wallet-core-kms/crypto/pq'
 import { quantumAddressCandidates } from '@perawallet/wallet-core-kms/crypto/quantumAddressCandidates'
 import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts/quantum'

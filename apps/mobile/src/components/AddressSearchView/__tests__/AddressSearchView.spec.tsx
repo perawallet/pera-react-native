@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AddressSearchView } from '../AddressSearchView'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
 // Mock dependencies
@@ -40,7 +40,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: vi.fn(),
 }))
 

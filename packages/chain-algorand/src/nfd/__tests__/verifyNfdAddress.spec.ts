@@ -29,7 +29,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 // The blockchain barrel pulls native deps that don't load under node; a
 // byte-labelled stand-in keeps the address maths observable.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../blockchain', () => ({
     encodeAlgorandAddress: (bytes: Uint8Array) => `ADDR(${bytes[0]})`,
 }))
 

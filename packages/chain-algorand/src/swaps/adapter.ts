@@ -15,7 +15,7 @@ import {
     decodeTransaction,
     encodeSignedTransactions,
     getAlgorandClient,
-} from '@perawallet/wallet-core-blockchain'
+} from '../blockchain'
 import type {
     PeraSignedTransaction,
     PeraTransaction,

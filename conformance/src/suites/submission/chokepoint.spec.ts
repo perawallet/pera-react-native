@@ -17,9 +17,9 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
     encodeSignedTransactions,
     groupTransactions,
-} from '@perawallet/wallet-core-blockchain/utils/transact'
+} from '@perawallet/wallet-core-chain-algorand/blockchain/utils/transact'
 import { Networks } from '@perawallet/wallet-core-config/models/network'
-// `submitAndAutoRefresh.ts` also imports the full `@perawallet/wallet-core-blockchain`
+// `submitAndAutoRefresh.ts` also imports the full `@perawallet/wallet-core-chain-algorand/blockchain`
 // barrel (for real `toAlgodError` classification logic this suite exercises).
 // That barrel IS aliased to `src` like every other import here — the barrel
 // itself is not the problem. The problem is one level out: the barrel's own

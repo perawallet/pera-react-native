@@ -12,7 +12,11 @@
 
 import { describe, test, expect } from 'vitest'
 import { LogicError } from '@algorandfoundation/algokit-utils/types/logic-error'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import {
+    BlockchainError,
+    ErrorCategory,
+    PeraNetworkError,
+} from '@perawallet/wallet-core-shared'
 import { toAlgodError } from '../toAlgodError'
 import { AlgodError } from '../AlgodError'
 import { AlgodErrorCode } from '../algodErrorCodes'
@@ -271,5 +275,14 @@ describe('toAlgodError', () => {
             ),
         )
         expect(overspend.metadata.retryable).toBe(false)
+    })
+})
+
+describe('AlgodError', () => {
+    test('is a shared BlockchainError', () => {
+        const e = new AlgodError(AlgodErrorCode.NETWORK_UNAVAILABLE, {})
+
+        expect(e).toBeInstanceOf(BlockchainError)
+        expect(e.metadata.category).toBe(ErrorCategory.BLOCKCHAIN)
     })
 })

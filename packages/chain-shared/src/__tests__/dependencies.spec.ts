@@ -20,7 +20,6 @@ const FORBIDDEN_DEPENDENCIES = [
     /^algosdk$/,
     /^@algorandfoundation\/algokit-utils$/,
     /^@perawallet\/wallet-core-chain-(?!contract$)/,
-    /^@perawallet\/wallet-core-blockchain$/,
 ]
 
 const DEPENDENCY_FIELDS = [

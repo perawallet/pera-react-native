@@ -84,8 +84,8 @@ describe('pera/no-chain-package-imports', () => {
         const found = await runRule(RULE, FIXTURES)
 
         expect(inFile(found, 'chain-imports.transitional.ts')).toEqual([
-            'chain-imports.transitional.ts:8',
             'chain-imports.transitional.ts:9',
+            'chain-imports.transitional.ts:10',
         ])
     })
 

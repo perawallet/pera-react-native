@@ -32,7 +32,7 @@ const mockTx2 = { id: 'tx-2', sender: 'ADDR2' } as PeraDisplayableTransaction
 
 const mockUseGroupTransactionsQuery = vi.fn()
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     useGroupTransactionsQuery: (...args: unknown[]) =>
         mockUseGroupTransactionsQuery(...args),
 }))

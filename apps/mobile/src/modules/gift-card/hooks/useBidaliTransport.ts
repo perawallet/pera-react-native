@@ -20,7 +20,7 @@ import type {
 import {
     isValidAlgorandAddress,
     useAlgorandClient,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     getKnownAssetId,
     useNativeAsset,

@@ -16,8 +16,8 @@ import '../../../__tests__/registerAlgorandAccounts'
 // Hardware-participant signing reaches into `Address.fromString` for rekey
 // detection. The fixture addresses below are not canonical 58-char Algorand
 // addresses, so stub it the same way createHardwareStrategy.spec.ts does.
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual('@perawallet/wallet-core-blockchain')
+vi.mock('../../../blockchain', async () => {
+    const actual = await vi.importActual('../../../blockchain')
     return {
         ...actual,
         Address: {

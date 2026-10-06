@@ -17,7 +17,7 @@ import {
     logger,
     queryClient,
 } from '@perawallet/wallet-core-shared'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { encodeAlgorandAddress } from '../blockchain'
 import type {
     NfdAddressVerification,
     VerifyForwardResolutionParams,

@@ -23,7 +23,7 @@ import {
     calculateMinTxnFee,
     calculatePQFeeSurcharge,
     groupTransactions,
-} from '@perawallet/wallet-core-blockchain'
+} from '../blockchain'
 
 import { Transaction } from 'algosdk'
 import { bytesToHex } from '@perawallet/wallet-core-shared'

@@ -14,7 +14,7 @@ import { KeyContext, XHDWalletAPI } from '@algorandfoundation/xhd-wallet-api'
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import type { indexerModels } from 'algosdk'
 import type { GetPublicKey } from '@perawallet/wallet-core-accounts'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { getAlgorandClient } from '../blockchain'
 import {
     fetchAccountFastLookup,
     logger,

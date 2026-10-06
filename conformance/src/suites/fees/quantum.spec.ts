@@ -13,11 +13,11 @@
 import { microAlgo } from '@algorandfoundation/algokit-utils'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { FALLBACK_PQ_MULTIPLIER } from '@perawallet/wallet-core-blockchain/constants'
+import { FALLBACK_PQ_MULTIPLIER } from '@perawallet/wallet-core-chain-algorand/blockchain/constants'
 import {
     calculatePQFeeSurcharge,
     calculateMinTxnFee,
-} from '@perawallet/wallet-core-blockchain/fees/feeCalculator'
+} from '@perawallet/wallet-core-chain-algorand/blockchain/fees/feeCalculator'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     buildRekeyTx,

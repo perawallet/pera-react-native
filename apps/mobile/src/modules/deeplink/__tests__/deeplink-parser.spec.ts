@@ -33,7 +33,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { isValidAlgorandAddress as isChecksummedAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from '../parser'
 import { parseDevLocaleTourUri } from '../dev-locale-tour-parser'

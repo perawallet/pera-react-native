@@ -12,7 +12,7 @@
 
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { FALLBACK_ASSET_MBR } from '@perawallet/wallet-core-blockchain/constants'
+import { FALLBACK_ASSET_MBR } from '@perawallet/wallet-core-chain-algorand/blockchain/constants'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { buildExpressTransferTxs } from '@perawallet/wallet-core-chain-algorand/transactions/builders'
 

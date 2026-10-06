@@ -18,7 +18,7 @@ import {
     encodeTransaction,
     encodeAlgorandAddress,
     pqSigningDigest,
-} from '@perawallet/wallet-core-blockchain'
+} from '../../blockchain'
 import type {
     PeraSignedTransaction,
     PeraTransaction,

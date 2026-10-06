@@ -16,7 +16,7 @@ import {
     mapToDisplayableTransaction,
     resolveArc0001SignTxnRequest,
     useFetchSuggestedMinFee,
-} from '@perawallet/wallet-core-blockchain'
+} from '../blockchain'
 import type {
     LocalKeySignerChainAdapter,
     MessageSignerChainAdapter,

@@ -30,7 +30,7 @@ import {
     toWholeUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
+import { useMinimumFeeConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { bottomSheetNotifier, PWText, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'

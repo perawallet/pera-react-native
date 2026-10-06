@@ -14,7 +14,6 @@
         "@algorandfoundation/keystore-core": "catalog:",
         "@algorandfoundation/xhd-wallet-api": "catalog:",
         "@perawallet/wallet-core-accounts": "workspace:*",
-        "@perawallet/wallet-core-blockchain": "workspace:*",
         "@perawallet/wallet-core-chain-algorand": "workspace:*",
         "@perawallet/wallet-core-chain-contract": "workspace:*",
         "@perawallet/wallet-core-config": "workspace:*",

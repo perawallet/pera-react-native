@@ -17,7 +17,7 @@ export type GoAlgorandPQVector = {
 }
 
 /**
- * Pinned from `packages/blockchain/src/pq/__tests__/derivation.spec.ts:22-24`,
+ * Pinned from `packages/chain-algorand/src/blockchain/pq/__tests__/derivation.spec.ts:22-24`,
  * which in turn carries go-algorand's `cmd/algokey/pq_test.go` published vector
  * (entropy = bytes 1..32). An external, non-Pera oracle — the whole point of
  * this vector is that it was never computed by this repo's code.

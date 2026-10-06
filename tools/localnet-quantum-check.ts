@@ -47,15 +47,15 @@ import {
     waitForConfirmation,
 } from 'algosdk'
 import { generateKey, signCompressed } from 'falcon-1024'
-import { calculateMinTxnFee } from '../packages/blockchain/src/fees/feeCalculator'
+import { calculateMinTxnFee } from '../packages/chain-algorand/src/blockchain/fees/feeCalculator'
 import {
     assemblePQSignedTransaction,
     deriveQuantumAddress,
     pqSigningDigest,
-} from '../packages/blockchain/src/pq/quantumAdapter'
+} from '../packages/chain-algorand/src/blockchain/pq/quantumAdapter'
 
 // Mirrors `FALLBACK_PQ_MULTIPLIER` in
-// `packages/blockchain/src/fees/useMinimumFeeConfig.ts` — that constant isn't
+// `packages/chain-algorand/src/blockchain/fees/useMinimumFeeConfig.ts` — that constant isn't
 // exported (it backs a React hook wired to remote config), so this script,
 // which has neither, keeps its own copy of the same default.
 const PQ_FEE_MULTIPLIER = 3n

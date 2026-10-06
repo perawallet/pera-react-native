@@ -227,15 +227,15 @@ when the app reinitializes (see `BaseStoreState`).
 
 ## Key packages
 
-| Package      | Purpose                            |
-| ------------ | ---------------------------------- |
-| `accounts`   | Wallet account management          |
-| `assets`     | Asset information and pricing      |
-| `blockchain` | Algorand node/indexer access       |
-| `signing`    | Transaction signing and submission |
-| `database`   | Local persistence                  |
-| `settings`   | User preferences                   |
-| `shared`     | Common utilities and models        |
+| Package          | Purpose                                                      |
+| ---------------- | ------------------------------------------------------------ |
+| `accounts`       | Wallet account management                                    |
+| `assets`         | Asset information and pricing                                |
+| `chain-algorand` | Algorand chain: node/indexer access and per-package adapters |
+| `signing`        | Transaction signing and submission                           |
+| `database`       | Local persistence                                            |
+| `settings`       | User preferences                                             |
+| `shared`         | Common utilities and models                                  |
 
 Platform service abstractions live in `extensions/*`, not in a package.
 

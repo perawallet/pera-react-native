@@ -57,7 +57,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => {
     class MockAlgodError extends Error {
         constructor(
             public readonly code: string,

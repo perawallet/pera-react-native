@@ -297,7 +297,7 @@ vi.mock('@modules/transactions', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (address: string) =>
         !!address && /^[0-9a-zA-Z]{58}$/.test(address),
     useTransactionEncoder: () => ({

@@ -29,8 +29,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 // Fully replaced (no `importActual`): the real `@perawallet/wallet-core-assets`
 // barrel transitively pulls in react-native-mmkv, which cannot resolve under
 // this package's jsdom test environment (same class of issue as the
-// `@perawallet/wallet-core-blockchain` mock in
-// `useRekeyFeePreflight.spec.ts` and the provider stub in `vitest.setup.ts`).
+// blockchain barrel mock in `useRekeyFeePreflight.spec.ts` and the provider
+// stub in `vitest.setup.ts`).
 // `./indexer/endpoints` only imports this one named export, and the routing
 // tests below that reach the indexer path use empty transaction pages, so
 // the mock needs no return value configured.

@@ -11,7 +11,7 @@
  */
 
 import { microAlgo } from '@algorandfoundation/algokit-utils'
-import { createWalletAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { createWalletAlgorandClient } from '../blockchain'
 
 import type {
     ChainScope,

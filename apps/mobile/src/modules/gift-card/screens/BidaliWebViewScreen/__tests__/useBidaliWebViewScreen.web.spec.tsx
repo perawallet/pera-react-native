@@ -70,7 +70,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: () => accountBalancesMock(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (addr: string) => /^[A-Z2-7]{58}$/.test(addr ?? ''),
     useAlgorandClient: () => ({ newGroup: () => ({}) }),
 }))
