@@ -74,6 +74,21 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',
     },
     {
+        file: 'packages/accounts/src/credentials/backfill.ts',
+        text: "'algorand'",
+        reason: "Writes Algorand's native member from the legacy multisig details; both go together.",
+    },
+    {
+        file: 'packages/backup/src/cloud/hooks/useCloudBackupImport.ts',
+        text: "'algorand'",
+        reason: "A backup's multisig payload is Algorand's, so its native member is written as such.",
+    },
+    {
+        file: 'packages/accounts/src/credentials/accessors.ts',
+        text: 'scope.chainId !== LEGACY_CHAIN_ID',
+        reason: "The legacy rekey fields it reads are the Algorand chain's; per-chain authority replaces them.",
+    },
+    {
         file: 'packages/backup/src/cloud/hooks/useCloudBackupContactImport.ts',
         text: "'algorand'",
         reason: "A contact payload's bare `address` predates chain families, so it is always an Algorand address.",
