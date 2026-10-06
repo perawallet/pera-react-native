@@ -200,6 +200,24 @@ export const indicesToEntropy = (indices: Uint16Array): Uint8Array => {
 }
 
 /**
+ * The 64-byte BIP39 seed (empty passphrase) for stored entropy, through the
+ * same native PBKDF2 path as {@link generateHDMasterKey}. Leaves `entropy`
+ * untouched; the caller zeroes the result.
+ */
+export const bip39SeedFromEntropy = async (
+    entropy: Uint8Array,
+): Promise<Uint8Array> => {
+    const indices = entropyToIndices(entropy)
+    let mnemonicBytes: Uint8Array | undefined
+    try {
+        mnemonicBytes = indicesToUtf8Bytes(indices)
+        return await deriveBip39Seed(mnemonicBytes)
+    } finally {
+        zeroBytes(indices, mnemonicBytes)
+    }
+}
+
+/**
  * Routes the BIP39 seed derivation through Node's `crypto.pbkdf2`. On React
  * Native this is rewritten by Metro to `react-native-quick-crypto`, which
  * runs PBKDF2 natively via JSI — orders of magnitude faster than the pure-JS
