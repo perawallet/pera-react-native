@@ -11,7 +11,7 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     navigateToScreen: vi.fn(),
