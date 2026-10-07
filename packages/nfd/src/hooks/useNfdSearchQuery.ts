@@ -15,7 +15,10 @@ import {
     LEGACY_CHAIN_ID,
     legacyNetworkOf,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { fetchNfdSearch } from '../api'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdSearchResult } from '../models'
@@ -36,7 +39,14 @@ export const useNfdSearchQuery = (
     const network = legacyNetworkOf(scope)
     // NFD names are case-insensitive; normalize so "BruNo.aLgo" matches "bruno.algo".
     const normalizedName = name.toLowerCase()
-    const enabled = (options?.enabled ?? true) && normalizedName.length > 0
+    const isNameServiceEnabled = useChainCapability(
+        LEGACY_CHAIN_ID,
+        'nameService',
+    )
+    const enabled =
+        (options?.enabled ?? true) &&
+        isNameServiceEnabled &&
+        normalizedName.length > 0
 
     const query = useQuery({
         queryKey: nfdQueryKeys.search(normalizedName, scope),

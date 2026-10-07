@@ -50,6 +50,7 @@ export * from './useAuthorityTargets'
 export * from './useLedgerAccountPreview'
 export * from './prefetchLedgerAccountPreview'
 export * from './useLedgerRekeyedScan'
+export * from './useIsRekeyAvailable'
 export * from './useOwnedAssets'
 export * from './useHDImportSession'
 export {

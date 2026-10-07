@@ -136,16 +136,6 @@ export const isMultisigUnsignable = (
 ): boolean =>
     isMultisigAccount(account) && !canSignWith(account, accounts, chainId)
 
-/**
- * Aliases `canSignWith` — the rekey txn itself must be signed by the current
- * auth chain — under an intent-revealing name.
- */
-export const canInitiateRekey = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-    chainId: ChainId,
-): boolean => canSignWith(account, accounts, chainId)
-
 export type RekeyTransition = {
     /** Type of the rekeyed account itself, not followed through the rekey. */
     from: AccountType

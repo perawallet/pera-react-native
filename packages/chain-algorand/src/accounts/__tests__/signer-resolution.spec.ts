@@ -17,7 +17,6 @@ import {
     resolveSignerForAccount,
     isRekeyedUnsignable,
     isMultisigUnsignable,
-    canInitiateRekey,
     canSignWith,
     getAuthAccount,
     getRekeyAccount,
@@ -320,30 +319,6 @@ describe('isMultisigUnsignable', () => {
     })
 })
 
-describe('canInitiateRekey', () => {
-    it('true for a signable standard account', () => {
-        const account = algo25('A')
-        expect(canInitiateRekey(account, [account], ALGORAND_CHAIN_ID)).toBe(
-            true,
-        )
-    })
-
-    it('false for a watch account', () => {
-        const account = watch('A')
-        expect(canInitiateRekey(account, [account], ALGORAND_CHAIN_ID)).toBe(
-            false,
-        )
-    })
-
-    it('true for a watch account rekeyed to a signable auth (auth chain signs the rekey)', () => {
-        const auth = algo25('S')
-        const account = watch('A', 'S')
-        expect(
-            canInitiateRekey(account, [account, auth], ALGORAND_CHAIN_ID),
-        ).toBe(true)
-    })
-})
-
 type SignerCase = {
     name: string
     /** `accounts[0]` is the account under test. */
@@ -596,9 +571,6 @@ describe.each(signerCases)('signer resolution: $name', c => {
                 null,
         ).toBe(c.signer)
         expect(canSignWith(account, c.accounts, ALGORAND_CHAIN_ID)).toBe(
-            c.signer !== null,
-        )
-        expect(canInitiateRekey(account, c.accounts, ALGORAND_CHAIN_ID)).toBe(
             c.signer !== null,
         )
         expect(
