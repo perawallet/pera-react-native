@@ -106,19 +106,21 @@ export const groupHasQuantumSigner = ({
  * so the new `grp` is what algod will verify. Untouched partitions and
  * ungrouped transactions keep their original object references.
  *
- * Prepaid fees are left alone: a quantum-signed transaction whose fee is
- * already at or above the PQ minimum is returned untouched. A dApp that
- * prices the PQ signature itself (ARC-0001 lets it set any fee) must not be
- * raised again, because raising changes the group ID, and a dApp that
- * co-signs part of the group (logic sigs, its own keys) only ever receives
- * `null` for those slots and would submit them with the old `grp`.
+ * Co-signed partitions are never touched: a group with any member outside
+ * `signableIndices` is returned as received, whatever its quantum fees are.
+ * Raising a fee changes the group ID, and the other signer (a dApp's logic
+ * sig or its own keys) only ever receives `null` for its slots, so it would
+ * submit them with the old `grp` and algod rejects the whole group with
+ * "inconsistent group values". A raise there can never produce a
+ * submittable group; whether such a group is funded is for the dApp to
+ * price. Partitions Pera signs in full are safe to re-group.
  *
- * Below the PQ minimum, the surcharge is ADDED to the fee the dApp set, never
- * clamped to the minimum. Fees pool across a group, so a fee above the base
- * minimum is budget for something else — most often an app call's inner
- * transactions — and clamping spends it on the signature instead, leaving the
- * inner transactions unfunded (`itxn_submit` then fails with "group fee too
- * small"). Adding the premium keeps the dApp's own budget intact.
+ * Pooled fees: the surcharge is ADDED to the fee the dApp set, never clamped
+ * to the PQ minimum. Fees pool across a group, so a fee above the base minimum
+ * is budget for something else — most often an app call's inner transactions —
+ * and clamping spends it on the signature instead, leaving the inner
+ * transactions unfunded (`itxn_submit` then fails with "group fee too small").
+ * Adding the premium keeps the dApp's own budget intact for every group shape.
  *
  * Underfunded groups are out of scope: a group whose fees don't cover its
  * pre-quantum cost already fails for an Ed25519 signer, and the wallet can't
@@ -150,6 +152,16 @@ export const assignMinimumFeesToGroup = ({
         pqMultiplier,
     })
 
+    // Group partitions (keyed by the claimed group ID) with a member Pera
+    // won't sign. Their group ID must survive, so they are never touched.
+    const signable = new Set(signableIndices)
+    const coSignedGroupKeys = new Set<string>()
+    transactions.forEach((tx, index) => {
+        if (tx.group && !signable.has(index)) {
+            coSignedGroupKeys.add(bytesToHex(tx.group))
+        }
+    })
+
     // Plan the adjustments: only signable txns whose effective authorizer
     // resolves to a quantum signer. Non-quantum senders are NEVER touched,
     // even if their fee is below the plain minimum.
@@ -165,10 +177,11 @@ export const assignMinimumFeesToGroup = ({
         )
         const signer = getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
         if (signer === null || !isQuantumAccount(signer)) continue
-        // Already prices the PQ signature: leave it, and the group ID, alone.
-        if (tx.fee >= minFee) continue
+        if (tx.group && coSignedGroupKeys.has(bytesToHex(tx.group))) continue
         // Add the premium to what the dApp set, then floor at the PQ minimum
-        // for a fee that wouldn't even cover a plain transaction.
+        // for a fee that wouldn't even cover a plain transaction. The floor
+        // makes this pointwise ≥ the fee any given group carries today, so no
+        // group that currently submits can start failing.
         const withSurcharge = tx.fee + surcharge
         const adjustedFee = withSurcharge > minFee ? withSurcharge : minFee
         if (adjustedFee <= tx.fee) continue

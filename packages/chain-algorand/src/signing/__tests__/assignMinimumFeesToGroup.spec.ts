@@ -123,43 +123,40 @@ describe('assignMinimumFeesToGroup', () => {
         ])
     })
 
-    test('leaves a fee already at the PQ minimum untouched', () => {
-        // A dApp that prices the PQ signature itself must not be raised
-        // again: a raise changes the group ID, which breaks any group the
-        // dApp co-signs.
-        const transactions = [makePayment(quantumAddress, 3000n)]
+    test('adds the surcharge to a fee already at the PQ minimum', () => {
+        // Fixed-output swap: 3000 µAlgo pools two inner-transaction fees, and
+        // coincidentally equals the PQ minimum — the old skip left it unfunded.
+        const tx = makePayment(quantumAddress, 3000n)
 
         const result = assignMinimumFeesToGroup({
             ...baseParams,
-            transactions,
+            transactions: [tx],
             signableIndices: [0],
             accounts: [quantum()],
         })
 
-        expect(result.transactions).toBe(transactions)
-        expect(result.transactions[0].fee).toBe(3000n)
-        expect(result.adjustments).toEqual([])
+        expect(result.transactions[0].fee).toBe(5000n)
     })
 
-    test('leaves a fee above the PQ minimum untouched', () => {
-        const transactions = [makePayment(quantumAddress, 9000n)]
+    test('adds the surcharge to a fee far above the PQ minimum', () => {
+        // Tinyman's router puts the whole pooled fee on one transaction
+        // (7 inner txns here) and zeroes the rest.
+        const tx = makePayment(quantumAddress, 9000n)
 
         const result = assignMinimumFeesToGroup({
             ...baseParams,
-            transactions,
+            transactions: [tx],
             signableIndices: [0],
             accounts: [quantum()],
         })
 
-        expect(result.transactions).toBe(transactions)
-        expect(result.transactions[0].fee).toBe(9000n)
-        expect(result.adjustments).toEqual([])
+        expect(result.transactions[0].fee).toBe(11000n)
     })
 
-    test('keeps the group ID of a co-signed group whose quantum fees are prepaid', () => {
+    test('leaves a co-signed partition untouched when its quantum fees are prepaid', () => {
         // Folks Finance "Create Loan": two quantum payments at 3000 and
         // 4000 µAlgo plus a zero-fee app call signed by the dApp's logic
-        // sig. Pera only sees null slots for what it doesn't sign, so any
+        // sig. Pera only returns null for the slot it doesn't sign, so a
         // re-group here would leave the dApp submitting the old grp.
         const grouped = groupTransactions([
             makePayment(quantumAddress, 3000n),
@@ -257,7 +254,11 @@ describe('assignMinimumFeesToGroup', () => {
         ).toBe(true)
     })
 
-    test('recomputes the group ID over the ENTIRE partition, including txns Pera does not sign', () => {
+    test('leaves a co-signed partition untouched even when a quantum fee is below the PQ minimum', () => {
+        // A raise would change the group ID, and the other signer only
+        // ever sees null for its slots, so the raised group could never be
+        // submitted. Whether the group is underfunded is for the dApp to
+        // price; the wallet must not make a working group unsubmittable.
         const grouped = groupTransactions([
             makePayment(quantumAddress, 1000n),
             makePayment(externalAddress, 1000n),
@@ -270,6 +271,29 @@ describe('assignMinimumFeesToGroup', () => {
             transactions: grouped,
             signableIndices: [0],
             accounts: [quantum()],
+        })
+
+        expect(result.transactions).toBe(grouped)
+        expect(result.adjustments).toEqual([])
+        expect(result.transactions[0].fee).toBe(1000n)
+        for (const tx of result.transactions) {
+            expect(bytesEqual(tx.group as Uint8Array, originalGroup)).toBe(true)
+        }
+    })
+
+    test('recomputes the group ID over the whole partition when Pera signs every member', () => {
+        const grouped = groupTransactions([
+            makePayment(quantumAddress, 1000n),
+            makePayment(algoAddress, 1000n),
+            makePayment(algoAddress, 1000n),
+        ])
+        const originalGroup = grouped[0].group as Uint8Array
+
+        const result = assignMinimumFeesToGroup({
+            ...baseParams,
+            transactions: grouped,
+            signableIndices: [0, 1, 2],
+            accounts: [quantum(), algo25()],
         })
 
         const newGroup = result.transactions[0].group as Uint8Array
@@ -291,14 +315,14 @@ describe('assignMinimumFeesToGroup', () => {
     test('modified group passes validateTransactionGroupIntegrity', () => {
         const grouped = groupTransactions([
             makePayment(quantumAddress, 1000n),
-            makePayment(externalAddress, 1000n),
+            makePayment(algoAddress, 1000n),
         ])
 
         const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions: grouped,
-            signableIndices: [0],
-            accounts: [quantum()],
+            signableIndices: [0, 1],
+            accounts: [quantum(), algo25()],
         })
 
         expect(() =>
@@ -309,7 +333,7 @@ describe('assignMinimumFeesToGroup', () => {
     test('throws InvalidSignableDataError when the incoming group is tampered and a modification is needed', () => {
         const grouped = groupTransactions([
             makePayment(quantumAddress, 1000n),
-            makePayment(externalAddress, 1000n),
+            makePayment(algoAddress, 1000n),
         ])
         // tamper one member's claimed group ID
         ;(grouped[1].group as Uint8Array)[0] ^= 0xff
@@ -318,8 +342,8 @@ describe('assignMinimumFeesToGroup', () => {
             assignMinimumFeesToGroup({
                 ...baseParams,
                 transactions: grouped,
-                signableIndices: [0],
-                accounts: [quantum()],
+                signableIndices: [0, 1],
+                accounts: [quantum(), algo25()],
             }),
         ).toThrow(InvalidSignableDataError)
     })
@@ -345,7 +369,7 @@ describe('assignMinimumFeesToGroup', () => {
     test('re-groups only the affected partition; other groups keep object references and bytes', () => {
         const groupA = groupTransactions([
             makePayment(quantumAddress, 1000n),
-            makePayment(externalAddress, 1000n),
+            makePayment(algoAddress, 1000n),
         ])
         const groupB = groupTransactions([
             makePayment(algoAddress, 1000n),
@@ -357,7 +381,7 @@ describe('assignMinimumFeesToGroup', () => {
         const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions,
-            signableIndices: [0, 2, 3],
+            signableIndices: [0, 1, 2, 3],
             accounts: [quantum(), algo25()],
         })
 
@@ -496,16 +520,16 @@ describe('assignMinimumFeesToGroup', () => {
 
     test('adjustment indices are group-space indices with exact fees', () => {
         const grouped = groupTransactions([
-            makePayment(externalAddress, 1000n),
-            makePayment(externalAddress, 1000n),
+            makePayment(algoAddress, 1000n),
+            makePayment(algoAddress, 1000n),
             makePayment(quantumAddress, 1500n),
         ])
 
         const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions: grouped,
-            signableIndices: [2],
-            accounts: [quantum()],
+            signableIndices: [0, 1, 2],
+            accounts: [quantum(), algo25()],
         })
 
         expect(result.adjustments).toEqual([
