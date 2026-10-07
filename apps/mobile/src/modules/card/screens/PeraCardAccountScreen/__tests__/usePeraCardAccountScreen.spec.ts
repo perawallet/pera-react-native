@@ -18,10 +18,13 @@ const mockState = vi.hoisted(() => ({
     accounts: [] as Array<{ address: string; name?: string }>,
 }))
 const mockNavigate = vi.fn()
-const { mockPublishPickerKind, mockCardPicker } = vi.hoisted(() => ({
-    mockPublishPickerKind: vi.fn(),
-    mockCardPicker: { showSearch: true, onSelected: vi.fn() },
-}))
+const { mockPublishPickerKind, mockCardPicker, mockSessionGuard } = vi.hoisted(
+    () => ({
+        mockPublishPickerKind: vi.fn(),
+        mockCardPicker: { showSearch: true, onSelected: vi.fn() },
+        mockSessionGuard: vi.fn(),
+    }),
+)
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
@@ -53,6 +56,12 @@ vi.mock('@perawallet/wallet-core-card', async () => {
 vi.mock('@modules/accounts/components/AccountDrawer', () => ({
     useCardPicker: () => mockCardPicker,
     useAccountDrawerPickerKind: mockPublishPickerKind,
+}))
+
+// The guard's own redirect behaviour is covered by its spec; here only the
+// fact that the dashboard shell mounts it matters.
+vi.mock('../../../hooks/useCardSessionGuard', () => ({
+    useCardSessionGuard: mockSessionGuard,
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -147,5 +156,14 @@ describe('usePeraCardAccountScreen', () => {
 
         act(() => result.current.onScannerClose())
         expect(result.current.isScannerVisible).toBe(false)
+    })
+
+    // Every Baanx query on this screen 401s once the token dies, so the shell
+    // must watch the session instead of rendering persisted card state over
+    // empty data.
+    it('mounts the session guard', () => {
+        renderHook(() => usePeraCardAccountScreen())
+
+        expect(mockSessionGuard).toHaveBeenCalled()
     })
 })

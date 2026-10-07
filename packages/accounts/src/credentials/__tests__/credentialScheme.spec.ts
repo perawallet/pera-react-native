@@ -12,7 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import type { SigningScheme } from '@perawallet/wallet-core-chain-contract'
-import type { AccountProvenance, WalletAccount } from '../../models'
+import type { AccountCustody, WalletAccount } from '../../models'
 import { credentialScheme, type SchemeChain } from '../credentialScheme'
 
 type Keys = NonNullable<Parameters<typeof credentialScheme>[2]>
@@ -32,16 +32,13 @@ const chainWith = (
     protocol: { supportsNativeMultisig },
 })
 
-const account = (
-    provenance: AccountProvenance,
-    keyPairId?: string,
-): WalletAccount =>
+const account = (custody: AccountCustody, keyPairId?: string): WalletAccount =>
     ({
         id: 'a',
         address: 'ADDR',
         type: 'algo25',
-        provenance,
-        credentials: keyPairId ? { algorand: { keyPairId } } : {},
+        custody,
+        chains: { algorand: { address: 'ADDR', keyPairId } },
     }) as WalletAccount
 
 const seedWithChild = (
@@ -89,7 +86,7 @@ describe('credentialScheme', () => {
         ).toBe('falcon-1024')
     })
 
-    test('follows the seed over the provenance when they disagree', () => {
+    test('follows the seed over the custody when they disagree', () => {
         expect(
             credentialScheme(
                 quantum('child'),
@@ -140,12 +137,7 @@ describe('credentialScheme', () => {
     })
 
     test('signs multisig accounts only on chains with native multisig', () => {
-        const multisig = account({
-            kind: 'multisig',
-            threshold: 1,
-            members: ['P1'],
-            version: 1,
-        })
+        const multisig = account({ kind: 'multisig' })
 
         expect(credentialScheme(multisig, algorand, [])).toBe('ed25519')
         expect(
@@ -153,7 +145,7 @@ describe('credentialScheme', () => {
         ).toBeNull()
     })
 
-    test('has no scheme for a watch account or one without a provenance', () => {
+    test('has no scheme for a watch account or one without a custody', () => {
         expect(
             credentialScheme(account({ kind: 'watch' }), algorand, []),
         ).toBeNull()

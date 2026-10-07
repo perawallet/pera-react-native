@@ -30,8 +30,9 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { useAlgoUsdPriceQuery } from '../useAlgoUsdPriceQuery'
+
+const NATIVE_ASSET_ID = '0'
 
 const testDb = vi.hoisted(() => ({ current: undefined as unknown }))
 
@@ -43,7 +44,18 @@ vi.mock('@perawallet/wallet-core-database', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: 'mainnet',
+    }),
+}))
+
+// No chain adapter is registered in this package's tests.
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
+    nativeAssetFor: () => ({ assetId: '0' }),
 }))
 
 const MAINNET = scopeForLegacyNetwork('mainnet')
@@ -57,7 +69,7 @@ describe('useAlgoUsdPriceQuery', () => {
         upsertAssetPrices({
             db,
             prices: [
-                { assetId: ALGO_ASSET_ID, usdPrice: new Decimal(usdPrice) },
+                { assetId: NATIVE_ASSET_ID, usdPrice: new Decimal(usdPrice) },
             ],
             scope,
         })

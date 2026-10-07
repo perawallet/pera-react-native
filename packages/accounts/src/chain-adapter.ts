@@ -30,15 +30,17 @@ import {
 } from '@perawallet/wallet-core-kms'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import {
-    HdDerivationTypeUnsupportedError,
     QuantumAccountsUnsupportedError,
     RekeyUnsupportedError,
     SingleKeyAccountsUnsupportedError,
 } from './errors'
 import type {
+    AccountCustody,
     AccountTypes,
-    DerivationType,
+    ChainAccount,
+    HdIndex,
     HDWalletDetails,
+    MultiSigDetails,
     WalletAccount,
 } from './models'
 import type { SignerResolution } from './signer-resolution'
@@ -99,11 +101,7 @@ export type AccountStateReadHint = {
     priorResourceCount: number
 }
 
-export type GetPublicKey = (params: {
-    account: number
-    keyIndex: number
-    derivationType: DerivationType
-}) => Promise<Uint8Array>
+export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>
 
 export type SingleKeyAccountKind =
     | typeof AccountTypes.algo25
@@ -163,8 +161,6 @@ export type SingleKeyAccountOps = {
 /** The chain-specific half of account state, discovery, creation and rekey; registered by the chain package. */
 export interface AccountsChainAdapter {
     readonly chainId: ChainId
-    /** The derivation type new HD accounts on this chain are created with. */
-    readonly hdDerivationType: DerivationType
     fetchAccountState(
         address: string,
         scope: ChainScope,
@@ -201,15 +197,21 @@ export interface AccountsChainAdapter {
      * deriving. Stored accounts reference this id, so its format never changes,
      * and it must equal the `keyPairId` the chain's `KeyDerivation` returns.
      */
-    hdKeyPairId(
-        seedKeyId: string,
-        details: Pick<
-            HDWalletDetails,
-            'account' | 'keyIndex' | 'derivationType'
-        >,
-    ): string
+    hdKeyPairId(seedKeyId: string, index: HdIndex): string
     /** Throws `InvalidBip44PathError` when `hdPath` is malformed or names other coordinates. */
     assertHdPathMatches(hdPath: string, details: HDWalletDetails): void
+    /**
+     * The legacy detail objects this chain's account records still carry for
+     * `custody`: HD and multisig only, empty otherwise. Throws `AccountError`
+     * when the custody needs data `entry` lacks.
+     */
+    legacyDetails(
+        custody: AccountCustody,
+        entry: ChainAccount,
+    ): {
+        hdWalletDetails?: HDWalletDetails
+        multisigDetails?: MultiSigDetails
+    }
     /** Absent on a chain with no post-quantum accounts. */
     readonly quantum?: QuantumChainDerivation
     /** Absent on a chain whose only software accounts are HD. */
@@ -252,36 +254,14 @@ export const ed25519DeriveOpts = (network: Network): DeriveOpts => ({
     networkId: scopeForLegacyNetwork(network).networkId,
 })
 
-export type HdAccountCoordinates = {
-    account: number
-    keyIndex: number
-    /** Defaults to the chain's `hdDerivationType`; a backup payload's is unvalidated, hence `number`. */
-    derivationType?: number
-}
-
-/**
- * Derives the HD child through the chain's registered `KeyDerivation`.
- * `KeyDerivation.deriveAccount` only derives the chain's own `hdDerivationType`, so
- * any other requested type throws {@link HdDerivationTypeUnsupportedError} rather
- * than yielding a key that doesn't match the type a record names.
- */
+/** Derives the HD child through the chain's registered `KeyDerivation`. */
 export const deriveHdAccount = async (
     network: Network,
     seedKeyId: string,
-    { account, keyIndex, derivationType }: HdAccountCoordinates,
-) => {
-    const adapter = accountsAdapterFor(network)
-    if (
-        derivationType !== undefined &&
-        derivationType !== adapter.hdDerivationType
-    ) {
-        throw new HdDerivationTypeUnsupportedError(
-            derivationType,
-            adapter.chainId,
-        )
-    }
-    return keyDerivations
-        .get(adapter.chainId)
+    { account, keyIndex }: HdIndex,
+) =>
+    keyDerivations
+        .get(accountsAdapterFor(network).chainId)
         .deriveAccount(
             kmsCore,
             seedKeyId,
@@ -289,7 +269,6 @@ export const deriveHdAccount = async (
             keyIndex,
             ed25519DeriveOpts(network),
         )
-}
 
 /** Throws {@link RekeyUnsupportedError} on a chain without rekey. */
 export const requireRekey = (

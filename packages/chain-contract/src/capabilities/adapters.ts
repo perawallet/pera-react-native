@@ -19,7 +19,7 @@ import type { ChainCapability } from '../models/capabilities'
  * driver, its own equivalent), so an error message and this list name the
  * same thing.
  *
- * A capability with no registry yet (`multisig`, `history`, …) has no entry;
+ * A capability with no registry yet (`staking`, …) has no entry;
  * add one only once its registry exists, or the parity test would have
  * nothing to check it against.
  */
@@ -28,6 +28,9 @@ export const CAPABILITY_ADAPTERS = {
     history: 'transaction history',
     assets: 'assets',
     pricing: 'assets',
+    messageSigning: 'message signer',
+    multisig: 'multisig',
+    secureBackup: 'backup',
     swap: 'swap',
     nameService: 'name service',
     card: 'card',

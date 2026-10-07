@@ -34,7 +34,7 @@ import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/Import
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
-import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { isElementDisabled } from '@test-utils/rnw'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 

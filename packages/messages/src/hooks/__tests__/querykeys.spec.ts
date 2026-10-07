@@ -11,29 +11,33 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { getNotificationsListQueryKey } from '../querykeys'
+
+const MAINNET = scopeForLegacyNetwork('mainnet')
+const TESTNET = scopeForLegacyNetwork('testnet')
 
 describe('push-notifications/hooks/querykeys', () => {
     test('should generate correct query key for notifications list', () => {
-        const key = getNotificationsListQueryKey('mainnet', 'device-123')
+        const key = getNotificationsListQueryKey(MAINNET, 'device-123')
 
         expect(key).toEqual([
             'notifications',
             'listv2',
-            { deviceID: 'device-123', network: 'mainnet' },
+            { deviceID: 'device-123', scope: MAINNET },
         ])
     })
 
-    test('should generate different keys for different networks', () => {
-        const mainnetKey = getNotificationsListQueryKey('mainnet', 'device-123')
-        const testnetKey = getNotificationsListQueryKey('testnet', 'device-123')
+    test('should generate different keys for different scopes', () => {
+        const mainnetKey = getNotificationsListQueryKey(MAINNET, 'device-123')
+        const testnetKey = getNotificationsListQueryKey(TESTNET, 'device-123')
 
         expect(mainnetKey).not.toEqual(testnetKey)
     })
 
     test('should generate different keys for different device IDs', () => {
-        const key1 = getNotificationsListQueryKey('mainnet', 'device-1')
-        const key2 = getNotificationsListQueryKey('mainnet', 'device-2')
+        const key1 = getNotificationsListQueryKey(MAINNET, 'device-1')
+        const key2 = getNotificationsListQueryKey(MAINNET, 'device-2')
 
         expect(key1).not.toEqual(key2)
     })

@@ -12,7 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import { Address, Transaction } from 'algosdk'
-import { groupTransactions } from '@perawallet/wallet-core-blockchain'
+import { groupTransactions } from '../../blockchain'
 import { makeTestAddress, makeTestPaymentTx } from './transactions'
 
 import {

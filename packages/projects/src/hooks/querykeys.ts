@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 const MODULE_PREFIX = 'projects'
 
 export const projectQueryKeys = {
     all: [MODULE_PREFIX] as const,
 
-    byUrl: (url: string, network: Network) =>
-        [MODULE_PREFIX, 'by-url', { url, network }] as const,
+    byUrl: (url: string, scope: ChainScope) =>
+        [MODULE_PREFIX, 'by-url', { url, scope }] as const,
 
-    application: (applicationId: string, network: Network) =>
-        [MODULE_PREFIX, 'application', { applicationId, network }] as const,
+    application: (applicationId: string, scope: ChainScope) =>
+        [MODULE_PREFIX, 'application', { applicationId, scope }] as const,
 }

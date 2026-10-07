@@ -93,7 +93,6 @@
     "@perawallet/wallet-core-app-integrity": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-backup": "workspace:*",
-    "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-card": "workspace:*",
     "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-chain-shared": "workspace:*",
@@ -106,6 +105,7 @@
     "@perawallet/wallet-core-multisig": "workspace:*",
     "@perawallet/wallet-core-nfd": "workspace:*",
     "@perawallet/wallet-core-onramp": "workspace:*",
+    "@perawallet/wallet-core-remote-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-core-swaps": "workspace:*",
@@ -113,6 +113,7 @@
     "@perawallet/wallet-extension-hardware-wallet": "workspace:*",
     "@perawallet/wallet-extension-ledger-shared": "workspace:*",
     "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-extension-provider": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "algosdk": "catalog:",
     "buffer": "catalog:",
@@ -120,7 +121,8 @@
     "decimal.js": "catalog:",
     "react": "catalog:",
     "tweetnacl": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "@algorandfoundation/algokit-client-generator": "6.0.1",
@@ -132,6 +134,7 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "drizzle-orm": "catalog:",
+    "falcon-1024": "catalog:",
     "msw": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",

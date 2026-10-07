@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'

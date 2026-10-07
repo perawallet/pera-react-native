@@ -93,8 +93,7 @@ const buildHardwareAccount = (
 ): HardwareWalletAccount => {
     assertValidAddress(context, payload.address)
     return buildAccount({
-        address: payload.address,
-        provenance: {
+        custody: {
             kind: 'hardware',
             device: {
                 manufacturer: payload.manufacturer,
@@ -104,6 +103,8 @@ const buildHardwareAccount = (
             },
             accountIndex: payload.accountIndex,
         },
+        chainId: context.adapter.chainId,
+        chains: { [context.adapter.chainId]: { address: payload.address } },
         ...nameField(payload.customName),
     })
 }
@@ -114,8 +115,9 @@ const buildWatchAccount = (
 ): WatchAccount => {
     assertValidAddress(context, payload.address)
     return buildAccount({
-        address: payload.address,
-        provenance: { kind: 'watch' },
+        custody: { kind: 'watch' },
+        chainId: context.adapter.chainId,
+        chains: { [context.adapter.chainId]: { address: payload.address } },
         ...nameField(payload.customName),
     })
 }
@@ -135,12 +137,20 @@ const buildMultisigAccount = (
         )
     }
     return buildAccount({
-        address: payload.address,
-        provenance: {
-            kind: 'multisig',
-            threshold: payload.threshold,
-            members: payload.participantAddresses,
-            version: payload.version,
+        custody: { kind: 'multisig' },
+        chainId: adapter.chainId,
+        chains: {
+            [adapter.chainId]: {
+                address: payload.address,
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        version: payload.version,
+                        threshold: payload.threshold,
+                        addresses: payload.participantAddresses,
+                    },
+                },
+            },
         },
         ...nameField(payload.customName),
     })
@@ -171,10 +181,17 @@ const buildHdWalletAccount = async (
         )
     }
     return buildAccount({
-        address: payload.address,
-        provenance: { kind: 'local', seed: 'bip39', hd: hdWalletDetails },
-        credentials: {
-            [adapter.chainId]: { keyPairId: derived.keyPairId },
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: payload.account, keyIndex: payload.keyIndex },
+        },
+        chainId: adapter.chainId,
+        chains: {
+            [adapter.chainId]: {
+                address: payload.address,
+                keyPairId: derived.keyPairId,
+            },
         },
         ...nameField(payload.customName),
     })

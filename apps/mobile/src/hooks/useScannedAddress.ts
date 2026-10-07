@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { parseDeeplink } from '@modules/deeplink/core'
 import { useToast } from '@hooks/useToast'

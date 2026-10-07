@@ -18,17 +18,17 @@ import {
     PeraNetworkError,
     logger,
 } from '@perawallet/wallet-core-shared'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { AlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { SubmissionError, SigningError } from '@perawallet/wallet-core-signing'
 import { resolveErrorCopy } from '../resolveErrorCopy'
 
-// Use the real blockchain package — this spec relies on actual AlgodError
+// Use the real Algorand runtime — this spec relies on actual AlgodError
 // instanceof checks and toAlgodError parsing, which the global mock in
 // vitest.setup.ts stubs out to always return unknown_node_error.
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >('@perawallet/wallet-core-blockchain')
+        typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+    >('@perawallet/wallet-core-chain-algorand/blockchain')
     return actual
 })
 

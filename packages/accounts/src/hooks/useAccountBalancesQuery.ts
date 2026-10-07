@@ -14,12 +14,11 @@ import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 import {
+    LEGACY_CHAIN_ID,
     legacyNetworkOf,
-    scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    isAlgoAssetId,
     logger,
     pow10,
     useStableIdList,
@@ -32,7 +31,7 @@ import type {
     WalletAccount,
 } from '../models'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
     getAccountBalance,
@@ -92,7 +91,7 @@ export const useAccountBalancesQuery = (
     enabled?: boolean,
     filters?: AccountHoldingsFilters,
 ): AccountBalancesWithTotals => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const hasAccounts = !!accounts?.length
 
@@ -105,7 +104,7 @@ export const useAccountBalancesQuery = (
     const queries = useMemo(() => {
         return addresses.map(address => {
             return {
-                queryKey: getAccountBalancesQueryKey(address, network, filters),
+                queryKey: getAccountBalancesQueryKey(address, scope, filters),
                 enabled: !!address && enabled,
                 staleTime: Infinity,
                 gcTime: HOLDINGS_ROWS_GC_TIME_MS,
@@ -119,12 +118,7 @@ export const useAccountBalancesQuery = (
                 // where _observerMatches and _result can get out of sync during
                 // synchronous notifications, causing "new Proxy target must be an Object".
                 notifyOnChangeProps: 'all' as const,
-                queryFn: () =>
-                    readAccountFromDb(
-                        address,
-                        scopeForLegacyNetwork(network),
-                        filters,
-                    ),
+                queryFn: () => readAccountFromDb(address, scope, filters),
             }
         })
         // filters is a stable object passed from a Zustand selector or memoized
@@ -133,7 +127,7 @@ export const useAccountBalancesQuery = (
     }, [
         addresses,
         enabled,
-        network,
+        scope,
         filters?.hideZeroBalance,
         filters?.hideNfts,
         filters?.hideOptedInNfts,
@@ -184,8 +178,8 @@ export const useAccountBalancesQuery = (
             // ALGO is itself a holding row now; its joined price is the ALGO/USD
             // rate used to express every holding's value in ALGO terms.
             const usdAlgoPrice =
-                holdings.find(h => isAlgoAssetId(h.assetId))?.usdPrice ??
-                new Decimal(0)
+                holdings.find(h => h.assetId === nativeAsset.assetId)
+                    ?.usdPrice ?? new Decimal(0)
 
             let algoValue = new Decimal(0)
             // Accumulated in the same pass as `algoValue`: the portfolio
@@ -194,7 +188,7 @@ export const useAccountBalancesQuery = (
             let usdValue = new Decimal(0)
             const assetBalances: AssetWithAccountBalance[] = holdings.map(
                 holding => {
-                    const isAlgo = isAlgoAssetId(holding.assetId)
+                    const isAlgo = holding.assetId === nativeAsset.assetId
                     // ALGO metadata is seeded, but fall back defensively so the
                     // native balance always renders even mid-sync.
                     const asset = holding.asset ?? (isAlgo ? nativeAsset : null)

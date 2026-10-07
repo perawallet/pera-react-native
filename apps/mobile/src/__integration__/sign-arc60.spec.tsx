@@ -52,7 +52,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 

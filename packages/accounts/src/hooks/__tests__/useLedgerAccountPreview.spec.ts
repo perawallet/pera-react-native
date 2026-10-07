@@ -13,8 +13,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { useLedgerAccountPreview } from '../useLedgerAccountPreview'
+
+const NATIVE_ASSET_ID = '0'
 
 const mocks = vi.hoisted(() => ({
     useOnChainAccountInformationQuery: vi.fn(),
@@ -53,8 +54,8 @@ beforeEach(() => {
     mocks.useAssetPricesQuery.mockReturnValue({
         data: new Map([
             [
-                ALGO_ASSET_ID,
-                { assetId: ALGO_ASSET_ID, usdPrice: new Decimal(2) },
+                NATIVE_ASSET_ID,
+                { assetId: NATIVE_ASSET_ID, usdPrice: new Decimal(2) },
             ],
         ]),
         isPending: false,

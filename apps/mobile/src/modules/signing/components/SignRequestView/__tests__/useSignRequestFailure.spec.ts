@@ -42,7 +42,7 @@ vi.mock('@hooks/useLanguage')
 // resolveErrorCopy (exercised via the SubmissionError branch below) does an
 // `instanceof AlgodError` check, so the mock needs a real class identity too
 // — importActual pulls in the network store's own module deps, so stub instead.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     AlgodError: class AlgodError extends Error {},
     toAlgodError: (err: unknown) => err,
 }))
@@ -51,7 +51,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -59,9 +59,9 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
-    getSignRequestDetailQueryKey: (network: string, id: string) => [
+    getSignRequestDetailQueryKey: (scope: unknown, id: string) => [
         'signRequestDetail',
-        network,
+        scope,
         id,
     ],
     useSignRequestDetailQuery: (params: unknown) =>
@@ -174,7 +174,11 @@ describe('useSignRequestFailure', () => {
         )
 
         expect(mocks.invalidateQueries).toHaveBeenCalledWith({
-            queryKey: ['signRequestDetail', 'mainnet', 'sr-1'],
+            queryKey: [
+                'signRequestDetail',
+                { chainId: 'algorand', networkId: 'mainnet' },
+                'sr-1',
+            ],
         })
     })
 

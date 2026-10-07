@@ -49,7 +49,7 @@ import {
     useAccountsStore,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
-import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 // The multisig account's address is the transaction sender; the seeded Algo25

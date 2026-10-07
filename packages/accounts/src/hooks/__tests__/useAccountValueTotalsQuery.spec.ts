@@ -33,12 +33,13 @@ vi.mock('../../sync/account-syncer', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPricesQuery: (...args: unknown[]) =>
         mockUseAssetPricesQuery(...args),
+    useNativeAsset: () => ({ assetId: '0' }),
 }))
 
 const createWrapper = () => {

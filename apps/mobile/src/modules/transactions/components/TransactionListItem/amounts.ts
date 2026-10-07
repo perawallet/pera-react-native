@@ -12,7 +12,6 @@
 
 import type { Decimal } from 'decimal.js'
 import {
-    ALGO_ASSET_ID,
     ALGO_ASSET_NAME,
     type Nullable,
     microAlgosToAlgos,
@@ -52,12 +51,13 @@ export type AmountDisplay = {
 export const createAlgoAmount = (
     microAlgos: Decimal,
     isOutgoing: boolean,
+    nativeAssetId: string,
 ): AmountDisplay => {
     const absValue = microAlgosToAlgos(microAlgos).abs()
 
     return {
         value: absValue,
-        assetId: ALGO_ASSET_ID,
+        assetId: nativeAssetId,
         currency: ALGO_ASSET_NAME,
         prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
     }

@@ -81,9 +81,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     >('../../../../../../../packages/shared/src/errors/base')
 
     return {
-        ALGO_ASSET_ID: '0',
-        isAlgoAssetId: (assetId: string | number | bigint) =>
-            String(assetId) === '0',
         logger: {
             debug: vi.fn(),
             warn: vi.fn(),
@@ -154,7 +151,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 // Re-mocks only what useDeepLink consumes. Keeps `microAlgosToAlgos` /
 // `isValidAlgorandAddress` / `useNetwork` consistent with the global
 // vitest.setup.ts contract.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (address: string) => {
         if (!address) return false
         return /^[0-9a-zA-Z]{58}$/.test(address)

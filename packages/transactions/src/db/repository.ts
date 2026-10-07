@@ -24,7 +24,7 @@ import {
     type SQL,
     type SQLWrapper,
 } from 'drizzle-orm'
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
     isoDateToUnixSeconds,
@@ -37,6 +37,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '../models/types'
 import { TransactionsSchema, AccountTransactionsSchema } from './schema'
+import { assetFactsResolverFor } from '../history-adapter'
 import { deserializeSwapGroupDetail, fromDb, toDb } from './mappers'
 
 type UpsertTransactionsParams = {
@@ -121,7 +122,7 @@ export async function upsertTransactions({
                 accountAddress,
                 transactionId: item.id,
                 network,
-                assetId: assetId ? new Decimal(assetId) : null,
+                assetId: assetId || null,
                 roundTime: item.roundTime,
             })
             // History sorts and pages on the link's time, so it follows a
@@ -169,7 +170,7 @@ const jsonPathAsText = (column: SQLWrapper, path: string): SQL =>
  * Matching the indexed column alone hides every swap from an asset's history.
  */
 const involvesAsset = (assetId: string): SQL =>
-    sql`(${eq(AccountTransactionsSchema.assetId, new Decimal(assetId))}
+    sql`(${eq(AccountTransactionsSchema.assetId, assetId)}
         OR CASE WHEN json_valid(${TransactionsSchema.balanceImpactsJson})
             THEN EXISTS (
                 SELECT 1 FROM json_each(${TransactionsSchema.balanceImpactsJson})
@@ -265,7 +266,8 @@ export async function getTransactionHistory({
         .limit(limit)
         .all()
 
-    return rows.map(fromDb)
+    const resolveAssetFacts = assetFactsResolverFor(scope.chainId)
+    return rows.map(row => fromDb(row, resolveAssetFacts))
 }
 
 type GetCloseRowsMissingCloseAmountParams = {
@@ -381,6 +383,7 @@ export async function persistResolvedSwapAssetFacts({
     ids,
 }: PersistResolvedSwapAssetFactsParams): Promise<void> {
     const network = toScopeKey(scope)
+    const resolveAssetFacts = assetFactsResolverFor(scope.chainId)
     for (const id of ids) {
         const [row] = await db
             .select({ json: TransactionsSchema.swapGroupDetailJson })
@@ -393,7 +396,10 @@ export async function persistResolvedSwapAssetFacts({
             )
             .all()
 
-        const resolved = deserializeSwapGroupDetail(row?.json ?? null)
+        const resolved = deserializeSwapGroupDetail(
+            row?.json ?? null,
+            resolveAssetFacts,
+        )
         if (!resolved) continue
 
         await db

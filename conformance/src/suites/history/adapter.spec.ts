@@ -22,7 +22,7 @@ import {
 } from '@perawallet/wallet-core-chain-algorand/transactions/history'
 import { fetchIndexerCloseAmount } from '@perawallet/wallet-core-chain-algorand/transactions/history/indexer/endpoints'
 import type { Network } from '@perawallet/wallet-core-shared'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 import {
     createAlgo25Account,
@@ -68,7 +68,7 @@ describe('history adapter conformance', () => {
                 scope,
                 sender: from.address,
                 receiver: to.address,
-                assetId: ALGO_ASSET_ID,
+                assetId: algorandDescriptor.nativeAsset.ref.assetId,
                 amount,
                 isCloseAccount,
             }),

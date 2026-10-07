@@ -11,9 +11,13 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+    queryKeyReferencesScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { AssetSortMode } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     getAccountHoldingsLite,
     type AccountHoldingsFilters,
@@ -59,10 +63,11 @@ export const useAccountAssetsQuery = (
         enabled = true,
     }: UseAccountAssetsQueryParams = {},
 ): UseAccountAssetsQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const query = useQuery({
-        queryKey: getAccountHoldingsPageQueryKey(address ?? '', network, {
+        queryKey: getAccountHoldingsPageQueryKey(address ?? '', scope, {
             filters,
             sortMode,
             search,
@@ -76,10 +81,10 @@ export const useAccountAssetsQuery = (
         // but never across accounts or networks.
         placeholderData: (previousRows, previousQuery) => {
             const previousParams = previousQuery?.queryKey[2] as
-                | { address?: string; network?: string }
+                | { address?: string }
                 | undefined
             return previousParams?.address === address &&
-                previousParams?.network === network
+                queryKeyReferencesScope(previousQuery?.queryKey ?? [], scope)
                 ? previousRows
                 : undefined
         },
@@ -94,7 +99,7 @@ export const useAccountAssetsQuery = (
             await ensureAccountFetched(address as string, network)
             return getAccountHoldingsLite({
                 accountAddress: address as string,
-                scope: scopeForLegacyNetwork(network),
+                scope,
                 ...filters,
                 sortMode,
                 search,

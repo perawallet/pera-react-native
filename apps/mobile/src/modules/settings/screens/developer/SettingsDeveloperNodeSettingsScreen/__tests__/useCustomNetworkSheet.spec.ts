@@ -17,7 +17,7 @@ import {
     getCustomNetworkConfig,
     setCustomNetwork,
     type CustomNetworkConfig,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useCustomNetworkSheet } from '../useCustomNetworkSheet'
 
@@ -50,10 +50,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 // `useNetworkStore.subscribe(...)` side effect would otherwise run for this
 // suite and reach into other mocked modules. fetchGenesisFromNode stays mocked
 // because it hits the network.
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
     const customNetwork = await vi.importActual<
-        typeof import('../../../../../../../../../packages/blockchain/src/store/custom-network')
-    >('../../../../../../../../../packages/blockchain/src/store/custom-network')
+        typeof import('@packages/chain-algorand/src/blockchain/store/custom-network')
+    >('@packages/chain-algorand/src/blockchain/store/custom-network')
 
     return {
         getCustomNetworkConfig: customNetwork.getCustomNetworkConfig,

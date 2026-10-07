@@ -11,19 +11,24 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { createQuotes, fetchProviders } from '../api'
 import type { CreateQuotesRequest } from '../api'
 import { swapQueryKeys } from './querykeys'
 
 export const useCreateQuotesMutation = () => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 
     return useMutation({
         mutationFn: async (data: CreateQuotesRequest) => {
             const providers = await queryClient.ensureQueryData({
-                queryKey: swapQueryKeys.providers(network),
+                queryKey: swapQueryKeys.providers(scope),
                 queryFn: () => fetchProviders(network),
             })
             return createQuotes(data, network, providers)

@@ -205,7 +205,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
                 queryClient.invalidateQueries({
                     queryKey: getOnChainAccountInformationQueryKey(
                         card.escrowCardAddress,
-                        network,
+                        scopeForLegacyNetwork(network),
                     ),
                 }),
             ])

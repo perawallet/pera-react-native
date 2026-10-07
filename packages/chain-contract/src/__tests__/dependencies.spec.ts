@@ -18,6 +18,7 @@ import { describe, expect, it } from 'vitest'
 const FORBIDDEN_DEPENDENCIES = [
     /^algosdk$/,
     /^@algorandfoundation\/algokit-utils$/,
+    /^viem$/,
     /^@perawallet\/wallet-core-chain-/,
 ]
 

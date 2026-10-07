@@ -17,6 +17,25 @@ import type { WalletAccount } from '../../models'
 import { withCustody } from '../../credentials'
 import { buildTestAccount } from '../../__tests__/accountFactory'
 
+// Built by hand: buildAccount needs a registered adapter for every chain it
+// derives from, and these specs put accounts on Ethereum.
+const watchOn = (
+    id: string,
+    addresses: Partial<Record<'algorand' | 'ethereum', string>>,
+): WalletAccount =>
+    ({
+        id,
+        type: 'watch',
+        ...(addresses.algorand ? { address: addresses.algorand } : {}),
+        custody: { kind: 'watch' },
+        chains: Object.fromEntries(
+            Object.entries(addresses).map(([chainId, address]) => [
+                chainId,
+                { address },
+            ]),
+        ),
+    }) as WalletAccount
+
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
@@ -35,6 +54,9 @@ describe('services/accounts/store', () => {
 
     beforeEach(async () => {
         vi.resetModules()
+        const { registerFakeAccountsChain } =
+            await import('../../__tests__/fakeAccountsChain')
+        registerFakeAccountsChain()
         const module = await import('../store')
         useAccountsStore = module.useAccountsStore
     })
@@ -193,6 +215,47 @@ describe('services/accounts/store', () => {
 
             expect(useAccountsStore.getState().accounts).toEqual(
                 accountsIn.map(withCustody),
+            )
+        })
+
+        test('collapses accounts that share an address on a non-Algorand chain, keeping the higher rank in the first position', () => {
+            const watch = watchOn('watch', {
+                algorand: 'WATCH-ALGO',
+                ethereum: '0xDUPE',
+            })
+            const hd = {
+                id: 'hd',
+                type: 'hdWallet',
+                address: 'HD-ALGO',
+                keyPairId: 'kp-hd',
+                hdWalletDetails: { account: 0, keyIndex: 0 },
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+                chains: {
+                    algorand: { address: 'HD-ALGO', keyPairId: 'kp-hd' },
+                    ethereum: { address: '0xDUPE', keyPairId: 'kp-hd-eth' },
+                },
+            } as unknown as WalletAccount
+            const other = watchOn('other', { algorand: 'OTHER' })
+
+            useAccountsStore.getState().setAccounts([watch, other, hd])
+
+            expect(useAccountsStore.getState().accounts.map(a => a.id)).toEqual(
+                ['hd', 'other'],
+            )
+        })
+
+        test('keeps accounts that share an address only on different chains', () => {
+            const onAlgorand = watchOn('algo', { algorand: 'SHARED' })
+            const onEthereum = watchOn('eth', { ethereum: 'SHARED' })
+
+            useAccountsStore.getState().setAccounts([onAlgorand, onEthereum])
+
+            expect(useAccountsStore.getState().accounts.map(a => a.id)).toEqual(
+                ['algo', 'eth'],
             )
         })
     })
@@ -572,6 +635,76 @@ describe('services/accounts/store', () => {
         })
     })
 
+    describe('addAccount', () => {
+        beforeEach(() => {
+            useAccountsStore.getState().resetState()
+        })
+
+        test('appends an account whose addresses are free', () => {
+            const existing = watchOn('existing', { algorand: 'A' })
+            const added = watchOn('added', { algorand: 'B' })
+            useAccountsStore.getState().setAccounts([existing])
+
+            useAccountsStore.getState().addAccount(added)
+
+            expect(useAccountsStore.getState().accounts).toEqual([
+                existing,
+                added,
+            ])
+        })
+
+        test('throws naming the existing account by id when an address is taken on the same chain', async () => {
+            const { DuplicateAccountError } = await import('../../errors')
+            const existing = watchOn('existing-id', {
+                algorand: 'A',
+                ethereum: '0xDUPE',
+            })
+            useAccountsStore.getState().setAccounts([existing])
+
+            const add = () =>
+                useAccountsStore
+                    .getState()
+                    .addAccount(watchOn('added', { ethereum: '0xDUPE' }))
+
+            expect(add).toThrow(DuplicateAccountError)
+            expect(add).toThrow(
+                /0xDUPE is already in the wallet as existing-id/,
+            )
+            expect(useAccountsStore.getState().accounts).toEqual([existing])
+        })
+
+        test('accepts an address that an existing account holds only on a different chain', () => {
+            const existing = watchOn('existing', { algorand: 'SHARED' })
+            const added = watchOn('added', { ethereum: 'SHARED' })
+            useAccountsStore.getState().setAccounts([existing])
+
+            useAccountsStore.getState().addAccount(added)
+
+            expect(useAccountsStore.getState().accounts.map(a => a.id)).toEqual(
+                ['existing', 'added'],
+            )
+        })
+
+        test('matches a legacy record with no chains through its Algorand address', async () => {
+            const { DuplicateAccountError } = await import('../../errors')
+            useAccountsStore.setState({
+                accounts: [
+                    {
+                        id: 'legacy',
+                        type: 'watch',
+                        address: 'LEGACY',
+                    } as WalletAccount,
+                ],
+            })
+
+            expect(() =>
+                useAccountsStore
+                    .getState()
+                    .addAccount(watchOn('added', { algorand: 'LEGACY' })),
+            ).toThrow(DuplicateAccountError)
+        })
+    })
+
     describe('addRekeyedWatchAccounts', () => {
         test('stamps new watch accounts with the scanned network entry and mirror', () => {
             useAccountsStore.getState().setAccounts([])
@@ -622,8 +755,8 @@ describe('services/accounts/store', () => {
                 rekeyAddress: 'AUTH',
                 rekeyAddressByNetwork: { mainnet: 'AUTH' },
                 hardwareDetails,
-                provenance: expect.objectContaining({ kind: 'hardware' }),
-                credentials: {},
+                custody: expect.objectContaining({ kind: 'hardware' }),
+                chains: { algorand: { address: 'WATCHED' } },
             })
         })
 
@@ -944,6 +1077,60 @@ describe('services/accounts/store', () => {
             expect(migrateAccountsState(structuredClone(once), 0)).toEqual(once)
         })
 
+        const v1Accounts = legacyAccounts.map(account => ({
+            ...withCustody(account),
+            provenance: { kind: 'stale' },
+            credentials: { algorand: { keyPairId: 'stale' } },
+        }))
+
+        test('v0 and v1 state migrate to the same v2 accounts, without the v1 fields', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            const fromV0 = migrateAccountsState(structuredClone(v0State), 0)
+            const fromV1 = migrateAccountsState(
+                structuredClone({ ...v0State, accounts: v1Accounts }),
+                1,
+            )
+
+            expect(fromV1.accounts).toEqual(fromV0.accounts)
+            for (const account of fromV1.accounts) {
+                expect(account).not.toHaveProperty('provenance')
+                expect(account).not.toHaveProperty('credentials')
+            }
+        })
+
+        test('a malformed v1 record keeps its legacy fields and gets no custody', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const malformed = {
+                id: 'm',
+                type: 'multisig',
+                address: 'MSIG-ADDR',
+                provenance: { kind: 'multisig' },
+                credentials: {},
+            }
+
+            const [account] = migrateAccountsState(
+                { ...v0State, accounts: [malformed] },
+                1,
+            ).accounts
+
+            expect(account).toEqual({
+                id: 'm',
+                type: 'multisig',
+                address: 'MSIG-ADDR',
+            })
+        })
+
+        test('persisted v2 state is not migrated again', async () => {
+            const { migrateAccountsState } = await import('../store')
+            const v2State = {
+                ...v0State,
+                accounts: legacyAccounts.map(withCustody),
+            }
+
+            expect(migrateAccountsState(v2State, 2)).toBe(v2State)
+        })
+
         test('hydrating a v0 payload twice yields identical state', async () => {
             getProvider().keyValueStorage.setItem(
                 'accounts-store',
@@ -971,12 +1158,9 @@ describe('services/accounts/store', () => {
             useAccountsStore.getState().setAccounts([legacyAccounts[0]])
 
             const [account] = useAccountsStore.getState().accounts
-            expect(account.provenance).toEqual({
-                kind: 'local',
-                seed: 'algo25',
-            })
-            expect(account.credentials).toEqual({
-                algorand: { keyPairId: 'seed-ed25519' },
+            expect(account.custody).toEqual({ kind: 'local', seed: 'algo25' })
+            expect(account.chains).toEqual({
+                algorand: { address: 'ALGO25-ADDR', keyPairId: 'seed-ed25519' },
             })
         })
 
@@ -997,19 +1181,20 @@ describe('services/accounts/store', () => {
             expect(useAccountsStore.getState().accounts).toEqual(accounts)
         })
 
-        test('addRekeyedWatchAccounts writes a watch provenance', () => {
+        test('addRekeyedWatchAccounts writes a watch custody with just the address', () => {
             useAccountsStore.getState().setAccounts([])
 
             useAccountsStore
                 .getState()
-                .addRekeyedWatchAccounts('SRC', ['R1'], 'mainnet')
+                .addRekeyedWatchAccounts('SRC', ['R1'], 'testnet')
 
-            expect(useAccountsStore.getState().accounts[0].provenance).toEqual({
-                kind: 'watch',
-            })
+            const [account] = useAccountsStore.getState().accounts
+            expect(account.custody).toEqual({ kind: 'watch' })
+            expect(account.chains).toEqual({ algorand: { address: 'R1' } })
+            expect(account.rekeyAddressByNetwork).toEqual({ testnet: 'SRC' })
         })
 
-        test('upgrading a watch account replaces its watch provenance with a hardware one', () => {
+        test('upgrading a watch account replaces its watch custody with a hardware one', () => {
             useAccountsStore
                 .getState()
                 .setAccounts([{ id: 'w', type: 'watch', address: 'WATCHED' }])
@@ -1024,7 +1209,8 @@ describe('services/accounts/store', () => {
                     transportType: 'ble',
                 })
 
-            expect(useAccountsStore.getState().accounts[0].provenance).toEqual({
+            const [account] = useAccountsStore.getState().accounts
+            expect(account.custody).toEqual({
                 kind: 'hardware',
                 device: {
                     manufacturer: 'ledger',
@@ -1034,9 +1220,10 @@ describe('services/accounts/store', () => {
                 },
                 accountIndex: 3,
             })
+            expect(account.chains).toEqual({ algorand: { address: 'WATCHED' } })
         })
 
-        test('re-binding hardware details updates the hardware provenance', () => {
+        test('re-binding hardware details updates the hardware custody', () => {
             const details = {
                 manufacturer: 'ledger' as const,
                 deviceId: 'old-device',
@@ -1057,7 +1244,7 @@ describe('services/accounts/store', () => {
                 .getState()
                 .updateHardwareDetails('HW', { ...details, deviceId: 'new' })
 
-            expect(useAccountsStore.getState().accounts[0].provenance).toEqual({
+            expect(useAccountsStore.getState().accounts[0].custody).toEqual({
                 kind: 'hardware',
                 device: {
                     manufacturer: 'ledger',

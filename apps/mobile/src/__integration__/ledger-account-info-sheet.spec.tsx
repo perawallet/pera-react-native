@@ -27,7 +27,7 @@ import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { LedgerSelectAccountsScreen } from '@modules/ledger'
 
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'

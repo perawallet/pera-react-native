@@ -15,7 +15,7 @@ import {
     ARC0001_MAX_TXN_B64_LENGTH,
     Arc0001Error,
     Arc0001ErrorCode,
-} from '@perawallet/wallet-core-blockchain'
+} from '../../blockchain'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
 import {

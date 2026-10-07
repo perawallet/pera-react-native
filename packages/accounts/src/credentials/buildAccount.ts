@@ -10,156 +10,121 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
     generateOrderedUniqueId,
     type Network,
 } from '@perawallet/wallet-core-shared'
+import { accountsChainAdapters } from '../chain-adapter'
 import { AccountError } from '../errors'
 import {
     AccountTypes,
-    type AccountCredentials,
-    type AccountProvenance,
+    type AccountChains,
+    type AccountType,
+    type AccountCustody,
     type Algo25Account,
-    type ChainCredential,
     type HardwareWalletAccount,
     type HDWalletAccount,
-    type LocalProvenance,
     type MultiSigAccount,
     type QuantumAccount,
     type WalletAccount,
     type WatchAccount,
 } from '../models'
 
-// The legacy `keyPairId` is the Algorand key, so a local account must have one.
-type LocalCredentials = AccountCredentials &
-    Record<typeof LEGACY_CHAIN_ID, ChainCredential>
+export type BuildAccountInput<C extends AccountCustody = AccountCustody> = {
+    /** Defaults to a fresh ordered unique id. */
+    id?: string
+    name?: string
+    custody: C
+    /** The chain the account is created on: its adapter writes the legacy details, and its entry sets the top-level `address`. */
+    chainId: ChainId
+    chains: AccountChains
+    rekeyAddress?: string
+    rekeyAddressByNetwork?: Partial<Record<Network, string>>
+}
 
-export type BuildAccountInput<P extends AccountProvenance = AccountProvenance> =
-    {
-        /** Defaults to a fresh ordered unique id. */
-        id?: string
-        name?: string
-        address: string
-        provenance: P
-        rekeyAddress?: string
-        rekeyAddressByNetwork?: Partial<Record<Network, string>>
-    } & (P extends { kind: 'local' }
-        ? { credentials: LocalCredentials }
-        : { credentials?: AccountCredentials })
-
-/** The legacy account variant a provenance maps onto. */
-export type AccountForProvenance<P extends AccountProvenance> = P extends {
+/** The legacy account variant a custody maps onto. */
+export type AccountForCustody<C extends AccountCustody> = C extends {
     kind: 'hardware'
 }
     ? HardwareWalletAccount
-    : P extends { kind: 'multisig' }
+    : C extends { kind: 'multisig' }
       ? MultiSigAccount
-      : P extends { kind: 'watch' }
+      : C extends { kind: 'watch' }
         ? WatchAccount
-        : P extends { seed: typeof SeedScheme.Bip39 }
+        : C extends { seed: typeof SeedScheme.Bip39 }
           ? HDWalletAccount
-          : P extends { seed: typeof SeedScheme.Quantum }
+          : C extends { seed: typeof SeedScheme.Quantum }
             ? QuantumAccount
-            : P extends { seed: typeof SeedScheme.Algo25 }
+            : C extends { seed: typeof SeedScheme.Algo25 }
               ? Algo25Account
               : WalletAccount
 
-type LegacyFields =
-    | Pick<Algo25Account, 'type' | 'keyPairId'>
-    | Pick<QuantumAccount, 'type' | 'keyPairId'>
-    | Pick<HDWalletAccount, 'type' | 'keyPairId' | 'hdWalletDetails'>
-    | Pick<HardwareWalletAccount, 'type' | 'hardwareDetails'>
-    | Pick<MultiSigAccount, 'type' | 'multisigDetails'>
-    | Pick<WatchAccount, 'type'>
-
-const localLegacyFieldsOf = (
-    provenance: LocalProvenance,
-    credentials: AccountCredentials,
-): LegacyFields => {
-    const keyPairId = credentials[LEGACY_CHAIN_ID]?.keyPairId
-    if (!keyPairId) {
-        throw new AccountError(
-            'A local account needs a credential on the Algorand chain',
-        )
-    }
-    if (provenance.seed === 'bip39') {
-        return {
-            type: AccountTypes.hdWallet,
-            keyPairId,
-            hdWalletDetails: { ...provenance.hd },
-        }
-    }
-    return {
-        type:
-            provenance.seed === 'quantum'
-                ? AccountTypes.quantum
-                : AccountTypes.algo25,
-        keyPairId,
-    }
-}
-
-const legacyFieldsOf = (
-    provenance: AccountProvenance,
-    credentials: AccountCredentials,
-): LegacyFields => {
-    switch (provenance.kind) {
+const legacyTypeOf = (custody: AccountCustody): AccountType => {
+    switch (custody.kind) {
         case 'local': {
-            return localLegacyFieldsOf(provenance, credentials)
+            if (custody.seed === 'bip39') return AccountTypes.hdWallet
+            return custody.seed === 'quantum'
+                ? AccountTypes.quantum
+                : AccountTypes.algo25
         }
         case 'hardware': {
-            return {
-                type: AccountTypes.hardware,
-                hardwareDetails: {
-                    ...provenance.device,
-                    accountIndex: provenance.accountIndex,
-                },
-            }
+            return AccountTypes.hardware
         }
         case 'multisig': {
-            return {
-                type: AccountTypes.multisig,
-                multisigDetails: {
-                    threshold: provenance.threshold,
-                    addresses: [...provenance.members],
-                    version: provenance.version,
-                },
-            }
+            return AccountTypes.multisig
         }
         case 'watch': {
-            return { type: AccountTypes.watch }
+            return AccountTypes.watch
         }
     }
 }
 
 /**
- * Builds a {@link WalletAccount} from its provenance and credentials. The
- * legacy `type` and details object are derived from them, so they can't
- * disagree.
+ * Builds a {@link WalletAccount} from its custody and per-chain entries. The
+ * legacy `type`, top-level `address` and details objects are derived from
+ * them, so they can't disagree.
  */
-export const buildAccount = <P extends AccountProvenance>(
-    input: BuildAccountInput<P>,
-): AccountForProvenance<P> => {
+export const buildAccount = <C extends AccountCustody>(
+    input: BuildAccountInput<C>,
+): AccountForCustody<C> => {
     const {
         id,
         name,
-        address,
-        provenance,
+        custody,
+        chainId,
+        chains,
         rekeyAddress,
         rekeyAddressByNetwork,
     } = input
-    const credentials: AccountCredentials = input.credentials ?? {}
+    const entry = chains[chainId]
+    if (!entry) {
+        throw new AccountError(`The account has no entry on ${chainId}`)
+    }
+    if (custody.kind === 'local' && !entry.keyPairId) {
+        throw new AccountError(`A local account needs a key on ${chainId}`)
+    }
     return {
         id: id ?? generateOrderedUniqueId(),
         ...(name !== undefined ? { name } : {}),
-        address,
-        ...legacyFieldsOf(provenance, credentials),
+        address: entry.address,
+        type: legacyTypeOf(custody),
+        ...(custody.kind === 'local' ? { keyPairId: entry.keyPairId } : {}),
+        ...(custody.kind === 'hardware'
+            ? {
+                  hardwareDetails: {
+                      ...custody.device,
+                      accountIndex: custody.accountIndex,
+                  },
+              }
+            : {}),
+        ...accountsChainAdapters.get(chainId).legacyDetails(custody, entry),
         ...(rekeyAddress !== undefined ? { rekeyAddress } : {}),
         ...(rekeyAddressByNetwork !== undefined
             ? { rekeyAddressByNetwork }
             : {}),
-        provenance,
-        credentials,
-    } as AccountForProvenance<P>
+        custody,
+        chains,
+    } as unknown as AccountForCustody<C>
 }

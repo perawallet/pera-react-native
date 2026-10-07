@@ -20,14 +20,13 @@ import {
 import { useHDImportSessionStore } from '../import-session'
 import { discoverAccounts } from '../account-discovery'
 import { accountsAdapterFor, deriveHdAccount } from '../chain-adapter'
-import type { DerivationType, HDWalletAccount } from '../models/accounts'
+import type { HDWalletAccount } from '../models/accounts'
 import { useAccountsStore } from '../store'
 import { HDImportSessionNotFoundError } from '../errors'
 
 export type UseHDImportSessionResult = {
     prepareImport: (params: { mnemonicIndices?: Uint16Array }) => Promise<{
         walletKeyId: string
-        derivationType: DerivationType
     }>
     discoverImportAccounts: (params: {
         walletKeyId: string
@@ -47,16 +46,14 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
     const prepareImport = useCallback(
         async ({ mnemonicIndices }: { mnemonicIndices?: Uint16Array }) => {
             const prepared = await prepareHDMasterKey({ mnemonicIndices })
-            const derivationType = accountsAdapterFor(network).hdDerivationType
             useHDImportSessionStore.getState().start({
                 walletKeyId: prepared.keyId,
                 rootKey: handOffSecret(prepared.rootKey),
                 entropy: handOffSecret(prepared.entropy),
-                derivationType,
             })
-            return { walletKeyId: prepared.keyId, derivationType }
+            return { walletKeyId: prepared.keyId }
         },
-        [network],
+        [],
     )
 
     const discoverImportAccounts = useCallback(
@@ -70,7 +67,6 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
             ).createPublicKeyGetter(pending.rootKey)
             return discoverAccounts({
                 getPublicKey,
-                derivationType: pending.derivationType,
                 walletKeyId: pending.walletKeyId,
             })
         },

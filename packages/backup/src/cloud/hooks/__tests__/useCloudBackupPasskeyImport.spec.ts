@@ -27,6 +27,7 @@ const subtle = webcrypto.subtle as unknown as SubtleCrypto
 const ENTROPY = new Uint8Array(32).fill(7)
 
 const writeEntry = vi.fn()
+const refreshIdentities = vi.fn().mockResolvedValue(undefined)
 const entryExists = vi.fn().mockReturnValue(false)
 // A fresh copy per call, like the real resolver: the import zeroes what it is
 // handed, so a shared buffer would be blanked for every later test.
@@ -48,6 +49,9 @@ vi.mock('@perawallet/wallet-core-passkeys', async importOriginal => {
         derivePasskeyMainKey: vi.fn(actual.derivePasskeyMainKey),
         writeNativePasskeyEntry: (...args: unknown[]) => writeEntry(...args),
         nativePasskeyEntryExists: (...args: unknown[]) => entryExists(...args),
+        usePasskeyAutofillService: () => ({
+            refreshCredentialIdentities: refreshIdentities,
+        }),
     }
 })
 
@@ -120,6 +124,7 @@ const withoutSecret = async (
 describe('useCloudBackupPasskeyImport', () => {
     beforeEach(() => {
         writeEntry.mockReset()
+        refreshIdentities.mockReset().mockResolvedValue(undefined)
         entryExists.mockReturnValue(false)
         resolveEntropy.mockClear()
     })
@@ -380,5 +385,46 @@ describe('useCloudBackupPasskeyImport', () => {
 
         expect(summary.skipped[0]?.reason).toBe('already-present')
         expect(writeEntry).not.toHaveBeenCalled()
+    })
+
+    describe('publishing to the iOS identity store', () => {
+        it('refreshes the identities once a credential is written', async () => {
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            await result.current.importPasskeys([
+                await buildPulledWithSecret('carol'),
+                await buildPulledWithSecret('dave'),
+            ])
+
+            expect(refreshIdentities).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not refresh when nothing was written', async () => {
+            entryExists.mockReturnValue(true)
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            await result.current.importPasskeys([await buildPulledWithSecret()])
+
+            expect(refreshIdentities).not.toHaveBeenCalled()
+        })
+
+        it('still reports the import when the refresh fails', async () => {
+            refreshIdentities.mockRejectedValue(
+                new Error('ASCredentialIdentityStoreErrorDomain error 1'),
+            )
+            const { result } = renderHook(() =>
+                useCloudBackupPasskeyImport(resolveEntropy),
+            )
+
+            const summary = await result.current.importPasskeys([
+                await buildPulledWithSecret(),
+            ])
+
+            expect(summary.imported).toBe(1)
+        })
     })
 })

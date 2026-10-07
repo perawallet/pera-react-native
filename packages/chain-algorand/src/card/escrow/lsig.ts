@@ -22,7 +22,7 @@ import {
     decodeFromBase64,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { getAlgorandClient } from '../../blockchain'
 import {
     AUTODRAW_TEAL_TEMPLATE,
     TMPL_GENESIS_HASH,

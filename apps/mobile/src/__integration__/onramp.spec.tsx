@@ -47,7 +47,7 @@ import {
 import {
     encodeTransaction,
     encodeSignedTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
@@ -90,7 +90,7 @@ import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockAlgodTransactionParams,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {

@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    queryKeyReferencesScope,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { describe, test, expect, vi } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
 
@@ -110,7 +113,7 @@ describe('getAssetsQueryKey', () => {
         )
     })
 
-    test('partitions by network', () => {
+    test('partitions by scope', () => {
         expect(
             getAssetsQueryKey(['123'], scopeForLegacyNetwork('mainnet')),
         ).not.toEqual(
@@ -186,13 +189,13 @@ describe('invalidateAssetQueries', () => {
 })
 
 describe('detail query keys', () => {
-    test('getAssetDetailsQueryKey includes id and network', () => {
+    test('getAssetDetailsQueryKey includes id and scope', () => {
         expect(
             getAssetDetailsQueryKey('123', scopeForLegacyNetwork('mainnet')),
         ).toEqual([
             MODULE_PREFIX,
             'detail',
-            { assetId: '123', network: 'mainnet' },
+            { assetId: '123', scope: scopeForLegacyNetwork('mainnet') },
         ])
     })
 
@@ -205,7 +208,7 @@ describe('detail query keys', () => {
         ).toEqual([
             MODULE_PREFIX,
             'detail-remote',
-            { assetId: '123', network: 'mainnet' },
+            { assetId: '123', scope: scopeForLegacyNetwork('mainnet') },
         ])
         expect(
             getRemoteAssetDetailsQueryKey(
@@ -235,11 +238,11 @@ describe('detail query keys', () => {
         ).toEqual([
             MODULE_PREFIX,
             'authorities',
-            { assetId: '123', network: 'mainnet' },
+            { assetId: '123', scope: scopeForLegacyNetwork('mainnet') },
         ])
     })
 
-    test('getAssetPriceHistoryQueryKey includes asset id, period, and network', () => {
+    test('getAssetPriceHistoryQueryKey includes asset id, period, and scope', () => {
         expect(
             getAssetPriceHistoryQueryKey(
                 '123',
@@ -250,7 +253,11 @@ describe('detail query keys', () => {
             MODULE_PREFIX,
             'prices',
             'history',
-            { assetID: '123', period: '7d', network: 'mainnet' },
+            {
+                assetID: '123',
+                period: '7d',
+                scope: scopeForLegacyNetwork('mainnet'),
+            },
         ])
     })
 })
@@ -288,7 +295,7 @@ describe('isAssetPriceHistoryQuery', () => {
 })
 
 describe('custom-network sweep', () => {
-    test('every network-scoped key carries the bare network, which clearCustomNetworkCache matches on', () => {
+    test('every network-scoped key references its scope, which clearCustomNetworkCache matches on', () => {
         const custom = scopeForLegacyNetwork('custom')
         const keys = [
             getAssetPricesQueryKey(['123'], custom),
@@ -300,9 +307,10 @@ describe('custom-network sweep', () => {
         ]
 
         for (const key of keys) {
-            expect(JSON.stringify(key), JSON.stringify(key)).toContain(
-                '"network":"custom"',
-            )
+            expect(
+                queryKeyReferencesScope(key, custom),
+                JSON.stringify(key),
+            ).toBe(true)
         }
     })
 })

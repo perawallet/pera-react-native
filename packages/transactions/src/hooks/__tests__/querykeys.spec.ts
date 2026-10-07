@@ -30,12 +30,16 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 import { QueryClient } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
 import {
     MODULE_PREFIX,
     transactionQueryKeys,
     invalidateTransactionQueriesForAddresses,
 } from '../querykeys'
+
+const MAINNET = scopeForLegacyNetwork('mainnet')
+const TESTNET = scopeForLegacyNetwork('testnet')
 
 describe('transactionQueryKeys', () => {
     describe('all', () => {
@@ -45,42 +49,36 @@ describe('transactionQueryKeys', () => {
     })
 
     describe('history', () => {
-        test('includes account address and network', () => {
-            const key = transactionQueryKeys.history('ADDR123', 'mainnet')
+        test('carries the account address and the scope object', () => {
+            const key = transactionQueryKeys.history('ADDR123', MAINNET)
 
             expect(key).toEqual([
                 'transactions',
                 'history',
-                { accountAddress: 'ADDR123', network: 'mainnet' },
+                { accountAddress: 'ADDR123', scope: MAINNET },
             ])
         })
 
-        test('produces different keys for different networks', () => {
-            const mainnetKey = transactionQueryKeys.history(
-                'ADDR123',
-                'mainnet',
-            )
-            const testnetKey = transactionQueryKeys.history(
-                'ADDR123',
-                'testnet',
-            )
+        test('produces different keys for different scopes', () => {
+            const mainnetKey = transactionQueryKeys.history('ADDR123', MAINNET)
+            const testnetKey = transactionQueryKeys.history('ADDR123', TESTNET)
 
             expect(mainnetKey).not.toEqual(testnetKey)
         })
 
         test('produces different keys for different addresses', () => {
-            const key1 = transactionQueryKeys.history('ADDR1', 'mainnet')
-            const key2 = transactionQueryKeys.history('ADDR2', 'mainnet')
+            const key1 = transactionQueryKeys.history('ADDR1', MAINNET)
+            const key2 = transactionQueryKeys.history('ADDR2', MAINNET)
 
             expect(key1).not.toEqual(key2)
         })
     })
 
     describe('historyWithFilters', () => {
-        test('includes account address, network, and filters', () => {
+        test('includes account address, scope, and filters', () => {
             const key = transactionQueryKeys.historyWithFilters(
                 'ADDR123',
-                'mainnet',
+                MAINNET,
                 {
                     assetId: '456',
                     limit: 25,
@@ -92,23 +90,23 @@ describe('transactionQueryKeys', () => {
                 'history',
                 {
                     accountAddress: 'ADDR123',
-                    network: 'mainnet',
+                    scope: MAINNET,
                     assetId: '456',
                     limit: 25,
                 },
             ])
         })
 
-        test('produces different keys for different networks', () => {
+        test('produces different keys for different scopes', () => {
             const filters = { assetId: '456' }
             const mainnetKey = transactionQueryKeys.historyWithFilters(
                 'ADDR123',
-                'mainnet',
+                MAINNET,
                 filters,
             )
             const testnetKey = transactionQueryKeys.historyWithFilters(
                 'ADDR123',
-                'testnet',
+                TESTNET,
                 filters,
             )
 
@@ -118,12 +116,12 @@ describe('transactionQueryKeys', () => {
         test('produces different keys for different filters', () => {
             const key1 = transactionQueryKeys.historyWithFilters(
                 'ADDR123',
-                'mainnet',
+                MAINNET,
                 { assetId: '100' },
             )
             const key2 = transactionQueryKeys.historyWithFilters(
                 'ADDR123',
-                'mainnet',
+                MAINNET,
                 { assetId: '200' },
             )
 
@@ -132,10 +130,10 @@ describe('transactionQueryKeys', () => {
     })
 
     describe('paginatedHistory', () => {
-        test('includes account address, network, and url', () => {
+        test('includes account address, scope, and url', () => {
             const key = transactionQueryKeys.paginatedHistory(
                 'ADDR123',
-                'mainnet',
+                MAINNET,
                 'https://api.example.com/next',
             )
 
@@ -145,26 +143,36 @@ describe('transactionQueryKeys', () => {
                 'page',
                 {
                     accountAddress: 'ADDR123',
-                    network: 'mainnet',
+                    scope: MAINNET,
                     url: 'https://api.example.com/next',
                 },
             ])
         })
 
-        test('produces different keys for different networks', () => {
+        test('produces different keys for different scopes', () => {
             const url = 'https://api.example.com/next'
             const mainnetKey = transactionQueryKeys.paginatedHistory(
                 'ADDR123',
-                'mainnet',
+                MAINNET,
                 url,
             )
             const testnetKey = transactionQueryKeys.paginatedHistory(
                 'ADDR123',
-                'testnet',
+                TESTNET,
                 url,
             )
 
             expect(mainnetKey).not.toEqual(testnetKey)
+        })
+    })
+
+    describe('openSubmissionTxIds', () => {
+        test('carries the scope object', () => {
+            expect(transactionQueryKeys.openSubmissionTxIds(MAINNET)).toEqual([
+                'transactions',
+                'open-submission-txids',
+                { scope: { chainId: 'algorand', networkId: 'mainnet' } },
+            ])
         })
     })
 })
@@ -172,8 +180,8 @@ describe('transactionQueryKeys', () => {
 describe('invalidateTransactionQueriesForAddresses', () => {
     test('invalidates only the targeted address histories', () => {
         const queryClient = new QueryClient()
-        const targetKey = transactionQueryKeys.history('ADDR1', 'mainnet')
-        const otherKey = transactionQueryKeys.history('ADDR2', 'mainnet')
+        const targetKey = transactionQueryKeys.history('ADDR1', MAINNET)
+        const otherKey = transactionQueryKeys.history('ADDR2', MAINNET)
         queryClient.setQueryData(targetKey, { value: 1 })
         queryClient.setQueryData(otherKey, { value: 2 })
 
@@ -187,12 +195,12 @@ describe('invalidateTransactionQueriesForAddresses', () => {
         const queryClient = new QueryClient()
         const filteredKey = transactionQueryKeys.historyWithFilters(
             'ADDR1',
-            'mainnet',
+            MAINNET,
             { assetId: '456' },
         )
         const pageKey = transactionQueryKeys.paginatedHistory(
             'ADDR1',
-            'mainnet',
+            MAINNET,
             'https://api.example.com/next',
         )
         queryClient.setQueryData(filteredKey, { value: 1 })
@@ -209,7 +217,7 @@ describe('invalidateTransactionQueriesForAddresses', () => {
         const foreignKey = [
             'accounts',
             'balance',
-            { address: 'ADDR1', network: 'mainnet' },
+            { address: 'ADDR1', scope: MAINNET },
         ]
         queryClient.setQueryData(foreignKey, { value: 1 })
 
@@ -220,7 +228,7 @@ describe('invalidateTransactionQueriesForAddresses', () => {
 
     test('is a no-op for an empty address list', () => {
         const queryClient = new QueryClient()
-        const key = transactionQueryKeys.history('ADDR1', 'mainnet')
+        const key = transactionQueryKeys.history('ADDR1', MAINNET)
         queryClient.setQueryData(key, { value: 1 })
 
         invalidateTransactionQueriesForAddresses(queryClient, [])

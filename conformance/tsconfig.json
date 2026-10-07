@@ -15,16 +15,10 @@
         "declarationMap": false,
         "rootDir": "..",
         // Mirrors vitest.config.ts's resolve.alias — without these, tsc resolves
-        // the deep imports (e.g. wallet-core-blockchain/errors) against the
+        // the deep imports (e.g. wallet-core-chain-algorand/blockchain/errors) against the
         // workspace package's dist/*.d.ts (or nothing, pre-build) instead of src,
         // and reports TS2307.
         "paths": {
-            "@perawallet/wallet-core-blockchain": [
-                "../packages/blockchain/src"
-            ],
-            "@perawallet/wallet-core-blockchain/*": [
-                "../packages/blockchain/src/*"
-            ],
             "@perawallet/wallet-core-chain-algorand/*": [
                 "../packages/chain-algorand/src/*"
             ],

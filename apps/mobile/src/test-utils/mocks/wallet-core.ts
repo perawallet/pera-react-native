@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 // Mock @perawallet/wallet-core-projects
 vi.mock('@perawallet/wallet-core-projects', () => ({
@@ -201,6 +202,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     nativeAssetFor: () => nativeAsset,
     isNativeAssetId: (_chainId: string, assetId: string) =>
         assetId === nativeAsset.assetId,
+    useIsNativeAssetId:
+        () => (assetId: string | number | bigint | null | undefined) =>
+            assetId != null && String(assetId) === nativeAsset.assetId,
+    displayCurrencyToAssetId: (code: string) =>
+        code === 'ALGO' ? nativeAsset.assetId : null,
     PeraAssetType: {
         algo: 'algo',
         standard_asset: 'standard_asset',
@@ -398,10 +404,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             isPending: false,
         })),
         getOnChainAccountInformationQueryKey: vi.fn(
-            (address: string, network: string) => [
+            (address: string, scope: ChainScope) => [
                 'accounts',
                 'on-chain-account-information',
-                { address, network },
+                { address, scope },
             ],
         ),
         invalidateAccountQueriesForAddresses: vi.fn(),
@@ -412,7 +418,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useArbitraryDataSigner: vi.fn(() => ({
             signArbitraryData: vi.fn().mockResolvedValue([]),
         })),
-        ALGO_ASSET_ID: '0',
         AccountTypes: {
             algo25: 'algo25',
             hdWallet: 'hdWallet',
@@ -522,7 +527,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
-// Mock @perawallet/wallet-core-blockchain
+// Mock @perawallet/wallet-core-chain-algorand/blockchain
 class MockAlgodError extends Error {
     constructor(
         public readonly code: string,
@@ -534,25 +539,25 @@ class MockAlgodError extends Error {
     }
 }
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
     // Real custom-network functions (backed by the real network store) so
-    // subscribed hooks re-render on change. Imported by module path, not a
-    // package barrel, to keep utils/algorandClient's module-level side effects
-    // out of every test in the suite.
+    // subscribed hooks re-render on change. Imported by module path, not the
+    // blockchain barrel, to keep utils/algorandClient's module-level side
+    // effects out of every test in the suite.
     const {
         getCustomNetworkConfig,
         isCustomNetworkConfigured,
         setCustomNetwork,
         clearCustomNetwork,
     } = await vi.importActual<
-        typeof import('@packages/blockchain/src/store/custom-network')
-    >('@packages/blockchain/src/store/custom-network')
+        typeof import('@packages/chain-algorand/src/blockchain/store/custom-network')
+    >('@packages/chain-algorand/src/blockchain/store/custom-network')
     // Real ARC-0001 module: `packages/connections` composes its request
     // schema from `arc0001SignTxnRequestSchema` at load, so a hand-written
     // stand-in would silently disarm the resolver's own refusals.
     const arc0001 = await vi.importActual<
-        typeof import('@packages/blockchain/src/arc0001')
-    >('@packages/blockchain/src/arc0001')
+        typeof import('@packages/chain-algorand/src/blockchain/arc0001')
+    >('@packages/chain-algorand/src/blockchain/arc0001')
 
     return {
         ...arc0001,

@@ -22,7 +22,10 @@ vi.mock('../../services/nfdBatchQueue', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: 'mainnet',
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({

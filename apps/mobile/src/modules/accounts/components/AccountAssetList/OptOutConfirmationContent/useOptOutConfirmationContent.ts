@@ -11,7 +11,7 @@
  */
 
 import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
-import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
+import { useMinimumFeeConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
 
 import type { Decimal } from 'decimal.js'
 

@@ -26,7 +26,7 @@ vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 const wrapper = () => {

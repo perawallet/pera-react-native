@@ -44,7 +44,7 @@ const {
     mockAssignFeeToGroup: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     // Real-ish: matches the production base32-length check well enough for
     // valid vs invalid sender discrimination in this hook.
     isValidAlgorandAddress: (address: string) =>

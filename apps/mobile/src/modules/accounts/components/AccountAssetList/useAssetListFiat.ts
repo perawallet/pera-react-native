@@ -16,12 +16,11 @@ import {
     useCurrency,
     usePreferredCurrencyPriceQuery,
 } from '@perawallet/wallet-core-currencies'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
-    isAlgoAssetId,
-    type Maybe,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+    useIsNativeAssetId,
+    useNativeAsset,
+} from '@perawallet/wallet-core-assets'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
 export type AssetFiatValue = {
     displayCurrency: string
@@ -45,6 +44,7 @@ export type AssetFiatConverter = (
  */
 export const useAssetListFiatConverter = (): AssetFiatConverter => {
     const nativeAsset = useNativeAsset()
+    const isNativeAssetId = useIsNativeAssetId()
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency()
     const isPreferredAlgo = preferredCurrency === nativeAsset.unitName
@@ -62,7 +62,7 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
                 return { displayCurrency: preferredCurrency, value: null }
             }
 
-            const isSourceAlgo = isAlgoAssetId(assetId)
+            const isSourceAlgo = isNativeAssetId(assetId)
             const needsFallback = isPreferredAlgo && isSourceAlgo
             const usdValue = amountDisplayUnits.mul(usdPrice)
             // An unresolved fallback rate yields no value, not a zero one —
@@ -80,6 +80,7 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
             }
         },
         [
+            isNativeAssetId,
             preferredCurrency,
             fallbackCurrency,
             usdToPreferred,

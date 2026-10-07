@@ -15,7 +15,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import {
     FALLBACK_ASSET_MBR,
     FALLBACK_BASE_ACCOUNT_MBR,
-} from '@perawallet/wallet-core-blockchain/constants'
+} from '@perawallet/wallet-core-chain-algorand/blockchain/constants'
 
 import {
     createAlgo25Account,

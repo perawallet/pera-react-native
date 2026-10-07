@@ -24,7 +24,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { useAlgorandClient } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useMinimumFeeCalculator } from '@perawallet/wallet-core-signing'
 import {
@@ -118,7 +118,7 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
                 await queryClient.invalidateQueries({
                     queryKey: getOnChainAccountInformationQueryKey(
                         escrowCardAddress,
-                        network,
+                        scopeForLegacyNetwork(network),
                     ),
                 })
                 invalidateAccountQueriesForAddresses(queryClient, [

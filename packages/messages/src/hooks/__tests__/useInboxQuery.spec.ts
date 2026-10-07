@@ -19,9 +19,10 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useInboxQuery } from '../useInboxQuery'
 import { fetchInbox } from '../../api/inbox'
 import type { InboxResponse } from '../../api/inbox'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useChainCapability,
-    useNetwork,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
@@ -29,11 +30,13 @@ import {
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
         ['mainnet', 'testnet'].includes(
-            vi.mocked(useNetwork).mock.results.at(-1)?.value?.network ??
+            vi.mocked(useSelectedScope).mock.results.at(-1)?.value?.networkId ??
                 'mainnet',
         ),
     ),
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
+    useSelectedScope: vi
+        .fn()
+        .mockReturnValue({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('../../api/inbox', () => ({
@@ -65,9 +68,9 @@ beforeEach(() => {
         { address: 'ADDR1', type: 'algo25' },
         { address: 'ADDR2', type: 'algo25' },
     ] as ReturnType<typeof useAllAccounts>)
-    vi.mocked(useNetwork).mockReturnValue({
-        network: 'mainnet',
-    } as ReturnType<typeof useNetwork>)
+    vi.mocked(useSelectedScope).mockReturnValue(
+        scopeForLegacyNetwork('mainnet'),
+    )
 })
 
 describe('useInboxQuery', () => {
@@ -461,9 +464,9 @@ describe('useInboxQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'disables the query and flags isUnavailableOnNetwork on %s',
             network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
+                vi.mocked(useSelectedScope).mockReturnValue(
+                    scopeForLegacyNetwork(network),
+                )
 
                 const { result } = renderHook(() => useInboxQuery(), {
                     wrapper: createWrapper(),
@@ -481,9 +484,9 @@ describe('useInboxQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'reports isPending false while unavailable on %s',
             network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
+                vi.mocked(useSelectedScope).mockReturnValue(
+                    scopeForLegacyNetwork(network),
+                )
 
                 const { result } = renderHook(() => useInboxQuery(), {
                     wrapper: createWrapper(),
@@ -497,9 +500,9 @@ describe('useInboxQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'does not invoke fetchInbox when refetch is called on %s',
             async network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
+                vi.mocked(useSelectedScope).mockReturnValue(
+                    scopeForLegacyNetwork(network),
+                )
 
                 const { result } = renderHook(() => useInboxQuery(), {
                     wrapper: createWrapper(),

@@ -13,12 +13,13 @@
 // @vitest-environment node
 // XHD's noble checks reject jsdom's Uint8Array realm.
 import { describe, expect, test } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
 import {
     mockAlgodAccountInformation,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '../../test-handlers'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
 import {

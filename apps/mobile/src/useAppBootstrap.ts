@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import * as SplashScreen from 'expo-splash-screen'
-import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain'
+import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { seedNativeAssets } from '@perawallet/wallet-core-assets'
 import {
     createSyncStorePorts,

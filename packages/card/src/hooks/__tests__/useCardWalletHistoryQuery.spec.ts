@@ -16,9 +16,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
+const mockUseSelectedScope = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
+    useSelectedScope: mockUseSelectedScope,
 }))
 
 const { fetchWalletHistory } = vi.hoisted(() => ({
@@ -31,6 +31,7 @@ vi.mock('../useCardSession', () => ({
     useCardSession: () => ({ isAuthenticated: mockSession.isAuthenticated }),
 }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardWalletHistoryQuery } from '../useCardWalletHistoryQuery'
 import { CardWalletKind, TransactionSign } from '../../models'
 
@@ -50,7 +51,7 @@ describe('useCardWalletHistoryQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
         mockSession.isAuthenticated = true
     })
 

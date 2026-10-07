@@ -15,10 +15,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockBuildRekeyTx = vi.fn()
-const mockUseNetwork = vi.fn(() => ({ network: 'mainnet' }))
+const mockUseSelectedScope = vi.fn(() => scopeForLegacyNetwork('mainnet'))
 const mockUseAllAccounts = vi.fn()
 const mockUseFeeConfig = vi.fn()
 const mockUseSuggestedMinFeeQuery = vi.fn()
@@ -32,7 +33,7 @@ const mockResolveMinFeeForSender = vi.fn()
 // these tests verify only that this hook wires the resolver's inputs
 // correctly and applies the override guard on its output.
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => mockUseNetwork(),
+    useSelectedScope: () => mockUseSelectedScope(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -84,7 +85,7 @@ const buildWrapper = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+    mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     sendFlowChainAdapters.reset()
     sendFlowChainAdapters.register({
         chainId: 'algorand',
@@ -246,7 +247,7 @@ describe('useRekeyTransactionFeeQuery', () => {
 
     it('caches per network — a mainnet fee does not satisfy a testnet query', async () => {
         // Same QueryClient across both renders — but the network change should
-        // produce a fresh fetch because network is part of the query key.
+        // produce a fresh fetch because scope is part of the query key.
         mockBuildRekeyTx
             .mockResolvedValueOnce({ fee: 1000n })
             .mockResolvedValueOnce({ fee: 5000n })
@@ -259,7 +260,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         await waitFor(() => expect(mainnet.current.isPending).toBe(false))
         expect(mainnet.current.feeAlgos?.toString()).toBe('0.001')
 
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
         const { result: testnet } = renderHook(
             () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
             { wrapper },

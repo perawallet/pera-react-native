@@ -14,7 +14,8 @@ import { KeyContext, XHDWalletAPI } from '@algorandfoundation/xhd-wallet-api'
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import type { indexerModels } from 'algosdk'
 import type { GetPublicKey } from '@perawallet/wallet-core-accounts'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { getAlgorandClient } from '../blockchain'
+import { ALGORAND_HD_DERIVATION_TYPE } from './constants'
 import {
     fetchAccountFastLookup,
     logger,
@@ -30,13 +31,13 @@ const MAX_REKEYED_SCAN_PAGES = 20
 /** Backed by an in-memory XHD root key, for discovery before keystore persistence (e.g. mnemonic import). */
 export const createXHDGetPublicKey = (rootKey: Uint8Array): GetPublicKey => {
     const api = new XHDWalletAPI()
-    return async ({ account, keyIndex, derivationType }) =>
+    return async ({ account, keyIndex }) =>
         api.keyGen(
             rootKey,
             KeyContext.Address,
             account,
             keyIndex,
-            derivationType,
+            ALGORAND_HD_DERIVATION_TYPE,
         )
 }
 

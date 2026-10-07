@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     type AnyParsedDeeplink,
     DeeplinkType,

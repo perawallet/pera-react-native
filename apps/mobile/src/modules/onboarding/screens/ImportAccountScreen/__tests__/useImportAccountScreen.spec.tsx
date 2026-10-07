@@ -588,7 +588,6 @@ describe('useImportAccountScreen', () => {
             mockImportAccount.mockResolvedValue({
                 type: 'hdWallet',
                 walletKeyId: 'WALLET1',
-                derivationType: 9,
             })
 
             const { result } = renderHook(() => useImportAccountScreen())
@@ -610,7 +609,6 @@ describe('useImportAccountScreen', () => {
             expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
                 mode: 'import',
                 walletKeyId: 'WALLET1',
-                derivationType: 9,
             })
             // markBackupComplete is NOT called yet — the user hasn't committed addresses.
             expect(mockMarkBackupComplete).not.toHaveBeenCalled()

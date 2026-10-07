@@ -36,7 +36,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { RescanRekeyedSelectScreen } from '@modules/rekey/screens/rescan-rekeyed/RescanRekeyedSelectScreen'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'

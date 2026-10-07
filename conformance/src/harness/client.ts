@@ -13,7 +13,7 @@
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 
 import type { AccountInformation } from '@perawallet/wallet-core-chain-contract'
-import { createTimeoutBoundedAlgorandClient } from '@perawallet/wallet-core-blockchain/utils/createAlgorandClient'
+import { createTimeoutBoundedAlgorandClient } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/createAlgorandClient'
 import { fetchOnChainAccountInformation } from '@perawallet/wallet-core-chain-algorand/accounts/endpoints'
 import { mapOnChainAccountInformation } from '@perawallet/wallet-core-chain-algorand/accounts/mappers'
 

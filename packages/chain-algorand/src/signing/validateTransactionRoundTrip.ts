@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    encodeTransactionRaw,
-    stripTxPrefix,
-} from '@perawallet/wallet-core-blockchain'
+import { encodeTransactionRaw, stripTxPrefix } from '../blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 

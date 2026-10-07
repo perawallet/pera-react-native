@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 import { renderHook } from '@testing-library/react'
 import {
     AccountTypes,
@@ -32,7 +33,7 @@ const mockZeroBytes = vi.fn()
 
 let storeAccounts: WalletAccount[] = []
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../../blockchain', () => ({
     isValidAlgorandAddress: (...args: unknown[]) =>
         mockIsValidAlgorandAddress(...args),
 }))
@@ -268,8 +269,8 @@ describe('useAsbAccountImport', () => {
         expect(returned).toMatchObject({
             address: VALID_ADDRESS_B,
             type: AccountTypes.watch,
-            provenance: { kind: 'watch' },
-            credentials: {},
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: VALID_ADDRESS_B } },
         })
         // Watch accounts never touch KMS or the backup-complete signal.
         expect(mockMarkBackupComplete).not.toHaveBeenCalled()

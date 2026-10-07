@@ -20,7 +20,7 @@ const { mockUseMinimumFeeConfig, mockUseSuggestedParametersQuery } = vi.hoisted(
     }),
 )
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../blockchain', () => ({
     useMinimumFeeConfig: mockUseMinimumFeeConfig,
     useSuggestedParametersQuery: mockUseSuggestedParametersQuery,
 }))

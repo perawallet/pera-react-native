@@ -22,7 +22,7 @@ import {
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../models'
 
-type KeystoreSnapshot = Parameters<typeof resolveSeedKeyFrom>[0]
+export type KeystoreSnapshot = Parameters<typeof resolveSeedKeyFrom>[0]
 
 export type SchemeChain = Pick<ChainDescriptor, 'id' | 'signing'> & {
     protocol: Pick<ChainDescriptor['protocol'], 'supportsNativeMultisig'>
@@ -42,7 +42,7 @@ const loadedSeedScheme = (
 /**
  * The scheme `account` signs with on `chain`, or `null` when it can't sign
  * there. A chain lists its primary scheme first. A local key follows its seed,
- * the kms signer's oracle; the provenance stands in until the keystore loads.
+ * the kms signer's oracle; the custody stands in until the keystore loads.
  */
 export const credentialScheme = (
     account: WalletAccount,
@@ -50,9 +50,9 @@ export const credentialScheme = (
     keys: KeystoreSnapshot = getKeystoreStore().state.keys,
 ): SigningScheme | null => {
     const primary = chain.signing.schemes[0] ?? null
-    const { provenance } = account
+    const { custody } = account
 
-    switch (provenance?.kind) {
+    switch (custody?.kind) {
         case 'hardware': {
             return primary
         }
@@ -60,9 +60,9 @@ export const credentialScheme = (
             return chain.protocol.supportsNativeMultisig ? primary : null
         }
         case 'local': {
-            const keyPairId = account.credentials?.[chain.id]?.keyPairId
+            const keyPairId = account.chains?.[chain.id]?.keyPairId
             if (!keyPairId) return null
-            const seed = loadedSeedScheme(keys, keyPairId) ?? provenance.seed
+            const seed = loadedSeedScheme(keys, keyPairId) ?? custody.seed
             const scheme = seed === SeedScheme.Quantum ? 'falcon-1024' : primary
             return scheme && chain.signing.schemes.includes(scheme)
                 ? scheme

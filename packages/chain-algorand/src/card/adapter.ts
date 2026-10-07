@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { waitForTransactionConfirmation } from '@perawallet/wallet-core-blockchain'
+import { waitForTransactionConfirmation } from '../blockchain'
 import type { CardChainAdapter } from '@perawallet/wallet-core-card'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { cardAlgorandClient } from './client'

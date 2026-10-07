@@ -17,7 +17,7 @@ import {
     getCustomNetworkConfig,
     setCustomNetwork,
     type CustomNetworkConfig,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     clearCustomNetworkCache,
     shouldClearCustomCache,

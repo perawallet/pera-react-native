@@ -303,7 +303,7 @@ describe('services/accounts/utils - account type checks', () => {
     }
 
     test.each(Object.values(AccountTypes))(
-        'the %s guard follows provenance over a contradicting stored type',
+        'the %s guard follows custody over a contradicting stored type',
         type => {
             const storedType =
                 type === AccountTypes.watch
@@ -691,7 +691,7 @@ describe('services/accounts/utils - accountType', () => {
         (_, legacy) => {
             const backfilled = withCustody(legacy)
 
-            expect(backfilled.provenance).toBeDefined()
+            expect(backfilled.custody).toBeDefined()
             expect(accountType(backfilled)).toBe(legacy.type)
         },
     )
@@ -709,7 +709,7 @@ describe('services/accounts/utils - accountType', () => {
         expect(accountType(account)).toBe(type)
     })
 
-    test('provenance decides when it disagrees with the stored type', () => {
+    test('custody decides when it disagrees with the stored type', () => {
         const account = {
             ...buildTestAccount(AccountTypes.watch),
             type: AccountTypes.algo25,
@@ -725,7 +725,7 @@ describe('services/accounts/utils - accountType', () => {
             type: AccountTypes.multisig,
         } as WalletAccount)
 
-        expect(malformed.provenance).toBeUndefined()
+        expect(malformed.custody).toBeUndefined()
         expect(accountType(malformed)).toBe(AccountTypes.multisig)
     })
 })

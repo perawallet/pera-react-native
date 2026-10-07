@@ -204,7 +204,10 @@ export const useMultisigTransportAdapters =
                 // It gates the "Cancel transaction" button, so losing it strips
                 // the user's ability to cancel their own proposal.
                 queryClient.setQueryData(
-                    getSignRequestDetailQueryKey(network, signRequestId),
+                    getSignRequestDetailQueryKey(
+                        scopeForLegacyNetwork(network),
+                        signRequestId,
+                    ),
                     {
                         ...latestResponse,
                         proposer_address:
@@ -258,7 +261,7 @@ export const useMultisigTransportAdapters =
                     // Backfilled for the reason given on the propose path above.
                     queryClient.setQueryData(
                         getSignRequestDetailQueryKey(
-                            network,
+                            scopeForLegacyNetwork(network),
                             proposeResponse.id,
                         ),
                         {
@@ -342,7 +345,7 @@ export const useMultisigTransportAdapters =
                 // addSignature doesn't always echo it; without this every cosign
                 // would wipe the pointer and strip the proposer's Cancel button.
                 const cacheKey = getSignRequestDetailQueryKey(
-                    network,
+                    scopeForLegacyNetwork(network),
                     signRequestId,
                 )
                 const previousCachedResponse =

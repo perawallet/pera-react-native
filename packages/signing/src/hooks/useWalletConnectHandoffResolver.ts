@@ -120,7 +120,7 @@ export const useWalletConnectHandoffResolver = ({
     const poll = useCallback(
         (handoff: PendingWalletConnectHandoff) => ({
             queryKey: getSignRequestsWithSignaturesQueryKey(
-                legacyNetworkOf(handoff.scope),
+                handoff.scope,
                 handoff.signRequestId,
             ),
             queryFn: () =>

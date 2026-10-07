@@ -34,6 +34,7 @@ const allCapabilities = (value: boolean): ChainCapabilities =>
 
 const build = (swap: boolean): CapabilityLayers['build'] => ({
     algorand: { ...allCapabilities(false), swap },
+    ethereum: allCapabilities(false),
 })
 
 type Row = {

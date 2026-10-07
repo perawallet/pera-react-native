@@ -26,7 +26,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
         ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
     ),
-    useNetwork: () => mockNetwork,
+    useSelectedScope: () => ({
+        chainId: 'algorand',
+        networkId: mockNetwork.network,
+    }),
 }))
 
 // Mock endpoints
@@ -38,7 +41,6 @@ vi.mock('../endpoints', () => ({
     fetchAccountAssetBalanceHistory: mocks.fetchAccountAssetBalanceHistory,
 }))
 
-// Mock network extension
 const mockNetwork = { network: 'mainnet' }
 
 // Mock currencies

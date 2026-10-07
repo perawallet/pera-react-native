@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { createWalletAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { createWalletAlgorandClient } from '../blockchain'
 import type { AssetInboxSendFlow } from '@perawallet/wallet-core-transactions'
 import { algorandNetworkOf } from '../legacy-network'
 import { arc59SendSummaryResponseSchema } from './api'

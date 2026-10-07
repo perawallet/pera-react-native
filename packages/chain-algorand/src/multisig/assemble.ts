@@ -16,7 +16,7 @@ import {
     msgpackRawEncode as encodeMsgpack,
 } from 'algosdk'
 import nacl from 'tweetnacl'
-import { addTxPrefix } from '@perawallet/wallet-core-blockchain'
+import { addTxPrefix } from '../blockchain'
 import type {
     AssembleSignedMultisigParams,
     AssembleSignedMultisigResult,

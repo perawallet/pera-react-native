@@ -14,6 +14,7 @@ import { createElement, type ReactNode } from 'react'
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useRemoveAccountByAddress } from '../useRemoveAccountByAddress'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
@@ -291,11 +292,18 @@ describe('useRemoveAccountByAddress', () => {
             predicates.some(p => p({ queryKey } as never))
 
         expect(
-            matches(['accounts', 'owned-asset-ids', { network: 'mainnet' }]),
+            matches([
+                'accounts',
+                'owned-asset-ids',
+                { scope: scopeForLegacyNetwork('mainnet') },
+            ]),
         ).toBe(true)
-        expect(matches(['assets', { assetIDs: [], network: 'mainnet' }])).toBe(
-            true,
-        )
+        expect(
+            matches([
+                'assets',
+                { assetIDs: [], scope: scopeForLegacyNetwork('mainnet') },
+            ]),
+        ).toBe(true)
 
         invalidateSpy.mockRestore()
     })
@@ -334,14 +342,20 @@ describe('useRemoveAccountByAddress', () => {
             matches([
                 'accounts',
                 'balance',
-                { address: 'LEDGER2', network: 'mainnet' },
+                {
+                    address: 'LEDGER2',
+                    scope: scopeForLegacyNetwork('mainnet'),
+                },
             ]),
         ).toBe(true)
         expect(
             matches([
                 'accounts',
                 'balance',
-                { address: 'LEDGER1', network: 'mainnet' },
+                {
+                    address: 'LEDGER1',
+                    scope: scopeForLegacyNetwork('mainnet'),
+                },
             ]),
         ).toBe(false)
 

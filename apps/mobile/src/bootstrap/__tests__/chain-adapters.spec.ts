@@ -16,13 +16,53 @@ import {
     createChainRegistry,
     type ChainCapabilityOverrides,
     type ChainContext,
+    type ChainModule,
     type ChainRegistry,
     type ChainSetupConfig,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    algorandCapabilityDefaults,
-    algorandDescriptor,
-} from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { ethereumModule } from '@perawallet/wallet-core-chain-ethereum'
+
+const PRODUCTION_ALGORAND_CAPABILITIES = {
+    send: true,
+    receive: true,
+    history: true,
+    assets: true,
+    pricing: true,
+    messageSigning: true,
+    dappConnect: true,
+    customNetworks: true,
+    watchAccounts: true,
+    ledger: true,
+    multisig: true,
+    rekey: true,
+    quantumAccounts: true,
+    staking: true,
+    swap: true,
+    card: true,
+    assetInbox: true,
+    nameService: true,
+    onramp: true,
+    giftCards: true,
+    discover: true,
+    feeDelegation: true,
+    arc0027: true,
+    liquidAuth: true,
+    notifications: true,
+    cloudBackup: true,
+    mnemonicBackup: true,
+    secureBackup: true,
+    nft: true,
+    manageAssets: true,
+    privateKeys: false,
+    contractDecoding: false,
+    priceHistory: true,
+    balanceHistory: true,
+    assetSearch: true,
+    assetFavorites: true,
+    priceAlerts: true,
+    csvExport: true,
+}
 
 const mocks = vi.hoisted(() => ({
     // The network store resolves its shim through the registry as it loads,
@@ -34,6 +74,7 @@ const mocks = vi.hoisted(() => ({
         chains: { enabled: ['algorand'], capabilities: {} } as ChainSetupConfig,
     },
     registerModule: vi.fn(),
+    ethereumChainModule: undefined as ChainModule | undefined,
     readCapabilityOverrides: vi.fn((): ChainCapabilityOverrides => ({})),
     networkGetState: vi.fn(),
     kmsCore: { deriveFromSeed: vi.fn(), importRawKey: vi.fn(), sign: vi.fn() },
@@ -79,6 +120,13 @@ vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
     }
 })
 
+// A getter so each test decides whether the Metro gate left the real module in.
+vi.mock('../ethereum-chain-module', () => ({
+    get ethereumChainModule() {
+        return mocks.ethereumChainModule
+    },
+}))
+
 import { registerChainAdapters } from '../chain-adapters'
 
 const contextGivenToModule = (): ChainContext =>
@@ -88,6 +136,7 @@ describe('registerChainAdapters', () => {
     beforeEach(() => {
         mocks.provider.chains = createChainRegistry()
         mocks.config.chains = { enabled: ['algorand'], capabilities: {} }
+        mocks.ethereumChainModule = ethereumModule
         mocks.readCapabilityOverrides.mockReturnValue({})
         mocks.networkGetState.mockReturnValue({
             mode: 'live',
@@ -101,6 +150,40 @@ describe('registerChainAdapters', () => {
 
         expect(mocks.provider.chains.get('algorand').descriptor).toBe(
             algorandDescriptor,
+        )
+    })
+
+    it('leaves Ethereum unregistered when the build does not list it', () => {
+        registerChainAdapters()
+
+        expect(mocks.provider.chains.has('ethereum')).toBe(false)
+    })
+
+    it('registers the Ethereum descriptor and defaults when the build lists it', () => {
+        mocks.config.chains = {
+            enabled: ['algorand', 'ethereum'],
+            capabilities: {},
+        }
+
+        registerChainAdapters()
+
+        expect(mocks.provider.chains.get('ethereum').descriptor).toBe(
+            ethereumModule.descriptor,
+        )
+        expect(mocks.provider.chains.capabilities('ethereum')).toEqual(
+            ethereumModule.capabilityDefaults,
+        )
+    })
+
+    it('fails loudly when the build lists Ethereum but Metro stubbed its module', () => {
+        mocks.ethereumChainModule = undefined
+        mocks.config.chains = {
+            enabled: ['algorand', 'ethereum'],
+            capabilities: {},
+        }
+
+        expect(() => registerChainAdapters()).toThrow(
+            /no chain module was supplied/,
         )
     })
 
@@ -118,11 +201,11 @@ describe('registerChainAdapters', () => {
         expect(mocks.provider.chains.list()).toEqual([algorandDescriptor])
     })
 
-    it('resolves the module defaults when nothing overrides them', () => {
+    it("resolves Algorand's supported feature set for a production build with no overrides", () => {
         registerChainAdapters()
 
         expect(mocks.provider.chains.capabilities('algorand')).toEqual(
-            algorandCapabilityDefaults,
+            PRODUCTION_ALGORAND_CAPABILITIES,
         )
     })
 

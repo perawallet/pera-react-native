@@ -46,10 +46,10 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
-    getArc59AssetRequestsQueryKey: vi.fn((address: string, network: string) => [
+    getArc59AssetRequestsQueryKey: vi.fn((address: string, scope: unknown) => [
         'asa-inbox',
         'arc59-asset-requests',
-        { address, network },
+        { address, scope },
     ]),
 }))
 

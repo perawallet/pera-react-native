@@ -10,29 +10,30 @@
  limitations under the License
  */
 
-import type { Network, Optional } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 import type { OnrampStatus } from '../models'
 
 const MODULE_PREFIX = 'onramp'
 
 export const onrampQueryKeys = {
-    pairs: (destinationTokenIds: string[], network: Network) =>
-        [MODULE_PREFIX, 'pairs', { destinationTokenIds, network }] as const,
-    region: (network: Network) =>
-        [MODULE_PREFIX, 'region', { network }] as const,
-    /** Prefix matching every history query (any device/account/status/network) —
+    pairs: (destinationTokenIds: string[], scope: ChainScope) =>
+        [MODULE_PREFIX, 'pairs', { destinationTokenIds, scope }] as const,
+    region: (scope: ChainScope) =>
+        [MODULE_PREFIX, 'region', { scope }] as const,
+    /** Prefix matching every history query (any device/account/status/scope) —
      *  used to invalidate the list after an order changes (e.g. cancelled). */
     historyRoot: () => [MODULE_PREFIX, 'history'] as const,
     history: (
         deviceId: string,
         accountAddress: string,
         status: Optional<OnrampStatus>,
-        network: Network,
+        scope: ChainScope,
     ) =>
         [
             MODULE_PREFIX,
             'history',
-            { deviceId, accountAddress, status, network },
+            { deviceId, accountAddress, status, scope },
         ] as const,
 }

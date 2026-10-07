@@ -16,7 +16,7 @@ import {
     decodeTransaction,
     encodeTransactionRaw,
     mapToDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '../blockchain'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,

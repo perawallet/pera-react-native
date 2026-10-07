@@ -17,8 +17,8 @@ import {
     AlgodErrorCode,
     isAlgodError,
     toAlgodError,
-} from '@perawallet/wallet-core-blockchain/errors'
-import { groupTransactions } from '@perawallet/wallet-core-blockchain/utils/transact'
+} from '@perawallet/wallet-core-chain-algorand/blockchain/errors'
+import { groupTransactions } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/transact'
 
 import { createAlgo25Account, fundAccount } from '../../harness/accounts'
 import { base32Encode } from '../../harness/base32'

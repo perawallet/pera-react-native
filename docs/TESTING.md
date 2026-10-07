@@ -151,8 +151,8 @@ aliased separately to its real source so consumers still get types and constants
 
 `algokit-utils` makes its REST calls through `fetch`, which MSW intercepts cleanly (verified in
 `apps/mobile/src/__integration__/algokit-smoke.spec.ts`). Handler factories for the common algod and
-indexer endpoints live in `packages/blockchain/src/msw-handlers.ts` and are re-exported via
-`@perawallet/wallet-core-blockchain/test-handlers`:
+indexer endpoints live in `packages/chain-algorand/src/blockchain/msw-handlers.ts` and are re-exported via
+`@perawallet/wallet-core-chain-algorand/test-handlers`:
 
 ```typescript
 import {
@@ -160,7 +160,7 @@ import {
     mockAlgodTransactionParams,
     mockAlgodSendRawTransaction,
     mockIndexerAccountTransactions,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 server.use(
     mockAlgodAccountInformation({
@@ -176,7 +176,7 @@ tests only override the value they're asserting on. Path globs match both algono
 
 `apps/mobile/vitest.integration-setup.ts` then `vi.unmock`s
 `@perawallet/wallet-extension-provider`, `@perawallet/wallet-core-kms`,
-`@perawallet/wallet-core-accounts`, `@perawallet/wallet-core-blockchain` and
+`@perawallet/wallet-core-accounts`, `@perawallet/wallet-core-chain-algorand/blockchain` and
 `@perawallet/wallet-core-chain-shared` on top of the unit setup,
 so account creation, key management, provider-singleton code and algokit clients all run end-to-end
 against the in-memory implementations and MSW.

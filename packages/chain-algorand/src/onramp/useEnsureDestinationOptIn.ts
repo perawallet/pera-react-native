@@ -12,10 +12,7 @@
 
 import { useCallback } from 'react'
 import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
-import {
-    useAlgorandClient,
-    useMinimumFeeConfig,
-} from '@perawallet/wallet-core-blockchain'
+import { useAlgorandClient, useMinimumFeeConfig } from '../blockchain'
 import {
     FeeDelegationAttestationRequiredError,
     useFeeDelegation,

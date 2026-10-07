@@ -109,7 +109,7 @@ beforeEach(async () => {
 vi.unmock('@perawallet/wallet-extension-provider')
 vi.unmock('@perawallet/wallet-core-kms')
 vi.unmock('@perawallet/wallet-core-accounts')
-vi.unmock('@perawallet/wallet-core-blockchain')
+vi.unmock('@perawallet/wallet-core-chain-algorand/blockchain')
 vi.unmock('@perawallet/wallet-core-chain-shared')
 
 // The send/swap pipelines fire a background task that awaits chain confirmation

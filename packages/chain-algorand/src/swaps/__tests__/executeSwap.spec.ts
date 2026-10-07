@@ -90,7 +90,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('../../blockchain', () => ({
     // Minimal mapping so the pre-sign quote validation has displayable txns;
     // the validator itself is mocked (`mockValidate`), so the shape is inert.
     mapToDisplayableTransaction: (tx: {

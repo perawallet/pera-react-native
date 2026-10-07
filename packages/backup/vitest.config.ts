@@ -23,6 +23,10 @@ export default defineConfig({
             ),
             // Test-only: lets specs that mock the accounts package wholesale
             // still build accounts with the real constructor.
+            '@perawallet/wallet-core-accounts/chain-adapter': path.resolve(
+                __dirname,
+                '../accounts/src/chain-adapter.ts',
+            ),
             '@perawallet/wallet-core-accounts/build-account': path.resolve(
                 __dirname,
                 '../accounts/src/credentials/buildAccount.ts',

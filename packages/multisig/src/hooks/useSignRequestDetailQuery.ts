@@ -16,6 +16,7 @@ import {
     useQueryClient,
     type RefetchOptions,
 } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { MultisigSignRequest } from '../models'
 import { getSignRequestDetail, type SignRequestDetailResponse } from '../api'
@@ -59,7 +60,10 @@ export const useSignRequestDetailQuery = ({
     pollWhileFailed = false,
 }: UseSignRequestDetailQueryParams): UseSignRequestDetailQueryResult => {
     const queryClient = useQueryClient()
-    const queryKey = getSignRequestDetailQueryKey(network, signRequestId)
+    const queryKey = getSignRequestDetailQueryKey(
+        scopeForLegacyNetwork(network),
+        signRequestId,
+    )
 
     const query = useQuery({
         queryKey,

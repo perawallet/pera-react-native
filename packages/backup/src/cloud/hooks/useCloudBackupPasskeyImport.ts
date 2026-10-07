@@ -19,9 +19,11 @@ import {
 import {
     derivePasskeyCredential,
     derivePasskeyMainKey,
+    isStoreDisabledError,
     nativePasskeyEntryExists,
     p256PrivateKeyToSpkiDer,
     passkeyMainKeyIdFromSeedKeyId,
+    usePasskeyAutofillService,
     writeNativePasskeyEntry,
 } from '@perawallet/wallet-core-passkeys'
 import { handOffSecret, zeroBytes } from '@perawallet/wallet-core-kms'
@@ -61,6 +63,8 @@ type ResolvedKey =
 export const useCloudBackupPasskeyImport = (
     resolveSeedEntropy: SeedEntropyResolver,
 ): UseCloudBackupPasskeyImportResult => {
+    const autofill = usePasskeyAutofillService()
+
     /** Only for a credential backed up without its `passkey-secrets/` item, by
      *  a build that re-derived every credential from its seed. */
     const keyFromSeed = useCallback(
@@ -215,9 +219,21 @@ export const useCloudBackupPasskeyImport = (
                 }
             }
 
+            // iOS only offers credentials published to its identity store.
+            if (summary.imported > 0) {
+                await autofill.refreshCredentialIdentities().catch(err => {
+                    if (!isStoreDisabledError(err)) {
+                        logger.warn(
+                            'useCloudBackupPasskeyImport: identity refresh failed',
+                            { error: String(err) },
+                        )
+                    }
+                })
+            }
+
             return summary
         },
-        [keyFromSeed],
+        [keyFromSeed, autofill],
     )
 
     return { importPasskeys }

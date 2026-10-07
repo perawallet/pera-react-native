@@ -17,7 +17,6 @@ import {
     discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
 } from '../account-discovery'
 import { deriveHdAccount, type GetPublicKey } from '../chain-adapter'
-import type { DerivationType } from '../models'
 
 export const useAccountDiscovery = () => {
     const { network } = useNetwork()
@@ -36,7 +35,6 @@ export const useAccountDiscovery = () => {
     const discoverAccounts = useCallback(
         async (params: {
             walletKeyId: string
-            derivationType: DerivationType
             accountGapLimit?: number
             keyIndexGapLimit?: number
         }) => {

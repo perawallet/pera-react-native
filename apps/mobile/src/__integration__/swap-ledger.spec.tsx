@@ -55,8 +55,8 @@ import {
     type HardwareWalletAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { encodeTransaction } from '@perawallet/wallet-core-blockchain'
-import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { encodeTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { SigningOverlays } from '@modules/signing/shell'
