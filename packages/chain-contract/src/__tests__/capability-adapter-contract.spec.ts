@@ -38,6 +38,9 @@ const registries = (registered: boolean): CapabilityAdapterRegistries => ({
     'send flow': fakeRegistry(registered),
     'transaction history': fakeRegistry(registered),
     assets: fakeRegistry(registered),
+    'message signer': fakeRegistry(registered),
+    multisig: fakeRegistry(registered),
+    backup: fakeRegistry(registered),
     swap: fakeRegistry(registered),
     'name service': fakeRegistry(registered),
     card: fakeRegistry(registered),
@@ -82,12 +85,15 @@ describe('capabilityAdapterContractViolations', () => {
             'chain "algorand" enables "history" but the "transaction history" registry has no adapter for it',
             'chain "algorand" enables "assets" but the "assets" registry has no adapter for it',
             'chain "algorand" enables "pricing" but the "assets" registry has no adapter for it',
+            'chain "algorand" enables "messageSigning" but the "message signer" registry has no adapter for it',
             'chain "algorand" enables "dappConnect" but the "dapp-request" registry has no adapter for it',
             'chain "algorand" enables "ledger" but the "ledger app driver" registry has no adapter for it',
+            'chain "algorand" enables "multisig" but the "multisig" registry has no adapter for it',
             'chain "algorand" enables "swap" but the "swap" registry has no adapter for it',
             'chain "algorand" enables "card" but the "card" registry has no adapter for it',
             'chain "algorand" enables "nameService" but the "name service" registry has no adapter for it',
             'chain "algorand" enables "onramp" but the "ramp" registry has no adapter for it',
+            'chain "algorand" enables "secureBackup" but the "backup" registry has no adapter for it',
         ])
     })
 

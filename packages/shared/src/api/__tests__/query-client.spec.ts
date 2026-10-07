@@ -227,7 +227,7 @@ vi.mock('@perawallet/wallet-core-config', () => {
             })),
             ...extraScopes.map(extra => extra.scope),
         ],
-        getChainConfig: (scope: Scope) =>
+        getAlgorandChainConfig: (scope: Scope) =>
             isAlgorand(scope)
                 ? chainUrlsByNetwork[scope.networkId]
                 : {

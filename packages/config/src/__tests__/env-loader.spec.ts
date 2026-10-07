@@ -276,6 +276,10 @@ describe('env-loader', () => {
             firebaseMeasurementId: 'G-BASE',
             firebaseVapidKey: 'base-vapid-key',
             reownProjectId: 'test-project-id',
+            ethereumMainnetRpcUrl: '',
+            ethereumSepoliaRpcUrl: '',
+            ethereumMainnetPeraServices: [],
+            ethereumSepoliaPeraServices: [],
             gaMeasurementApiSecret: 'base-ga-secret',
             sentryDsn: 'https://base@o0.ingest.sentry.io/0',
             mainnetExplorerUrl: 'https://explorer.example.com',
@@ -401,6 +405,17 @@ describe('env-loader', () => {
             const result = getConfigWithEnvOverrides(mockBaseConfig)
 
             expect(result.firebaseVapidKey).toBe('env-vapid-key')
+        })
+
+        test('splits an Ethereum Pera services list from the environment', () => {
+            process.env.ETHEREUM_SEPOLIA_PERA_SERVICES = 'assets,blockFollowing'
+
+            const result = getConfigWithEnvOverrides(mockBaseConfig)
+
+            expect(result.ethereumSepoliaPeraServices).toEqual([
+                'assets',
+                'blockFollowing',
+            ])
         })
 
         test('overrides boolean flags correctly', () => {

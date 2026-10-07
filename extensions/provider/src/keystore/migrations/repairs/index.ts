@@ -16,6 +16,7 @@ import { migration as r0001 } from './0001-normalize-canary13-records'
 import { migration as r0002 } from './0002-rematerialize-passkey-credentials'
 import { migration as r0003 } from './0003-mint-passkey-main-key'
 import { migration as r0004 } from './0004-stamp-quantum-derivation'
+import { migration as r0005 } from './0005-url-safe-passkey-user-id'
 
 /**
  * Permanent ledger key. Renaming it makes the engine believe this module has
@@ -29,4 +30,5 @@ export const repairsMigrations: readonly Migration<PeraMigrationContext>[] = [
     r0002,
     r0003,
     r0004,
+    r0005,
 ]

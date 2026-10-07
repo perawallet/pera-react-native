@@ -11,5 +11,7 @@
  */
 
 import { install } from 'react-native-quick-crypto'
+import { installAbortSignalThrowIfAborted } from './src/polyfills/abortSignal'
 
 install()
+installAbortSignalThrowIfAborted()

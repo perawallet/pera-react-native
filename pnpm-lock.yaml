@@ -2528,6 +2528,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
       viem:
         specifier: 'catalog:'
         version: 2.57.0(typescript@7.0.2)(zod@4.4.3)

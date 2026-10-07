@@ -147,7 +147,7 @@ pipelines:
       # matches this repo's other whole-suite CI jobs (ci-localnet-conformance,
       # security-codeql in .github/workflows) and, unlike those, a hang here
       # also holds the serial queue and the signing host — the android jobs'
-      # 45-minute budget would let a hung test job block a build for as long
+      # 60-minute budget would let a hung test job block a build for as long
       # as the build itself.
       test: { script: ci/jobs/test.sh, env: { VALIDATE_PROFILE: test }, timeout_minutes: 30 }
       # allow_failure: release notes are not worth skipping a release build for.
@@ -167,7 +167,7 @@ pipelines:
           # CI_UPLOADS_ENABLED is turned on for this pipeline.
           BUILD_NUMBER_OFFSET: '1000'
         secrets: *android_secrets
-        timeout_minutes: 45
+        timeout_minutes: 60
       # No changelog: TestFlight takes no release notes from this lane.
       ios-production:
         script: ci/jobs/ios.sh
@@ -224,7 +224,7 @@ pipelines:
           # CI_UPLOADS_ENABLED is turned on for this pipeline.
           BUILD_NUMBER_OFFSET: '1000'
         secrets: *android_secrets
-        timeout_minutes: 45
+        timeout_minutes: 60
       ios-staging:
         script: ci/jobs/ios.sh
         needs: [test]

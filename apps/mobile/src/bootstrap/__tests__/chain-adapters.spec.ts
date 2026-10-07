@@ -20,11 +20,49 @@ import {
     type ChainRegistry,
     type ChainSetupConfig,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    algorandCapabilityDefaults,
-    algorandDescriptor,
-} from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { ethereumModule } from '@perawallet/wallet-core-chain-ethereum'
+
+const PRODUCTION_ALGORAND_CAPABILITIES = {
+    send: true,
+    receive: true,
+    history: true,
+    assets: true,
+    pricing: true,
+    messageSigning: true,
+    dappConnect: true,
+    customNetworks: true,
+    watchAccounts: true,
+    ledger: true,
+    multisig: true,
+    rekey: true,
+    quantumAccounts: true,
+    staking: true,
+    swap: true,
+    card: true,
+    assetInbox: true,
+    nameService: true,
+    onramp: true,
+    giftCards: true,
+    discover: true,
+    feeDelegation: true,
+    arc0027: true,
+    liquidAuth: true,
+    notifications: true,
+    cloudBackup: true,
+    mnemonicBackup: true,
+    secureBackup: true,
+    nft: true,
+    manageAssets: true,
+    privateKeys: false,
+    contractDecoding: false,
+    priceHistory: true,
+    balanceHistory: true,
+    assetSearch: true,
+    assetFavorites: true,
+    priceAlerts: true,
+    csvExport: true,
+}
 
 const mocks = vi.hoisted(() => ({
     // The network store resolves its shim through the registry as it loads,
@@ -163,11 +201,11 @@ describe('registerChainAdapters', () => {
         expect(mocks.provider.chains.list()).toEqual([algorandDescriptor])
     })
 
-    it('resolves the module defaults when nothing overrides them', () => {
+    it("resolves Algorand's supported feature set for a production build with no overrides", () => {
         registerChainAdapters()
 
         expect(mocks.provider.chains.capabilities('algorand')).toEqual(
-            algorandCapabilityDefaults,
+            PRODUCTION_ALGORAND_CAPABILITIES,
         )
     })
 

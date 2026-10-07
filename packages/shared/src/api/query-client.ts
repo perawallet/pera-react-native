@@ -27,7 +27,7 @@ import {
 import {
     config,
     configuredScopes,
-    getChainConfig,
+    getAlgorandChainConfig,
     getPeraServicesConfig,
     hasPeraService,
     type PeraService,
@@ -456,7 +456,7 @@ const createChainClients = (
     scope: ChainScope,
 ): Pick<BackendInstances, 'algod' | 'indexer'> => {
     const { algodUrl, indexerUrl, algodToken, indexerToken } =
-        getChainConfig(scope)
+        getAlgorandChainConfig(scope)
 
     return {
         algod: createTokenHeaderClient(

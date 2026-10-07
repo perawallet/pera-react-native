@@ -27,6 +27,30 @@ import {
 } from './constants'
 
 import { generatedEnv } from './generated-env'
+import type { PeraService } from './network-config'
+
+const csv = (value: string): string[] =>
+    value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean)
+
+/** The Pera services an Ethereum scope can list; the rest are Algorand-only. */
+export const ETHEREUM_PERA_SERVICES = [
+    'prices',
+    'assets',
+    'history',
+    'blockFollowing',
+] as const satisfies readonly PeraService[]
+
+// The build bakes the list as one flat string; a missing or empty list means
+// the backend serves nothing for that scope.
+const ethereumPeraServicesSchema = z.preprocess(
+    value => (typeof value === 'string' ? csv(value) : value),
+    z.array(z.enum(ETHEREUM_PERA_SERVICES)),
+)
+
+const optionalUrlSchema = z.url().or(z.literal(''))
 
 const chainSetupSchema = z.object({
     enabled: z.array(z.enum(CHAIN_IDS)).min(1),
@@ -116,6 +140,14 @@ export const configSchema = z
         // project id. Empty in open-source builds, where v2 is unavailable;
         // a production build without one fails in tools/dev/generate-config.sh.
         reownProjectId: z.string(),
+
+        // Public JSON-RPC endpoints, no third-party API key. Empty in builds
+        // that don't ship Ethereum; generate-config.sh refuses a build whose
+        // CHAINS lists ethereum without both.
+        ethereumMainnetRpcUrl: optionalUrlSchema,
+        ethereumSepoliaRpcUrl: optionalUrlSchema,
+        ethereumMainnetPeraServices: ethereumPeraServicesSchema,
+        ethereumSepoliaPeraServices: ethereumPeraServicesSchema,
 
         notificationRefreshTime: z.number().int(),
         remoteConfigRefreshTime: z.number().int(),
@@ -272,8 +304,18 @@ export const configSchema = z
 
 export type Config = z.infer<typeof configSchema>
 
+type PeraServicesListField =
+    | 'ethereumMainnetPeraServices'
+    | 'ethereumSepoliaPeraServices'
+
+// generate-config.sh bakes the list fields as flat strings the schema splits.
 type ConfigOverrides = Partial<
-    Omit<Config, 'discoverBaseUrl' | 'integrityCheckOrigin'>
+    Omit<
+        Config,
+        'discoverBaseUrl' | 'integrityCheckOrigin' | PeraServicesListField
+    > & {
+        [Field in PeraServicesListField]: Config[Field] | string
+    }
 >
 
 const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {
@@ -344,6 +386,10 @@ const productionConfig: Omit<
     firebaseVapidKey: '',
     sentryDsn: '',
     reownProjectId: '',
+    ethereumMainnetRpcUrl: '',
+    ethereumSepoliaRpcUrl: '',
+    ethereumMainnetPeraServices: [],
+    ethereumSepoliaPeraServices: [],
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
@@ -510,6 +556,10 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     gaMeasurementApiSecret: 'GA_MEASUREMENT_API_SECRET',
     sentryDsn: 'SENTRY_DSN',
     reownProjectId: 'REOWN_PROJECT_ID',
+    ethereumMainnetRpcUrl: 'ETHEREUM_MAINNET_RPC_URL',
+    ethereumSepoliaRpcUrl: 'ETHEREUM_SEPOLIA_RPC_URL',
+    ethereumMainnetPeraServices: 'ETHEREUM_MAINNET_PERA_SERVICES',
+    ethereumSepoliaPeraServices: 'ETHEREUM_SEPOLIA_PERA_SERVICES',
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
     testnetExplorerUrl: 'TESTNET_EXPLORER_URL',
@@ -588,12 +638,6 @@ type ChainEnv = { chainIds?: string } & Partial<
 
 const chainCapabilitiesEnvKey = (chainId: ChainId): ChainCapabilitiesEnvKey =>
     `chain${chainId.charAt(0).toUpperCase()}${chainId.slice(1)}Capabilities` as ChainCapabilitiesEnvKey
-
-const csv = (value: string): string[] =>
-    value
-        .split(',')
-        .map(item => item.trim())
-        .filter(Boolean)
 
 // Left unvalidated here: configSchema.parse rejects an unknown chain id or
 // capability, so a typo fails at import rather than shipping.

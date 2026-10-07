@@ -172,6 +172,38 @@ describe('writeNativePasskeyEntry metadata mapping', () => {
         expect(metadata.userId).toBe(OPAQUE_USER_ID)
         expect(metadata.userName).toBe(HUMAN_USER_NAME)
     })
+
+    it('Android: stores a standard-base64 user.id as unpadded base64url, the only alphabet its assertion decodes', async () => {
+        platformMock.OS = 'android'
+        await writeNativePasskeyEntry(
+            {
+                ...entryParams('cred-1'),
+                userId: 'a+b/cw==',
+                userName: undefined,
+            },
+            subtle,
+        )
+
+        const [, , record] = writeSplitMock.mock.calls.at(-1) as [
+            Uint8Array,
+            string,
+            { metadata: Record<string, unknown> },
+        ]
+        expect(record.metadata.userId).toBe('a-b_cw')
+        expect(record.metadata.userHandle).toBe('a-b_cw')
+    })
+
+    it('iOS: keeps a standard-base64 user.id as written', async () => {
+        await writeNativePasskeyEntry(
+            { ...entryParams('cred-1'), userId: 'a+b/cw==' },
+            subtle,
+        )
+
+        const record = await lastWrittenRecord()
+        expect((record.metadata as Record<string, unknown>).userId).toBe(
+            'a+b/cw==',
+        )
+    })
 })
 
 describe('createNativePasskeyWriter master-key reuse', () => {

@@ -12,11 +12,13 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import {
+    addressCodecs,
     createChainRegistry,
     registerChainSetup,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumModule } from '..'
+import { ethereumAddressCodec } from '../addresses'
 
 const context: ChainContext = {
     getScope: vi.fn(),
@@ -48,7 +50,7 @@ describe('ethereumModule', () => {
         expect(enabled.sort()).toEqual([...ENABLED].sort())
     })
 
-    it('registers its descriptor and resolves its defaults through the setup', () => {
+    it('registers its descriptor, address codec and defaults through the setup', () => {
         const chains = createChainRegistry()
 
         registerChainSetup(
@@ -70,6 +72,7 @@ describe('ethereumModule', () => {
         expect(chains.capabilities('ethereum')).toEqual(
             ethereumModule.capabilityDefaults,
         )
+        expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
         expect(chains.byCaip2('eip155:11155111')).toMatchObject({
             chainId: 'ethereum',
             network: { id: 'sepolia' },

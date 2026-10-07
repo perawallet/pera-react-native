@@ -21,6 +21,7 @@ import {
 } from './nativeProviderRecord'
 import { notifyPasskeyChanged } from './passkeyChanges'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { toUrlSafeBase64 } from '@perawallet/wallet-core-shared'
 import {
     getProvider,
     keystoreSubtle,
@@ -91,41 +92,43 @@ export type WriteNativePasskeyEntryParams = {
     createdAtMs?: number
 }
 
-const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
-    id: params.credentialId,
-    type: 'hd-derived-p256',
-    algorithm: 'P256',
-    extractable: false,
-    keyUsages: ['sign'],
-    name: `Passkey: ${params.origin}`,
-    privateKey: params.privateKey,
-    publicKey: params.publicKeySpkiDer,
-    metadata: {
-        origin: params.origin,
-        ...(params.identity != null ? { identity: params.identity } : {}),
-        ...(params.parentKeyId != null
-            ? { parentKeyId: params.parentKeyId }
-            : {}),
-        ...(params.counter != null ? { counter: params.counter } : {}),
-        // userHandle is platform-overloaded: Android's picker renders it as the
-        // label (assertion reads userId) so it must be user.name; iOS uses it as
-        // the assertion id (display reads userName).
-        userHandle:
-            getProvider().deviceInfo.getDevicePlatform() === 'android'
-                ? (params.userName ?? params.userId)
-                : params.userId,
-        userId: params.userId,
-        ...(params.userName != null ? { userName: params.userName } : {}),
-        ...(params.displayName != null
-            ? { displayName: params.displayName }
-            : {}),
-        count: params.count ?? 0,
-        ...(params.createdAtMs ? { createdAt: params.createdAtMs } : {}),
-        ...(params.lastUsedAtMs != null
-            ? { lastUsedAt: params.lastUsedAtMs }
-            : {}),
-    },
-})
+const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => {
+    const isAndroid = getProvider().deviceInfo.getDevicePlatform() === 'android'
+    // Android's provider decodes userId as URL-safe; iOS writes the standard alphabet.
+    const userId = isAndroid ? toUrlSafeBase64(params.userId) : params.userId
+    return {
+        id: params.credentialId,
+        type: 'hd-derived-p256',
+        algorithm: 'P256',
+        extractable: false,
+        keyUsages: ['sign'],
+        name: `Passkey: ${params.origin}`,
+        privateKey: params.privateKey,
+        publicKey: params.publicKeySpkiDer,
+        metadata: {
+            origin: params.origin,
+            ...(params.identity != null ? { identity: params.identity } : {}),
+            ...(params.parentKeyId != null
+                ? { parentKeyId: params.parentKeyId }
+                : {}),
+            ...(params.counter != null ? { counter: params.counter } : {}),
+            // userHandle is platform-overloaded: Android's picker renders it as the
+            // label (assertion reads userId) so it must be user.name; iOS uses it as
+            // the assertion id (display reads userName).
+            userHandle: isAndroid ? (params.userName ?? userId) : userId,
+            userId,
+            ...(params.userName != null ? { userName: params.userName } : {}),
+            ...(params.displayName != null
+                ? { displayName: params.displayName }
+                : {}),
+            count: params.count ?? 0,
+            ...(params.createdAtMs ? { createdAt: params.createdAtMs } : {}),
+            ...(params.lastUsedAtMs != null
+                ? { lastUsedAt: params.lastUsedAtMs }
+                : {}),
+        },
+    }
+}
 
 export type NativePasskeyWriter = ((
     params: WriteNativePasskeyEntryParams,

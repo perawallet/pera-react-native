@@ -59,7 +59,7 @@ export async function upsertTransactions({
     const now = Date.now()
 
     for (const item of items) {
-        const row = toDb(item)
+        const row = toDb(item, scope)
 
         await db
             .insert(TransactionsSchema)
@@ -98,6 +98,11 @@ export async function upsertTransactions({
                     swapGroupDetailJson: row.swapGroupDetailJson,
                     interpretedMeaningJson: row.interpretedMeaningJson,
                     balanceImpactsJson: row.balanceImpactsJson,
+                    // Same merge rule as closeAmount. Reading the old column
+                    // also carries the sweep over for rows cached before
+                    // chain_data existed.
+                    chainData: sql`json_set(${row.chainData}, '$.algorand.closeAmount', COALESCE(${row.closeAmount?.toString() ?? null}, ${TransactionsSchema.closeAmount}))`,
+                    assetRef: row.assetRef,
                     updatedAt: now,
                 },
             })
@@ -399,7 +404,12 @@ export async function persistResolvedSwapAssetFacts({
 
         await db
             .update(TransactionsSchema)
-            .set({ swapGroupDetailJson: JSON.stringify(resolved) })
+            .set({
+                swapGroupDetailJson: JSON.stringify(resolved),
+                // json_set on a NULL document stays NULL, so rows cached
+                // before chain_data existed are left alone.
+                chainData: sql`json_set(${TransactionsSchema.chainData}, '$.algorand.swapGroupDetail', json(${JSON.stringify(resolved)}))`,
+            })
             .where(
                 and(
                     eq(TransactionsSchema.id, id),
@@ -426,7 +436,10 @@ export async function updateTransactionCloseAmount({
     const network = toScopeKey(scope)
     await db
         .update(TransactionsSchema)
-        .set({ closeAmount })
+        .set({
+            closeAmount,
+            chainData: sql`json_set(${TransactionsSchema.chainData}, '$.algorand.closeAmount', ${closeAmount.toString()})`,
+        })
         .where(
             and(
                 eq(TransactionsSchema.id, id),
