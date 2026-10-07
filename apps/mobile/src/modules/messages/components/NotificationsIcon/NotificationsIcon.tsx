@@ -18,9 +18,16 @@ import { useNotificationsIcon } from './useNotificationsIcon'
 export type NotificationsIconProps = {} & SvgProps
 
 export const NotificationsIcon = (props: NotificationsIconProps) => {
-    const { showCountBadge, showDotBadge, countLabel, goToNotifications } =
-        useNotificationsIcon()
+    const {
+        canOpenMessages,
+        showCountBadge,
+        showDotBadge,
+        countLabel,
+        goToNotifications,
+    } = useNotificationsIcon()
     const styles = useStyles()
+
+    if (!canOpenMessages) return null
 
     return (
         <PWTouchableOpacity

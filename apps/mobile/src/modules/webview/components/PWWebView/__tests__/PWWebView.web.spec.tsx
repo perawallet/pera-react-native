@@ -15,6 +15,8 @@ import { act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from '@test-utils/render'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import type WebView from 'react-native-webview'
 
 const {
@@ -106,6 +108,7 @@ const renderDiscover = () =>
 beforeEach(() => {
     vi.clearAllMocks()
     hostParams.current = undefined
+    useRemoteConfigStore.getState().resetState()
 })
 
 describe('PWWebView.web', () => {
@@ -225,6 +228,20 @@ describe('PWWebView.web', () => {
         )
         hostParams.current!.onMessage({ anything: true })
         expect(onCustomMessage).toHaveBeenCalledWith({ anything: true })
+        expect(handleMessage).not.toHaveBeenCalled()
+    })
+
+    it('drops bridge messages when the dappConnect capability is off, whatever the prop says', () => {
+        setCapabilityOverrides({ dappConnect: false })
+        renderDiscover()
+
+        hostParams.current!.onMessage({
+            id: '5',
+            jsonrpc: '2.0',
+            method: 'getSettings',
+            token: mountedToken(),
+        })
+
         expect(handleMessage).not.toHaveBeenCalled()
     })
 

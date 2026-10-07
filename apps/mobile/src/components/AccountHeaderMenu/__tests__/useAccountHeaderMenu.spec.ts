@@ -15,6 +15,8 @@ import { act, renderHook } from '@testing-library/react'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const { mockCapabilities, mockLock, restart } = vi.hoisted(() => ({
     mockCapabilities: { developerGallery: true },
@@ -59,6 +61,18 @@ describe('useAccountHeaderMenu', () => {
         mockLock.fn = null
         restart.mockClear()
         useNetworkStore.getState().resetState()
+        useRemoteConfigStore.getState().resetState()
+    })
+
+    it('offers search at the Algorand defaults and drops it when assetSearch is off', () => {
+        const { result } = renderHook(() => useAccountHeaderMenu())
+        expect(result.current.items.map(i => i.label)).toContain('search.title')
+
+        act(() => setCapabilityOverrides({ assetSearch: false }))
+
+        expect(result.current.items.map(i => i.label)).not.toContain(
+            'search.title',
+        )
     })
 
     it('leads with the chart toggle by default', () => {

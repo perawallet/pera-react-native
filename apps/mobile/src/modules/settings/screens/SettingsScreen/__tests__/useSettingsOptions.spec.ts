@@ -16,6 +16,7 @@ import { useSettingsOptions } from '../useSettingsOptions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
+import { capabilityState } from '@test-utils/capability-mock'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(),
@@ -80,11 +81,16 @@ vi.mock('@routes/capabilities', () => ({
     routeCapabilities: mockCapabilities,
 }))
 
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
 describe('useSettingsOptions', () => {
     const mockT = vi.fn((key: string) => key)
 
     beforeEach(() => {
         vi.clearAllMocks()
+        capabilityState.reset()
         ;(useLanguage as Mock).mockReturnValue({
             t: mockT,
             currentLanguage: 'de',
@@ -299,6 +305,26 @@ describe('useSettingsOptions', () => {
                 title: 'settings.main.security_title',
             })
         })
+
+        it.each([
+            ['rekey', 'scan_rekeyed_title'],
+            ['notifications', 'notifications_title'],
+            ['dappConnect', 'wallet_connect_title'],
+            ['liquidAuth', 'passkeys_title'],
+        ] as const)(
+            'omits the item behind the %s chain capability when it is off',
+            (capability, titleKey) => {
+                capabilityState.turnOff(capability)
+
+                const { result } = renderHook(() => useSettingsOptions())
+
+                expect(
+                    result.current.settingsOptions[0].items.map(
+                        item => item.title,
+                    ),
+                ).not.toContain(`settings.main.${titleKey}`)
+            },
+        )
 
         it('omits the scan-rekeyed action when rekeyFlows is off (web)', () => {
             Object.assign(mockCapabilities, { rekeyFlows: false })

@@ -12,6 +12,8 @@
 
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
+import { useCapability } from '@hooks/useCapability'
+import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
 import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
 import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { config } from '@perawallet/wallet-core-config'
@@ -42,6 +44,23 @@ export const useSettingsOptions = () => {
     const isCloudBackupConfigured = useCloudBackupStore(state =>
         state.isConfigured(),
     )
+    const canOpenNotifications = useCapability({
+        platform: 'pushNotificationSettings',
+        anyChain: 'notifications',
+    })
+    const canOpenConnections = useCapability({
+        platform: 'connectionsSettings',
+        anyChain: 'dappConnect',
+    })
+    const canOpenWalletConnect = useCapability({
+        platform: 'walletConnectSettings',
+        anyChain: 'dappConnect',
+    })
+    const canOpenPasskeys = useCapability({
+        platform: 'passkeysAutofillSettings',
+        anyChain: 'liquidAuth',
+    })
+    const canRekey = useCapability(REKEY_REQUIREMENT)
 
     const settingsOptions = useMemo<SettingsOptionSection[]>(() => {
         const sections: SettingsOptionSection[] = [
@@ -69,7 +88,7 @@ export const useSettingsOptions = () => {
                         icon: 'shield-check',
                         title: t('settings.main.security_title'),
                     },
-                    ...(routeCapabilities.pushNotificationSettings
+                    ...(canOpenNotifications
                         ? [
                               {
                                   route: 'NotificationsSettings',
@@ -84,7 +103,7 @@ export const useSettingsOptions = () => {
                     // regardless of their own capability flags. The
                     // underlying routes/screens are untouched for direct
                     // navigation elsewhere (e.g. a WC pairing flow).
-                    ...(routeCapabilities.connectionsSettings
+                    ...(canOpenConnections
                         ? [
                               {
                                   route: 'ConnectionsSettings',
@@ -92,7 +111,7 @@ export const useSettingsOptions = () => {
                                   title: t('settings.main.connections_title'),
                               } satisfies SettingsOptionItem,
                           ]
-                        : routeCapabilities.walletConnectSettings
+                        : canOpenWalletConnect
                           ? [
                                 {
                                     route: 'WalletConnectSettings',
@@ -103,7 +122,7 @@ export const useSettingsOptions = () => {
                                 } satisfies SettingsOptionItem,
                             ]
                           : []),
-                    ...(routeCapabilities.passkeysAutofillSettings
+                    ...(canOpenPasskeys
                         ? [
                               {
                                   route: 'PasskeysSettings',
@@ -112,7 +131,7 @@ export const useSettingsOptions = () => {
                               } satisfies SettingsOptionItem,
                           ]
                         : []),
-                    ...(routeCapabilities.rekeyFlows
+                    ...(canRekey
                         ? [
                               {
                                   // Sweeps every signable key for on-chain
@@ -203,6 +222,11 @@ export const useSettingsOptions = () => {
         isLanguageSelectionEnabled,
         isCloudBackupEnabled,
         isCloudBackupConfigured,
+        canOpenNotifications,
+        canOpenConnections,
+        canOpenWalletConnect,
+        canOpenPasskeys,
+        canRekey,
     ])
 
     return {
