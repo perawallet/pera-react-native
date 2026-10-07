@@ -72,7 +72,10 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     withSecret: withSecretMock,
 }))
 vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({ keyValueStorage: { getItem: () => null } }),
+    getProvider: () => ({
+        keyValueStorage: { getItem: () => null },
+        passkeyAutofill: { refreshCredentialIdentities: async () => {} },
+    }),
     getKeystoreStore: () => ({ state: { keys: keystoreKeysMock() } }),
     // The import derives with `derivePasskeyMainKey`'s default `subtle`.
     keystoreSubtle: webcrypto.subtle,
