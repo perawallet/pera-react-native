@@ -12,9 +12,11 @@
 
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import {
-    useNetwork,
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
     type AccountInformation,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { fetchAccountInformation } from '../chain-adapter'
 import { getOnChainAccountInformationQueryKey } from './querykeys'
 
@@ -39,10 +41,11 @@ export type UseOnChainAccountInformationQueryResult = {
 export const useOnChainAccountInformationQuery = (
     address: string,
 ): UseOnChainAccountInformationQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const query = useQuery({
-        queryKey: getOnChainAccountInformationQueryKey(address, network),
+        queryKey: getOnChainAccountInformationQueryKey(address, scope),
         queryFn: () => fetchAccountInformation(address, network),
         enabled: !!address,
         staleTime: ON_CHAIN_ACCOUNT_INFO_STALE_TIME_MS,

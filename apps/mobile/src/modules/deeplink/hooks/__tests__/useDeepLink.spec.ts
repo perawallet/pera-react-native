@@ -70,6 +70,10 @@ vi.mock('../../parser', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { microAlgosToAlgos } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+
     // Real enum rather than a hand-copied literal — see the note in
     // vitest.setup.ts. base.ts has no runtime imports.
     const { ErrorCategory } = await vi.importActual<
@@ -77,9 +81,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     >('../../../../../../../packages/shared/src/errors/base')
 
     return {
-        ALGO_ASSET_ID: '0',
-        isAlgoAssetId: (assetId: string | number | bigint) =>
-            String(assetId) === '0',
         logger: {
             debug: vi.fn(),
             warn: vi.fn(),
@@ -90,6 +91,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             Uint8Array.from(Buffer.from(b64, 'base64')),
         ),
         ErrorCategory,
+        microAlgosToAlgos,
     }
 })
 
@@ -110,7 +112,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     UserRejectedSigningError: class UserRejectedSigningError extends Error {},
     // Non-quantum sender in every fixture here — the calculator's real fast
     // path is a passthrough no-op. Real fee behavior is covered by
-    // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
+    // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
     // and apps/mobile/src/modules/deeplink/handlers/__tests__/useKeyregDeeplink.spec.ts.
     useMinimumFeeCalculator: () => ({
         assignFeeToGroup: async ({
@@ -149,20 +151,11 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 // Re-mocks only what useDeepLink consumes. Keeps `microAlgosToAlgos` /
 // `isValidAlgorandAddress` / `useNetwork` consistent with the global
 // vitest.setup.ts contract.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (address: string) => {
         if (!address) return false
         return /^[0-9a-zA-Z]{58}$/.test(address)
     },
-    microAlgosToAlgos: (microAlgos: bigint | number | string) => {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { Decimal } = require('decimal.js')
-        return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
-    },
-    useNetwork: () => ({
-        network: 'mainnet',
-        networkConfig: { genesisId: 'mainnet-v1.0' },
-    }),
     getExpectedGenesisHash: () => 'mainnet-hash',
     // Identity encode/decode pair for the keyreg shape-normalization
     // step. Real impl encodes to msgpack bytes then decodes back to a
@@ -170,6 +163,13 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useTransactionEncoder: () => ({
         encodeTransaction: (tx: unknown) => tx,
         decodeTransaction: (tx: unknown) => tx,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => ({
+        network: 'mainnet',
+        networkConfig: { genesisId: 'mainnet-v1.0' },
     }),
 }))
 
@@ -321,7 +321,6 @@ const { mockShowSignRequest, mockIsPeraCardEnabled, mockIsGiftCardsEnabled } =
 // all-native capabilities.ts).
 const { mockRouteCapabilities } = vi.hoisted(() => ({
     mockRouteCapabilities: {
-        peraCard: true,
         giftCards: true,
         inAppWebView: true,
         // Native map has Discover registered; these tests exercise the
@@ -419,7 +418,6 @@ describe('useDeepLink', () => {
         // layout-mounted instances); reset it so one test's initial-URL
         // handling doesn't suppress the next test's.
         resetDeeplinkListenerStateForTesting()
-        mockRouteCapabilities.peraCard = true
         mockRouteCapabilities.giftCards = true
         mockIsGiftCardsEnabled.mockReturnValue(true)
         mockRouteCapabilities.inAppWebView = true
@@ -1615,29 +1613,6 @@ describe('useDeepLink', () => {
         // staying locked forever on its handlingRef guard.
         expect(onError).toHaveBeenCalled()
         expect(onSuccess).not.toHaveBeenCalled()
-    })
-
-    it('ignores a CARDS deeplink when the peraCard capability is off', async () => {
-        mockIsPeraCardEnabled.mockReturnValue(true)
-        mockRouteCapabilities.peraCard = false
-        ;(parseDeeplink as Mock).mockReturnValue({
-            type: DeeplinkType.CARDS,
-            path: '/cards',
-        })
-        const onError = vi.fn()
-        const { result } = renderHook(() => useDeepLink())
-
-        await act(async () => {
-            await result.current.handleDeepLink(
-                'perawallet://app/cards',
-                false,
-                'deeplink',
-                onError,
-            )
-        })
-
-        expect(mockNavigate).not.toHaveBeenCalled()
-        expect(onError).toHaveBeenCalled()
     })
 
     it('opens the pending-signatures sheet for a SIGN_REQUEST deeplink', async () => {

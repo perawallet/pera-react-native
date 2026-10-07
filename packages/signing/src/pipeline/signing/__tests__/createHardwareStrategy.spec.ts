@@ -13,19 +13,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual('@perawallet/wallet-core-blockchain')
-    return {
-        ...actual,
-        Address: {
-            fromString: (addr: string) => ({
-                address: addr,
-                publicKey: new Uint8Array(32).fill(0xaa),
-            }),
-        },
-    }
-})
-
 // Shrink the Ledger timeouts for the timeout tests so they run with real
 // timers in under 100ms. Keeps the assertions simple (no fake-timer +
 // microtask-ordering quirks) while still exercising the real withTimeout
@@ -876,6 +863,9 @@ describe('createHardwareStrategy', () => {
                     .mockResolvedValue({ major: 2, minor: 0, patch: 0 }),
                 signData: vi.fn().mockResolvedValue(authDataSignature),
             })
+            const KEY = new Uint8Array(32).fill(0xaa)
+            const signerPublicKey = vi.fn(() => KEY)
+            registerFakeMessageSignerAdapter({ signerPublicKey })
             const provider = makeMockProvider(transport)
             const registry = makeRegistry(provider)
             const strategy = createHardwareStrategy({
@@ -895,9 +885,10 @@ describe('createHardwareStrategy', () => {
                     domain: AUTH_DOMAIN,
                     scope: 1,
                     encoding: 'base64',
-                    signerPublicKey: expect.any(Uint8Array),
+                    signerPublicKey: KEY,
                 }),
             )
+            expect(signerPublicKey).toHaveBeenCalledWith(SIGNER_ADDRESS)
             expect(result).toEqual({
                 signedData: { type: 'auth-data', signature: authDataSignature },
                 signers: [{ address: SIGNER_ADDRESS }],

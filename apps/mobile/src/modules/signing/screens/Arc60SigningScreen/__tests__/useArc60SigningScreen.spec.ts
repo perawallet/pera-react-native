@@ -53,7 +53,6 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
         ...actual,
         useSigningPipeline: () => mockPipeline,
         useLastSigningEvent: () => null,
-        isAuthDataOriginMismatch: () => false,
     }
 })
 
@@ -229,6 +228,65 @@ describe('useArc60SigningScreen', () => {
 
         expect(mockPipeline.next).not.toHaveBeenCalled()
         expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
+    })
+
+    it('blocks confirmation when the sign-in domain differs from the browser-verified origin', async () => {
+        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            type: 'auth-data',
+            sourceType: 'injected',
+            verifiedOrigin: 'https://evil.example',
+            authData: { signer: 'ADDR', domain: 'app.victim.xyz' },
+        }
+        mockPipeline.resolved = {
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        expect(result.current.hasOriginMismatch).toBe(true)
+        expect(result.current.canConfirm).toBe(false)
+
+        await act(async () => {
+            result.current.handleApprove()
+        })
+
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+    })
+
+    it('allows confirmation when the sign-in domain matches the browser-verified origin', () => {
+        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            type: 'auth-data',
+            sourceType: 'injected',
+            verifiedOrigin: 'https://app.victim.xyz',
+            authData: { signer: 'ADDR', domain: 'app.victim.xyz' },
+        }
+        mockPipeline.resolved = {
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        expect(result.current.hasOriginMismatch).toBe(false)
+        expect(result.current.canConfirm).toBe(true)
+    })
+
+    it('does not block a mismatched domain when no origin was verified (WalletConnect)', () => {
+        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            type: 'auth-data',
+            sourceType: 'walletconnect',
+            authData: { signer: 'ADDR', domain: 'app.victim.xyz' },
+        }
+        mockPipeline.resolved = {
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        expect(result.current.hasOriginMismatch).toBe(false)
+        expect(result.current.canConfirm).toBe(true)
     })
 
     it('does not consult the quantum dApp warning for first-party card requests', async () => {

@@ -31,7 +31,7 @@ import {
     PERAWALLET_SCHEME,
     PERAWALLET_WC_SCHEME,
 } from './constants'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     parsePeraWebQrPayload,
     PeraWebImportError,

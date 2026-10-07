@@ -76,6 +76,7 @@ export type {
     LocalSnapshot,
     SyncEngineDeps,
     SyncImportFn,
+    ImportProgressFn,
     ImportSummary,
     ContactImportFn,
     ContactImportSummary,

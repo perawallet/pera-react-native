@@ -19,7 +19,10 @@ const mockNetworkState = vi.hoisted(() => ({
     network: 'mainnet' as Network,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({
         network: mockNetworkState.network,
         isMainnet: mockNetworkState.network === 'mainnet',

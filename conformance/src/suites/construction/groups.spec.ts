@@ -13,7 +13,7 @@
 import { microAlgo } from '@algorandfoundation/algokit-utils'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { groupTransactions } from '@perawallet/wallet-core-blockchain/utils/transact'
+import { groupTransactions } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/transact'
 
 import {
     createAlgo25Account,

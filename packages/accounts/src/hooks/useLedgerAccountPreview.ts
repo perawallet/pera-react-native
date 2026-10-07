@@ -19,10 +19,10 @@ import {
     PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
 import {
+    ALGO_ASSET_NAME,
     baseUnitsToDisplayUnits,
     microAlgosToAlgos,
-} from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID, ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+} from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
     LedgerAccountPreview,
@@ -47,7 +47,10 @@ export const useLedgerAccountPreview = (
     )
 
     const { data: assets } = useAssetsQuery(assetIds)
-    const priceIds = useMemo(() => [ALGO_ASSET_ID, ...assetIds], [assetIds])
+    const priceIds = useMemo(
+        () => [nativeAsset.assetId, ...assetIds],
+        [nativeAsset.assetId, assetIds],
+    )
     const { data: prices } = useAssetPricesQuery(priceIds)
 
     const preview = useMemo<LedgerAccountPreview | undefined>(() => {
@@ -55,13 +58,13 @@ export const useLedgerAccountPreview = (
 
         const algoBalance = microAlgosToAlgos(onChain.data.amount)
         const algoUsdPrice =
-            prices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0)
+            prices?.get(nativeAsset.assetId)?.usdPrice ?? new Decimal(0)
 
         const previewAssets: LedgerAccountPreviewAsset[] = []
         let totalUsd = algoBalance.times(algoUsdPrice)
 
         previewAssets.push({
-            assetId: ALGO_ASSET_ID,
+            assetId: nativeAsset.assetId,
             name: nativeAsset.name ?? 'Algo',
             unitName: nativeAsset.unitName ?? ALGO_ASSET_NAME,
             decimals: nativeAsset.decimals,

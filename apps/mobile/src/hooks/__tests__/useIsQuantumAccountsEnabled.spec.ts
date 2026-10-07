@@ -10,20 +10,9 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
-import { config } from '@perawallet/wallet-core-config'
 import { useIsQuantumAccountsEnabled } from '../useIsQuantumAccountsEnabled'
-
-vi.mock('@perawallet/wallet-core-remote-config', () => ({
-    useRemoteConfig: vi.fn(),
-    RemoteConfigKeys: { enable_quantum_accounts: 'enable_quantum_accounts' },
-}))
-
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: { appEnvironment: 'production' },
-}))
 
 const { mockRouteCapabilities } = vi.hoisted(() => ({
     mockRouteCapabilities: { quantum: true },
@@ -34,69 +23,15 @@ vi.mock('@routes/capabilities', () => ({
 }))
 
 describe('useIsQuantumAccountsEnabled', () => {
-    const mockGetBooleanValue = vi.fn()
-
-    beforeEach(() => {
-        vi.clearAllMocks()
-        config.appEnvironment = 'production'
+    it('follows the platform quantum capability', () => {
         mockRouteCapabilities.quantum = true
-        ;(useRemoteConfig as Mock).mockReturnValue({
-            getBooleanValue: mockGetBooleanValue,
-        })
-    })
+        expect(
+            renderHook(() => useIsQuantumAccountsEnabled()).result.current,
+        ).toBe(true)
 
-    it('queries the enable_quantum_accounts flag', () => {
-        mockGetBooleanValue.mockReturnValue(true)
-
-        renderHook(() => useIsQuantumAccountsEnabled())
-
-        expect(mockGetBooleanValue).toHaveBeenCalledWith(
-            'enable_quantum_accounts',
-            expect.any(Boolean),
-        )
-    })
-
-    it('returns the remote value when set', () => {
-        mockGetBooleanValue.mockReturnValue(true)
-        const { result } = renderHook(() => useIsQuantumAccountsEnabled())
-        expect(result.current).toBe(true)
-
-        mockGetBooleanValue.mockReturnValue(false)
-        const { result: result2 } = renderHook(() =>
-            useIsQuantumAccountsEnabled(),
-        )
-        expect(result2.current).toBe(false)
-    })
-
-    it('falls back to enabled on staging when the flag is unset', () => {
-        // Mimic an unset remote value by echoing the fallback the hook passes.
-        mockGetBooleanValue.mockImplementation(
-            (_key: string, fallback?: boolean) => fallback ?? false,
-        )
-        config.appEnvironment = 'staging'
-
-        const { result } = renderHook(() => useIsQuantumAccountsEnabled())
-
-        expect(result.current).toBe(true)
-    })
-
-    it('falls back to disabled in production when the flag is unset', () => {
-        mockGetBooleanValue.mockImplementation(
-            (_key: string, fallback?: boolean) => fallback ?? false,
-        )
-        config.appEnvironment = 'production'
-
-        const { result } = renderHook(() => useIsQuantumAccountsEnabled())
-
-        expect(result.current).toBe(false)
-    })
-
-    it('stays disabled when routeCapabilities.quantum is off, even if the remote flag is on', () => {
-        mockGetBooleanValue.mockReturnValue(true)
         mockRouteCapabilities.quantum = false
-
-        const { result } = renderHook(() => useIsQuantumAccountsEnabled())
-
-        expect(result.current).toBe(false)
+        expect(
+            renderHook(() => useIsQuantumAccountsEnabled()).result.current,
+        ).toBe(false)
     })
 })

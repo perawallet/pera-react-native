@@ -19,11 +19,7 @@ import type {
     HardwareWalletRegistry,
     HardwareWalletTransport,
 } from '@perawallet/wallet-core-hardware-wallet'
-import type {
-    PeraTransaction,
-    PeraSignedTransaction,
-} from '@perawallet/wallet-core-blockchain'
-import { Address } from '@perawallet/wallet-core-blockchain'
+
 import { encodeToBase64, withTimeout } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
@@ -43,7 +39,11 @@ import {
     MIN_ARBITRARY_SIGN_APP_VERSION,
     isAppVersionAtLeast,
 } from '@perawallet/wallet-core-ledger'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraTransaction,
+    type PeraSignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { legacyPlannerAdapter } from '../../chain-adapter'
 import {
     messageSignerFor,
@@ -59,7 +59,7 @@ import {
 
 /**
  * Function to encode a transaction to raw bytes for the Ledger to sign.
- * Injected from the hook layer (useTransactionEncoder).
+ * Injected from the hook layer (the planner's `encodeUnsignedTransaction`).
  */
 export type EncodeTransactionFunction = (tx: PeraTransaction) => Uint8Array
 
@@ -234,8 +234,9 @@ const signAuthDataOnHardwareWallet = (
                     transport.signData({
                         accountIndex,
                         data: authData.data,
-                        signerPublicKey: Address.fromString(hwAccount.address)
-                            .publicKey,
+                        signerPublicKey: messageSigner.signerPublicKey(
+                            hwAccount.address,
+                        ),
                         domain: authData.domain,
                         authenticatorData: authData.authenticatorData,
                         requestId: authData.requestId,

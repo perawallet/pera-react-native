@@ -11,7 +11,6 @@
  */
 
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
@@ -21,6 +20,7 @@ import {
     formatNumber,
     LONG_ADDRESS_LENGTH,
     truncateAlgorandAddress,
+    microAlgosToAlgos,
 } from '@perawallet/wallet-core-shared'
 
 type WarningItemProps = {

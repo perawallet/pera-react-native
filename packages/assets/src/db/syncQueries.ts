@@ -20,13 +20,11 @@ import {
     ne,
     or,
     isNull,
-    sql,
     type SQL,
 } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
-import { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
@@ -66,10 +64,7 @@ const idPredicate = (
     assetIds: string[],
 ): Optional<SQL> =>
     assetIds.length <= ID_PREDICATE_IN_SQL_MAX
-        ? inArray(
-              column,
-              assetIds.map(id => new Decimal(id)),
-          )
+        ? inArray(column, assetIds)
         : undefined
 
 /**
@@ -96,9 +91,7 @@ async function getStaleOrMissingIdsFromTable({
     const freshThreshold = Date.now() - ttlMs
 
     const freshRows = await db
-        // Raw TEXT read: routing through the column's Decimal decoder would
-        // cost one Decimal + one toString per row for ids we only compare.
-        .select({ assetId: sql<string>`${table.assetId}` })
+        .select({ assetId: table.assetId })
         .from(table)
         .where(
             and(
@@ -145,7 +138,7 @@ async function getUnclassifiedNftIds({
 
     const rows = await db
         .select({
-            assetId: sql<string>`${AssetsPeraSchema.assetId}`,
+            assetId: AssetsPeraSchema.assetId,
             totalSupply: AssetsNodeSchema.totalSupply,
             decimals: AssetsNodeSchema.decimals,
         })
@@ -210,7 +203,7 @@ async function getStaleArc19CollectibleIds({
     const now = Date.now()
 
     const rows = await db
-        .select({ assetId: sql<string>`${AssetsPeraSchema.assetId}` })
+        .select({ assetId: AssetsPeraSchema.assetId })
         .from(AssetsPeraSchema)
         .innerJoin(
             AssetsNodeSchema,
@@ -254,11 +247,11 @@ export async function getCollectibleIdsMissingUrl({
     /** Bounds one backfill pass; the remainder converges on later passes. */
     limit?: number
 }): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return []
 
     const query = db
-        .select({ assetId: sql<string>`${AssetsPeraSchema.assetId}` })
+        .select({ assetId: AssetsPeraSchema.assetId })
         .from(AssetsPeraSchema)
         .innerJoin(
             AssetsNodeSchema,
@@ -303,7 +296,7 @@ export async function getStaleOrMissingAssetIds({
     recheckUnclassified?: UnclassifiedRecheck
     recheckArc19?: Arc19Recheck
 }): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
         table: AssetsNodeSchema,
@@ -357,7 +350,7 @@ export async function getStaleOrMissingPriceAssetIds({
     ttlMs,
     missRetryMs,
 }: GetStaleOrMissingPriceAssetIdsParams): Promise<string[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
         table: AssetPricesSchema,
@@ -377,16 +370,11 @@ export async function getStaleOrMissingPriceAssetIds({
     // Same split as getStaleOrMissingIdsFromTable: past the cap, scanning the
     // network's recent misses beats binding one parameter per candidate id.
     if (staleOrMissing.length <= ID_PREDICATE_IN_SQL_MAX) {
-        conditions.push(
-            inArray(
-                AssetPriceMissesSchema.assetId,
-                staleOrMissing.map(id => new Decimal(id)),
-            ),
-        )
+        conditions.push(inArray(AssetPriceMissesSchema.assetId, staleOrMissing))
     }
 
     const deferredRows = await db
-        .select({ assetId: sql<string>`${AssetPriceMissesSchema.assetId}` })
+        .select({ assetId: AssetPriceMissesSchema.assetId })
         .from(AssetPriceMissesSchema)
         .where(and(...conditions))
         .all()

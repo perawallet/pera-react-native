@@ -11,7 +11,7 @@
  */
 
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { nativeAssetFor } from '../chain-adapter'
 import type { PeraAsset } from '../models'
 

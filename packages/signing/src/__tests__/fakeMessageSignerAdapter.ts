@@ -35,6 +35,7 @@ export const fakeMessageSignerAdapter = (
     isAuthDataWirePayload: vi.fn(notStubbed('isAuthDataWirePayload')),
     parseAuthDataWireRequest: vi.fn(notStubbed('parseAuthDataWireRequest')),
     buildSiwxAuthData: vi.fn(notStubbed('buildSiwxAuthData')),
+    signerPublicKey: vi.fn(() => new Uint8Array(32)),
     ...overrides,
 })
 

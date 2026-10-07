@@ -21,6 +21,7 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import type { TransactionHistoryItem } from '../../models/types'
 import { upsertTransactions, deleteTransactionsForAccount } from '../repository'
 import { TransactionsSchema } from '../schema'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const makeTx = (id: string): TransactionHistoryItem => ({
     id,
@@ -69,13 +70,13 @@ describe('deleteTransactionsForAccount', () => {
             db,
             items: [makeTx('TX_SHARED'), makeTx('TX_ONLY_A')],
             accountAddress: 'ACCT_A',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         await upsertTransactions({
             db,
             items: [makeTx('TX_SHARED'), makeTx('TX_ONLY_B')],
             accountAddress: 'ACCT_B',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
 
         await deleteTransactionsForAccount({ db, accountAddress: 'ACCT_A' })
@@ -89,13 +90,13 @@ describe('deleteTransactionsForAccount', () => {
             db,
             items: [makeTx('TX_MAIN')],
             accountAddress: 'ACCT_A',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         await upsertTransactions({
             db,
             items: [makeTx('TX_TEST')],
             accountAddress: 'ACCT_A',
-            network: 'testnet',
+            scope: scopeForLegacyNetwork('testnet'),
         })
 
         await deleteTransactionsForAccount({ db, accountAddress: 'ACCT_A' })

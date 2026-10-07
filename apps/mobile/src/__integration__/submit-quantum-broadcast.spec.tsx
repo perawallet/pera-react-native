@@ -51,13 +51,13 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import {
     buildPaymentTransaction,
@@ -69,7 +69,6 @@ import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
-    enableQuantumFlag,
 } from './__fixtures__/quantum'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
@@ -137,7 +136,6 @@ describe('submit from quantum account over algod transport', () => {
     })
 
     it('Given a real quantum sender, when a payment is signed over the algod transport, then the Falcon group is broadcast to algod through the ordinary submission path', async () => {
-        await enableQuantumFlag()
         await seedQuantumSender()
 
         const payment = buildPaymentTransaction({

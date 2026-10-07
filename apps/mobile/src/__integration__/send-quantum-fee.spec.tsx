@@ -20,7 +20,6 @@ import {
     it,
     vi,
 } from 'vitest'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import { renderHook, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
@@ -47,14 +46,14 @@ import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/routes'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodSendRawTransaction,
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -62,9 +61,9 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 
-const RECEIVER_ADDRESS = HD_TEST_ADDRESS
+const NATIVE_ASSET_ID = '0'
 
-const QUANTUM_FLAG_KEY = 'enable_quantum_accounts'
+const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
 // Mint a real algo25 key in the in-memory keystore from the pinned
 // mnemonic and register the matching account in the accounts store.
@@ -171,16 +170,9 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
         )
     })
 
-    it('Given the quantum flag is on and a quantum sender, when the confirmation screen settles, then the quantum-fee explainer renders in the fee row', async () => {
-        // Enable the flag through the real remote-config override so the
-        // whole useIsQuantumAccountsEnabled → useSignerFor chain is
-        // exercised, not a mocked hook.
-        useRemoteConfigStore
-            .getState()
-            .setConfigOverride(QUANTUM_FLAG_KEY, true)
-
+    it('Given a quantum sender, when the confirmation screen settles, then the quantum-fee explainer renders in the fee row', async () => {
         seedQuantumSender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -202,15 +194,11 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
         ).toBeTruthy()
     })
 
-    it('Given a standard algo25 sender, when the confirmation screen settles with the quantum flag on, then the quantum-fee explainer is absent', async () => {
-        // Flag on to prove the account type — not the flag alone — gates
-        // the explainer: a standard signer must never surface it.
-        useRemoteConfigStore
-            .getState()
-            .setConfigOverride(QUANTUM_FLAG_KEY, true)
-
+    it('Given a standard algo25 sender, when the confirmation screen settles, then the quantum-fee explainer is absent', async () => {
+        // The account type gates the explainer: a standard signer must never
+        // surface it.
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

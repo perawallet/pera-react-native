@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useFeeConfig } from '@perawallet/wallet-core-signing'
 import {
     fetchAccountInformation,
     insertAssetHolding,
@@ -60,7 +61,7 @@ const formatAlgoShortfall = (microAlgos: bigint): string =>
     )
 
 export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
-    const { assetMbr } = useMinimumFeeConfig()
+    const { assetOptInMinBalance } = useFeeConfig(LEGACY_CHAIN_ID)
 
     const { mutateAsync, isLoading, isError, error } =
         useAssetHoldingMutation<AssetOptInParams>({
@@ -97,7 +98,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     0n,
                 )
                 const balanceNeeded =
-                    accountInfo.minBalance + assetMbr + feeTotal
+                    accountInfo.minBalance + assetOptInMinBalance + feeTotal
                 if (accountInfo.amount < balanceNeeded) {
                     throw new InsufficientBalanceForOptInError(
                         formatAlgoShortfall(balanceNeeded - accountInfo.amount),

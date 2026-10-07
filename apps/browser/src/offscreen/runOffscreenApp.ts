@@ -32,13 +32,11 @@ import {
     createSyncStorePorts,
     getSyncService,
     initializeSyncService,
-    usePollingStore,
+    useSyncCursorStore,
 } from '@perawallet/wallet-core-background'
 import { canSignWith, useAccountsStore } from '@perawallet/wallet-core-accounts'
-import {
-    getCustomNetworkConfig,
-    useNetworkStore,
-} from '@perawallet/wallet-core-blockchain'
+import { getCustomNetworkConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 import {
     bootConnections,
@@ -56,6 +54,7 @@ import {
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
+import { createDatabaseRecovery } from './databaseRecovery'
 import { createWorkerExecutor } from './worker-executor'
 
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000
@@ -68,16 +67,18 @@ const REHYDRATE_BY_KEY: Record<
 > = {
     'kv:accounts-store': useAccountsStore,
     'kv:network-store': useNetworkStore,
-    'kv:polling-store': usePollingStore,
+    'kv:polling-store': useSyncCursorStore,
 }
 
 export type OffscreenAppDeps = {
     // Handed over by the web shell: apps/browser imports no apps/mobile code but the query client.
     registerChainAdapters: () => void
+    onDatabaseReset: () => Promise<void>
 }
 
 export const runOffscreenApp = async ({
     registerChainAdapters,
+    onDatabaseReset,
 }: OffscreenAppDeps): Promise<void> => {
     const services = getPlatformServices()
 
@@ -104,7 +105,9 @@ export const runOffscreenApp = async ({
     registerChainAdapters()
 
     // Migrations run before the host answers ready to anyone.
-    await initializeDatabase(services.database)
+    await initializeDatabase(services.database, {
+        recovery: createDatabaseRecovery(onDatabaseReset),
+    })
     await seedNativeAssets(getDatabase())
     host.setReady()
 

@@ -14,25 +14,23 @@ import { Decimal } from 'decimal.js'
 import {
     DEFAULT_ASSET_METADATA,
     PeraAssetVerificationTier,
+    isNativeAssetId,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import {
     rampTokenAssetId,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import {
-    ALGO_ASSET_ID,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { type Network, type Nullable } from '@perawallet/wallet-core-shared'
 
 // RampToken carries no tier, so the known-safe listings are mapped here rather
-// than fabricating one on the domain model. Keyed on the resolved asset id, so
-// a provider that lists ALGO under its on-chain id is still recognised.
+// than fabricating one on the domain model. The native asset is matched on the
+// resolved asset id, so a provider that lists ALGO under its on-chain id is
+// still recognised.
 const RAMP_TOKEN_VERIFICATION_TIER: Record<string, PeraAssetVerificationTier> =
     {
-        [ALGO_ASSET_ID]: PeraAssetVerificationTier.verified,
         USDC: PeraAssetVerificationTier.verified,
         USDC_ALGORAND: PeraAssetVerificationTier.verified,
     }
@@ -45,6 +43,10 @@ export const buildAccountBalanceFromRampToken = (
     network: Network,
 ): AssetWithAccountBalance => {
     const assetId = rampTokenAssetId(token, network)
+    const isNative = isNativeAssetId(
+        scopeForLegacyNetwork(network).chainId,
+        assetId,
+    )
 
     const asset: PeraAsset = {
         assetId,
@@ -55,9 +57,10 @@ export const buildAccountBalanceFromRampToken = (
         totalSupply: new Decimal(0),
         peraMetadata: {
             ...DEFAULT_ASSET_METADATA,
-            verificationTier:
-                RAMP_TOKEN_VERIFICATION_TIER[assetId] ??
-                DEFAULT_ASSET_METADATA.verificationTier,
+            verificationTier: isNative
+                ? PeraAssetVerificationTier.verified
+                : (RAMP_TOKEN_VERIFICATION_TIER[assetId] ??
+                  DEFAULT_ASSET_METADATA.verificationTier),
         },
     }
 

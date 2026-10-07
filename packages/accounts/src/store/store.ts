@@ -33,6 +33,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { buildAccount, withCustody } from '../credentials'
 import { rebuildCustody } from '../credentials/backfill'
 import { DuplicateAccountError } from '../errors'
+import { accountType, isHardwareWalletAccount, isWatchAccount } from '../utils'
 
 const STORE_NAME = 'accounts-store'
 const STORE_VERSION = 1
@@ -101,8 +102,8 @@ const resolveDuplicateAccounts = (
             continue
         }
         if (
-            ACCOUNT_TYPE_RANK[account.type] >
-            ACCOUNT_TYPE_RANK[resolved[position].type]
+            ACCOUNT_TYPE_RANK[accountType(account)] >
+            ACCOUNT_TYPE_RANK[accountType(resolved[position])]
         ) {
             resolved[position] = account
         }
@@ -337,7 +338,7 @@ export const useAccountsStore: UseBoundStore<
                 const idx = accounts.findIndex(a => a.address === address)
                 if (idx === -1) return false
                 const current = accounts[idx]
-                if (current.type !== AccountTypes.watch) return false
+                if (!isWatchAccount(current)) return false
 
                 const upgraded: WalletAccount = {
                     ...current,
@@ -357,7 +358,7 @@ export const useAccountsStore: UseBoundStore<
                 const idx = accounts.findIndex(a => a.address === address)
                 if (idx === -1) return false
                 const current = accounts[idx]
-                if (current.type !== AccountTypes.hardware) return false
+                if (!isHardwareWalletAccount(current)) return false
 
                 // Structural compare over the union of keys (all scalar) so a
                 // future HardwareWalletDetails field can't silently skip a

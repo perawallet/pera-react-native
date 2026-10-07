@@ -10,20 +10,27 @@
  limitations under the License
  */
 
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { chainModule as algorandChainModule } from '@perawallet/wallet-core-chain-algorand'
 import {
     buildChainSetup,
     ChainHttpClientUnavailableError,
     registerChainSetup,
+    type ChainCapabilityOverrides,
     type ChainContext,
+    type ChainId,
+    type ChainMode,
     type ChainSetupEntry,
 } from '@perawallet/wallet-core-chain-contract'
-import { selectChainNetworkId } from '@perawallet/wallet-core-chain-shared'
+import {
+    selectChainMode,
+    selectChainNetworkId,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ethereumChainModule } from './ethereum-chain-module'
 
 const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
     getScope: () => ({
@@ -42,13 +49,26 @@ const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
     kms: kmsCore,
 })
 
+const readCapabilityLayers = (): ChainCapabilityOverrides => {
+    const state = useNetworkStore.getState()
+    const chainMode = Object.fromEntries(
+        getProvider()
+            .chains.list()
+            .map(({ id }) => [id, selectChainMode(state, id)]),
+    ) as Partial<Record<ChainId, ChainMode>>
+    return { ...readCapabilityOverrides(), chainMode }
+}
+
 // The app picks which chains ship: generic packages only define the adapter
 // registries and never import a chain package.
 export const registerChainAdapters = (): void => {
     const { chains } = getProvider()
-    chains.setCapabilityOverrides(readCapabilityOverrides)
+    chains.setCapabilityOverrides(readCapabilityLayers)
     registerChainSetup(
-        buildChainSetup(config.chains, { algorand: algorandChainModule }),
+        buildChainSetup(config.chains, {
+            algorand: algorandChainModule,
+            ethereum: ethereumChainModule,
+        }),
         chains,
         chainContextFor,
     )

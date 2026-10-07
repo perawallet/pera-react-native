@@ -14,7 +14,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import { createActor, fromPromise, waitFor, setup } from 'xstate'
 import { AppError } from '@perawallet/wallet-core-shared'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
+import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
 import { signingMachine } from '../signingMachine'
 import { SubmissionError } from '../../pipeline/errors'
 import type { SigningMachineInput } from '../context'
@@ -627,6 +628,7 @@ describe('signingMachine', () => {
             })
 
         it('times out a hung transport and routes to failed, RETRY re-enters transporting', async () => {
+            const broadcaster = registerFakeBroadcaster()
             const actor = createActor(makeHangingTransportMachine(50), {
                 input: makeInput(),
             })
@@ -640,6 +642,12 @@ describe('signingMachine', () => {
                 timeout: 1000,
             })
             expect(failed.context.failedDuringState).toBe('transporting')
+            expect(broadcaster.submitTimeoutError).toHaveBeenCalledWith(
+                config.signingTransportTimeout,
+            )
+            expect(failed.context.error).toBe(
+                vi.mocked(broadcaster.submitTimeoutError).mock.results[0].value,
+            )
 
             // canRetryTransporting must hold → RETRY returns to transporting.
             actor.send({ type: 'RETRY' })
@@ -689,7 +697,9 @@ describe('signingMachine', () => {
                     new SubmissionError(
                         ['TXID'],
                         'unknown-outcome',
-                        new AlgodError('network_unavailable', {}),
+                        Object.assign(new Error('offline'), {
+                            code: 'network_unavailable',
+                        }),
                     ),
                 )
                 .mockResolvedValueOnce({ txIds: ['TXID'] })

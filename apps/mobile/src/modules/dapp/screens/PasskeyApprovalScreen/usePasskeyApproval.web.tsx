@@ -47,6 +47,7 @@ import {
 } from '../../components/PasskeyChooserContent'
 import { useApprovalArming } from '@hooks/useApprovalArming.web'
 import { useLanguage } from '@hooks/useLanguage'
+import { toPeerDisplayText } from '@utils/peerDisplay'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 /**
@@ -93,6 +94,7 @@ const asPasskeyApproval = (
 type UsePasskeyApprovalResult = {
     isLoading: boolean
     isCreate: boolean
+    /** Page-asserted, so cleaned and clamped for display like a peer name. */
     rpId: string
     userName?: string
     origin: string
@@ -224,8 +226,8 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
     return {
         isLoading: isLoading || !passkeyApproval,
         isCreate: passkeyApproval?.kind === 'passkey-create',
-        rpId: passkeyApproval?.rpId ?? '',
-        userName: passkeyApproval?.userName,
+        rpId: toPeerDisplayText(passkeyApproval?.rpId),
+        userName: toPeerDisplayText(passkeyApproval?.userName) || undefined,
         origin: passkeyApproval?.origin ?? '',
         isBusy,
         canApprove: isArmed && !isBusy,

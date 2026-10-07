@@ -17,39 +17,70 @@ import {
     QueryClientProvider,
     onlineManager,
 } from '@tanstack/react-query'
-import { useAlgoUsdPriceQuery } from '../useAlgoUsdPriceQuery'
 import React from 'react'
 import { Decimal } from 'decimal.js'
+import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
+import {
+    scopeForLegacyNetwork,
+    toScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    migrations,
+    runMigrations,
+    type Database,
+} from '@perawallet/wallet-core-database'
+import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import { useAlgoUsdPriceQuery } from '../useAlgoUsdPriceQuery'
 
-const mockAll = vi.hoisted(() => vi.fn())
+const NATIVE_ASSET_ID = '0'
 
-vi.mock('@perawallet/wallet-core-database', async () => {
-    const actual = await vi.importActual<
+const testDb = vi.hoisted(() => ({ current: undefined as unknown }))
+
+vi.mock('@perawallet/wallet-core-database', async importOriginal => ({
+    ...(await importOriginal<
         typeof import('@perawallet/wallet-core-database')
-    >('@perawallet/wallet-core-database')
-
-    const chain = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        all: mockAll,
-    }
-
-    return {
-        ...actual,
-        getDatabase: () => ({
-            select: vi.fn(() => chain),
-        }),
-    }
-})
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    >()),
+    getDatabase: () => testDb.current,
 }))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: 'mainnet',
+    }),
+}))
+
+// No chain adapter is registered in this package's tests.
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
+    nativeAssetFor: () => ({ assetId: '0' }),
+}))
+
+const MAINNET = scopeForLegacyNetwork('mainnet')
 
 describe('useAlgoUsdPriceQuery', () => {
     let queryClient: QueryClient
+    let db: Database
+    let teardown: () => void
 
-    beforeEach(() => {
+    const storePrice = (usdPrice: string, scope = MAINNET) =>
+        upsertAssetPrices({
+            db,
+            prices: [
+                { assetId: NATIVE_ASSET_ID, usdPrice: new Decimal(usdPrice) },
+            ],
+            scope,
+        })
+
+    beforeEach(async () => {
+        const result = createTestDatabase()
+        db = result.db
+        teardown = result.teardown
+        testDb.current = db
+        await runMigrations(db, migrations)
+
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -64,6 +95,7 @@ describe('useAlgoUsdPriceQuery', () => {
         // onlineManager is a global singleton — restore connectivity so an
         // offline test can't leak into the next one.
         onlineManager.setOnline(true)
+        teardown()
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -73,8 +105,8 @@ describe('useAlgoUsdPriceQuery', () => {
             children,
         )
 
-    it('fetches ALGO USD price as Decimal from DB', async () => {
-        mockAll.mockResolvedValue([{ usdPrice: new Decimal('0.15') }])
+    it(`returns the price stored under ${toScopeKey(MAINNET)}`, async () => {
+        await storePrice('0.15')
 
         const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
             wrapper,
@@ -83,16 +115,6 @@ describe('useAlgoUsdPriceQuery', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
         expect(result.current.data).toEqual(new Decimal('0.15'))
-    })
-
-    it('handles loading state', () => {
-        mockAll.mockImplementation(() => new Promise(() => {}))
-
-        const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
-            wrapper,
-        })
-
-        expect(result.current.isPending).toBe(true)
     })
 
     it('does not fetch when disabled', () => {
@@ -101,7 +123,7 @@ describe('useAlgoUsdPriceQuery', () => {
         })
 
         expect(result.current.fetchStatus).toBe('idle')
-        expect(mockAll).not.toHaveBeenCalled()
+        expect(result.current.data).toBeUndefined()
     })
 
     it('serves the ALGO price from SQLite while offline', async () => {
@@ -109,7 +131,7 @@ describe('useAlgoUsdPriceQuery', () => {
         // resolve even when onlineManager reports offline, instead of pausing
         // its queryFn (TanStack's default networkMode: 'online' behaviour).
         onlineManager.setOnline(false)
-        mockAll.mockResolvedValue([{ usdPrice: new Decimal('0.15') }])
+        await storePrice('0.15')
 
         const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
             wrapper,
@@ -120,8 +142,8 @@ describe('useAlgoUsdPriceQuery', () => {
         expect(result.current.data).toEqual(new Decimal('0.15'))
     })
 
-    it('returns zero when no price found in DB', async () => {
-        mockAll.mockResolvedValue([])
+    it('returns zero when only another scope has a price', async () => {
+        await storePrice('0.15', scopeForLegacyNetwork('testnet'))
 
         const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
             wrapper,

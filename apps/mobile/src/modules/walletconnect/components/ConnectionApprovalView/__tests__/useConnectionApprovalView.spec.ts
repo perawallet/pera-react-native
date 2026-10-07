@@ -348,7 +348,7 @@ describe('useConnectionApprovalView', () => {
         })
     })
 
-    it('labels the peer url without its scheme and marks it openable', () => {
+    it('labels the peer url by its host alone and marks it openable', () => {
         const { result } = renderHook(() =>
             useConnectionApprovalView(
                 makeProposal({
@@ -357,7 +357,22 @@ describe('useConnectionApprovalView', () => {
             ),
         )
 
-        expect(result.current.peerUrlLabel).toBe('tinyman.org/pools')
+        expect(result.current.peerUrlLabel).toBe('tinyman.org')
         expect(result.current.canOpenPeerUrl).toBe(true)
+    })
+
+    it('cleans the peer-asserted name of bidi controls before it is shown', () => {
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(
+                makeProposal({
+                    peer: {
+                        name: 'Tiny\u202Enamyt\u202C',
+                        url: 'https://tinyman.org',
+                    },
+                }) as never,
+            ),
+        )
+
+        expect(result.current.peerName).toBe('Tinynamyt')
     })
 })

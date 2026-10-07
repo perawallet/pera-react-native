@@ -38,8 +38,10 @@ export const WcConnectScreen = (): React.JSX.Element => {
     const { t } = useLanguage()
     const {
         peer,
+        peerName,
         permissions,
         requesterOrigin,
+        requesterOriginLabel,
         isRequesterOriginDistinct,
         accounts,
         selected,
@@ -91,8 +93,10 @@ export const WcConnectScreen = (): React.JSX.Element => {
                 ListHeaderComponent={
                     <WcConnectHeader
                         peer={peer}
+                        peerName={peerName}
                         permissions={permissions}
                         requesterOrigin={requesterOrigin}
+                        requesterOriginLabel={requesterOriginLabel}
                         isRequesterOriginDistinct={isRequesterOriginDistinct}
                         peerUrlLabel={peerUrlLabel}
                         canOpenPeerUrl={canOpenPeerUrl}

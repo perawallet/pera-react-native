@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { startRegisterVerification } from '../api/onboarding'
 import type { VeriffSession } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'

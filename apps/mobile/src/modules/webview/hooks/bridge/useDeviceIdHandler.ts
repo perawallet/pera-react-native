@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type WebView from 'react-native-webview'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { GET_DEVICE_ID_ACTION, sendActionToWebview } from '../handlers'

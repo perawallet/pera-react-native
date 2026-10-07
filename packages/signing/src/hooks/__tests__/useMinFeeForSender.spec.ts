@@ -9,85 +9,32 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import '../../__tests__/registerAlgorandAccounts'
 import { renderHook } from '@testing-library/react'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useMinFeeForSender } from '../useMinFeeForSender'
 
-const mockUseAllAccounts = vi.fn()
-const mockUseSuggestedParametersQuery = vi.fn()
-const mockUseMinimumFeeConfig = vi.fn()
-
-vi.mock('@perawallet/wallet-core-accounts', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-accounts',
-    )
-    return {
-        ...actual,
-        useAllAccounts: () => mockUseAllAccounts(),
-    }
-})
-
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
-    return {
-        ...actual,
-        useSuggestedParametersQuery: () => mockUseSuggestedParametersQuery(),
-        useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
-    }
-})
-
-const accounts = [{ id: 'q1', address: 'QADDR' }]
-const resolveMinFee = vi.fn(() => 3000n)
-
 describe('useMinFeeForSender', () => {
+    const chainHook = vi.fn()
+
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseSuggestedParametersQuery.mockReturnValue({
-            data: { minFee: 1000 },
-            isPending: false,
-        })
-        mockUseMinimumFeeConfig.mockReturnValue({
-            minTxnFee: 1000n,
-            pqMultiplier: 3n,
-        })
-        mockUseAllAccounts.mockReturnValue(accounts)
-        resolveMinFee.mockClear()
-        registerFakePlannerAdapter({ minFeeForSender: resolveMinFee })
+        chainHook.mockReturnValue({ minFee: 3000n, isPending: false })
+        registerFakePlannerAdapter({ useMinFeeForSender: chainHook })
     })
 
-    it('hands the sender, wallet accounts, suggested fee and fee config to the resolver', () => {
+    it('returns what the planner hook returns, with the sender passed through', () => {
         const { result } = renderHook(() => useMinFeeForSender('QADDR'))
 
-        expect(resolveMinFee).toHaveBeenCalledWith({
-            senderAddress: 'QADDR',
-            accounts,
-            suggestedMinFee: 1000n,
-            configMinTxnFee: 1000n,
-            pqMultiplier: 3n,
-        })
-        expect(result.current.minFee).toBe(3000n)
-        expect(result.current.isPending).toBe(false)
+        expect(chainHook).toHaveBeenCalledWith('QADDR')
+        expect(result.current).toEqual({ minFee: 3000n, isPending: false })
     })
 
-    it('returns undefined minFee while suggested params are pending', () => {
-        mockUseSuggestedParametersQuery.mockReturnValue({
-            data: undefined,
-            isPending: true,
-        })
-        const { result } = renderHook(() => useMinFeeForSender('QADDR'))
-
-        expect(result.current.minFee).toBeUndefined()
-        expect(result.current.isPending).toBe(true)
-    })
-
-    it('returns undefined minFee when senderAddress is undefined', () => {
+    it('passes an undefined sender through', () => {
+        chainHook.mockReturnValue({ minFee: undefined, isPending: false })
         const { result } = renderHook(() => useMinFeeForSender(undefined))
 
+        expect(chainHook).toHaveBeenCalledWith(undefined)
         expect(result.current.minFee).toBeUndefined()
     })
 })

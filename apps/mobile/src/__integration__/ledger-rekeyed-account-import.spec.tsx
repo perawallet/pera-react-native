@@ -32,7 +32,7 @@ import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { LedgerSelectAccountsScreen, LedgerVerifyScreen } from '@modules/ledger'
 
 import { isElementDisabled } from '@test-utils/rnw'

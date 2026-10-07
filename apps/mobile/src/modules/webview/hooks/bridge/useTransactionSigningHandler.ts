@@ -15,7 +15,7 @@ import type WebView from 'react-native-webview'
 import type {
     Arc0001SignTxnsOpts,
     Arc0001WalletTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     type SignRequestSource,

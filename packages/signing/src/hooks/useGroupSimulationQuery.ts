@@ -12,12 +12,14 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
-    useNetwork,
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
     type PeraDisplayableTransaction,
     type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { plannerAdapterFor } from '../chain-adapter'
+import { plannerAdapterForScope } from '../chain-adapter'
 
 type UseGroupSimulationQueryParams = {
     /** Identifies the request for caching; the query is disabled without it. */
@@ -48,15 +50,18 @@ export const useGroupSimulationQuery = ({
     groupTxs,
     enabled = true,
 }: UseGroupSimulationQueryParams): UseGroupSimulationQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     const query = useQuery({
-        queryKey: ['balance-impact-simulation', requestId, network],
+        queryKey: ['balance-impact-simulation', requestId, scope],
         enabled: enabled && !!requestId && !!groupTxs?.length,
         staleTime: Infinity,
         retry: false,
         queryFn: () =>
-            plannerAdapterFor(network).simulateGroup(groupTxs ?? [], network),
+            plannerAdapterForScope(scope).simulateGroup(
+                groupTxs ?? [],
+                legacyNetworkOf(scope),
+            ),
     })
 
     return {

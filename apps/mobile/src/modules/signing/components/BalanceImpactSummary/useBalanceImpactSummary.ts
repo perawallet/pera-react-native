@@ -16,7 +16,6 @@ import {
     computeBalanceImpact,
     useImpactTransactions,
 } from '@perawallet/wallet-core-signing'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
     useNativeAsset,
     PeraAssetType,
@@ -26,7 +25,7 @@ import {
     type DisplayableAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 
 export type BalanceImpactDirection = 'receive' | 'spend'
 
@@ -96,15 +95,18 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                     // still needs metadata to render its "entire balance" row.
                     ...impact.closedAssetIds,
                 ]),
-            ].filter(id => id !== ALGO_ASSET_ID),
-        [impact.deltas, impact.closedAssetIds],
+            ].filter(id => id !== nativeAsset.assetId),
+        [impact.deltas, impact.closedAssetIds, nativeAsset.assetId],
     )
 
     // The signed group can touch assets the user doesn't hold (e.g. a swap
     // into a new asset), so they won't be in the local DB. Fetch them so rows
     // show real names/units instead of falling back to the raw asset id.
     const { data: assets } = useAssetsQuery(assetIds, { fetchMissing: true })
-    const { data: prices } = useAssetPricesQuery([ALGO_ASSET_ID, ...assetIds])
+    const { data: prices } = useAssetPricesQuery([
+        nativeAsset.assetId,
+        ...assetIds,
+    ])
 
     return useMemo(() => {
         const closedAssetIds = new Set(impact.closedAssetIds)
@@ -120,7 +122,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                 .map(assetId => ({ assetId, amount: 0n })),
         ]
         const items = movements.map<SortableItem>(({ assetId, amount }) => {
-            const isAlgo = assetId === ALGO_ASSET_ID
+            const isAlgo = assetId === nativeAsset.assetId
             const asset: PeraAsset | undefined = isAlgo
                 ? nativeAsset
                 : assets.get(assetId)
@@ -196,8 +198,8 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
         const order = (list: SortableItem[]): BalanceImpactItem[] =>
             [...list]
                 .sort((a, b) => {
-                    if (a.assetId === ALGO_ASSET_ID) return -1
-                    if (b.assetId === ALGO_ASSET_ID) return 1
+                    if (a.assetId === nativeAsset.assetId) return -1
+                    if (b.assetId === nativeAsset.assetId) return 1
                     return b.sortValue.comparedTo(a.sortValue)
                 })
                 .map(({ sortValue: _sortValue, ...item }) => item)

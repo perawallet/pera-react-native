@@ -28,6 +28,7 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import type { AssetSyncKind } from '../polling/models'
 
 /**
  * Max concurrent per-account requests within one sync phase.
@@ -57,8 +58,6 @@ export type AccountPhaseResult = SyncPhaseResult<AccountSyncResult> & {
     changedAddresses: string[]
     hasHoldingsChanged: boolean
 }
-
-export type AssetSyncKind = 'assets' | 'prices'
 
 export type AssetPhaseResult = SyncPhaseResult<void> & {
     succeededKinds: AssetSyncKind[]

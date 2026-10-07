@@ -42,10 +42,16 @@ vi.mock('@hooks/useLanguage')
 // resolveErrorCopy (exercised via the SubmissionError branch below) does an
 // `instanceof AlgodError` check, so the mock needs a real class identity too
 // — importActual pulls in the network store's own module deps, so stub instead.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     AlgodError: class AlgodError extends Error {},
     toAlgodError: (err: unknown) => err,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -53,9 +59,9 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
-    getSignRequestDetailQueryKey: (network: string, id: string) => [
+    getSignRequestDetailQueryKey: (scope: unknown, id: string) => [
         'signRequestDetail',
-        network,
+        scope,
         id,
     ],
     useSignRequestDetailQuery: (params: unknown) =>
@@ -74,7 +80,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         constructor(
             readonly txIds: string[],
             readonly classification: string,
-            readonly algodError: unknown,
+            readonly nodeError: unknown,
         ) {
             super(`Submission ${classification}`)
         }
@@ -168,7 +174,11 @@ describe('useSignRequestFailure', () => {
         )
 
         expect(mocks.invalidateQueries).toHaveBeenCalledWith({
-            queryKey: ['signRequestDetail', 'mainnet', 'sr-1'],
+            queryKey: [
+                'signRequestDetail',
+                { chainId: 'algorand', networkId: 'mainnet' },
+                'sr-1',
+            ],
         })
     })
 
@@ -238,7 +248,7 @@ describe('useSignRequestFailure', () => {
         const error = new (SubmissionError as unknown as new (
             txIds: string[],
             classification: string,
-            algodError: unknown,
+            nodeError: unknown,
         ) => Error)(
             ['TXID'],
             'unknown-outcome',
@@ -263,7 +273,7 @@ describe('useSignRequestFailure', () => {
         const error = new (SubmissionError as unknown as new (
             txIds: string[],
             classification: string,
-            algodError: unknown,
+            nodeError: unknown,
         ) => Error)(['TXID'], 'rejected-by-node', new Error('overspend'))
 
         const { result } = renderHook(() =>
@@ -280,7 +290,7 @@ describe('useSignRequestFailure', () => {
         const error = new (SubmissionError as unknown as new (
             txIds: string[],
             classification: string,
-            algodError: unknown,
+            nodeError: unknown,
         ) => Error)(
             ['TXID'],
             'unknown-outcome',

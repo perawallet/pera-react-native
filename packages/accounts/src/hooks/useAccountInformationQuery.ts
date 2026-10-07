@@ -11,16 +11,19 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
 import {
-    useNetwork,
-    Address,
+    scopeForLegacyNetwork,
+    type AccountInformation,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    type Optional,
     algosToMicroAlgosBigInt,
     toBigInt,
-    type AccountInformation,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-shared'
+import { isNativeAssetId } from '@perawallet/wallet-core-assets'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
+import { accountsChainAdapters } from '../chain-adapter'
 import { getAccountBalance, getAccountHoldings } from '../db'
 
 const getAccountInformationQueryKey = (address: string, network: string) => [
@@ -62,14 +65,16 @@ export const useAccountInformationQuery = (
                 amount: balance
                     ? algosToMicroAlgosBigInt(balance.algoBalance)
                     : 0n,
-                address: Address.fromString(address),
+                address: accountsChainAdapters
+                    .get(scope.chainId)
+                    .toAccountInformationAddress(address),
                 status: balance?.status ?? 'Offline',
                 rewards: 0n,
                 // ALGO is persisted as a holding row for the home-screen reads,
                 // but AccountInformation.assets is ASAs-only — the algo balance
                 // is carried separately in `amount` above.
                 assets: holdings
-                    .filter(h => !isAlgoAssetId(h.assetId))
+                    .filter(h => !isNativeAssetId(scope.chainId, h.assetId))
                     .map(h => ({
                         assetId: BigInt(h.assetId),
                         amount: toBigInt(h.amount),

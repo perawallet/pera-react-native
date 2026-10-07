@@ -24,20 +24,23 @@ import { draftProposeContexts } from '../draftProposeContexts'
 
 const getNetworkMock = vi.fn(() => ({ network: 'testnet' }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
+vi.mock('../../../blockchain', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../../blockchain')>()
     return {
         ...actual,
-        useNetworkStore: {
-            getState: () => getNetworkMock(),
-            subscribe: () => () => {},
-        },
         encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1, 0xa2])),
     }
 })
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetworkStore: {
+        getState: () => getNetworkMock(),
+        subscribe: () => () => {},
+    },
+}))
 
 const transactionResult: SigningResult = {
     signedData: {
@@ -307,7 +310,10 @@ describe('createMultisigProposeTransport', () => {
             expect(handoff).toBeDefined()
             expect(handoff?.multisigAddress).toBe('JOINT_ADDR')
             expect(handoff?.deviceId).toBe('device-1')
-            expect(handoff?.network).toBe('testnet')
+            expect(handoff?.scope).toEqual({
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
             expect(handoff?.msigMetadata).toEqual(MSIG_METADATA)
             // The bytes the adapter actually sent are pinned on the handoff
             // so the resolver can refuse mismatching poll responses.

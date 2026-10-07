@@ -30,7 +30,11 @@ vi.mock('@perawallet/wallet-core-app-integrity', () => ({
     buildIntegrityHeaders,
 }))
 
-import { defaultTransport, setRefreshHandler } from '../default-transport'
+import {
+    defaultTransport,
+    setRefreshHandler,
+    setSessionLostHandler,
+} from '../default-transport'
 
 const ok = { data: { ok: true }, status: 200, statusText: 'OK' }
 const unauthorized = { response: { status: 401 } }
@@ -39,6 +43,7 @@ describe('defaultTransport', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         setRefreshHandler(null)
+        setSessionLostHandler(null)
         buildIntegrityHeaders.mockReturnValue({})
     })
 
@@ -186,6 +191,44 @@ describe('defaultTransport', () => {
         ).rejects.toBe(unauthorized)
         expect(refresh).toHaveBeenCalledTimes(1)
         expect(baanxDirectRequest).toHaveBeenCalledTimes(1)
+    })
+
+    it('drops the session when the retry after a successful refresh is still a 401', async () => {
+        baanxDirectRequest.mockRejectedValue(unauthorized)
+        setRefreshHandler(vi.fn().mockResolvedValue(true))
+        const sessionLost = vi.fn().mockResolvedValue(undefined)
+        setSessionLostHandler(sessionLost)
+
+        await expect(
+            defaultTransport.request({
+                network: 'mainnet',
+                method: 'GET',
+                path: '/v1/user',
+                authenticated: true,
+            }),
+        ).rejects.toBe(unauthorized)
+        expect(baanxDirectRequest).toHaveBeenCalledTimes(2)
+        expect(sessionLost).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the session when the retry after a refresh fails for another reason', async () => {
+        const serverError = { response: { status: 500 } }
+        baanxDirectRequest
+            .mockRejectedValueOnce(unauthorized)
+            .mockRejectedValueOnce(serverError)
+        setRefreshHandler(vi.fn().mockResolvedValue(true))
+        const sessionLost = vi.fn().mockResolvedValue(undefined)
+        setSessionLostHandler(sessionLost)
+
+        await expect(
+            defaultTransport.request({
+                network: 'mainnet',
+                method: 'GET',
+                path: '/v1/user',
+                authenticated: true,
+            }),
+        ).rejects.toBe(serverError)
+        expect(sessionLost).not.toHaveBeenCalled()
     })
 
     it('does not refresh on a 401 from a pre-auth direct call', async () => {

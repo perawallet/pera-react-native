@@ -21,11 +21,13 @@ import { useStyles } from './styles'
 export type PWLoadingOverlayProps = {
     isVisible: boolean
     title?: string
+    description?: string
 }
 
 export const PWLoadingOverlay = ({
     isVisible,
     title,
+    description,
 }: PWLoadingOverlayProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
@@ -42,6 +44,14 @@ export const PWLoadingOverlay = ({
                 color={theme.colors.linkPrimary}
                 testID='activity-indicator'
             />
+            {!!description && (
+                <PWText
+                    variant='caption'
+                    style={styles.description}
+                >
+                    {description}
+                </PWText>
+            )}
         </PWOverlay>
     )
 }

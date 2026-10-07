@@ -11,18 +11,15 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { AlgodError } from '../../../blockchain'
 import { SubmissionError } from '@perawallet/wallet-core-signing'
 import { submitRawSignedTransactionGroup } from '../submitRawSignedTransactionGroup'
 
 const mockSendRawTransaction = vi.fn()
 const mockTxID = vi.fn(() => 'DERIVED_TXID')
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
+vi.mock('../../../blockchain', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../../blockchain')>()
     return {
         ...actual,
         decodeSignedTransaction: () => ({ txn: { txID: mockTxID } }),

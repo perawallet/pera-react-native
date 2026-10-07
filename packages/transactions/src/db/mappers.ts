@@ -12,13 +12,15 @@
 
 import { Decimal } from 'decimal.js'
 import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
-import type {
-    TransactionHistoryItem,
-    TransactionBalanceImpact,
-    TransactionAssetSummary,
-    TransactionSwapGroupDetail,
+import {
+    TransactionHistoryStatuses,
+    type TransactionHistoryItem,
+    type TransactionHistoryStatus,
+    type TransactionBalanceImpact,
+    type TransactionAssetSummary,
+    type TransactionSwapGroupDetail,
 } from '../models/types'
-import { resolveAssetFacts } from '../utils/algoAssetFacts'
+import type { AssetFactsResolver } from '../history-adapter'
 
 /**
  * Serializes balance impacts to JSON for persistence. The signed `amount`
@@ -44,6 +46,7 @@ function serializeBalanceImpacts(
  */
 function deserializeBalanceImpacts(
     json: Nullable<string>,
+    resolveAssetFacts: AssetFactsResolver,
 ): TransactionBalanceImpact[] {
     if (!json) return []
     const parsed = JSON.parse(json) as Array<{
@@ -76,6 +79,7 @@ function deserializeBalanceImpacts(
  */
 function deserializeAsset(
     json: Nullable<string>,
+    resolveAssetFacts: AssetFactsResolver,
 ): Nullable<TransactionAssetSummary> {
     if (!json) return null
     const parsed = JSON.parse(json) as TransactionAssetSummary
@@ -94,6 +98,7 @@ function deserializeAsset(
  */
 export function deserializeSwapGroupDetail(
     json: Nullable<string>,
+    resolveAssetFacts: AssetFactsResolver,
 ): Nullable<TransactionSwapGroupDetail> {
     if (!json) return null
     const parsed = JSON.parse(json) as TransactionSwapGroupDetail
@@ -123,8 +128,9 @@ export function toDb(item: TransactionHistoryItem) {
         txType: item.txType,
         sender: item.sender,
         receiver: item.receiver,
-        confirmedRound: item.confirmedRound,
+        confirmedRound: item.confirmedRound ?? null,
         roundTime: item.roundTime,
+        status: item.status ?? TransactionHistoryStatuses.CONFIRMED,
         fee: item.fee,
         groupId: item.groupId,
         amount: item.amount,
@@ -146,34 +152,40 @@ export function toDb(item: TransactionHistoryItem) {
     }
 }
 
-export function fromDb(row: {
-    id: string
-    txType: string
-    sender: string
-    assetSender: Nullable<string>
-    receiver: Nullable<string>
-    confirmedRound: number
-    roundTime: number
-    fee: Decimal
-    groupId: Nullable<string>
-    amount: Nullable<Decimal>
-    closeTo: Nullable<string>
-    closeAmount: Nullable<Decimal>
-    applicationId: Nullable<Decimal>
-    innerTransactionCount: Nullable<number>
-    assetJson: Nullable<string>
-    swapGroupDetailJson: Nullable<string>
-    interpretedMeaningJson: Nullable<string>
-    balanceImpactsJson: Nullable<string>
-}): TransactionHistoryItem {
+export function fromDb(
+    row: {
+        id: string
+        txType: string
+        sender: string
+        assetSender: Nullable<string>
+        receiver: Nullable<string>
+        confirmedRound: Nullable<number>
+        roundTime: Nullable<number>
+        status: TransactionHistoryStatus
+        fee: Decimal
+        groupId: Nullable<string>
+        amount: Nullable<Decimal>
+        closeTo: Nullable<string>
+        closeAmount: Nullable<Decimal>
+        applicationId: Nullable<Decimal>
+        innerTransactionCount: Nullable<number>
+        assetJson: Nullable<string>
+        swapGroupDetailJson: Nullable<string>
+        interpretedMeaningJson: Nullable<string>
+        balanceImpactsJson: Nullable<string>
+    },
+    resolveAssetFacts: AssetFactsResolver,
+): TransactionHistoryItem {
     return {
         id: row.id,
         txType: row.txType as TransactionHistoryItem['txType'],
         sender: row.sender,
         assetSender: row.assetSender,
         receiver: row.receiver,
-        confirmedRound: row.confirmedRound,
-        roundTime: row.roundTime,
+        confirmedRound: row.confirmedRound ?? undefined,
+        status: row.status,
+        // Only a chain that can't time a pending transaction leaves this NULL.
+        roundTime: row.roundTime ?? 0,
         fee: row.fee,
         groupId: row.groupId,
         amount: row.amount,
@@ -181,11 +193,17 @@ export function fromDb(row: {
         closeAmount: row.closeAmount,
         applicationId: row.applicationId?.toString() ?? null,
         innerTransactionCount: row.innerTransactionCount,
-        asset: deserializeAsset(row.assetJson),
-        swapGroupDetail: deserializeSwapGroupDetail(row.swapGroupDetailJson),
+        asset: deserializeAsset(row.assetJson, resolveAssetFacts),
+        swapGroupDetail: deserializeSwapGroupDetail(
+            row.swapGroupDetailJson,
+            resolveAssetFacts,
+        ),
         interpretedMeaning: row.interpretedMeaningJson
             ? JSON.parse(row.interpretedMeaningJson)
             : null,
-        balanceImpacts: deserializeBalanceImpacts(row.balanceImpactsJson),
+        balanceImpacts: deserializeBalanceImpacts(
+            row.balanceImpactsJson,
+            resolveAssetFacts,
+        ),
     }
 }

@@ -15,6 +15,10 @@ import { useInfiniteQuery, onlineManager, hashKey } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import type { Maybe, Network, Nullable } from '@perawallet/wallet-core-shared'
 import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     getOpenSubmissionAttempts,
     type SubmissionAttempt,
 } from '@perawallet/wallet-core-signing'
@@ -193,15 +197,15 @@ const toPendingHistoryItem = (
  */
 const buildPendingHistoryItems = async ({
     accountAddress,
-    network,
+    scope,
 }: {
     accountAddress: string
-    network: Network
+    scope: ChainScope
 }): Promise<TransactionHistoryItem[]> => {
     // Scoped in SQL: history renders per account, and a row without a
     // recorded sender can't be attributed to one.
     const attempts = await getOpenSubmissionAttempts({
-        network,
+        scope,
         sender: accountAddress,
         limit: MAX_PENDING_HISTORY_ROWS,
     })
@@ -229,10 +233,11 @@ export const useTransactionHistoryQuery = (
         limit = HISTORY_PAGE_SIZE,
         isEnabled = true,
     } = params
+    const scope = scopeForLegacyNetwork(network)
 
     const queryKey = transactionQueryKeys.historyWithFilters(
         accountAddress,
-        network,
+        scope,
         {
             assetId,
             afterTime,
@@ -255,7 +260,7 @@ export const useTransactionHistoryQuery = (
             if (pageParam == null || pageParam.type === 'db') {
                 const rows = await getTransactionHistory({
                     accountAddress,
-                    network,
+                    scope,
                     assetId,
                     afterTime,
                     beforeTime,
@@ -282,7 +287,7 @@ export const useTransactionHistoryQuery = (
                 ) {
                     const pending = await buildPendingHistoryItems({
                         accountAddress,
-                        network,
+                        scope,
                     })
                     // The real row always wins: a synthetic entry carries no
                     // amount or interpreted meaning, so shadowing a row SQLite
@@ -366,7 +371,7 @@ export const useTransactionHistoryQuery = (
                     void persistTransactionsToDb(
                         result.transactions,
                         accountAddress,
-                        network,
+                        scope,
                     )
                 }
 
@@ -399,6 +404,8 @@ export const useTransactionHistoryQuery = (
                 beforeRound !== undefined
                     ? result.transactions.filter(
                           tx =>
+                              // A row with no round can't overlap the cursor.
+                              tx.confirmedRound === undefined ||
                               tx.confirmedRound < beforeRound ||
                               (tx.confirmedRound === beforeRound &&
                                   !beforeRoundTxIds.has(tx.id)),
@@ -410,7 +417,7 @@ export const useTransactionHistoryQuery = (
                 void persistTransactionsToDb(
                     dedupedTransactions,
                     accountAddress,
-                    network,
+                    scope,
                 )
             }
 

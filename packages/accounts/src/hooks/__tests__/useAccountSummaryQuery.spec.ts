@@ -32,13 +32,14 @@ vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 const mockAlgoPrices = new Map<string, { usdPrice: Decimal }>()
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPricesQuery: () => ({ data: mockAlgoPrices }),
+    useNativeAsset: () => ({ assetId: '0' }),
 }))
 
 const wrapper = () => {

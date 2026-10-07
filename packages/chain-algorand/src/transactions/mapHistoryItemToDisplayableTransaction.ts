@@ -11,10 +11,8 @@
  */
 
 import { Decimal } from 'decimal.js'
-import {
-    toBigInt,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import { toBigInt } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
 const toAmountBigInt = (amount: TransactionHistoryItem['amount']): bigint =>
@@ -45,7 +43,10 @@ export const mapHistoryItemToDisplayableTransaction = (
         fee: toBigInt(item.fee),
         firstValid: 0n,
         lastValid: 0n,
-        confirmedRound: BigInt(item.confirmedRound),
+        confirmedRound:
+            item.confirmedRound === undefined
+                ? undefined
+                : BigInt(item.confirmedRound),
         roundTime: item.roundTime,
         roundTimeMillis: item.roundTime * 1000,
     }

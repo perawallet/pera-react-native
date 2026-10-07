@@ -10,12 +10,11 @@
  limitations under the License
  */
 
+import { buildPrismUrl, getInitials } from '@perawallet/wallet-core-shared'
 import {
-    buildPrismUrl,
-    getInitials,
-    isAlgoAssetId,
-} from '@perawallet/wallet-core-shared'
-import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+    useIsNativeAssetId,
+    type DisplayableAsset,
+} from '@perawallet/wallet-core-assets'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SvgProps } from 'react-native-svg'
@@ -43,6 +42,7 @@ export type AssetIconProps = {
 export const AssetIcon = (props: AssetIconProps) => {
     const { asset, size, style, logoUrl, shape = 'circle', ...rest } = props
     const { theme } = useTheme()
+    const isNativeAssetId = useIsNativeAssetId()
     const [loadFailed, setLoadFailed] = useState(false)
 
     const iconSize = getIconPixelSize(theme, size ?? 'md')
@@ -78,7 +78,7 @@ export const AssetIcon = (props: AssetIconProps) => {
 
     const icon = useMemo(() => {
         if (!asset) return <></>
-        if (isAlgoAssetId(asset.assetId))
+        if (isNativeAssetId(asset.assetId))
             return (
                 <AlgoAssetIcon
                     {...rest}
@@ -109,6 +109,7 @@ export const AssetIcon = (props: AssetIconProps) => {
             </PWView>
         )
     }, [
+        isNativeAssetId,
         asset,
         rest,
         iconSize,

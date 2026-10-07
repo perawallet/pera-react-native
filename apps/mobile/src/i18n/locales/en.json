@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera couldn't deliver your decision to the site. The extension went to sleep while this window was open. Close this window and try the request again from the site.",
             "request_origin": "Request came from {{origin}}",
-            "requester_verified_label": "Verified tab",
+            "requester_verified_label": "Verified tab: {{origin}}",
+            "requester_mismatch": "This request came from {{origin}}, not {{claimed}}.",
             "requester_verified_a11y_origin": "Verified: this request came from your browser tab at {{origin}}"
         }
     },
@@ -360,7 +361,6 @@
         "show_address": "Show Address",
         "view_passphrase_hd": "View root wallet recovery passphrase",
         "view_passphrase_algo25": "View recovery passphrase",
-        "view_passphrase_quantum": "View Quantum account recovery passphrase",
         "undo_rekey": "Undo Rekey",
         "rekeyed_to": "Rekeyed to",
         "rekey_account": "Rekey Account",
@@ -830,6 +830,11 @@
             "encryption_key_placeholder": "Paste your encryption key",
             "encryption_key_restore": "Restore backup",
             "restoring": "Restoring your backup…",
+            "progress_unlocking": "Unlocking your backup…",
+            "progress_downloading": "Downloading your backup…",
+            "progress_importing": "Restoring accounts: {{done}} of {{total}}",
+            "progress_finishing": "Finishing up…",
+            "progress_hint": "This can take over a minute for backups with many accounts. Keep Pera open until it’s done.",
             "error_not_found": "No backup found for these credentials.",
             "error_invalid_credentials": "Incorrect backup phrase or encryption key.",
             "error_unknown": "Something went wrong. Please try again.",
@@ -2001,6 +2006,11 @@
                 "paste_passphrase": "Paste Full Passphrase",
                 "scan_qr": "Scan QR Code",
                 "learn_more": "Learn More"
+            },
+            "quantum_detected": {
+                "title": "This is a Quantum account passphrase",
+                "body": "These words belong to a Quantum account that already exists. Importing them as a regular account would add a different, empty account.",
+                "import_button": "Import Quantum Account"
             }
         },
         "searching_accounts": {
@@ -3048,7 +3058,7 @@
             "siwa_not_before": "Not Before",
             "siwa_resources": "Resources",
             "siwa_invalid": "This authentication request is malformed and cannot be signed.",
-            "origin_mismatch": "This site is asking you to sign in to a different domain ({{domain}}). Only continue if you trust it.",
+            "origin_mismatch": "This site is asking you to sign in to a different domain ({{domain}}). Pera blocked this request to protect your account.",
             "show_details": "Show Details",
             "details_title": "Athentication Request Details",
             "details_description": "Review the full metadata of this authentication request before approving."
@@ -4104,6 +4114,10 @@
             "acknowledge": "I understand this deletes my data and can't be undone",
             "confirm_button": "Reset Wallet",
             "error": "Couldn't reset the wallet. Please try again."
+        },
+        "database_reset": {
+            "title": "Wallet data refreshed",
+            "body": "We rebuilt the balances and history saved in this browser. They'll reload in a moment. Your accounts aren't affected."
         },
         "security": {
             "autolock_title": "Auto-lock after",

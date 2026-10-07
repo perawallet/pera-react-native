@@ -31,6 +31,24 @@ describe('getPreferredDappIcon', () => {
         )
     })
 
+    it('skips icons that are not served over https', () => {
+        expect(
+            getPreferredDappIcon([
+                'http://tracker.example/icon.png',
+                'data:image/png;base64,AAAA',
+                'javascript:alert(1)',
+                'not a url',
+                'https://dapp.example/icon.svg',
+            ]),
+        ).toBe('https://dapp.example/icon.svg')
+    })
+
+    it('returns undefined when no icon is https', () => {
+        expect(
+            getPreferredDappIcon(['http://dapp.example/icon.png']),
+        ).toBeUndefined()
+    })
+
     it('returns undefined for empty or missing lists', () => {
         expect(getPreferredDappIcon([])).toBeUndefined()
         expect(getPreferredDappIcon(undefined)).toBeUndefined()

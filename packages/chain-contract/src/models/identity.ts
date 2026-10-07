@@ -11,12 +11,12 @@
  */
 
 /** A chain package adds its own id here in the change that creates it. */
-export const CHAIN_IDS = ['algorand'] as const
+export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
 export type ChainId = (typeof CHAIN_IDS)[number]
 
 /** Grown the same way as `ChainId`. */
-export type ChainFamily = 'algorand'
+export type ChainFamily = 'algorand' | 'evm'
 
 export const NETWORK_TIERS = ['mainnet', 'testnet'] as const
 
@@ -37,15 +37,30 @@ export const WALLET_MODES = ['live', 'developer'] as const
 export type WalletMode = (typeof WALLET_MODES)[number]
 
 /**
+ * What a chain resolves to: `developer-override` is developer mode on any
+ * network but the chain's default test network.
+ */
+export type ChainMode = WalletMode | 'developer-override'
+
+/** The modes a capability can be switched off in; `live` can't be restricted. */
+export type DeveloperChainMode = Exclude<ChainMode, 'live'>
+
+/**
  * The network as its own chain identifies it. A chain package adds its own
  * member, discriminated by `kind`.
  */
-export type NativeNetworkRef = {
-    kind: 'algorand'
-    genesisId: string
-    /** Base64, as algod reports it. */
-    genesisHash: string
-}
+export type NativeNetworkRef =
+    | {
+          kind: 'algorand'
+          genesisId: string
+          /** Base64, as algod reports it. */
+          genesisHash: string
+      }
+    | {
+          kind: 'evm'
+          /** EIP-155 chain id. */
+          eip155ChainId: number
+      }
 
 export interface ChainNetwork {
     id: NetworkId

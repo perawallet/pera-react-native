@@ -43,11 +43,17 @@ const CONTRACT_SUITES = {
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
         passWithNoTests: true,
+        typecheck: {
+            enabled: true,
+            include: ['src/**/*.test-d.ts'],
+            tsconfig: './tsconfig.typecheck.json',
+        },
     },
     resolve: {
         conditions: ['default'],
@@ -62,9 +68,11 @@ export default defineConfig({
                     path.resolve(__dirname, file),
                 ]),
             ),
-            '@perawallet/wallet-core-blockchain/test-handlers': path.resolve(
+            // Source, not dist: chain-shared's dist would import the provider's
+            // dist and call a different getProvider() than the one mocked here.
+            '@perawallet/wallet-core-chain-shared': path.resolve(
                 __dirname,
-                '../blockchain/src/test-handlers.ts',
+                '../chain-shared/src/index.ts',
             ),
             '@perawallet/wallet-core-shared/test-handlers': path.resolve(
                 __dirname,
@@ -95,5 +103,4 @@ export default defineConfig({
             ),
         },
     },
-    ...poolConfig,
 })

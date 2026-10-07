@@ -10,12 +10,13 @@
  limitations under the License
  */
 
+import { getTransactionType } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
-    type PeraDisplayableTransaction,
-    getTransactionType,
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
-} from '@perawallet/wallet-core-blockchain'
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import {
@@ -24,7 +25,6 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { AssetAmount } from '@components/AssetAmount'
 import { PWText, PWView } from '@components/core'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 
 const getInnerTransactionCount = (tx: PeraDisplayableTransaction): number => {

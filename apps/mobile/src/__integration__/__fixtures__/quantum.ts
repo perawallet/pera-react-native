@@ -15,11 +15,7 @@ import { getPQProvider } from '@perawallet/wallet-core-kms'
 import {
     deriveQuantumAddress,
     derivePQKeygenSeed,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    RemoteConfigKeys,
-    useRemoteConfigStore,
-} from '@perawallet/wallet-core-remote-config'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     ALGO25_TEST_MNEMONIC,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -63,16 +59,3 @@ export const QUANTUM_TEST_LEGACY_PUBLIC_KEY =
 export const QUANTUM_TEST_LEGACY_ADDRESS = deriveQuantumAddress(
     QUANTUM_TEST_LEGACY_PUBLIC_KEY,
 )
-
-// The remote-config store persists, so an async rehydration landing after the
-// override would wipe it; await hydration before setting the flag.
-const setQuantumFlag = async (isEnabled: boolean): Promise<void> => {
-    await useRemoteConfigStore.persist.rehydrate()
-    useRemoteConfigStore
-        .getState()
-        .setConfigOverride(RemoteConfigKeys.enable_quantum_accounts, isEnabled)
-}
-
-export const enableQuantumFlag = (): Promise<void> => setQuantumFlag(true)
-
-export const disableQuantumFlag = (): Promise<void> => setQuantumFlag(false)

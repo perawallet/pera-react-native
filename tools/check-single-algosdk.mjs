@@ -354,7 +354,7 @@ function main() {
             '\nFix: add "algosdk": "catalog:" as a direct dependency in each offending',
         )
         console.error(
-            "package.json listed above (mirroring packages/blockchain's own",
+            "package.json listed above (mirroring packages/chain-algorand's own",
         )
         console.error(
             'dependencies), then run `pnpm install` and re-run this check.',

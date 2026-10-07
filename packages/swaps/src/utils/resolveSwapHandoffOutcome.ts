@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
 import {
     completeMultisigHandoff,
     deriveSubmissionAttemptFromBytes,
@@ -22,7 +26,7 @@ import type { SwapStatusUpdateRequest } from '../api'
 import type { SwapHandoffRecord } from '../models'
 
 export type CosignSubmissionAttemptParams = {
-    network: string
+    scope: ChainScope
     txIds: string[]
     flow: 'cosign'
     intentKey: { kind: 'cosign'; signRequestId: string; swapId?: string }
@@ -68,7 +72,7 @@ export type SwapHandoffResolutionDeps = {
     }) => Promise<unknown>
     /** Best-effort: tell the backend the wallet submitted, so it won't broadcast. */
     markConfirmed: (input: {
-        network: SwapHandoffRecord['network']
+        network: Network
         deviceId: string
         signRequestIds: string[]
     }) => Promise<void>
@@ -166,7 +170,8 @@ export const resolveSwapHandoffOutcome = async ({
     record: SwapHandoffRecord
     deps: SwapHandoffResolutionDeps
 }): Promise<void> => {
-    const { signRequestId, swapIdStr, network, deviceId, plan } = record
+    const { signRequestId, swapIdStr, deviceId, plan } = record
+    const network = legacyNetworkOf(record.scope)
 
     await completeMultisigHandoff({
         outcome,
@@ -195,7 +200,7 @@ export const resolveSwapHandoffOutcome = async ({
                     let attemptId: string | null = null
                     if (derived.txIds.length > 0) {
                         attemptId = await deps.recordSubmissionAttempt({
-                            network,
+                            scope: record.scope,
                             txIds: derived.txIds,
                             flow: 'cosign',
                             intentKey: {
@@ -223,7 +228,7 @@ export const resolveSwapHandoffOutcome = async ({
                             throw new SubmissionError(
                                 [...new Set([...txIds, ...error.txIds])],
                                 error.classification,
-                                error.algodError,
+                                error.nodeError,
                             )
                         }
                         throw error

@@ -18,9 +18,8 @@ import {
     useAccountBalancesInvalidator,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { useAssetsQuery, useNativeAsset } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
     pickBestByAmountOut,
     useCalculateSwapAmountMutation,
@@ -30,10 +29,10 @@ import {
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
 import {
-    ALGO_ASSET_ID,
     isDecimalEqual,
     uint64IdToNumber,
     type Nullable,
+    baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useToast } from '@hooks/useToast'
@@ -110,6 +109,7 @@ export const useSwapForm = (
         useState<Nullable<string>>(null)
     const { request: requestBottomSheet } = useBottomSheet()
     const selectedAccount = useSelectedAccount()
+    const nativeAsset = useNativeAsset()
     const prefetchProviders = usePrefetchProviders()
 
     useEffect(() => {
@@ -466,7 +466,7 @@ export const useSwapForm = (
             registerTabResumeIntent({
                 flow: 'swap',
                 accountAddress: selectedAccount.address,
-                assetInId: fromAsset ?? ALGO_ASSET_ID,
+                assetInId: fromAsset ?? nativeAsset.assetId,
                 assetOutId: toAsset,
                 payAmount: payAmount.toString(),
             })
@@ -543,6 +543,7 @@ export const useSwapForm = (
         selectedAccount,
         payAmount,
         fromAsset,
+        nativeAsset.assetId,
         toAsset,
     ])
 

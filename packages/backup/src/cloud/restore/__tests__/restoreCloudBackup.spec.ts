@@ -109,7 +109,6 @@ import { useCloudBackupPasskeyImport } from '../../hooks/useCloudBackupPasskeyIm
 import { useResolveSeedEntropyForBackup } from '../../hooks/useResolveSeedEntropyForBackup'
 import { backupChainAdapters } from '../../../chain-adapter'
 import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const ACCOUNT_KEY = accountItemKey(hashAddress('A'))
@@ -219,7 +218,10 @@ describe('restoreCloudBackup', () => {
             itemKey: expect.any(Uint8Array),
             mnemonic: MNEMONIC,
         })
-        expect(importAccounts).toHaveBeenCalledWith(pull.accounts)
+        expect(importAccounts).toHaveBeenCalledWith(
+            pull.accounts,
+            expect.any(Function),
+        )
         expect(importContacts).toHaveBeenCalledWith(pull.contacts)
         expect(result.backupId).toBe('did:pera:abc')
         expect(result.summary).toBe(SUMMARY)
@@ -231,6 +233,32 @@ describe('restoreCloudBackup', () => {
             lastSyncResult: 'SUCCESS',
         })
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('reports each phase in order, with the account import counted', async () => {
+        importAccounts.mockImplementation(
+            async (
+                _accounts: unknown,
+                onProgress: (done: number, total: number) => void,
+            ) => {
+                onProgress(0, 2)
+                onProgress(1, 2)
+                onProgress(2, 2)
+                return SUMMARY
+            },
+        )
+        const onProgress = vi.fn()
+
+        await restoreCloudBackup({ ...params(), onProgress })
+
+        expect(onProgress.mock.calls.map(([progress]) => progress)).toEqual([
+            { phase: 'unlocking' },
+            { phase: 'downloading' },
+            { phase: 'importing', done: 0, total: 2 },
+            { phase: 'importing', done: 1, total: 2 },
+            { phase: 'importing', done: 2, total: 2 },
+            { phase: 'finishing' },
+        ])
     })
 
     test('derives under the argon2id config it was given, not the build defaults', async () => {
@@ -326,6 +354,31 @@ describe('restoreCloudBackup', () => {
         const { syncState } = await restoreCloudBackup(params())
 
         expect(syncState.items[UNREADABLE_KEY].address ?? null).toBeNull()
+    })
+
+    // A newer client may add item kinds; their keys are hashed, so they must
+    // not be mistaken for the legacy layout the restore refuses.
+    test('restores a backup holding an item kind it does not know and keeps tracking it', async () => {
+        const unknownKey = `fixture-kind/${hashAddress('FIXADDR')}`
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            manifestItems: {
+                ...pull.manifestItems,
+                [unknownKey]: manifestItem({ ver: 4 }),
+            },
+        })
+
+        const { syncState } = await restoreCloudBackup(params())
+
+        expect(importAccounts).toHaveBeenCalledWith(
+            pull.accounts,
+            expect.any(Function),
+        )
+        expect(syncState.items[unknownKey]).toMatchObject({
+            knownVer: 4,
+            status: 'ACTIVE',
+        })
+        expect(syncState.items[unknownKey].address ?? null).toBeNull()
     })
 
     test('keeps a restore whose accounts landed when the contact import throws', async () => {
@@ -535,8 +588,8 @@ describe('restoreCloudBackup: passkey acceptance', () => {
     // authenticates on device B after restore" actually holds.
     const subtle = webcrypto.subtle as unknown as SubtleCrypto
     const ENTROPY = new Uint8Array(32).fill(9)
-    const SEED_PUBKEY = new Uint8Array(32).fill(5)
-    const SEED_ADDRESS = encodeAlgorandAddress(SEED_PUBKEY)
+    const SEED_ADDRESS =
+        'AUCQKBIFAUCQKBIFAUCQKBIFAUCQKBIFAUCQKBIFAUCQKBIFAUC7CN5SGQ'
 
     const derivePasskey = async () =>
         derivePasskeyCredential({

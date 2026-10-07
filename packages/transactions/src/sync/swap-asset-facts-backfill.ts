@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import type { TransactionHistoryResult } from '../models/types'
@@ -99,11 +100,12 @@ export async function backfillSwapAssetFacts({
     accountAddress,
     fetchHistory = defaultFetchHistory,
 }: BackfillParams): Promise<void> {
+    const scope = scopeForLegacyNetwork(network)
     let windows: Window[]
     try {
         const rows = await getSwapRowsMissingAssetFacts({
             db,
-            network,
+            scope,
             accountAddress,
         })
         windows = groupIntoWindows(rows)
@@ -128,13 +130,13 @@ export async function backfillSwapAssetFacts({
                 db,
                 items: healed,
                 accountAddress,
-                network,
+                scope,
             })
 
             const returned = new Set(healed.map(item => item.id))
             await persistResolvedSwapAssetFacts({
                 db,
-                network,
+                scope,
                 ids: ids.filter(id => !returned.has(id)),
             })
         } catch (error) {

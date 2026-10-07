@@ -48,17 +48,15 @@ import { TransactionProcessingScreen } from '@modules/transactions/screens/send-
 import { TransactionSuccessScreen } from '@modules/transactions/routes'
 import { useSendFundsStore } from '@modules/transactions'
 import {
-    mockAssetDetails,
-    mockIndexerAssetDetails,
-    mockPublicAssetDetails,
-} from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import {
     mockAlgodAccountInformation,
     mockAlgodSendRawTransaction,
     mockAlgodStatus,
     mockAlgodTransactionParams,
+    mockAssetDetails,
+    mockIndexerAssetDetails,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+    mockPublicAssetDetails,
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { isElementDisabled } from '@test-utils/rnw'

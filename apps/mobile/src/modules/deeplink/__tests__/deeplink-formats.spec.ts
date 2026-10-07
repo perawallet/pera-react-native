@@ -115,6 +115,10 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { microAlgosToAlgos } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+
     // Real enum rather than a hand-copied literal — see the note in
     // vitest.setup.ts. base.ts has no runtime imports.
     const { ErrorCategory } = await vi.importActual<
@@ -122,15 +126,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     >('../../../../../../packages/shared/src/errors/base')
 
     return {
-        ALGO_ASSET_ID: '0',
-        isAlgoAssetId: (assetId: string | number | bigint) =>
-            String(assetId) === '0',
         logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
         generateOrderedUniqueId: vi.fn(() => 'test-id'),
         decodeFromBase64: vi.fn((b64: string) =>
             Uint8Array.from(Buffer.from(b64, 'base64')),
         ),
         ErrorCategory,
+        microAlgosToAlgos,
     }
 })
 
@@ -221,7 +223,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     UserRejectedSigningError: class UserRejectedSigningError extends Error {},
     // Non-quantum in every fixture here — the calculator's real fast path
     // is a passthrough no-op. Real fee behavior is covered by
-    // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
+    // packages/chain-algorand/src/signing/__tests__/useAssignFeeToGroup.spec.ts
     // and apps/mobile/src/modules/deeplink/handlers/__tests__/useKeyregDeeplink.spec.ts.
     useMinimumFeeCalculator: () => ({
         assignFeeToGroup: async ({
@@ -292,19 +294,17 @@ vi.mock('@modules/transactions', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (address: string) =>
         !!address && /^[0-9a-zA-Z]{58}$/.test(address),
-    microAlgosToAlgos: (microAlgos: bigint | number | string) => {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { Decimal } = require('decimal.js')
-        return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
-    },
-    useNetwork: () => ({ network: 'mainnet' }),
     useTransactionEncoder: () => ({
         encodeTransaction: (tx: unknown) => tx,
         decodeTransaction: (tx: unknown) => tx,
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@hooks/useToast', () => ({

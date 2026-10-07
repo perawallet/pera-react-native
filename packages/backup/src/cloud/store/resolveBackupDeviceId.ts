@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { deviceIdFor, useDeviceStore } from '@perawallet/wallet-core-device'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { DeviceId } from '../models'
 import { useCloudBackupStore } from './store'
@@ -21,5 +21,4 @@ import { useCloudBackupStore } from './store'
  *  reading it directly makes a network switch change what we send. */
 export const resolveBackupDeviceId = (network: Network): DeviceId | null =>
     useCloudBackupStore.getState().deviceId ??
-    useDeviceStore.getState().deviceIDs?.get(network) ??
-    null
+    deviceIdFor(useDeviceStore.getState(), network)

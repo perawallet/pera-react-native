@@ -84,7 +84,7 @@ lockfileVersion: '9.0'
 
 importers:
 
-  packages/blockchain:
+  packages/chain-algorand:
     dependencies:
       algosdk:
         specifier: 'catalog:'

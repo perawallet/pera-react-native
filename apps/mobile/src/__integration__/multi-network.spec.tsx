@@ -41,11 +41,11 @@ import {
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     getAlgorandClient,
-    useNetworkStore,
     setCustomNetwork,
     clearCustomNetwork,
     getExpectedGenesisHash,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { fetchTransactionHistory } from '@perawallet/wallet-core-transactions'
 import { fetchAssets } from '@perawallet/wallet-core-chain-algorand/assets'
 import { assertTransactionsMatchNetwork } from '@perawallet/wallet-core-chain-algorand/signing'

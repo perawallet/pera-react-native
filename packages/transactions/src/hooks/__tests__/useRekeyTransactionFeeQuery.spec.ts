@@ -14,15 +14,15 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockBuildRekeyTx = vi.fn()
-const mockUseNetwork = vi.fn(() => ({ network: 'mainnet' }))
+const mockUseSelectedScope = vi.fn(() => scopeForLegacyNetwork('mainnet'))
 const mockUseAllAccounts = vi.fn()
-const mockUseMinimumFeeConfig = vi.fn()
-const mockUseSuggestedParametersQuery = vi.fn()
+const mockUseFeeConfig = vi.fn()
+const mockUseSuggestedMinFeeQuery = vi.fn()
 const mockResolveMinFeeForSender = vi.fn()
 
 // Full replacement (not importActual): the real barrels pull in
@@ -32,12 +32,8 @@ const mockResolveMinFeeForSender = vi.fn()
 // packages/chain-algorand/src/signing/__tests__/minFeeResolver.spec.ts —
 // these tests verify only that this hook wires the resolver's inputs
 // correctly and applies the override guard on its output.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => mockUseNetwork(),
-    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
-    useSuggestedParametersQuery: () => mockUseSuggestedParametersQuery(),
-    microAlgosToAlgos: (microAlgos: bigint) =>
-        new Decimal(microAlgos.toString()).dividedBy(1_000_000),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: () => mockUseSelectedScope(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -45,6 +41,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    useFeeConfig: () => mockUseFeeConfig(),
+    useSuggestedMinFeeQuery: () => mockUseSuggestedMinFeeQuery(),
     resolveMinFeeForSender: (...args: unknown[]) =>
         mockResolveMinFeeForSender(...args),
 }))
@@ -87,18 +85,19 @@ const buildWrapper = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+    mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     sendFlowChainAdapters.reset()
     sendFlowChainAdapters.register({
         chainId: 'algorand',
         buildTransferTxs: vi.fn(),
         rekey: { buildTx: mockBuildRekeyTx },
     })
-    mockUseSuggestedParametersQuery.mockReturnValue({
-        data: { minFee: 1000n },
+    mockUseSuggestedMinFeeQuery.mockReturnValue({
+        suggestedMinFee: 1000n,
         isPending: false,
+        isError: false,
     })
-    mockUseMinimumFeeConfig.mockReturnValue({
+    mockUseFeeConfig.mockReturnValue({
         minTxnFee: 1000n,
         pqMultiplier: 3n,
     })
@@ -147,9 +146,10 @@ describe('useRekeyTransactionFeeQuery', () => {
     })
 
     it('stays pending until the shared suggested-params query resolves', async () => {
-        mockUseSuggestedParametersQuery.mockReturnValue({
-            data: undefined,
+        mockUseSuggestedMinFeeQuery.mockReturnValue({
+            suggestedMinFee: undefined,
             isPending: true,
+            isError: false,
         })
         const { wrapper } = buildWrapper()
 
@@ -166,8 +166,8 @@ describe('useRekeyTransactionFeeQuery', () => {
         // Offline / algod down: the shared query rejects fast (networkMode
         // 'always'). The fee query must still settle — a permanently pending
         // fee leaves the confirm CTA disabled with no error and no retry.
-        mockUseSuggestedParametersQuery.mockReturnValue({
-            data: undefined,
+        mockUseSuggestedMinFeeQuery.mockReturnValue({
+            suggestedMinFee: undefined,
             isPending: false,
             isError: true,
         })
@@ -205,7 +205,7 @@ describe('useRekeyTransactionFeeQuery', () => {
     it('follows the resolved minimum fee when the built transaction has no fee', async () => {
         // Non-default config: the resolver floors at the 2000 µAlgo config
         // minimum, so the displayed fee is 0.002 ALGO.
-        mockUseMinimumFeeConfig.mockReturnValue({
+        mockUseFeeConfig.mockReturnValue({
             minTxnFee: 2000n,
             pqMultiplier: 3n,
         })
@@ -247,7 +247,7 @@ describe('useRekeyTransactionFeeQuery', () => {
 
     it('caches per network — a mainnet fee does not satisfy a testnet query', async () => {
         // Same QueryClient across both renders — but the network change should
-        // produce a fresh fetch because network is part of the query key.
+        // produce a fresh fetch because scope is part of the query key.
         mockBuildRekeyTx
             .mockResolvedValueOnce({ fee: 1000n })
             .mockResolvedValueOnce({ fee: 5000n })
@@ -260,7 +260,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         await waitFor(() => expect(mainnet.current.isPending).toBe(false))
         expect(mainnet.current.feeAlgos?.toString()).toBe('0.001')
 
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
         const { result: testnet } = renderHook(
             () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
             { wrapper },

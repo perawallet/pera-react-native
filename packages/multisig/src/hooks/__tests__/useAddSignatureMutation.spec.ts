@@ -14,6 +14,7 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAddSignatureMutation } from '../useAddSignatureMutation'
 import { getSignRequestDetailQueryKey } from '../querykeys'
 
@@ -146,7 +147,10 @@ describe('useAddSignatureMutation', () => {
     test('invalidates sign request detail query on success', async () => {
         mocks.addSignature.mockResolvedValue(validSignRequestResponse)
 
-        const queryKey = getSignRequestDetailQueryKey('mainnet', 'sr-123')
+        const queryKey = getSignRequestDetailQueryKey(
+            scopeForLegacyNetwork('mainnet'),
+            'sr-123',
+        )
         queryClient.setQueryData(queryKey, { id: 'sr-123', status: 'pending' })
 
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')

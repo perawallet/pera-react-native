@@ -12,7 +12,20 @@
 
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { algo25SecretKeyToIndices, algo25SeedToIndices } from '../algo25-utils'
+import {
+    algo25PublicKeyFromSeed,
+    algo25SecretKeyToIndices,
+    algo25SeedToIndices,
+    indicesToAlgo25Seed,
+} from '../algo25-utils'
+import { mnemonicWordsToIndices } from '../mnemonic-indices'
+
+// THROWAWAY TEST VECTOR, published in source; NEVER fund it. Its algo25
+// address is T2A7FPKQ3YON2JT5A5CSN4JWNDMUGJY6WX4H6HEH2UPKWSPSPBG5O7X4UM.
+const TEST_MNEMONIC =
+    'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
+const TEST_PUBLIC_KEY_HEX =
+    '9e81f2bd50de1cdd267d074526f13668d943271eb5f87f1c87d51eab49f2784d'
 
 describe('algo25SecretKeyToIndices', () => {
     it('truncates a 64-byte keypair to the 32-byte seed before encoding', () => {
@@ -36,5 +49,25 @@ describe('algo25SecretKeyToIndices', () => {
         expect(() =>
             algo25SecretKeyToIndices(new Uint8Array(16).fill(3)),
         ).toThrow(RangeError)
+    })
+})
+
+describe('algo25PublicKeyFromSeed', () => {
+    it('derives the Ed25519 public key the algo25 account signs with', () => {
+        const seed = indicesToAlgo25Seed(
+            mnemonicWordsToIndices(TEST_MNEMONIC.split(' '))!,
+        )
+
+        const publicKey = algo25PublicKeyFromSeed(seed)
+
+        expect(Buffer.from(publicKey).toString('hex')).toBe(TEST_PUBLIC_KEY_HEX)
+    })
+
+    it('leaves the caller-owned seed untouched', () => {
+        const seed = new Uint8Array(32).fill(9)
+
+        algo25PublicKeyFromSeed(seed)
+
+        expect(seed).toEqual(new Uint8Array(32).fill(9))
     })
 })

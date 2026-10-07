@@ -30,18 +30,13 @@ const mockGetSuggestedParams = vi.fn()
 const mockAddSignRequest = vi.fn()
 const mockSubmitAndAutoRefresh = vi.fn()
 const mockUseAllAccounts = vi.fn()
-const mockUseMinimumFeeConfig = vi.fn()
+const mockUseFeeConfig = vi.fn()
 const mockResolveMinFeeForSender = vi.fn()
 const mockNetworkStoreGetState = vi.fn()
 const mockGetOpenSubmissionAttemptsForIntent = vi.fn()
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
-    useFetchSuggestedMinFee: () => async () =>
-        BigInt((await mockGetSuggestedParams()).minFee),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: { getState: () => mockNetworkStoreGetState() },
-    compactSignedResults: (signed: unknown[]) =>
-        signed.filter(tx => tx !== null),
 }))
 
 // Full replacement (not importActual): the real barrels pull in
@@ -56,6 +51,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    useFeeConfig: () => mockUseFeeConfig(),
+    useFetchSuggestedMinFee: () => async () =>
+        BigInt((await mockGetSuggestedParams()).minFee),
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     submitAndAutoRefresh: (...args: unknown[]) =>
         mockSubmitAndAutoRefresh(...args),
@@ -69,6 +67,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
 import { RekeyError } from '../../errors'
 import { sendFlowChainAdapters } from '../../chain-adapter'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const SIGNING_METADATA = {
     name: 'Source account',
@@ -109,7 +108,7 @@ describe('useSubmitRekeyMutation', () => {
             buildTransferTxs: vi.fn(),
             rekey: { buildTx: mockBuildRekeyTx },
         })
-        mockUseMinimumFeeConfig.mockReturnValue({
+        mockUseFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
         })
@@ -181,7 +180,7 @@ describe('useSubmitRekeyMutation', () => {
             reason: 'submission_pending',
         })
         expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledWith({
-            network: 'testnet',
+            scope: scopeForLegacyNetwork('testnet'),
             sender: 'SRC',
             intentKey: { kind: 'rekey', address: 'SRC' },
             // Bounded like the swap guard: a row with no decodable validity

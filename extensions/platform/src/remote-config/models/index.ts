@@ -29,7 +29,6 @@ export const RemoteConfigKeys = {
     force_platform_age_gate: 'force_platform_age_gate',
     onramp_currency_decimals: 'onramp_currency_decimals',
     enable_pera_card: 'enable_pera_card',
-    enable_quantum_accounts: 'enable_quantum_accounts',
     enable_quantum_dapp_warning: 'enable_quantum_dapp_warning',
     enable_quantum_swap: 'enable_quantum_swap',
     enable_card_auto_funding: 'enable_card_auto_funding',
@@ -42,6 +41,7 @@ export const RemoteConfigKeys = {
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
     chain_algorand_overrides: 'chain_algorand_overrides',
+    chain_ethereum_overrides: 'chain_ethereum_overrides',
 } as const
 
 export type RemoteConfigKey =
@@ -78,7 +78,6 @@ export const RemoteConfigDefaults: Record<
     // built-in onramp defaults. Empty string = no overrides.
     onramp_currency_decimals: '',
     enable_pera_card: false,
-    enable_quantum_accounts: false,
     enable_quantum_dapp_warning: true,
     // Rollout gate and kill switch for swapping FROM quantum accounts. The
     // backend must price the pqsig fee surcharge into prepared swap groups
@@ -134,6 +133,7 @@ export const RemoteConfigDefaults: Record<
     // JSON `{"enabled"?: boolean, "capabilities"?: {<capability>: boolean}}`;
     // empty string = no overrides. Parsed by readCapabilityOverrides.
     chain_algorand_overrides: '',
+    chain_ethereum_overrides: '',
 }
 
 export interface RemoteConfigService {

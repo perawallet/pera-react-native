@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import {
-    type PeraDisplayableTransaction,
-    getAssetConfigType,
-} from '@perawallet/wallet-core-blockchain'
+import { getAssetConfigType } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {

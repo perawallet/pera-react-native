@@ -24,6 +24,7 @@ import type {
 } from '../../models/types'
 import { upsertTransactions, getTransactionHistory } from '../../db'
 import { backfillSwapAssetFacts } from '../swap-asset-facts-backfill'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 // 2026-09-02T10:21:41Z. The window is padded a day either side so the row is
 // caught regardless of which timezone the backend reads the day filter in.
@@ -125,7 +126,7 @@ describe('backfillSwapAssetFacts', () => {
                 makeTx({ swapGroupDetail: legacySwapDetail, ...overrides }),
             ],
             accountAddress: ACCOUNT,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
 
     const run = (fetchHistory: unknown) =>
@@ -140,7 +141,7 @@ describe('backfillSwapAssetFacts', () => {
         const rows = await getTransactionHistory({
             db,
             accountAddress: ACCOUNT,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
         return rows.find(row => row.id === id)
     }
@@ -176,7 +177,7 @@ describe('backfillSwapAssetFacts', () => {
             db,
             items: [makeTx({ id: 'BYSTANDER' })],
             accountAddress: ACCOUNT,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
         const fetchHistory = vi.fn().mockResolvedValue(
             asResult([
@@ -250,7 +251,7 @@ describe('backfillSwapAssetFacts', () => {
             db,
             items: [makeTx({ swapGroupDetail: healedSwapDetail })],
             accountAddress: ACCOUNT,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
         const fetchHistory = vi.fn()
 

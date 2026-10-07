@@ -116,8 +116,8 @@ describe('cleanupRemovedAccountData', () => {
             .insert(AccountAssetHoldingsSchema)
             .values({
                 accountAddress: 'ADDR1',
-                assetId: new Decimal('200'),
-                network: 'devnet' as ChainScopeKey,
+                assetId: '200',
+                network: 'unknown/devnet' as ChainScopeKey,
                 updatedAt: Date.now(),
             })
             .run()
@@ -127,7 +127,9 @@ describe('cleanupRemovedAccountData', () => {
             accountAddress: 'ADDR1',
         })
 
-        expect(result.prunedAssetIdsByNetwork).toEqual({ mainnet: ['100'] })
+        expect(result.prunedAssetIdsByNetwork).toEqual({
+            'algorand/mainnet': ['100'],
+        })
         expect(handler).toHaveBeenCalledWith({ db, accountAddress: 'ADDR1' })
     })
 
@@ -191,7 +193,9 @@ describe('cleanupRemovedAccountData', () => {
                 scope: MAINNET_SCOPE,
             }),
         ).toHaveLength(0)
-        expect(result.prunedAssetIdsByNetwork).toEqual({ mainnet: ['100'] })
+        expect(result.prunedAssetIdsByNetwork).toEqual({
+            'algorand/mainnet': ['100'],
+        })
     })
 
     it('keeps assets another account still holds or is opted into', async () => {
@@ -280,7 +284,10 @@ describe('cleanupRemovedAccountData', () => {
                 scope: TESTNET_SCOPE,
             }),
         ).toHaveLength(0)
-        expect(result.networksAffected.sort()).toEqual(['mainnet', 'testnet'])
+        expect(result.networksAffected.sort()).toEqual([
+            'algorand/mainnet',
+            'algorand/testnet',
+        ])
     })
 
     it('keeps the seeded native row when the last account holding it goes', async () => {

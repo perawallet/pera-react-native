@@ -13,19 +13,22 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAssetConfigDisplay } from '../useAssetConfigDisplay'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { Decimal } from 'decimal.js'
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        getAssetConfigType: vi.fn(() => 'create'),
-    }
-})
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => {
+        const actual =
+            await importOriginal<
+                typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+            >()
+        return {
+            ...actual,
+            getAssetConfigType: vi.fn(() => 'create'),
+        }
+    },
+)
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =

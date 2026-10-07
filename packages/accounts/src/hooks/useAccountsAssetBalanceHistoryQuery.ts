@@ -11,8 +11,14 @@
  */
 
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import type { AccountAssetBalanceHistoryItem, WalletAccount } from '../models'
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
@@ -37,13 +43,17 @@ export const useAccountsAssetsBalanceHistoryQuery = (
     assetId: string,
     period: HistoryPeriod,
 ): UseAccountsAssetsBalanceHistoryQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const { preferredCurrency, usdToPreferred } = useCurrency()
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scope.chainId,
+        'balanceHistory',
+    )
 
     const query = useQuery({
         queryKey: getAccountAssetBalanceHistoryQueryKey(
-            network,
+            scope,
             account.address,
             assetId,
             period,

@@ -12,7 +12,11 @@
 
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { HardwareWalletDerivedAccount } from '@perawallet/wallet-core-hardware-wallet'
 import { fetchRekeyedAddresses } from '../chain-adapter'
 import { getRekeyedAddressesQueryKey } from './querykeys'
@@ -37,12 +41,13 @@ type UseLedgerRekeyedScanResult = {
 export const useLedgerRekeyedScan = (
     derivedAccounts: HardwareWalletDerivedAccount[],
 ): UseLedgerRekeyedScanResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const allAccounts = useAllAccounts()
 
     const results = useQueries({
         queries: derivedAccounts.map(acc => ({
-            queryKey: getRekeyedAddressesQueryKey(acc.address, network),
+            queryKey: getRekeyedAddressesQueryKey(acc.address, scope),
             queryFn: () => fetchRekeyedAddresses(acc.address, network),
             staleTime: 30_000,
         })),

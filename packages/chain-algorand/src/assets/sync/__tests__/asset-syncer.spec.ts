@@ -48,9 +48,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 const deviceIdGetMock = vi.hoisted(() => vi.fn(() => null as string | null))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceStore: {
-        getState: () => ({ deviceIDs: { get: deviceIdGetMock } }),
-    },
+    useDeviceStore: { getState: () => ({}) },
+    deviceIdFor: () => deviceIdGetMock(),
 }))
 
 import {

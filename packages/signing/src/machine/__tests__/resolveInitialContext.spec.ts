@@ -12,8 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
-import { Address, Transaction } from 'algosdk'
-import { groupTransactions } from '@perawallet/wallet-core-blockchain'
+import { Address, Transaction, assignGroupID } from 'algosdk'
 import {
     makeTestAddress,
     makeTestPaymentTx,
@@ -34,6 +33,12 @@ import {
     InvalidSignableDataError,
     SigningError,
 } from '../../pipeline/errors'
+
+// assignGroupID stamps the group id in place.
+const groupTransactions = (transactions: Transaction[]): Transaction[] => {
+    assignGroupID(transactions)
+    return transactions
+}
 
 const userAddr = makeTestAddress(1)
 const dappAddr = makeTestAddress(2)

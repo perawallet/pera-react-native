@@ -89,10 +89,10 @@ const { stores, withSecretMock, parsePinRecordMock, mkStore, seedStores } =
             })
             Object.assign(stores.device, {
                 deviceIDs: new Map([
-                    ['mainnet', 'm-id'],
-                    ['testnet', 't-id'],
+                    ['algorand/mainnet', 'm-id'],
+                    ['algorand/testnet', 't-id'],
                 ]),
-                deviceIdOrigins: { mainnet: 'migrated' },
+                deviceIdOrigins: { 'algorand/mainnet': 'migrated' },
             })
             Object.assign(stores.swaps, { slippage: '0.5' })
         }
@@ -133,6 +133,14 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: mkStore(stores.device),
+    deviceIdFor: (
+        state: { deviceIDs: Map<string, string | null> },
+        network: string,
+    ) => state.deviceIDs.get(`algorand/${network}`) ?? null,
+    deviceIdOriginFor: (
+        state: { deviceIdOrigins: Record<string, string | undefined> },
+        network: string,
+    ) => state.deviceIdOrigins[`algorand/${network}`],
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -262,7 +270,7 @@ describe('useRNMigrationSnapshot > derived maps', () => {
     })
 
     it('falls back to null when a device id is missing from the store', () => {
-        stores.device.deviceIDs = new Map([['mainnet', 'only-m']])
+        stores.device.deviceIDs = new Map([['algorand/mainnet', 'only-m']])
 
         const { result } = renderHook(() => useRNMigrationSnapshot())
 
@@ -282,7 +290,7 @@ describe('useRNMigrationSnapshot > derived maps', () => {
     })
 
     it('reflects a recreated device id origin', () => {
-        stores.device.deviceIdOrigins = { mainnet: 'recreated' }
+        stores.device.deviceIdOrigins = { 'algorand/mainnet': 'recreated' }
 
         const { result } = renderHook(() => useRNMigrationSnapshot())
 

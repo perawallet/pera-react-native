@@ -43,14 +43,14 @@ import {
     encodeTransaction,
     encodeTransactionRaw,
     rawTransactionsMatch,
-    useNetworkStore,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -654,10 +654,6 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
     })
 
     it('Given a quantum account is selected, when the user taps Connect, then the warning sheet appears once even on a double tap, and Cancel rejects the session without persisting it', async () => {
-        await useRemoteConfigStore.persist.rehydrate()
-        useRemoteConfigStore
-            .getState()
-            .setConfigOverride('enable_quantum_accounts', true)
         // The acknowledgement is a persisted preference on a singleton
         // store, so a prior test's Continue would hide the warning here.
         useSettingsStore

@@ -48,10 +48,11 @@ type UseArc60SigningScreenResult = {
     /** Localized copy for the pipeline's failure, resolved for direct display. */
     errorMessage: Nullable<string>
     /**
-     * The SIWA `domain` is asking for a signature from an origin the wallet
-     * actually loaded a different page from — a relay/phishing signal. Surfaced
-     * as a non-blocking warning (the user can still confirm). False unless the
-     * request carries a platform-verified origin (i.e. webview-sourced).
+     * The SIWA `domain` differs from the origin the platform observed sending
+     * the request, a relay/phishing signal. Blocks confirm, since a verified
+     * origin makes the mismatch unambiguous. False unless the request carries
+     * a platform-verified origin (extension or webview), so WalletConnect
+     * requests are never blocked by it.
      */
     hasOriginMismatch: boolean
     /**
@@ -96,10 +97,16 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     // 'injected' / 'webview' / 'walletconnect' and must not fire card events.
     const isCardRequest = request?.sourceType === 'card'
 
+    const hasOriginMismatch = isAuthDataOriginMismatch(
+        request?.authData.domain ?? '',
+        request?.verifiedOrigin,
+    )
+
     const handleApprove = useCallback(() => {
-        // Backstop for the blocked terminal state — the confirm control is
-        // not rendered when quantum-blocked, so this should be unreachable.
-        if (isQuantumBlocked) return
+        // Backstop for the blocked terminal states: the confirm control is
+        // hidden when quantum-blocked and disabled on an origin mismatch, so
+        // this should be unreachable.
+        if (isQuantumBlocked || hasOriginMismatch) return
 
         if (isCardRequest) trackEvent(CardEvent.CreateArbTxConfirm)
 
@@ -124,6 +131,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         request,
         confirmQuantumDappUsage,
         isQuantumBlocked,
+        hasOriginMismatch,
     ])
 
     const handleReject = useCallback(() => {
@@ -137,12 +145,11 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
 
     const isPending = pipeline.isLoading || isApproving
     const canConfirm =
-        !isPending && !!account && parsed?.type === 'siwx' && !isQuantumBlocked
-
-    const hasOriginMismatch = isAuthDataOriginMismatch(
-        request?.authData.domain ?? '',
-        request?.verifiedOrigin,
-    )
+        !isPending &&
+        !!account &&
+        parsed?.type === 'siwx' &&
+        !isQuantumBlocked &&
+        !hasOriginMismatch
 
     const errorMessage = pipeline.error
         ? resolveErrorCopy(pipeline.error, t, undefined, getMessage).body

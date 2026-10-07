@@ -20,8 +20,8 @@ const mocks = vi.hoisted(() => ({
     knownUsdcId: '10458941' as string | null,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 vi.mock('@perawallet/wallet-core-assets', () => ({
     getKnownAssetId: (_key: string, scope: { networkId: string }) =>

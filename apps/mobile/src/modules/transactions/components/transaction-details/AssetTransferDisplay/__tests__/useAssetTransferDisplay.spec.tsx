@@ -13,23 +13,26 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAssetTransferDisplay } from '../useAssetTransferDisplay'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { UseQueryResult } from '@tanstack/react-query'
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        getAssetTransferType: vi.fn(() => 'transfer'),
-    }
-})
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => {
+        const actual =
+            await importOriginal<
+                typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+            >()
+        return {
+            ...actual,
+            getAssetTransferType: vi.fn(() => 'transfer'),
+        }
+    },
+)
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const actual =

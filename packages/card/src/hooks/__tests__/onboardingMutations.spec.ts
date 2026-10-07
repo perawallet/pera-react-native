@@ -16,8 +16,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+const mockUseSelectedScope = vi.hoisted(() => vi.fn())
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: mockUseNetwork,
+    useSelectedScope: mockUseSelectedScope,
 }))
 
 const api = vi.hoisted(() => ({
@@ -38,6 +40,7 @@ vi.mock('../../session', () => session)
 const auth = vi.hoisted(() => ({ acquireCardSessionTokens: vi.fn() }))
 vi.mock('../../api/auth', () => auth)
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useSendEmailVerificationMutation } from '../useSendEmailVerificationMutation'
 import { useVerifyEmailMutation } from '../useVerifyEmailMutation'
 import { useSendPhoneVerificationMutation } from '../useSendPhoneVerificationMutation'
@@ -64,6 +67,7 @@ describe('onboarding mutation hooks', () => {
         })
         vi.clearAllMocks()
         mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
         Object.values(api).forEach(fn => fn.mockResolvedValue(undefined))
         // The address step returns a token-bearing body the mutation reads.
         api.submitAddress.mockResolvedValue({

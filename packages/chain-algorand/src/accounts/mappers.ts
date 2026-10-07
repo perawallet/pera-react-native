@@ -11,7 +11,7 @@
  */
 
 import { Address } from 'algosdk'
-import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
+import type { AccountInformation } from '@perawallet/wallet-core-chain-contract'
 import type { OnChainAccountInformationResponse } from './endpoints'
 
 export const mapOnChainAccountInformation = (

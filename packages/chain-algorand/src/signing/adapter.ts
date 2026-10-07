@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { resolveArc0001SignTxnRequest } from '@perawallet/wallet-core-blockchain'
+import {
+    Address,
+    encodeTransactionRaw,
+    mapToDisplayableTransaction,
+    resolveArc0001SignTxnRequest,
+    useFetchSuggestedMinFee,
+} from '../blockchain'
 import type {
     LocalKeySignerChainAdapter,
     MessageSignerChainAdapter,
@@ -19,7 +25,6 @@ import type {
 } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { decodeArbitraryDataForDisplay } from './arbitraryDataDisplay'
-import { assignFeeToGroup } from './assignMinimumFeesToGroup'
 import { computeBalanceImpact } from './balanceImpact'
 import {
     classifyRequestStructure,
@@ -27,6 +32,10 @@ import {
 } from './classification'
 import { createStandardAnalyzer } from './createStandardAnalyzer'
 import { enqueueArc0001SignRequest } from './enqueueArc0001SignRequest'
+import {
+    useAlgorandFeeConfig,
+    useAlgorandSuggestedMinFeeQuery,
+} from './feeHooks'
 import { calculateTotalFee, detectHighGroupFee } from './fees'
 import {
     getRekeyedUnsignableReason,
@@ -42,6 +51,8 @@ import { signArc60AuthRequest } from './message/signArc60AuthRequest'
 import { buildSiwxAuthData } from './message/siwx'
 import { resolveMinFeeForSender } from './minFeeResolver'
 import { simulateInnerTransactions } from './simulateImpact'
+import { useAssignFeeToGroup } from './useAssignFeeToGroup'
+import { useMinFeeForSender } from './useMinFeeForSender'
 import { createLocalKeyStrategy } from './local-key/createLocalKeyStrategy'
 import { signLocalKeyGroups } from './local-key/signLocalKeyGroups'
 import {
@@ -74,6 +85,7 @@ export const algorandReviewerAdapter: ReviewerChainAdapter = {
     resolveAllSignerAddresses,
     getRekeyedUnsignableReason,
     decodeArbitraryDataForDisplay,
+    toDisplayableTransaction: mapToDisplayableTransaction,
 }
 
 export const algorandPlannerAdapter: PlannerChainAdapter = {
@@ -81,7 +93,12 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
     resolveDappRequest: resolveArc0001SignTxnRequest,
     enqueueDappRequest: enqueueArc0001SignRequest,
     minFeeForSender: resolveMinFeeForSender,
-    assignGroupFees: assignFeeToGroup,
+    useFeeConfig: useAlgorandFeeConfig,
+    useSuggestedMinFeeQuery: useAlgorandSuggestedMinFeeQuery,
+    useFetchSuggestedMinFee,
+    useMinFeeForSender,
+    useAssignFeeToGroup,
+    encodeUnsignedTransaction: encodeTransactionRaw,
     reviewGroupFees: (transactions, signableAddresses) => ({
         totalFee: calculateTotalFee(transactions, signableAddresses),
         highFeeWarning: detectHighGroupFee(transactions, signableAddresses),
@@ -125,4 +142,5 @@ export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
     isAuthDataWirePayload: isArc60WirePayload,
     parseAuthDataWireRequest: parseArc60WireRequest,
     buildSiwxAuthData,
+    signerPublicKey: address => Address.fromString(address).publicKey,
 }

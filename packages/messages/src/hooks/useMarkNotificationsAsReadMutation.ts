@@ -13,8 +13,11 @@
 import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { updateLastSeenNotification } from '../api/notifications'
 import { useInboxInvalidator } from './useInboxInvalidator'
 
@@ -28,7 +31,10 @@ export const useMarkNotificationsAsReadMutation =
     (): UseMarkNotificationsAsReadMutationResult => {
         const { network } = useNetwork()
         const deviceID = useDeviceID(network)
-        const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+        const isUnavailableOnNetwork = !useChainCapability(
+            scopeForLegacyNetwork(network).chainId,
+            'notifications',
+        )
         const { invalidate } = useInboxInvalidator()
 
         const { mutate } = useMutation({

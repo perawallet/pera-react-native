@@ -11,8 +11,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { nameServiceAdapterFor } from '../chain-adapter'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
@@ -44,15 +47,14 @@ export const useNfdForAddressQuery = (
     address: string,
     options?: { enabled?: boolean },
 ): UseNfdForAddressQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const enabled =
         (options?.enabled ?? true) &&
-        nameServiceAdapterFor(scopeForLegacyNetwork(network)).isValidAddress(
-            address,
-        )
+        nameServiceAdapterFor(scope).isValidAddress(address)
 
     const query = useQuery({
-        queryKey: nfdQueryKeys.forAddress(address, network),
+        queryKey: nfdQueryKeys.forAddress(address, scope),
         queryFn: () => {
             const valuePromise = nfdBatchQueue.enqueue(address, network)
             return valuePromise.then(value => (value ? [value] : []))

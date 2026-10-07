@@ -26,11 +26,8 @@ vi.mock('../assertTransactionsMatchNetwork', () => ({
         assertTransactionsMatchNetworkMock(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
+vi.mock('../../blockchain', async importOriginal => {
+    const original = await importOriginal<typeof import('../../blockchain')>()
     return {
         ...original,
         classifyPeraTransaction: (tx: { type?: string }) => tx.type ?? 'pay',

@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useOpenSubmissionTxIdsQuery } from '../useOpenSubmissionTxIdsQuery'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const mockGetOpenSubmissionAttempts = vi.fn()
 
@@ -60,7 +61,7 @@ describe('useOpenSubmissionTxIdsQuery', () => {
             ]),
         )
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
     })
 

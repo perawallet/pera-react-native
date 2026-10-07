@@ -33,7 +33,7 @@ vi.mock('../../db', () => ({
     getAssetsByIds: mocks.getAssetsByIds,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: mocks.useNetwork,
 }))
 

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { upsertTransactions } from '../db'
 import type { TransactionHistoryItem } from '../models/types'
@@ -17,10 +18,10 @@ import type { TransactionHistoryItem } from '../models/types'
 export const persistTransactionsToDb = async (
     items: TransactionHistoryItem[],
     accountAddress: string,
-    network: string,
+    scope: ChainScope,
 ): Promise<void> => {
     try {
-        await upsertTransactions({ items, accountAddress, network })
+        await upsertTransactions({ items, accountAddress, scope })
     } catch (error) {
         logger.warn('Failed to persist transactions to database', { error })
     }

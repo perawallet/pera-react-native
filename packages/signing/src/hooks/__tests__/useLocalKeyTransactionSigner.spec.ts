@@ -13,11 +13,10 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const mockSignTransactionsWithKey = vi.fn()
 const mockGetPQSigningInfo = vi.fn()
-const encodeTransactionMock = vi.fn()
 const networkMock = vi.fn(() => ({ network: 'mainnet' }))
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
@@ -29,11 +28,10 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
-    ...(await importOriginal<object>()),
-    useTransactionEncoder: () => ({
-        encodeTransaction: encodeTransactionMock,
-    }),
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => networkMock(),
 }))
 
@@ -73,7 +71,7 @@ describe('useLocalKeyTransactionSigner', () => {
         )
     })
 
-    test('binds payload signing to the signing key domain and passes the PQ oracle and encoder through', async () => {
+    test('binds payload signing to the signing key domain and passes the PQ oracle through', async () => {
         mockSignTransactionsWithKey.mockResolvedValue([new Uint8Array([7])])
         const adapter = registerFakeLocalKeySignerAdapter({
             signTransactions: vi.fn().mockResolvedValue([]),
@@ -91,7 +89,10 @@ describe('useLocalKeyTransactionSigner', () => {
             payloads,
         )
         expect(deps.getPQSigningInfo).toBe(mockGetPQSigningInfo)
-        expect(deps.encodeTransaction).toBe(encodeTransactionMock)
+        expect(Object.keys(deps).sort()).toEqual([
+            'getPQSigningInfo',
+            'signPayloads',
+        ])
     })
 
     test('rejects when no signer adapter is registered for the network chain', async () => {

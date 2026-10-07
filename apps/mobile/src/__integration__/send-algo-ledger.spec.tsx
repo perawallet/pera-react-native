@@ -20,7 +20,6 @@ import {
     it,
     vi,
 } from 'vitest'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
@@ -55,11 +54,13 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
+
+const NATIVE_ASSET_ID = '0'
 
 // The Ledger sender reuses the same valid fixture address that the other
 // ledger integration tests pin (HD_TEST_ADDRESS). The receiver is a
@@ -201,7 +202,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
     it('Given a Ledger sender, when the user confirms, then the LedgerAwaitingApprovalContent surfaces via the SigningOverlays driver until the device signs', async () => {
         const sender = seedLedgerSender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -274,7 +275,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
     it('Given a Ledger sender, when the device rejects the transaction, then the signing sheet shows the user-rejected error, never POSTs to algod, and never reaches success', async () => {
         seedLedgerSender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -359,7 +360,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
     it('Given a Ledger sender, when signing times out mid-confirmation, then the signing sheet shows the timeout error, never POSTs to algod, and never reaches success', async () => {
         seedLedgerSender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

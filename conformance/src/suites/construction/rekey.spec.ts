@@ -17,7 +17,7 @@ import {
     buildRekeyTx,
     buildTransferTxs,
 } from '@perawallet/wallet-core-chain-algorand/transactions/builders'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 import {
     createAlgo25Account,
@@ -122,7 +122,7 @@ describe('rekey construction conformance', () => {
                 scope,
                 sender: source.address,
                 receiver: receiver.address,
-                assetId: ALGO_ASSET_ID,
+                assetId: algorandDescriptor.nativeAsset.ref.assetId,
                 amount: 1000n,
             }),
         )
@@ -142,7 +142,7 @@ describe('rekey construction conformance', () => {
                 scope,
                 sender: source.address,
                 receiver: receiver.address,
-                assetId: ALGO_ASSET_ID,
+                assetId: algorandDescriptor.nativeAsset.ref.assetId,
                 amount,
             }),
         )

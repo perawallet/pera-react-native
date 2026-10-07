@@ -24,7 +24,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { Arc0001ResolveResult } from '@perawallet/wallet-core-blockchain'
+import type { Arc0001ResolveResult } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeFromBase64,
     encodeToBase64,
@@ -45,10 +45,9 @@ const mockEncodeSignedTransaction = vi.fn(() => new Uint8Array([1, 2, 3, 4]))
 
 // Real algosdk encoder, the same one the blockchain module wraps; only the
 // signed-transaction encoder is stubbed since the specs pass placeholder signatures.
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<Record<string, unknown>>(
-        '@perawallet/wallet-core-blockchain',
-    )
+vi.mock('../../blockchain', async () => {
+    const actual =
+        await vi.importActual<Record<string, unknown>>('../../blockchain')
     return {
         ...actual,
         encodeSignedTransaction: () => mockEncodeSignedTransaction(),

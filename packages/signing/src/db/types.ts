@@ -73,6 +73,7 @@ export type IntentKey =
 
 export type SubmissionAttempt = {
     id: string
+    /** Raw column value, a scope key. Decode with scopeFromNetworkColumn. */
     network: string
     txIds: string[]
     intentKey: IntentKey | null

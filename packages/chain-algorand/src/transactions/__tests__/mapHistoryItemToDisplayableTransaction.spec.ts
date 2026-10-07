@@ -16,9 +16,6 @@ import type { TransactionHistoryItem } from '@perawallet/wallet-core-transaction
 
 // Faithful reimplementation of toBigInt — the real module pulls in
 // react-native-mmkv, which cannot load in the node test environment.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    toBigInt: (d: Decimal) => BigInt(d.toFixed(0)),
-}))
 
 import { mapHistoryItemToDisplayableTransaction } from '../mapHistoryItemToDisplayableTransaction'
 
@@ -58,6 +55,15 @@ describe('mapHistoryItemToDisplayableTransaction', () => {
             closeRemainderTo: 'CLOSE_ADDR',
             closeAmount: 50854132929n,
         })
+    })
+
+    it('leaves the round unset for a transaction not yet in a block', () => {
+        const result = mapHistoryItemToDisplayableTransaction({
+            ...baseItem,
+            confirmedRound: undefined,
+        })
+
+        expect(result?.confirmedRound).toBeUndefined()
     })
 
     it('carries closeAmount into the displayable asset-transfer leg', () => {

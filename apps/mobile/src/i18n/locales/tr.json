@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera kararını siteye iletemedi. Bu pencere açıkken uzantı uyku moduna geçti. Bu pencereyi kapat ve isteği siteden tekrar gönder.",
             "request_origin": "İstek {{origin}} adresinden geldi",
-            "requester_verified_label": "Doğrulanmış sekme",
+            "requester_verified_label": "Doğrulanmış sekme: {{origin}}",
+            "requester_mismatch": "Bu istek {{claimed}} değil, {{origin}} adresinden geldi.",
             "requester_verified_a11y_origin": "Doğrulandı: bu istek {{origin}} adresindeki tarayıcı sekmenden geldi"
         }
     },
@@ -360,7 +361,6 @@
         "show_address": "Adresi göster",
         "view_passphrase_hd": "Ana cüzdan kurtarma passphrase’ini görüntüle",
         "view_passphrase_algo25": "Kurtarma passphrase’ini görüntüle",
-        "view_passphrase_quantum": "Quantum hesabı kurtarma passphrase’ini görüntüle",
         "undo_rekey": "Rekey’i geri al",
         "rekeyed_to": "Rekey hedefi",
         "rekey_account": "Hesaba rekey yap",
@@ -830,6 +830,11 @@
             "encryption_key_placeholder": "Şifreleme anahtarını yapıştır",
             "encryption_key_restore": "Yedeklemeyi geri yükle",
             "restoring": "Yedeklemen geri yükleniyor…",
+            "progress_unlocking": "Yedeklemenin kilidi açılıyor…",
+            "progress_downloading": "Yedeklemen indiriliyor…",
+            "progress_importing": "Hesaplar geri yükleniyor: {{done}} / {{total}}",
+            "progress_finishing": "Tamamlanıyor…",
+            "progress_hint": "Çok sayıda hesap içeren yedeklemelerde bu işlem bir dakikadan uzun sürebilir. İşlem bitene kadar Pera’yı açık tut.",
             "error_not_found": "Bu kimlik bilgileri için yedekleme bulunamadı.",
             "error_invalid_credentials": "Yedekleme ifadesi veya şifreleme anahtarı yanlış.",
             "error_unknown": "Bir şeyler ters gitti. Lütfen tekrar dene.",
@@ -2001,6 +2006,11 @@
                 "paste_passphrase": "Passphrase’in tamamını yapıştır",
                 "scan_qr": "QR kodu tara",
                 "learn_more": "Daha fazla bilgi"
+            },
+            "quantum_detected": {
+                "title": "Bu bir Quantum hesabının passphrase’i",
+                "body": "Bu kelimeler zaten var olan bir Quantum hesabına ait. Normal bir hesap olarak içe aktarırsan farklı, boş bir hesap eklenir.",
+                "import_button": "Quantum hesabı içe aktar"
             }
         },
         "searching_accounts": {
@@ -3048,7 +3058,7 @@
             "siwa_not_before": "Geçerlilik başlangıcı",
             "siwa_resources": "Kaynaklar",
             "siwa_invalid": "Bu kimlik doğrulama isteği hatalı biçimlendirilmiş ve imzalanamaz.",
-            "origin_mismatch": "Bu site, farklı bir alan adına giriş yapmanı istiyor ({{domain}}). Yalnızca güveniyorsan devam et.",
+            "origin_mismatch": "Bu site, farklı bir alan adına giriş yapmanı istiyor ({{domain}}). Pera, hesabını korumak için bu isteği engelledi.",
             "show_details": "Detayları göster",
             "details_title": "Kimlik doğrulama isteği detayları",
             "details_description": "Onaylamadan önce bu kimlik doğrulama isteğinin tüm metadata’sını incele."
@@ -4104,6 +4114,10 @@
             "acknowledge": "Bunun verilerimi sileceğini ve geri alınamayacağını anlıyorum",
             "confirm_button": "Cüzdanı sıfırla",
             "error": "Cüzdan sıfırlanamadı. Lütfen tekrar dene."
+        },
+        "database_reset": {
+            "title": "Cüzdan verileri yenilendi",
+            "body": "Bu tarayıcıda kayıtlı bakiyeleri ve geçmişi yeniden oluşturduk. Birazdan yeniden yüklenecek. Hesapların etkilenmedi."
         },
         "security": {
             "autolock_title": "Otomatik kilitleme süresi",

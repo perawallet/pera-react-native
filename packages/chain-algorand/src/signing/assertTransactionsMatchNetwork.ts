@@ -11,7 +11,7 @@
  */
 
 import { encodeToBase64, type Network } from '@perawallet/wallet-core-shared'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'
 

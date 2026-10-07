@@ -21,7 +21,7 @@ import { mutationDefaults } from '@perawallet/wallet-core-shared'
 import React from 'react'
 
 const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: mockUseNetwork,
 }))
 

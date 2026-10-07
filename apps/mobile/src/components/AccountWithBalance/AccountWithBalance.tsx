@@ -14,7 +14,6 @@ import {
     useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { PWView, type PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 
@@ -57,7 +56,7 @@ export const AccountWithBalance = ({
                 />
 
                 <PreferredAmount
-                    sourceAssetId={ALGO_ASSET_ID}
+                    sourceAssetId={nativeAsset.assetId}
                     sourceAmount={
                         accountValueTotals.get(account.address)?.algoValue
                     }

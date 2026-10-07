@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { QueryClient, QueryKey } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import {
     isAccountBalancesHistoryQuery,
     isAccountQuery,
@@ -19,19 +19,11 @@ import {
     isAssetPriceHistoryQuery,
     isAssetQuery,
 } from '@perawallet/wallet-core-assets'
+import {
+    queryKeyReferencesScope,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
-import type { Network } from '@perawallet/wallet-core-shared'
-
-// Every DB-backed key factory embeds the network either as a bare string
-// element or as a `network` field of an object element.
-const keyReferencesNetwork = (queryKey: QueryKey, network: Network): boolean =>
-    queryKey.some(
-        part =>
-            part === network ||
-            (typeof part === 'object' &&
-                part !== null &&
-                (part as { network?: unknown }).network === network),
-    )
 
 /**
  * Drops a departed network's DB-backed cache entries instead of letting the
@@ -43,7 +35,7 @@ const keyReferencesNetwork = (queryKey: QueryKey, network: Network): boolean =>
  */
 export const releaseNetworkScopedQueries = (
     queryClient: QueryClient,
-    network: Network,
+    scope: ChainScope,
 ): void => {
     queryClient.removeQueries({
         predicate: query => {
@@ -61,7 +53,7 @@ export const releaseNetworkScopedQueries = (
             ) {
                 return false
             }
-            return keyReferencesNetwork(key, network)
+            return queryKeyReferencesScope(key, scope)
         },
     })
 }

@@ -16,7 +16,7 @@ import type { GetPublicKey } from '../chain-adapter'
 import { DerivationTypes } from '../models'
 import { fakeAccountsChain, TESTNET_SCOPE } from './fakeAccountsChain'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {
         getState: vi.fn(() => ({ network: 'testnet' })),
     },

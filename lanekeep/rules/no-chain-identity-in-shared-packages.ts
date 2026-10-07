@@ -9,11 +9,10 @@ import { withoutTests } from '../shared/scope.js'
  * Mirrors `CHAIN_IDS` in packages/chain-contract/src/models/identity.ts, which
  * lanekeep's rule loader can't import. The spec fails until the two match.
  */
-export const CHAIN_IDS = ['algorand'] as const
+export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
 const SHARED_PACKAGES = [
     'chain-contract',
-    'blockchain',
     'accounts',
     'assets',
     'transactions',
@@ -53,6 +52,11 @@ const ALLOWED: readonly Allowed[] = [
         file: 'packages/chain-contract/src/scope.ts',
         text: "'algorand'",
         reason: 'Legacy shim: every row stored before scope keys existed belongs to this chain.',
+    },
+    {
+        file: 'packages/chain-contract/src/scope.ts',
+        text: '(part as Partial<ChainScope>).chainId === scope.chainId',
+        reason: "Compares a query key's scope against whichever scope the caller passes, never a named chain.",
     },
     {
         file: 'packages/walletconnect/src/v2/handler.ts',

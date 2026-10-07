@@ -217,6 +217,45 @@ describe('metro resolver: tslib', () => {
     })
 })
 
+describe('metro resolver: viem', () => {
+    const resolvingTo = (filePath: string): ResolverContext => ({
+        resolveRequest: vi.fn(() => ({ type: 'sourceFile', filePath })),
+    })
+
+    const VIEM = '/repo/node_modules/.pnpm/viem@2.57.0/node_modules/viem'
+
+    it.each(['ios', 'android'])(
+        'swaps a _cjs resolution for its _esm twin on %s',
+        platform => {
+            const resolved = resolveRequest(
+                resolvingTo(`${VIEM}/_cjs/accounts/index.js`),
+                'viem/accounts',
+                platform,
+            )
+
+            expect(resolved).toEqual({
+                type: 'sourceFile',
+                filePath: `${VIEM}/_esm/accounts/index.js`,
+            })
+        },
+    )
+
+    it('passes an _esm resolution through', () => {
+        const filePath = `${VIEM}/_esm/index.js`
+
+        expect(resolveRequest(resolvingTo(filePath), 'viem', 'ios')).toEqual({
+            type: 'sourceFile',
+            filePath,
+        })
+    })
+
+    it('leaves a package that merely starts with viem alone', () => {
+        const context = makeContext()
+
+        expect(resolveRequest(context, 'viem-extra', 'ios')).toBe(FELL_THROUGH)
+    })
+})
+
 describe('AsyncStorage stub', () => {
     it.each(Object.keys(asyncStorageUnavailable))(
         'throws from %s rather than pretending to store anything',

@@ -11,6 +11,7 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import {
     fetchAccountInformation,
@@ -32,14 +33,15 @@ export const prefetchLedgerAccountPreview = async (
     network: Network,
 ): Promise<void> => {
     if (!address) return
+    const scope = scopeForLegacyNetwork(network)
 
     await Promise.allSettled([
         queryClient.prefetchQuery({
-            queryKey: getOnChainAccountInformationQueryKey(address, network),
+            queryKey: getOnChainAccountInformationQueryKey(address, scope),
             queryFn: () => fetchAccountInformation(address, network),
         }),
         queryClient.prefetchQuery({
-            queryKey: getRekeyedAddressesQueryKey(address, network),
+            queryKey: getRekeyedAddressesQueryKey(address, scope),
             queryFn: () => fetchRekeyedAddresses(address, network),
         }),
     ])

@@ -107,9 +107,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     setOnConfirmedHandler: mocks.setOnConfirmedHandler,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    algorandSafeQuerySerialize: (value: unknown) => value,
-    algorandSafeQueryParse: (value: unknown) => value,
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     derivePQKeygenSeed: (entropy: Uint8Array) => entropy,
 }))
 
@@ -205,6 +203,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         info: vi.fn(),
     },
     updateBackendHeaders: vi.fn(),
+    stringifyTypedJson: (value: unknown) => value,
+    parseTypedJson: (value: unknown) => value,
 }))
 
 describe('useAppBootstrap', () => {

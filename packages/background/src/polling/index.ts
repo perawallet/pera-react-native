@@ -12,4 +12,4 @@
 
 export * from './models'
 export { sendShouldRefreshRequest } from './endpoints'
-export { usePollingStore } from './store'
+export { useSyncCursorStore } from './store'

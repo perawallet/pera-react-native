@@ -19,7 +19,7 @@ import {
 import {
     useNetwork,
     useOnNetworkSwitch,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { createMultisigAccount } from '@perawallet/wallet-core-multisig'
 import {

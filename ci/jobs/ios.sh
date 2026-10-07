@@ -5,6 +5,7 @@ source ci/jobs/lib/toolchain.sh
 source ci/jobs/lib/ios-keychain.sh
 use_pinned_node
 use_pinned_ruby
+use_ccache_if_available
 
 cleanup_signing() {
   ios_keychain_teardown
@@ -52,7 +53,11 @@ set -x
 # so the Gemfile's CocoaPods pin applies rather than whatever `pod` is on PATH.
 pnpm --filter mobile exec expo prebuild --no-install --no-clean --platform ios
 pnpm --filter mobile exec node scripts/fix-development-team.js
-(cd apps/mobile/ios && bundle exec pod install)
+# expo-modules-jsi links a stub with a bare `clang`, which picks the Command
+# Line Tools SDK over the selected Xcode's when the CLT one is newer; Xcode
+# 26.2's ld can't parse the macOS 27 SDK's arm64e.x1 stubs. Scoped to pod
+# install because xcodebuild would read an exported SDKROOT as a build setting.
+(cd apps/mobile/ios && SDKROOT="$(xcrun --sdk macosx --show-sdk-path)" bundle exec pod install)
 
 ios_keychain_setup
 

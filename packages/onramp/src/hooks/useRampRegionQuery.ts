@@ -11,7 +11,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 import { getRampRegion } from '../api'
 import type { RampRegion } from '../models'
@@ -24,10 +28,11 @@ export type UseRampRegionQueryResult = {
 export const useRampRegionQuery = (
     enabled: boolean = true,
 ): UseRampRegionQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const query = useQuery({
-        queryKey: onrampQueryKeys.region(network),
+        queryKey: onrampQueryKeys.region(scope),
         queryFn: () => getRampRegion(network),
         enabled,
     })

@@ -19,8 +19,8 @@ const isSdk = source =>
 // A pera rule rather than no-restricted-imports: oxlint overrides replace a
 // rule's options instead of merging them, so any per-path no-restricted-imports
 // override (the decimal.js ban) would silently drop this boundary. The root
-// config turns it off for chain-algorand and packages/blockchain/src/models/index.ts,
-// whose type-only SDK aliases are the sanctioned seam.
+// config turns it off for chain-algorand, whose `Address` re-export is the
+// sanctioned seam.
 export const noAlgorandSdkImports = {
     meta: {
         type: 'suggestion',

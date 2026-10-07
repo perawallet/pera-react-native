@@ -11,18 +11,15 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 import { validateTransactionRoundTrip } from '../validateTransactionRoundTrip'
 import { TransactionRoundTripError } from '@perawallet/wallet-core-signing'
 
 const encodeTransactionRawMock = vi.fn<(tx: PeraTransaction) => Uint8Array>()
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
+vi.mock('../../blockchain', async importOriginal => {
+    const original = await importOriginal<typeof import('../../blockchain')>()
     return {
         ...original,
         encodeTransactionRaw: (tx: PeraTransaction) =>

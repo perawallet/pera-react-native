@@ -11,9 +11,9 @@
  */
 
 import { eq, and, inArray, sql } from 'drizzle-orm'
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -39,12 +39,12 @@ export async function upsertAssetPrices({
     prices,
     scope,
 }: UpsertAssetPricesParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (prices.length === 0) return
 
     const now = Date.now()
     const rows = prices.map(price => ({
-        assetId: new Decimal(price.assetId),
+        assetId: price.assetId,
         network,
         usdPrice: price.usdPrice,
         updatedAt: now,
@@ -76,10 +76,8 @@ export async function getAssetPricesByIds({
     assetIds,
     scope,
 }: GetAssetPricesByIdsParams): Promise<AssetPriceRow[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return []
-
-    const decimalIds = assetIds.map(id => new Decimal(id))
 
     const rows = await db
         .select({
@@ -89,16 +87,13 @@ export async function getAssetPricesByIds({
         .from(AssetPricesSchema)
         .where(
             and(
-                inArray(AssetPricesSchema.assetId, decimalIds),
+                inArray(AssetPricesSchema.assetId, assetIds),
                 eq(AssetPricesSchema.network, network),
             ),
         )
         .all()
 
-    return rows.map(r => ({
-        assetId: r.assetId.toString(),
-        usdPrice: r.usdPrice,
-    }))
+    return rows
 }
 
 type PriceMissesParams = {
@@ -113,12 +108,12 @@ export async function recordPriceMisses({
     assetIds,
     scope,
 }: PriceMissesParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return
 
     const now = Date.now()
     const rows = assetIds.map(assetId => ({
-        assetId: new Decimal(assetId),
+        assetId,
         network,
         attemptedAt: now,
     }))
@@ -144,12 +139,10 @@ export async function clearPriceMisses({
     assetIds,
     scope,
 }: PriceMissesParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return
 
-    const decimalIds = assetIds.map(id => new Decimal(id))
-
-    await forEachWriteChunk(decimalIds, async chunk => {
+    await forEachWriteChunk(assetIds, async chunk => {
         await db
             .delete(AssetPriceMissesSchema)
             .where(
@@ -174,12 +167,10 @@ export async function deleteAssetPrices({
     assetIds,
     scope,
 }: DeleteAssetPricesParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return
 
-    const decimalIds = assetIds.map(id => new Decimal(id))
-
-    await forEachWriteChunk(decimalIds, async chunk => {
+    await forEachWriteChunk(assetIds, async chunk => {
         await db
             .delete(AssetPricesSchema)
             .where(

@@ -91,7 +91,7 @@ describe('device/store', () => {
     })
 
     test('setDeviceID overwrites existing and keeps other networks intact', async () => {
-        const { useDeviceStore } = await import('../index')
+        const { useDeviceStore, deviceIdFor } = await import('../index')
         const { result } = renderHook(() => useDeviceStore())
 
         act(() => {
@@ -100,8 +100,8 @@ describe('device/store', () => {
             result.current.setDeviceID('mainnet', 'mainnet-2')
         })
 
-        expect(result.current.deviceIDs.get('mainnet')).toBe('mainnet-2')
-        expect(result.current.deviceIDs.get('testnet')).toBe('testnet-1')
+        expect(deviceIdFor(result.current, 'mainnet')).toBe('mainnet-2')
+        expect(deviceIdFor(result.current, 'testnet')).toBe('testnet-1')
     })
 
     test('setDeviceID produces a new Map reference (immutability)', async () => {
@@ -129,8 +129,8 @@ describe('device/store', () => {
         })
 
         expect(result.current.deviceIdOrigins).toEqual({
-            mainnet: 'recreated',
-            testnet: 'migrated',
+            'algorand/mainnet': 'recreated',
+            'algorand/testnet': 'migrated',
         })
     })
 
@@ -144,7 +144,7 @@ describe('device/store', () => {
         const persisted = partialize?.(useDeviceStore.getState())
 
         expect(persisted).toMatchObject({
-            deviceIdOrigins: { mainnet: 'migrated' },
+            deviceIdOrigins: { 'algorand/mainnet': 'migrated' },
         })
     })
 
@@ -200,5 +200,97 @@ describe('device/store', () => {
         expect(useDeviceStore.getState().pushToken).toBeNull()
 
         expect(() => registration.clearStorage()).not.toThrow()
+    })
+
+    test('hydrates a v1 mainnet device id under the Algorand mainnet key', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        const { useDeviceStore, deviceIdFor } = await import('../index')
+        getProvider().keyValueStorage.setItem(
+            'device-store',
+            JSON.stringify({
+                state: {
+                    deviceIDs: { mainnet: 'device-main', testnet: null },
+                    pushToken: 'tok',
+                    deviceIdOrigins: { mainnet: 'migrated' },
+                },
+                version: 1,
+            }),
+        )
+
+        await useDeviceStore.persist.rehydrate()
+
+        const state = useDeviceStore.getState()
+        expect(state.deviceIDs).toEqual(
+            new Map([
+                ['algorand/mainnet', 'device-main'],
+                ['algorand/testnet', null],
+            ]),
+        )
+        expect(deviceIdFor(state, 'mainnet')).toBe('device-main')
+        expect(state.deviceIdOrigins).toEqual({
+            'algorand/mainnet': 'migrated',
+        })
+        expect(state.pushToken).toBe('tok')
+        const rewritten = JSON.parse(
+            getProvider().keyValueStorage.getItem('device-store') as string,
+        )
+        expect(rewritten.version).toBe(2)
+        expect(rewritten.state.deviceIDs).toEqual({
+            'algorand/mainnet': 'device-main',
+            'algorand/testnet': null,
+        })
+    })
+})
+
+describe('device/store - migrateDeviceState', () => {
+    test('re-keys v1 ids and origins by scope key, values unchanged', async () => {
+        const { migrateDeviceState } = await import('../store')
+
+        const migrated = migrateDeviceState(
+            {
+                deviceIDs: { mainnet: 'device-main', testnet: 'device-test' },
+                pushToken: 'tok',
+                deviceIdOrigins: { mainnet: 'migrated', testnet: 'recreated' },
+            },
+            1,
+        )
+
+        expect(migrated).toEqual({
+            deviceIDs: {
+                'algorand/mainnet': 'device-main',
+                'algorand/testnet': 'device-test',
+            },
+            pushToken: 'tok',
+            deviceIdOrigins: {
+                'algorand/mainnet': 'migrated',
+                'algorand/testnet': 'recreated',
+            },
+        })
+    })
+
+    test('migrates a v1 state persisted before origins were tracked', async () => {
+        const { migrateDeviceState } = await import('../store')
+
+        const migrated = migrateDeviceState(
+            { deviceIDs: { mainnet: 'device-main' }, pushToken: null },
+            1,
+        )
+
+        expect(migrated.deviceIDs).toEqual({
+            'algorand/mainnet': 'device-main',
+        })
+        expect(migrated.deviceIdOrigins).toEqual({})
+    })
+
+    test('leaves v2 state untouched', async () => {
+        const { migrateDeviceState } = await import('../store')
+        const state = {
+            deviceIDs: { 'algorand/mainnet': 'device-main' },
+            pushToken: null,
+            deviceIdOrigins: {},
+        }
+
+        expect(migrateDeviceState(state, 2)).toEqual(state)
     })
 })

@@ -13,9 +13,10 @@
 import {
     createChainAdapterRegistry,
     type ChainId,
+    type PeraSignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
-import type { Network } from '@perawallet/wallet-core-shared'
+
+import type { AppError, Network } from '@perawallet/wallet-core-shared'
 import type { SignRequest } from './models'
 import type { DataTransport } from './pipeline/types'
 import type { IntentKey, SubmissionFlow } from './db/types'
@@ -85,6 +86,12 @@ export interface BroadcasterChainAdapter {
         flow: SubmissionFlow,
         handler: SubmissionSettledHandler | null,
     ): void
+    /**
+     * The error a submit fails with when there is no answer within
+     * `timeoutMs`. Must be `metadata.retryable`, or RETRY can't re-enter
+     * transporting.
+     */
+    submitTimeoutError(timeoutMs: number): AppError
 }
 
 export const broadcasterChainAdapters =

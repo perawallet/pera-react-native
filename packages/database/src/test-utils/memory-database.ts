@@ -20,11 +20,19 @@ type TestDatabase = {
     teardown: () => void
 }
 
-export const createTestDatabase = (): TestDatabase => {
+type TestDatabaseOptions = {
+    // Runs before each statement reaches sqlite; throw to fake a driver failure.
+    beforeExec?: (sql: string) => void
+}
+
+export const createTestDatabase = ({
+    beforeExec,
+}: TestDatabaseOptions = {}): TestDatabase => {
     const sqlite = new BetterSqlite3(':memory:')
 
     const db: Database = drizzle(
         createDrizzleProxyCallback(async (sql, params, method) => {
+            beforeExec?.(sql)
             if (method === 'run') {
                 sqlite.prepare(sql).run(...params)
                 return []

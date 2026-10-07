@@ -24,6 +24,7 @@ const mockAddAssetTransfer = vi.fn()
 // Mutable so the "fallback network" providerJS test below can switch away
 // from mainnet without a new vi.mock factory.
 let mockNetwork = 'mainnet'
+let mockChainMode = 'live'
 const mockBuildTransactions = vi.fn().mockResolvedValue({
     transactions: [{ fake: 'txn' }],
 })
@@ -48,17 +49,17 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-api-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     }),
-    isMainnet: (network: string) => network === 'mainnet',
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedChainMode: () => mockChainMode,
+    useNetwork: () => ({ network: mockNetwork }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (addr: string) => /^[A-Z2-7]{58}$/.test(addr ?? ''),
     useAlgorandClient: () => ({
         newGroup: () => mockComposer,
-    }),
-    useNetwork: () => ({ network: mockNetwork }),
-    displayUnitsToBaseUnits: (amount: string, decimals: number) => ({
-        toFixed: () => String(Number(amount) * 10 ** decimals),
     }),
 }))
 
@@ -81,18 +82,21 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    ALGO_ASSET_ID: '0',
-    isAlgoAssetId: (assetId: string | number | bigint) =>
-        String(assetId) === '0',
-    generateOrderedUniqueId: () => 'test-id-123',
-    logger: {
-        warn: vi.fn(),
-        error: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-    },
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { displayUnitsToBaseUnits } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+    return {
+        generateOrderedUniqueId: () => 'test-id-123',
+        logger: {
+            warn: vi.fn(),
+            error: vi.fn(),
+            info: vi.fn(),
+            debug: vi.fn(),
+        },
+        displayUnitsToBaseUnits,
+    }
+})
 
 vi.mock('@hooks/useLanguage')
 
@@ -131,6 +135,7 @@ describe('useBidaliTransport', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockNetwork = 'mainnet'
+        mockChainMode = 'live'
     })
 
     // -- providerJS --------------------------------------------------------
@@ -152,11 +157,22 @@ describe('useBidaliTransport', () => {
             expect(result.current.providerJS).toContain('"usdcalgorand"')
         })
 
-        // computeBidaliBalances's isMainnetCatalogue branch: custom has no
-        // Bidali catalogue of its own, so it must select the same
-        // testusdcalgorand balance key as testnet, not usdcalgorand.
-        it('selects the testusdcalgorand balance key for a fallback network (custom)', () => {
+        it('selects the usdcalgorand balance key in live mode', () => {
+            const { result } = renderHook(() =>
+                useBidaliTransport(mockAccount, emptyBalances),
+            )
+
+            expect(result.current.providerJS).toContain('"usdcalgorand":')
+            expect(result.current.providerJS).not.toContain(
+                '"testusdcalgorand":',
+            )
+        })
+
+        // Custom has no Bidali catalogue of its own, so developer-override must
+        // select the same testusdcalgorand balance key as the default test network.
+        it('selects the testusdcalgorand balance key in developer-override mode', () => {
             mockNetwork = 'custom'
+            mockChainMode = 'developer-override'
 
             const { result } = renderHook(() =>
                 useBidaliTransport(mockAccount, emptyBalances),

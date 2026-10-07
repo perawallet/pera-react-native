@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { SubmissionError } from '@perawallet/wallet-core-signing'
 import { submitSignedTransactionGroup } from '../submitSignedTransactionGroup'
 import type { AlgokitClientInterface } from '../types'
@@ -136,7 +136,7 @@ describe('submitSignedTransactionGroup', () => {
             const error = await promise.catch((e: SubmissionError) => e)
             expect(error.classification).toBe('rejected-by-node')
             expect(error.txIds).toEqual(['COMPUTED_A'])
-            expect(error.algodError.code).toBe('overspend')
+            expect(error.nodeError.code).toBe('overspend')
             expect(error.metadata.retryable).toBe(false)
         })
 

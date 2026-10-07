@@ -108,9 +108,6 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
-    // The quantum option also needs `enable_quantum_accounts`, which an
-    // exported build only gets from Firebase; the developer override stands in
-    // for it so the run doesn't depend on a live Remote Config fetch.
     await serviceWorker.evaluate(async () => {
         await chrome.storage.local.set({
             'kv:settings-store': JSON.stringify({
@@ -120,10 +117,6 @@ test.beforeAll(async () => {
                         'transaction-info-agreed': true,
                     },
                 },
-                version: 1,
-            }),
-            'kv:remote-config-store': JSON.stringify({
-                state: { configOverrides: { enable_quantum_accounts: true } },
                 version: 1,
             }),
         })

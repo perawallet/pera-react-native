@@ -43,8 +43,7 @@ const {
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useMinimumFeeConfig: () => ({ assetMbr: 100_000n }),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
 }))
 
@@ -61,6 +60,11 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
+    useFeeConfig: () => ({
+        minTxnFee: 1000n,
+        pqMultiplier: 1n,
+        assetOptInMinBalance: 100_000n,
+    }),
 }))
 
 vi.mock('../../store', () => ({

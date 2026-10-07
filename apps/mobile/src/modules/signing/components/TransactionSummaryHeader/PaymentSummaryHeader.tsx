@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-import {
-    type PeraDisplayableTransaction,
-    microAlgosToAlgos,
-} from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
@@ -71,7 +68,7 @@ export const PaymentSummaryHeader = ({
                 />
                 <PreferredAmount
                     sourceAmount={amount}
-                    sourceAssetId={ALGO_ASSET_ID}
+                    sourceAssetId={nativeAsset.assetId}
                     variant='h4'
                     style={styles.secondaryAmountValue}
                     ignorePrivacyMode

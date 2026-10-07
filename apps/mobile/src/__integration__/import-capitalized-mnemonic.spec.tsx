@@ -34,8 +34,9 @@ import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/Import
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
-import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { isElementDisabled } from '@test-utils/rnw'
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
 const typeWordsIndividually = (words: string[]) => {
     words.forEach((word, idx) => {
@@ -128,8 +129,10 @@ describe('Flow: Onboarding → Import Algo25 (IME-capitalized passphrase)', () =
 
         fireEvent.click(screen.getByTestId('import_account_import_button'))
 
-        await waitFor(() =>
-            expect(useAccountsStore.getState().accounts).toHaveLength(1),
+        // The quantum passphrase probe runs real Falcon keygen first.
+        await waitFor(
+            () => expect(useAccountsStore.getState().accounts).toHaveLength(1),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
         expect(vi.mocked(Notifier.showNotification)).not.toHaveBeenCalled()
     })

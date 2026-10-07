@@ -14,8 +14,9 @@ import {
     createChainAdapterRegistry,
     type ChainId,
     type ChainScope,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+
 import {
     PeraServiceUnavailableError,
     type Nullable,

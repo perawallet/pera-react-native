@@ -12,7 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchWalletHistory } from '../api/wallet-balance'
 import type { CardWalletHistoryEntry, CardWalletKind } from '../models'
@@ -37,11 +41,12 @@ export const useCardWalletHistoryQuery = (
     kind: CardWalletKind,
     walletId: Nullable<string>,
 ): UseCardWalletHistoryQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const { isAuthenticated } = useCardSession()
 
     const query = useInfiniteQuery({
-        queryKey: cardQueryKeys.walletHistory(network, kind, walletId ?? ''),
+        queryKey: cardQueryKeys.walletHistory(scope, kind, walletId ?? ''),
         queryFn: ({ pageParam, signal }) =>
             fetchWalletHistory({
                 kind,

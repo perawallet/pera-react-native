@@ -23,7 +23,10 @@ import {
     type WalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     hexToBytes,
     kmsCore,
@@ -45,7 +48,11 @@ import {
     type WatchAddressPayload,
 } from '../models'
 import type { PulledAccount } from '../restore/pullBackupItems'
-import type { ImportSummary, SyncImportFn } from '../sync/types'
+import type {
+    ImportProgressFn,
+    ImportSummary,
+    SyncImportFn,
+} from '../sync/types'
 
 type ImportFailure = ImportSummary['failed'][number]
 
@@ -170,7 +177,7 @@ const buildHdWalletAccount = async (
         address: payload.address,
         provenance: { kind: 'local', seed: 'bip39', hd: hdWalletDetails },
         credentials: {
-            [adapter.chainId]: { keyPairId: derived.keyPairId },
+            [LEGACY_CHAIN_ID]: { keyPairId: derived.keyPairId },
         },
         ...nameField(payload.customName),
     })
@@ -437,7 +444,10 @@ const dedupeFailuresByAddress = (
 const importBatch = async (
     context: ImportContext,
     accounts: PulledAccount[],
+    onProgress?: ImportProgressFn,
 ): Promise<ImportSummary> => {
+    const total = accounts.length
+    onProgress?.(0, total)
     const { seedKeyIdByFirstDerivedAddress, failures } = await importSeeds(
         context,
         accounts,
@@ -448,7 +458,7 @@ const importBatch = async (
         failed: [...failures],
     }
 
-    for (const account of accounts) {
+    for (const [index, account] of accounts.entries()) {
         try {
             summary.imported += await importOneAccount(
                 context,
@@ -458,15 +468,16 @@ const importBatch = async (
         } catch (error) {
             if (error instanceof DuplicateAccountError) {
                 summary.skippedDuplicate += 1
-                continue
+            } else {
+                const reason = toFailureReason(error)
+                logger.warn('useCloudBackupImport: failed to import account', {
+                    address: account.address,
+                    reason,
+                })
+                summary.failed.push({ address: account.address, reason })
             }
-            const reason = toFailureReason(error)
-            logger.warn('useCloudBackupImport: failed to import account', {
-                address: account.address,
-                reason,
-            })
-            summary.failed.push({ address: account.address, reason })
         }
+        onProgress?.(index + 1, total)
     }
 
     summary.failed = dedupeFailuresByAddress(summary.failed)
@@ -512,8 +523,12 @@ export const useCloudBackupImport = (): UseCloudBackupImportResult => {
     // Resolved before the seed pre-pass so a build without the chain's adapter
     // refuses the whole restore instead of half-importing it.
     const importAccounts = useCallback(
-        async (accounts: PulledAccount[]) =>
-            importBatch({ ...context, adapter: backupAdapterFor() }, accounts),
+        async (accounts: PulledAccount[], onProgress?: ImportProgressFn) =>
+            importBatch(
+                { ...context, adapter: backupAdapterFor() },
+                accounts,
+                onProgress,
+            ),
         [context],
     )
 

@@ -16,8 +16,10 @@ import type { CardChainAdapter } from '../../chain-adapter'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 
 const { useNetwork } = vi.hoisted(() => ({ useNetwork: vi.fn() }))
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork,
 }))
 

@@ -13,10 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Keyboard } from 'react-native'
 import type { Decimal } from 'decimal.js'
-import {
-    displayUnitsToBaseUnits,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     percentToApiSlippage,
     useCreateQuotesMutation,
@@ -30,6 +27,7 @@ import {
     uint64IdToNumber,
     useDebouncedValue,
     type Nullable,
+    displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
 
 // Debounce so typing an amount doesn't fire a quote request per keystroke.

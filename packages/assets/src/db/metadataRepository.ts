@@ -11,9 +11,9 @@
  */
 
 import { eq, and, inArray, sql } from 'drizzle-orm'
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -86,20 +86,6 @@ export function peraAssetFromColumns(row: {
     }
 }
 
-function fromDb(row: {
-    assetId: Decimal
-    decimals: number
-    creatorAddress: string
-    totalSupply: Decimal
-    name: Nullable<string>
-    unitName: Nullable<string>
-    url: Nullable<string>
-    metadata: Nullable<string>
-    peraMetadataJson: Nullable<string>
-}): PeraAsset {
-    return peraAssetFromColumns({ ...row, assetId: row.assetId.toString() })
-}
-
 type UpsertNodeAssetsParams = {
     db?: Database
     items: PeraAsset[]
@@ -111,12 +97,12 @@ export async function upsertNodeAssets({
     items,
     scope,
 }: UpsertNodeAssetsParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (items.length === 0) return
 
     const now = Date.now()
     const rows = items.map(item => ({
-        assetId: new Decimal(item.assetId),
+        assetId: item.assetId,
         network,
         decimals: item.decimals,
         creatorAddress: item.creator.address,
@@ -164,11 +150,10 @@ export async function upsertPeraAssets({
     items,
     scope,
 }: UpsertPeraAssetsParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (items.length === 0) return
 
     const now = Date.now()
-    const decimalIds = items.map(i => new Decimal(i.assetId))
 
     // Read existing metadata to merge the device-specific fields (isFavorited,
     // isPriceAlertEnabled): a non-device-scoped fetch leaves them null, in which
@@ -183,7 +168,10 @@ export async function upsertPeraAssets({
         .from(AssetsPeraSchema)
         .where(
             and(
-                inArray(AssetsPeraSchema.assetId, decimalIds),
+                inArray(
+                    AssetsPeraSchema.assetId,
+                    items.map(i => i.assetId),
+                ),
                 eq(AssetsPeraSchema.network, network),
             ),
         )
@@ -193,7 +181,7 @@ export async function upsertPeraAssets({
     for (const row of existingRows) {
         if (row.peraMetadataJson) {
             existingMetaMap.set(
-                row.assetId.toString(),
+                row.assetId,
                 JSON.parse(row.peraMetadataJson) as PeraAssetMetadata,
             )
         }
@@ -216,7 +204,7 @@ export async function upsertPeraAssets({
             : undefined
 
         return {
-            assetId: new Decimal(item.assetId),
+            assetId: item.assetId,
             network,
             verificationTier: meta?.verificationTier ?? 'unverified',
             isDeleted: meta?.isDeleted ?? false,
@@ -275,10 +263,8 @@ export async function getAssetsByIds({
     assetIds,
     scope,
 }: GetAssetsByIdsParams): Promise<PeraAsset[]> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return []
-
-    const decimalIds = assetIds.map(id => new Decimal(id))
 
     const rows = await db
         .select({
@@ -302,13 +288,13 @@ export async function getAssetsByIds({
         )
         .where(
             and(
-                inArray(AssetsNodeSchema.assetId, decimalIds),
+                inArray(AssetsNodeSchema.assetId, assetIds),
                 eq(AssetsNodeSchema.network, network),
             ),
         )
         .all()
 
-    return rows.map(fromDb)
+    return rows.map(row => peraAssetFromColumns(row))
 }
 
 type GetAssetByIdParams = {
@@ -337,13 +323,13 @@ export async function getAssetPeraMetadata({
     assetId,
     scope,
 }: GetAssetPeraMetadataParams): Promise<Nullable<PeraAssetMetadata>> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({ peraMetadataJson: AssetsPeraSchema.peraMetadataJson })
         .from(AssetsPeraSchema)
         .where(
             and(
-                eq(AssetsPeraSchema.assetId, new Decimal(assetId)),
+                eq(AssetsPeraSchema.assetId, assetId),
                 eq(AssetsPeraSchema.network, network),
             ),
         )
@@ -366,8 +352,7 @@ export async function updateAssetPeraMetadata({
     scope,
     updates,
 }: UpdateAssetPeraMetadataParams): Promise<void> {
-    const network = networkColumnValue(scope)
-    const decimalId = new Decimal(assetId)
+    const network = toScopeKey(scope)
     const now = Date.now()
 
     const rows = await db
@@ -375,7 +360,7 @@ export async function updateAssetPeraMetadata({
         .from(AssetsPeraSchema)
         .where(
             and(
-                eq(AssetsPeraSchema.assetId, decimalId),
+                eq(AssetsPeraSchema.assetId, assetId),
                 eq(AssetsPeraSchema.network, network),
             ),
         )
@@ -395,7 +380,7 @@ export async function updateAssetPeraMetadata({
     await db
         .insert(AssetsPeraSchema)
         .values({
-            assetId: decimalId,
+            assetId,
             network,
             verificationTier: merged.verificationTier,
             isDeleted: merged.isDeleted,
@@ -429,12 +414,10 @@ export async function deleteAssets({
     assetIds,
     scope,
 }: DeleteAssetsParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     if (assetIds.length === 0) return
 
-    const decimalIds = assetIds.map(id => new Decimal(id))
-
-    await forEachWriteChunk(decimalIds, async chunk => {
+    await forEachWriteChunk(assetIds, async chunk => {
         await db
             .delete(AssetsNodeSchema)
             .where(

@@ -33,7 +33,7 @@ import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore
 import {
     mockAlgodAccountInformation,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {
@@ -43,7 +43,6 @@ import {
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_LEGACY_ADDRESS,
-    enableQuantumFlag,
 } from './__fixtures__/quantum'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
@@ -180,7 +179,6 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
     })
 
     it('Given a valid 25-word mnemonic, when the user imports through the Quantum entrypoint, then the explainer note renders, a quantum account is persisted at the Falcon-derived address, and onboarding completes without hanging on the search step', async () => {
-        await enableQuantumFlag()
         renderQuantumImportFromOnboarding()
 
         await openQuantumImportScreen()
@@ -221,8 +219,6 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
     })
 
     it('Given the same quantum address is already in the wallet, when the user re-imports the mnemonic through the Quantum entrypoint, then a duplicate-account toast is raised and no second copy is stored', async () => {
-        await enableQuantumFlag()
-
         // Pre-seed the accounts store with the address the test mnemonic
         // derives under the Falcon (quantum) path. The import flow should
         // detect the duplicate and surface a tailored toast instead of
@@ -269,9 +265,6 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
     })
 
     it('Given the same 25 words are imported through the generic Recover-a-wallet (algo25) flow instead of the Quantum entrypoint, then a standard algo25 account is persisted at a different address than the Quantum derivation', async () => {
-        // Deliberately does NOT enable the quantum flag — the generic
-        // recover flow does not depend on it, and this test exercises the
-        // collision regression from the algo25 side only.
         await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
 
         await waitFor(() => screen.getByTestId('name_account_finish_button'), {
@@ -294,5 +287,53 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
         expect(accounts).toHaveLength(1)
         expect(accounts[0].type).toBe(AccountTypes.algo25)
         expect(accounts[0].address).toBe(ALGO25_TEST_ADDRESS)
+    })
+
+    describe('Given quantum words entered through the Recover-a-wallet (algo25) flow, and the quantum account they control exists on chain', () => {
+        beforeEach(() => {
+            server.use(
+                mockAlgodAccountInformation({
+                    address: ALGO25_TEST_ADDRESS,
+                    response: {},
+                }),
+            )
+        })
+
+        it('then the user is offered the quantum account and importing it persists only that account', async () => {
+            server.use(
+                mockAlgodAccountInformation({
+                    address: QUANTUM_TEST_ADDRESS,
+                    response: { amount: 5_000_000 },
+                }),
+            )
+
+            await startAlgo25ImportThroughMnemonic(ALGO25_TEST_MNEMONIC_WORDS)
+
+            await waitFor(
+                () =>
+                    screen.getByTestId(
+                        'quantum_passphrase_detected_sheet_import_quantum',
+                    ),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(
+                screen.getByTestId('quantum_passphrase_detected_sheet_address')
+                    .textContent,
+            ).toBe(QUANTUM_TEST_ADDRESS)
+            fireEvent.click(
+                screen.getByTestId(
+                    'quantum_passphrase_detected_sheet_import_quantum',
+                ),
+            )
+
+            await waitFor(
+                () => screen.getByTestId('name_account_finish_button'),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            const accounts = useAccountsStore.getState().accounts
+            expect(accounts).toHaveLength(1)
+            expect(accounts[0].type).toBe(AccountTypes.quantum)
+            expect(accounts[0].address).toBe(QUANTUM_TEST_ADDRESS)
+        })
     })
 })

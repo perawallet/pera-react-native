@@ -15,9 +15,9 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mockUseNetwork,
+const mockUseSelectedScope = vi.hoisted(() => vi.fn())
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: mockUseSelectedScope,
 }))
 
 const mocks = vi.hoisted(() => ({
@@ -37,6 +37,7 @@ vi.mock('../useEscrowWithdrawal', () => ({
     }),
 }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardPendingWithdrawalQuery } from '../useCardPendingWithdrawalQuery'
 import { CardEscrowNotConfiguredError } from '../../api/escrow'
 
@@ -63,7 +64,7 @@ describe('useCardPendingWithdrawalQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
         mocks.escrowCardOwner = 'OWNER'
         mocks.getPendingWithdrawal.mockResolvedValue(PENDING)
         mocks.getWaitTimeSeconds.mockResolvedValue(20)

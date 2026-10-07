@@ -29,7 +29,7 @@ const network = vi.hoisted(() => {
     return holder
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {
         getState: () => ({ network: network.current }),
         subscribe: (cb: (state: unknown, prev: unknown) => void) => {

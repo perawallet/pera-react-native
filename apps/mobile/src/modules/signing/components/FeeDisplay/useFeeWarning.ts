@@ -11,16 +11,16 @@
  */
 
 import { useMemo } from 'react'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
-import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
+import {
+    useAssetPricesQuery,
+    useNativeAsset,
+} from '@perawallet/wallet-core-assets'
 import {
     useRemoteConfig,
     RemoteConfigKeys,
 } from '@perawallet/wallet-core-remote-config'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
-
-const ALGO_PRICE_IDS = [ALGO_ASSET_ID]
 
 type UseFeeWarningResult = {
     showWarning: boolean
@@ -42,9 +42,11 @@ export const useFeeWarning = (): UseFeeWarningResult => {
     )
 
     const remoteConfigService = useRemoteConfig()
-    const { data: assetPrices } = useAssetPricesQuery(ALGO_PRICE_IDS, true)
+    const nativeAssetId = useNativeAsset().assetId
+    const priceIds = useMemo(() => [nativeAssetId], [nativeAssetId])
+    const { data: assetPrices } = useAssetPricesQuery(priceIds, true)
 
-    const algoPrice = assetPrices?.get(ALGO_ASSET_ID)?.usdPrice
+    const algoPrice = assetPrices?.get(nativeAssetId)?.usdPrice
 
     if (signableTransactionCount === 0 || !algoPrice) {
         return { showWarning: false, fee }

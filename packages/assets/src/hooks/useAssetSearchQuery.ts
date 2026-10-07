@@ -11,8 +11,10 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { assetsAdapterFor } from '../chain-adapter'
 import type { DisplayableAsset } from '../models/assets'
@@ -51,7 +53,10 @@ export const useAssetSearchQuery = (
 ): UseAssetSearchQueryResult => {
     const { network } = useNetwork()
     const hasCollectible = options?.hasCollectible ?? false
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scopeForLegacyNetwork(network).chainId,
+        'assetSearch',
+    )
     const enabled = (options?.enabled ?? true) && !isUnavailableOnNetwork
 
     const infiniteQuery = useInfiniteQuery({

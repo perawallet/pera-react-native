@@ -17,6 +17,18 @@ import { useAssetPriceHistoryQuery } from '../useAssetPriceHistoryQuery'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(
+            mocks.useNetwork.mock.results.at(-1)?.value?.network ?? 'mainnet',
+        ),
+    ),
+    useNetwork: mocks.useNetwork,
+}))
 
 // Mock endpoints
 const mocks = vi.hoisted(() => ({
@@ -31,10 +43,6 @@ vi.mock('../../api', async importOriginal => {
         fetchAssetPriceHistory: mocks.fetchAssetPriceHistory,
     }
 })
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mocks.useNetwork,
-}))
 
 describe('useAssetPriceHistoryQuery', () => {
     let queryClient: QueryClient
@@ -96,6 +104,10 @@ describe('useAssetPriceHistoryQuery', () => {
                 )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(useChainCapability).toHaveBeenCalledWith(
+                    'algorand',
+                    'priceHistory',
+                )
                 expect(mocks.fetchAssetPriceHistory).not.toHaveBeenCalled()
             },
         )

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { ModeRestrictions } from '@perawallet/wallet-core-chain-contract'
+
 /**
  * Gate UI on these flags, never on Platform.OS (pera/no-platform-os-web fails
  * `=== 'web'`). Native resolves capabilities.ts; web resolves capabilities.web.ts.
@@ -67,3 +69,7 @@ export type RouteCapabilities = {
      * settings-menu entries; their routes stay for direct navigation. */
     connectionsSettings: boolean
 }
+
+export type RouteCapability = keyof RouteCapabilities
+
+export type RouteCapabilityRestrictions = ModeRestrictions<RouteCapability>

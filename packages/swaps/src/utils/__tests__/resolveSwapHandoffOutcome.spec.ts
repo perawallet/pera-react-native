@@ -11,7 +11,6 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     const actual =
@@ -35,6 +34,11 @@ import {
     type SwapHandoffResolutionDeps,
 } from '../resolveSwapHandoffOutcome'
 
+const nodeError = (code: string) =>
+    Object.assign(new Error(code), { code }) as ConstructorParameters<
+        typeof SubmissionError
+    >[2]
+
 const PRESIGNED_BYTES = new Uint8Array([1, 1, 1])
 const ASSEMBLED_BYTES = new Uint8Array([2, 2, 2])
 
@@ -43,7 +47,7 @@ const makeRecord = (
 ): SwapHandoffRecord => ({
     swapIdStr: '42',
     signRequestId: 'req-1',
-    network: 'mainnet',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     multisigAddress: 'JOINT_ADDR',
     deviceId: 'device-1',
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
@@ -188,7 +192,7 @@ describe('resolveSwapHandoffOutcome', () => {
 
         expect(deps.recordSubmissionAttempt).toHaveBeenCalledTimes(2)
         expect(deps.recordSubmissionAttempt).toHaveBeenNthCalledWith(1, {
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             txIds: ['id-a'],
             flow: 'cosign',
             intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
@@ -198,7 +202,7 @@ describe('resolveSwapHandoffOutcome', () => {
             lastValid: 20,
         })
         expect(deps.recordSubmissionAttempt).toHaveBeenNthCalledWith(2, {
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             txIds: ['id-b'],
             flow: 'cosign',
             intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
@@ -239,7 +243,7 @@ describe('resolveSwapHandoffOutcome', () => {
             new SubmissionError(
                 ['TXID'],
                 'unknown-outcome',
-                new AlgodError('network_unavailable', {}),
+                nodeError('network_unavailable'),
             ),
         )
         const completionDeps = await resolve()
@@ -268,7 +272,7 @@ describe('resolveSwapHandoffOutcome', () => {
                 new SubmissionError(
                     ['second-group'],
                     'unknown-outcome',
-                    new AlgodError('network_unavailable', {}),
+                    nodeError('network_unavailable'),
                 ),
             )
         const completionDeps = await resolve(record)
@@ -285,7 +289,7 @@ describe('resolveSwapHandoffOutcome', () => {
         const rejected = new SubmissionError(
             ['TXID'],
             'rejected-by-node',
-            new AlgodError('overspend', {}),
+            nodeError('overspend'),
         )
         deps.submitGroup.mockRejectedValueOnce(rejected)
         const completionDeps = await resolve()

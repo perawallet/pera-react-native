@@ -19,8 +19,7 @@ export const AccountAssetHoldingsSchema = sqliteTable(
     'account_asset_holdings',
     {
         accountAddress: text('account_address').notNull(),
-        assetId: decimalColumn('asset_id').notNull(),
-        // Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
+        assetId: text('asset_id').notNull(),
         network: text('network').notNull().$type<ChainScopeKey>(),
         /** Asset amount in base units (smallest indivisible unit of the asset) */
         amount: decimalColumn('amount').notNull().default(new Decimal(0)),
@@ -41,7 +40,6 @@ export const AccountBalancesSchema = sqliteTable(
     'account_balances',
     {
         accountAddress: text('account_address').notNull(),
-        // Holds the bare legacy network until the backfill: decode with scopeFromNetworkColumn.
         network: text('network').notNull().$type<ChainScopeKey>(),
         /** ALGO balance in display units (ALGOs, not microAlgos) */
         algoBalance: decimalColumn('algo_balance')

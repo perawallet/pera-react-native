@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
     Address,
     computeGroupID,
@@ -30,6 +30,8 @@ import {
     resolveSubmissionAttempt,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 const makeTestAddress = (fill: number): Address =>
     new Address(new Uint8Array(32).fill(fill))
@@ -128,6 +130,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
 
     afterEach(() => {
         teardown()
+        vi.restoreAllMocks()
     })
 
     it('is true when the group has an open ledger row', async () => {
@@ -135,14 +138,14 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         await recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds,
             flow: 'generic',
         })
 
         const submitted = await isRequestGroupAlreadySubmitted(
             makeTransactionSignRequest(txs),
-            { db },
+            { db, scope: scopeForLegacyNetwork('mainnet') },
         )
         expect(submitted).toBe(true)
     })
@@ -152,7 +155,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         const id = await recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds,
             flow: 'generic',
         })
@@ -160,7 +163,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
 
         const submitted = await isRequestGroupAlreadySubmitted(
             makeTransactionSignRequest(txs),
-            { db },
+            { db, scope: scopeForLegacyNetwork('mainnet') },
         )
         expect(submitted).toBe(true)
     })
@@ -170,7 +173,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         const id = await recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds,
             flow: 'generic',
         })
@@ -180,9 +183,44 @@ describe('isRequestGroupAlreadySubmitted', () => {
 
         const submitted = await isRequestGroupAlreadySubmitted(
             makeTransactionSignRequest(txs),
-            { db },
+            { db, scope: scopeForLegacyNetwork('mainnet') },
         )
         expect(submitted).toBe(false)
+    })
+
+    it('is false when the group was submitted under another scope', async () => {
+        const txs = makeGroup()
+        await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: submitTimeTxIds(txs),
+            flow: 'generic',
+        })
+
+        const submitted = await isRequestGroupAlreadySubmitted(
+            makeTransactionSignRequest(txs),
+            { db, scope: scopeForLegacyNetwork('mainnet') },
+        )
+        expect(submitted).toBe(false)
+    })
+
+    it('looks the group up on the active network when no scope is given', async () => {
+        vi.spyOn(useNetworkStore, 'getState').mockReturnValue({
+            network: 'testnet',
+        } as ReturnType<typeof useNetworkStore.getState>)
+        const txs = makeGroup()
+        await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: submitTimeTxIds(txs),
+            flow: 'generic',
+        })
+
+        const submitted = await isRequestGroupAlreadySubmitted(
+            makeTransactionSignRequest(txs),
+            { db },
+        )
+        expect(submitted).toBe(true)
     })
 
     it('is false for non-transaction requests and empty groups', async () => {

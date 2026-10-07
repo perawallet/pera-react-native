@@ -14,13 +14,13 @@ import { useCallback } from 'react'
 import {
     compactSignedResults,
     useAlgorandClient,
-    useNetwork,
     useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+} from '../../blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { submitAndAutoRefresh } from '../../signing/submission/submitAndAutoRefresh'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'

@@ -23,11 +23,11 @@ import {
     type SignableGroup,
 } from '@perawallet/wallet-core-signing'
 import {
-    type PeraTransaction,
     encodeAlgorandAddress,
     classifyPeraTransaction,
     getExpectedGenesisHash,
-} from '@perawallet/wallet-core-blockchain'
+} from '../blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { validateTransactionRoundTrip } from './validateTransactionRoundTrip'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
 

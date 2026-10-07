@@ -13,10 +13,7 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { AnyActorRef, SnapshotFrom } from 'xstate'
 import { AppError, logger, type Optional } from '@perawallet/wallet-core-shared'
-import {
-    useTransactionEncoder,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -34,6 +31,7 @@ import { approvalGate } from '../pipeline/approvalGate'
 import { signingEventBus } from '../pipeline/signingEventBus'
 import { isInteractiveSource } from '../pipeline/types'
 import { broadcasterChainAdapters } from '../broadcaster'
+import { plannerAdapterFor } from '../chain-adapter'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SignRequest } from '../models'
 
@@ -154,7 +152,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const { signTransactions } = useLocalKeyTransactionSigner()
     const { signArbitraryData } = useArbitraryDataSigner()
     const { signAuthData } = useAuthDataSigner()
-    const { encodeTransactionRaw } = useTransactionEncoder()
     const { network } = useNetwork()
     const allAccounts = useAllAccounts()
     const {
@@ -184,9 +181,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     createDraftSignRequest,
                 }),
                 network,
-                // Hardware-wallet actor consumes this. Ledger adds the "TX"
-                // domain-separation prefix on-device, so we pass raw msgpack.
-                encodeTransaction: encodeTransactionRaw,
+                // Hardware-wallet actor consumes this. The device adds the
+                // signing-domain prefix itself, so the bytes are unprefixed.
+                encodeTransaction: txn =>
+                    plannerAdapterFor(network).encodeUnsignedTransaction(txn),
                 hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
             }
         },
@@ -194,7 +192,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             signTransactions,
             signArbitraryData,
             signAuthData,
-            encodeTransactionRaw,
             network,
             proposeSignRequest,
             addSignatures,

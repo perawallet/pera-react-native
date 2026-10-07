@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import {
     runMigrations,
     migrations,
@@ -28,6 +28,7 @@ import {
     pruneResolvedSubmissionAttempts,
 } from '..'
 import { SubmissionAttemptsSchema } from '../schema'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 describe('submission ledger repository', () => {
     let db: Database
@@ -58,7 +59,7 @@ describe('submission ledger repository', () => {
     ) =>
         recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: ['TXID-REKEY-1'],
             flow: 'rekey',
             intentKey: { kind: 'rekey', address: 'SENDER_A' },
@@ -74,7 +75,7 @@ describe('submission ledger repository', () => {
         expect(open).toHaveLength(1)
         expect(open[0]).toMatchObject({
             id,
-            network: 'mainnet',
+            network: 'algorand/mainnet',
             txIds: ['TXID-REKEY-1'],
             intentKey: { kind: 'rekey', address: 'SENDER_A' },
             flow: 'rekey',
@@ -91,6 +92,7 @@ describe('submission ledger repository', () => {
         // Terminal rows are not open — the txid query only surfaces open ones.
         const byTxId = await getSubmissionAttemptsByTxIds({
             db,
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: ['TXID-REKEY-1'],
         })
         expect(byTxId).toHaveLength(0)
@@ -120,14 +122,36 @@ describe('submission ledger repository', () => {
 
     it('filters open rows by network', async () => {
         await recordRekey()
-        await recordRekey({ network: 'testnet', txIds: ['TXID-TESTNET'] })
+        await recordRekey({
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: ['TXID-TESTNET'],
+        })
 
         const mainnet = await getOpenSubmissionAttempts({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         expect(mainnet).toHaveLength(1)
-        expect(mainnet[0]!.network).toBe('mainnet')
+        expect(mainnet[0]!.network).toBe('algorand/mainnet')
+    })
+
+    it('returns every network when no scope is given', async () => {
+        await recordRekey()
+        await recordRekey({
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: ['TXID-TESTNET'],
+        })
+
+        expect(await getOpenSubmissionAttempts({ db })).toHaveLength(2)
+    })
+
+    it('stores the scope key the backfill migration wrote', async () => {
+        await recordRekey({ scope: scopeForLegacyNetwork('testnet') })
+
+        const rows = (await db.all(
+            sql.raw('select network from submission_attempts'),
+        )) as Array<[string]>
+        expect(rows.map(([network]) => network)).toEqual(['algorand/testnet'])
     })
 
     it('filters open rows by sender', async () => {
@@ -263,23 +287,47 @@ describe('submission ledger repository', () => {
         await recordRekey()
         await recordSubmissionAttempt({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: ['TXID-GROUP-2'],
             flow: 'generic',
         })
 
         const matches = await getSubmissionAttemptsByTxIds({
             db,
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: ['TXID-GROUP-2', 'UNRELATED'],
         })
         expect(matches).toHaveLength(1)
         expect(matches[0]!.txIds).toEqual(['TXID-GROUP-2'])
     })
 
+    it('finds only the attempts recorded under the queried scope', async () => {
+        await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+            txIds: ['TXID-SHARED'],
+            flow: 'generic',
+        })
+        const testnetId = await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: ['TXID-SHARED'],
+            flow: 'generic',
+        })
+
+        const matches = await getSubmissionAttemptsByTxIds({
+            db,
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: ['TXID-SHARED'],
+        })
+        expect(matches.map(match => match.id)).toEqual([testnetId])
+    })
+
     it('returns nothing for an empty txid query', async () => {
         await recordRekey()
         const matches = await getSubmissionAttemptsByTxIds({
             db,
+            scope: scopeForLegacyNetwork('mainnet'),
             txIds: [],
         })
         expect(matches).toHaveLength(0)

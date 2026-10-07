@@ -14,10 +14,8 @@ import {
     isQuantumAccount,
     useSignerFor,
 } from '@perawallet/wallet-core-accounts'
-import {
-    encodeAlgorandAddress,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 

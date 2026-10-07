@@ -11,10 +11,8 @@
  */
 
 import { useEffect, useRef } from 'react'
-import {
-    getCustomNetworkConfig,
-    useNetworkStore,
-} from '@perawallet/wallet-core-blockchain'
+import { getCustomNetworkConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     hydrateConnectionsStore,

@@ -12,13 +12,10 @@
 
 import type { Decimal } from 'decimal.js'
 import {
-    microAlgosToAlgos,
-    baseUnitsToDisplayUnits,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    ALGO_ASSET_ID,
     ALGO_ASSET_NAME,
     type Nullable,
+    microAlgosToAlgos,
+    baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 import type { TransactionBalanceImpact } from '@perawallet/wallet-core-transactions'
 
@@ -54,12 +51,13 @@ export type AmountDisplay = {
 export const createAlgoAmount = (
     microAlgos: Decimal,
     isOutgoing: boolean,
+    nativeAssetId: string,
 ): AmountDisplay => {
     const absValue = microAlgosToAlgos(microAlgos).abs()
 
     return {
         value: absValue,
-        assetId: ALGO_ASSET_ID,
+        assetId: nativeAssetId,
         currency: ALGO_ASSET_NAME,
         prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
     }

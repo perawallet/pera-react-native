@@ -12,12 +12,11 @@
 
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
-import {
-    type PeraSignedTransaction,
-    type PeraTransaction,
-    useNetwork,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { localKeySignerAdapterFor } from '../chain-adapter'
@@ -46,14 +45,12 @@ export type UseLocalKeyTransactionSignerResult = {
 
 /**
  * React binding for the chain's local-key signer: supplies key
- * custody (`useKMS`) and the transaction encoder, and holds no signing logic
- * of its own. The batching, `sgnr` and `pqsig` rules live in the pure
+ * custody (`useKMS`) and holds no signing logic of its own. The batching, `sgnr` and `pqsig` rules live in the pure
  * pipeline function so they can be proven against a real node.
  */
 export const useLocalKeyTransactionSigner =
     (): UseLocalKeyTransactionSignerResult => {
         const { signTransactionsWithKey, getPQSigningInfo } = useKMS()
-        const { encodeTransaction } = useTransactionEncoder()
         const { network } = useNetwork()
 
         const signTransactions = useCallback(
@@ -71,18 +68,12 @@ export const useLocalKeyTransactionSigner =
                                 payloads,
                             ),
                         getPQSigningInfo,
-                        encodeTransaction,
                     },
                     txnGroup,
                     indexesToSign,
                     account,
                 ),
-            [
-                signTransactionsWithKey,
-                getPQSigningInfo,
-                encodeTransaction,
-                network,
-            ],
+            [signTransactionsWithKey, getPQSigningInfo, network],
         )
 
         return {

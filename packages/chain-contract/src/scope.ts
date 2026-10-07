@@ -15,6 +15,7 @@ import {
     isChainId,
     isLegacyNetwork,
     isNetworkId,
+    LEGACY_NETWORKS,
     type ChainId,
     type ChainScope,
     type ChainScopeKey,
@@ -62,24 +63,61 @@ export const scopeForLegacyNetwork = (network: LegacyNetwork): ChainScope => ({
     networkId: network,
 })
 
+export const LEGACY_SCOPES: readonly ChainScope[] = LEGACY_NETWORKS.map(
+    scopeForLegacyNetwork,
+)
+
+export const scopeKeyForLegacyNetwork = (
+    network: LegacyNetwork,
+): ChainScopeKey => toScopeKey(scopeForLegacyNetwork(network))
+
 // A Record so that adding a chain id stops this compiling. A new chain has no
-// rows from before scope keys, so its entry must return its scope key: a bare
-// network id would collide with the legacy chain's rows.
-const LEGACY_COLUMN_VALUE: Record<ChainId, (scope: ChainScope) => string> = {
-    algorand: scope => scope.networkId,
+// legacy networks, so its entry returns undefined.
+const LEGACY_NETWORK_OF: Record<
+    ChainId,
+    (scope: ChainScope) => LegacyNetwork | undefined
+> = {
+    algorand: scope =>
+        isLegacyNetwork(scope.networkId) ? scope.networkId : undefined,
+    ethereum: () => undefined,
 }
 
-export const legacyColumnValue = (scope: ChainScope): string => {
+// The inverse, for the backend and algod clients that are still keyed by the
+// legacy network.
+export const legacyNetworkOf = (scope: ChainScope): LegacyNetwork => {
     assertValidScope(scope)
-    return LEGACY_COLUMN_VALUE[scope.chainId](scope)
+    const network = LEGACY_NETWORK_OF[scope.chainId](scope)
+    if (network === undefined) {
+        throw new InvalidScopeKeyError(joinScope(scope))
+    }
+    return network
 }
 
-// Until the column is backfilled to scope keys it still holds the bare legacy
-// network, so this cast is the one place the column's type runs ahead of its rows.
-export const networkColumnValue = (scope: ChainScope): ChainScopeKey =>
-    legacyColumnValue(scope) as ChainScopeKey
+const isScopeOf = (part: unknown, scope: ChainScope): boolean =>
+    typeof part === 'object' &&
+    part !== null &&
+    (part as Partial<ChainScope>).chainId === scope.chainId &&
+    (part as Partial<ChainScope>).networkId === scope.networkId
 
-// Never parseScopeKey a stored value directly: legacy rows hold a bare network.
+// Every network-partitioned query key embeds its ChainScope, either as a bare
+// element or as the `scope` field of an object element. Typed without
+// TanStack's QueryKey so this package keeps depending on nothing.
+export const queryKeyReferencesScope = (
+    queryKey: readonly unknown[],
+    scope: ChainScope,
+): boolean => {
+    assertValidScope(scope)
+    return queryKey.some(
+        part =>
+            isScopeOf(part, scope) ||
+            (typeof part === 'object' &&
+                part !== null &&
+                isScopeOf((part as { scope?: unknown }).scope, scope)),
+    )
+}
+
+// Never parseScopeKey a persisted value directly: state written before scope
+// keys holds a bare network.
 export const scopeFromNetworkColumn = (value: string): ChainScope => {
     if (value.includes(SCOPE_KEY_SEPARATOR)) {
         return parseScopeKey(value)
@@ -88,4 +126,22 @@ export const scopeFromNetworkColumn = (value: string): ChainScope => {
         throw new InvalidScopeKeyError(value)
     }
     return scopeForLegacyNetwork(value)
+}
+
+// For persisted state keyed by the bare legacy network. A key that already is a
+// scope key passes through, so migrated state re-keys to itself. Any other key
+// is dropped rather than thrown: a throw inside a store migration discards the
+// whole store.
+export const rekeyLegacyNetworkRecord = <V>(
+    record: Readonly<Record<string, V>> | null | undefined,
+): Partial<Record<ChainScopeKey, V>> => {
+    const rekeyed: Partial<Record<ChainScopeKey, V>> = {}
+    for (const [key, value] of Object.entries(record ?? {})) {
+        try {
+            rekeyed[toScopeKey(scopeFromNetworkColumn(key))] = value
+        } catch {
+            // Unreadable key: dropped, see above.
+        }
+    }
+    return rekeyed
 }

@@ -530,6 +530,31 @@ describe('useCloudBackupImport', () => {
         ).toBe(true)
     })
 
+    test('reports progress per backup entry, counting duplicates and failures', async () => {
+        storeState.accounts = [{ address: 'DUPE_ADDR' }]
+        isValidAddressMock.mockImplementation(
+            (addr?: string) => addr !== 'BAD_ADDR',
+        )
+        const onProgress = vi.fn()
+        const { current } = renderImport()
+
+        await current.importAccounts(
+            [
+                watchAccount('DUPE_ADDR'),
+                watchAccount('BAD_ADDR'),
+                watchAccount('GOOD_ADDR'),
+            ],
+            onProgress,
+        )
+
+        expect(onProgress.mock.calls).toEqual([
+            [0, 3],
+            [1, 3],
+            [2, 3],
+            [3, 3],
+        ])
+    })
+
     test('persists the hdSeed master key before deriving the hdWallet child', async () => {
         persistHDMasterKeyMock.mockImplementation(async () => {
             callOrder.push('persistHDMasterKey')

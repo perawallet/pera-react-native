@@ -17,8 +17,7 @@ import {
 import { useIsQuantumAccountsEnabled } from './useIsQuantumAccountsEnabled'
 
 // Defaults ON so it can be switched *off* once dApps support PQ. Composes
-// useIsQuantumAccountsEnabled rather than re-reading its flag to inherit the
-// web capability gate and the dev/staging fallback.
+// useIsQuantumAccountsEnabled to inherit the platform capability gate.
 export const useIsQuantumDappWarningEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
     const isQuantumEnabled = useIsQuantumAccountsEnabled()

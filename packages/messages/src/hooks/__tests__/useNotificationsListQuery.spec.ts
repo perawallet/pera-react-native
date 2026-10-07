@@ -14,11 +14,29 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
 import { useNotificationsListQuery } from '../useNotificationsListQuery'
 import { fetchNotificationList } from '../../api/notifications'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: vi.fn(() =>
+        ['mainnet', 'testnet'].includes(
+            vi.mocked(useSelectedScope).mock.results.at(-1)?.value?.networkId ??
+                'mainnet',
+        ),
+    ),
+    useSelectedScope: vi
+        .fn()
+        .mockReturnValue({ chainId: 'algorand', networkId: 'mainnet' }),
+}))
 
 vi.mock('../../api/notifications', () => ({
     fetchNotificationList: vi.fn(),
@@ -33,14 +51,10 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
-}))
-
 beforeEach(() => {
-    vi.mocked(useNetwork).mockReturnValue({
-        network: 'mainnet',
-    } as ReturnType<typeof useNetwork>)
+    vi.mocked(useSelectedScope).mockReturnValue(
+        scopeForLegacyNetwork('mainnet'),
+    )
 })
 
 describe('useNotificationsListQuery', () => {
@@ -303,9 +317,9 @@ describe('useNotificationsListQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'disables the query, flags isUnavailableOnNetwork and returns [] on %s',
             network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
+                vi.mocked(useSelectedScope).mockReturnValue(
+                    scopeForLegacyNetwork(network),
+                )
 
                 const { result } = renderHook(
                     () => useNotificationsListQuery(),
@@ -315,6 +329,10 @@ describe('useNotificationsListQuery', () => {
                 )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(useChainCapability).toHaveBeenCalledWith(
+                    'algorand',
+                    'notifications',
+                )
                 // Network unavailability outranks the missing-device state:
                 // this can never succeed, so it must not read as "unregistered".
                 expect(result.current.isDeviceUnregistered).toBe(false)
@@ -327,9 +345,9 @@ describe('useNotificationsListQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'no-ops fetchNextPage on %s',
             async network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
+                vi.mocked(useSelectedScope).mockReturnValue(
+                    scopeForLegacyNetwork(network),
+                )
 
                 const { result } = renderHook(
                     () => useNotificationsListQuery(),

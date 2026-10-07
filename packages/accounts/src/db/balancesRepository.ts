@@ -13,7 +13,7 @@
 import { eq, and } from 'drizzle-orm'
 import type { Decimal } from 'decimal.js'
 import {
-    networkColumnValue,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
@@ -56,7 +56,7 @@ export async function upsertAccountBalance({
     status,
     authAddress,
 }: UpsertAccountBalanceParams): Promise<void> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const now = Date.now()
 
     await db
@@ -103,7 +103,7 @@ export async function getAccountBalance({
     accountAddress,
     scope,
 }: GetAccountBalanceParams): Promise<Optional<AccountBalanceRow>> {
-    const network = networkColumnValue(scope)
+    const network = toScopeKey(scope)
     const rows = await db
         .select({
             accountAddress: AccountBalancesSchema.accountAddress,

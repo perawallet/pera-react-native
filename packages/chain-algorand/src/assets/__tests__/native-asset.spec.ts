@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
-import { algorandDescriptor } from '../../descriptor'
+import { algorandDescriptor, isAlgorandNativeAssetId } from '../../descriptor'
 import { ALGORAND_NATIVE_ASSET } from '../native-asset'
 
 describe('ALGORAND_NATIVE_ASSET', () => {
@@ -63,5 +63,15 @@ describe('ALGORAND_NATIVE_ASSET', () => {
                 type: PeraAssetType.algo,
             }),
         )
+    })
+})
+
+describe('isAlgorandNativeAssetId', () => {
+    it('matches only the descriptor native id', () => {
+        expect(isAlgorandNativeAssetId(ALGORAND_NATIVE_ASSET.assetId)).toBe(
+            true,
+        )
+        expect(isAlgorandNativeAssetId('31566704')).toBe(false)
+        expect(isAlgorandNativeAssetId('')).toBe(false)
     })
 })

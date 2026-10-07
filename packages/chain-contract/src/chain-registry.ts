@@ -22,6 +22,7 @@ import {
     CHAIN_CAPABILITIES,
     type ChainCapabilities,
     type ChainCapability,
+    type ChainCapabilityRestrictions,
 } from './models/capabilities'
 import type { ChainDescriptor } from './models/descriptor'
 import type { ChainId, ChainNetwork } from './models/identity'
@@ -31,7 +32,7 @@ const FEATURE = 'chain descriptor'
 
 export type ChainCapabilityOverrides = Pick<
     CapabilityLayers,
-    'remote' | 'developer'
+    'remote' | 'developer' | 'chainMode'
 > & {
     /**
      * The per-chain kill switch; only `false` switches a chain off. `unknown`
@@ -46,14 +47,18 @@ export interface RegisteredChain {
 
 export interface ChainRegistry {
     /** `build` is the module's defaults with the composition root's overrides applied. */
-    register(descriptor: ChainDescriptor, build: ChainCapabilities): void
+    register(
+        descriptor: ChainDescriptor,
+        build: ChainCapabilities,
+        restrictions?: ChainCapabilityRestrictions,
+    ): void
     /** @throws ChainAdapterNotRegisteredError */
     get(chainId: ChainId): RegisteredChain
     has(chainId: ChainId): boolean
     list(): ChainDescriptor[]
     /** @throws ChainAdapterNotRegisteredError */
     capabilities(chainId: ChainId): ChainCapabilities
-    /** Read on every `capabilities` call, so a changed remote value applies without re-registering. */
+    /** Read on every `capabilities` call, so a changed remote value or chain mode applies without re-registering. */
     setCapabilityOverrides(read: () => ChainCapabilityOverrides): void
     /**
      * True only while the kill switch is explicitly off, registered or not, so
@@ -95,7 +100,11 @@ const ALL_OFF = Object.fromEntries(
 export const createChainRegistry = (): ChainRegistry => {
     const chains = new Map<
         ChainId,
-        { chain: RegisteredChain; build: ChainCapabilities }
+        {
+            chain: RegisteredChain
+            build: ChainCapabilities
+            restrictions?: ChainCapabilityRestrictions
+        }
     >()
     let readOverrides = NO_OVERRIDES
 
@@ -108,7 +117,7 @@ export const createChainRegistry = (): ChainRegistry => {
     }
 
     return {
-        register: (descriptor, build) => {
+        register: (descriptor, build, restrictions) => {
             const existing = chains.get(descriptor.id)
             if (existing?.chain.descriptor === descriptor) {
                 return
@@ -116,13 +125,17 @@ export const createChainRegistry = (): ChainRegistry => {
             if (existing) {
                 throw new DuplicateChainAdapterError(FEATURE, descriptor.id)
             }
-            chains.set(descriptor.id, { chain: { descriptor }, build })
+            chains.set(descriptor.id, {
+                chain: { descriptor },
+                build,
+                restrictions,
+            })
         },
         get: chainId => entryFor(chainId).chain,
         has: chainId => chains.has(chainId),
         list: () => [...chains.values()].map(entry => entry.chain.descriptor),
         capabilities: chainId => {
-            const { build } = entryFor(chainId)
+            const { build, restrictions } = entryFor(chainId)
             const { chainEnabled, ...overrides } = readOverrides()
             if (chainEnabled?.[chainId] === false) {
                 return ALL_OFF
@@ -131,6 +144,7 @@ export const createChainRegistry = (): ChainRegistry => {
             const layers = {
                 ...overrides,
                 build: { [chainId]: build },
+                restrictions: { [chainId]: restrictions },
             } as CapabilityLayers
             return Object.fromEntries(
                 CHAIN_CAPABILITIES.map(capability => [
@@ -177,17 +191,21 @@ export const registerChainSetup = (
         if (!entry.enabled) {
             continue
         }
-        chains.register(entry.module.descriptor, {
-            ...entry.module.capabilityDefaults,
-            ...entry.capabilities,
-        })
+        chains.register(
+            entry.module.descriptor,
+            {
+                ...entry.module.capabilityDefaults,
+                ...entry.capabilities,
+            },
+            entry.module.capabilityRestrictions,
+        )
         entry.module.register(contextFor(entry))
     }
 }
 
 export const buildChainSetup = (
     chains: ChainSetupConfig,
-    modules: Record<ChainId, ChainModule>,
+    modules: Partial<Record<ChainId, ChainModule>>,
 ): ChainSetupEntry[] => {
     for (const chainId of chains.enabled) {
         if (!modules[chainId]) {
@@ -196,8 +214,9 @@ export const buildChainSetup = (
             )
         }
     }
-    return (Object.entries(modules) as [ChainId, ChainModule][]).map(
-        ([chainId, module]) => {
+    return (Object.entries(modules) as [ChainId, ChainModule | undefined][])
+        .filter((entry): entry is [ChainId, ChainModule] => !!entry[1])
+        .map(([chainId, module]) => {
             const listed = chains.capabilities[chainId]
             return {
                 chainId,
@@ -213,6 +232,5 @@ export const buildChainSetup = (
                     ) as ChainCapabilities,
                 }),
             }
-        },
-    )
+        })
 }

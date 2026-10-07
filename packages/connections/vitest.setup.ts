@@ -37,13 +37,6 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
     }
 })
 
-// Same wall as the signing barrel, and the same remedy: ARC-0001 is the only
-// part of the blockchain package this layer touches, and it is self-contained.
-vi.mock(
-    '@perawallet/wallet-core-blockchain',
-    async () => await import('../blockchain/src/arc0001'),
-)
-
 const store = new Map<string, string>()
 
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({

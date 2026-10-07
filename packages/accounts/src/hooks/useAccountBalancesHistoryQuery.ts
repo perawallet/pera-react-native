@@ -21,8 +21,14 @@ import type {
 } from '../models'
 import { useCallback } from 'react'
 import { Decimal } from 'decimal.js'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { getAccountBalancesHistoryQueryKey } from './querykeys'
 
@@ -57,13 +63,13 @@ export const useAccountBalancesHistoryQuery = (
     enabled = true,
 ): UseAccountBalancesHistoryQueryResult => {
     const { usdToPreferred } = useCurrency()
-    const { network } = useNetwork()
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
-    const queryKey = getAccountBalancesHistoryQueryKey(
-        addresses,
-        period,
-        network,
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scope.chainId,
+        'balanceHistory',
     )
+    const queryKey = getAccountBalancesHistoryQueryKey(addresses, period, scope)
     const query = useQuery({
         queryKey,
         // Gated by callers on chart visibility — this hits a slow network

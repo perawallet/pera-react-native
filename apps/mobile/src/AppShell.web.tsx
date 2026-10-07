@@ -23,9 +23,9 @@ import {
 } from '@react-navigation/native'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import {
-    algorandSafeQuerySerialize,
-    algorandSafeQueryParse,
-} from '@perawallet/wallet-core-blockchain'
+    parseTypedJson,
+    stringifyTypedJson,
+} from '@perawallet/wallet-core-shared'
 import {
     getProvider,
     PeraWalletProvider,
@@ -34,9 +34,11 @@ import { AppProviders } from '@providers/AppProviders'
 import {
     VaultGate,
     CreatePasswordScreen,
+    useAppLockFromVault,
     useAutoLockActivity,
     useVaultLockState,
 } from '@modules/vault'
+import { useBackupSyncLifecycle } from '@modules/cloud-backup'
 import { OnboardingStackNavigator } from '@modules/onboarding/routes'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
@@ -49,6 +51,7 @@ import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useAppTheme } from '@hooks/useAppTheme'
 import { useCrashReporterBinding } from '@hooks/useCrashReporterBinding'
+import { useDatabaseResetNotice } from '@hooks/useDatabaseResetNotice'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { getNavigationTheme } from '@theme/theme'
@@ -69,8 +72,8 @@ import { useIntegrityTokenSync } from './useIntegrityTokenSync.web'
 // rest of the post-hydration setup is bootstrap/preReact.web.ts.
 const persister = createAsyncStoragePersister({
     storage: getProvider().keyValueStorage,
-    serialize: algorandSafeQuerySerialize,
-    deserialize: algorandSafeQueryParse,
+    serialize: stringifyTypedJson,
+    deserialize: parseTypedJson,
 })
 
 // Theme-aware paint for the whole app area, below ThemeProvider so it sees
@@ -117,6 +120,16 @@ const ApprovalPlaceholder = (): React.JSX.Element => {
 // calling it from the shell body crashes at boot with "No QueryClient set".
 const NetworkSwitchInvalidation = (): null => {
     useNetworkSwitchInvalidation()
+    return null
+}
+
+// Native runs the backup sync from RootComponent, which the web shell
+// replaces. Main surface only (popup or expanded tab): an approval window
+// running its own manager would open a second sync and socket beside it.
+const MainSurfaceLifecycle = (): null => {
+    useAppLockFromVault()
+    useBackupSyncLifecycle()
+    useDatabaseResetNotice()
     return null
 }
 
@@ -191,7 +204,12 @@ const ShellRouter = (): React.JSX.Element => {
         case 'main': {
             // WebMainRoutes mounts its own BottomSheetManager inside its
             // NavigationContainer (native parity) — do not add another here.
-            return <WebMainRoutes fcmToken={fcmToken} />
+            return (
+                <>
+                    <MainSurfaceLifecycle />
+                    <WebMainRoutes fcmToken={fcmToken} />
+                </>
+            )
         }
         case 'error': {
             return (

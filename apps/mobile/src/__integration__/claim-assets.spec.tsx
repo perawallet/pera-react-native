@@ -57,7 +57,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useClaimAssetsStore } from '@modules/transactions/hooks/claim-assets/useClaimAssets'
 import {
     AssetTransferRequestsScreen,

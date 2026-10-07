@@ -15,7 +15,7 @@ import { onlineManager, focusManager } from '@tanstack/react-query'
 import {
     useNetwork,
     useOnNetworkSwitch,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-shared'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
 
 import { useDevice } from './useDevice'

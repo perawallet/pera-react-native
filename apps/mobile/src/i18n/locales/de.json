@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera konnte deine Entscheidung nicht an die Website übermitteln. Die Erweiterung wurde in den Ruhezustand versetzt, während dieses Fenster geöffnet war. Schließe dieses Fenster und starte die Anfrage erneut über die Website.",
             "request_origin": "Anfrage kam von {{origin}}",
-            "requester_verified_label": "Verifizierter Tab",
+            "requester_verified_label": "Verifizierter Tab: {{origin}}",
+            "requester_mismatch": "Diese Anfrage kam von {{origin}}, nicht von {{claimed}}.",
             "requester_verified_a11y_origin": "Verifiziert: Diese Anfrage kam aus deinem Browser-Tab unter {{origin}}"
         }
     },
@@ -360,7 +361,6 @@
         "show_address": "Adresse anzeigen",
         "view_passphrase_hd": "Wiederherstellungsphrase des Root-Wallets anzeigen",
         "view_passphrase_algo25": "Wiederherstellungsphrase anzeigen",
-        "view_passphrase_quantum": "Wiederherstellungsphrase des Quantum-Kontos anzeigen",
         "undo_rekey": "Rekey rückgängig machen",
         "rekeyed_to": "Rekeyed zu",
         "rekey_account": "Konto rekeyen",
@@ -822,6 +822,11 @@
             "encryption_key_placeholder": "Verschlüsselungsschlüssel einfügen",
             "encryption_key_restore": "Backup wiederherstellen",
             "restoring": "Dein Backup wird wiederhergestellt …",
+            "progress_unlocking": "Dein Backup wird entsperrt …",
+            "progress_downloading": "Dein Backup wird heruntergeladen …",
+            "progress_importing": "Konten werden wiederhergestellt: {{done}} von {{total}}",
+            "progress_finishing": "Wird abgeschlossen …",
+            "progress_hint": "Bei Backups mit vielen Konten kann das über eine Minute dauern. Lass Pera geöffnet, bis der Vorgang abgeschlossen ist.",
             "error_not_found": "Kein Backup für diese Zugangsdaten gefunden.",
             "error_invalid_credentials": "Falsche Backup-Phrase oder falscher Verschlüsselungsschlüssel.",
             "error_unknown": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
@@ -1993,6 +1998,11 @@
                 "paste_passphrase": "Vollständige Passphrase einfügen",
                 "scan_qr": "QR-Code scannen",
                 "learn_more": "Mehr erfahren"
+            },
+            "quantum_detected": {
+                "title": "Das ist die Passphrase eines Quantum-Kontos",
+                "body": "Diese Wörter gehören zu einem bereits bestehenden Quantum-Konto. Als reguläres Konto importiert, würden sie ein anderes, leeres Konto hinzufügen.",
+                "import_button": "Quantum-Konto importieren"
             }
         },
         "searching_accounts": {
@@ -3040,7 +3050,7 @@
             "siwa_not_before": "Nicht vor",
             "siwa_resources": "Ressourcen",
             "siwa_invalid": "Diese Authentifizierungsanfrage ist fehlerhaft und kann nicht signiert werden.",
-            "origin_mismatch": "Diese Website bittet dich, dich bei einer anderen Domain ({{domain}}) anzumelden. Fahre nur fort, wenn du ihr vertraust.",
+            "origin_mismatch": "Diese Website bittet dich, dich bei einer anderen Domain ({{domain}}) anzumelden. Pera hat diese Anfrage zum Schutz deines Kontos blockiert.",
             "show_details": "Details anzeigen",
             "details_title": "Details der Authentifizierungsanfrage",
             "details_description": "Überprüfe die vollständigen Metadaten dieser Authentifizierungsanfrage, bevor du sie genehmigst."
@@ -4096,6 +4106,10 @@
             "acknowledge": "Mir ist klar, dass meine Daten gelöscht werden und das nicht rückgängig gemacht werden kann",
             "confirm_button": "Wallet zurücksetzen",
             "error": "Die Wallet konnte nicht zurückgesetzt werden. Bitte versuche es erneut."
+        },
+        "database_reset": {
+            "title": "Wallet-Daten aktualisiert",
+            "body": "Wir haben die in diesem Browser gespeicherten Guthaben und Verläufe neu aufgebaut. Sie werden gleich neu geladen. Deine Konten sind nicht betroffen."
         },
         "security": {
             "autolock_title": "Automatisch sperren nach",

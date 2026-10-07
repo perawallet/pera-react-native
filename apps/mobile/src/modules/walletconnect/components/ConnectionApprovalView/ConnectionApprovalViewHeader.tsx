@@ -33,6 +33,8 @@ import { getPreferredDappIcon } from '../../utils/dapp-icon'
 
 export type ConnectionApprovalViewHeaderProps = {
     peer: ConnectionPeer
+    /** `peer.name` cleaned and clamped for display. */
+    peerName: string
     /**
      * Handler-resolved list (v1's 4160 wildcard already expanded), not a wire chain
      * id. `'custom'` is filtered from the badge row: it names a runtime-configurable
@@ -57,6 +59,7 @@ const permissionTitleKey: Record<string, string> = {
 
 export const ConnectionApprovalViewHeader = ({
     peer,
+    peerName,
     networks,
     methods,
     peerUrlLabel,
@@ -121,9 +124,10 @@ export const ConnectionApprovalViewHeader = ({
                     <PWText
                         variant='h3'
                         style={styles.title}
+                        numberOfLines={3}
                     >
                         {t('walletconnect.request.title', {
-                            name: peer.name,
+                            name: peerName,
                         })}
                     </PWText>
                     {!!verificationTier && (
@@ -144,6 +148,7 @@ export const ConnectionApprovalViewHeader = ({
                         <PWText
                             variant='caption'
                             style={styles.peerUrlText}
+                            numberOfLines={1}
                         >
                             {peerUrlLabel}
                         </PWText>

@@ -100,6 +100,7 @@ vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
 }))
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     startDatabaseHost: vi.fn(() => ({ setReady: vi.fn() })),
+    isSqlStatementTimeout: vi.fn(() => false),
 }))
 vi.mock('../worker-executor', () => ({
     createWorkerExecutor: vi.fn(() => ({ onDeath: vi.fn() })),
@@ -130,7 +131,10 @@ vi.mock('@perawallet/wallet-core-background', () => ({
     createSyncStorePorts: vi.fn(() => ({})),
     getSyncService: vi.fn(() => ({ start: vi.fn() })),
     initializeSyncService,
-    usePollingStore: { persist: { rehydrate: vi.fn() } },
+    useSyncCursorStore: {
+        getState: () => ({ resetState: vi.fn() }),
+        persist: { rehydrate: vi.fn() },
+    },
 }))
 // The stores are only read through `.getState()` or stashed for
 // `.persist.rehydrate()`, so the app-wide selector-hook mocks are replaced
@@ -142,12 +146,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         persist: { rehydrate: vi.fn() },
     },
 }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    getCustomNetworkConfig,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {
         getState: networkGetState,
         persist: { rehydrate: vi.fn() },
     },
-    getCustomNetworkConfig,
 }))
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
@@ -184,10 +191,24 @@ describe('runOffscreenApp connections wiring', () => {
         canSignWith.mockReturnValue(true)
     })
 
-    const boot = async () => {
+    const boot = async (
+        onDatabaseReset: () => Promise<void> = vi
+            .fn()
+            .mockResolvedValue(undefined),
+    ) => {
         const { runOffscreenApp } = await import('../runOffscreenApp')
-        await runOffscreenApp({ registerChainAdapters })
+        await runOffscreenApp({ registerChainAdapters, onDatabaseReset })
     }
+
+    it('migrates with a recovery that hands a database reset to the web shell', async () => {
+        const onDatabaseReset = vi.fn().mockResolvedValue(undefined)
+
+        await boot(onDatabaseReset)
+        const [, options] = vi.mocked(initializeDatabase).mock.calls[0] ?? []
+        await options?.recovery?.onReset('0008_scope_key_network')
+
+        expect(onDatabaseReset).toHaveBeenCalledOnce()
+    })
 
     it('builds the registry on the provider store and registers the v1 handler with the storage-backed key store', async () => {
         await boot()
@@ -359,7 +380,10 @@ describe('runOffscreenApp connections wiring', () => {
         const { runOffscreenApp } = await import('../runOffscreenApp')
 
         await expect(
-            runOffscreenApp({ registerChainAdapters }),
+            runOffscreenApp({
+                registerChainAdapters,
+                onDatabaseReset: vi.fn().mockResolvedValue(undefined),
+            }),
         ).resolves.toBeUndefined()
     })
 })

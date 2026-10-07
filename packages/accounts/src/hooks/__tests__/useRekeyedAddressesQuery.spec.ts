@@ -28,8 +28,8 @@ const mocks = {
     },
 }
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 const createWrapper = () => {
@@ -50,10 +50,10 @@ describe('useRekeyedAddressesQuery', () => {
     })
 
     it('builds the expected query key', () => {
-        expect(getRekeyedAddressesQueryKey('ADDR', 'mainnet')).toEqual([
+        expect(getRekeyedAddressesQueryKey('ADDR', MAINNET_SCOPE)).toEqual([
             'accounts',
             'rekeyed-addresses',
-            { address: 'ADDR', network: 'mainnet' },
+            { address: 'ADDR', scope: MAINNET_SCOPE },
         ])
     })
 

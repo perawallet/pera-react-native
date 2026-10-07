@@ -232,7 +232,7 @@
       "rules": { "pera/hook-result-type": "error" }
     },
     {
-      "files": ["packages/chain-algorand/**", "packages/blockchain/src/models/index.ts"],
+      "files": ["packages/chain-algorand/**"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
     },
     {

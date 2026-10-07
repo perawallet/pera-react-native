@@ -27,7 +27,8 @@
         "approval": {
             "delivery_failed": "Pera no ha podido enviar tu decisión al sitio. La extensión se suspendió mientras esta ventana estaba abierta. Cierra esta ventana y vuelve a hacer la solicitud desde el sitio.",
             "request_origin": "La solicitud proviene de {{origin}}",
-            "requester_verified_label": "Pestaña verificada",
+            "requester_verified_label": "Pestaña verificada: {{origin}}",
+            "requester_mismatch": "Esta solicitud vino de {{origin}}, no de {{claimed}}.",
             "requester_verified_a11y_origin": "Verificado: esta solicitud proviene de tu pestaña del navegador en {{origin}}"
         }
     },
@@ -360,7 +361,6 @@
         "show_address": "Ver dirección",
         "view_passphrase_hd": "Ver la passphrase de recuperación de la wallet raíz",
         "view_passphrase_algo25": "Ver la passphrase de recuperación",
-        "view_passphrase_quantum": "Ver la passphrase de recuperación de la cuenta Quantum",
         "undo_rekey": "Deshacer rekey",
         "rekeyed_to": "Con rekey a",
         "rekey_account": "Hacer rekey de la cuenta",
@@ -830,6 +830,11 @@
             "encryption_key_placeholder": "Pega tu clave de cifrado",
             "encryption_key_restore": "Restaurar copia de seguridad",
             "restoring": "Restaurando tu copia de seguridad…",
+            "progress_unlocking": "Desbloqueando tu copia de seguridad…",
+            "progress_downloading": "Descargando tu copia de seguridad…",
+            "progress_importing": "Restaurando cuentas: {{done}} de {{total}}",
+            "progress_finishing": "Finalizando…",
+            "progress_hint": "Puede tardar más de un minuto si tu copia de seguridad tiene muchas cuentas. No cierres Pera hasta que termine.",
             "error_not_found": "No se encontró ninguna copia de seguridad para estas credenciales.",
             "error_invalid_credentials": "La frase de copia de seguridad o la clave de cifrado son incorrectas.",
             "error_unknown": "Algo ha ido mal. Vuelve a intentarlo.",
@@ -2001,6 +2006,11 @@
                 "paste_passphrase": "Pegar la passphrase completa",
                 "scan_qr": "Escanear código QR",
                 "learn_more": "Más información"
+            },
+            "quantum_detected": {
+                "title": "Esta es la passphrase de una cuenta Quantum",
+                "body": "Estas palabras pertenecen a una cuenta Quantum que ya existe. Si las importas como una cuenta normal, se añadirá otra cuenta vacía.",
+                "import_button": "Importar cuenta Quantum"
             }
         },
         "searching_accounts": {
@@ -3048,7 +3058,7 @@
             "siwa_not_before": "No válida antes de",
             "siwa_resources": "Recursos",
             "siwa_invalid": "Esta solicitud de autenticación tiene un formato incorrecto y no se puede firmar.",
-            "origin_mismatch": "Este sitio te está pidiendo iniciar sesión en un dominio diferente ({{domain}}). Continúa solo si confías en él.",
+            "origin_mismatch": "Este sitio te está pidiendo iniciar sesión en un dominio diferente ({{domain}}). Pera bloqueó esta solicitud para proteger tu cuenta.",
             "show_details": "Ver detalles",
             "details_title": "Detalles de la solicitud de autenticación",
             "details_description": "Revisa todos los metadatos de esta solicitud de autenticación antes de aprobarla."
@@ -4104,6 +4114,10 @@
             "acknowledge": "Entiendo que esto borra mis datos y no se puede deshacer",
             "confirm_button": "Restablecer wallet",
             "error": "No se pudo restablecer la wallet. Inténtalo de nuevo."
+        },
+        "database_reset": {
+            "title": "Datos de la wallet actualizados",
+            "body": "Reconstruimos los saldos y el historial guardados en este navegador. Se volverán a cargar en un momento. Tus cuentas no se ven afectadas."
         },
         "security": {
             "autolock_title": "Bloqueo automático tras",

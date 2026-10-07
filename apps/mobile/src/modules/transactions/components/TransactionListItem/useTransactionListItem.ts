@@ -13,17 +13,18 @@
 import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import {
-    baseUnitsToDisplayUnits,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     getDebitedAddress,
     isOutgoingFor,
     useOpenSubmissionTxIdsQuery,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatNumber,
+    type Nullable,
+    baseUnitsToDisplayUnits,
+} from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'

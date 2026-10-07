@@ -12,6 +12,7 @@
 
 import type { ChainDescriptor } from './models/descriptor'
 import type {
+    ChainMode,
     ChainNetwork,
     NetworkId,
     NetworkTier,
@@ -54,3 +55,21 @@ export const networkIdForMode = (
     mode === 'live'
         ? defaultForTier(descriptor, 'mainnet')
         : (override ?? defaultForTier(descriptor, 'testnet'))
+
+/**
+ * The caller validates `override`, as for `networkIdForMode`. Never throws,
+ * even for a descriptor with no default test network.
+ */
+export const chainModeFor = (
+    descriptor: ChainDescriptor,
+    mode: WalletMode,
+    override?: NetworkId,
+): ChainMode => {
+    if (mode === 'live') {
+        return 'live'
+    }
+    return override === undefined ||
+        override === defaultNetworkForTier(descriptor, 'testnet')?.id
+        ? 'developer'
+        : 'developer-override'
+}

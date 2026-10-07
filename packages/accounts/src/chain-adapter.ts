@@ -20,8 +20,9 @@ import {
     type ChainId,
     type ChainScope,
     type DeriveOpts,
+    type AccountInformation,
 } from '@perawallet/wallet-core-chain-contract'
-import type { AccountInformation } from '@perawallet/wallet-core-blockchain'
+
 import {
     kmsCore,
     type QuantumChainDerivation,
@@ -145,6 +146,18 @@ export type SingleKeyAccountOps = {
         scope: ChainScope,
         save: (minted: MintedAccount) => Promise<void>,
     ): Promise<WalletAccount | WalletAccount[]>
+    /**
+     * A quantum passphrase has as many words as an algo25 one, so a standard
+     * import can't tell them apart. Returns the on-chain quantum account these
+     * algo25 words also control when the algo25 address itself has no on-chain
+     * footprint, else null. A failed probe reads as null: this is advisory and
+     * must never block an import.
+     */
+    findQuantumAccountForAlgo25Mnemonic(
+        /** Wordlist indices; the caller zeroes them. */
+        mnemonicIndices: Uint16Array,
+        scope: ChainScope,
+    ): Promise<Nullable<string>>
 }
 
 /** The chain-specific half of account state, discovery, creation and rekey; registered by the chain package. */
@@ -157,6 +170,11 @@ export interface AccountsChainAdapter {
         scope: ChainScope,
         hint: AccountStateReadHint,
     ): Promise<AccountStateSnapshot>
+    /**
+     * The `address` an `AccountInformation` carries for `address`; throws when
+     * `address` isn't valid on this chain.
+     */
+    toAccountInformationAddress(address: string): AccountInformation['address']
     fetchAccountInformation(
         address: string,
         scope: ChainScope,

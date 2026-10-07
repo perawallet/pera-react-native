@@ -33,10 +33,8 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    useNetworkStore,
-    type PeraSignedTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 const { mockWaitForConfirmation } = vi.hoisted(() => ({
     mockWaitForConfirmation: vi.fn(),
@@ -484,7 +482,7 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
         const all = await db.select().from(SubmissionAttemptsSchema).all()
         expect(all).toHaveLength(1)
         expect(all[0]).toMatchObject({
-            network: 'mainnet',
+            network: 'algorand/mainnet',
             flow: 'rekey',
             sender: WALLET,
             intentKeyJson: JSON.stringify({ kind: 'rekey', address: WALLET }),
