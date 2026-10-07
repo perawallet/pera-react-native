@@ -576,7 +576,9 @@ describe('Flow: Onramp buy (native XO)', () => {
             expect(await screen.findByText('onramp.testnet.title')).toBeTruthy()
             expect(screen.queryByTestId('onramp-screen')).toBeNull()
 
-            act(() => useNetworkStore.getState().setMode('live'))
+            await act(async () => {
+                useNetworkStore.getState().setMode('live')
+            })
 
             expect(await screen.findByTestId('onramp-screen')).toBeTruthy()
             expect(screen.queryByText('onramp.testnet.title')).toBeNull()
