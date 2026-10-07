@@ -39,6 +39,46 @@ export const decimalColumn = customType<{ data: Decimal }>({
     },
 })
 
+const DECIMAL_TAG = '$decimal'
+
+const isTaggedDecimal = (value: unknown): value is { [DECIMAL_TAG]: string } =>
+    typeof value === 'object' &&
+    value !== null &&
+    Object.keys(value).length === 1 &&
+    typeof (value as Record<string, unknown>)[DECIMAL_TAG] === 'string'
+
+/**
+ * A JSON TEXT column whose `Decimal` values, at any depth, come back as
+ * `Decimal`. Each one is stored tagged as `{"$decimal": "<string>"}`, so the
+ * column needs no knowledge of the shape it holds.
+ */
+export const decimalJsonColumn = <T>(name: string) =>
+    customType<{ data: T }>({
+        dataType() {
+            return 'text'
+        },
+        fromDriver(value: unknown): T {
+            return JSON.parse(String(value), (_key, parsed: unknown) =>
+                isTaggedDecimal(parsed)
+                    ? new Decimal(parsed[DECIMAL_TAG])
+                    : parsed,
+            ) as T
+        },
+        toDriver(value: T): string {
+            // The replacer sees Decimal.toJSON's string; the holder still has
+            // the Decimal itself, which is what tells the two apart.
+            return JSON.stringify(
+                value,
+                function (this: Record<string, unknown>, key, encoded) {
+                    const raw = this[key]
+                    return Decimal.isDecimal(raw)
+                        ? { [DECIMAL_TAG]: raw.toString() }
+                        : encoded
+                },
+            )
+        },
+    })(name)
+
 /**
  * Precision-safe SUM aggregate for `decimalColumn` fields.
  *

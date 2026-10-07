@@ -76,6 +76,7 @@ describe('fetchAndPersistAccount', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUpsertAccountBalance.mockResolvedValue(undefined)
+        mockUpsertAccountChainState.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
         mockGetAccountBalance.mockResolvedValue(undefined)
         fetchAccountState().mockResolvedValue(snapshot())
@@ -163,6 +164,24 @@ describe('fetchAndPersistAccount', () => {
         expect(mockUpsertAccountBalance).not.toHaveBeenCalled()
         expect(mockUpsertAccountChainState).not.toHaveBeenCalled()
         expect(mockRefreshAccountHoldings).not.toHaveBeenCalled()
+    })
+
+    it('still mirrors the rekey and refreshes holdings when the chain-state write fails', async () => {
+        mockUpsertAccountChainState.mockRejectedValue(new Error('db locked'))
+        const updateRekey = vi.spyOn(
+            useAccountsStore.getState(),
+            'updateAccountRekeyAddress',
+        )
+
+        const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+        expect(updateRekey).toHaveBeenCalledWith(
+            'ADDR1',
+            'REKEY_ADDR',
+            'mainnet',
+        )
+        expect(mockRefreshAccountHoldings).toHaveBeenCalled()
+        expect(result.changed).toBe(true)
     })
 
     it('reports no change when balance and holdings are unchanged', async () => {

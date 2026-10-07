@@ -11,18 +11,15 @@
  */
 
 import { Decimal } from 'decimal.js'
-import {
-    sqliteTable,
-    text,
-    integer,
-    primaryKey,
-    customType,
-} from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 import type {
     AccountChainState,
     ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { decimalColumn } from '@perawallet/wallet-core-database'
+import {
+    decimalColumn,
+    decimalJsonColumn,
+} from '@perawallet/wallet-core-database'
 
 export const AccountAssetHoldingsSchema = sqliteTable(
     'account_asset_holdings',
@@ -76,23 +73,6 @@ export const AccountBalancesSchema = sqliteTable(
     ],
 )
 
-// Decimal serialises to its string form through toJSON, so only the read side
-// needs to rebuild it.
-const chainStateColumn = customType<{ data: AccountChainState }>({
-    dataType() {
-        return 'text'
-    },
-    fromDriver(value: unknown): AccountChainState {
-        const parsed = JSON.parse(String(value)) as AccountChainState
-        return parsed.family === 'algorand'
-            ? { ...parsed, minBalance: new Decimal(parsed.minBalance) }
-            : parsed
-    },
-    toDriver(value: AccountChainState): string {
-        return JSON.stringify(value)
-    },
-})
-
 export const AccountChainStateSchema = sqliteTable(
     'account_chain_state',
     {
@@ -100,7 +80,7 @@ export const AccountChainStateSchema = sqliteTable(
         network: text('network').notNull().$type<ChainScopeKey>(),
         /** Base units of the chain's native asset. */
         nativeBalance: decimalColumn('native_balance').notNull(),
-        chainData: chainStateColumn('chain_data').notNull(),
+        chainData: decimalJsonColumn<AccountChainState>('chain_data').notNull(),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [

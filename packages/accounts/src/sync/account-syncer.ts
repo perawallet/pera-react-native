@@ -200,12 +200,25 @@ async function doFetchAndPersistAccount(
         status,
         authAddress,
     })
-    await upsertAccountChainState({
-        accountAddress: address,
-        scope,
-        nativeBalance: nativeBalanceBaseUnits,
-        chainData: chainState,
-    })
+    // A failed chain-state write must not skip the rekey mirror and holdings
+    // refresh below; the next sync rewrites the row.
+    try {
+        await upsertAccountChainState({
+            accountAddress: address,
+            scope,
+            nativeBalance: nativeBalanceBaseUnits,
+            chainData: chainState,
+        })
+    } catch (error) {
+        logger.warn('Account chain-state write failed', {
+            address,
+            network,
+            error:
+                error instanceof Error
+                    ? { message: error.message, stack: error.stack }
+                    : error,
+        })
+    }
 
     useAccountsStore
         .getState()
