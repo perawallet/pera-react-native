@@ -11,10 +11,15 @@
  */
 
 import { beforeEach, vi } from 'vitest'
+import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
 import { registerFakeAssetsAdapter } from '@perawallet/wallet-core-assets/testing'
 import { registerFakeAccountsChain } from './src/__tests__/fakeAccountsChain'
 
 const kvStore = new Map<string, string>()
+
+// One instance for the whole file: a store module re-imported after
+// vi.resetModules must see what the test registered.
+const chains = createChainRegistry()
 
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({
@@ -46,11 +51,13 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
                 kvStore.delete(key)
             },
         },
+        chains,
     }),
 }))
 
 // Hooks and the syncer resolve the chain through the registries.
 beforeEach(() => {
+    chains.reset()
     registerFakeAccountsChain()
     registerFakeAssetsAdapter()
 })

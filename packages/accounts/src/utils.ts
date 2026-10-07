@@ -14,7 +14,12 @@ import {
     truncateAlgorandAddress,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     AccountTypes,
     type AccountCustody,
@@ -27,10 +32,18 @@ import {
     type MultiSigAccount,
     type WatchAccount,
     type ImportAccountType,
+    type HdIndex,
     type WalletAccount,
 } from './models'
 import { MNEMONIC_WORD_COUNT } from './constants'
 import { accountsChainAdapters } from './chain-adapter'
+import {
+    addressOn,
+    hasCustody,
+    hdIndexOf,
+    seedOf,
+} from './credentials/accessors'
+import type { KeystoreSnapshot } from './credentials/credentialScheme'
 
 // Matches any `prefix...suffix`/`prefix…suffix` truncation of the address,
 // not just our own 5+5 format — legacy apps auto-named accounts with a 6+6
@@ -243,3 +256,75 @@ export const resolveImportAccountType = (
 
     return { success: false, wordCount }
 }
+
+// A chain whose codec isn't registered (a build-gated chain) falls back to
+// string equality rather than throwing on every account write.
+export const isSameAddress = (
+    chainId: ChainId,
+    a: string,
+    b: string,
+): boolean =>
+    addressCodecs.has(chainId)
+        ? addressCodecs.get(chainId).areEqual(a, b)
+        : a === b
+
+/**
+ * Whether the wallet `walletId` (a seed's KMS id, as `seedOf` returns) can mint
+ * an account for `chainId`. Adapter presence is left to the capability parity
+ * test, as in `useChainCapability`.
+ */
+export const canDerive = (
+    accounts: readonly WalletAccount[],
+    walletId: string,
+    chainId: ChainId,
+    keys?: KeystoreSnapshot,
+): boolean => {
+    const { chains } = getProvider()
+    if (!chains.has(chainId)) return false
+    const { schemes, derivationPaths } = chains.get(chainId).descriptor.signing
+    if (!schemes.some(scheme => derivationPaths[scheme])) return false
+    return accounts.some(
+        account =>
+            hasCustody(account, 'local') &&
+            account.custody.seed === 'bip39' &&
+            seedOf(account, keys) === walletId,
+    )
+}
+
+/** Whether the chain imports an account from raw private-key bytes. */
+export const canImportRawKey = (chainId: ChainId): boolean => {
+    const { chains } = getProvider()
+    return (
+        chains.has(chainId) &&
+        chains.get(chainId).descriptor.signing.rawKeySchemes.length > 0 &&
+        chains.capabilities(chainId).privateKeys
+    )
+}
+
+/** The account at `index` in wallet `walletId`, whatever chains it spans. */
+export const findPathHolder = (
+    accounts: readonly WalletAccount[],
+    walletId: string,
+    index: HdIndex,
+    keys?: KeystoreSnapshot,
+): WalletAccount | undefined =>
+    accounts.find(account => {
+        const held = hdIndexOf(account)
+        // The index test goes first because `seedOf` scans the keystore.
+        return (
+            held?.account === index.account &&
+            held.keyIndex === index.keyIndex &&
+            seedOf(account, keys) === walletId
+        )
+    })
+
+/** The account holding `address` on `scope`, compared through the chain codec. */
+export const findAddressHolder = (
+    accounts: readonly WalletAccount[],
+    scope: ChainScope,
+    address: string,
+): WalletAccount | undefined =>
+    accounts.find(account => {
+        const held = addressOn(account, scope)
+        return held !== undefined && isSameAddress(scope.chainId, held, address)
+    })

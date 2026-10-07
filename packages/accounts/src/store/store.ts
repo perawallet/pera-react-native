@@ -29,17 +29,18 @@ import {
     type WithPersist,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import {
-    addressCodecs,
-    CHAIN_IDS,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { CHAIN_IDS, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsAdapterFor } from '../chain-adapter'
 import { buildAccount, chainAccountOf, withCustody } from '../credentials'
 import { rebuildCustody } from '../credentials/backfill'
 import { DuplicateAccountError } from '../errors'
-import { accountType, isHardwareWalletAccount, isWatchAccount } from '../utils'
+import {
+    accountType,
+    isHardwareWalletAccount,
+    isSameAddress,
+    isWatchAccount,
+} from '../utils'
 
 const STORE_NAME = 'accounts-store'
 const STORE_VERSION = 2
@@ -93,13 +94,6 @@ const chainAddressesOf = (account: WalletAccount): ChainAddresses => {
     }
     return addresses
 }
-
-// A chain whose codec isn't registered (a build-gated chain) falls back to
-// string equality rather than throwing on every account write.
-const isSameAddress = (chainId: ChainId, a: string, b: string): boolean =>
-    addressCodecs.has(chainId)
-        ? addressCodecs.get(chainId).areEqual(a, b)
-        : a === b
 
 /** The first of `candidate`'s addresses that `existing` also holds on the same chain. */
 const sharedChainAddress = (
