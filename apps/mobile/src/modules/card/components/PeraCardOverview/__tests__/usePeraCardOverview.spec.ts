@@ -315,6 +315,9 @@ describe('usePeraCardOverview', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
         expect(result.current.isAutoFunding).toBe(false)
+        expect(result.current.fundingTypeLabel).toBe(
+            'peraCard.account.funding_type_enabled_manual',
+        )
         expect(result.current.balance.toString()).toBe('0')
     })
 

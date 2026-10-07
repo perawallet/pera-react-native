@@ -1211,8 +1211,6 @@
             "funding_account": "Finanzierungskonto",
             "no_funding_account": "Kein Konto verbunden",
             "connect": "Verbinden",
-            "change": "Ändern",
-            "funding_type_label": "Finanzierungsart",
             "funding_type_enabled_auto": "Auto-Funding aktiviert",
             "funding_type_enabled_manual": "Manuelle Finanzierung aktiviert",
             "funding_type_sheet_title": "Finanzierungsart auswählen",

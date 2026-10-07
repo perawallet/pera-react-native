@@ -39,10 +39,9 @@ import {
     useIsCardAutoFundingActive,
     useOpenCardSupport,
 } from '../../hooks'
-// Imported directly (not via the hooks barrel) to avoid an import cycle: both
-// pull in sheet components that import from that barrel.
+// Imported directly (not via the hooks barrel) to avoid an import cycle: the
+// flow orchestrator pulls in report sheet components that import from that barrel.
 import { useReportSuspiciousFlow } from '../../hooks/useReportSuspiciousFlow'
-import { useOpenFundingTypeSheet } from '../../hooks/useOpenFundingTypeSheet'
 import { CardAccountDetailsSheet } from '../CardAccountDetailsSheet'
 import { FreezeCardConfirmationSheet } from '../FreezeCardConfirmationSheet'
 import { ReportLostStolenSheet } from '../ReportLostStolenSheet'
@@ -95,10 +94,6 @@ type UsePeraCardDetailsResult = {
     /** Connected funding-source address, or `null` if none is stored. */
     fundingAddress: string | null
     onChangeFunding: () => void
-    /** True once a card has actually been created (the status query returns
-     * one). Funding TYPE is per-card, so its selector only makes sense once
-     * a card exists — the funding source picker itself has no such gate. */
-    hasCard: boolean
     /** Where the Baanx card is on its way to existing (drives the dimmed
      * visual, the issuance notice, and hiding the card-only affordances
      * until it reaches READY). */
@@ -109,10 +104,6 @@ type UsePeraCardDetailsResult = {
     onRetryOrder: () => void
     /** Opens support for the terminal VERIFICATION_REJECTED notice. */
     onContactSupport: () => void
-    /** Localised Auto/Manual funding label for the Funding Type row. */
-    fundingTypeLabel: string
-    /** Opens the Select Funding Type sheet. */
-    onChangeFundingType: () => void
     /** True when there is no connectivity (device offline, or the status query
      * is paused pending reconnect) — drives disabling the offline-unsafe card
      * actions (set PIN, freeze/unfreeze, reveal). */
@@ -151,9 +142,6 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         state => state.connectedFundingSourceAddress,
     )
     const isAutoFunding = useIsCardAutoFundingActive()
-    const fundingTypeLabel = isAutoFunding
-        ? t('peraCard.setup_status.funding_type_auto_title')
-        : t('peraCard.setup_status.funding_type_manual_title')
 
     const { hasInternet } = useNetworkStatus()
     // Owns the KYC-wait / auto-order / provisioning-poll lifecycle, and
@@ -447,8 +435,6 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         void changeFunding()
     }, [changeFunding])
 
-    const onChangeFundingType = useOpenFundingTypeSheet()
-
     const onReportLostStolen = useCallback(() => {
         trackEvent(CardEvent.DetailsReportLostCard)
         void request({
@@ -479,13 +465,10 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         onSecureImageError,
         fundingAddress,
         onChangeFunding,
-        hasCard: card != null,
         issuanceState,
         eligibilityReason,
         onRetryOrder,
         onContactSupport,
-        fundingTypeLabel,
-        onChangeFundingType,
         isOffline,
         isFrozen,
         freezeLabel: isFrozen
