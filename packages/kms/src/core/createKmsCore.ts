@@ -11,7 +11,6 @@
  */
 
 import nacl from 'tweetnacl'
-import { bytesToHex } from '@noble/hashes/utils.js'
 import type {
     DeriveOptions,
     Key,
@@ -21,26 +20,19 @@ import type {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     InvalidKeyError,
-    KeyAccessError,
     KeyManagementError,
     KeyNotFoundError,
 } from '../errors'
 import { SeedScheme } from '../constants'
-import { bip39SeedFromEntropy } from '../crypto/hdwallet-utils'
+import { zeroBytes } from '../crypto/secure-memory'
 import {
-    deriveSecp256k1PrivateKey,
-    isValidSecp256k1PrivateKey,
-    parseBip32Path,
-    secp256k1PublicKeyOf,
-    signSecp256k1,
-} from '../crypto/secp256k1'
-import { handOffSecret, zeroBytes } from '../crypto/secure-memory'
-import {
-    SECP256K1_KEY_SCHEME,
+    SECP256K1_DERIVED_KEY_TYPE,
+    SECP256K1_IMPORTED_KEY_TYPE,
+    SECP256K1_KEY_ALGORITHM,
+    decodeSecp256k1Signature,
     encodeSecp256k1Signature,
     isSecp256k1Key,
-    type Secp256k1KeyMetadata,
-    type Secp256k1KeyOrigin,
+    isValidSecp256k1PrivateKey,
     type Secp256k1Signature,
 } from '../models/keys'
 import { entropyChildIdOf, expiresAtOf, seedSchemeOf } from '../utils'
@@ -56,12 +48,13 @@ import type {
     Secp256k1ImportRequest,
 } from './types'
 
-// secp256k1 has no keystore backend, so it is served from the secrets store
-// below rather than through `keyStore.deriveFromSeed`/`import`/`sign`.
+// secp256k1 runs through the keystore's secp256k1 shim, not the ed25519
+// `deriveChild`/`importRawKey` paths below.
 const KEYSTORE_NATIVE_SCHEMES: ReadonlySet<string> = new Set<KmsKeyScheme>([
     'ed25519',
 ])
 
+const SECP256K1_SCHEME: KmsKeyScheme = 'secp256k1'
 const ED25519_SEED_LENGTH = 32
 const SECP256K1_DIGEST_LENGTH = 32
 
@@ -130,7 +123,7 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
         request: KmsDerivationRequest,
         domain: string,
     ): Promise<KmsDerivedKey> => {
-        if (request.scheme === SECP256K1_KEY_SCHEME) {
+        if (request.scheme === SECP256K1_SCHEME) {
             return deriveSecp256k1Child(seedKeyId, request, domain)
         }
         const keyPairId = await deriveChild(seedKeyId, request, domain)
@@ -154,7 +147,7 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
         request: KmsImportRequest,
         domain: string,
     ): Promise<KmsDerivedKey> => {
-        if (request.scheme === SECP256K1_KEY_SCHEME) {
+        if (request.scheme === SECP256K1_SCHEME) {
             return importSecp256k1Key(bytes, request, domain)
         }
         let pair: Optional<nacl.SignKeyPair>
@@ -229,18 +222,13 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
         return signature
     }
 
-    const secretStore = () => {
-        const { secrets } = deps.keyStore()
-        if (!secrets) {
-            throw new KeyManagementError(
-                'Keystore backend does not implement secrets',
-            )
+    const publicKeyOf = (keyPairId: KeyId): Uint8Array => {
+        const key = deps.keys().find(k => k.id === keyPairId)
+        if (!key?.publicKey) {
+            throw new KeyManagementError('Keystore entry has no public key')
         }
-        return secrets
+        return new Uint8Array(key.publicKey)
     }
-
-    const secp256k1MetadataOf = (key: Key): Secp256k1KeyMetadata =>
-        key.metadata as Secp256k1KeyMetadata
 
     const findSecp256k1Key = (keyPairId: KeyId): Key => {
         const key = deps.keys().find(k => k.id === keyPairId)
@@ -255,65 +243,35 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
         parentIdOf(key) ? resolveSeedKey(key.id) : key
 
     /**
-     * Writes the key unless `id` already holds it. Anything else under the
-     * same id is a collision, never an overwrite: a different key, or the same
-     * key with another origin or parent, which would change whether it can be
-     * exported.
+     * Derives the BIP-32 child at `request.path` from an HD wallet's BIP39
+     * entropy. The keystore opens the entropy, seals the child and returns only
+     * its public key; re-deriving the same id and path never reopens it.
      */
-    const storeSecp256k1Key = async (
-        privateKey: Uint8Array,
-        request: { id: string; parentKeyId?: string },
-        origin: Secp256k1KeyOrigin,
-    ): Promise<Secp256k1ChildRef> => {
-        const publicKey = secp256k1PublicKeyOf(privateKey)
-        const existing = deps.keys().find(k => k.id === request.id)
-        if (existing) {
-            const stored = isSecp256k1Key(existing)
-                ? secp256k1MetadataOf(existing)
-                : undefined
-            const matches =
-                stored?.pera.publicKey === bytesToHex(publicKey) &&
-                stored.pera.origin === origin &&
-                stored.parentKeyId === request.parentKeyId
-            if (!matches) {
-                throw new KeyManagementError(
-                    `Key id ${request.id} already holds another entry`,
-                )
-            }
-            return { keyPairId: request.id, publicKey }
-        }
-        const metadata: Secp256k1KeyMetadata = {
-            ...(request.parentKeyId
-                ? { parentKeyId: request.parentKeyId }
-                : {}),
-            pera: {
-                keyScheme: SECP256K1_KEY_SCHEME,
-                origin,
-                publicKey: bytesToHex(publicKey),
-            },
-        }
-        const keyPairId = await secretStore().put(privateKey, {
-            id: request.id,
-            metadata,
-        })
-        return { keyPairId, publicKey }
-    }
-
-    /** Derives the BIP-32 child at `request.path` under a BIP-39 seed and stores it. */
     const deriveSecp256k1Child = async (
         seedKeyId: KeyId,
         request: Secp256k1DerivationRequest,
         domain: string,
     ): Promise<Secp256k1ChildRef> => {
         assertId(request.id)
-        // Fail before the entropy is decrypted and PBKDF2 runs.
-        parseBip32Path(request.path)
         const seed = resolveSeedKey(seedKeyId)
         checkAccess(seed, domain)
         if (seedSchemeOf(seed) !== SeedScheme.Bip39) {
             throw new KeyManagementError(
-                'secp256k1 keys derive from a BIP-39 seed only',
+                'secp256k1 keys derive from an HD wallet only',
             )
+        }
+        const existing = deps.keys().find(k => k.id === request.id)
+        if (existing) {
+            const sameChild =
+                existing.type === SECP256K1_DERIVED_KEY_TYPE &&
+                parentIdOf(existing) === seed.id &&
+                existing.metadata?.path === request.path
+            if (!sameChild) {
+                throw new KeyManagementError(
+                    `Key id ${request.id} already holds another entry`,
+                )
+            }
+            return { keyPairId: request.id, publicKey: publicKeyOf(request.id) }
         }
         const entropyId = entropyChildIdOf(seed.id, deps.keys())
         if (!entropyId) {
@@ -321,27 +279,30 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
                 'HD seed is missing its entropy secret',
             )
         }
-
-        let entropy: Optional<Uint8Array>
-        let bip39Seed: Optional<Uint8Array>
-        let privateKey: Optional<Uint8Array>
-        try {
-            entropy = await secretStore().get(entropyId)
-            bip39Seed = await bip39SeedFromEntropy(entropy)
-            privateKey = deriveSecp256k1PrivateKey(bip39Seed, request.path)
-            return await storeSecp256k1Key(
-                privateKey,
-                { id: request.id, parentKeyId: seed.id },
-                'derived',
+        const keyStore = deps.keyStore()
+        if (!keyStore.deriveFromSeed) {
+            throw new KeyManagementError(
+                'Keystore backend does not implement deriveFromSeed',
             )
-        } finally {
-            zeroBytes(entropy, bip39Seed, privateKey)
         }
+        const keyPairId = await keyStore.deriveFromSeed(
+            entropyId,
+            request.path,
+            {
+                algorithm: SECP256K1_KEY_ALGORITHM,
+                curve: 'secp256k1',
+                id: request.id,
+                // The engine would record the entropy secret as the parent; the
+                // seed is what access, expiry and removal resolve through.
+                metadata: { parentKeyId: seed.id },
+            },
+        )
+        return { keyPairId, publicKey: publicKeyOf(keyPairId) }
     }
 
     /**
-     * Imports a raw 32-byte secp256k1 private key. `privateKey` is zeroed
-     * before this returns or throws, whatever the outcome.
+     * Seals a raw 32-byte secp256k1 private key in the keystore. `privateKey`
+     * is zeroed before this returns or throws, whatever the outcome.
      */
     const importSecp256k1Key = async (
         privateKey: Uint8Array,
@@ -353,18 +314,36 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
                 throw new InvalidKeyError(request.id)
             }
             assertId(request.id)
+            const { id, parentKeyId } = request
             // A parentless import is checked as the record it would become.
-            const governingKey: Key = request.parentKeyId
-                ? resolveSeedKey(request.parentKeyId)
+            const governingKey: Key = parentKeyId
+                ? resolveSeedKey(parentKeyId)
                 : {
-                      id: request.id,
-                      type: 'secret-key',
-                      algorithm: 'raw',
+                      id,
+                      type: SECP256K1_IMPORTED_KEY_TYPE,
+                      algorithm: SECP256K1_KEY_ALGORITHM,
                       extractable: false,
                       metadata: {},
                   }
             checkAccess(governingKey, domain)
-            return await storeSecp256k1Key(privateKey, request, 'imported')
+            if (deps.keys().some(k => k.id === id)) {
+                throw new KeyManagementError(
+                    `Key id ${id} already holds another entry`,
+                )
+            }
+            const keyPairId = await deps.keyStore().import(
+                {
+                    id,
+                    type: SECP256K1_IMPORTED_KEY_TYPE,
+                    algorithm: SECP256K1_KEY_ALGORITHM,
+                    extractable: false,
+                    keyUsages: ['sign', 'verify'],
+                    privateKey,
+                    metadata: parentKeyId ? { parentKeyId } : {},
+                },
+                'raw',
+            )
+            return { keyPairId, publicKey: publicKeyOf(keyPairId) }
         } finally {
             zeroBytes(privateKey)
         }
@@ -382,30 +361,9 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
             )
         }
         checkAccess(governingKeyOf(findSecp256k1Key(keyPairId)), domain)
-        let privateKey: Optional<Uint8Array>
-        try {
-            privateKey = await secretStore().get(keyPairId)
-            return signSecp256k1(digest, privateKey)
-        } finally {
-            zeroBytes(privateKey)
-        }
-    }
-
-    /**
-     * The private key of an imported entry, for the reveal screen. A derived
-     * child is never exported: its seed's phrase is the backup. The caller
-     * zeroes the result.
-     */
-    const exportSecp256k1Key = async (
-        keyPairId: KeyId,
-        domain: string,
-    ): Promise<Uint8Array> => {
-        const key = findSecp256k1Key(keyPairId)
-        if (secp256k1MetadataOf(key).pera.origin !== 'imported') {
-            throw new KeyAccessError()
-        }
-        checkAccess(governingKeyOf(key), domain)
-        return handOffSecret(await secretStore().get(keyPairId))
+        return decodeSecp256k1Signature(
+            await deps.keyStore().sign(keyPairId, digest),
+        )
     }
 
     return {
@@ -417,6 +375,5 @@ export const createKmsCore = (deps: KmsCoreDeps) => {
         deriveSecp256k1Child,
         importSecp256k1Key,
         signSecp256k1Digest,
-        exportSecp256k1Key,
     }
 }

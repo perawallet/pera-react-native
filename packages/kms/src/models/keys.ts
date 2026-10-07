@@ -100,31 +100,37 @@ export const secp256k1SignKeyId = (
     keyIndex: number,
 ): string => `${seedId}-bip32-acc${account}-idx${keyIndex}`
 
-export const SECP256K1_KEY_SCHEME = 'secp256k1'
-
-export type Secp256k1KeyOrigin = 'derived' | 'imported'
-
 /**
- * Metadata on a secp256k1 key's keystore entry. The secrets API stamps every
- * entry `type: 'secret-key'`, so the scheme is recorded here instead, nested
- * under `pera` because keystore-core reserves top-level keys such as `scheme`.
+ * Keystore entry `type`s and `algorithm` for secp256k1 keys. They must stay
+ * spelled exactly as the keystore engine writes them, as with
+ * `FALCON_CHILD_KEY_TYPE`: every "is this secp256k1?" guard compares against
+ * them.
  */
-export type Secp256k1KeyMetadata = {
-    parentKeyId?: string
-    pera: {
-        keyScheme: typeof SECP256K1_KEY_SCHEME
-        origin: Secp256k1KeyOrigin
-        /** Hex of the 65-byte uncompressed SEC1 public key. */
-        publicKey: string
-    }
-}
+export const SECP256K1_DERIVED_KEY_TYPE = 'hd-derived-secp256k1'
+export const SECP256K1_IMPORTED_KEY_TYPE = 'secp256k1'
+export const SECP256K1_KEY_ALGORITHM = 'ECDSA-secp256k1'
 
-export const isSecp256k1Key = (key: Key | undefined): boolean => {
-    const pera = (key?.metadata as Partial<Secp256k1KeyMetadata> | undefined)
-        ?.pera
-    return (
-        key?.type === 'secret-key' && pera?.keyScheme === SECP256K1_KEY_SCHEME
-    )
+export const isSecp256k1Key = (key: Key | undefined): boolean =>
+    key?.type === SECP256K1_DERIVED_KEY_TYPE ||
+    key?.type === SECP256K1_IMPORTED_KEY_TYPE
+
+// secp256k1's group order n, big-endian. A private key is a scalar in [1, n-1].
+const SECP256K1_ORDER = Uint8Array.from([
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
+    0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
+])
+
+/** 32 bytes encoding a scalar in `[1, n-1]`; checked without a curve library. */
+export const isValidSecp256k1PrivateKey = (privateKey: Uint8Array): boolean => {
+    if (privateKey.length !== SECP256K1_ORDER.length) return false
+    if (privateKey.every(byte => byte === 0)) return false
+    for (let i = 0; i < SECP256K1_ORDER.length; i++) {
+        if (privateKey[i] !== SECP256K1_ORDER[i]) {
+            return privateKey[i] < SECP256K1_ORDER[i]
+        }
+    }
+    return false
 }
 
 /**
@@ -140,7 +146,7 @@ export type Secp256k1Signature = {
 const SIGNATURE_SCALAR_LENGTH = 32
 const ENCODED_SIGNATURE_LENGTH = 2 * SIGNATURE_SCALAR_LENGTH + 1
 
-/** `r‖s‖recovery`, 65 bytes: what the chain-facing `sign` returns for a secp256k1 key. */
+/** `r‖s‖recovery`, 65 bytes: the keystore's secp256k1 signature, and what the chain-facing `sign` returns. */
 export const encodeSecp256k1Signature = ({
     r,
     s,
