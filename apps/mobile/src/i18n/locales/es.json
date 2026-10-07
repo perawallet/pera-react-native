@@ -361,7 +361,6 @@
         "show_address": "Ver dirección",
         "view_passphrase_hd": "Ver la passphrase de recuperación de la wallet raíz",
         "view_passphrase_algo25": "Ver la passphrase de recuperación",
-        "view_passphrase_quantum": "Ver la passphrase de recuperación de la cuenta Quantum",
         "undo_rekey": "Deshacer rekey",
         "rekeyed_to": "Con rekey a",
         "rekey_account": "Hacer rekey de la cuenta",

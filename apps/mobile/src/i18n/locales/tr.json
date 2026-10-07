@@ -361,7 +361,6 @@
         "show_address": "Adresi göster",
         "view_passphrase_hd": "Ana cüzdan kurtarma passphrase’ini görüntüle",
         "view_passphrase_algo25": "Kurtarma passphrase’ini görüntüle",
-        "view_passphrase_quantum": "Quantum hesabı kurtarma passphrase’ini görüntüle",
         "undo_rekey": "Rekey’i geri al",
         "rekeyed_to": "Rekey hedefi",
         "rekey_account": "Hesaba rekey yap",
