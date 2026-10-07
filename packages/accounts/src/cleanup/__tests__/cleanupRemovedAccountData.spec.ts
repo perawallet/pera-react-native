@@ -41,7 +41,7 @@ import {
     upsertAccountBalance,
     getAccountBalance,
     upsertAccountChainState,
-    getAccountChainState,
+    getAccountChainStateRow,
     getHeldAssetIdsByAccount,
 } from '../../db'
 import {
@@ -190,7 +190,7 @@ describe('cleanupRemovedAccountData', () => {
             }),
         ).toBeUndefined()
         expect(
-            await getAccountChainState({
+            await getAccountChainStateRow({
                 db,
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,

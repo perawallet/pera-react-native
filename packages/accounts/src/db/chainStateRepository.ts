@@ -72,7 +72,7 @@ type GetAccountChainStateParams = {
     scope: ChainScope
 }
 
-export async function getAccountChainState({
+export async function getAccountChainStateRow({
     db = getDatabase(),
     accountAddress,
     scope,

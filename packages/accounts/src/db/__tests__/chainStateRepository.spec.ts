@@ -24,7 +24,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     upsertAccountChainState,
-    getAccountChainState,
+    getAccountChainStateRow,
     deleteAccountChainState,
 } from '../chainStateRepository'
 
@@ -68,7 +68,7 @@ describe('account chain state repository', () => {
             chainData: algorandState(),
         })
 
-        const row = await getAccountChainState({
+        const row = await getAccountChainStateRow({
             db,
             accountAddress: 'ADDR1',
             scope: MAINNET_SCOPE,
@@ -90,7 +90,7 @@ describe('account chain state repository', () => {
             chainData: { family: 'evm' },
         })
 
-        const row = await getAccountChainState({
+        const row = await getAccountChainStateRow({
             db,
             accountAddress: 'ADDR1',
             scope: MAINNET_SCOPE,
@@ -120,7 +120,7 @@ describe('account chain state repository', () => {
             chainData: rekeyedBack,
         })
 
-        const row = await getAccountChainState({
+        const row = await getAccountChainStateRow({
             db,
             accountAddress: 'ADDR1',
             scope: MAINNET_SCOPE,
@@ -139,7 +139,7 @@ describe('account chain state repository', () => {
         })
 
         expect(
-            await getAccountChainState({
+            await getAccountChainStateRow({
                 db,
                 accountAddress: 'ADDR1',
                 scope: TESTNET_SCOPE,
@@ -165,21 +165,21 @@ describe('account chain state repository', () => {
         await deleteAccountChainState({ db, accountAddress: 'ADDR1' })
 
         expect(
-            await getAccountChainState({
+            await getAccountChainStateRow({
                 db,
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,
             }),
         ).toBeUndefined()
         expect(
-            await getAccountChainState({
+            await getAccountChainStateRow({
                 db,
                 accountAddress: 'ADDR1',
                 scope: TESTNET_SCOPE,
             }),
         ).toBeUndefined()
         expect(
-            await getAccountChainState({
+            await getAccountChainStateRow({
                 db,
                 accountAddress: 'ADDR2',
                 scope: MAINNET_SCOPE,

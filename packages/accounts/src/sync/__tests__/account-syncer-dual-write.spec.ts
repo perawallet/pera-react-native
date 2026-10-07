@@ -24,7 +24,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { fetchAndPersistAccount } from '../account-syncer'
 import type { AccountStateSnapshot } from '../../chain-adapter'
-import { getAccountBalance, getAccountChainState } from '../../db'
+import { getAccountBalance, getAccountChainStateRow } from '../../db'
 import {
     fakeAccountsChain,
     MAINNET_SCOPE,
@@ -76,7 +76,7 @@ const readBothTables = async () => {
         accountAddress: 'ADDR1',
         scope: MAINNET_SCOPE,
     })
-    const chainState = await getAccountChainState({
+    const chainState = await getAccountChainStateRow({
         accountAddress: 'ADDR1',
         scope: MAINNET_SCOPE,
     })

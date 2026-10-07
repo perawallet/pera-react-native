@@ -57,7 +57,7 @@ export {
 } from './balancesRepository'
 export {
     upsertAccountChainState,
-    getAccountChainState,
+    getAccountChainStateRow,
     deleteAccountChainState,
     type AccountChainStateRow,
 } from './chainStateRepository'

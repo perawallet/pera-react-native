@@ -22,7 +22,6 @@ import {
     type DeriveOpts,
     type AccountChainState,
     type AccountInformation,
-    type AccountChainState,
 } from '@perawallet/wallet-core-chain-contract'
 
 import {
