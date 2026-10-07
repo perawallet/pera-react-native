@@ -173,6 +173,90 @@ describe('withSubtleSecp256k1', () => {
         )
     })
 
+    test('a public-key failure zeroes the child before it reaches the engine', async () => {
+        const failing: Secp256k1Binding = {
+            ...capturingBinding,
+            publicKeyOf: () => {
+                throw new Error('boom')
+            },
+        }
+
+        await expect(
+            withSubtleSecp256k1(host, failing).generateKey(
+                {
+                    name: SECP256K1_ALGORITHM,
+                    entropy: new Uint8Array(32).fill(3),
+                    path: PATH,
+                } as AlgorithmIdentifier,
+                false,
+                ['sign'],
+            ),
+        ).rejects.toThrow('boom')
+        expect(produced.length).toBeGreaterThan(0)
+        expect(produced.every(isZero)).toBe(true)
+    })
+
+    describe('every other algorithm reaches the host unchanged', () => {
+        const recordingHost = () => {
+            const calls: string[] = []
+            const record =
+                (name: string) =>
+                async (...args: unknown[]) => {
+                    calls.push(name)
+                    return args
+                }
+            const spied = {
+                generateKey: record('generateKey'),
+                deriveBits: record('deriveBits'),
+                sign: record('sign'),
+                importKey: record('importKey'),
+                exportKey: record('exportKey'),
+            } as unknown as SubtleCrypto
+            return { calls, shim: withSubtleSecp256k1(spied, secp256k1Binding) }
+        }
+        const hostKey = { algorithm: { name: 'Ed25519' } } as CryptoKey
+
+        test('generateKey', async () => {
+            const { calls, shim: s } = recordingHost()
+            await s.generateKey({ name: 'Ed25519' }, true, ['sign'])
+            expect(calls).toEqual(['generateKey'])
+        })
+
+        test('deriveBits, with its length', async () => {
+            const { calls, shim: s } = recordingHost()
+            const args = (await s.deriveBits(
+                { name: 'PBKDF2' } as AlgorithmIdentifier,
+                hostKey,
+                512,
+            )) as unknown as unknown[]
+            expect(calls).toEqual(['deriveBits'])
+            expect(args[2]).toBe(512)
+        })
+
+        test('sign', async () => {
+            const { calls, shim: s } = recordingHost()
+            await s.sign({ name: 'Ed25519' }, hostKey, new Uint8Array(1))
+            expect(calls).toEqual(['sign'])
+        })
+
+        test('importKey', async () => {
+            const { calls, shim: s } = recordingHost()
+            await s.importKey(
+                'raw',
+                new Uint8Array(32),
+                { name: 'Ed25519' },
+                true,
+                ['verify'],
+            )
+            expect(calls).toEqual(['importKey'])
+        })
+
+        test('exportKey', async () => {
+            const { calls, shim: s } = recordingHost()
+            await s.exportKey('raw', hostKey)
+            expect(calls).toEqual(['exportKey'])
+        })
+    })
     test('other algorithms reach the host', async () => {
         const digest = await shim().digest('SHA-256', new Uint8Array([1]))
 

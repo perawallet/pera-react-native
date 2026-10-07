@@ -112,7 +112,15 @@ export const withSubtleSecp256k1 = (
             parseBip32Path(path)
             seed = await bip39SeedFromEntropy(host, entropy)
             const privateKey = binding.deriveChildPrivateKey(seed, path)
-            const publicKey = binding.publicKeyOf(privateKey)
+            let publicKey: Uint8Array
+            try {
+                publicKey = binding.publicKeyOf(privateKey)
+            } catch (error) {
+                // Past this point the engine owns and zeroes the key; before it,
+                // nothing else would.
+                privateKey.fill(0)
+                throw error
+            }
             const keyAlgorithm = { name: SECP256K1_ALGORITHM }
             return {
                 publicKey: createKeyHandle(

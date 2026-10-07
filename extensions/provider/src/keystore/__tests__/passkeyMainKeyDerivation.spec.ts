@@ -26,13 +26,11 @@ import {
  * `createDefaultShims({ falcon })` and no `dp256` override.
  *
  * `createDefaultShims` wraps the bundled dp256 binding in
- * `withSubtleDerivedMainKey` **only when no `dp256` override is passed**
- * (`keystore-core@1.0.0-canary.3` `dist/defaults.js:169`), and the React Native
- * engine calls it that way (`react-native-keystore@1.0.0-canary.19`
- * `dist/engine.js:205-209`, which passes `{ falcon }` alone). Supplying a
- * `dp256` override would silently swap the host's native PBKDF2 for the
- * bundled pure-JS one — 210,000 `@noble/hashes` iterations, which blocks
- * Hermes.
+ * `withSubtleDerivedMainKey` **only when no `dp256` override is passed**, and
+ * `createPeraKeystore` calls it with `{ falcon }` alone, as the React Native
+ * engine's own default does. Supplying a `dp256` override would silently swap
+ * the host's native PBKDF2 for the bundled pure-JS one — 210,000
+ * `@noble/hashes` iterations, which blocks Hermes.
  *
  * Both paths produce identical bytes, so a bytes-only assertion cannot tell
  * them apart; the host-call assertion below is the one that discriminates.

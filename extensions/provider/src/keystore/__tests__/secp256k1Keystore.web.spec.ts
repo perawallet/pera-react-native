@@ -40,6 +40,7 @@ vi.mock('@algorandfoundation/keystore-core', async importOriginal => {
 import { createPeraKeystore } from '../createKeystore.web'
 import { setEngineKeySource } from '../engineKeySource'
 import { SECP256K1_ALGORITHM } from '../shims/secp256k1'
+import { secp256k1Binding } from '../shims/secp256k1/binding'
 
 const SESSION_KEY = Uint8Array.from({ length: 32 }, (_, i) => i + 1)
 const TEST_WORDS = 'test test test test test test test test test test test junk'
@@ -108,6 +109,53 @@ describe('secp256k1 through the patched engine and the provider shim', () => {
         expect(entry.metadata?.parentKeyId).toBe('seed-1')
         expect(entry.metadata?.path).toBe(FIRST_PATH)
         expect(addressOf(entry.publicKey!)).toBe(FIRST_ADDRESS)
+    })
+
+    it('leaves no copy of the child key outside the sealed store', async () => {
+        const { keystore } = await freshKeystore()
+        await storeEntropy(keystore)
+        const children: Uint8Array[] = []
+        const derive = secp256k1Binding.deriveChildPrivateKey
+        const spy = vi
+            .spyOn(secp256k1Binding, 'deriveChildPrivateKey')
+            .mockImplementation((seed, path) => {
+                const key = derive(seed, path)
+                children.push(key)
+                return key
+            })
+
+        try {
+            await deriveFirst(keystore)
+        } finally {
+            spy.mockRestore()
+        }
+
+        expect(children).toHaveLength(1)
+        expect(children[0].every(byte => byte === 0)).toBe(true)
+    })
+
+    it('refuses a passphrase-protected seed rather than deriving the wrong key', async () => {
+        const { keystore } = await freshKeystore()
+        await keystore.import(
+            {
+                id: 'protected-seed',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: false,
+                keyUsages: ['deriveKey', 'deriveBits'],
+                privateKey: mnemonicToEntropy(TEST_WORDS, wordlist),
+                metadata: { scheme: 'bip39', protected: true },
+            },
+            'raw',
+        )
+
+        await expect(
+            keystore.deriveFromSeed!('protected-seed', FIRST_PATH, {
+                algorithm: SECP256K1_ALGORITHM,
+                curve: 'secp256k1',
+                id: 'eth-0',
+            }),
+        ).rejects.toBeInstanceOf(InvalidKeyDataError)
     })
 
     it('signs a 32-byte digest as r‖s‖yParity that verifies, and never exports the key', async () => {
