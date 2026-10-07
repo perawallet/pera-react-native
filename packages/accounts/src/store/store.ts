@@ -29,9 +29,14 @@ import {
     type WithPersist,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import {
+    addressCodecs,
+    CHAIN_IDS,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsAdapterFor } from '../chain-adapter'
-import { buildAccount, withCustody } from '../credentials'
+import { buildAccount, chainAccountOf, withCustody } from '../credentials'
 import { rebuildCustody } from '../credentials/backfill'
 import { DuplicateAccountError } from '../errors'
 import { accountType, isHardwareWalletAccount, isWatchAccount } from '../utils'
@@ -78,10 +83,40 @@ export const migrateAccountsState = (
     return state
 }
 
+type ChainAddress = { chainId: ChainId; address: string }
+
+const chainAddressesOf = (account: WalletAccount): ChainAddress[] =>
+    CHAIN_IDS.flatMap(chainId => {
+        const address = chainAccountOf(account, chainId)?.address
+        return address === undefined ? [] : [{ chainId, address }]
+    })
+
+// A chain whose codec isn't registered (a build-gated chain) falls back to
+// string equality rather than throwing on every account write.
+const isSameAddress = (chainId: ChainId, a: string, b: string): boolean =>
+    addressCodecs.has(chainId)
+        ? addressCodecs.get(chainId).areEqual(a, b)
+        : a === b
+
+/** The first of `candidate`'s chain addresses that `existing` also holds on that chain. */
+const sharedChainAddress = (
+    candidate: ChainAddress[],
+    existing: ChainAddress[],
+): ChainAddress | undefined =>
+    candidate.find(c =>
+        existing.some(
+            e =>
+                e.chainId === c.chainId &&
+                isSameAddress(c.chainId, c.address, e.address),
+        ),
+    )
+
 /**
- * Collapse repeated addresses, the higher-precedence account type winning (see
- * `ACCOUNT_TYPE_RANK`) and equal ranks keeping the first occurrence. The
- * survivor sits at the index where its address *first* appeared:
+ * Collapse accounts that hold the same address on the same chain, the
+ * higher-precedence account type winning (see `ACCOUNT_TYPE_RANK`) and equal
+ * ranks keeping the first occurrence. One account holding one address on two
+ * chains is not a duplicate. The survivor sits at the index where it *first*
+ * collided:
  * `manualAccountOrder`, `selectedAccountAddress` and the rendered list all read
  * this array, so a dedupe that reorders accounts would be a worse bug than the
  * one it fixes.
@@ -102,14 +137,17 @@ export const migrateAccountsState = (
 const resolveDuplicateAccounts = (
     accounts: WalletAccount[],
 ): WalletAccount[] => {
-    const positionByAddress = new Map<string, number>()
     const resolved: WalletAccount[] = []
+    const resolvedAddresses: ChainAddress[][] = []
 
     for (const account of accounts) {
-        const position = positionByAddress.get(account.address)
-        if (position === undefined) {
-            positionByAddress.set(account.address, resolved.length)
+        const addresses = chainAddressesOf(account)
+        const position = resolvedAddresses.findIndex(
+            existing => sharedChainAddress(addresses, existing) !== undefined,
+        )
+        if (position === -1) {
             resolved.push(account)
+            resolvedAddresses.push(addresses)
             continue
         }
         if (
@@ -117,6 +155,7 @@ const resolveDuplicateAccounts = (
             ACCOUNT_TYPE_RANK[accountType(resolved[position])]
         ) {
             resolved[position] = account
+            resolvedAddresses[position] = addresses
         }
     }
 
@@ -155,7 +194,7 @@ export const useAccountsStore: UseBoundStore<
             },
             setAccounts: (accounts: WalletAccount[]) => {
                 // Single chokepoint for every account write — dedupe by
-                // address so no caller can ever persist the same account
+                // chain address so no caller can ever persist the same account
                 // twice, keeping the higher-precedence type (see
                 // ACCOUNT_TYPE_RANK) rather than whichever happened to come
                 // first. Callers that need to surface duplicates to the user
@@ -200,11 +239,18 @@ export const useAccountsStore: UseBoundStore<
             },
             addAccount: (account: WalletAccount) => {
                 const { accounts } = get()
-                const existing = accounts.find(
-                    a => a.address === account.address,
-                )
-                if (existing) {
-                    throw new DuplicateAccountError(account.address, existing)
+                const candidate = chainAddressesOf(account)
+                for (const existing of accounts) {
+                    const shared = sharedChainAddress(
+                        candidate,
+                        chainAddressesOf(existing),
+                    )
+                    if (shared) {
+                        throw new DuplicateAccountError(
+                            shared.address,
+                            existing,
+                        )
+                    }
                 }
                 get().setAccounts([...accounts, account])
             },

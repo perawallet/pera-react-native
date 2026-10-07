@@ -17,6 +17,25 @@ import type { WalletAccount } from '../../models'
 import { withCustody } from '../../credentials'
 import { buildTestAccount } from '../../__tests__/accountFactory'
 
+// Built by hand: buildAccount needs a registered adapter for every chain it
+// derives from, and these specs put accounts on Ethereum.
+const watchOn = (
+    id: string,
+    addresses: Partial<Record<'algorand' | 'ethereum', string>>,
+): WalletAccount =>
+    ({
+        id,
+        type: 'watch',
+        ...(addresses.algorand ? { address: addresses.algorand } : {}),
+        custody: { kind: 'watch' },
+        chains: Object.fromEntries(
+            Object.entries(addresses).map(([chainId, address]) => [
+                chainId,
+                { address },
+            ]),
+        ),
+    }) as WalletAccount
+
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
@@ -196,6 +215,47 @@ describe('services/accounts/store', () => {
 
             expect(useAccountsStore.getState().accounts).toEqual(
                 accountsIn.map(withCustody),
+            )
+        })
+
+        test('collapses accounts that share an address on a non-Algorand chain, keeping the higher rank in the first position', () => {
+            const watch = watchOn('watch', {
+                algorand: 'WATCH-ALGO',
+                ethereum: '0xDUPE',
+            })
+            const hd = {
+                id: 'hd',
+                type: 'hdWallet',
+                address: 'HD-ALGO',
+                keyPairId: 'kp-hd',
+                hdWalletDetails: { account: 0, keyIndex: 0 },
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+                chains: {
+                    algorand: { address: 'HD-ALGO', keyPairId: 'kp-hd' },
+                    ethereum: { address: '0xDUPE', keyPairId: 'kp-hd-eth' },
+                },
+            } as unknown as WalletAccount
+            const other = watchOn('other', { algorand: 'OTHER' })
+
+            useAccountsStore.getState().setAccounts([watch, other, hd])
+
+            expect(useAccountsStore.getState().accounts.map(a => a.id)).toEqual(
+                ['hd', 'other'],
+            )
+        })
+
+        test('keeps accounts that share an address only on different chains', () => {
+            const onAlgorand = watchOn('algo', { algorand: 'SHARED' })
+            const onEthereum = watchOn('eth', { ethereum: 'SHARED' })
+
+            useAccountsStore.getState().setAccounts([onAlgorand, onEthereum])
+
+            expect(useAccountsStore.getState().accounts.map(a => a.id)).toEqual(
+                ['algo', 'eth'],
             )
         })
     })
@@ -580,9 +640,9 @@ describe('services/accounts/store', () => {
             useAccountsStore.getState().resetState()
         })
 
-        test('appends an account whose address is free', () => {
-            const existing = buildTestAccount('algo25', { address: 'A' })
-            const added = buildTestAccount('watch', { address: 'B' })
+        test('appends an account whose addresses are free', () => {
+            const existing = watchOn('existing', { algorand: 'A' })
+            const added = watchOn('added', { algorand: 'B' })
             useAccountsStore.getState().setAccounts([existing])
 
             useAccountsStore.getState().addAccount(added)
@@ -593,22 +653,55 @@ describe('services/accounts/store', () => {
             ])
         })
 
-        test('throws naming the existing account when the address is taken', async () => {
+        test('throws naming the existing account by id when an address is taken on the same chain', async () => {
             const { DuplicateAccountError } = await import('../../errors')
-            const existing = buildTestAccount('algo25', {
-                id: 'existing-id',
-                address: 'DUPE',
+            const existing = watchOn('existing-id', {
+                algorand: 'A',
+                ethereum: '0xDUPE',
             })
             useAccountsStore.getState().setAccounts([existing])
 
             const add = () =>
                 useAccountsStore
                     .getState()
-                    .addAccount(buildTestAccount('watch', { address: 'DUPE' }))
+                    .addAccount(watchOn('added', { ethereum: '0xDUPE' }))
 
             expect(add).toThrow(DuplicateAccountError)
-            expect(add).toThrow(/already in the wallet as existing-id/)
+            expect(add).toThrow(
+                /0xDUPE is already in the wallet as existing-id/,
+            )
             expect(useAccountsStore.getState().accounts).toEqual([existing])
+        })
+
+        test('accepts an address that an existing account holds only on a different chain', () => {
+            const existing = watchOn('existing', { algorand: 'SHARED' })
+            const added = watchOn('added', { ethereum: 'SHARED' })
+            useAccountsStore.getState().setAccounts([existing])
+
+            useAccountsStore.getState().addAccount(added)
+
+            expect(useAccountsStore.getState().accounts.map(a => a.id)).toEqual(
+                ['existing', 'added'],
+            )
+        })
+
+        test('matches a legacy record with no chains through its Algorand address', async () => {
+            const { DuplicateAccountError } = await import('../../errors')
+            useAccountsStore.setState({
+                accounts: [
+                    {
+                        id: 'legacy',
+                        type: 'watch',
+                        address: 'LEGACY',
+                    } as WalletAccount,
+                ],
+            })
+
+            expect(() =>
+                useAccountsStore
+                    .getState()
+                    .addAccount(watchOn('added', { algorand: 'LEGACY' })),
+            ).toThrow(DuplicateAccountError)
         })
     })
 
