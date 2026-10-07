@@ -45,9 +45,3 @@ vi.mock(
     '@perawallet/wallet-core-accounts',
     async () => await import('../accounts/src/utils'),
 )
-// `accounts/src/utils` imports the provider, whose entry reaches the same mmkv
-// wall; these specs never call it.
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({}),
-    getKeystoreStore: () => ({ state: { keys: [] } }),
-}))

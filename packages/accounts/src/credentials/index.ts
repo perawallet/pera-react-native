@@ -28,3 +28,9 @@ export {
     type BuildAccountInput,
 } from './buildAccount'
 export { credentialScheme, type SchemeChain } from './credentialScheme'
+export {
+    canDerive,
+    canImportRawKey,
+    findAddressHolder,
+    findPathHolder,
+} from './eligibility'
