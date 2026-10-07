@@ -36,6 +36,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
+import { capabilityState } from '@test-utils/capability-mock'
 
 const { mockNavigate, mockDispatch } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
@@ -340,6 +341,10 @@ vi.mock('@modules/multisig', () => ({
     }),
 }))
 
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
 vi.mock('@hooks/useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: mockIsPeraCardEnabled,
 }))
@@ -418,6 +423,7 @@ describe('useDeepLink', () => {
         // layout-mounted instances); reset it so one test's initial-URL
         // handling doesn't suppress the next test's.
         resetDeeplinkListenerStateForTesting()
+        capabilityState.reset()
         mockRouteCapabilities.giftCards = true
         mockIsGiftCardsEnabled.mockReturnValue(true)
         mockRouteCapabilities.inAppWebView = true
@@ -1326,6 +1332,95 @@ describe('useDeepLink', () => {
             expect(mockOnError).toHaveBeenCalled()
         },
     )
+
+    describe('capability gating', () => {
+        // The capability each gated type needs, switched off in turn.
+        it.each([
+            [DeeplinkType.DISCOVER_PATH, 'discover'],
+            [DeeplinkType.DISCOVER_BROWSER, 'discover'],
+            [DeeplinkType.STAKING, 'staking'],
+            [DeeplinkType.SWAP, 'swap'],
+            [DeeplinkType.ADD_WATCH_ACCOUNT, 'watchAccounts'],
+            [DeeplinkType.SHARED_ACCOUNT_IMPORT, 'multisig'],
+            [DeeplinkType.SIGN_REQUEST, 'multisig'],
+            [DeeplinkType.ASSET_OPT_IN, 'manageAssets'],
+            [DeeplinkType.ASSET_INBOX, 'assetInbox'],
+            [DeeplinkType.WALLET_CONNECT, 'dappConnect'],
+            [DeeplinkType.LIQUID_AUTH, 'liquidAuth'],
+            [DeeplinkType.PERA_WEB_IMPORT, 'peraWebImport'],
+        ] as const)(
+            'refuses %s without navigating while %s is off',
+            async (type, capability) => {
+                capabilityState.turnOff(capability)
+                ;(parseDeeplink as Mock).mockReturnValue({
+                    type,
+                    sourceUrl: 'perawallet://app',
+                })
+                const onError = vi.fn()
+                const onSuccess = vi.fn()
+                const { result } = renderHook(() => useDeepLink())
+
+                await act(async () => {
+                    await result.current.handleDeepLink(
+                        'perawallet://app',
+                        false,
+                        'deeplink',
+                        onError,
+                        onSuccess,
+                    )
+                })
+
+                expect(onError).toHaveBeenCalledTimes(1)
+                expect(onSuccess).not.toHaveBeenCalled()
+                expect(mockNavigate).not.toHaveBeenCalled()
+                expect(mockErrorToast).toHaveBeenCalled()
+            },
+        )
+
+        it('refuses a notification-sourced link silently', async () => {
+            capabilityState.turnOff('staking')
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.STAKING,
+                path: '/staking',
+            })
+            const onError = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/staking',
+                    false,
+                    'notification',
+                    onError,
+                )
+            })
+
+            expect(onError).toHaveBeenCalledTimes(1)
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        })
+
+        it('leaves an ungated type alone while an unrelated capability is off', async () => {
+            capabilityState.turnOff('staking', 'swap', 'multisig')
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.HOME,
+            })
+            const onSuccess = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app',
+                    false,
+                    'deeplink',
+                    undefined,
+                    onSuccess,
+                )
+            })
+
+            expect(onSuccess).toHaveBeenCalledTimes(1)
+        })
+    })
 
     it('should handle STAKING deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({

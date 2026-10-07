@@ -34,8 +34,9 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapabilityCheck } from '@hooks/useCapability'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
+import { capabilityRequirementForDeeplink } from '../capability-policy'
 import { isNotificationAllowedDeeplinkType } from '../notification-policy'
 import { isPeraOwnedDeeplink } from '../utils'
 import {
@@ -88,6 +89,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const { showSignRequest } = usePendingSignaturesSheet()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isGiftCardsEnabled = useIsGiftCardsEnabled()
+    const isAllowed = useCapabilityCheck()
 
     const recoverAddress = useRecoverAddressDeeplink()
     const openSendFunds = useSendFundsDeeplink()
@@ -155,6 +157,24 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 logger.warn('Blocked notification deeplink', {
                     type: parsedData.type,
                 })
+                onError?.()
+                return
+            }
+
+            const requirement = capabilityRequirementForDeeplink(
+                parsedData.type,
+            )
+            if (requirement && !isAllowed(requirement)) {
+                logger.warn('Blocked deeplink for an unavailable capability', {
+                    type: parsedData.type,
+                })
+                // A notification refusal stays silent, like the policy above.
+                if (source !== 'notification') {
+                    errorToast(
+                        t('errors.deeplink.invalid_url_title'),
+                        t('errors.deeplink.invalid_url_body'),
+                    )
+                }
                 onError?.()
                 return
             }
@@ -410,12 +430,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
-                    // `onError` rather than a bare return: the QR scanner stays
-                    // locked until one of its callbacks fires.
-                    if (!routeCapabilities.sharedAccounts) {
-                        onError?.()
-                        return
-                    }
                     navigateToScreen(replaceCurrentScreen, 'Multisig', {
                         screen: 'ImportSharedAccount',
                         params: { address: parsedData.address },

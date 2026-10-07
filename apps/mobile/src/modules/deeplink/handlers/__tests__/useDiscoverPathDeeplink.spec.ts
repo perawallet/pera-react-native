@@ -16,7 +16,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
     navigateToScreen: vi.fn(),
     errorToast: vi.fn(),
-    capabilities: { discoverTab: true },
 }))
 
 vi.mock('../../navigateToScreen', () => ({
@@ -29,19 +28,9 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-vi.mock('@routes/capabilities', () => ({
-    get routeCapabilities() {
-        return mocks.capabilities
-    },
-}))
-
 import { useDiscoverPathDeeplink } from '../useDiscoverPathDeeplink'
 
 describe('useDiscoverPathDeeplink', () => {
-    beforeEach(() => {
-        mocks.capabilities.discoverTab = true
-    })
-
     it('navigates into the Discover tab when the capability is on', () => {
         const { result } = renderHook(() => useDiscoverPathDeeplink())
         const handled = result.current({
@@ -54,22 +43,6 @@ describe('useDiscoverPathDeeplink', () => {
             screen: 'Discover',
             params: { path: '/markets' },
         })
-    })
-
-    it('returns false, toasts, and calls onError when discoverTab is off', () => {
-        mocks.capabilities.discoverTab = false
-        const onError = vi.fn()
-        const { result } = renderHook(() => useDiscoverPathDeeplink())
-        const handled = result.current({
-            path: '/markets',
-            sourceUrl: 'perawallet://discover?path=/markets',
-            replaceCurrentScreen: false,
-            onError,
-        })
-        expect(handled).toBe(false)
-        expect(mocks.navigateToScreen).not.toHaveBeenCalled()
-        expect(mocks.errorToast).toHaveBeenCalled()
-        expect(onError).toHaveBeenCalledOnce()
     })
 
     it('rejects an unsafe path before considering the capability', () => {
