@@ -68,7 +68,8 @@ Ethereum carries a public JSON-RPC URL per network (no third-party API key) and,
 list of Pera services the backend serves for it. Its Pera traffic reuses the Pera backend URL of the
 Algorand network of the same tier. An empty list leaves the scope with no Pera deployment, so every
 Pera request for it is refused. A build whose `CHAINS` lists `ethereum` fails in
-`tools/dev/generate-config.sh` unless both RPC URLs are set.
+`tools/dev/generate-config.sh` unless both RPC URLs are set and baked, so a `CONFIG_ALLOWLIST` that
+keeps `chainIds` must keep them too.
 
 Betanet carries chain endpoints only. It has no Pera backend, so its Pera service traffic fails typed
 through `createPeraClient`; see [Architecture](../../docs/ARCHITECTURE.md).

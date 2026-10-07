@@ -304,13 +304,18 @@ export const configSchema = z
 
 export type Config = z.infer<typeof configSchema>
 
-// Input, not output, types: generate-config.sh bakes list fields as flat
-// strings that the schema splits.
+type PeraServicesListField =
+    | 'ethereumMainnetPeraServices'
+    | 'ethereumSepoliaPeraServices'
+
+// generate-config.sh bakes the list fields as flat strings the schema splits.
 type ConfigOverrides = Partial<
     Omit<
-        z.input<typeof configSchema>,
-        'discoverBaseUrl' | 'integrityCheckOrigin'
-    >
+        Config,
+        'discoverBaseUrl' | 'integrityCheckOrigin' | PeraServicesListField
+    > & {
+        [Field in PeraServicesListField]: Config[Field] | string
+    }
 >
 
 const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {

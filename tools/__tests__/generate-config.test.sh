@@ -51,13 +51,15 @@ run_case() {
     fi
 }
 
-# $1 label  $2 CHAINS  $3 ETHEREUM_SEPOLIA_RPC_URL  $4 expected stderr, or "" to expect success
+# $1 label  $2 CHAINS  $3 ETHEREUM_SEPOLIA_RPC_URL  $4 expected stderr, or "" to
+# expect success  $5 CONFIG_ALLOWLIST (optional)
 run_guard_case() {
-    local label="$1" chains="$2" sepolia_rpc="$3" expected="$4"
+    local label="$1" chains="$2" sepolia_rpc="$3" expected="$4" allowlist="${5:-}"
     local status=0
 
     env -i PATH="$PATH" HOME="$HOME" ENV_FILE="$WORK/missing.env" \
         OUTPUT_FILE="$WORK/generated-env.ts" CHAINS="$chains" \
+        CONFIG_ALLOWLIST="$allowlist" \
         ETHEREUM_MAINNET_RPC_URL='https://mainnet.rpc.example' \
         ETHEREUM_SEPOLIA_RPC_URL="$sepolia_rpc" \
         bash "$SCRIPT" > "$WORK/log" 2>&1 || status=$?
@@ -87,6 +89,9 @@ run_guard_case "a build shipping ethereum with every RPC URL passes" \
     'algorand,ethereum' 'https://sepolia.rpc.example' ''
 run_guard_case "a build without ethereum needs no RPC URL" \
     'algorand' '' ''
+run_guard_case "an allowlist that bakes CHAINS must bake every RPC URL" \
+    'algorand,ethereum' 'https://sepolia.rpc.example' \
+    'CONFIG_ALLOWLIST drops ethereumSepoliaRpcUrl' 'chainIds ethereumMainnetRpcUrl'
 
 if [ "$failures" -gt 0 ]; then
     echo "${failures} case(s) failed"

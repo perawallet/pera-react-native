@@ -191,6 +191,49 @@ describe('tools/dev/generate-config.sh', () => {
             },
         )
 
+        test('treats any whitespace in CHAINS as a separator', () => {
+            expect(
+                runExpectingFailure({
+                    CHAINS: 'algorand,\tethereum',
+                    ETHEREUM_MAINNET_RPC_URL: '',
+                    ETHEREUM_SEPOLIA_RPC_URL: '',
+                }),
+            ).toMatch(/ETHEREUM_MAINNET_RPC_URL is unset/)
+        })
+
+        // The browser build passes an allowlist; one that bakes the chain list
+        // but not the RPC URLs would ship Ethereum without them.
+        test('fails when the allowlist bakes CHAINS but drops an RPC URL', () => {
+            expect(
+                runExpectingFailure({
+                    CHAINS: 'algorand,ethereum',
+                    ...ETHEREUM_ENDPOINTS,
+                    CONFIG_ALLOWLIST: 'chainIds ethereumMainnetRpcUrl',
+                }),
+            ).toMatch(/CONFIG_ALLOWLIST drops ethereumSepoliaRpcUrl/)
+        })
+
+        test('passes when the allowlist bakes CHAINS and both RPC URLs', () => {
+            const output = run({
+                CHAINS: 'algorand,ethereum',
+                ...ETHEREUM_ENDPOINTS,
+                CONFIG_ALLOWLIST:
+                    'chainIds ethereumMainnetRpcUrl ethereumSepoliaRpcUrl',
+            })
+
+            expect(output).toContain('ethereumSepoliaRpcUrl:')
+        })
+
+        test('passes when the allowlist does not bake CHAINS at all', () => {
+            expect(() =>
+                run({
+                    CHAINS: 'algorand,ethereum',
+                    ...ETHEREUM_ENDPOINTS,
+                    CONFIG_ALLOWLIST: 'reownProjectId',
+                }),
+            ).not.toThrow()
+        })
+
         test.each(['', 'algorand'])(
             'leaves a build with CHAINS=%j and no RPC URLs alone',
             chains => {
