@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -41,6 +42,7 @@ export const useConnectionsSettingsScreen =
         } = useConnectionSettingsList()
         const { request: requestBottomSheet } = useBottomSheet()
         const scannerState = useModalState()
+        const canConnect = useCapability({ anyChain: 'dappConnect' })
 
         const connections = useMemo(
             () =>
@@ -113,5 +115,6 @@ export const useConnectionsSettingsScreen =
             handleRevoke,
             keyExtractor,
             scannerState,
+            canConnect,
         }
     }

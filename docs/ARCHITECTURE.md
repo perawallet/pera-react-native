@@ -182,6 +182,8 @@ tab descriptors carry `requires`, and `DEEPLINK_CAPABILITY_REQUIREMENTS` classif
 type. Routes, tabs and menu rows use `anyChain`; an element acting on an account uses the `chain:`
 form. Signing never depends on a capability remote config can switch off: `rekey` gates the ways into
 rekeying and rekey discovery, not `getSignerFor`, so an account that is already rekeyed keeps signing.
+The same holds for anything that outlives its capability: WalletConnect sessions, registered pushes and
+passkeys keep running, so their settings screens stay reachable and only the way to start a new one hides.
 
 ### Keeping code out of a build
 

@@ -129,7 +129,6 @@ export const useAccountOptions = ({
         platform: 'sharedAccounts',
         anyChain: 'multisig',
     })
-    const canUseNotifications = useCapability({ anyChain: 'notifications' })
     const isRekeyed = isRekeyedAccount(account, LEGACY_CHAIN_ID)
     const showPassphrase =
         !isRekeyed &&
@@ -564,17 +563,15 @@ export const useAccountOptions = ({
             onPress: () => void handleOpenRename(),
         })
 
-        if (canUseNotifications) {
-            items.push({
-                id: 'toggle-notifications',
-                icon: 'bell',
-                title: notificationsEnabled
-                    ? t('account_options.mute_notifications')
-                    : t('account_options.unmute_notifications'),
-                onPress: handleToggleNotifications,
-                disabled: isNotificationTogglePending,
-            })
-        }
+        items.push({
+            id: 'toggle-notifications',
+            icon: 'bell',
+            title: notificationsEnabled
+                ? t('account_options.mute_notifications')
+                : t('account_options.unmute_notifications'),
+            onPress: handleToggleNotifications,
+            disabled: isNotificationTogglePending,
+        })
 
         items.push({
             id: 'remove-account',
@@ -593,7 +590,6 @@ export const useAccountOptions = ({
         canSign,
         canRekey,
         canUseMultisig,
-        canUseNotifications,
         isSharedAccount,
         notificationsEnabled,
         isNotificationTogglePending,

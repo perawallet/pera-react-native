@@ -440,10 +440,10 @@ describe('useAccountOptions', () => {
             expect(ids).toContain('scan-rekeyed')
         })
 
-        it('hides the notification toggle when notifications are off', () => {
+        it('keeps the mute toggle when notifications are off, since pushes already registered still arrive', () => {
             setCapabilityOverrides({ notifications: false })
 
-            expect(idsFor(algo25Account)).not.toContain('toggle-notifications')
+            expect(idsFor(algo25Account)).toContain('toggle-notifications')
         })
     })
 

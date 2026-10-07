@@ -306,13 +306,24 @@ describe('useSettingsOptions', () => {
             })
         })
 
+        it('omits the scan-rekeyed item when the rekey capability is off', () => {
+            capabilityState.turnOff('rekey')
+
+            const { result } = renderHook(() => useSettingsOptions())
+
+            expect(
+                result.current.settingsOptions[0].items.map(item => item.title),
+            ).not.toContain('settings.main.scan_rekeyed_title')
+        })
+
+        // Sessions, pushes and passkeys outlive their capability, so the
+        // screens that manage them must too.
         it.each([
-            ['rekey', 'scan_rekeyed_title'],
             ['notifications', 'notifications_title'],
             ['dappConnect', 'wallet_connect_title'],
             ['liquidAuth', 'passkeys_title'],
         ] as const)(
-            'omits the item behind the %s chain capability when it is off',
+            'keeps the item managing %s when that capability is off',
             (capability, titleKey) => {
                 capabilityState.turnOff(capability)
 
@@ -322,7 +333,7 @@ describe('useSettingsOptions', () => {
                     result.current.settingsOptions[0].items.map(
                         item => item.title,
                     ),
-                ).not.toContain(`settings.main.${titleKey}`)
+                ).toContain(`settings.main.${titleKey}`)
             },
         )
 

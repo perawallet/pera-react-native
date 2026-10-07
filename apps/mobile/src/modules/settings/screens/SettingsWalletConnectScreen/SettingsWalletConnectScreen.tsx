@@ -24,6 +24,7 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { QRScannerView } from '@components/QRScannerView'
+import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
@@ -43,6 +44,8 @@ export const SettingsWalletConnectScreen = () => {
     const { connections, isHydrated, revokeAll, keyExtractor } =
         useConnectionSettingsList()
     const scannerState = useModalState()
+    // Existing sessions stay listed and revocable while dappConnect is off; only a new one is refused.
+    const canConnect = useCapability({ anyChain: 'dappConnect' })
     const deleteState = useModalState()
     const styles = useStyles()
     const [isLoading, setIsLoading] = useState(false)
@@ -50,7 +53,7 @@ export const SettingsWalletConnectScreen = () => {
     useNavigationHeader({
         title: t('settings.main.wallet_connect_title'),
         right:
-            connections.length > 0 ? (
+            canConnect && connections.length > 0 ? (
                 <PWView testID='wallet_connect_qr_scanner_button'>
                     <PWIcon
                         name='camera'
@@ -92,18 +95,22 @@ export const SettingsWalletConnectScreen = () => {
                         title={t('walletconnect.settings.empty_title')}
                         body={t('walletconnect.settings.empty_body')}
                         button={
-                            <PWButton
-                                title={t('walletconnect.settings.empty_button')}
-                                variant='primary'
-                                onPress={scannerState.open}
-                                testID='wallet_connect_connect_button'
-                            />
+                            canConnect ? (
+                                <PWButton
+                                    title={t(
+                                        'walletconnect.settings.empty_button',
+                                    )}
+                                    variant='primary'
+                                    onPress={scannerState.open}
+                                    testID='wallet_connect_connect_button'
+                                />
+                            ) : undefined
                         }
                     />
                 }
                 ListFooterComponentStyle={styles.listFooter}
                 ListFooterComponent={
-                    connections.length > 0 ? (
+                    canConnect && connections.length > 0 ? (
                         <PWButton
                             title={t('walletconnect.settings.clear_all')}
                             variant='secondary'
