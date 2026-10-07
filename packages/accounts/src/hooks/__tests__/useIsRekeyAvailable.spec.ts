@@ -27,7 +27,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         chains: {
             get: () => ({
-                descriptor: { supportsRekey: mocks.supportsRekey },
+                descriptor: {
+                    protocol: { supportsRekey: mocks.supportsRekey },
+                },
             }),
         },
     }),

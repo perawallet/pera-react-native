@@ -23,10 +23,6 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
 
 vi.mock('@hooks/useCapability', () => ({ useCapability: vi.fn() }))
 
-vi.mock('@routes/capabilities', () => ({
-    routeCapabilities: mockRouteCapabilities,
-}))
-
 describe('useIsGiftCardsEnabled', () => {
     const mockGetBooleanValue = vi.fn()
 

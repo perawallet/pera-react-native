@@ -28,10 +28,6 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 
 vi.mock('@hooks/useCapability', () => ({ useCapability: vi.fn() }))
 
-vi.mock('@routes/capabilities', () => ({
-    routeCapabilities: mockRouteCapabilities,
-}))
-
 describe('useIsQuantumSwapEnabled', () => {
     const mockGetBooleanValue = vi.fn()
 

@@ -22,6 +22,6 @@ export const useIsRekeyAvailable = (chainId: ChainId): boolean => {
     const isRekeyEnabled = useChainCapability(chainId, 'rekey')
     return (
         isRekeyEnabled &&
-        getProvider().chains.get(chainId).descriptor.supportsRekey
+        getProvider().chains.get(chainId).descriptor.protocol.supportsRekey
     )
 }
