@@ -48,9 +48,9 @@ import type {
     Secp256k1ImportRequest,
 } from './types'
 
-// secp256k1 runs through the keystore's secp256k1 shim, not the ed25519
-// `deriveChild`/`importRawKey` paths below.
-const KEYSTORE_NATIVE_SCHEMES: ReadonlySet<string> = new Set<KmsKeyScheme>([
+// The schemes the ed25519 `deriveChild`/`importRawKey` paths accept. secp256k1
+// has its own primitives below.
+const ED25519_PATH_SCHEMES: ReadonlySet<string> = new Set<KmsKeyScheme>([
     'ed25519',
 ])
 
@@ -70,7 +70,7 @@ export type KmsCoreDeps = {
 export type KmsCore = ReturnType<typeof createKmsCore>
 
 const assertSupportedScheme = (scheme: string): void => {
-    if (!KEYSTORE_NATIVE_SCHEMES.has(scheme)) {
+    if (!ED25519_PATH_SCHEMES.has(scheme)) {
         throw new KeyManagementError(`Unsupported key scheme: ${scheme}`)
     }
 }
