@@ -171,6 +171,18 @@ test network only, say) declares the developer modes it is off in, in a chain mo
 restriction can only switch a capability off, and Feature Flags still overrides it. The UI gates through
 `useCapability` or `<CapabilityGuard>`, which follow the mode and per-chain network override live.
 
+An entry point renders when three independent things hold: the platform gate (`routeCapabilities`),
+the app flag if the feature has one (a remote `enable_*` boolean behind its `useIsXEnabled` hook), and
+the chain capability. A flag hook ANDs its capability in so callers check one hook, but a capability
+is never folded into a remote flag read or the reverse. A false capability removes the element from the
+tree; nothing renders disabled because a capability is off.
+
+`useCapabilityCheck` evaluates a list, or a requirement chosen at call time, from one subscription:
+tab descriptors carry `requires`, and `DEEPLINK_CAPABILITY_REQUIREMENTS` classifies every deeplink
+type. Routes, tabs and menu rows use `anyChain`; an element acting on an account uses the `chain:`
+form. Signing never depends on a capability remote config can switch off: `rekey` gates the ways into
+rekeying and rekey discovery, not `getSignerFor`, so an account that is already rekeyed keeps signing.
+
 ### Keeping code out of a build
 
 A capability hides a feature but still ships its code. Code that must not be in a bundle at all is
