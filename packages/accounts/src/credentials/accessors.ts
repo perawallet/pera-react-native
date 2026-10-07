@@ -25,6 +25,7 @@ import type {
     HdIndex,
     WalletAccount,
 } from '../models'
+import { authAddressOf, getAccountChainState } from '../store/accountChainState'
 import type { KeystoreSnapshot } from './credentialScheme'
 
 // A record the backfill left without `custody` is answered from the legacy
@@ -122,11 +123,17 @@ export const seedOf = (
 /**
  * The address whose key authorises the account on `scope`, or `null` when it
  * signs for itself. Observed chain state, so it never joins the account record.
+ * Reads the chain-state slice, falling back to the legacy record fields for a
+ * scope the slice doesn't hold yet.
  */
 export const authorityOf = (
     account: WalletAccount,
     scope: ChainScope,
 ): string | null => {
+    const address = addressOn(account, scope)
+    const state =
+        address === undefined ? undefined : getAccountChainState(scope, address)
+    if (state) return authAddressOf(state)
     if (scope.chainId !== LEGACY_CHAIN_ID) return null
     const { rekeyAddressByNetwork, rekeyAddress } = account
     // An account that predates the per-network map only has the mirror, as

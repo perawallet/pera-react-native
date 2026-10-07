@@ -206,6 +206,16 @@ export const isInvalidInputError = (apiError: CardApiError): boolean =>
     apiError.status === 400 || apiError.status === 422
 
 /**
+ * A rejected email/password on login. Baanx documents 400 but its dev API
+ * answers 404 "Invalid Login Details", and 401 has been seen too. The 404 is
+ * matched on its message so a missing route still reads as an outage.
+ */
+export const isInvalidCredentialsError = (apiError: CardApiError): boolean =>
+    apiError.status === 401 ||
+    isInvalidInputError(apiError) ||
+    (apiError.status === 404 && /invalid login/i.test(apiError.message ?? ''))
+
+/**
  * Lets a retried non-idempotent submit count as success. Matched on message
  * text, since Baanx's status for this case is unconfirmed.
  */

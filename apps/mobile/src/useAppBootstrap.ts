@@ -36,7 +36,10 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    hydrateAccountChainStates,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import {
     getProvider,
     KeystoreHydrationError,
@@ -229,6 +232,9 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                     languageBranch,
                     launchAccountBranch,
                 ])
+
+                // Runs before the splash lifts so signing never reads an unhydrated slice.
+                await hydrateAccountChainStates()
 
                 initializeSyncService({
                     queryClient,

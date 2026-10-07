@@ -18,6 +18,7 @@ import { createIndexedDBDriver } from '@algorandfoundation/keystore-web'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 import type { PeraKeystoreDeps } from './createKeystore'
 import { resolveEngineKey } from './engineKeySource'
+import { secp256k1Shim } from './shims/secp256k1'
 
 /**
  * Web build of {@link createPeraKeystore}, picked by Metro's `.web.ts`
@@ -71,7 +72,7 @@ export const createPeraKeystore = (
         driver: gatedDriver,
         store: deps.store,
         hooks: deps.hooks,
-        shims: () => createDefaultShims(),
+        shims: async () => [...(await createDefaultShims()), secp256k1Shim()],
     }) as unknown as ReactNativeKeyStore
 
     // A caller is free to never await `ready`; without this, a migrations

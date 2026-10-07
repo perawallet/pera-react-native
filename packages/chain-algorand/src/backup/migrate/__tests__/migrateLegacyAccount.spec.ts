@@ -32,6 +32,7 @@ vi.mock('../buildKeylessAccount', () => ({
     buildWatchAccount: vi.fn(() => ({ kind: 'watch-built' })),
     buildLedgerAccount: vi.fn(() => ({ kind: 'ledger-built' })),
     buildMultiSigAccount: vi.fn(() => ({ kind: 'msig-built' })),
+    recordLegacyAuthority: vi.fn(),
 }))
 
 vi.mock('../legacyKeyConversion', () => ({
@@ -57,6 +58,7 @@ import {
     buildLedgerAccount,
     buildMultiSigAccount,
     buildWatchAccount,
+    recordLegacyAuthority,
 } from '../buildKeylessAccount'
 import { migrateAlgo25Account } from '../migrateAlgo25Account'
 import { migrateHdAccount } from '../migrateHdAccount'
@@ -97,6 +99,7 @@ beforeEach(() => {
     vi.mocked(buildWatchAccount).mockClear()
     vi.mocked(buildLedgerAccount).mockClear()
     vi.mocked(buildMultiSigAccount).mockClear()
+    vi.mocked(recordLegacyAuthority).mockClear()
     vi.mocked(migrateAlgo25Account).mockClear()
     vi.mocked(migrateHdAccount).mockClear()
 })
@@ -113,6 +116,7 @@ describe('migrateLegacyAccount dispatch', () => {
         })
         expect(migrateAlgo25Account).not.toHaveBeenCalled()
         expect(migrateHdAccount).not.toHaveBeenCalled()
+        expect(recordLegacyAuthority).toHaveBeenCalledWith(account)
     })
 
     it('routes multisig (joint != null) before checking ledger/hd/secret', async () => {
@@ -134,6 +138,7 @@ describe('migrateLegacyAccount dispatch', () => {
         expect(buildLedgerAccount).not.toHaveBeenCalled()
         expect(migrateHdAccount).not.toHaveBeenCalled()
         expect(migrateAlgo25Account).not.toHaveBeenCalled()
+        expect(recordLegacyAuthority).not.toHaveBeenCalled()
     })
 
     it('routes ledger before hd/algo25 when ledger details exist', async () => {
@@ -150,6 +155,7 @@ describe('migrateLegacyAccount dispatch', () => {
 
         expect(buildLedgerAccount).toHaveBeenCalledWith(account)
         expect(addKeylessAccountToStore).toHaveBeenCalled()
+        expect(recordLegacyAuthority).not.toHaveBeenCalled()
         expect(migrateHdAccount).not.toHaveBeenCalled()
         expect(migrateAlgo25Account).not.toHaveBeenCalled()
     })
@@ -194,6 +200,7 @@ describe('migrateLegacyAccount dispatch', () => {
 
         expect(buildWatchAccount).toHaveBeenCalledWith(account)
         expect(result).toEqual({ kind: 'watch-built' })
+        expect(recordLegacyAuthority).toHaveBeenCalledWith(account)
     })
 })
 

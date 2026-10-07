@@ -158,7 +158,7 @@ describe('createKmsCore', () => {
     })
 
     describe('unsupported scheme', () => {
-        test.each(['secp256k1', 'falcon-1024'])(
+        test.each(['secp256r1', 'falcon-1024'])(
             'deriveFromSeed rejects %s before the keystore is reached',
             async scheme => {
                 await expect(
@@ -172,7 +172,7 @@ describe('createKmsCore', () => {
             },
         )
 
-        test.each(['secp256k1', 'falcon-1024'])(
+        test.each(['secp256r1', 'falcon-1024'])(
             'importRawKey rejects %s and still zeroes the input',
             async scheme => {
                 const bytes = rawKey()

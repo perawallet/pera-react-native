@@ -79,6 +79,7 @@ const mocks = vi.hoisted(() => {
             (_fn: (state: unknown) => void) => () => {},
         ),
         applyLaunchAccountPreference: vi.fn(),
+        hydrateAccountChainStates: vi.fn(),
     }
 })
 
@@ -147,6 +148,7 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    hydrateAccountChainStates: () => mocks.hydrateAccountChainStates(),
     useAccountsStore: {
         getState: () => ({
             applyLaunchAccountPreference: mocks.applyLaunchAccountPreference,
@@ -222,6 +224,7 @@ describe('useAppBootstrap', () => {
         })
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedNativeAssets.mockResolvedValue(undefined)
+        mocks.hydrateAccountChainStates.mockResolvedValue(undefined)
         mocks.runPasskeyAutofillBootstrap.mockResolvedValue(undefined)
         mocks.configOverrides = {}
         mocks.settingsState.language = 'system'
@@ -252,6 +255,28 @@ describe('useAppBootstrap', () => {
         expect(result.current.initError).toBeNull()
         expect(result.current.persister).toBeDefined()
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+    })
+
+    it('stays unbootstrapped until the chain-state slice has hydrated', async () => {
+        let finishHydration: () => void = () => {}
+        mocks.hydrateAccountChainStates.mockReturnValue(
+            new Promise<void>(resolve => {
+                finishHydration = resolve
+            }),
+        )
+        vi.useFakeTimers()
+        const { result } = renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+        expect(result.current.bootstrapped).toBe(false)
+
+        await act(async () => {
+            finishHydration()
+            await vi.runAllTimersAsync()
+        })
+        expect(result.current.bootstrapped).toBe(true)
     })
 
     // rAF does not fire while the app produces no frames, so a cold start that

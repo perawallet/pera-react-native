@@ -42,6 +42,10 @@ import {
     getAccountBalance,
     getHeldAssetIdsByAccount,
 } from '../../db'
+import {
+    getAccountChainState,
+    useAccountChainStateStore,
+} from '../../store/accountChainState'
 import { cleanupRemovedAccountData } from '../cleanupRemovedAccountData'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
@@ -87,6 +91,28 @@ describe('cleanupRemovedAccountData', () => {
     afterEach(() => {
         teardown()
         resetAccountCleanupRegistry()
+        useAccountChainStateStore.getState().resetState()
+    })
+
+    it('drops the removed account from every chain-state scope and keeps others', async () => {
+        const state = {
+            family: 'algorand' as const,
+            minBalance: new Decimal(0),
+            status: 'Offline' as const,
+            totalAssetsOptedIn: 0,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+        }
+        const slice = useAccountChainStateStore.getState()
+        slice.setAccountChainState(MAINNET_SCOPE, 'ADDR1', state)
+        slice.setAccountChainState(TESTNET_SCOPE, 'ADDR1', state)
+        slice.setAccountChainState(MAINNET_SCOPE, 'ADDR2', state)
+
+        await cleanupRemovedAccountData({ db, accountAddress: 'ADDR1' })
+
+        expect(getAccountChainState(MAINNET_SCOPE, 'ADDR1')).toBeUndefined()
+        expect(getAccountChainState(TESTNET_SCOPE, 'ADDR1')).toBeUndefined()
+        expect(getAccountChainState(MAINNET_SCOPE, 'ADDR2')).toBeDefined()
     })
 
     it('runs registered account cleanup handlers with the db and address', async () => {

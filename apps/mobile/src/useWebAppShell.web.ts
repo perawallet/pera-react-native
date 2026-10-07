@@ -34,7 +34,10 @@ import {
 } from '@perawallet/wallet-core-background'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
-import { useHasAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    hydrateAccountChainStates,
+    useHasAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { queryClient } from '@providers/QueryProvider'
@@ -139,6 +142,7 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             }
             await initializeDatabase(getProvider().database)
             await seedNativeAssets(getDatabase())
+            await hydrateAccountChainStates()
             initializeSyncService({
                 queryClient,
                 stores: createSyncStorePorts(),

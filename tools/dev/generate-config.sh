@@ -78,6 +78,27 @@ if [ "${APP_ENV:-}" == "production" ]; then
   fi
 fi
 
+# Ethereum's RPC endpoints have no committed default, so in any channel a build
+# that ships the chain without them would only fail once the app reads chain state.
+# An allowlist that bakes the chain list but drops a URL ships the same way.
+is_allowlisted() {
+  [ -z "${CONFIG_ALLOWLIST:-}" ] || [[ " $CONFIG_ALLOWLIST " == *" $1 "* ]]
+}
+if [[ ",${CHAINS//[[:space:]]/}," == *",ethereum,"* ]] && is_allowlisted chainIds; then
+  for pair in ETHEREUM_MAINNET_RPC_URL:ethereumMainnetRpcUrl ETHEREUM_SEPOLIA_RPC_URL:ethereumSepoliaRpcUrl; do
+    var="${pair%%:*}"
+    key="${pair#*:}"
+    if [ -z "${!var:-}" ]; then
+      echo "ERROR: $var is unset but CHAINS ships ethereum." >&2
+      exit 1
+    fi
+    if ! is_allowlisted "$key"; then
+      echo "ERROR: CONFIG_ALLOWLIST drops $key but CHAINS ships ethereum." >&2
+      exit 1
+    fi
+  done
+fi
+
 echo "Generating configuration from environment variables..."
 
 # Start the file content
@@ -264,6 +285,13 @@ append_config "TESTNET_CARD_USDC_ASSET_ID" "testnetCardUsdcAssetId" "string"
 append_config "CHAINS" "chainIds" "string"
 append_config "CHAIN_ALGORAND_CAPABILITIES" "chainAlgorandCapabilities" "string"
 append_config "CHAIN_ETHEREUM_CAPABILITIES" "chainEthereumCapabilities" "string"
+
+# Ethereum: public JSON-RPC endpoints per network, and per network the comma
+# list of Pera services the backend serves for it (empty means none).
+append_config "ETHEREUM_MAINNET_RPC_URL" "ethereumMainnetRpcUrl" "string"
+append_config "ETHEREUM_SEPOLIA_RPC_URL" "ethereumSepoliaRpcUrl" "string"
+append_config "ETHEREUM_MAINNET_PERA_SERVICES" "ethereumMainnetPeraServices" "string"
+append_config "ETHEREUM_SEPOLIA_PERA_SERVICES" "ethereumSepoliaPeraServices" "string"
 
 # Default Network
 if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then

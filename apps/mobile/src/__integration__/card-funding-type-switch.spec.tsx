@@ -67,6 +67,7 @@ import {
     useCardStore,
 } from '@perawallet/wallet-core-card'
 import { PeraCardDetails } from '@modules/card/components/PeraCardDetails'
+import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
@@ -95,7 +96,7 @@ const activeCardStatus = http.get('*/v1/card/status', () =>
 
 const openFundingTypeSheet = async () => {
     fireEvent.click(
-        await screen.findByTestId('pera_card_change_funding_type_button'),
+        await screen.findByTestId('pera_card_overview_funding_type_row'),
     )
     expect(
         await screen.findByTestId('card_select_funding_type_sheet'),
@@ -123,7 +124,7 @@ describe('Flow: Card funding type switch', () => {
     it('disables auto-draw and persists Manual when switching Auto → Manual', async () => {
         useCardStore.getState().setSelectedFundingType(FundingType.Auto)
 
-        renderWithNavigation(PeraCardDetails, 'CardDetails')
+        renderWithNavigation(PeraCardOverview, 'Overview')
         await openFundingTypeSheet()
 
         fireEvent.click(screen.getByTestId('card_funding_type_option_manual'))
@@ -136,15 +137,15 @@ describe('Flow: Card funding type switch', () => {
             ),
         )
         expect(
-            (await screen.findByTestId('pera_card_funding_type_row'))
+            (await screen.findByTestId('pera_card_overview_funding_type_row'))
                 .textContent,
-        ).toContain('funding_type_manual_title')
+        ).toContain('funding_type_enabled_manual')
     })
 
     it('enables auto-draw against the escrow card when switching Manual → Auto', async () => {
         useCardStore.getState().setSelectedFundingType(FundingType.Manual)
 
-        renderWithNavigation(PeraCardDetails, 'CardDetails')
+        renderWithNavigation(PeraCardOverview, 'Overview')
         await openFundingTypeSheet()
 
         fireEvent.click(screen.getByTestId('card_funding_type_option_auto'))
@@ -163,34 +164,50 @@ describe('Flow: Card funding type switch', () => {
         )
     })
 
-    it('shows both funding selectors even when no funding account is linked', async () => {
+    it('shows the active funding type on the overview and opens the switch from it', async () => {
+        useCardStore.getState().setSelectedFundingType(FundingType.Manual)
+
+        renderWithNavigation(PeraCardOverview, 'Overview')
+
+        const row = await screen.findByTestId(
+            'pera_card_overview_funding_type_row',
+        )
+        expect(row.textContent).toContain(
+            'peraCard.account.funding_type_enabled_manual',
+        )
+
+        fireEvent.click(row)
+
+        expect(
+            await screen.findByTestId('card_select_funding_type_sheet'),
+        ).toBeTruthy()
+    })
+
+    it('offers Connect on Card Details when no funding account is linked, with no funding type row', async () => {
         useCardStore.getState().setConnectedFundingSourceAddress(null)
 
         renderWithNavigation(PeraCardDetails, 'CardDetails')
 
         expect(
-            await screen.findByTestId('pera_card_funding_type_row'),
-        ).toBeTruthy()
-        expect(
-            screen.getByTestId('pera_card_funding_account_row').textContent,
+            (await screen.findByTestId('pera_card_funding_account_row'))
+                .textContent,
         ).toContain('no_funding_account')
+        expect(screen.queryByTestId('pera_card_funding_type_row')).toBeNull()
         expect(
             screen.getByTestId('pera_card_change_funding_button').textContent,
         ).toContain('connect')
     })
 
     // Re-linking has no robust implementation yet, so a linked account offers
-    // no way to change it. The funding TYPE selector is unaffected.
+    // no way to change it.
     it('offers no way to change the funding account once one is linked', async () => {
         renderWithNavigation(PeraCardDetails, 'CardDetails')
 
-        // Awaiting the funding-type row first proves the section finished
-        // rendering, so the missing Change link below is a real absence.
+        // Awaiting the row first proves the section finished rendering, so the
+        // missing Change link below is a real absence.
         expect(
-            await screen.findByTestId('pera_card_change_funding_type_button'),
-        ).toBeTruthy()
-        expect(
-            screen.getByTestId('pera_card_funding_account_row').textContent,
+            (await screen.findByTestId('pera_card_funding_account_row'))
+                .textContent,
         ).not.toContain('no_funding_account')
         expect(
             screen.queryByTestId('pera_card_change_funding_button'),
@@ -201,7 +218,7 @@ describe('Flow: Card funding type switch', () => {
         useCardStore.getState().setSelectedFundingType(FundingType.Manual)
         enableAutoDraw.mockRejectedValueOnce(new Error('chain down'))
 
-        renderWithNavigation(PeraCardDetails, 'CardDetails')
+        renderWithNavigation(PeraCardOverview, 'Overview')
         await openFundingTypeSheet()
 
         fireEvent.click(screen.getByTestId('card_funding_type_option_auto'))

@@ -38,6 +38,7 @@ vi.mock('../../db', () => ({
 describe('fetchAndPersistAccount', () => {
     let fetchAndPersistAccount: typeof import('../account-syncer').fetchAndPersistAccount
     let useAccountsStore: typeof import('../../store').useAccountsStore
+    let useAccountChainStateStore: typeof import('../../store/accountChainState').useAccountChainStateStore
 
     beforeEach(async () => {
         vi.resetModules()
@@ -62,6 +63,9 @@ describe('fetchAndPersistAccount', () => {
         fetchAndPersistAccount = (await import('../account-syncer'))
             .fetchAndPersistAccount
         useAccountsStore = (await import('../../store')).useAccountsStore
+        useAccountChainStateStore = (
+            await import('../../store/accountChainState')
+        ).useAccountChainStateStore
         useAccountsStore.getState().resetState()
         useAccountsStore.getState().setAccounts([
             {
@@ -81,5 +85,18 @@ describe('fetchAndPersistAccount', () => {
         // The sync's network is threaded into the per-network state, not
         // just the active-network mirror.
         expect(account?.rekeyAddressByNetwork).toEqual({ mainnet: 'S' })
+    })
+
+    it('writes the chain-state slice and keeps its reference on an unchanged sync', async () => {
+        const mainnetKey = 'algorand/mainnet' as never
+        await fetchAndPersistAccount('A', 'mainnet' as Network)
+        const first = useAccountChainStateStore.getState().states[mainnetKey]?.A
+
+        await fetchAndPersistAccount('A', 'mainnet' as Network)
+        const second =
+            useAccountChainStateStore.getState().states[mainnetKey]?.A
+
+        expect(first).toMatchObject({ authAddress: 'S' })
+        expect(second).toBe(first)
     })
 })

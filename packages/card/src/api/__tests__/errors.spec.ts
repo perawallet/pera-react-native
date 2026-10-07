@@ -15,6 +15,7 @@ import {
     getCardApiError,
     isConflictError,
     isInvalidInputError,
+    isInvalidCredentialsError,
     isAlreadyCreatedError,
     isUserAlreadyCreatedError,
     isDuplicateError,
@@ -234,6 +235,32 @@ describe('isInvalidInputError', () => {
 
     it.each([409, 404, 500, undefined])('is false for %s', status => {
         expect(isInvalidInputError({ status })).toBe(false)
+    })
+})
+
+describe('isInvalidCredentialsError', () => {
+    it.each([401, 400, 422])('is true for %s', status => {
+        expect(isInvalidCredentialsError({ status })).toBe(true)
+    })
+
+    it('is true for the Baanx dev 404 "Invalid Login Details"', () => {
+        expect(
+            isInvalidCredentialsError({
+                status: 404,
+                message: 'Invalid Login Details',
+            }),
+        ).toBe(true)
+    })
+
+    it('is false for a 404 without the invalid-login message', () => {
+        expect(isInvalidCredentialsError({ status: 404 })).toBe(false)
+        expect(
+            isInvalidCredentialsError({ status: 404, message: 'Not Found' }),
+        ).toBe(false)
+    })
+
+    it.each([500, 403, undefined])('is false for %s', status => {
+        expect(isInvalidCredentialsError({ status })).toBe(false)
     })
 })
 

@@ -46,6 +46,8 @@ export {
 export {
     upsertAccountBalance,
     getAccountBalance,
+    getAllAccountBalances,
     deleteAccountBalance,
     type AccountBalanceRow,
+    type StoredAccountBalanceRow,
 } from './balancesRepository'

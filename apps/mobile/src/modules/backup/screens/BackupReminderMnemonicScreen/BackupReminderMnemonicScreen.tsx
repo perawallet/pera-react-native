@@ -59,6 +59,7 @@ export const BackupReminderMnemonicScreen = () => {
 
     return (
         <PWScreen
+            testID='backup_mnemonic_screen'
             footer={
                 <PWButton
                     title={t('backup.mnemonic.cta_continue')}

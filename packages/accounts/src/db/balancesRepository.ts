@@ -15,6 +15,7 @@ import type { Decimal } from 'decimal.js'
 import {
     toScopeKey,
     type ChainScope,
+    type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
@@ -29,6 +30,11 @@ export type AccountBalanceRow = {
     minBalance: Decimal
     status: string
     authAddress: Nullable<string>
+}
+
+/** `network` is the raw column; read it through `scopeFromNetworkColumn`. */
+export type StoredAccountBalanceRow = AccountBalanceRow & {
+    network: ChainScopeKey
 }
 
 type UpsertAccountBalanceParams = {
@@ -125,6 +131,25 @@ export async function getAccountBalance({
         .all()
 
     return rows[0]
+}
+
+export async function getAllAccountBalances({
+    db = getDatabase(),
+}: { db?: Database } = {}): Promise<StoredAccountBalanceRow[]> {
+    return db
+        .select({
+            accountAddress: AccountBalancesSchema.accountAddress,
+            network: AccountBalancesSchema.network,
+            algoBalance: AccountBalancesSchema.algoBalance,
+            totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
+            totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
+            totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
+            minBalance: AccountBalancesSchema.minBalance,
+            status: AccountBalancesSchema.status,
+            authAddress: AccountBalancesSchema.authAddress,
+        })
+        .from(AccountBalancesSchema)
+        .all()
 }
 
 type DeleteAccountBalanceParams = {

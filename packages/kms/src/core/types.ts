@@ -11,7 +11,7 @@
  */
 
 /** The schemes the core derives and imports. Anything else is rejected at runtime. */
-export type KmsKeyScheme = 'ed25519'
+export type KmsKeyScheme = 'ed25519' | 'secp256k1'
 
 /**
  * `scheme` is a wide `string` on purpose: the chain-facing port passes any
@@ -39,3 +39,16 @@ export type KmsDerivedKey = {
     keyPairId: string
     publicKey: Uint8Array
 }
+
+export type Secp256k1DerivationRequest = Pick<
+    KmsDerivationRequest,
+    'path' | 'id'
+>
+
+export type Secp256k1ImportRequest = Pick<
+    KmsImportRequest,
+    'id' | 'parentKeyId'
+>
+
+/** `publicKey` is the 65-byte uncompressed SEC1 point. */
+export type Secp256k1ChildRef = KmsDerivedKey
