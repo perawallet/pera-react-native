@@ -72,6 +72,29 @@ describe('tools/dev/generate-config.sh', () => {
         return readFileSync(out, 'utf8')
     }
 
+    const runExpectingFailure = (env: Record<string, string>): string => {
+        const emptyEnvFile = join(dir, '.env.base')
+        writeFileSync(emptyEnvFile, '')
+        try {
+            execFileSync('bash', [SCRIPT], {
+                env: {
+                    ...process.env,
+                    OUTPUT_FILE: join(dir, 'generated-env.ts'),
+                    ENV_FILE: emptyEnvFile,
+                    MAINNET_BACKEND_URL: '',
+                    TESTNET_BACKEND_URL: '',
+                    ...env,
+                },
+                stdio: ['ignore', 'pipe', 'pipe'],
+            })
+        } catch (error) {
+            const failure = error as { status?: number; stderr?: Buffer }
+            expect(failure.status).not.toBe(0)
+            return failure.stderr?.toString() ?? ''
+        }
+        throw new Error('expected generate-config.sh to exit non-zero')
+    }
+
     test('emits testnet genesis hash from TESTNET_GENESIS_HASH', () => {
         const output = run({ TESTNET_GENESIS_HASH: 'LOCALNETHASH=' })
         expect(output).toContain('testnetGenesisHash: "LOCALNETHASH="')
@@ -123,6 +146,61 @@ describe('tools/dev/generate-config.sh', () => {
         expect(output).toContain('chainIds: "algorand"')
         expect(output).toContain('chainAlgorandCapabilities: "send,receive"')
         expect(output).toContain('chainEthereumCapabilities: "send"')
+    })
+
+    describe('ethereum endpoints', () => {
+        const ETHEREUM_ENDPOINTS = {
+            ETHEREUM_MAINNET_RPC_URL: 'https://mainnet.rpc.example',
+            ETHEREUM_SEPOLIA_RPC_URL: 'https://sepolia.rpc.example',
+        }
+
+        test('emits the RPC URLs and Pera service lists', () => {
+            const output = run({
+                CHAINS: 'algorand,ethereum',
+                ...ETHEREUM_ENDPOINTS,
+                ETHEREUM_MAINNET_PERA_SERVICES: 'prices,history',
+                ETHEREUM_SEPOLIA_PERA_SERVICES: 'assets',
+            })
+
+            expect(output).toContain(
+                'ethereumMainnetRpcUrl: "https://mainnet.rpc.example"',
+            )
+            expect(output).toContain(
+                'ethereumSepoliaRpcUrl: "https://sepolia.rpc.example"',
+            )
+            expect(output).toContain(
+                'ethereumMainnetPeraServices: "prices,history"',
+            )
+            expect(output).toContain('ethereumSepoliaPeraServices: "assets"')
+        })
+
+        test.each(['ETHEREUM_MAINNET_RPC_URL', 'ETHEREUM_SEPOLIA_RPC_URL'])(
+            'fails a build that ships ethereum with %s unset',
+            variable => {
+                expect(
+                    runExpectingFailure({
+                        CHAINS: 'algorand, ethereum',
+                        ...ETHEREUM_ENDPOINTS,
+                        [variable]: '',
+                    }),
+                ).toMatch(
+                    new RegExp(`${variable} is unset but CHAINS ships ethereum`),
+                )
+            },
+        )
+
+        test.each(['', 'algorand'])(
+            'leaves a build with CHAINS=%j and no RPC URLs alone',
+            chains => {
+                expect(() =>
+                    run({
+                        CHAINS: chains,
+                        ETHEREUM_MAINNET_RPC_URL: '',
+                        ETHEREUM_SEPOLIA_RPC_URL: '',
+                    }),
+                ).not.toThrow()
+            },
+        )
     })
 
     // turbo hashes only globalEnv into the build key, so a variable missing
@@ -180,29 +258,6 @@ describe('tools/dev/generate-config.sh', () => {
     // BEFORE the artifact is signed (main.ts's schema check only throws once the
     // config module is imported). It went six months without one of these.
     describe('production staging guard', () => {
-        const runExpectingFailure = (env: Record<string, string>): string => {
-            const emptyEnvFile = join(dir, '.env.base')
-            writeFileSync(emptyEnvFile, '')
-            try {
-                execFileSync('bash', [SCRIPT], {
-                    env: {
-                        ...process.env,
-                        OUTPUT_FILE: join(dir, 'generated-env.ts'),
-                        ENV_FILE: emptyEnvFile,
-                        MAINNET_BACKEND_URL: '',
-                        TESTNET_BACKEND_URL: '',
-                        ...env,
-                    },
-                    stdio: ['ignore', 'pipe', 'pipe'],
-                })
-            } catch (error) {
-                const failure = error as { status?: number; stderr?: Buffer }
-                expect(failure.status).not.toBe(0)
-                return failure.stderr?.toString() ?? ''
-            }
-            throw new Error('expected generate-config.sh to exit non-zero')
-        }
-
         test('fails a production build when a backend URL is unset', () => {
             expect(runExpectingFailure({ APP_ENV: 'production' })).toMatch(
                 /MAINNET_BACKEND_URL is unset in a production build/,

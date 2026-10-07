@@ -51,6 +51,28 @@ run_case() {
     fi
 }
 
+# $1 label  $2 CHAINS  $3 ETHEREUM_SEPOLIA_RPC_URL  $4 expected stderr, or "" to expect success
+run_guard_case() {
+    local label="$1" chains="$2" sepolia_rpc="$3" expected="$4"
+    local status=0
+
+    env -i PATH="$PATH" HOME="$HOME" ENV_FILE="$WORK/missing.env" \
+        OUTPUT_FILE="$WORK/generated-env.ts" CHAINS="$chains" \
+        ETHEREUM_MAINNET_RPC_URL='https://mainnet.rpc.example' \
+        ETHEREUM_SEPOLIA_RPC_URL="$sepolia_rpc" \
+        bash "$SCRIPT" > "$WORK/log" 2>&1 || status=$?
+
+    if [ -z "$expected" ] && [ "$status" -eq 0 ]; then
+        echo "  ok    ${label}"
+    elif [ -n "$expected" ] && [ "$status" -ne 0 ] && grep -q "$expected" "$WORK/log"; then
+        echo "  ok    ${label}"
+    else
+        echo "  FAIL  ${label}: exit ${status}"
+        sed 's/^/        /' "$WORK/log"
+        failures=$((failures + 1))
+    fi
+}
+
 echo "generate-config.sh"
 run_case "plain url" 'https://mainnet.api.perawallet.app'
 run_case "double quote cannot end the literal" 'x", injected: "1'
@@ -59,6 +81,12 @@ run_case "newline cannot start a new property" $'x",\n  injected: 1,\n  y: "'
 run_case "comment closer is inert" '*/ throw new Error("boom") /*'
 run_case "control character is escaped" $'bell\a'
 run_case "leading dash is not a node option" '-e "x'
+run_guard_case "a build shipping ethereum needs every RPC URL" \
+    'algorand,ethereum' '' 'ETHEREUM_SEPOLIA_RPC_URL is unset but CHAINS ships ethereum'
+run_guard_case "a build shipping ethereum with every RPC URL passes" \
+    'algorand,ethereum' 'https://sepolia.rpc.example' ''
+run_guard_case "a build without ethereum needs no RPC URL" \
+    'algorand' '' ''
 
 if [ "$failures" -gt 0 ]; then
     echo "${failures} case(s) failed"
