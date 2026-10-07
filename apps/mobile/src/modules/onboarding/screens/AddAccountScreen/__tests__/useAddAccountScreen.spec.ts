@@ -616,6 +616,30 @@ describe('useAddAccountScreen', () => {
         ).toBeDefined()
     })
 
+    it('mainOptions excludes the multisig option when the multisig capability is off', () => {
+        capabilityState.turnOff('multisig')
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            result.current.mainOptions.some(
+                o => o.testID === 'add_account_create_multisig_button',
+            ),
+        ).toBe(false)
+    })
+
+    it('otherOptions excludes the watch option when the watchAccounts capability is off', () => {
+        capabilityState.turnOff('watchAccounts')
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            result.current.otherOptions.some(
+                o => o.testID === 'add_account_watch_button',
+            ),
+        ).toBe(false)
+    })
+
     it('mainOptions excludes quantum option when the flag is disabled', () => {
         setQuantumEnabled(false)
 

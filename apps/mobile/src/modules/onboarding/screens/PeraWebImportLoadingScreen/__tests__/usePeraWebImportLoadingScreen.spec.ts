@@ -14,6 +14,8 @@ import { renderHook, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { Networks } from '@perawallet/wallet-core-config'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks'
 import { usePeraWebImportLoadingScreen } from '../usePeraWebImportLoadingScreen'
 
@@ -65,6 +67,7 @@ const encryptionKey = new Uint8Array(32).fill(1)
 describe('usePeraWebImportLoadingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         usePeraWebImportFlowStore.getState().reset()
         usePeraWebImportFlowStore.getState().setQr({
             backupId: 'backup-1',
@@ -76,26 +79,21 @@ describe('usePeraWebImportLoadingScreen', () => {
         mockDecryptPeraWebBackupPayload.mockReturnValue({ accounts: [] })
     })
 
-    it.each([Networks.betanet, Networks.custom])(
-        'does not fetch the backup and surfaces the network-unavailable reason on %s',
-        async network => {
-            vi.mocked(useNetwork).mockReturnValue({
-                network,
-            } as ReturnType<typeof useNetwork>)
+    it('does not fetch the backup and surfaces the network-unavailable reason while peraWebImport is off', async () => {
+        setCapabilityOverrides({ peraWebImport: false })
 
-            renderHook(() => usePeraWebImportLoadingScreen())
+        renderHook(() => usePeraWebImportLoadingScreen())
 
-            await waitFor(() => {
-                expect(mockGoBack).toHaveBeenCalledTimes(1)
-            })
+        await waitFor(() => {
+            expect(mockGoBack).toHaveBeenCalledTimes(1)
+        })
 
-            expect(mockFetchPeraWebBackup).not.toHaveBeenCalled()
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'common.network_unavailable.title',
-                'common.network_unavailable.body',
-            )
-        },
-    )
+        expect(mockFetchPeraWebBackup).not.toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.network_unavailable.title',
+            'common.network_unavailable.body',
+        )
+    })
 
     it('still fetches the backup on mainnet (happy path unaffected)', async () => {
         mockFetchPeraWebBackup.mockResolvedValue({ encryptedContent: 'x' })

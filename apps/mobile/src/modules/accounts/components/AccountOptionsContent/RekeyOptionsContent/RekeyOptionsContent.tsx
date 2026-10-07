@@ -27,6 +27,7 @@ export const RekeyOptionsContent = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { resolve } = useBottomSheetResult<RekeyTargetType>()
+    const canUseLedger = useCapability({ anyChain: 'ledger' })
     const isQuantumEnabled = useCapability({
         platform: 'quantum',
         anyChain: 'quantumAccounts',
@@ -38,16 +39,18 @@ export const RekeyOptionsContent = () => {
             header={<SheetHeader title={t('account_options.rekey_account')} />}
         >
             <PWView style={styles.optionsContainer}>
-                <PanelButton
-                    testID='rekey_option_ledger'
-                    title={t('account_options.rekey_option_ledger_title')}
-                    description={t(
-                        'account_options.rekey_option_ledger_description',
-                    )}
-                    titleWeight='h3'
-                    leftIcon='ledger'
-                    onPress={() => resolve('ledger')}
-                />
+                {canUseLedger && (
+                    <PanelButton
+                        testID='rekey_option_ledger'
+                        title={t('account_options.rekey_option_ledger_title')}
+                        description={t(
+                            'account_options.rekey_option_ledger_description',
+                        )}
+                        titleWeight='h3'
+                        leftIcon='ledger'
+                        onPress={() => resolve('ledger')}
+                    />
+                )}
                 <PanelButton
                     testID='rekey_option_standard'
                     title={t('account_options.rekey_option_standard_title')}

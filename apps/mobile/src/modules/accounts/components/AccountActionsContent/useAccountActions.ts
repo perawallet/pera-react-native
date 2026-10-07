@@ -14,6 +14,7 @@ import { useCallback, useMemo } from 'react'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCapability } from '@hooks/useCapability'
 import { useSendFundsStore } from '@modules/transactions'
 
 type UseAccountActionsParams = {
@@ -29,6 +30,7 @@ type UseAccountActionsResult = {
      * Contact" — and `openContact` routes to the right screen.
      */
     existingContact: Contact | null
+    canAddWatchAccount: boolean
     openSendTransaction: () => void
     openWatchAddress: () => void
     openContact: () => void
@@ -42,6 +44,7 @@ export const useAccountActions = ({
     const navigation = useAppNavigation()
     const { requestByType } = useBottomSheet()
     const { contacts, setSelectedContact } = useContacts()
+    const canAddWatchAccount = useCapability({ anyChain: 'watchAccounts' })
 
     const existingContact = useMemo(
         () => contacts.find(c => c.addresses.algorand === address) ?? null,
@@ -102,6 +105,7 @@ export const useAccountActions = ({
 
     return {
         existingContact,
+        canAddWatchAccount,
         openSendTransaction,
         openWatchAddress,
         openContact,

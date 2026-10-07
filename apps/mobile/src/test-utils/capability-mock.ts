@@ -12,17 +12,25 @@
 
 import type { ChainCapability } from '@perawallet/wallet-core-chain-contract'
 import type { CapabilityRequirement } from '@hooks/useCapability'
+import { routeCapabilities } from '@routes/capabilities'
 
 const switchedOff = new Set<ChainCapability>()
 
-const isAllowed = ({ chain, anyChain }: CapabilityRequirement): boolean =>
+// A spec that stubs `@routes/capabilities` partially leaves other flags
+// undefined; only an explicit `false` removes the element.
+const isAllowed = ({
+    platform,
+    chain,
+    anyChain,
+}: CapabilityRequirement): boolean =>
     !(chain && switchedOff.has(chain.capability)) &&
-    !(anyChain && switchedOff.has(anyChain))
+    !(anyChain && switchedOff.has(anyChain)) &&
+    !(platform && routeCapabilities[platform] === false)
 
 /**
  * Stands in for `@hooks/useCapability` in a spec that mocks the remote-config
- * module wholesale: every capability is on until switched off, and the
- * platform part always holds.
+ * module wholesale: every chain capability is on until switched off, and the
+ * platform part follows `routeCapabilities`.
  *
  * `vi.mock('@hooks/useCapability', async () => (await import('@test-utils/capability-mock')).capabilityHookMock())`
  */

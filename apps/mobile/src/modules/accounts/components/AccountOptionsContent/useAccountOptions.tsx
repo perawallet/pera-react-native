@@ -35,7 +35,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapability } from '@hooks/useCapability'
+import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
@@ -123,13 +124,19 @@ export const useAccountOptions = ({
     useMultisigDetailsBackfill(account)
 
     const canSign = useCanSignWith(account)
+    const canRekey = useCapability(REKEY_REQUIREMENT)
+    const canUseMultisig = useCapability({
+        platform: 'sharedAccounts',
+        anyChain: 'multisig',
+    })
+    const canUseNotifications = useCapability({ anyChain: 'notifications' })
     const isRekeyed = isRekeyedAccount(account, LEGACY_CHAIN_ID)
     const showPassphrase =
         !isRekeyed &&
         (isAlgo25Account(account) ||
             isHDWalletAccount(account) ||
             isQuantumAccount(account))
-    const canUndoRekey = routeCapabilities.rekeyFlows && isRekeyed && canSign
+    const canUndoRekey = canRekey && isRekeyed && canSign
     const isHdWallet = isHDWalletAccount(account)
     const isSharedAccount = isMultisigAccount(account)
     const participantCount = isMultisigAccount(account)
@@ -473,7 +480,7 @@ export const useAccountOptions = ({
     const options = useMemo(() => {
         const items: AccountOption[] = []
 
-        if (isSharedAccount) {
+        if (isSharedAccount && canUseMultisig) {
             items.push({
                 id: 'shared-account-detail',
                 icon: 'people',
@@ -516,8 +523,9 @@ export const useAccountOptions = ({
         // is a root stack that a platform may not register, and an
         // unregistered route makes the row a silent no-op rather than an error.
         // Rekeying also needs a signature from the source account, so only
-        // offer it when this wallet can actually sign.
-        if (routeCapabilities.rekeyFlows && canSign) {
+        // offer it when this wallet can actually sign. A shared account's only
+        // target is another shared account.
+        if (canRekey && canSign && (!isSharedAccount || canUseMultisig)) {
             items.push({
                 id: 'rekey-account',
                 icon: 'rekey',
@@ -526,7 +534,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (isSharedAccount) {
+        if (isSharedAccount && canUseMultisig) {
             // Export stays available regardless of `canSign` — it only reads
             // metadata.
             items.push({
@@ -540,7 +548,7 @@ export const useAccountOptions = ({
         // Post-import rekey discovery: find accounts whose on-chain auth-addr
         // is this account's key. Signable types only — a watch account holds
         // no key another account could be rekeyed to sign with.
-        if (routeCapabilities.rekeyFlows && canSign) {
+        if (canRekey && canSign) {
             items.push({
                 id: 'scan-rekeyed',
                 icon: 'magnifying-glass',
@@ -556,15 +564,17 @@ export const useAccountOptions = ({
             onPress: () => void handleOpenRename(),
         })
 
-        items.push({
-            id: 'toggle-notifications',
-            icon: 'bell',
-            title: notificationsEnabled
-                ? t('account_options.mute_notifications')
-                : t('account_options.unmute_notifications'),
-            onPress: handleToggleNotifications,
-            disabled: isNotificationTogglePending,
-        })
+        if (canUseNotifications) {
+            items.push({
+                id: 'toggle-notifications',
+                icon: 'bell',
+                title: notificationsEnabled
+                    ? t('account_options.mute_notifications')
+                    : t('account_options.unmute_notifications'),
+                onPress: handleToggleNotifications,
+                disabled: isNotificationTogglePending,
+            })
+        }
 
         items.push({
             id: 'remove-account',
@@ -581,6 +591,9 @@ export const useAccountOptions = ({
         participantCount,
         showPassphrase,
         canSign,
+        canRekey,
+        canUseMultisig,
+        canUseNotifications,
         isSharedAccount,
         notificationsEnabled,
         isNotificationTogglePending,

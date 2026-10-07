@@ -13,6 +13,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Contact } from '@perawallet/wallet-core-contacts'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useAccountActions } from '../useAccountActions'
 
 const {
@@ -62,6 +64,18 @@ describe('useAccountActions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         contactsRef.contacts = []
+        useRemoteConfigStore.getState().resetState()
+    })
+
+    it('offers watching an address only while the watchAccounts capability is on', () => {
+        const { result } = renderHook(() =>
+            useAccountActions({ address: ADDRESS, onClose }),
+        )
+        expect(result.current.canAddWatchAccount).toBe(true)
+
+        act(() => setCapabilityOverrides({ watchAccounts: false }))
+
+        expect(result.current.canAddWatchAccount).toBe(false)
     })
 
     it('reports no existing contact when the address is unknown', () => {
