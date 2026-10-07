@@ -66,12 +66,19 @@ describe('useNotificationsIcon', () => {
         } as unknown as ReturnType<typeof useSpotBannersQuery>)
     })
 
-    it('offers the inbox only while the notifications capability is on', () => {
+    it('offers the inbox while any of notifications, asset inbox or multisig is on', () => {
         const { result } = renderHook(() => useNotificationsIcon())
-        expect(result.current.canOpenMessages).toBe(true)
 
         act(() => setCapabilityOverrides({ notifications: false }))
+        expect(result.current.canOpenMessages).toBe(true)
 
+        act(() =>
+            setCapabilityOverrides({
+                notifications: false,
+                assetInbox: false,
+                multisig: false,
+            }),
+        )
         expect(result.current.canOpenMessages).toBe(false)
     })
 

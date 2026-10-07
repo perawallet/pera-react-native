@@ -39,7 +39,10 @@ import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useCapabilityCheck } from '@hooks/useCapability'
-import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
+import {
+    MESSAGES_REQUIREMENTS,
+    REKEY_REQUIREMENT,
+} from '@hooks/capabilityRequirements'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { GroupTransactionListScreen } from '@modules/transactions/routes'
 import { StakingScreen } from '@modules/staking'
@@ -155,7 +158,7 @@ export const WebMainRoutes = ({
                             component={SearchStackNavigator}
                         />
                     )}
-                    {isAllowed({ anyChain: 'notifications' }) && (
+                    {MESSAGES_REQUIREMENTS.some(isAllowed) && (
                         <RootStack.Screen
                             name='Messages'
                             component={MessagesStackNavigator}

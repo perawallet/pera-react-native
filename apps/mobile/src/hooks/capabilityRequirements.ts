@@ -19,3 +19,11 @@ export const REKEY_REQUIREMENT: CapabilityRequirement = {
     platform: 'rekeyFlows',
     chain: { chainId: LEGACY_CHAIN_ID, capability: 'rekey' },
 }
+
+// Messages hosts notifications, the asset inbox and multisig invitations, so it
+// stays reachable while any one of them is on.
+export const MESSAGES_REQUIREMENTS: readonly CapabilityRequirement[] = [
+    { anyChain: 'notifications' },
+    { anyChain: 'assetInbox' },
+    { anyChain: 'multisig' },
+]

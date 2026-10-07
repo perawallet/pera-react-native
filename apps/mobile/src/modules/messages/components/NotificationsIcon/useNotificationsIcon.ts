@@ -15,7 +15,8 @@ import { useSpotBannersQuery } from '@perawallet/wallet-core-banners'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, HomeEvent } from '@analytics'
-import { useCapability } from '@hooks/useCapability'
+import { useCapabilityCheck } from '@hooks/useCapability'
+import { MESSAGES_REQUIREMENTS } from '@hooks/capabilityRequirements'
 
 const MAX_INBOX_COUNT_DISPLAY = 9
 
@@ -29,7 +30,8 @@ export type UseNotificationsIconResult = {
 
 export const useNotificationsIcon = (): UseNotificationsIconResult => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const canOpenMessages = useCapability({ anyChain: 'notifications' })
+    const isAllowed = useCapabilityCheck()
+    const canOpenMessages = MESSAGES_REQUIREMENTS.some(isAllowed)
     const { unreadInboxCount, hasUnreadNotifications, isUnavailableOnNetwork } =
         useInboxStatus()
     // Spot banners live on the Messages screen above the tabs, so any

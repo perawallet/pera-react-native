@@ -29,7 +29,10 @@ import { SettingsStackNavigator } from '@modules/settings/routes'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useCapabilityCheck } from '@hooks/useCapability'
-import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
+import {
+    MESSAGES_REQUIREMENTS,
+    REKEY_REQUIREMENT,
+} from '@hooks/capabilityRequirements'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
@@ -106,7 +109,7 @@ export const MainRoutes = () => {
                             name='TabBar'
                             component={TabBarStackNavigator}
                         />
-                        {isAllowed({ anyChain: 'notifications' }) && (
+                        {MESSAGES_REQUIREMENTS.some(isAllowed) && (
                             <RootStack.Screen
                                 name='Messages'
                                 options={{
