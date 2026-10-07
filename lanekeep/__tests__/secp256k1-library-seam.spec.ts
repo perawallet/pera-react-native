@@ -17,6 +17,7 @@ describe('pera/secp256k1-library-seam', () => {
 
         expect(locations(found).sort()).toEqual([
             'flow.ts:1',
+            'leak.ts:1',
             'leaks.ts:1',
             'leaks.ts:2',
             'leaks.ts:3',
@@ -32,7 +33,8 @@ describe('pera/secp256k1-library-seam', () => {
         const read = (file: string) =>
             readFileSync(join(REPO_ROOT, SECP256K1_SEAM_DIR, file), 'utf8')
 
-        expect(read('ecdsa.ts')).toMatch(/from ['"]@noble\/secp256k1['"]/)
-        expect(read('derive.ts')).toMatch(/from ['"]@scure\/bip32['"]/)
+        const binding = read('binding.ts')
+        expect(binding).toMatch(/from ['"]@noble\/secp256k1['"]/)
+        expect(binding).toMatch(/from ['"]@scure\/bip32['"]/)
     })
 })

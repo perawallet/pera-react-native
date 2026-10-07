@@ -6,7 +6,8 @@
 export const PQ_SEAM_DIR = 'packages/kms/src/crypto/pq'
 
 /** The only directory that may import a secp256k1 library. The spec asserts it exists. */
-export const SECP256K1_SEAM_DIR = 'packages/kms/src/crypto/secp256k1'
+export const SECP256K1_SEAM_DIR =
+    'extensions/provider/src/keystore/shims/secp256k1'
 
 /**
  * A repo path as a gate glob: a file matches itself, a directory everything

@@ -22,9 +22,9 @@ export default defineRule({
     severity: 'error',
     card: {
         message:
-            'a secp256k1 library is imported outside the kms secp256k1 seam',
+            'a secp256k1 library is imported outside the keystore secp256k1 shim',
         remediation:
-            'Derive, import and sign secp256k1 keys through the KMS (kmsCore or useKMS) instead of importing @noble/secp256k1, @scure/bip32 or @noble/curves/secp256k1. Only packages/kms/src/crypto/secp256k1 handles the private key bytes. Build configs and tests are deliberately out of scope.',
+            'Derive, import and sign secp256k1 keys through the KMS (kmsCore or useKMS), which reach the keystore, instead of importing @noble/secp256k1, @scure/bip32 or @noble/curves/secp256k1. Only the keystore shim in extensions/provider/src/keystore/shims/secp256k1 handles the private key bytes. Build configs and tests are deliberately out of scope.',
         examples: {
             bad: "import { HDKey } from '@scure/bip32'",
             good: "import { kmsCore } from '@perawallet/wallet-core-kms'",
@@ -33,11 +33,12 @@ export default defineRule({
     // No `fileContains`: it requires every listed substring, and none covers
     // all three packages.
     gates: {
-        pathMatches: ['**/apps/**', '**/packages/**'],
+        pathMatches: ['**/apps/**', '**/packages/**', '**/extensions/**'],
         pathNotMatches: [
             glob(SECP256K1_SEAM_DIR),
             '**/apps/**/__tests__/**',
             '**/packages/**/__tests__/**',
+            '**/extensions/**/__tests__/**',
             '**/e2e/**',
             '**/*.config.ts',
             '**/*.config.tsx',
