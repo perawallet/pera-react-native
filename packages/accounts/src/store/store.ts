@@ -83,13 +83,16 @@ export const migrateAccountsState = (
     return state
 }
 
-type ChainAddress = { chainId: ChainId; address: string }
+type ChainAddresses = Partial<Record<ChainId, string>>
 
-const chainAddressesOf = (account: WalletAccount): ChainAddress[] =>
-    CHAIN_IDS.flatMap(chainId => {
+const chainAddressesOf = (account: WalletAccount): ChainAddresses => {
+    const addresses: ChainAddresses = {}
+    for (const chainId of CHAIN_IDS) {
         const address = chainAccountOf(account, chainId)?.address
-        return address === undefined ? [] : [{ chainId, address }]
-    })
+        if (address !== undefined) addresses[chainId] = address
+    }
+    return addresses
+}
 
 // A chain whose codec isn't registered (a build-gated chain) falls back to
 // string equality rather than throwing on every account write.
@@ -98,18 +101,24 @@ const isSameAddress = (chainId: ChainId, a: string, b: string): boolean =>
         ? addressCodecs.get(chainId).areEqual(a, b)
         : a === b
 
-/** The first of `candidate`'s chain addresses that `existing` also holds on that chain. */
+/** The first of `candidate`'s addresses that `existing` also holds on the same chain. */
 const sharedChainAddress = (
-    candidate: ChainAddress[],
-    existing: ChainAddress[],
-): ChainAddress | undefined =>
-    candidate.find(c =>
-        existing.some(
-            e =>
-                e.chainId === c.chainId &&
-                isSameAddress(c.chainId, c.address, e.address),
-        ),
-    )
+    candidate: ChainAddresses,
+    existing: ChainAddresses,
+): string | undefined => {
+    for (const chainId of CHAIN_IDS) {
+        const ours = candidate[chainId]
+        const theirs = existing[chainId]
+        if (
+            ours !== undefined &&
+            theirs !== undefined &&
+            isSameAddress(chainId, ours, theirs)
+        ) {
+            return ours
+        }
+    }
+    return undefined
+}
 
 /**
  * Collapse accounts that hold the same address on the same chain, the
@@ -138,7 +147,7 @@ const resolveDuplicateAccounts = (
     accounts: WalletAccount[],
 ): WalletAccount[] => {
     const resolved: WalletAccount[] = []
-    const resolvedAddresses: ChainAddress[][] = []
+    const resolvedAddresses: ChainAddresses[] = []
 
     for (const account of accounts) {
         const addresses = chainAddressesOf(account)
@@ -245,11 +254,8 @@ export const useAccountsStore: UseBoundStore<
                         candidate,
                         chainAddressesOf(existing),
                     )
-                    if (shared) {
-                        throw new DuplicateAccountError(
-                            shared.address,
-                            existing,
-                        )
+                    if (shared !== undefined) {
+                        throw new DuplicateAccountError(shared, existing)
                     }
                 }
                 get().setAccounts([...accounts, account])
