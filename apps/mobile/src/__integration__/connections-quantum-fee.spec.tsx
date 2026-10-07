@@ -17,9 +17,13 @@
 // surface; this is the one that drives a real `algo_signTxn` through the
 // connector stub end to end.
 //
-// Scenario (a) is the quantum path (fee raised to the PQ minimum, regrouped,
-// "Adjusted" marker shown); scenario (b) proves an algo25 request stays
-// byte-identical, so the override never touches ordinary dApp traffic.
+// Scenario (a) is the quantum path over a group Pera signs in full (fees
+// raised to the PQ minimum, regrouped, "Adjusted" marker shown); scenario (b)
+// is the quantum path over a group with an external slot, which the override
+// must leave as received because the other signer only receives null for
+// its slot and would submit it with the old grp; scenario (c) proves an
+// algo25 request stays byte-identical, so the override never touches
+// ordinary dApp traffic.
 
 import React, { useEffect, useRef, useState } from 'react'
 import {
@@ -325,6 +329,32 @@ const buildGroupEntries = (signer: string) => {
     return { entries, originalGroup }
 }
 
+/**
+ * A 2-txn atomic group the wallet signs in full: both slots are payments
+ * from `signer`. This is the shape the override may re-price and re-group.
+ */
+const buildSignableGroupEntries = (signer: string) => {
+    const tx0 = buildPaymentTransaction({
+        sender: signer,
+        receiver: HD_TEST_ADDRESS,
+        amount: 1_000_000n,
+        fee: 1000n,
+    })
+    const tx1 = buildPaymentTransaction({
+        sender: signer,
+        receiver: HD_TEST_ADDRESS,
+        amount: 500_000n,
+        fee: 1000n,
+    })
+    const [g0, g1] = groupTransactions([tx0, tx1])
+    const originalGroup = g0.group ? Uint8Array.from(g0.group) : undefined
+    const entries = [
+        { txn: encodeToBase64(encodeTransactionRaw(g0)) },
+        { txn: encodeToBase64(encodeTransactionRaw(g1)) },
+    ]
+    return { entries, originalGroup }
+}
+
 const fireSignRequest = (
     connector: NonNullable<ReturnType<typeof walletConnectClientStub.last>>,
     id: number,
@@ -396,7 +426,7 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         useAlgodMocks()
     })
 
-    it('Given a quantum signer and a dApp fee below the PQ minimum, when the request is reviewed and confirmed, then the fee is raised to 3000 µAlgo with a regrouped grp, the review shows the Adjusted marker + explainer, and the delivered result carries pqsig bytes at the quantum slot and null at the external slot', async () => {
+    it('Given a quantum signer and a group Pera signs in full with dApp fees below the PQ minimum, when the request is reviewed and confirmed, then both fees are raised to 3000 µAlgo with a regrouped grp, the review shows the Adjusted marker + explainer, and the delivered result carries pqsig bytes at both slots', async () => {
         const signer = await seedQuantumSender()
         await mountProviderWithSigning()
         const { result: signReq } = renderHook(() => useSigningRequest(), {
@@ -407,7 +437,9 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         await approveViaUi([signer.name as string])
         await waitForStoredConnection(connector.clientId)
 
-        const { entries, originalGroup } = buildGroupEntries(signer.address)
+        const { entries, originalGroup } = buildSignableGroupEntries(
+            signer.address,
+        )
         const requestId = 7001
         fireSignRequest(connector, requestId, entries)
 
@@ -433,13 +465,16 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         const enqueued = signReq.current
             .pendingSignRequests[0] as TransactionSignRequest
         expect(enqueued).toBeTruthy()
-        expect(enqueued.feeAdjustments).toHaveLength(1)
-        expect(enqueued.feeAdjustments![0].originalFee).toBe(1000n)
-        expect(enqueued.feeAdjustments![0].adjustedFee).toBe(EXPECTED_PQ_FEE)
+        expect(enqueued.feeAdjustments).toHaveLength(2)
+        for (const adjustment of enqueued.feeAdjustments!) {
+            expect(adjustment.originalFee).toBe(1000n)
+            expect(adjustment.adjustedFee).toBe(EXPECTED_PQ_FEE)
+        }
 
         const group = enqueued.groupContext as PeraTransaction[]
         expect(group[0].fee).toBe(EXPECTED_PQ_FEE)
-        // Regrouped over the ENTIRE group: both slots carry the SAME new grp
+        expect(group[1].fee).toBe(EXPECTED_PQ_FEE)
+        // Regrouped over the whole group: both slots carry the SAME new grp
         // (consistent recompute) and it differs from the incoming grp.
         expect(group[0].group).toBeTruthy()
         expect(group[1].group).toBeTruthy()
@@ -461,14 +496,76 @@ describe('Flow: connections quantum fee override end-to-end', () => {
             .result as Nullable<string>[]
         // ARC-0001 slot-order contract: one entry per requested txn.
         expect(result).toHaveLength(2)
+        // Both slots carry a pqsig carrier: present and far larger than an
+        // ed25519-signed payment (~250B) — a Falcon-1024 signature pushes
+        // the carrier well past 1KB.
+        for (const slot of result) {
+            expect(slot).toBeTruthy()
+            expect(decodeFromBase64(slot as string).length).toBeGreaterThan(
+                1000,
+            )
+        }
+
+        expect(connector.rejectRequestCalls).toHaveLength(0)
+    })
+
+    it('Given a quantum signer and a group with an external slot, when the request is reviewed and confirmed, then no fee is adjusted, the grp is unchanged, no Adjusted marker is shown, and the delivered result carries pqsig bytes at the quantum slot and null at the external slot', async () => {
+        const signer = await seedQuantumSender()
+        await mountProviderWithSigning()
+        const { result: signReq } = renderHook(() => useSigningRequest(), {
+            wrapper: HookWrapper,
+        })
+
+        const connector = await pairAndHandshake()
+        await approveViaUi([signer.name as string])
+        await waitForStoredConnection(connector.clientId)
+
+        const { entries, originalGroup } = buildGroupEntries(signer.address)
+        const requestId = 7003
+        fireSignRequest(connector, requestId, entries)
+
+        await waitFor(
+            () => {
+                expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
+            },
+            { timeout: 15_000 },
+        )
+
+        // The other signer only receives null for its slot, so a raise here
+        // could never be submitted: no override, no marker.
+        expect(screen.queryByText(ADJUSTED_LABEL_KEY)).toBeNull()
+        expect(screen.getAllByText(EXTERNAL_PILL_KEY)).toHaveLength(1)
+
+        const enqueued = signReq.current
+            .pendingSignRequests[0] as TransactionSignRequest
+        expect(enqueued).toBeTruthy()
+        expect(enqueued.feeAdjustments).toBeUndefined()
+        expect(enqueued.rawTransactionsBase64![0]).toBe(entries[0].txn)
+        const group = enqueued.groupContext as PeraTransaction[]
+        expect(group[0].fee).toBe(1000n)
+        expect(originalGroup).toBeTruthy()
+        expect(bytesEqual(group[0].group!, originalGroup!)).toBe(true)
+        expect(bytesEqual(group[1].group!, originalGroup!)).toBe(true)
+
+        fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
+
+        await waitFor(
+            () => {
+                expect(connector.approveRequestCalls).toHaveLength(1)
+            },
+            { timeout: 15_000 },
+        )
+
+        expect(connector.approveRequestCalls[0].id).toBe(requestId)
+        const result = connector.approveRequestCalls[0]
+            .result as Nullable<string>[]
+        expect(result).toHaveLength(2)
         // External party's slot is padded null (the wallet did not sign it).
         expect(result[1]).toBeNull()
-        // Quantum slot carries the pqsig carrier: present and far larger
-        // than an ed25519-signed payment (~250B) — a Falcon-1024 signature
-        // pushes the carrier well past 1KB.
         expect(result[0]).toBeTruthy()
-        const pqsigBytes = decodeFromBase64(result[0] as string)
-        expect(pqsigBytes.length).toBeGreaterThan(1000)
+        expect(decodeFromBase64(result[0] as string).length).toBeGreaterThan(
+            1000,
+        )
 
         expect(connector.rejectRequestCalls).toHaveLength(0)
     })
@@ -735,15 +832,16 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
 
         applyRekey(sender.address, quantumAuth.address)
 
-        const { entries } = buildGroupEntries(sender.address)
+        const { entries } = buildSignableGroupEntries(sender.address)
         // The signing store is a module singleton with no per-test
         // reset, so count from the pre-request baseline, not zero.
         const baseline = signReq.current.pendingSignRequests.length
         fireSignRequest(connector, 7101, entries)
 
         const enqueued = await enqueuedAfter(signReq, baseline)
-        expect(enqueued.feeAdjustments).toHaveLength(1)
+        expect(enqueued.feeAdjustments).toHaveLength(2)
         expect(enqueued.feeAdjustments![0].adjustedFee).toBe(EXPECTED_PQ_FEE)
+        expect(enqueued.feeAdjustments![1].adjustedFee).toBe(EXPECTED_PQ_FEE)
         expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(
             EXPECTED_PQ_FEE,
         )
@@ -772,7 +870,7 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
 
         applyRekey(sender.address, undefined)
 
-        const { entries } = buildGroupEntries(sender.address)
+        const { entries } = buildSignableGroupEntries(sender.address)
         const baseline = signReq.current.pendingSignRequests.length
         fireSignRequest(connector, 7102, entries)
 
