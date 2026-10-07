@@ -93,6 +93,7 @@ export const algorandDescriptor: ChainDescriptor = {
             ed25519: (account, keyIndex) =>
                 `m/44'/283'/${account}'/0/${keyIndex}`,
         },
+        rawKeySchemes: ['ed25519'],
     },
     protocol: {
         feeModel: 'flat',

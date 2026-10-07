@@ -19,7 +19,11 @@ type Keys = NonNullable<Parameters<typeof credentialScheme>[2]>
 
 const algorand: SchemeChain = {
     id: 'algorand',
-    signing: { schemes: ['ed25519', 'falcon-1024'], derivationPaths: {} },
+    signing: {
+        schemes: ['ed25519', 'falcon-1024'],
+        derivationPaths: {},
+        rawKeySchemes: [],
+    },
     protocol: { supportsNativeMultisig: true },
 }
 
@@ -28,7 +32,7 @@ const chainWith = (
     supportsNativeMultisig = true,
 ): SchemeChain => ({
     ...algorand,
-    signing: { schemes, derivationPaths: {} },
+    signing: { schemes, derivationPaths: {}, rawKeySchemes: [] },
     protocol: { supportsNativeMultisig },
 })
 
