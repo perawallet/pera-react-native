@@ -18,8 +18,10 @@ import {
     type ChainContext,
     type ChainModule,
     type ChainRegistry,
+    type ChainScope,
     type ChainSetupConfig,
 } from '@perawallet/wallet-core-chain-contract'
+import { UnconfiguredScopeError } from '@perawallet/wallet-core-config'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { ethereumModule } from '@perawallet/wallet-core-chain-ethereum'
 
@@ -72,8 +74,12 @@ const mocks = vi.hoisted(() => ({
     },
     config: {
         chains: { enabled: ['algorand'], capabilities: {} } as ChainSetupConfig,
+        algodReadTimeout: 10_000,
+        algodSubmitTimeout: 30_000,
     },
+    getChainConfig: vi.fn(),
     registerModule: vi.fn(),
+    registerEthereumModule: vi.fn(),
     ethereumChainModule: undefined as ChainModule | undefined,
     readCapabilityOverrides: vi.fn((): ChainCapabilityOverrides => ({})),
     networkGetState: vi.fn(),
@@ -89,6 +95,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
         typeof import('@perawallet/wallet-core-config')
     >()),
     config: mocks.config,
+    getChainConfig: mocks.getChainConfig,
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -131,6 +138,19 @@ import { registerChainAdapters } from '../chain-adapters'
 
 const contextGivenToModule = (): ChainContext =>
     mocks.registerModule.mock.calls[0]?.[0] as ChainContext
+
+const contextGivenToEthereum = (): ChainContext => {
+    mocks.config.chains = {
+        enabled: ['algorand', 'ethereum'],
+        capabilities: {},
+    }
+    mocks.ethereumChainModule = {
+        ...ethereumModule,
+        register: mocks.registerEthereumModule,
+    }
+    registerChainAdapters()
+    return mocks.registerEthereumModule.mock.calls[0]?.[0] as ChainContext
+}
 
 describe('registerChainAdapters', () => {
     beforeEach(() => {
@@ -331,6 +351,38 @@ describe('registerChainAdapters', () => {
             registerChainAdapters()
 
             expect(contextGivenToModule().getEndpoints()).toEqual({})
+        })
+
+        it("hands over the wallet's request timeouts", () => {
+            registerChainAdapters()
+
+            expect(contextGivenToModule().timeouts).toEqual({
+                readMs: 10_000,
+                submitMs: 30_000,
+            })
+        })
+
+        it('hands Ethereum the RPC URL of every configured network, keyed by network id', () => {
+            mocks.getChainConfig.mockImplementation((scope: ChainScope) => {
+                if (scope.networkId === 'sepolia') {
+                    throw new UnconfiguredScopeError(scope)
+                }
+                return { rpcUrl: 'https://mainnet.rpc.test' }
+            })
+
+            expect(contextGivenToEthereum().getEndpoints()).toEqual({
+                mainnet: 'https://mainnet.rpc.test',
+            })
+        })
+
+        it('rethrows a config failure other than an unconfigured network', () => {
+            mocks.getChainConfig.mockImplementation(() => {
+                throw new Error('config broken')
+            })
+
+            expect(() => contextGivenToEthereum().getEndpoints()).toThrow(
+                'config broken',
+            )
         })
 
         it('hands over the KMS core as the key store', () => {

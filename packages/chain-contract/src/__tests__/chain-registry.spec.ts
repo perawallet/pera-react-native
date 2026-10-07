@@ -104,6 +104,7 @@ const allFalse = Object.fromEntries(
 const context: ChainContext = {
     getScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     getEndpoints: () => ({}),
+    timeouts: { readMs: 10_000, submitMs: 30_000 },
     http: { request: vi.fn() },
     kms: {} as ChainContext['kms'],
 }

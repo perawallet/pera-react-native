@@ -81,9 +81,9 @@ describe('ChainModule', () => {
 })
 
 describe('ChainContext', () => {
-    it('exposes only the scope, endpoints, http client and key store', () => {
+    it('exposes only the scope, endpoints, timeouts, http client and key store', () => {
         expectTypeOf<keyof ChainContext>().toEqualTypeOf<
-            'getScope' | 'getEndpoints' | 'http' | 'kms'
+            'getScope' | 'getEndpoints' | 'timeouts' | 'http' | 'kms'
         >()
     })
 })

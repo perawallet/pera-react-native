@@ -26,6 +26,7 @@
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@types/node": "catalog:",
+    "msw": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

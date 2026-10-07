@@ -10,6 +10,13 @@
  limitations under the License
  */
 
-export { ethereumModule } from './module'
-export { createEvmClient, UnconfiguredEvmRpcError } from './rpc/client'
-export { evmHttpTransport } from './rpc/transport'
+export {
+    DEFAULT_EVM_RPC_RESPONSES,
+    EvmRpcErrorFixture,
+    evmRpcHandlers,
+    evmTransactionReceipt,
+    type EvmRpcFixtures,
+    type EvmRpcMethod,
+    type EvmRpcResponder,
+    type EvmRpcResults,
+} from './rpc/msw-handlers'
