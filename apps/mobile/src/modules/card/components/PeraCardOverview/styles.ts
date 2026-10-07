@@ -42,6 +42,11 @@ export const useStyles = makeStyles(theme => ({
         alignSelf: 'flex-start',
         gap: theme.spacing.xs,
     },
+    fundingTypeLabelGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
     // Action buttons (stacked)
     buttons: {
         gap: theme.spacing.md,

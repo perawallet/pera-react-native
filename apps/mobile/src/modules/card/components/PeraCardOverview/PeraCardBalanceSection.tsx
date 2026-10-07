@@ -86,17 +86,19 @@ export const PeraCardBalanceSection = ({
                 style={styles.fundingTypeRow}
                 testID='pera_card_overview_funding_type_row'
             >
-                <PWIcon
-                    name='fund'
-                    size='sm'
-                    variant='secondary'
-                />
-                <PWText
-                    variant='footnoteMedium'
-                    style={styles.balanceLabel}
-                >
-                    {fundingTypeLabel}
-                </PWText>
+                <PWView style={styles.fundingTypeLabelGroup}>
+                    <PWIcon
+                        name='buy-sell'
+                        size='sm'
+                        variant='secondary'
+                    />
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.balanceLabel}
+                    >
+                        {fundingTypeLabel}
+                    </PWText>
+                </PWView>
                 <PWIcon
                     name='chevron-right'
                     size='sm'
