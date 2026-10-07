@@ -27,6 +27,7 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useLanguage } from '@hooks/useLanguage'
 import { USDC_RAMP_TOKEN_ID } from '@modules/onramp'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
 import {
@@ -35,6 +36,9 @@ import {
     useIsCardAutoFundingActive,
     useCardWithdraw,
 } from '../../hooks'
+// Imported directly (not via the hooks barrel) to avoid an import cycle: it
+// pulls in a sheet component that imports from that barrel.
+import { useOpenFundingTypeSheet } from '../../hooks/useOpenFundingTypeSheet'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -51,6 +55,9 @@ export type CardWithdrawState = 'idle' | 'waiting' | 'ready'
 
 type UsePeraCardOverviewResult = {
     isAutoFunding: boolean
+    /** Localised "Auto/Manual Funding enabled" status shown under the balance. */
+    fundingTypeLabel: string
+    onChangeFundingType: () => void
     currency: string
     /** On-card balance, plus the linked account's balance when auto-funding. */
     balance: Decimal
@@ -76,7 +83,12 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const navigation = useAppNavigation()
     const { network } = useNetwork()
     const nativeAsset = useNativeAsset()
+    const { t } = useLanguage()
     const isAutoFunding = useIsCardAutoFundingActive()
+    const fundingTypeLabel = isAutoFunding
+        ? t('peraCard.account.funding_type_enabled_auto')
+        : t('peraCard.account.funding_type_enabled_manual')
+    const onChangeFundingType = useOpenFundingTypeSheet()
     const { transactions, isLoading } = useCardTransactionsQuery()
 
     const transactionSections = useMemo(
@@ -206,6 +218,8 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     return {
         isAutoFunding,
+        fundingTypeLabel,
+        onChangeFundingType,
         currency: DEFAULT_CARD_CURRENCY,
         balance,
         isBalanceLoading:
