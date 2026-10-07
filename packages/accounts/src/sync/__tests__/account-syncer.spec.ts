@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('../../db', () => ({
     upsertAccountBalance: vi.fn(),
+    upsertAccountChainState: vi.fn(),
     refreshAccountHoldings: vi.fn().mockResolvedValue(true),
     getAccountBalance: vi.fn().mockResolvedValue(undefined),
     getAccountHoldings: vi.fn().mockResolvedValue([]),
@@ -49,12 +50,22 @@ describe('fetchAndPersistAccount', () => {
         ).registerFakeAccountsChain({
             fetchAccountState: async () => ({
                 nativeBalance: new Decimal(0),
+                nativeBalanceBaseUnits: new Decimal(0),
                 minBalance: new Decimal(0),
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
                 status: 'Offline',
                 authAddress: 'S',
+                chainState: {
+                    family: 'algorand',
+                    authAddress: 'S',
+                    minBalance: new Decimal(0),
+                    status: 'Offline',
+                    totalAssetsOptedIn: 0,
+                    totalCreatedAssets: 0,
+                    totalAppsOptedIn: 0,
+                },
                 holdings: [],
                 observedRound: null,
             }),

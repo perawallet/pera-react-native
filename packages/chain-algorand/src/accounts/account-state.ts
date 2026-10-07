@@ -17,6 +17,7 @@ import type {
     AccountStateReadHint,
     AccountStateSnapshot,
 } from '@perawallet/wallet-core-accounts'
+import type { AccountChainState } from '@perawallet/wallet-core-chain-contract'
 import { getAlgorandClient } from '../blockchain'
 import {
     type Network,
@@ -139,15 +140,42 @@ export async function fetchAlgorandAccountState(
         isFrozen: false,
     })
 
+    const totalAssetsOptedIn = info.totalAssetsOptedIn ?? 0
+    const totalCreatedAssets = info.totalCreatedAssets ?? 0
+    const totalAppsOptedIn = info.totalAppsOptedIn ?? 0
+    const authAddress = info.authAddr?.toString() ?? null
+
     return {
         nativeBalance: microAlgosToAlgos(info.amount),
+        nativeBalanceBaseUnits: new Decimal(info.amount.toString()),
         minBalance: microAlgosToAlgos(info.minBalance),
-        totalAssetsOptedIn: info.totalAssetsOptedIn ?? 0,
-        totalCreatedAssets: info.totalCreatedAssets ?? 0,
-        totalAppsOptedIn: info.totalAppsOptedIn ?? 0,
+        totalAssetsOptedIn,
+        totalCreatedAssets,
+        totalAppsOptedIn,
         status: info.status ?? 'Offline',
-        authAddress: info.authAddr?.toString() ?? null,
+        authAddress,
+        chainState: {
+            family: 'algorand',
+            ...(authAddress === null ? {} : { authAddress }),
+            minBalance: new Decimal(info.minBalance.toString()),
+            status: toParticipationStatus(info.status),
+            totalAssetsOptedIn,
+            totalCreatedAssets,
+            totalAppsOptedIn,
+        },
         holdings,
         observedRound,
     }
 }
+
+type ParticipationStatus = Extract<
+    AccountChainState,
+    { family: 'algorand' }
+>['status']
+
+// algod types status as a bare string; anything unrecognised reads as Offline,
+// the same default the balance row uses.
+const toParticipationStatus = (
+    status: Optional<string>,
+): ParticipationStatus =>
+    status === 'Online' || status === 'NotParticipating' ? status : 'Offline'

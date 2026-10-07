@@ -40,6 +40,8 @@ import {
     refreshAccountHoldings,
     upsertAccountBalance,
     getAccountBalance,
+    upsertAccountChainState,
+    getAccountChainState,
     getHeldAssetIdsByAccount,
 } from '../../db'
 import { cleanupRemovedAccountData } from '../cleanupRemovedAccountData'
@@ -133,7 +135,7 @@ describe('cleanupRemovedAccountData', () => {
         expect(handler).toHaveBeenCalledWith({ db, accountAddress: 'ADDR1' })
     })
 
-    it('removes the account holdings and balance row', async () => {
+    it('removes the account holdings, balance and chain-state rows', async () => {
         await refreshAccountHoldings({
             db,
             accountAddress: 'ADDR1',
@@ -141,6 +143,13 @@ describe('cleanupRemovedAccountData', () => {
             scope: MAINNET_SCOPE,
         })
         await upsertAccountBalance(balanceArgs(db, 'ADDR1', MAINNET_SCOPE))
+        await upsertAccountChainState({
+            db,
+            accountAddress: 'ADDR1',
+            scope: MAINNET_SCOPE,
+            nativeBalance: new Decimal(1_000_000),
+            chainData: { family: 'evm' },
+        })
 
         await cleanupRemovedAccountData({ db, accountAddress: 'ADDR1' })
 
@@ -149,6 +158,13 @@ describe('cleanupRemovedAccountData', () => {
         ).toEqual([])
         expect(
             await getAccountBalance({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            }),
+        ).toBeUndefined()
+        expect(
+            await getAccountChainState({
                 db,
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,

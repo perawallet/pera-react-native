@@ -21,6 +21,7 @@ import {
     type ChainScope,
     type DeriveOpts,
     type AccountInformation,
+    type AccountChainState,
 } from '@perawallet/wallet-core-chain-contract'
 
 import {
@@ -77,6 +78,10 @@ export type AccountHoldingSnapshot = {
 export type AccountStateSnapshot = {
     /** Display units of the chain's native asset. */
     nativeBalance: Decimal
+    /** Base units of the chain's native asset. */
+    nativeBalanceBaseUnits: Decimal
+    /** Persisted to `account_chain_state`; amounts inside are in base units. */
+    chainState: AccountChainState
     /** Display units of the chain's native asset; zero on a chain with no reserve. */
     minBalance: Decimal
     // Algorand's resource counts and participation status. A chain without

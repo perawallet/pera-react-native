@@ -46,6 +46,7 @@ const CUSTOM_SCOPE: ChainScope = {
 export const NETWORK_PARTITIONED_TABLES = [
     'account_asset_holdings',
     'account_balances',
+    'account_chain_state',
     'assets_node',
     'assets_pera',
     'asset_prices',

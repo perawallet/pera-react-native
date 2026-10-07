@@ -103,12 +103,22 @@ describe('fetchAlgorandAccountState', () => {
         expect(mockLookupAccountAssets).not.toHaveBeenCalled()
         expect(state).toEqual({
             nativeBalance: new Decimal('1.5'),
+            nativeBalanceBaseUnits: new Decimal(1_500_000),
             minBalance: new Decimal('0.1'),
             totalAssetsOptedIn: 2,
             totalCreatedAssets: 1,
             totalAppsOptedIn: 0,
             status: 'Online',
             authAddress: 'REKEY_ADDR',
+            chainState: {
+                family: 'algorand',
+                authAddress: 'REKEY_ADDR',
+                minBalance: new Decimal(100_000),
+                status: 'Online',
+                totalAssetsOptedIn: 2,
+                totalCreatedAssets: 1,
+                totalAppsOptedIn: 0,
+            },
             holdings: [
                 // ALGO injected as a base-units (microalgos) holding, first.
                 {
@@ -151,11 +161,32 @@ describe('fetchAlgorandAccountState', () => {
             totalAppsOptedIn: 0,
             status: 'Offline',
             authAddress: null,
+            chainState: {
+                family: 'algorand',
+                minBalance: new Decimal(0),
+                status: 'Offline',
+                totalAssetsOptedIn: 0,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+            },
         })
+        expect(state.chainState).not.toHaveProperty('authAddress')
         // No ASAs, but ALGO is always injected as a holding.
         expect(state.holdings).toEqual([
             { assetId: '0', amount: new Decimal(0), isFrozen: false },
         ])
+    })
+
+    it('reads a status algod does not name as Offline in the chain state', async () => {
+        mockAccountInformationDo.mockResolvedValue({
+            amount: 0n,
+            minBalance: 0n,
+            status: 'Unknown',
+        })
+
+        const state = await fetchAlgorandAccountState('ADDR1', 'mainnet', SMALL)
+
+        expect(state.chainState).toMatchObject({ status: 'Offline' })
     })
 
     it('treats a missing asset amount as zero', async () => {

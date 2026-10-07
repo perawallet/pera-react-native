@@ -50,8 +50,10 @@ const fixtureAdapter: AccountsChainAdapter = {
         if (!account) throw new Error('no such account')
         return {
             nativeBalance: new Decimal(account.balance),
+            nativeBalanceBaseUnits: new Decimal(account.balance),
             minBalance: new Decimal(0),
             authAddress: null,
+            chainState: { family: 'evm' },
             holdings: [
                 {
                     assetId: NATIVE_ASSET_ID,

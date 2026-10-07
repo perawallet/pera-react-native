@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     upsertAccountBalance,
+    upsertAccountChainState,
     refreshAccountHoldings,
     getAccountBalance,
     getAccountHoldings,
@@ -166,6 +167,8 @@ async function doFetchAndPersistAccount(
         totalAppsOptedIn = 0,
         status = 'Offline',
         authAddress,
+        nativeBalanceBaseUnits,
+        chainState,
         holdings,
         observedRound,
     } = await accountsAdapterFor(network).fetchAccountState(address, scope, {
@@ -196,6 +199,12 @@ async function doFetchAndPersistAccount(
         minBalance,
         status,
         authAddress,
+    })
+    await upsertAccountChainState({
+        accountAddress: address,
+        scope,
+        nativeBalance: nativeBalanceBaseUnits,
+        chainData: chainState,
     })
 
     useAccountsStore
