@@ -63,7 +63,7 @@ const mockGetAlgorandClient = vi.fn(() => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
+vi.mock('../../blockchain', async importOriginal => ({
     ...(await importOriginal<object>()),
     getAlgorandClient: (...args: unknown[]) => mockGetAlgorandClient(...args),
 }))

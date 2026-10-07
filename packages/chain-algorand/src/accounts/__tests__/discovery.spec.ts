@@ -11,14 +11,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { getAlgorandClient } from '../../blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     checkAlgorandActivity,
     fetchAlgorandRekeyedAddresses,
 } from '../discovery'
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
+vi.mock('../../blockchain', async importOriginal => ({
     ...(await importOriginal<object>()),
     getAlgorandClient: vi.fn(),
 }))

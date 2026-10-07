@@ -12,7 +12,6 @@
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
 import {
     canSignWith,
@@ -20,7 +19,10 @@ import {
     useAllAccounts,
     useOnChainAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    useIsNativeAssetId,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { getArc59Config } from '@perawallet/wallet-core-config'
 import { useNavigation } from '@react-navigation/native'
@@ -44,6 +46,7 @@ import { useToast } from '@hooks/useToast'
  */
 export const useSendDestinationRouter = () => {
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
+    const isNativeAssetId = useIsNativeAssetId()
     const accounts = useAllAccounts()
     const { accountBalances, isPending: isBalancesPending } =
         useAccountBalancesQuery(accounts)
@@ -126,7 +129,7 @@ export const useSendDestinationRouter = () => {
             // ALGO sends always go through normal flow
             if (
                 !selectedAsset?.assetId ||
-                isAlgoAssetId(selectedAsset.assetId)
+                isNativeAssetId(selectedAsset.assetId)
             ) {
                 setSendMode('normal')
                 navigation.navigate('ConfirmTransaction')
@@ -166,6 +169,7 @@ export const useSendDestinationRouter = () => {
             setPendingExternalAddress(address)
         },
         [
+            isNativeAssetId,
             selectedAsset,
             accounts,
             accountBalances,
@@ -191,7 +195,7 @@ export const useSendDestinationRouter = () => {
     // the asset lookup nor balances, so it's ready as soon as it resolves.
     const isReady =
         !!selectedAsset &&
-        (isAlgoAssetId(selectedAsset.assetId) || !isBalancesPending)
+        (isNativeAssetId(selectedAsset.assetId) || !isBalancesPending)
 
     return {
         selectedAsset,

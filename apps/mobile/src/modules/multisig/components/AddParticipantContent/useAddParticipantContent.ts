@@ -15,7 +15,7 @@ import { AccountTypes, useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     AccountSigTypes,
     useAccountSigTypeQuery,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     ParticipantIsMultisigError,

@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    useMinimumFeeConfig,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
+import { useMinimumFeeConfig, useSuggestedParametersQuery } from '../blockchain'
 import type {
     ChainFeeConfig,
     UseSuggestedMinFeeQueryResult,

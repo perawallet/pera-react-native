@@ -30,8 +30,8 @@ vi.mock('@perawallet/wallet-core-config', async () => ({
     },
     getNetworkConfig,
 }))
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual('@perawallet/wallet-core-blockchain')),
+vi.mock('../../../blockchain', async () => ({
+    ...(await vi.importActual('../../../blockchain')),
     getAlgorandClient,
 }))
 

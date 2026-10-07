@@ -11,7 +11,7 @@
  */
 
 import { EmptyView } from '@components/EmptyView'
-import { getTransactionType } from '@perawallet/wallet-core-blockchain'
+import { getTransactionType } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import {

@@ -14,7 +14,7 @@ import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contra
 
 /**
  * Encoder function type for signed transactions (see
- * `@perawallet/wallet-core-blockchain`'s `encodeSignedTransaction`; a
+ * `encodeSignedTransaction` in `blockchain/utils/transact`; a
  * quantum signature is just a `pqsig` field on the same type, nothing
  * carrier-specific to handle).
  */

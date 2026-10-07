@@ -47,7 +47,7 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { RekeyToLedgerIntroScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerIntroScreen'
 import { RekeyToLedgerSelectTargetScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerSelectTargetScreen'

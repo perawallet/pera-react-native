@@ -15,7 +15,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { toAlgodError } from '@perawallet/wallet-core-blockchain'
+import { toAlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getRekeyedUnsignableReason,

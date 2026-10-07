@@ -5,7 +5,11 @@
   ],
   "compilerOptions": {
     "rootDir": "./src",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "types": [],
+    // tsconfig.json maps the /testing suite to source for the specs; an
+    // emitting program must not pull it in from outside rootDir.
+    "paths": {}
   },
   "include": [
     "src"
@@ -15,8 +19,6 @@
     "dist",
     "**/__tests__/**",
     "**/*.spec.ts",
-    "**/*.spec.tsx",
-    "**/handlers.ts",
-    "**/*-handlers.ts"
+    "**/*.spec.tsx"
   ]
 }

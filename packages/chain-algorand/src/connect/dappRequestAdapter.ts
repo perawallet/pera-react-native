@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { arc0001SignTxnRequestSchema } from '@perawallet/wallet-core-blockchain'
-import { ARC0001_MAX_TXN_B64_LENGTH } from '@perawallet/wallet-core-blockchain/arc0001/limits'
+import { arc0001SignTxnRequestSchema } from '../blockchain/arc0001/schema'
+import { ARC0001_MAX_TXN_B64_LENGTH } from '../blockchain/arc0001/limits'
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import {
     getNetworkConfig,

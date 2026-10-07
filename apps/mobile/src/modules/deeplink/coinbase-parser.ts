@@ -17,7 +17,7 @@ import {
 } from './types'
 import { normalizeUrl, parseQueryParams } from './utils'
 import { ALGO_SCHEME } from './constants'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const ALGO_URI_PREFIX = `${ALGO_SCHEME}:`

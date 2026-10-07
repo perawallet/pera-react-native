@@ -46,8 +46,8 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock('../../blockchain', async () => ({
+    ...(await vi.importActual<object>('../../blockchain')),
     useAlgorandClient: () => ({
         client: {
             algod: {

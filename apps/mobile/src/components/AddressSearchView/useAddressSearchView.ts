@@ -20,7 +20,7 @@ import {
     type AccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     useNfdSearchQuery,
     type NfdSearchResult,

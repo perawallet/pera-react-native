@@ -10,7 +10,5 @@
  limitations under the License
  */
 
-export * from './BlockchainError'
-export * from './AlgodError'
-export * from './algodErrorCodes'
-export * from './toAlgodError'
+export { ethereumModule } from './module'
+export { evmHttpTransport } from './rpc/transport'

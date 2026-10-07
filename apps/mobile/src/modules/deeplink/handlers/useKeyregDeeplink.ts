@@ -15,7 +15,7 @@ import {
     getExpectedGenesisHash,
     isValidAlgorandAddress,
     useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     LEGACY_CHAIN_ID,

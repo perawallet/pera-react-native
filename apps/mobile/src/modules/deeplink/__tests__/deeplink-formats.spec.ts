@@ -126,9 +126,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     >('../../../../../../packages/shared/src/errors/base')
 
     return {
-        ALGO_ASSET_ID: '0',
-        isAlgoAssetId: (assetId: string | number | bigint) =>
-            String(assetId) === '0',
         logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
         generateOrderedUniqueId: vi.fn(() => 'test-id'),
         decodeFromBase64: vi.fn((b64: string) =>
@@ -297,7 +294,7 @@ vi.mock('@modules/transactions', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (address: string) =>
         !!address && /^[0-9a-zA-Z]{58}$/.test(address),
     useTransactionEncoder: () => ({

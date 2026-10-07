@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { AlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useAlgodErrorMessage } from '../useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -20,13 +20,13 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(),
 }))
 
-// Use the real blockchain package — the hook relies on actual AlgodError
+// Use the real Algorand runtime — the hook relies on actual AlgodError
 // instanceof checks and toAlgodError parsing, which the global mock in
 // vitest.setup.ts stubs out.
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >('@perawallet/wallet-core-blockchain')
+        typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+    >('@perawallet/wallet-core-chain-algorand/blockchain')
     return actual
 })
 

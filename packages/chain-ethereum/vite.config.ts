@@ -10,22 +10,14 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-blockchain'
+import { defineConfig } from 'vite'
+import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export * from './models'
-export * from './hooks'
-export * from './fees'
-export * from './errors'
-export * from './utils'
-export * from './schema'
-export * from './constants'
-export * from './arc0001'
-export * from './pq'
-
-export {
-    getCustomNetworkConfig,
-    isCustomNetworkConfigured,
-    setCustomNetwork,
-    clearCustomNetwork,
-} from './store/custom-network'
-export type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: resolve(__dirname, 'src/index.ts'),
+        fileName: () => 'index.js',
+    }),
+)

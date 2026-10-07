@@ -34,10 +34,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<Record<string, unknown>>(
-        '@perawallet/wallet-core-blockchain',
-    )
+vi.mock('../../blockchain', async () => {
+    const actual =
+        await vi.importActual<Record<string, unknown>>('../../blockchain')
     return {
         ...actual,
         useFetchSuggestedMinFee: () => mockFetchSuggestedMinFee,

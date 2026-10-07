@@ -12,10 +12,7 @@
 
 import { useCallback } from 'react'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import {
-    useFetchSuggestedMinFee,
-    useMinimumFeeConfig,
-} from '@perawallet/wallet-core-blockchain'
+import { useFetchSuggestedMinFee, useMinimumFeeConfig } from '../blockchain'
 import type { AssignFeeToGroup } from '@perawallet/wallet-core-signing'
 import { assignFeeToGroup } from './assignMinimumFeesToGroup'
 

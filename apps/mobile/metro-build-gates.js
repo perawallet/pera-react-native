@@ -24,6 +24,10 @@ const DEVELOPER_GALLERY_MODULES = [
     'src/modules/settings/routes/developer-gallery',
 ]
 
+// The Ethereum chain module's only entry point: chain-adapters.ts reaches the
+// chain-ethereum package solely through it, so swapping it drops viem.
+const ETHEREUM_CHAIN_MODULES = ['src/bootstrap/ethereum-chain-module']
+
 /**
  * The `appEnvironment` baked into packages/config/src/generated-env.ts, which
  * is exactly what `config.appEnvironment` reads at runtime. Undefined when the
@@ -36,6 +40,24 @@ const readBakedAppEnvironment = generatedEnvPath => {
     if (!fs.existsSync(generatedEnvPath)) return undefined
     const source = fs.readFileSync(generatedEnvPath, 'utf8')
     return source.match(/^\s*appEnvironment:\s*"([^"]*)"/m)?.[1]
+}
+
+/**
+ * The chain ids baked into packages/config/src/generated-env.ts, which is
+ * exactly what `config.chains` reads at runtime. Undefined when the file or
+ * the key is absent (the runtime then defaults to Algorand alone).
+ *
+ * @param {string} generatedEnvPath
+ * @returns {string[] | undefined}
+ */
+const readBakedChainIds = generatedEnvPath => {
+    if (!fs.existsSync(generatedEnvPath)) return undefined
+    const source = fs.readFileSync(generatedEnvPath, 'utf8')
+    const list = source.match(/^\s*chainIds:\s*"([^"]*)"/m)?.[1]
+    return list
+        ?.split(',')
+        .map(id => id.trim())
+        .filter(Boolean)
 }
 
 /**
@@ -66,7 +88,9 @@ const toStubMap = (projectRoot, modulePaths) =>
 
 module.exports = {
     DEVELOPER_GALLERY_MODULES,
+    ETHEREUM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
     readBakedAppEnvironment,
+    readBakedChainIds,
     toStubMap,
 }

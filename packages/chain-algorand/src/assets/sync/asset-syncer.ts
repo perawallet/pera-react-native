@@ -32,13 +32,10 @@ import {
     ASSET_NEWLY_SEEN_WINDOW_MS,
     ASSET_RECLASSIFY_TTL_MS,
 } from '../constants'
-import {
-    isAlgoAssetId,
-    partition,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { partition, type Nullable } from '@perawallet/wallet-core-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { deviceIdFor, useDeviceStore } from '@perawallet/wallet-core-device'
+import { isAlgorandNativeAssetId } from '../../descriptor'
 import { algorandNetworkOf } from '../../legacy-network'
 
 const ASSET_FETCH_CONCURRENCY = 5
@@ -158,7 +155,7 @@ export async function fetchAndPersistAssets(
     scope: ChainScope,
 ): Promise<void> {
     const network = algorandNetworkOf(scope)
-    const nonAlgoIds = assetIds.filter(id => !isAlgoAssetId(id))
+    const nonAlgoIds = assetIds.filter(id => !isAlgorandNativeAssetId(id))
     if (nonAlgoIds.length === 0) return
 
     // Pera-backed networks only: elsewhere persistChainIntrinsics already

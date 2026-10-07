@@ -19,12 +19,11 @@ import {
     quoteDestinationValueInUsd,
     type RampQuote,
 } from '@perawallet/wallet-core-onramp'
-import {
-    displayCurrencyToAssetId,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getOnrampDestinationCurrency } from '../onrampQuoteDisplay'
 import { useStyles } from './styles'
+import { displayCurrencyToAssetId } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 /** `priceInUsd` on the ramp token is USD-denominated, so the value line is too. */
 const USD_CURRENCY = 'USD'
@@ -91,7 +90,10 @@ export const ProviderSelectionItem = ({
                 <PWView style={styles.rightColumn}>
                     <CurrencyAmount
                         currency={destinationCurrency}
-                        assetId={displayCurrencyToAssetId(destinationCurrency)}
+                        assetId={displayCurrencyToAssetId(
+                            destinationCurrency,
+                            LEGACY_CHAIN_ID,
+                        )}
                         value={quoteDestinationAmount(quote, sourceAmount)}
                         precision='compact'
                         showSymbol
@@ -102,7 +104,10 @@ export const ProviderSelectionItem = ({
                     {destinationValueInUsd ? (
                         <CurrencyAmount
                             currency={USD_CURRENCY}
-                            assetId={displayCurrencyToAssetId(USD_CURRENCY)}
+                            assetId={displayCurrencyToAssetId(
+                                USD_CURRENCY,
+                                LEGACY_CHAIN_ID,
+                            )}
                             value={destinationValueInUsd}
                             precision='compact'
                             showSymbol

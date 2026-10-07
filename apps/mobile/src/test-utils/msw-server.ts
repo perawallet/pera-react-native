@@ -16,7 +16,7 @@ import { setupServer } from 'msw/node'
 import {
     mockAlgodPendingTransaction,
     mockAlgodStatusAfterBlock,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { mockGetCurrency } from '@perawallet/wallet-core-currencies/test-handlers'
 import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
 

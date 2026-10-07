@@ -39,6 +39,18 @@ describe('config/main', () => {
             })
         })
 
+        test('reads ethereum and its capability list', () => {
+            expect(
+                getConfig({
+                    chainIds: 'algorand,ethereum',
+                    chainEthereumCapabilities: 'send, receive',
+                }).chains,
+            ).toEqual({
+                enabled: ['algorand', 'ethereum'],
+                capabilities: { ethereum: ['send', 'receive'] },
+            })
+        })
+
         test('rejects an unknown chain id', () => {
             expect(() => getConfig({ chainIds: 'algorand,dogecoin' })).toThrow()
         })

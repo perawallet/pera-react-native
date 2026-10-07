@@ -15,7 +15,7 @@ import { getPQProvider } from '@perawallet/wallet-core-kms'
 import {
     deriveQuantumAddress,
     derivePQKeygenSeed,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     ALGO25_TEST_MNEMONIC,
     ALGO25_TEST_MNEMONIC_INDICES,

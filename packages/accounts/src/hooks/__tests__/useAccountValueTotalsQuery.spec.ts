@@ -39,6 +39,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPricesQuery: (...args: unknown[]) =>
         mockUseAssetPricesQuery(...args),
+    useNativeAsset: () => ({ assetId: '0' }),
 }))
 
 const createWrapper = () => {

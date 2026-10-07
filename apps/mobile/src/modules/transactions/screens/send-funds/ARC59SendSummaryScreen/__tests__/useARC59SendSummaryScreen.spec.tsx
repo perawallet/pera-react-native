@@ -73,7 +73,7 @@ vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
         BigInt(summary.minimum_balance_requirement),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({}))
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({}))
 
 const NATIVE_ASSET = vi.hoisted(() => ({ id: '0', decimals: 6 }))
 

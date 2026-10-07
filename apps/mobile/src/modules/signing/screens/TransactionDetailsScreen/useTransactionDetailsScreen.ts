@@ -22,7 +22,7 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import {
     useTransactionDetailQuery,
     useGroupTransactionsQuery,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'

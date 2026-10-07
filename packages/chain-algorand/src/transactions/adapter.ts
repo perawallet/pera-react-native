@@ -19,6 +19,7 @@ import type {
 import { algorandAssetInbox } from '../asa-inbox/adapter'
 import { fetchIndexerCloseAmount } from './history/indexer/endpoints'
 import { fetchMoreTransactions, fetchTransactionHistory } from './history'
+import { resolveAlgorandAssetFacts } from './history/assetFacts'
 import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
 import {
     buildExpressTransferTxs,
@@ -51,4 +52,5 @@ export const algorandHistoryAdapter: HistoryChainAdapter = {
     fetchCloseAmount: async (txId, scope) =>
         fetchIndexerCloseAmount(txId, algorandNetworkOf(scope)),
     toDisplayable: mapHistoryItemToDisplayableTransaction,
+    resolveAssetFacts: resolveAlgorandAssetFacts,
 }

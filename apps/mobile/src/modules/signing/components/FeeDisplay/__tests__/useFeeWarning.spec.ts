@@ -21,6 +21,7 @@ import { Decimal } from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPricesQuery: vi.fn(),
+    useNativeAsset: () => ({ assetId: '0' }),
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({

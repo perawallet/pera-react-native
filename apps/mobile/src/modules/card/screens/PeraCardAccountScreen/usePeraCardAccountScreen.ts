@@ -22,6 +22,7 @@ import {
 import { trackEvent, HomeEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
+import { useCardSessionGuard } from '../../hooks/useCardSessionGuard'
 
 type UsePeraCardAccountScreenResult = {
     /** Pera Card identity rendered in the shared AccountSelection trigger. */
@@ -46,6 +47,7 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     // details tab mounts its own instance for display; the shared mutation
     // key keeps the two coordinated.
     useCardIssuance()
+    useCardSessionGuard()
 
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
     const cardDisplay = useMemo<AccountDisplayCard>(() => {

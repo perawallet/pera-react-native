@@ -12,7 +12,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { Address, Transaction, TransactionType } from 'algosdk'
-import { groupTransactions } from '@perawallet/wallet-core-blockchain'
+import { groupTransactions } from '../../blockchain'
 import {
     flattenSimulatedInnerTransactions,
     simulateInnerTransactions,
@@ -35,8 +35,8 @@ const mockCreateClient = vi.fn((_network: string) => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock('../../blockchain', async () => ({
+    ...(await vi.importActual<object>('../../blockchain')),
     createWalletAlgorandClient: (network: string) => mockCreateClient(network),
 }))
 

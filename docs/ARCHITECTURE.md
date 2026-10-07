@@ -175,15 +175,16 @@ restriction can only switch a capability off, and Feature Flags still overrides 
 
 A capability hides a feature but still ships its code. Code that must not be in a bundle at all is
 dropped by Metro instead: `apps/mobile/metro.config.js` resolves the feature's entry modules to
-sibling `.stub.ts` files, so nothing behind them enters the graph. Two features use this. The locale
+sibling `.stub.ts` files, so nothing behind them enters the graph. Three features use this. The locale
 tour exists only when `NODE_ENV` is `development`. The developer screen gallery (settings, developer
 menu) is left out of production builds and kept in development and staging; the decision reads the
 `appEnvironment` baked into `packages/config/src/generated-env.ts` (or `APP_ENV`), not `NODE_ENV`,
 because a staging release bundles with `NODE_ENV=production` too. Its UI entry points read
 `routeCapabilities.developerGallery`, and its screens must be imported only through
 `modules/settings/routes/developer-gallery.ts`, which the oxlint rule
-`pera/dev-gallery-entry-points` enforces. Metro logs both decisions at startup
-(`[metro] developer gallery: included|stubbed`).
+`pera/dev-gallery-entry-points` enforces. The Ethereum chain module ships only when the baked `CHAINS`
+lists `ethereum`, and the extension build fails if viem reaches a bundle anyway. Metro logs each
+decision at startup (`[metro] developer gallery: included|stubbed`).
 
 ## Networks without a Pera backend
 
@@ -227,15 +228,15 @@ when the app reinitializes (see `BaseStoreState`).
 
 ## Key packages
 
-| Package      | Purpose                            |
-| ------------ | ---------------------------------- |
-| `accounts`   | Wallet account management          |
-| `assets`     | Asset information and pricing      |
-| `blockchain` | Algorand node/indexer access       |
-| `signing`    | Transaction signing and submission |
-| `database`   | Local persistence                  |
-| `settings`   | User preferences                   |
-| `shared`     | Common utilities and models        |
+| Package          | Purpose                                                      |
+| ---------------- | ------------------------------------------------------------ |
+| `accounts`       | Wallet account management                                    |
+| `assets`         | Asset information and pricing                                |
+| `chain-algorand` | Algorand chain: node/indexer access and per-package adapters |
+| `signing`        | Transaction signing and submission                           |
+| `database`       | Local persistence                                            |
+| `settings`       | User preferences                                             |
+| `shared`         | Common utilities and models                                  |
 
 Platform service abstractions live in `extensions/*`, not in a package.
 

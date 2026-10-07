@@ -31,10 +31,8 @@ const mocks = vi.hoisted(() => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >()),
+vi.mock('../../blockchain', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../blockchain')>()),
     createWalletAlgorandClient: mocks.createWalletAlgorandClient,
 }))
 

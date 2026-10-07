@@ -18,7 +18,7 @@ import { useOptInConfirmationContent } from '../useOptInConfirmationContent'
 const mockUseMinimumFeeConfig = vi.fn()
 const mockUseMinFeeForSender = vi.fn()
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
 }))
 

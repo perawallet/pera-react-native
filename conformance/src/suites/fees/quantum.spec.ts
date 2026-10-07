@@ -13,17 +13,17 @@
 import { microAlgo } from '@algorandfoundation/algokit-utils'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { FALLBACK_PQ_MULTIPLIER } from '@perawallet/wallet-core-blockchain/constants'
+import { FALLBACK_PQ_MULTIPLIER } from '@perawallet/wallet-core-chain-algorand/blockchain/constants'
 import {
     calculatePQFeeSurcharge,
     calculateMinTxnFee,
-} from '@perawallet/wallet-core-blockchain/fees/feeCalculator'
+} from '@perawallet/wallet-core-chain-algorand/blockchain/fees/feeCalculator'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     buildRekeyTx,
     buildTransferTxs,
 } from '@perawallet/wallet-core-chain-algorand/transactions/builders'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { resolveMinFeeForSender } from '@perawallet/wallet-core-chain-algorand/signing/minFeeResolver'
 
 import {
@@ -313,7 +313,7 @@ describe('quantum fee through the app builders', () => {
                 scope,
                 sender: sender.address,
                 receiver: receiver.address,
-                assetId: ALGO_ASSET_ID,
+                assetId: algorandDescriptor.nativeAsset.ref.assetId,
                 amount,
                 fee: resolvedFee,
             }),

@@ -25,12 +25,13 @@ import { useSendDestinationRouter } from '../useSendDestinationRouter'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
+    useIsNativeAssetId,
     useNativeAsset,
     isCollectible,
     toWholeUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
+import { useMinimumFeeConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { bottomSheetNotifier, PWText, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
@@ -39,12 +40,13 @@ import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useStyles } from './styles'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { isAlgoAssetId, type Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 type CloseAccountChoice = 'close' | 'keepOpen'
 
 export const useInputScreen = () => {
     const nativeAsset = useNativeAsset()
+    const isNativeAssetId = useIsNativeAssetId()
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
@@ -163,7 +165,7 @@ export const useInputScreen = () => {
     }, [accountBalances, selectedAssetId, selectedAccount])
 
     const maxAmount = useMemo(() => {
-        if (isAlgoAssetId(selectedAssetId)) {
+        if (isNativeAssetId(selectedAssetId)) {
             const balance = toWholeUnits(
                 accountInformation?.amount ?? 0n,
                 nativeAsset,
@@ -177,10 +179,17 @@ export const useInputScreen = () => {
         } else {
             return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
         }
-    }, [selectedAssetId, minFee, accountInformation, tokenBalance, nativeAsset])
+    }, [
+        isNativeAssetId,
+        selectedAssetId,
+        minFee,
+        accountInformation,
+        tokenBalance,
+        nativeAsset,
+    ])
 
     const totalBalance = useMemo(() => {
-        if (isAlgoAssetId(selectedAssetId)) {
+        if (isNativeAssetId(selectedAssetId)) {
             const balance = toWholeUnits(
                 accountInformation?.amount ?? 0n,
                 nativeAsset,
@@ -189,7 +198,13 @@ export const useInputScreen = () => {
         } else {
             return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
         }
-    }, [selectedAssetId, accountInformation, tokenBalance, nativeAsset])
+    }, [
+        isNativeAssetId,
+        selectedAssetId,
+        accountInformation,
+        tokenBalance,
+        nativeAsset,
+    ])
 
     // A close-out leaves nothing behind: everything moves except the fee that
     // pays for the closing transaction.
@@ -203,14 +218,14 @@ export const useInputScreen = () => {
     )
 
     const minBalanceDisplay = useMemo(() => {
-        if (isAlgoAssetId(selectedAssetId)) {
+        if (isNativeAssetId(selectedAssetId)) {
             return toWholeUnits(
                 accountInformation?.minBalance ?? 0n,
                 nativeAsset,
             ).toString()
         }
         return '0'
-    }, [selectedAssetId, accountInformation, nativeAsset])
+    }, [isNativeAssetId, selectedAssetId, accountInformation, nativeAsset])
 
     // A rekeyed account can never close out or spend below its minimum
     // balance — the rekey would be lost and the account left unusable. So
@@ -228,11 +243,11 @@ export const useInputScreen = () => {
     // the node would reject the close-out for.
     const canCloseAccount = useMemo(() => {
         return (
-            isAlgoAssetId(selectedAssetId) &&
+            isNativeAssetId(selectedAssetId) &&
             (accountInformation?.assets?.length ?? 0) === 0 &&
             (accountInformation?.minBalance ?? 0n) <= baseAccountMbr
         )
-    }, [selectedAssetId, accountInformation, baseAccountMbr])
+    }, [isNativeAssetId, selectedAssetId, accountInformation, baseAccountMbr])
 
     // Keeping the account open is the primary choice: some exchanges reject
     // incoming payments that carry a close-remainder-to.
@@ -349,7 +364,7 @@ export const useInputScreen = () => {
         // sync pings). Zero stays rejected for ASAs, where the destination
         // router could misroute a 0 send into the Express/ARC-59 opt-in
         // flows that cost the sender real ALGO.
-        const isZeroAllowed = isAlgoAssetId(selectedAssetId)
+        const isZeroAllowed = isNativeAssetId(selectedAssetId)
         if (
             !amountValue ||
             amountValue.lt(0) ||
@@ -410,6 +425,7 @@ export const useInputScreen = () => {
         setAmount(amountValue)
         proceedToDestination()
     }, [
+        isNativeAssetId,
         value,
         selectedAssetId,
         maxAmount,
@@ -434,7 +450,7 @@ export const useInputScreen = () => {
         !!asset &&
         !!accountInformation &&
         minFee !== undefined &&
-        (isAlgoAssetId(selectedAssetId) ||
+        (isNativeAssetId(selectedAssetId) ||
             (!!selectedAccount &&
                 !!accountBalances?.get(selectedAccount.address)))
 

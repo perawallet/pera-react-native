@@ -143,8 +143,9 @@ pera-react-native/
 ├── packages/                # Headless business logic (one per domain)
 │   ├── accounts/            # Account management and state
 │   ├── assets/              # Asset management
-│   ├── blockchain/          # Algorand-specific code (node/indexer)
 │   ├── browser-runtime/     # Browser extension runtime (message routing, dApp/WC plumbing)
+│   ├── chain-algorand/      # Algorand chain: node/indexer access and per-package adapters
+│   ├── chain-ethereum/      # Ethereum chain: descriptor, module and its adapters (viem)
 │   ├── config/              # Configuration and environment
 │   ├── database/            # Local persistence
 │   ├── devtools/            # Development tools

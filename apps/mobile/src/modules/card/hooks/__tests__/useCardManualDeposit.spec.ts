@@ -39,8 +39,10 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
+    ...(await vi.importActual<object>(
+        '@perawallet/wallet-core-chain-algorand/blockchain',
+    )),
     useAlgorandClient: () => ({
         newGroup: () => ({
             addAssetTransfer: mockAddAssetTransfer,

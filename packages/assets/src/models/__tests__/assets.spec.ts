@@ -46,7 +46,7 @@ describe('known asset ids', () => {
 
     test('getKnownAssetId returns null, without throwing, for a chain that is not compiled in', () => {
         const scope = {
-            chainId: 'ethereum',
+            chainId: 'unknown',
             networkId: 'mainnet',
         } as unknown as ChainScope
 

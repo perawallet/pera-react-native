@@ -18,7 +18,7 @@ import { http, HttpResponse } from 'msw'
 import {
     mockAlgodAccountInformation,
     mockIndexerSearchForAccounts,
-} from '@perawallet/wallet-core-blockchain/test-handlers'
+} from '../../test-handlers'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { accountsContractTests } from '@perawallet/wallet-core-accounts/testing'
 import {

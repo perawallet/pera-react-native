@@ -12,7 +12,7 @@
 
 import { PWView } from '@components/core'
 import { TransactionIcon } from '@components/TransactionIcon'
-import { getTransactionType } from '@perawallet/wallet-core-blockchain'
+import { getTransactionType } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { PaymentSummaryHeader } from './PaymentSummaryHeader'

@@ -13,11 +13,8 @@
 import { useCallback, useRef } from 'react'
 import { Linking } from 'react-native'
 import { useToast } from '@hooks/useToast'
-import {
-    ALGO_ASSET_ID,
-    logger,
-    microAlgosToAlgos,
-} from '@perawallet/wallet-core-shared'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { logger, microAlgosToAlgos } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from '../parser'
 import { isDevLocaleTourDeeplink } from '../dev-locale-tour-parser'
 import { DeeplinkType, type LinkSource } from '../types'
@@ -29,7 +26,7 @@ import {
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
 import { usePendingSignaturesSheet } from '@modules/multisig'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     getBiometricSecurityLevel,
     hasStrongBiometricOrCredential,
@@ -102,6 +99,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const showError = useDeeplinkErrorHandler()
     const runLocaleTourStep = useLocaleTourDeeplink()
     const connectWalletConnect = useWalletConnectDeeplink()
+    const nativeAsset = useNativeAsset()
 
     /**
      * Runs a sheet-opening handler WITHOUT awaiting it. Sheets render at the app
@@ -222,7 +220,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.ALGO_TRANSFER: {
                     openSendFunds({
-                        assetId: ALGO_ASSET_ID,
+                        assetId: nativeAsset.assetId,
                         destination: parsedData.receiverAddress,
                         // Wire is microAlgos; the store holds display units.
                         amount: parsedData.amount

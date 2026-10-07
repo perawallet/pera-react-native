@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    encodeSignedTransaction,
-    encodeTransactionRaw,
-} from '@perawallet/wallet-core-blockchain'
+import { encodeSignedTransaction, encodeTransactionRaw } from '../blockchain'
 import type {
     Arc0001ResolveResult,
     PeraSignedTransaction,

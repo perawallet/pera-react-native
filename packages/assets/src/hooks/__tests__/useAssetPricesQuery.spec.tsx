@@ -12,12 +12,13 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useAssetPricesQuery } from '../useAssetPricesQuery'
 import { Decimal } from 'decimal.js'
 import { createWrapper } from './test-utils'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
+
+const NATIVE_ASSET_ID = '0'
 
 const mocks = vi.hoisted(() => ({
     getAssetPricesByIds: vi.fn(),
@@ -79,7 +80,7 @@ describe('useAssetPricesQuery', () => {
     it('reads prices from the database and transforms them', async () => {
         mocks.getAssetPricesByIds.mockReturnValue([
             { assetId: '123', usdPrice: new Decimal('2.0') },
-            { assetId: ALGO_ASSET_ID, usdPrice: new Decimal('1.5') },
+            { assetId: NATIVE_ASSET_ID, usdPrice: new Decimal('1.5') },
         ])
 
         const { result } = renderHook(() => useAssetPricesQuery(['123']), {
@@ -89,7 +90,7 @@ describe('useAssetPricesQuery', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(result.current.data.size).toBe(2)
-        expect(result.current.data.get(ALGO_ASSET_ID)?.usdPrice).toEqual(
+        expect(result.current.data.get(NATIVE_ASSET_ID)?.usdPrice).toEqual(
             new Decimal(1.5),
         )
         expect(result.current.data.get('123')?.usdPrice).toEqual(

@@ -15,10 +15,7 @@ import type {
     AddressCodec,
     ParsedPaymentUri,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    deriveQuantumAddress,
-    encodeAlgorandAddress,
-} from '@perawallet/wallet-core-blockchain'
+import { deriveQuantumAddress, encodeAlgorandAddress } from '../blockchain'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 

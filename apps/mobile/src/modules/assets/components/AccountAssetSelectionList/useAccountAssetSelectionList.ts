@@ -17,10 +17,8 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 
-import {
-    isAlgoAssetId,
-    useDebouncedValue,
-} from '@perawallet/wallet-core-shared'
+import { useDebouncedValue } from '@perawallet/wallet-core-shared'
+import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 
 type UseAccountAssetSelectionListParams = {
     isVisible?: boolean
@@ -42,6 +40,7 @@ export const useAccountAssetSelectionList = ({
     filterAsset,
 }: UseAccountAssetSelectionListParams): UseAccountAssetSelectionListResult => {
     const selectedAccount = useSelectedAccount()
+    const isNativeAssetId = useIsNativeAssetId()
     const { accountBalances, isPending } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
@@ -83,11 +82,17 @@ export const useAccountAssetSelectionList = ({
         const predicated = filterAsset ? excluded.filter(filterAsset) : excluded
 
         return [...predicated].sort((a, b) => {
-            if (isAlgoAssetId(a.assetId)) return -1
-            if (isAlgoAssetId(b.assetId)) return 1
+            if (isNativeAssetId(a.assetId)) return -1
+            if (isNativeAssetId(b.assetId)) return 1
             return 0
         })
-    }, [balanceData, debouncedSearchFilter, excludeAssetId, filterAsset])
+    }, [
+        isNativeAssetId,
+        balanceData,
+        debouncedSearchFilter,
+        excludeAssetId,
+        filterAsset,
+    ])
 
     return {
         filteredBalanceData,

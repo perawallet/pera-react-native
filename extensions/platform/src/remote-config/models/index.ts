@@ -41,6 +41,7 @@ export const RemoteConfigKeys = {
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
     chain_algorand_overrides: 'chain_algorand_overrides',
+    chain_ethereum_overrides: 'chain_ethereum_overrides',
 } as const
 
 export type RemoteConfigKey =
@@ -132,6 +133,7 @@ export const RemoteConfigDefaults: Record<
     // JSON `{"enabled"?: boolean, "capabilities"?: {<capability>: boolean}}`;
     // empty string = no overrides. Parsed by readCapabilityOverrides.
     chain_algorand_overrides: '',
+    chain_ethereum_overrides: '',
 }
 
 export interface RemoteConfigService {
