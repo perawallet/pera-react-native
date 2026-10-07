@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-export { withCustody, type CustodyFields } from './backfill'
 export {
     addressOn,
     authorityOf,

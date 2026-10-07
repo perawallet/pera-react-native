@@ -52,7 +52,7 @@ export const credentialScheme = (
     const primary = chain.signing.schemes[0] ?? null
     const { custody } = account
 
-    switch (custody?.kind) {
+    switch (custody.kind) {
         case 'hardware': {
             return primary
         }

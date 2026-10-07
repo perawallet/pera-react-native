@@ -19,9 +19,7 @@ import {
 import { accountsChainAdapters } from '../chain-adapter'
 import { AccountError } from '../errors'
 import {
-    AccountTypes,
     type AccountChains,
-    type AccountType,
     type AccountCustody,
     type Algo25Account,
     type HardwareWalletAccount,
@@ -61,30 +59,10 @@ export type AccountForCustody<C extends AccountCustody> = C extends {
               ? Algo25Account
               : WalletAccount
 
-const legacyTypeOf = (custody: AccountCustody): AccountType => {
-    switch (custody.kind) {
-        case 'local': {
-            if (custody.seed === 'bip39') return AccountTypes.hdWallet
-            return custody.seed === 'quantum'
-                ? AccountTypes.quantum
-                : AccountTypes.algo25
-        }
-        case 'hardware': {
-            return AccountTypes.hardware
-        }
-        case 'multisig': {
-            return AccountTypes.multisig
-        }
-        case 'watch': {
-            return AccountTypes.watch
-        }
-    }
-}
-
 /**
  * Builds a {@link WalletAccount} from its custody and per-chain entries. The
- * legacy `type`, top-level `address` and details objects are derived from
- * them, so they can't disagree.
+ * top-level `address` and legacy details objects are derived from them, so
+ * they can't disagree.
  */
 export const buildAccount = <C extends AccountCustody>(
     input: BuildAccountInput<C>,
@@ -109,7 +87,6 @@ export const buildAccount = <C extends AccountCustody>(
         id: id ?? generateOrderedUniqueId(),
         ...(name !== undefined ? { name } : {}),
         address: entry.address,
-        type: legacyTypeOf(custody),
         ...(custody.kind === 'local' ? { keyPairId: entry.keyPairId } : {}),
         ...(custody.kind === 'hardware'
             ? {
