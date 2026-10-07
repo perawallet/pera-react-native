@@ -32,6 +32,7 @@ import { selectChainMode, useNetworkStore } from '../../store/network-store'
 import {
     useAnyEnabledChainHasCapability,
     useChainCapability,
+    useChainCapabilityCheck,
     useChainCapabilityRequirement,
 } from '../useChainCapability'
 
@@ -187,6 +188,25 @@ describe('useChainCapability', () => {
         setDeveloperSwap(false)
 
         expect(screen.queryByTestId('marker')).toBeNull()
+    })
+})
+
+describe('useChainCapabilityCheck', () => {
+    beforeEach(() => {
+        store.clear()
+        useRemoteConfigStore.getState().resetState()
+        provide(setUpChains())
+    })
+
+    it('evaluates several requirements from one subscription and follows an override', () => {
+        const { result } = renderHook(() => useChainCapabilityCheck())
+
+        expect(result.current({ anyChain: 'swap' })).toBe(true)
+        expect(result.current({ chain: { chainId: SECOND_CHAIN_ID, capability: 'swap' } })).toBe(false)
+
+        setDeveloperSwap(false)
+
+        expect(result.current({ anyChain: 'swap' })).toBe(false)
     })
 })
 

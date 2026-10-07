@@ -13,16 +13,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { ChainMode } from '@perawallet/wallet-core-chain-contract'
-import { useCapability } from '../useCapability'
+import { useCapability, useCapabilityCheck } from '../useCapability'
 
 const mocks = vi.hoisted(() => ({
     chainMode: 'live' as ChainMode,
     isChainAllowed: true,
-    useChainCapabilityRequirement: vi.fn(),
+    checkChain: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapabilityRequirement: mocks.useChainCapabilityRequirement,
+    useChainCapabilityCheck: () => mocks.checkChain,
     useSelectedChainMode: () => mocks.chainMode,
 }))
 
@@ -35,7 +35,7 @@ describe('useCapability', () => {
     beforeEach(() => {
         mocks.chainMode = 'live'
         mocks.isChainAllowed = true
-        mocks.useChainCapabilityRequirement.mockImplementation(
+        mocks.checkChain.mockImplementation(
             () => mocks.isChainAllowed,
         )
     })
@@ -85,7 +85,7 @@ describe('useCapability', () => {
             useCapability({ platform: 'staking', anyChain: 'onramp' }),
         )
 
-        expect(mocks.useChainCapabilityRequirement).toHaveBeenCalledWith({
+        expect(mocks.checkChain).toHaveBeenCalledWith({
             anyChain: 'onramp',
         })
         expect(result.current).toBe(false)
@@ -95,5 +95,14 @@ describe('useCapability', () => {
         const { result } = renderHook(() => useCapability({}))
 
         expect(result.current).toBe(true)
+    })
+
+    it('evaluates several requirements from one checker', () => {
+        const { result } = renderHook(() => useCapabilityCheck())
+
+        expect(result.current({ platform: 'staking' })).toBe(true)
+        expect(result.current({ platform: 'swapTab' })).toBe(false)
+        mocks.isChainAllowed = false
+        expect(result.current({ anyChain: 'swap' })).toBe(false)
     })
 })
