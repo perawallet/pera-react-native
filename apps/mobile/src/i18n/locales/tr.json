@@ -1221,6 +1221,8 @@
             "connect": "Bağla",
             "change": "Değiştir",
             "funding_type_label": "Fonlama türü",
+            "funding_type_enabled_auto": "Otomatik fonlama açık",
+            "funding_type_enabled_manual": "Manuel fonlama açık",
             "funding_type_sheet_title": "Fonlama türünü seç",
             "funding_type_sheet_description": "Kartının nasıl fonlanacağını seç.",
             "funding_type_apply": "Uygula",

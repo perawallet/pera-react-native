@@ -39,13 +39,13 @@ import {
     useIsCardAutoFundingActive,
     useOpenCardSupport,
 } from '../../hooks'
-// Imported directly (not via the hooks barrel) to avoid an import cycle: the
-// flow orchestrator pulls in report sheet components that import from that barrel.
+// Imported directly (not via the hooks barrel) to avoid an import cycle: both
+// pull in sheet components that import from that barrel.
 import { useReportSuspiciousFlow } from '../../hooks/useReportSuspiciousFlow'
+import { useOpenFundingTypeSheet } from '../../hooks/useOpenFundingTypeSheet'
 import { CardAccountDetailsSheet } from '../CardAccountDetailsSheet'
 import { FreezeCardConfirmationSheet } from '../FreezeCardConfirmationSheet'
 import { ReportLostStolenSheet } from '../ReportLostStolenSheet'
-import { SelectFundingTypeSheet } from '../SelectFundingTypeSheet'
 import { UnfreezeCardConfirmationSheet } from '../UnfreezeCardConfirmationSheet'
 import {
     WalletInstructionsSheet,
@@ -447,18 +447,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         void changeFunding()
     }, [changeFunding])
 
-    const onChangeFundingType = useCallback(() => {
-        // Design's event catalog names this `card_home_*` although the switch
-        // lives on the Card Details tab — the only funding-type control in code.
-        trackEvent(CardEvent.HomeFundingType)
-        void request({
-            contents: <SelectFundingTypeSheet />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-            },
-        })
-    }, [request])
+    const onChangeFundingType = useOpenFundingTypeSheet()
 
     const onReportLostStolen = useCallback(() => {
         trackEvent(CardEvent.DetailsReportLostCard)

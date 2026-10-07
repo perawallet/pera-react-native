@@ -67,6 +67,7 @@ import {
     useCardStore,
 } from '@perawallet/wallet-core-card'
 import { PeraCardDetails } from '@modules/card/components/PeraCardDetails'
+import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
@@ -161,6 +162,25 @@ describe('Flow: Card funding type switch', () => {
                 FundingType.Auto,
             ),
         )
+    })
+
+    it('shows the active funding type on the overview and opens the switch from it', async () => {
+        useCardStore.getState().setSelectedFundingType(FundingType.Manual)
+
+        renderWithNavigation(PeraCardOverview, 'Overview')
+
+        const row = await screen.findByTestId(
+            'pera_card_overview_funding_type_row',
+        )
+        expect(row.textContent).toContain(
+            'peraCard.account.funding_type_enabled_manual',
+        )
+
+        fireEvent.click(row)
+
+        expect(
+            await screen.findByTestId('card_select_funding_type_sheet'),
+        ).toBeTruthy()
     })
 
     it('shows both funding selectors even when no funding account is linked', async () => {

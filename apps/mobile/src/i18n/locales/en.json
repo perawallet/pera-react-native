@@ -1221,6 +1221,8 @@
             "connect": "Connect",
             "change": "Change",
             "funding_type_label": "Funding Type",
+            "funding_type_enabled_auto": "Auto Funding enabled",
+            "funding_type_enabled_manual": "Manual Funding enabled",
             "funding_type_sheet_title": "Select Funding Type",
             "funding_type_sheet_description": "Choose how your card is funded.",
             "funding_type_apply": "Apply",

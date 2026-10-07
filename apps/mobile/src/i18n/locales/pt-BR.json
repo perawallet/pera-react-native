@@ -1221,6 +1221,8 @@
             "connect": "Conectar",
             "change": "Alterar",
             "funding_type_label": "Tipo de financiamento",
+            "funding_type_enabled_auto": "Financiamento automático ativado",
+            "funding_type_enabled_manual": "Financiamento manual ativado",
             "funding_type_sheet_title": "Selecionar tipo de financiamento",
             "funding_type_sheet_description": "Escolha como seu cartão é financiado.",
             "funding_type_apply": "Aplicar",

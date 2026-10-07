@@ -35,6 +35,7 @@ const mockState = vi.hoisted(() => ({
 const mockInfoToast = vi.fn()
 const mockSuccessToast = vi.fn()
 const mockTrackEvent = vi.hoisted(() => vi.fn())
+const mockOpenFundingTypeSheet = vi.hoisted(() => vi.fn())
 const mockNavigate = vi.fn()
 const mockSetSelectedAccountAddress = vi.fn()
 
@@ -128,6 +129,10 @@ vi.mock('../../../hooks', async () => ({
         isCancelling: mockWithdraw.isCancelling,
     }),
     useCardErrorToast: () => mockWithdrawErrorToast,
+}))
+
+vi.mock('../../../hooks/useOpenFundingTypeSheet', () => ({
+    useOpenFundingTypeSheet: () => mockOpenFundingTypeSheet,
 }))
 
 vi.mock('@analytics', async () => {
@@ -266,6 +271,34 @@ describe('usePeraCardOverview', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
         expect(result.current.isAutoFunding).toBe(true)
+    })
+
+    describe('funding type status', () => {
+        it('labels manual funding as enabled by default', () => {
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            expect(result.current.fundingTypeLabel).toBe(
+                'peraCard.account.funding_type_enabled_manual',
+            )
+        })
+
+        it('labels auto funding as enabled when it is active', () => {
+            mockState.selectedFundingType = 'AUTO'
+
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            expect(result.current.fundingTypeLabel).toBe(
+                'peraCard.account.funding_type_enabled_auto',
+            )
+        })
+
+        it('opens the funding type sheet from the status row', () => {
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            result.current.onChangeFundingType()
+
+            expect(mockOpenFundingTypeSheet).toHaveBeenCalledTimes(1)
+        })
     })
 
     // A Ledger can never sign the AutoDraw LSig, so a stored AUTO left over
