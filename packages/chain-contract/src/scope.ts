@@ -58,7 +58,9 @@ export const parseScopeKey = (key: string): ChainScope => {
 // chain's.
 export const LEGACY_CHAIN_ID = 'algorand' satisfies ChainId
 
-export const scopeForLegacyNetwork = (network: LegacyNetwork): ChainScope => ({
+export const scopeForLegacyNetwork = (
+    network: LegacyNetwork,
+): ChainScope & { chainId: typeof LEGACY_CHAIN_ID } => ({
     chainId: LEGACY_CHAIN_ID,
     networkId: network,
 })

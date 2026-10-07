@@ -37,7 +37,8 @@
     "BACKUP_BASE_URL",
     "CARD_AUTODRAW_TEMPLATE_HASH",
     "CHAINS",
-    "CHAIN_*"
+    "CHAIN_*",
+    "ETHEREUM_*"
   ],
   "globalPassThroughEnv": [
     "VITEST_MAX_WORKERS"

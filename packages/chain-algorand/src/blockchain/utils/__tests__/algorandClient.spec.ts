@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
     fromClients: vi.fn(),
     registerErrorTransformer: vi.fn(),
     getChainConfig: vi.fn(),
+    getAlgorandChainConfig: vi.fn(),
     registerCustomNetworkSource: vi.fn(() => () => undefined),
     updateNodeEndpoints: vi.fn(),
     toAlgodError: vi.fn((e: unknown) => e),
@@ -51,6 +52,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         algodSubmitTimeout: 30_000,
     },
     getChainConfig: mocks.getChainConfig,
+    getAlgorandChainConfig: mocks.getAlgorandChainConfig,
     registerCustomNetworkSource: mocks.registerCustomNetworkSource,
     // Real 4-network union. The subscription under test (module-level, at
     // the bottom of algorandClient.ts) iterates Object.values(Networks)
@@ -97,7 +99,7 @@ beforeEach(() => {
     // undefined") inside beforeEach itself, which then fails every subsequent
     // test too (the throw stops this function before it ever reaches this
     // mockImplementation call).
-    mocks.getChainConfig.mockImplementation((scope: { networkId: string }) =>
+    const chainConfigFor = (scope: { networkId: string }) =>
         scope.networkId === 'custom'
             ? // Mirrors the real `custom` placeholder with no saved node.
               {
@@ -111,8 +113,9 @@ beforeEach(() => {
                   indexerUrl: `https://indexer.${scope.networkId}`,
                   algodToken: `algod-token-${scope.networkId}`,
                   indexerToken: `indexer-token-${scope.networkId}`,
-              },
-    )
+              }
+    mocks.getChainConfig.mockImplementation(chainConfigFor)
+    mocks.getAlgorandChainConfig.mockImplementation(chainConfigFor)
     mocks.Algodv2.mockImplementation(function Algodv2() {})
     mocks.Indexer.mockImplementation(function Indexer() {})
     mocks.TimeoutHttpClient.mockImplementation(function TimeoutHttpClient() {})
@@ -125,7 +128,7 @@ describe('getAlgorandClient', () => {
     it('builds algod and indexer via TimeoutHttpClient seeded with the configured timeouts', () => {
         getAlgorandClient()
 
-        expect(mocks.getChainConfig).toHaveBeenCalledWith({
+        expect(mocks.getAlgorandChainConfig).toHaveBeenCalledWith({
             chainId: 'algorand',
             networkId: 'mainnet',
         })
@@ -173,7 +176,7 @@ describe('getAlgorandClient', () => {
     it('uses the network override instead of the store network', () => {
         getAlgorandClient('testnet')
 
-        expect(mocks.getChainConfig).toHaveBeenCalledWith({
+        expect(mocks.getAlgorandChainConfig).toHaveBeenCalledWith({
             chainId: 'algorand',
             networkId: 'testnet',
         })
@@ -189,7 +192,7 @@ describe('getAlgorandClient', () => {
     it('passes a ChainScope straight through without a legacy-network round trip', () => {
         getAlgorandClient({ chainId: 'algorand', networkId: 'testnet' })
 
-        expect(mocks.getChainConfig).toHaveBeenCalledWith({
+        expect(mocks.getAlgorandChainConfig).toHaveBeenCalledWith({
             chainId: 'algorand',
             networkId: 'testnet',
         })
@@ -220,7 +223,7 @@ describe('getAlgorandClient', () => {
         // (see network-config.ts — their algod/indexer are public
         // third-party endpoints Pera does not control). TimeoutHttpClient
         // must never receive an empty-string credential header.
-        mocks.getChainConfig.mockImplementation(
+        mocks.getAlgorandChainConfig.mockImplementation(
             (scope: { networkId: string }) => ({
                 algodUrl: `https://algod.${scope.networkId}`,
                 indexerUrl: `https://indexer.${scope.networkId}`,
