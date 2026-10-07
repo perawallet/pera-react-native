@@ -88,6 +88,10 @@ use_ccache_if_available() {
   fi
   echo "pera-ci: compiling through $(command -v ccache)"
   export CCACHE_BASEDIR="$CI_WORKSPACE"
+  # Release native builds compile with -g, and ccache then hashes the cwd
+  # too, which BASEDIR doesn't rewrite: every run missed. Debug-info paths
+  # pointing at a deleted checkout are a fair price.
+  export CCACHE_NOHASHDIR=1
   # CMake 3.17+ reads these as defaults, so every native module's
   # externalNativeBuild compiles through ccache. NDK_CCACHE covers ndk-build.
   export CMAKE_C_COMPILER_LAUNCHER=ccache
