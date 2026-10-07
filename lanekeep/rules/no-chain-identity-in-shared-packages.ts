@@ -54,6 +54,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Legacy shim: every row stored before scope keys existed belongs to this chain.',
     },
     {
+        file: 'packages/chain-contract/src/scope.ts',
+        text: '(part as Partial<ChainScope>).chainId === scope.chainId',
+        reason: "Compares a query key's scope against whichever scope the caller passes, never a named chain.",
+    },
+    {
         file: 'packages/walletconnect/src/v2/handler.ts',
         text: 'event.params.chainId !== activeChainId',
         reason: "WalletConnect's chainId is a CAIP-2 string, not a ChainId.",
