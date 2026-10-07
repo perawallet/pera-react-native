@@ -231,7 +231,9 @@ describe('PWWebView.web', () => {
         expect(handleMessage).not.toHaveBeenCalled()
     })
 
-    it('drops bridge messages when the dappConnect capability is off, whatever the prop says', () => {
+    // Discover and Staking are Pera's own pages; only the walletConnect
+    // handler refuses while dApps are off.
+    it('keeps routing bridge messages to Discover when the dappConnect capability is off', () => {
         setCapabilityOverrides({ dappConnect: false })
         renderDiscover()
 
@@ -242,7 +244,7 @@ describe('PWWebView.web', () => {
             token: mountedToken(),
         })
 
-        expect(handleMessage).not.toHaveBeenCalled()
+        expect(handleMessage).toHaveBeenCalledTimes(1)
     })
 
     it('drops bridge messages when enablePeraConnect is false', () => {

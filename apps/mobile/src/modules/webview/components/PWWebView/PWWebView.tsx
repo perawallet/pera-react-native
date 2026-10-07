@@ -31,7 +31,6 @@ import {
     peraMobileInterfaceJS,
 } from './injected-scripts'
 import { useStyles } from './styles'
-import { useCapability } from '@hooks/useCapability'
 import {
     useContextFingerprints,
     usePeraWebviewInterface,
@@ -90,7 +89,7 @@ const updateTheme = (mode: 'light' | 'dark') => {
 export const PWWebView = (props: PWWebViewProps) => {
     const {
         url,
-        enablePeraConnect: isPeraConnectRequested,
+        enablePeraConnect,
         requestId,
         showControls = false,
         showFooterBar = true,
@@ -104,9 +103,6 @@ export const PWWebView = (props: PWWebViewProps) => {
         inBottomSheet = false,
         ...rest
     } = props
-    // The single check point for every dApp bridge caller.
-    const canConnectDapps = useCapability({ anyChain: 'dappConnect' })
-    const enablePeraConnect = isPeraConnectRequested && canConnectDapps
     const insets = useSafeAreaInsets()
     // A bottom sheet supplies no bottom inset of its own, so the footer must
     // clear the home indicator / system nav bar itself. Outside a sheet the

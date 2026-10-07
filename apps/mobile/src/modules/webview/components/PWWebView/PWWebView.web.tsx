@@ -62,7 +62,6 @@ import {
 } from '../../hooks/handlers.web'
 import { toLoadableUrl } from './toLoadableUrl'
 import { useStyles } from './styles'
-import { useCapability } from '@hooks/useCapability'
 // Same timeout the native load-state machine uses, so both platforms give up
 // on a silent navigation after the same wait.
 import { WEBVIEW_LOADING_TIMEOUT_MS } from './usePWWebViewLoadState'
@@ -93,7 +92,7 @@ const IFrame = 'iframe' as unknown as React.ComponentType<{
 
 export const PWWebView = ({
     url,
-    enablePeraConnect: isPeraConnectRequested,
+    enablePeraConnect,
     onClose,
     onBack,
     // customJavaScript is intentionally inert on web: the content-script
@@ -108,9 +107,6 @@ export const PWWebView = ({
     containerStyle,
     webviewRef,
 }: PWWebViewProps) => {
-    // The single check point for every dApp bridge caller.
-    const canConnectDapps = useCapability({ anyChain: 'dappConnect' })
-    const enablePeraConnect = isPeraConnectRequested && canConnectDapps
     const styles = useStyles({ bottomInset: 0 })
     const { t } = useLanguage()
 
