@@ -40,11 +40,9 @@ export type PersistedAccountRecord = Omit<BaseWalletAccount, 'custody'> & {
 }
 
 /**
- * What a persisted record's `type` and details describe, or `undefined` for a
- * shape that can't keep its kind without inventing an HD index or a device.
- * A multisig without details and a single-key or HD account without a
- * `keyPairId` keep their kind but get no signing key; the multisig heals
- * through `useMultisigDetailsBackfill`.
+ * `undefined` for a shape that can't keep its kind without inventing an HD
+ * index or a device. A record missing only its key or multisig details keeps
+ * its kind without them; `useMultisigDetailsBackfill` heals the multisig.
  */
 export const custodyFromLegacy = (
     account: PersistedAccountRecord,
