@@ -198,7 +198,7 @@ describe('useQuantumFeeExplainer', () => {
         expect(result.current.isQuantumFee).toBe(false)
     })
 
-    it('returns false when the feature flag is disabled', () => {
+    it('still explains the premium an existing quantum account pays after quantumAccounts is switched off', () => {
         capabilityState.turnOff('quantumAccounts')
         useAccountsStore.getState().setAccounts([quantumAccount()])
 
@@ -206,6 +206,6 @@ describe('useQuantumFeeExplainer', () => {
             useQuantumFeeExplainer(buildTransaction()),
         )
 
-        expect(result.current.isQuantumFee).toBe(false)
+        expect(result.current.isQuantumFee).toBe(true)
     })
 })

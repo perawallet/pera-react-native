@@ -164,7 +164,7 @@ describe('useAssetClaimDetailScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
     })
 
-    it('offers the fund tab only while the onramp capability is on', () => {
+    it('offers the Add Funds button only while the onramp capability is on', () => {
         useRemoteConfigStore.getState().resetState()
         const { result, rerender } = renderHook(() =>
             useAssetClaimDetailScreen(),

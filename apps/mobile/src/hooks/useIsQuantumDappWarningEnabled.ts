@@ -19,10 +19,9 @@ import { useCapability } from './useCapability'
 // Defaults ON so it can be switched *off* once dApps support PQ.
 export const useIsQuantumDappWarningEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
-    const isQuantumEnabled = useCapability({
-        platform: 'quantum',
-        anyChain: 'quantumAccounts',
-    })
+    // Platform part only: an existing quantum account still connects to dApps
+    // after remote config switches `quantumAccounts` off.
+    const isQuantumEnabled = useCapability({ platform: 'quantum' })
     return (
         isQuantumEnabled &&
         remoteConfig.getBooleanValue(

@@ -236,9 +236,6 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
             getBooleanValue: vi.fn().mockReturnValue(false),
             getNumberValue: vi.fn().mockReturnValue(0),
         },
-        // Algorand at its shipped defaults, so a capability gate renders as it
-        // does in the app. A spec drives a gate off through the remote-config
-        // developer override, or resets the registry to start empty.
         chains,
         // A real (empty) registry, as `WithHardwareWalletExtension` supplies in
         // production, so a spec can register a fake transport through it.

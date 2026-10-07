@@ -101,10 +101,9 @@ export const useTransactionConfirmationScreen =
 
         // The quantum fee premium is driven by the effective signer (resolving
         // one rekey hop), matching the fee-multiplier logic — not the raw sender.
-        const isQuantumAccountsEnabled = useCapability({
-            platform: 'quantum',
-            anyChain: 'quantumAccounts',
-        })
+        // Platform part only: an existing quantum account still pays the
+        // premium after remote config switches `quantumAccounts` off.
+        const isQuantumAccountsEnabled = useCapability({ platform: 'quantum' })
         const signer = useSignerFor(selectedAccount?.address)
         const isQuantumFee =
             isQuantumAccountsEnabled &&

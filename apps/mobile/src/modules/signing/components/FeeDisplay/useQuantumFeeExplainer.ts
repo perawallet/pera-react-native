@@ -41,10 +41,9 @@ type UseQuantumFeeExplainerResult = {
 export const useQuantumFeeExplainer = (
     transaction?: PeraDisplayableTransaction,
 ): UseQuantumFeeExplainerResult => {
-    const enabled = useCapability({
-        platform: 'quantum',
-        anyChain: 'quantumAccounts',
-    })
+    // Platform part only: an existing quantum account still pays the premium
+    // after remote config switches `quantumAccounts` off.
+    const enabled = useCapability({ platform: 'quantum' })
     const { resolved } = useSigningPipeline()
 
     const authorizerAddress = transaction

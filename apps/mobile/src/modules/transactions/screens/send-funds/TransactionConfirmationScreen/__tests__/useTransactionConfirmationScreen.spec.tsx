@@ -837,7 +837,7 @@ describe('useTransactionConfirmationScreen', () => {
             expect(result.current.isQuantumFee).toBe(true)
         })
 
-        it('does not flag a quantum fee when the feature flag is disabled', () => {
+        it('still flags the quantum fee an existing account pays after quantumAccounts is switched off', () => {
             capabilityState.turnOff('quantumAccounts')
             ;(useSignerFor as Mock).mockReturnValue({
                 address: 'QUANTUM_ADDRESS',
@@ -852,7 +852,7 @@ describe('useTransactionConfirmationScreen', () => {
                 useTransactionConfirmationScreen(),
             )
 
-            expect(result.current.isQuantumFee).toBe(false)
+            expect(result.current.isQuantumFee).toBe(true)
         })
     })
 })
