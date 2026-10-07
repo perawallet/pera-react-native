@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { ChainModule } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainModule,
+} from '@perawallet/wallet-core-chain-contract'
+import { ethereumAddressCodec } from './addresses'
 import { ethereumCapabilityDefaults } from './capability-defaults'
 import { ethereumDescriptor } from './descriptor'
 
@@ -18,6 +22,8 @@ export const ethereumModule: ChainModule = {
     descriptor: ethereumDescriptor,
     capabilityDefaults: ethereumCapabilityDefaults,
     // registerChainSetup registers the descriptor; each Ethereum adapter registers here.
-    register: _ctx => {},
+    register: _ctx => {
+        addressCodecs.register(ethereumAddressCodec)
+    },
     i18nKeys: () => [],
 }

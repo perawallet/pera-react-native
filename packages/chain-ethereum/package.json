@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@perawallet/wallet-core-chain-contract": "workspace:*",
+    "decimal.js": "catalog:",
     "viem": "catalog:"
   },
   "devDependencies": {
