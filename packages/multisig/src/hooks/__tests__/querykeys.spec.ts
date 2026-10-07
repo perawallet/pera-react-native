@@ -11,60 +11,64 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     getMultisigAccountDetailQueryKey,
     getSignRequestDetailQueryKey,
 } from '../querykeys'
 
+const MAINNET = scopeForLegacyNetwork('mainnet')
+const TESTNET = scopeForLegacyNetwork('testnet')
+
 describe('getMultisigAccountDetailQueryKey', () => {
     test('returns array with correct structure for mainnet', () => {
-        const result = getMultisigAccountDetailQueryKey('mainnet', 'MSIG_ADDR')
+        const result = getMultisigAccountDetailQueryKey(MAINNET, 'MSIG_ADDR')
 
         expect(result).toEqual([
             'multisig',
             'account-detail',
-            { network: 'mainnet', address: 'MSIG_ADDR' },
+            { scope: MAINNET, address: 'MSIG_ADDR' },
         ])
     })
 
     test('returns array with correct structure for testnet', () => {
         const result = getMultisigAccountDetailQueryKey(
-            'testnet',
+            TESTNET,
             'TEST_ADDR_123',
         )
 
         expect(result).toEqual([
             'multisig',
             'account-detail',
-            { network: 'testnet', address: 'TEST_ADDR_123' },
+            { scope: TESTNET, address: 'TEST_ADDR_123' },
         ])
     })
 
     test('includes address in the key params', () => {
         const result = getMultisigAccountDetailQueryKey(
-            'mainnet',
+            MAINNET,
             'UNIQUE_ADDRESS',
         )
 
         expect(result[2]).toHaveProperty('address', 'UNIQUE_ADDRESS')
     })
 
-    test('includes network in the key params', () => {
-        const result = getMultisigAccountDetailQueryKey('testnet', 'ADDR')
+    test('includes scope in the key params', () => {
+        const result = getMultisigAccountDetailQueryKey(TESTNET, 'ADDR')
 
-        expect(result[2]).toHaveProperty('network', 'testnet')
+        expect(result[2]).toHaveProperty('scope', TESTNET)
     })
 
     test('returns unique keys for different addresses', () => {
-        const key1 = getMultisigAccountDetailQueryKey('mainnet', 'ADDR1')
-        const key2 = getMultisigAccountDetailQueryKey('mainnet', 'ADDR2')
+        const key1 = getMultisigAccountDetailQueryKey(MAINNET, 'ADDR1')
+        const key2 = getMultisigAccountDetailQueryKey(MAINNET, 'ADDR2')
 
         expect(key1).not.toEqual(key2)
     })
 
-    test('returns unique keys for different networks', () => {
-        const key1 = getMultisigAccountDetailQueryKey('mainnet', 'ADDR')
-        const key2 = getMultisigAccountDetailQueryKey('testnet', 'ADDR')
+    test('returns unique keys for different scopes', () => {
+        const key1 = getMultisigAccountDetailQueryKey(MAINNET, 'ADDR')
+        const key2 = getMultisigAccountDetailQueryKey(TESTNET, 'ADDR')
 
         expect(key1).not.toEqual(key2)
     })
@@ -72,47 +76,47 @@ describe('getMultisigAccountDetailQueryKey', () => {
 
 describe('getSignRequestDetailQueryKey', () => {
     test('returns array with correct structure for mainnet', () => {
-        const result = getSignRequestDetailQueryKey('mainnet', 'sr-123')
+        const result = getSignRequestDetailQueryKey(MAINNET, 'sr-123')
 
         expect(result).toEqual([
             'multisig',
             'sign-request-detail',
-            { network: 'mainnet', signRequestId: 'sr-123' },
+            { scope: MAINNET, signRequestId: 'sr-123' },
         ])
     })
 
     test('returns array with correct structure for testnet', () => {
-        const result = getSignRequestDetailQueryKey('testnet', 'sr-456')
+        const result = getSignRequestDetailQueryKey(TESTNET, 'sr-456')
 
         expect(result).toEqual([
             'multisig',
             'sign-request-detail',
-            { network: 'testnet', signRequestId: 'sr-456' },
+            { scope: TESTNET, signRequestId: 'sr-456' },
         ])
     })
 
     test('includes signRequestId in the key params', () => {
-        const result = getSignRequestDetailQueryKey('mainnet', 'unique-sr-id')
+        const result = getSignRequestDetailQueryKey(MAINNET, 'unique-sr-id')
 
         expect(result[2]).toHaveProperty('signRequestId', 'unique-sr-id')
     })
 
-    test('includes network in the key params', () => {
-        const result = getSignRequestDetailQueryKey('testnet', 'sr-1')
+    test('includes scope in the key params', () => {
+        const result = getSignRequestDetailQueryKey(TESTNET, 'sr-1')
 
-        expect(result[2]).toHaveProperty('network', 'testnet')
+        expect(result[2]).toHaveProperty('scope', TESTNET)
     })
 
     test('returns unique keys for different sign request IDs', () => {
-        const key1 = getSignRequestDetailQueryKey('mainnet', 'sr-1')
-        const key2 = getSignRequestDetailQueryKey('mainnet', 'sr-2')
+        const key1 = getSignRequestDetailQueryKey(MAINNET, 'sr-1')
+        const key2 = getSignRequestDetailQueryKey(MAINNET, 'sr-2')
 
         expect(key1).not.toEqual(key2)
     })
 
-    test('returns unique keys for different networks', () => {
-        const key1 = getSignRequestDetailQueryKey('mainnet', 'sr-1')
-        const key2 = getSignRequestDetailQueryKey('testnet', 'sr-1')
+    test('returns unique keys for different scopes', () => {
+        const key1 = getSignRequestDetailQueryKey(MAINNET, 'sr-1')
+        const key2 = getSignRequestDetailQueryKey(TESTNET, 'sr-1')
 
         expect(key1).not.toEqual(key2)
     })

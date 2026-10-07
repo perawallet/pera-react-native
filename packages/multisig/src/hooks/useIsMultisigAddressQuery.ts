@@ -11,6 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { checkIsMultisigAddress } from '../api/endpoints'
 import { getMultisigAccountDetailQueryKey } from './querykeys'
@@ -36,7 +37,10 @@ export const useIsMultisigAddressQuery = ({
     enabled = true,
 }: UseIsMultisigAddressQueryParams): UseIsMultisigAddressQueryResult => {
     const query = useQuery({
-        queryKey: getMultisigAccountDetailQueryKey(network, address),
+        queryKey: getMultisigAccountDetailQueryKey(
+            scopeForLegacyNetwork(network),
+            address,
+        ),
         queryFn: async () => {
             const isMultisig = await checkIsMultisigAddress(network, address)
             return { isMultisig }

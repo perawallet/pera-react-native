@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 // Mock @perawallet/wallet-core-projects
 vi.mock('@perawallet/wallet-core-projects', () => ({
@@ -403,10 +404,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             isPending: false,
         })),
         getOnChainAccountInformationQueryKey: vi.fn(
-            (address: string, network: string) => [
+            (address: string, scope: ChainScope) => [
                 'accounts',
                 'on-chain-account-information',
-                { address, network },
+                { address, scope },
             ],
         ),
         invalidateAccountQueriesForAddresses: vi.fn(),

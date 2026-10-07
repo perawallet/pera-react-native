@@ -18,7 +18,7 @@ import { useAvailableAssetsQuery } from '../useAvailableAssetsQuery'
 import { fetchAvailableAssets } from '../../api'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('../../api', () => ({

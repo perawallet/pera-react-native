@@ -17,10 +17,9 @@ import { usePreferredCurrencyPriceQuery } from '../usePreferredCurrencyPriceQuer
 import React from 'react'
 import { Decimal } from 'decimal.js'
 
-// Mock the network hook
-const mockUseNetwork = vi.hoisted(() => vi.fn())
+const mockUseSelectedScope = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
+    useSelectedScope: mockUseSelectedScope,
 }))
 
 // Mock the fetch function
@@ -41,7 +40,10 @@ describe('usePreferredCurrencyPriceQuery', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+        mockUseSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -73,7 +75,10 @@ describe('usePreferredCurrencyPriceQuery', () => {
     })
 
     it('uses correct network and currency', async () => {
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        mockUseSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         mockFetchCurrency.mockResolvedValue({
             id: 'GBP',
             usdPrice: new Decimal('1.25'),

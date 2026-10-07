@@ -30,7 +30,7 @@ vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))
 

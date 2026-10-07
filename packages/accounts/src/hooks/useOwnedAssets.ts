@@ -11,14 +11,14 @@
  */
 
 import { useMemo } from 'react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useQuery } from '@tanstack/react-query'
 import {
     useAssetsQuery,
     useNativeAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAllHeldAssetIdsForNetwork } from '../db'
 import { getOwnedAssetIdsQueryKey } from './querykeys'
 
@@ -41,15 +41,12 @@ export const useOwnedAssets = (
     options?: UseOwnedAssetsOptions,
 ): UseOwnedAssetsResult => {
     const enabled = options?.enabled ?? true
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
 
     const { data: ownedAssetIds = [], isLoading: isIdsLoading } = useQuery({
-        queryKey: getOwnedAssetIdsQueryKey(network),
-        queryFn: () =>
-            getAllHeldAssetIdsForNetwork({
-                scope: scopeForLegacyNetwork(network),
-            }),
+        queryKey: getOwnedAssetIdsQueryKey(scope),
+        queryFn: () => getAllHeldAssetIdsForNetwork({ scope }),
         enabled,
         staleTime: OWNED_ASSET_IDS_STALE_TIME_MS,
     })

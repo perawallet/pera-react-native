@@ -164,30 +164,36 @@ describe('clearCustomNetworkCache', () => {
         const customAccountKey = [
             'accounts',
             'balance',
-            { address: 'ADDR', network: Networks.custom },
+            { address: 'ADDR', scope: scopeForLegacyNetwork(Networks.custom) },
         ]
         const testnetAccountKey = [
             'accounts',
             'balance',
-            { address: 'ADDR', network: Networks.testnet },
+            { address: 'ADDR', scope: scopeForLegacyNetwork(Networks.testnet) },
         ]
         const customAssetKey = [
             'assets',
             'prices',
             'usd',
-            { assetIDs: ['1'], network: Networks.custom },
+            { assetIDs: ['1'], scope: scopeForLegacyNetwork(Networks.custom) },
         ]
         const customTransactionKey = [
             'transactions',
             'history',
-            { accountAddress: 'ADDR', network: Networks.custom },
+            {
+                accountAddress: 'ADDR',
+                scope: scopeForLegacyNetwork(Networks.custom),
+            },
         ]
         const customNfdKey = [
             'nfd',
             'address',
-            { address: 'ADDR', network: Networks.custom },
+            { address: 'ADDR', scope: scopeForLegacyNetwork(Networks.custom) },
         ]
-        const unrelatedDomainKey = ['card', { network: Networks.custom }]
+        const unrelatedDomainKey = [
+            'card',
+            { scope: scopeForLegacyNetwork(Networks.custom) },
+        ]
 
         queryClient.setQueryData(customAccountKey, { value: 1 })
         queryClient.setQueryData(testnetAccountKey, { value: 2 })

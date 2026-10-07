@@ -14,7 +14,8 @@ import { useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SuggestedParams } from 'algosdk'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getSuggestedParametersQueryKey } from './querykeys'
 
@@ -37,10 +38,10 @@ export type UseSuggestedParametersQueryResult = {
 export const useSuggestedParametersQuery =
     (): UseSuggestedParametersQueryResult => {
         const algokit = useAlgorandClient()
-        const { network } = useNetwork()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
         const query = useQuery({
-            queryKey: getSuggestedParametersQueryKey(network),
+            queryKey: getSuggestedParametersQueryKey(scope),
             queryFn: async () => await algokit.getSuggestedParams(),
             staleTime: SUGGESTED_PARAMS_STALE_TIME_MS,
             // Run the fetch even while offline so consumers get a fast typed
@@ -74,18 +75,18 @@ export type FetchSuggestedParameters = () => Promise<SuggestedParams>
  */
 export const useFetchSuggestedParameters = (): FetchSuggestedParameters => {
     const algokit = useAlgorandClient()
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const queryClient = useQueryClient()
 
     return useCallback(
         () =>
             queryClient.fetchQuery({
-                queryKey: getSuggestedParametersQueryKey(network),
+                queryKey: getSuggestedParametersQueryKey(scope),
                 queryFn: async () => await algokit.getSuggestedParams(),
                 staleTime: SUGGESTED_PARAMS_STALE_TIME_MS,
                 networkMode: 'always',
             }),
-        [algokit, network, queryClient],
+        [algokit, scope, queryClient],
     )
 }
 

@@ -15,9 +15,9 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
+const mockUseSelectedScope = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
+    useSelectedScope: mockUseSelectedScope,
 }))
 
 const { fetchCardTransactions } = vi.hoisted(() => ({
@@ -25,6 +25,7 @@ const { fetchCardTransactions } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/transactions', () => ({ fetchCardTransactions }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCardTransactionsQuery } from '../useCardTransactionsQuery'
 
 describe('useCardTransactionsQuery', () => {
@@ -35,7 +36,7 @@ describe('useCardTransactionsQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>

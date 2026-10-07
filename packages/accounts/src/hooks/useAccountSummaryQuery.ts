@@ -11,7 +11,11 @@
  */
 
 import { useMemo } from 'react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { type Network, type Nullable } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
@@ -20,7 +24,7 @@ import {
     useNativeAsset,
 } from '@perawallet/wallet-core-assets'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAccountPortfolioTotals } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountSummaryQueryKey } from './querykeys'
@@ -74,10 +78,11 @@ export const readAccountSummary = async (address: string, network: Network) => {
 export const useAccountSummaryQuery = (
     address?: string,
 ): UseAccountSummaryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const query = useQuery({
-        queryKey: getAccountSummaryQueryKey(address ?? '', network),
+        queryKey: getAccountSummaryQueryKey(address ?? '', scope),
         enabled: !!address,
         staleTime: Infinity,
         // SQLite is the source of truth; run the queryFn even while offline

@@ -59,7 +59,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))

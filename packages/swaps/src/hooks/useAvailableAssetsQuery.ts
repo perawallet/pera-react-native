@@ -11,7 +11,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { fetchAvailableAssets } from '../api'
 import { swapQueryKeys } from './querykeys'
 
@@ -20,10 +24,11 @@ export const useAvailableAssetsQuery = (
     q?: string,
     enabled: boolean = true,
 ) => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     return useQuery({
-        queryKey: swapQueryKeys.availableAssets(assetInId, q, network),
+        queryKey: swapQueryKeys.availableAssets(assetInId, q, scope),
         queryFn: () => fetchAvailableAssets(assetInId, network, q),
         enabled,
     })

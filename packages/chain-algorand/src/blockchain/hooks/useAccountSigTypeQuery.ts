@@ -13,7 +13,8 @@
 import { useQuery } from '@tanstack/react-query'
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getAccountSigTypeQueryKey } from './querykeys'
 
@@ -78,10 +79,10 @@ export const useAccountSigTypeQuery = ({
     enabled = true,
 }: UseAccountSigTypeQueryParams): UseAccountSigTypeQueryResult => {
     const algokit = useAlgorandClient()
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     const query = useQuery({
-        queryKey: getAccountSigTypeQueryKey(address, network),
+        queryKey: getAccountSigTypeQueryKey(address, scope),
         queryFn: () => fetchAccountSigType(algokit, address),
         enabled: enabled && !!address,
         retry: false,

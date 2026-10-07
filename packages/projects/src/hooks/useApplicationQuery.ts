@@ -11,11 +11,15 @@
  */
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchApplication } from '../api/applications'
 import { projectQueryKeys } from './querykeys'
 import type { PeraApplication } from '../models/types'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseApplicationQueryParams = {
     applicationId: string
@@ -30,10 +34,11 @@ export const useApplicationQuery = (
     params: UseApplicationQueryParams,
 ): UseApplicationQueryResult => {
     const { applicationId, isEnabled = true } = params
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     return useQuery({
-        queryKey: projectQueryKeys.application(applicationId, network),
+        queryKey: projectQueryKeys.application(applicationId, scope),
         queryFn: async ({ signal }) =>
             fetchApplication({
                 applicationId,

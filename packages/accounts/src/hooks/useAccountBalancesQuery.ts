@@ -14,8 +14,8 @@ import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 import {
+    LEGACY_CHAIN_ID,
     legacyNetworkOf,
-    scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -31,7 +31,7 @@ import type {
     WalletAccount,
 } from '../models'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
     getAccountBalance,
@@ -91,7 +91,7 @@ export const useAccountBalancesQuery = (
     enabled?: boolean,
     filters?: AccountHoldingsFilters,
 ): AccountBalancesWithTotals => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const hasAccounts = !!accounts?.length
 
@@ -104,7 +104,7 @@ export const useAccountBalancesQuery = (
     const queries = useMemo(() => {
         return addresses.map(address => {
             return {
-                queryKey: getAccountBalancesQueryKey(address, network, filters),
+                queryKey: getAccountBalancesQueryKey(address, scope, filters),
                 enabled: !!address && enabled,
                 staleTime: Infinity,
                 gcTime: HOLDINGS_ROWS_GC_TIME_MS,
@@ -118,12 +118,7 @@ export const useAccountBalancesQuery = (
                 // where _observerMatches and _result can get out of sync during
                 // synchronous notifications, causing "new Proxy target must be an Object".
                 notifyOnChangeProps: 'all' as const,
-                queryFn: () =>
-                    readAccountFromDb(
-                        address,
-                        scopeForLegacyNetwork(network),
-                        filters,
-                    ),
+                queryFn: () => readAccountFromDb(address, scope, filters),
             }
         })
         // filters is a stable object passed from a Zustand selector or memoized
@@ -132,7 +127,7 @@ export const useAccountBalancesQuery = (
     }, [
         addresses,
         enabled,
-        network,
+        scope,
         filters?.hideZeroBalance,
         filters?.hideNfts,
         filters?.hideOptedInNfts,

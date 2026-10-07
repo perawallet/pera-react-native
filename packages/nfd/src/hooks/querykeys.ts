@@ -11,16 +11,16 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 export const MODULE_PREFIX = 'nfd'
 
 export const nfdQueryKeys = {
     all: [MODULE_PREFIX] as const,
-    forAddress: (address: string, network: Network) =>
-        [MODULE_PREFIX, 'address', { address, network }] as const,
-    search: (name: string, network: Network) =>
-        [MODULE_PREFIX, 'search', { name, network }] as const,
+    forAddress: (address: string, scope: ChainScope) =>
+        [MODULE_PREFIX, 'address', { address, scope }] as const,
+    search: (name: string, scope: ChainScope) =>
+        [MODULE_PREFIX, 'search', { name, scope }] as const,
 }
 
 export function invalidateNfdQueries(queryClient: QueryClient): void {

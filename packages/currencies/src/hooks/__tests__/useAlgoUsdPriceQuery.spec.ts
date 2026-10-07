@@ -44,7 +44,10 @@ vi.mock('@perawallet/wallet-core-database', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: 'mainnet',
+    }),
 }))
 
 // No chain adapter is registered in this package's tests.

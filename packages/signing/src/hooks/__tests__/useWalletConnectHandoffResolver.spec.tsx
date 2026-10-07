@@ -14,6 +14,7 @@ import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, act, waitFor } from '@testing-library/react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({
     getSignRequestsWithSignatures: vi.fn(),
@@ -27,9 +28,9 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
     addSignature: mocks.addSignature,
     getSignRequestsWithSignatures: mocks.getSignRequestsWithSignatures,
     getSignRequestsWithSignaturesQueryKey: (
-        network: string,
+        scope: ChainScope,
         signRequestId: string,
-    ) => ['multisig', 'sign-request-with-signatures', network, signRequestId],
+    ) => ['multisig', 'sign-request-with-signatures', { scope, signRequestId }],
     useMarkSignRequestsConfirmedMutation: () => ({
         markConfirmed: mocks.markConfirmed,
         isPending: false,

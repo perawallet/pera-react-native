@@ -22,7 +22,6 @@ import {
     LEGACY_SCOPES,
     legacyNetworkOf,
     parseScopeKey,
-    queryKeyNetworkValue,
     queryKeyReferencesScope,
     rekeyLegacyNetworkRecord,
     scopeForLegacyNetwork,
@@ -117,50 +116,6 @@ describe('scopeForLegacyNetwork', () => {
     })
 })
 
-describe('queryKeyNetworkValue', () => {
-    it.each(['mainnet', 'testnet', 'betanet', 'custom'] as const)(
-        'is the bare legacy value for %s',
-        network => {
-            const value = queryKeyNetworkValue(scopeForLegacyNetwork(network))
-
-            expect(value).toBe(network)
-        },
-    )
-
-    it('is the bare network id for any other network of the legacy chain', () => {
-        const value = queryKeyNetworkValue({
-            chainId: 'algorand',
-            networkId: 'custom-9f3a',
-        })
-
-        expect(value).toBe('custom-9f3a')
-    })
-
-    it('is the scope key for a chain with no bare-network keys', () => {
-        const value = queryKeyNetworkValue({
-            chainId: 'ethereum',
-            networkId: 'mainnet',
-        })
-
-        expect(value).toBe('ethereum/mainnet')
-    })
-
-    it('rejects a network id that is not valid', () => {
-        const scope: ChainScope = {
-            chainId: 'algorand',
-            networkId: 'Not Valid',
-        }
-
-        expect(() => queryKeyNetworkValue(scope)).toThrow(InvalidScopeKeyError)
-    })
-
-    it('rejects a chain id this build does not know', () => {
-        expect(() => queryKeyNetworkValue(UNKNOWN_CHAIN_SCOPE)).toThrow(
-            InvalidScopeKeyError,
-        )
-    })
-})
-
 describe('network column encoding', () => {
     it.each(LEGACY_NETWORKS)(
         'stores the Algorand %s scope as its scope key',
@@ -211,22 +166,44 @@ describe('LEGACY_SCOPES', () => {
 describe('queryKeyReferencesScope', () => {
     const testnet = scopeForLegacyNetwork('testnet')
 
-    it('matches the scope in the network field of an object element', () => {
-        const key = ['assets', { assetId: '1', network: 'testnet' }]
+    it('matches the scope in the scope field of an object element', () => {
+        const key = ['assets', { assetId: '1', scope: testnet }]
 
         expect(queryKeyReferencesScope(key, testnet)).toBe(true)
     })
 
     it('matches the scope as a bare element', () => {
-        const key = ['accounts', 'history', 'testnet']
+        const key = ['rekey-transaction-fee', { ...testnet }, 'ADDR']
 
         expect(queryKeyReferencesScope(key, testnet)).toBe(true)
     })
 
     it('does not match a key for another scope', () => {
-        const key = ['assets', { assetId: '1', network: 'mainnet' }, 'mainnet']
+        const mainnet = scopeForLegacyNetwork('mainnet')
+        const key = ['assets', { assetId: '1', scope: mainnet }, mainnet]
 
         expect(queryKeyReferencesScope(key, testnet)).toBe(false)
+    })
+
+    it('does not match the same network id on another chain', () => {
+        const key = [
+            'assets',
+            { scope: { chainId: 'ethereum', networkId: 'testnet' } },
+        ]
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(false)
+    })
+
+    it('does not match a key shaped before scopes, with a bare network', () => {
+        const key = ['assets', { assetId: '1', network: 'testnet' }, 'testnet']
+
+        expect(queryKeyReferencesScope(key, testnet)).toBe(false)
+    })
+
+    it('rejects a scope that is not valid', () => {
+        expect(() =>
+            queryKeyReferencesScope(['assets'], UNKNOWN_CHAIN_SCOPE),
+        ).toThrow(InvalidScopeKeyError)
     })
 
     it('does not match a key that carries no network', () => {

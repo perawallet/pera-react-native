@@ -17,10 +17,10 @@ import {
     nativeAssetFor,
 } from '@perawallet/wallet-core-assets'
 import {
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { currencyQueryKeys } from './querykeys'
 
 async function getAlgoPriceFromDb(scope: ChainScope): Promise<Decimal> {
@@ -32,11 +32,11 @@ async function getAlgoPriceFromDb(scope: ChainScope): Promise<Decimal> {
 }
 
 export const useAlgoUsdPriceQuery = (enabled: boolean = true) => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     return useQuery({
-        queryKey: currencyQueryKeys.algoUsdPrice(network),
-        queryFn: () => getAlgoPriceFromDb(scopeForLegacyNetwork(network)),
+        queryKey: currencyQueryKeys.algoUsdPrice(scope),
+        queryFn: () => getAlgoPriceFromDb(scope),
         staleTime: Infinity,
         // SQLite is the source of truth for the ALGO price. Force the queryFn
         // to run even while offline — TanStack's default networkMode: 'online'

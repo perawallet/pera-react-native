@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     getSuggestedParametersQueryKey,
     getTransactionDetailQueryKey,
@@ -18,33 +19,36 @@ import {
     isBlockchainQuery,
 } from '../querykeys'
 
+const MAINNET = scopeForLegacyNetwork('mainnet')
+const TESTNET = scopeForLegacyNetwork('testnet')
+
 describe('querykeys', () => {
     describe('getSuggestedParametersQueryKey', () => {
-        test('includes the network in the key', () => {
-            const key = getSuggestedParametersQueryKey('mainnet')
+        test('carries the scope object in the key', () => {
+            const key = getSuggestedParametersQueryKey(MAINNET)
 
             expect(key).toEqual([
                 'blockchain',
                 'suggested-parameters',
-                { network: 'mainnet' },
+                { scope: { chainId: 'algorand', networkId: 'mainnet' } },
             ])
         })
     })
 
     describe('getTransactionDetailQueryKey', () => {
-        test('includes the transaction ID and network in the key', () => {
-            const key = getTransactionDetailQueryKey('TXID123', 'mainnet')
+        test('includes the transaction ID and scope in the key', () => {
+            const key = getTransactionDetailQueryKey('TXID123', MAINNET)
 
             expect(key).toEqual([
                 'blockchain',
                 'transaction-detail',
-                { transactionId: 'TXID123', network: 'mainnet' },
+                { transactionId: 'TXID123', scope: MAINNET },
             ])
         })
 
-        test('produces different keys for different networks', () => {
-            const key1 = getTransactionDetailQueryKey('TXID123', 'mainnet')
-            const key2 = getTransactionDetailQueryKey('TXID123', 'testnet')
+        test('produces different keys for different scopes', () => {
+            const key1 = getTransactionDetailQueryKey('TXID123', MAINNET)
+            const key2 = getTransactionDetailQueryKey('TXID123', TESTNET)
 
             expect(key1).not.toEqual(key2)
         })
@@ -53,16 +57,16 @@ describe('querykeys', () => {
     describe('isBlockchainQuery', () => {
         test('returns true for keys built by the blockchain key factories', () => {
             expect(
-                isBlockchainQuery(getSuggestedParametersQueryKey('mainnet')),
+                isBlockchainQuery(getSuggestedParametersQueryKey(MAINNET)),
             ).toBe(true)
             expect(
                 isBlockchainQuery(
-                    getTransactionDetailQueryKey('TXID123', 'mainnet'),
+                    getTransactionDetailQueryKey('TXID123', MAINNET),
                 ),
             ).toBe(true)
             expect(
                 isBlockchainQuery(
-                    getGroupTransactionsQueryKey('GROUP123', 'mainnet'),
+                    getGroupTransactionsQueryKey('GROUP123', MAINNET),
                 ),
             ).toBe(true)
         })

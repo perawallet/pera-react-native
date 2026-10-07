@@ -35,12 +35,11 @@ export const useOpenSubmissionTxIdsQuery = ({
 }: {
     network: Network
 }): UseOpenSubmissionTxIdsQueryResult => {
+    const scope = scopeForLegacyNetwork(network)
     const query = useQuery({
-        queryKey: transactionQueryKeys.openSubmissionTxIds(network),
+        queryKey: transactionQueryKeys.openSubmissionTxIds(scope),
         queryFn: async () => {
-            const attempts = await getOpenSubmissionAttempts({
-                scope: scopeForLegacyNetwork(network),
-            })
+            const attempts = await getOpenSubmissionAttempts({ scope })
             return new Set(attempts.flatMap(attempt => attempt.txIds))
         },
         staleTime: 30_000,

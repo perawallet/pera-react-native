@@ -10,31 +10,31 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 const MODULE_PREFIX = 'multisig'
 
 export const getMultisigAccountDetailQueryKey = (
-    network: Network,
+    scope: ChainScope,
     address: string,
 ) => {
-    return [MODULE_PREFIX, 'account-detail', { network, address }]
+    return [MODULE_PREFIX, 'account-detail', { scope, address }]
 }
 
 export const getSignRequestDetailQueryKey = (
-    network: Network,
+    scope: ChainScope,
     signRequestId: string,
 ) => {
-    return [MODULE_PREFIX, 'sign-request-detail', { network, signRequestId }]
+    return [MODULE_PREFIX, 'sign-request-detail', { scope, signRequestId }]
 }
 
 export const getSignRequestsWithSignaturesQueryKey = (
-    network: Network,
+    scope: ChainScope,
     signRequestId: string,
 ) => {
     return [
         MODULE_PREFIX,
         'sign-request-with-signatures',
-        { network, signRequestId },
+        { scope, signRequestId },
     ]
 }

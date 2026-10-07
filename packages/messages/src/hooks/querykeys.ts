@@ -10,38 +10,38 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Query } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'notifications'
 
 export const getNotificationsListQueryKey = (
-    network: Network,
+    scope: ChainScope,
     deviceID: string,
 ) => {
-    return [MODULE_PREFIX, 'listv2', { deviceID, network }]
+    return [MODULE_PREFIX, 'listv2', { deviceID, scope }]
 }
 
 export const getNotificationStatusQueryKey = (
-    network: Network,
+    scope: ChainScope,
     deviceID: string,
 ) => {
-    return [MODULE_PREFIX, 'notification-status', { deviceID, network }]
+    return [MODULE_PREFIX, 'notification-status', { deviceID, scope }]
 }
 
 export const getMessageStatusQueryKey = (
-    network: Network,
+    scope: ChainScope,
     deviceID: string,
 ) => {
-    return [MODULE_PREFIX, 'message-status', { deviceID, network }]
+    return [MODULE_PREFIX, 'message-status', { deviceID, scope }]
 }
 
 export const getInboxQueryKey = (
-    network: Network,
+    scope: ChainScope,
     deviceID: string,
     addresses: string[],
 ) => {
-    return [MODULE_PREFIX, 'inbox', { deviceID, network, addresses }]
+    return [MODULE_PREFIX, 'inbox', { deviceID, scope, addresses }]
 }
 
 export const invalidateAllPredicate = (query: Query) => {
