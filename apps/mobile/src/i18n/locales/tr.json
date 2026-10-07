@@ -879,7 +879,8 @@
         },
         "network_unavailable": {
             "title": "Bu ağda kullanılamıyor",
-            "body": "BetaNet veya özel düğümlerde bulunmayan Pera services gerekiyor. MainNet veya TestNet'e geç."
+            "body": "BetaNet veya özel düğümlerde bulunmayan Pera services gerekiyor. MainNet veya TestNet'e geç.",
+            "generic_body": "Bu özellik şu anda kullanılamıyor."
         },
         "yes": "Evet",
         "no": "Hayır",
@@ -2659,7 +2660,7 @@
             "error_title": "Bir şeyler ters gitti",
             "error_body": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene.",
             "inbox_unavailable_title": "Varlık gelen kutusu kullanılamıyor",
-            "inbox_unavailable_body": "Alıcı bu varlığı eklemedi ve varlık gelen kutusu bu ağda kullanılamıyor. Göndermek için MainNet veya TestNet'e geç.",
+            "inbox_unavailable_body": "Alıcı bu varlığı eklemedi ve varlık gelen kutusu şu anda kullanılamıyor, bu yüzden gönderilemiyor.",
             "nfd_mismatch_title": "Ad zincirdekiyle eşleşmiyor",
             "nfd_mismatch_body": "{{name}} için NFD sözleşmesi bu adresi listelemiyor. Güveniyorsan adresi doğrudan yapıştır.",
             "nfd_unavailable_title": "{{name}} doğrulanamadı",

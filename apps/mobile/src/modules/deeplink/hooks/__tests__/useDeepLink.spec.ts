@@ -1337,7 +1337,6 @@ describe('useDeepLink', () => {
         // The capability each gated type needs, switched off in turn.
         it.each([
             [DeeplinkType.DISCOVER_PATH, 'discover'],
-            [DeeplinkType.DISCOVER_BROWSER, 'discover'],
             [DeeplinkType.STAKING, 'staking'],
             [DeeplinkType.SWAP, 'swap'],
             [DeeplinkType.ADD_WATCH_ACCOUNT, 'watchAccounts'],
@@ -1373,9 +1372,33 @@ describe('useDeepLink', () => {
                 expect(onError).toHaveBeenCalledTimes(1)
                 expect(onSuccess).not.toHaveBeenCalled()
                 expect(mockNavigate).not.toHaveBeenCalled()
-                expect(mockErrorToast).toHaveBeenCalled()
+                // A remote switch must not call a valid link invalid.
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'common.network_unavailable.title',
+                    'common.network_unavailable.generic_body',
+                )
             },
         )
+
+        it('reports a link as unavailable without dispatching it', () => {
+            capabilityState.turnOff('staking')
+            ;(parseDeeplink as Mock).mockReturnValueOnce({
+                type: DeeplinkType.STAKING,
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            expect(
+                result.current.isDeepLinkAvailable('perawallet://app/staking'),
+            ).toBe(false)
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        })
+
+        it('treats an unparseable input as available, leaving validation to the caller', () => {
+            ;(parseDeeplink as Mock).mockReturnValueOnce(null)
+            const { result } = renderHook(() => useDeepLink())
+
+            expect(result.current.isDeepLinkAvailable('ADDRESS')).toBe(true)
+        })
 
         it('refuses a notification-sourced link silently', async () => {
             capabilityState.turnOff('staking')
@@ -1708,6 +1731,10 @@ describe('useDeepLink', () => {
         // staying locked forever on its handlingRef guard.
         expect(onError).toHaveBeenCalled()
         expect(onSuccess).not.toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.network_unavailable.title',
+            'common.network_unavailable.generic_body',
+        )
     })
 
     it('opens the pending-signatures sheet for a SIGN_REQUEST deeplink', async () => {
@@ -1773,6 +1800,10 @@ describe('useDeepLink', () => {
 
         expect(mockRequestByType).not.toHaveBeenCalled()
         expect(onError).toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.network_unavailable.title',
+            'common.network_unavailable.generic_body',
+        )
     })
 
     it('should handle RECOVER_ADDRESS deeplink and open the pre-filled Import screen (HD) from QR', async () => {

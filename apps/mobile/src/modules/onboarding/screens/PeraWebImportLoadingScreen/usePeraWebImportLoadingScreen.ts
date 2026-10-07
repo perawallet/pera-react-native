@@ -86,7 +86,7 @@ export const usePeraWebImportLoadingScreen = (): void => {
             if (!canImportPeraWebRef.current) {
                 errorToastRef.current(
                     tRef.current('common.network_unavailable.title'),
-                    tRef.current('common.network_unavailable.body'),
+                    tRef.current('common.network_unavailable.generic_body'),
                 )
                 navigationRef.current.goBack()
                 return

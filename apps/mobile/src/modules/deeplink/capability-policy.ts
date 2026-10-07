@@ -18,15 +18,13 @@ import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
  * screen its capability removed. `null` means it needs nothing.
  *
  * Exhaustive `Record` like `DEEPLINK_NOTIFICATION_POLICY`: a new `DeeplinkType`
- * fails to compile until it is classified. The `CARDS` and `SELL` checks stay in
- * `useDeepLink`, since their flag hooks already fold in the capability.
+ * fails to compile until it is classified. `useDeepLink` checks `CARDS` and
+ * `SELL` beside this table, since their flag hooks already fold in the capability.
  */
 export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
     Exclude<DeeplinkType, DevLocaleTourDeeplinkType>,
     CapabilityRequirement | null
 > = {
-    // No platform part: on web it opens the system browser, not the Discover tab.
-    [DeeplinkType.DISCOVER_BROWSER]: { anyChain: 'discover' },
     [DeeplinkType.DISCOVER_PATH]: {
         platform: 'discoverTab',
         anyChain: 'discover',
@@ -59,7 +57,9 @@ export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
     [DeeplinkType.CARDS]: null,
     [DeeplinkType.SELL]: null,
     [DeeplinkType.ACCOUNT_DETAIL]: null,
+    // Both open a URL in the webview stack and never reach the Discover tab.
     [DeeplinkType.INTERNAL_BROWSER]: null,
+    [DeeplinkType.DISCOVER_BROWSER]: null,
     [DeeplinkType.HOME]: null,
 }
 

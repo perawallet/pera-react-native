@@ -76,7 +76,9 @@ export const useSendDestinationRouter = () => {
     } = useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
 
     const { network } = useNetwork()
-    const canUseAssetInbox = useCapability({ anyChain: 'assetInbox' })
+    const canUseAssetInbox = useCapability({
+        chain: { chainId: LEGACY_CHAIN_ID, capability: 'assetInbox' },
+    })
     const { showToast } = useToast()
     const { t } = useLanguage()
 

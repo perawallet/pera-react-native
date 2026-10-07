@@ -15,12 +15,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     isValidDeepLink: vi.fn(),
+    isDeepLinkAvailable: vi.fn(),
     handleDeepLink: vi.fn(),
 }))
 
 vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({
         isValidDeepLink: mocks.isValidDeepLink,
+        isDeepLinkAvailable: mocks.isDeepLinkAvailable,
         handleDeepLink: mocks.handleDeepLink,
     }),
 }))
@@ -32,7 +34,21 @@ const WC_URI = 'wc:topic@1?bridge=https%3A%2F%2Fbridge.example&key=abc'
 describe('usePasteLinkContent', () => {
     beforeEach(() => {
         mocks.isValidDeepLink.mockReturnValue(true)
+        mocks.isDeepLinkAvailable.mockReturnValue(true)
+        mocks.handleDeepLink.mockReset()
         mocks.handleDeepLink.mockResolvedValue(undefined)
+    })
+
+    it('shows only the inline error, never dispatching, for a link whose capability is off', async () => {
+        mocks.isDeepLinkAvailable.mockReturnValue(false)
+        const onClose = vi.fn()
+        const { result } = renderHook(() => usePasteLinkContent(onClose))
+        act(() => result.current.setValue(WC_URI))
+        await act(async () => result.current.handleSubmit())
+        expect(result.current.hasError).toBe(true)
+        expect(result.current.errorMessageKey).toBe('paste_link.error_failed')
+        expect(mocks.handleDeepLink).not.toHaveBeenCalled()
+        expect(onClose).not.toHaveBeenCalled()
     })
 
     it('sets hasError and does not dispatch an unrecognised value', async () => {

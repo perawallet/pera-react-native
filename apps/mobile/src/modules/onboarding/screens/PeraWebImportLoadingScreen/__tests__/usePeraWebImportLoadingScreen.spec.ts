@@ -91,7 +91,7 @@ describe('usePeraWebImportLoadingScreen', () => {
         expect(mockFetchPeraWebBackup).not.toHaveBeenCalled()
         expect(mockErrorToast).toHaveBeenCalledWith(
             'common.network_unavailable.title',
-            'common.network_unavailable.body',
+            'common.network_unavailable.generic_body',
         )
     })
 

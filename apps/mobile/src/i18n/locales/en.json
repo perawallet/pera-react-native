@@ -879,7 +879,8 @@
         },
         "network_unavailable": {
             "title": "Not available on this network",
-            "body": "This needs Pera services, which aren't available on BetaNet or custom nodes. Switch to MainNet or TestNet."
+            "body": "This needs Pera services, which aren't available on BetaNet or custom nodes. Switch to MainNet or TestNet.",
+            "generic_body": "This feature isn't available right now."
         },
         "yes": "Yes",
         "no": "No",
@@ -2659,7 +2660,7 @@
             "error_title": "Something went wrong",
             "error_body": "An unexpected error has occurred. Please try again.",
             "inbox_unavailable_title": "Asset Inbox unavailable",
-            "inbox_unavailable_body": "The recipient hasn't opted in to this asset, and Asset Inbox isn't available on this network. Switch to MainNet or TestNet to send it.",
+            "inbox_unavailable_body": "The recipient hasn't opted in to this asset, and Asset Inbox isn't available right now, so it can't be sent.",
             "nfd_mismatch_title": "Name doesn't match on-chain",
             "nfd_mismatch_body": "The NFD contract for {{name}} doesn't list this address. Paste the address directly if you trust it.",
             "nfd_unavailable_title": "Couldn't verify {{name}}",
