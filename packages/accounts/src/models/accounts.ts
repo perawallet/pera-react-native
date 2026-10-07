@@ -15,7 +15,7 @@ import type {
     LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
 import type { Network } from '@perawallet/wallet-core-shared'
-import type { AccountCredentials, AccountProvenance } from './credentials'
+import type { AccountChains, AccountCustody } from './credentials'
 
 export const DerivationTypes = {
     Khovratovich: 32,
@@ -141,9 +141,9 @@ export type BaseWalletAccount = {
      * changes `type` or its details must go through `rebuildCustody` or the old
      * kind sticks. A record missing the details its `type` requires stays bare.
      */
-    provenance?: AccountProvenance
-    /** Keyed by chain; empty when no local key signs for the account. */
-    credentials?: AccountCredentials
+    custody?: AccountCustody
+    /** Everything that varies by chain, keyed by chain id. */
+    chains?: AccountChains
 }
 
 export type Algo25Account = BaseWalletAccount & {

@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 
 // Same stub as buildKeylessAccount.spec.ts. Without it, the importActual of
 // buildKeylessAccount below loads the real Algorand runtime (algosdk), which

@@ -11,36 +11,30 @@
  */
 
 import { buildAccount, type BuildAccountInput } from '../credentials'
-import {
-    DerivationTypes,
-    type AccountType,
-    type WalletAccount,
-} from '../models'
+import type { AccountType, WalletAccount } from '../models'
 
-const defaults: Record<AccountType, Omit<BuildAccountInput, 'address'>> = {
+const inputs = (address: string): Record<AccountType, BuildAccountInput> => ({
     algo25: {
-        provenance: { kind: 'local', seed: 'algo25' },
-        credentials: { algorand: { keyPairId: 'algo25-key' } },
+        custody: { kind: 'local', seed: 'algo25' },
+        chainId: 'algorand',
+        chains: { algorand: { address, keyPairId: 'algo25-key' } },
     },
     quantum: {
-        provenance: { kind: 'local', seed: 'quantum' },
-        credentials: { algorand: { keyPairId: 'quantum-key' } },
+        custody: { kind: 'local', seed: 'quantum' },
+        chainId: 'algorand',
+        chains: { algorand: { address, keyPairId: 'quantum-key' } },
     },
     hdWallet: {
-        provenance: {
+        custody: {
             kind: 'local',
             seed: 'bip39',
-            hd: {
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: DerivationTypes.Peikert,
-            },
+            hd: { account: 0, keyIndex: 0 },
         },
-        credentials: { algorand: { keyPairId: 'hd-key' } },
+        chainId: 'algorand',
+        chains: { algorand: { address, keyPairId: 'hd-key' } },
     },
     hardware: {
-        provenance: {
+        custody: {
             kind: 'hardware',
             device: {
                 manufacturer: 'ledger',
@@ -50,25 +44,33 @@ const defaults: Record<AccountType, Omit<BuildAccountInput, 'address'>> = {
             },
             accountIndex: 0,
         },
+        chainId: 'algorand',
+        chains: { algorand: { address } },
     },
     multisig: {
-        provenance: {
-            kind: 'multisig',
-            threshold: 1,
-            members: ['MEMBER-1', 'MEMBER-2'],
-            version: 1,
+        custody: { kind: 'multisig' },
+        chainId: 'algorand',
+        chains: {
+            algorand: {
+                address,
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        version: 1,
+                        threshold: 1,
+                        addresses: ['MEMBER-1', 'MEMBER-2'],
+                    },
+                },
+            },
         },
     },
-    watch: { provenance: { kind: 'watch' } },
-}
+    watch: {
+        custody: { kind: 'watch' },
+        chainId: 'algorand',
+        chains: { algorand: { address } },
+    },
+})
 
 /** A valid account of `type`, built the same way production code builds one. */
-export const buildTestAccount = (
-    type: AccountType,
-    overrides: Partial<BuildAccountInput> = {},
-): WalletAccount =>
-    buildAccount({
-        address: `${type.toUpperCase()}-ADDR`,
-        ...defaults[type],
-        ...overrides,
-    } as BuildAccountInput)
+export const buildTestAccount = (type: AccountType): WalletAccount =>
+    buildAccount(inputs(`${type.toUpperCase()}-ADDR`)[type])

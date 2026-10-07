@@ -14,7 +14,6 @@ import type {
     WalletAccount,
     HDWalletAccount,
     ImportAccountType,
-    DerivationType,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -57,7 +56,6 @@ export type SearchAccountsParams =
     | {
           mode: 'import'
           walletKeyId: string
-          derivationType: DerivationType
       }
 
 export type ImportSelectAddressesParams =

@@ -132,7 +132,6 @@ describe('algorandKeyDerivation equivalence with the hook-based derivation', () 
                 algorandAccountsAdapter.hdKeyPairId(SEED_ID, {
                     account,
                     keyIndex,
-                    derivationType: BIP32DerivationType.Peikert,
                 }),
             ).toBe(derived.keyPairId)
         },

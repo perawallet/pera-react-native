@@ -19,7 +19,7 @@ import {
 import {
     AccountTypes,
     DerivationTypes,
-    type AccountCredentials,
+    type AccountChains,
     type WalletAccount,
 } from '../models'
 
@@ -83,25 +83,20 @@ describe('buildDeviceAccountRegistrations', () => {
         expect(buildDeviceAccountRegistrations([], ['ADDR_A'])).toEqual([])
     })
 
-    it('registers credential-bearing accounts exactly as their legacy-shaped twins', () => {
-        // A credential a later chain adds must not change what the devices API
-        // is told. It isn't a `ChainId` member, hence the widening cast.
-        const fixtureChainCredential = (
-            keyPairId: string,
-        ): AccountCredentials =>
+    it('registers custody-bearing accounts exactly as their legacy-shaped twins', () => {
+        // An entry a later chain adds must not change what the devices API is
+        // told. It isn't a `ChainId` member, hence the widening cast.
+        const withOtherChain = (
+            address: string,
+            keyPairId?: string,
+        ): AccountChains =>
             ({
-                'fixture-chain': { keyPairId: `fixture-${keyPairId}` },
-            }) as unknown as AccountCredentials
-        const credentials = (keyPairId: string) => ({
-            ...fixtureChainCredential(keyPairId),
-            algorand: { keyPairId },
-        })
-        const hd = {
-            account: 0,
-            change: 0,
-            keyIndex: 1,
-            derivationType: DerivationTypes.Peikert,
-        }
+                'fixture-chain': {
+                    address: `fixture-${address}`,
+                    ...(keyPairId ? { keyPairId: `fixture-${keyPairId}` } : {}),
+                },
+            }) as unknown as AccountChains
+        const hd = { account: 0, keyIndex: 1 }
         const ledger = {
             manufacturer: 'ledger',
             deviceId: 'ble-1',
@@ -110,48 +105,79 @@ describe('buildDeviceAccountRegistrations', () => {
         } as const
         const credentialBearing: WalletAccount[] = [
             buildAccount({
-                address: 'ALGO25ADDR',
-                provenance: { kind: 'local', seed: 'algo25' },
-                credentials: credentials('algo25-key'),
+                custody: { kind: 'local', seed: 'algo25' },
+                chainId: 'algorand',
+                chains: {
+                    ...withOtherChain('ALGO25ADDR', 'algo25-key'),
+                    algorand: {
+                        address: 'ALGO25ADDR',
+                        keyPairId: 'algo25-key',
+                    },
+                },
             }),
             buildAccount({
-                address: 'HDADDR',
-                provenance: { kind: 'local', seed: 'bip39', hd },
-                credentials: credentials('hd-key'),
+                custody: { kind: 'local', seed: 'bip39', hd },
+                chainId: 'algorand',
+                chains: {
+                    ...withOtherChain('HDADDR', 'hd-key'),
+                    algorand: { address: 'HDADDR', keyPairId: 'hd-key' },
+                },
             }),
             buildAccount({
-                address: 'LEDGERADDR',
-                provenance: {
+                custody: {
                     kind: 'hardware',
                     device: ledger,
                     accountIndex: 0,
                 },
+                chainId: 'algorand',
+                chains: { algorand: { address: 'LEDGERADDR' } },
             }),
             buildAccount({
-                address: 'MSIGADDR',
-                provenance: {
-                    kind: 'multisig',
-                    threshold: 1,
-                    members: ['MEMBERA', 'MEMBERB'],
-                    version: 1,
+                custody: { kind: 'multisig' },
+                chainId: 'algorand',
+                chains: {
+                    algorand: {
+                        address: 'MSIGADDR',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                version: 1,
+                                threshold: 1,
+                                addresses: ['MEMBERA', 'MEMBERB'],
+                            },
+                        },
+                    },
                 },
             }),
             buildAccount({
-                address: 'WATCHADDR',
-                provenance: { kind: 'watch' },
-                credentials: fixtureChainCredential('watch'),
+                custody: { kind: 'watch' },
+                chainId: 'algorand',
+                chains: {
+                    ...withOtherChain('WATCHADDR'),
+                    algorand: { address: 'WATCHADDR' },
+                },
             }),
             buildAccount({
-                address: 'QUANTUMADDR',
-                provenance: { kind: 'local', seed: 'quantum' },
-                credentials: credentials('quantum-key'),
+                custody: { kind: 'local', seed: 'quantum' },
+                chainId: 'algorand',
+                chains: {
+                    ...withOtherChain('QUANTUMADDR', 'quantum-key'),
+                    algorand: {
+                        address: 'QUANTUMADDR',
+                        keyPairId: 'quantum-key',
+                    },
+                },
             }),
         ]
         const legacyShaped: WalletAccount[] = [
             account('ALGO25ADDR', AccountTypes.algo25),
             {
                 ...account('HDADDR', AccountTypes.hdWallet),
-                hdWalletDetails: hd,
+                hdWalletDetails: {
+                    ...hd,
+                    change: 0,
+                    derivationType: DerivationTypes.Peikert,
+                },
             } as WalletAccount,
             {
                 id: 'LEDGERADDR',

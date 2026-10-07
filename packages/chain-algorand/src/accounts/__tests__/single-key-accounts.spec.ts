@@ -12,6 +12,7 @@
 
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import {
     DuplicateAccountError,
     type AccountKeystore,
@@ -131,19 +132,20 @@ describe('algorandSingleKeyAccounts', () => {
             })
             expect(minted.isNewSeed).toBe(true)
             expect(minted.seedKeyId).toBe('SEED1')
+            const address = algorandAddressCodec.fromPublicKey(
+                ALGO25_PUBLIC_KEY,
+                { scheme: 'ed25519', networkId: 'mainnet' },
+            )
             expect(minted.account).toMatchObject({
                 type: 'algo25',
-                address: algorandAddressCodec.fromPublicKey(ALGO25_PUBLIC_KEY, {
-                    scheme: 'ed25519',
-                    networkId: 'mainnet',
-                }),
+                address,
                 keyPairId: algo25SignKeyId('SEED1'),
-                provenance: {
-                    kind: 'local',
-                    seed: 'algo25',
-                },
-                credentials: {
-                    algorand: { keyPairId: algo25SignKeyId('SEED1') },
+                custody: { kind: 'local', seed: 'algo25' },
+                chains: {
+                    algorand: {
+                        address,
+                        keyPairId: algo25SignKeyId('SEED1'),
+                    },
                 },
             })
         })
@@ -193,12 +195,12 @@ describe('algorandSingleKeyAccounts', () => {
                 type: 'quantum',
                 address: CANONICAL_ADDRESS,
                 keyPairId: 'QSEED1-quantum-pqk1',
-                provenance: {
-                    kind: 'local',
-                    seed: 'quantum',
-                },
-                credentials: {
-                    algorand: { keyPairId: 'QSEED1-quantum-pqk1' },
+                custody: { kind: 'local', seed: 'quantum' },
+                chains: {
+                    algorand: {
+                        address: CANONICAL_ADDRESS,
+                        keyPairId: 'QSEED1-quantum-pqk1',
+                    },
                 },
             })
         })
@@ -239,12 +241,12 @@ describe('algorandSingleKeyAccounts', () => {
             expect(account).toMatchObject({
                 type: 'algo25',
                 keyPairId: algo25SignKeyId('SEED1'),
-                provenance: {
-                    kind: 'local',
-                    seed: 'algo25',
-                },
-                credentials: {
-                    algorand: { keyPairId: algo25SignKeyId('SEED1') },
+                custody: { kind: 'local', seed: 'algo25' },
+                chains: {
+                    algorand: {
+                        address: expect.any(String),
+                        keyPairId: algo25SignKeyId('SEED1'),
+                    },
                 },
             })
             expect(save).toHaveBeenCalledWith(
@@ -258,12 +260,15 @@ describe('algorandSingleKeyAccounts', () => {
             expect(accounts).toHaveLength(1)
             expect(accounts[0].address).toBe(CANONICAL_ADDRESS)
             expect(accounts[0].keyPairId).toBe('QSEED1-quantum-pqk1')
-            expect(accounts[0].provenance).toEqual({
+            expect(accounts[0].custody).toEqual({
                 kind: 'local',
                 seed: 'quantum',
             })
-            expect(accounts[0].credentials).toEqual({
-                algorand: { keyPairId: 'QSEED1-quantum-pqk1' },
+            expect(accounts[0].chains).toEqual({
+                algorand: {
+                    address: CANONICAL_ADDRESS,
+                    keyPairId: 'QSEED1-quantum-pqk1',
+                },
             })
             expect(keystore.createQuantumKey).toHaveBeenCalledWith({
                 chain: algorandQuantumDerivation,

@@ -14,15 +14,16 @@ import {
     buildAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 
 export const buildWatchAccount = (account: LegacyAccount): WalletAccount =>
     buildAccount({
         name: account.name || undefined,
-        address: account.address,
-        provenance: { kind: 'watch' },
+        custody: { kind: 'watch' },
+        chainId: ALGORAND_CHAIN_ID,
+        chains: { [ALGORAND_CHAIN_ID]: { address: account.address } },
         // Only the mirror — deliberately NOT rekeyAddressByNetwork: rekeys are per-network on-chain
         // and the legacy value's network is ambiguous; the syncer's updateAccountRekeyAddress
         // writes the authoritative per-network map on first tick, per the field's documented contract.
@@ -34,8 +35,7 @@ export const buildLedgerAccount = (account: LegacyAccount): WalletAccount => {
         throw new Error('Ledger account missing ledger details')
     return buildAccount({
         name: account.name || undefined,
-        address: account.address,
-        provenance: {
+        custody: {
             kind: 'hardware',
             device: {
                 manufacturer: 'ledger',
@@ -45,6 +45,8 @@ export const buildLedgerAccount = (account: LegacyAccount): WalletAccount => {
             },
             accountIndex: account.ledger.positionInLedger,
         },
+        chainId: ALGORAND_CHAIN_ID,
+        chains: { [ALGORAND_CHAIN_ID]: { address: account.address } },
     })
 }
 
@@ -61,12 +63,20 @@ export const buildMultiSigAccount = (account: LegacyAccount): WalletAccount => {
         deriveMultisigThreshold(account.address, version, participants)
     return buildAccount({
         name: account.name || undefined,
-        address: account.address,
-        provenance: {
-            kind: 'multisig',
-            threshold: resolvedThreshold,
-            members: participants,
-            version: version,
+        custody: { kind: 'multisig' },
+        chainId: ALGORAND_CHAIN_ID,
+        chains: {
+            [ALGORAND_CHAIN_ID]: {
+                address: account.address,
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        version,
+                        threshold: resolvedThreshold,
+                        addresses: participants,
+                    },
+                },
+            },
         },
     })
 }
@@ -76,7 +86,7 @@ const deriveMultisigThreshold = (
     version: number,
     participants: string[],
 ): number => {
-    const multisig = multisigChainAdapters.get(LEGACY_CHAIN_ID)
+    const multisig = multisigChainAdapters.get(ALGORAND_CHAIN_ID)
     for (let k = 1; k <= participants.length; k += 1) {
         if (
             multisig.deriveAddress({

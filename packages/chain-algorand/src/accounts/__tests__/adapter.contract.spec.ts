@@ -13,6 +13,7 @@
 // @vitest-environment node
 // XHD's noble checks reject jsdom's Uint8Array realm.
 import { describe, expect, test } from 'vitest'
+import '../../__tests__/registerAlgorandAccounts'
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
 import {

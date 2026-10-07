@@ -19,10 +19,7 @@ import {
     type SingleKeyAccountOps,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     algo25PublicKeyFromSeed,
     algo25SignKeyId,
@@ -37,6 +34,7 @@ import {
     generateOrderedUniqueId,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../legacy-network'
 import { algorandAddressCodec } from './address-codec'
 import { algorandAccountExists } from './discovery'
@@ -73,13 +71,11 @@ const createAlgo25 = async (
     try {
         return {
             account: buildAccount({
-                address: ed25519Address(publicKey, scope),
-                provenance: {
-                    kind: 'local',
-                    seed: 'algo25',
-                },
-                credentials: {
-                    [LEGACY_CHAIN_ID]: {
+                custody: { kind: 'local', seed: 'algo25' },
+                chainId: ALGORAND_CHAIN_ID,
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: ed25519Address(publicKey, scope),
                         keyPairId: algo25SignKeyId(seedKeyId),
                     },
                 },
@@ -109,13 +105,13 @@ const createQuantum = async (
     try {
         return {
             account: buildAccount({
-                address: result.address,
-                provenance: {
-                    kind: 'local',
-                    seed: 'quantum',
-                },
-                credentials: {
-                    [LEGACY_CHAIN_ID]: { keyPairId: result.signKeyId },
+                custody: { kind: 'local', seed: 'quantum' },
+                chainId: ALGORAND_CHAIN_ID,
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: result.address,
+                        keyPairId: result.signKeyId,
+                    },
                 },
             }),
             seedKeyId: result.seedKey.id,
@@ -198,13 +194,11 @@ const importQuantum = async (
         })
         const minted: MintedAccount = {
             account: buildAccount({
-                address: result.address,
-                provenance: {
-                    kind: 'local',
-                    seed: 'quantum',
-                },
-                credentials: {
-                    [LEGACY_CHAIN_ID]: {
+                custody: { kind: 'local', seed: 'quantum' },
+                chainId: ALGORAND_CHAIN_ID,
+                chains: {
+                    [ALGORAND_CHAIN_ID]: {
+                        address: result.address,
                         keyPairId:
                             candidate.derivation === PQ_DERIVATION_CANONICAL
                                 ? quantumSignKeyId(
@@ -236,13 +230,13 @@ const importAlgo25 = async (
     })
     const minted: MintedAccount = {
         account: buildAccount({
-            address: ed25519Address(publicKey, scope),
-            provenance: {
-                kind: 'local',
-                seed: 'algo25',
-            },
-            credentials: {
-                [LEGACY_CHAIN_ID]: { keyPairId: algo25SignKeyId(seedKey.id) },
+            custody: { kind: 'local', seed: 'algo25' },
+            chainId: ALGORAND_CHAIN_ID,
+            chains: {
+                [ALGORAND_CHAIN_ID]: {
+                    address: ed25519Address(publicKey, scope),
+                    keyPairId: algo25SignKeyId(seedKey.id),
+                },
             },
         }),
         seedKeyId: seedKey.id,

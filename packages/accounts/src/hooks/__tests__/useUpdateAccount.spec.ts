@@ -135,7 +135,7 @@ describe('useUpdateAccount', () => {
         ])
     })
 
-    it('re-derives the provenance from the updated details instead of keeping a stale one', () => {
+    it('re-derives the custody from the updated details instead of keeping a stale one', () => {
         const device = {
             manufacturer: 'ledger' as const,
             deviceName: 'Nano X',
@@ -146,12 +146,12 @@ describe('useUpdateAccount', () => {
             id: 'hw',
             type: 'hardware',
             hardwareDetails: { ...device, deviceId: 'old', accountIndex: 0 },
-            provenance: {
+            custody: {
                 kind: 'hardware',
                 device: { ...device, deviceId: 'old' },
                 accountIndex: 0,
             },
-            credentials: {},
+            chains: { algorand: { address: 'LEDGER' } },
         })
         const { result } = renderHook(() => useUpdateAccount())
 
@@ -161,7 +161,7 @@ describe('useUpdateAccount', () => {
         } as WalletAccount)
 
         const written = mockSetAccounts.mock.calls[0][0] as WalletAccount[]
-        expect(written[2].provenance).toEqual({
+        expect(written[2].custody).toEqual({
             kind: 'hardware',
             device: { ...device, deviceId: 'new' },
             accountIndex: 0,

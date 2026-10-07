@@ -41,6 +41,16 @@ export const isNativeAsset = (
 
 export type SigningScheme = 'ed25519' | 'falcon-1024' | 'secp256k1'
 
+/**
+ * Account data only its own chain reads, persisted on the account's chain
+ * entry. A chain package adds its member, discriminated by `family`.
+ */
+export type ChainAccountNative = {
+    family: 'algorand'
+    /** Present on a multisig account; Algorand derives the address from it. */
+    multisig?: { version: number; threshold: number; addresses: string[] }
+}
+
 export type AccountChainState =
     | {
           family: 'algorand'

@@ -35,11 +35,7 @@ import {
     type MintedAccount,
     type SingleKeyAccountKind,
 } from '../chain-adapter'
-import {
-    DerivationTypes,
-    type HDWalletDetails,
-    type WalletAccount,
-} from '../models'
+import type { HDWalletDetails, HdIndex, WalletAccount } from '../models'
 
 type ChainState = {
     address: string
@@ -216,11 +212,7 @@ export const accountsContractTests = (
             const adapter = makeAdapter()
             const getPublicKey = adapter.createPublicKeyGetter(fixtures.rootKey)
             const at = (account: number, keyIndex: number) =>
-                getPublicKey({
-                    account,
-                    keyIndex,
-                    derivationType: adapter.hdDerivationType,
-                })
+                getPublicKey({ account, keyIndex })
 
             const [first, again, other] = await Promise.all([
                 at(0, 0),
@@ -237,23 +229,19 @@ export const accountsContractTests = (
             expect(codec.isValid(address, scope.networkId)).toBe(true)
         })
 
-        it('names the HD child key id deterministically per coordinate and derivation type', () => {
+        it('names the HD child key id deterministically per coordinate', () => {
             const adapter = makeAdapter()
             const { details } = fixtures.hdPath
-            const idOf = (overrides: Partial<HDWalletDetails> = {}) =>
-                adapter.hdKeyPairId('seed-1', { ...details, ...overrides })
+            const idOf = (overrides: Partial<HdIndex> = {}) =>
+                adapter.hdKeyPairId('seed-1', {
+                    account: details.account,
+                    keyIndex: details.keyIndex,
+                    ...overrides,
+                })
 
             expect(idOf()).toBe(idOf())
             expect(idOf({ account: details.account + 1 })).not.toBe(idOf())
             expect(idOf({ keyIndex: details.keyIndex + 1 })).not.toBe(idOf())
-            expect(
-                idOf({
-                    derivationType:
-                        details.derivationType === DerivationTypes.Peikert
-                            ? DerivationTypes.Khovratovich
-                            : DerivationTypes.Peikert,
-                }),
-            ).not.toBe(idOf())
         })
 
         it('accepts the matching HD path and rejects the others with their reason', () => {
