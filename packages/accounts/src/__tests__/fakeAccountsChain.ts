@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import { Decimal } from 'decimal.js'
 import {
     addressCodecs,
     keyDerivations,
@@ -75,6 +76,15 @@ const createFakeKeyDerivation = (): KeyDerivation => ({
 const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     chainId: FAKE_CHAIN_ID,
     fetchAccountState: vi.fn(),
+    toChainState: vi.fn(observed => ({
+        family: 'algorand' as const,
+        minBalance: observed.minBalance ?? new Decimal(0),
+        status: 'Offline' as const,
+        totalAssetsOptedIn: 0,
+        totalCreatedAssets: 0,
+        totalAppsOptedIn: 0,
+        ...(observed.authAddress ? { authAddress: observed.authAddress } : {}),
+    })),
     toAccountInformationAddress: vi.fn(
         ((address: string) =>
             address) as unknown as AccountsChainAdapter['toAccountInformationAddress'],
