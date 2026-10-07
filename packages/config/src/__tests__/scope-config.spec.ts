@@ -406,6 +406,22 @@ describe('ethereum scopes', () => {
         ).toStrictEqual({ rpcUrl: 'https://mainnet.rpc.example' })
     })
 
+    test('a registered custom-node source never reaches an Ethereum scope', async () => {
+        const { getChainConfig: fresh, registerCustomNetworkSource: register } =
+            await withEthereumConfig({
+                ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
+            })
+        const unregister = register(() => SAVED_NODE)
+
+        try {
+            expect(fresh(ETHEREUM_SEPOLIA)).toStrictEqual({
+                rpcUrl: 'https://sepolia.rpc.example',
+            })
+        } finally {
+            unregister()
+        }
+    })
+
     test('a network without an RPC URL is unconfigured', async () => {
         const { getChainConfig: fresh, UnconfiguredScopeError: FreshError } =
             await withEthereumConfig({
