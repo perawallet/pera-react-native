@@ -219,6 +219,8 @@ export interface PaymentUriOpts {
     amount?: Decimal
     label?: string
     note?: string
+    /** Unset in a parsed URI that names no network; the current network applies. A chain whose URIs carry no network ignores it. */
+    networkId?: NetworkId
 }
 
 export interface MessageSummary {
