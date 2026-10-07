@@ -11,15 +11,53 @@
  */
 
 import {
-    CHAIN_CAPABILITIES,
     type ChainCapabilities,
     type ChainCapabilityRestrictions,
 } from '@perawallet/wallet-core-chain-contract'
 
-// Algorand offers every capability; a composition root narrows per platform.
-export const algorandCapabilityDefaults = Object.fromEntries(
-    CHAIN_CAPABILITIES.map(capability => [capability, true]),
-) as ChainCapabilities
+// Explicit, so a new capability forces an Algorand decision.
+// privateKeys is off because accounts enter through mnemonics; contractDecoding
+// is off because application calls are decoded from the group, not from ABIs.
+export const algorandCapabilityDefaults: ChainCapabilities = {
+    send: true,
+    receive: true,
+    history: true,
+    assets: true,
+    pricing: true,
+    messageSigning: true,
+    dappConnect: true,
+    customNetworks: true,
+    watchAccounts: true,
+    ledger: true,
+    multisig: true,
+    rekey: true,
+    quantumAccounts: true,
+    staking: true,
+    swap: true,
+    card: true,
+    assetInbox: true,
+    nameService: true,
+    onramp: true,
+    giftCards: true,
+    discover: true,
+    feeDelegation: true,
+    arc0027: true,
+    liquidAuth: true,
+    notifications: true,
+    cloudBackup: true,
+    mnemonicBackup: true,
+    secureBackup: true,
+    nft: true,
+    manageAssets: true,
+    privateKeys: false,
+    contractDecoding: false,
+    priceHistory: true,
+    balanceHistory: true,
+    assetSearch: true,
+    assetFavorites: true,
+    priceAlerts: true,
+    csvExport: true,
+}
 
 // These need the Pera backend, which BetaNet and custom nodes don't have.
 const PERA_BACKED = ['developer-override'] as const
