@@ -263,6 +263,7 @@ append_config "TESTNET_CARD_USDC_ASSET_ID" "testnetCardUsdcAssetId" "string"
 # shell can't enumerate chain ids, so each chain gets its own line.
 append_config "CHAINS" "chainIds" "string"
 append_config "CHAIN_ALGORAND_CAPABILITIES" "chainAlgorandCapabilities" "string"
+append_config "CHAIN_ETHEREUM_CAPABILITIES" "chainEthereumCapabilities" "string"
 
 # Default Network
 if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then

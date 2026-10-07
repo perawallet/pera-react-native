@@ -79,6 +79,7 @@ const LEGACY_NETWORK_OF: Record<
 > = {
     algorand: scope =>
         isLegacyNetwork(scope.networkId) ? scope.networkId : undefined,
+    ethereum: () => undefined,
 }
 
 // The inverse, for the backend and algod clients that are still keyed by the

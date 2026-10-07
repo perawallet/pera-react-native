@@ -10,15 +10,9 @@
  limitations under the License
  */
 
-import type { ChainId } from './models/identity'
+import type { ChainModule } from '@perawallet/wallet-core-chain-contract'
+import { ethereumModule } from '@perawallet/wallet-core-chain-ethereum'
 
-// A Record so that adding a chain id stops this compiling. Must agree with the
-// chain's ChainDescriptor.nativeAsset.decimals.
-const NATIVE_ASSET_DECIMALS: Record<ChainId, number> = {
-    algorand: 6,
-    ethereum: 18,
-}
-
-/** Base units per display unit of the chain's native asset, as a power of ten. */
-export const nativeAssetDecimals = (chainId: ChainId): number =>
-    NATIVE_ASSET_DECIMALS[chainId]
+// metro.config.js swaps this for the stub unless the baked CHAINS lists
+// ethereum, which keeps viem out of an Algorand-only bundle.
+export const ethereumChainModule: ChainModule | undefined = ethereumModule

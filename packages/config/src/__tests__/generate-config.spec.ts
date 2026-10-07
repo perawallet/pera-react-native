@@ -118,9 +118,11 @@ describe('tools/dev/generate-config.sh', () => {
         const output = run({
             CHAINS: 'algorand',
             CHAIN_ALGORAND_CAPABILITIES: 'send,receive',
+            CHAIN_ETHEREUM_CAPABILITIES: 'send',
         })
         expect(output).toContain('chainIds: "algorand"')
         expect(output).toContain('chainAlgorandCapabilities: "send,receive"')
+        expect(output).toContain('chainEthereumCapabilities: "send"')
     })
 
     // turbo hashes only globalEnv into the build key, so a variable missing

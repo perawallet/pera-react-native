@@ -9,7 +9,7 @@ import { withoutTests } from '../shared/scope.js'
  * Mirrors `CHAIN_IDS` in packages/chain-contract/src/models/identity.ts, which
  * lanekeep's rule loader can't import. The spec fails until the two match.
  */
-export const CHAIN_IDS = ['algorand'] as const
+export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
 const SHARED_PACKAGES = [
     'chain-contract',

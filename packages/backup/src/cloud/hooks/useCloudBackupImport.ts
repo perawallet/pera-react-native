@@ -23,7 +23,10 @@ import {
     type WalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     hexToBytes,
     kmsCore,
@@ -174,7 +177,7 @@ const buildHdWalletAccount = async (
         address: payload.address,
         provenance: { kind: 'local', seed: 'bip39', hd: hdWalletDetails },
         credentials: {
-            [adapter.chainId]: { keyPairId: derived.keyPairId },
+            [LEGACY_CHAIN_ID]: { keyPairId: derived.keyPairId },
         },
         ...nameField(payload.customName),
     })

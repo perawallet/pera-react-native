@@ -108,8 +108,8 @@ describe('readCapabilityOverrides', () => {
 
     test('gives no overrides while every blob is empty', () => {
         expect(readCapabilityOverrides()).toEqual({
-            remote: { algorand: {} },
-            developer: { algorand: {} },
+            remote: { algorand: {}, ethereum: {} },
+            developer: { algorand: {}, ethereum: {} },
             chainEnabled: {},
         })
     })
@@ -119,6 +119,7 @@ describe('readCapabilityOverrides', () => {
 
         expect(readCapabilityOverrides().remote).toEqual({
             algorand: { staking: false },
+            ethereum: {},
         })
     })
 
@@ -127,6 +128,7 @@ describe('readCapabilityOverrides', () => {
 
         expect(readCapabilityOverrides().developer).toEqual({
             algorand: { staking: true },
+            ethereum: {},
         })
     })
 
@@ -136,7 +138,7 @@ describe('readCapabilityOverrides', () => {
 
         const overrides = readCapabilityOverrides()
 
-        expect(overrides.developer).toEqual({ algorand: {} })
+        expect(overrides.developer).toEqual({ algorand: {}, ethereum: {} })
         expect(overrides.chainEnabled).toEqual({})
     })
 

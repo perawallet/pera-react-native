@@ -24,6 +24,7 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
+import { assertNoViem } from './bundle-content.mjs'
 import { assertExtensionPagesCsp, buildExtensionPagesCsp } from './csp.mjs'
 import {
     assertReleaseEnv,
@@ -463,6 +464,12 @@ const assertBakedConfig = (code, surface) => {
 }
 assertBakedConfig(workerCode, 'background.js')
 assertBakedConfig(uiCode, 'the exported UI bundle')
+if (!config.chains.enabled.includes('ethereum')) {
+    assertNoViem(uiCode, 'the exported UI bundle')
+    for (const name of readdirSync(dist).filter(file => file.endsWith('.js'))) {
+        assertNoViem(readFileSync(path.join(dist, name), 'utf8'), name)
+    }
+}
 // The UI bundle must point dotlottie at the wasm shipped in step 1c — the
 // exact call in configureLottieWasm.web.ts survives minification because
 // `chrome.runtime.getURL` is a global member expression and its string
