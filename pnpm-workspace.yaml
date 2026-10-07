@@ -217,6 +217,13 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 patchedDependencies:
+  # The engine has no secp256k1 path: `deriveFromSeed` only derives
+  # BIP32-Ed25519 from an `hd-root-key`, and `sign`/`import` know no secp256k1
+  # type. The patch routes `curve: 'secp256k1'` to the provider's shim: the
+  # child is derived from an HD wallet's BIP39 entropy and sealed at birth,
+  # signing opens only that child, and imported raw keys are sealed the same
+  # way. Nothing is exportable. Drop once upstream takes these branches.
+  "@algorandfoundation/keystore-core@1.0.0-canary.4": patches/@algorandfoundation__keystore-core@1.0.0-canary.4.patch
   # `getMasterKey` read-then-generates the vault master key with no locking, so
   # every context that builds a driver (service worker, offscreen document,
   # each extension page — all of which construct one within milliseconds at
@@ -229,6 +236,11 @@ patchedDependencies:
   # happens under a Web Lock with a re-read once held, so the first caller
   # creates and the rest read what it wrote. Drop once upstream takes it.
   "@algorandfoundation/keystore-web@1.0.0-canary.4": patches/@algorandfoundation__keystore-web@1.0.0-canary.4.patch
+  # `shims` is typed as an array, though it is handed unchanged to keystore-core's
+  # `createKeyStore`, which also takes a lazy function. The provider needs the
+  # lazy form to fold the asynchronously loaded native Falcon binding in next to
+  # the secp256k1 shim. Type-only; drop once upstream widens it.
+  "@algorandfoundation/react-native-keystore@1.0.0-canary.20": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.20.patch
   # Four unrelated reasons, none configurable through plugin options:
   # - The Android credential provider keeps the legacy native app's service
   #   class name, so Credential Manager carries the user's enablement across

@@ -66,8 +66,6 @@ const mockKeyStoreGenerate = vi.fn(
 )
 const mockKeyStoreSign = vi.fn()
 const mockKeyStoreExport = vi.fn()
-const mockSecretsGet = vi.fn()
-const mockSecretsPut = vi.fn()
 const mockCheckAccess = vi.fn()
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
@@ -77,10 +75,6 @@ vi.mock('../useKMSServices', () => ({
             sign: (...args: any[]) => mockKeyStoreSign(...args),
             export: (...args: any[]) => mockKeyStoreExport(...args),
             generate: (...args: any[]) => mockKeyStoreGenerate(...args),
-            secrets: {
-                get: (...args: any[]) => mockSecretsGet(...args),
-                put: (...args: any[]) => mockSecretsPut(...args),
-            },
         },
         withExportedKey: async (
             keyId: string,
@@ -119,7 +113,6 @@ vi.mock('../useQuantum', () => ({
 const mockEntropyToIndices = vi.fn()
 vi.mock('../../crypto/hdwallet-utils', () => ({
     entropyToIndices: (...args: any[]) => mockEntropyToIndices(...args),
-    bip39SeedFromEntropy: async () => new Uint8Array(64).fill(1),
 }))
 
 const mockAlgo25SeedToIndices = vi.fn()
@@ -1181,99 +1174,5 @@ describe('useKMS', () => {
 
         expect(result.current.hasSeedWithEntropy('hd-1')).toBe(false)
         expect(result.current.hasSeedWithEntropy('hd-2')).toBe(true)
-    })
-})
-
-describe('useKMS secp256k1 primitives', () => {
-    const PRIVATE_KEY_HEX =
-        'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
-    const privateKey = () =>
-        Uint8Array.from(PRIVATE_KEY_HEX.match(/../g)!, h => parseInt(h, 16))
-    const sealed = new Map<string, Uint8Array>()
-
-    beforeEach(() => {
-        vi.clearAllMocks()
-        mockKeystoreKeys = []
-        sealed.clear()
-        mockSecretsPut.mockImplementation(
-            async (value: Uint8Array, options: any) => {
-                sealed.set(options.id, new Uint8Array(value))
-                mockKeystoreKeys.push({
-                    id: options.id,
-                    type: 'secret-key',
-                    algorithm: 'raw',
-                    extractable: false,
-                    metadata: options.metadata,
-                })
-                return options.id
-            },
-        )
-        mockSecretsGet.mockImplementation(
-            async (id: string) => new Uint8Array(sealed.get(id)!),
-        )
-    })
-
-    it('imports, signs with and exports a key through the core', async () => {
-        const { result } = renderHook(() => useKMS())
-        const input = privateKey()
-
-        const imported = await result.current.importSecp256k1Key(
-            input,
-            { id: 'imported-1' },
-            'pera.accounts',
-        )
-        const signature = await result.current.signSecp256k1Digest(
-            'imported-1',
-            new Uint8Array(32).fill(9),
-            'pera.accounts',
-        )
-        const exported = await result.current.exportSecp256k1Key(
-            'imported-1',
-            'pera.accounts',
-        )
-
-        expect(imported.publicKey).toHaveLength(65)
-        expect(input.every(b => b === 0)).toBe(true)
-        expect(signature.r).toHaveLength(32)
-        expect(exported).toEqual(privateKey())
-        expect(mockCheckAccess).toHaveBeenCalledTimes(3)
-    })
-
-    it('derives a child under a BIP-39 seed through the core', async () => {
-        seedBip39Root('hd-1')
-        mockKeystoreKeys.push({
-            id: 'hd-1-entropy',
-            type: 'secret-key',
-            algorithm: 'raw',
-            extractable: false,
-            metadata: { parentKeyId: 'hd-1', entropyKey: true },
-        })
-        sealed.set('hd-1-entropy', new Uint8Array(32).fill(3))
-        const { result } = renderHook(() => useKMS())
-
-        const child = await result.current.deriveSecp256k1Child(
-            'hd-1',
-            { path: "m/44'/0'/0'/0/0", id: 'hd-1-bip32-acc0-idx0' },
-            'pera.accounts',
-        )
-
-        expect(child.keyPairId).toBe('hd-1-bip32-acc0-idx0')
-        expect(child.publicKey).toHaveLength(65)
-        expect(mockSecretsPut.mock.calls[0][1].metadata.parentKeyId).toBe(
-            'hd-1',
-        )
-    })
-
-    it('rejects a digest that is not 32 bytes', async () => {
-        const { result } = renderHook(() => useKMS())
-
-        await expect(
-            result.current.signSecp256k1Digest(
-                'imported-1',
-                new Uint8Array(33),
-                'pera.accounts',
-            ),
-        ).rejects.toBeInstanceOf(KeyManagementError)
-        expect(mockSecretsGet).not.toHaveBeenCalled()
     })
 })

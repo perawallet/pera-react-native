@@ -15,7 +15,6 @@ import { describe, test, expect, vi } from 'vitest'
 import { mnemonicToEntropy, mnemonicToSeed } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
 import {
-    bip39SeedFromEntropy,
     deriveLiquidAuthMainKey,
     entropyToIndices,
     entropyToMnemonic,
@@ -169,40 +168,6 @@ describe('generateHDMasterKey', () => {
         expect(Buffer.from(a.entropy).equals(Buffer.from(b.entropy))).toBe(
             false,
         )
-    })
-})
-
-describe('bip39SeedFromEntropy', () => {
-    const entropy = () =>
-        Uint8Array.from(mnemonicToEntropy(TEST_MNEMONIC, wordlist))
-
-    test('produces the same seed as @scure/bip39 from the mnemonic', async () => {
-        const expected = await mnemonicToSeed(TEST_MNEMONIC)
-
-        const seed = await bip39SeedFromEntropy(entropy())
-
-        expect(Buffer.from(seed).equals(expected)).toBe(true)
-    })
-
-    test('leaves the entropy untouched', async () => {
-        const input = entropy()
-
-        await bip39SeedFromEntropy(input)
-
-        expect(input).toEqual(entropy())
-    })
-
-    test('zeroes the indices and mnemonic bytes it builds', async () => {
-        zeroedBuffers.length = 0
-
-        await bip39SeedFromEntropy(entropy())
-
-        const scrubbed = zeroedBuffers.filter(b => b instanceof Uint16Array)
-        expect(scrubbed).toHaveLength(1)
-        expect(scrubbed.every(b => b.every(v => v === 0))).toBe(true)
-        const mnemonicBytes = vi.mocked(indicesToUtf8Bytes).mock.results.at(-1)
-            ?.value as Uint8Array
-        expect(mnemonicBytes.every(v => v === 0)).toBe(true)
     })
 })
 
