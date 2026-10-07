@@ -16,6 +16,7 @@ import {
     scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    assetFactsResolverFor,
     fetchCloseAmount,
     fetchMoreTransactions,
     fetchTransactionHistory,
@@ -116,5 +117,32 @@ describe('history adapter wrappers', () => {
                 'mainnet',
             ),
         ).toThrow('No transaction history adapter is registered')
+    })
+})
+
+describe('assetFactsResolverFor', () => {
+    const STORED = { unitName: 'asset(0)', decimals: 0 }
+
+    beforeEach(() => {
+        historyChainAdapters.reset()
+    })
+
+    it("applies the chain adapter's resolver", () => {
+        const repaired = { unitName: 'ALGO', decimals: 6 }
+        historyChainAdapters.register(
+            makeAdapter({ resolveAssetFacts: () => repaired }),
+        )
+
+        expect(assetFactsResolverFor('algorand')('0', STORED)).toBe(repaired)
+    })
+
+    it('keeps the stored facts when the adapter has no resolver', () => {
+        historyChainAdapters.register(makeAdapter())
+
+        expect(assetFactsResolverFor('algorand')('0', STORED)).toBe(STORED)
+    })
+
+    it('keeps the stored facts when the chain has no history adapter', () => {
+        expect(assetFactsResolverFor('algorand')('0', STORED)).toBe(STORED)
     })
 })

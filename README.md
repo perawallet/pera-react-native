@@ -145,6 +145,7 @@ pera-react-native/
 │   ├── assets/              # Asset management
 │   ├── browser-runtime/     # Browser extension runtime (message routing, dApp/WC plumbing)
 │   ├── chain-algorand/      # Algorand chain: node/indexer access and per-package adapters
+│   ├── chain-ethereum/      # Ethereum chain: descriptor, module and its adapters (viem)
 │   ├── config/              # Configuration and environment
 │   ├── database/            # Local persistence
 │   ├── devtools/            # Development tools

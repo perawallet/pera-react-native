@@ -23,6 +23,10 @@ export const COMPOSITION_ROOTS: ExemptPath[] = [
         reason: 'mobile composition root: registers each chain and its per-package adapters',
     },
     {
+        glob: '**/apps/mobile/src/bootstrap/ethereum-chain-module.ts',
+        reason: 'build-gated Ethereum module for the mobile composition root; metro.config.js stubs it out of builds whose CHAINS omits ethereum',
+    },
+    {
         glob: '**/apps/browser/src/offscreen/runOffscreenApp.ts',
         reason: 'extension offscreen composition root: passes the Algorand chain id to the dApp handler',
     },

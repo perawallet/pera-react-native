@@ -16,10 +16,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useCurrenciesQuery } from '../useCurrenciesQuery'
 import React from 'react'
 
-// Mock the network hook
-const mockUseNetwork = vi.hoisted(() => vi.fn())
+const mockUseSelectedScope = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
+    useSelectedScope: mockUseSelectedScope,
 }))
 
 // Mock the fetch function
@@ -40,7 +39,10 @@ describe('useCurrenciesQuery', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+        mockUseSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -69,8 +71,11 @@ describe('useCurrenciesQuery', () => {
         ])
     })
 
-    it('uses correct network from useNetwork hook', async () => {
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+    it('uses the legacy network of the selected scope', async () => {
+        mockUseSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         mockFetchCurrenciesList.mockResolvedValue([])
 
         renderHook(() => useCurrenciesQuery(), { wrapper })

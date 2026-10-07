@@ -143,11 +143,8 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             if (!walletKeyId) return
 
             if (account.type === AccountTypes.hdWallet) {
-                const derivationType = account.hdWalletDetails.derivationType
-
                 const discoveredAccounts = await discoverAccounts({
                     walletKeyId,
-                    derivationType,
                 })
 
                 if (!discoveredAccounts) return

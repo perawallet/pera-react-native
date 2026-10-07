@@ -12,15 +12,18 @@
 
 import { Decimal } from 'decimal.js'
 import type { AssetPriceRow } from '@perawallet/wallet-core-assets'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { fetchPublicAssetDetails } from '../assets/api'
+import { algorandDescriptor } from '../descriptor'
 import { fetchAssetPrices } from './endpoints'
 import type { Network } from '@perawallet/wallet-core-shared'
 
 export const fetchNativeUsdPrice = async (
     network: Network,
 ): Promise<Decimal> => {
-    const details = await fetchPublicAssetDetails(ALGO_ASSET_ID, network)
+    const details = await fetchPublicAssetDetails(
+        algorandDescriptor.nativeAsset.ref.assetId,
+        network,
+    )
     return new Decimal(details.usd_value ?? '0')
 }
 

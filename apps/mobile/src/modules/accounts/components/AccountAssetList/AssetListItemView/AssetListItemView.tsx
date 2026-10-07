@@ -15,16 +15,17 @@ import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 import { AssetAmount } from '@components/AssetAmount'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { PWView } from '@components/core'
-import { isCollectible } from '@perawallet/wallet-core-assets'
+import {
+    displayCurrencyToAssetId,
+    useIsNativeAssetId,
+    isCollectible,
+} from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     assetFromHoldingLiteRow,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
-import {
-    displayCurrencyToAssetId,
-    isAlgoAssetId,
-    pow10,
-} from '@perawallet/wallet-core-shared'
+import { pow10 } from '@perawallet/wallet-core-shared'
 import {
     AssetItemView,
     CollectibleListItem,
@@ -56,6 +57,7 @@ const AssetListItemViewBase = ({
     style,
 }: AssetListItemViewProps) => {
     const styles = useStyles()
+    const isNativeAssetId = useIsNativeAssetId()
 
     const asset = useMemo(() => assetFromHoldingLiteRow(holding), [holding])
 
@@ -104,7 +106,7 @@ const AssetListItemViewBase = ({
                 asset={asset}
                 value={amount}
                 density='compact'
-                showSymbol={isAlgoAssetId(holding.assetId)}
+                showSymbol={isNativeAssetId(holding.assetId)}
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />
@@ -116,7 +118,10 @@ const AssetListItemViewBase = ({
                 value). */}
             <CurrencyAmount
                 currency={fiat.displayCurrency}
-                assetId={displayCurrencyToAssetId(fiat.displayCurrency)}
+                assetId={displayCurrencyToAssetId(
+                    fiat.displayCurrency,
+                    LEGACY_CHAIN_ID,
+                )}
                 value={fiat.value}
                 precision='compact'
                 showSymbol

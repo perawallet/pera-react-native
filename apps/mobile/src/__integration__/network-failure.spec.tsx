@@ -27,7 +27,6 @@ import {
     it,
     vi,
 } from 'vitest'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
@@ -74,6 +73,8 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
+
+const NATIVE_ASSET_ID = '0'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
@@ -154,7 +155,7 @@ describe('Edge: Network failure paths', () => {
         )
 
         const sender = await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

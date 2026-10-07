@@ -16,12 +16,8 @@ import { RoundButton } from '@components/RoundButton'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import {
-    isAlgoAssetId,
-    ALGO_ASSET_ID,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendFunds } from '@modules/transactions'
 import {
@@ -60,6 +56,7 @@ export const AssetActionButtons = ({
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
     const isFrozen = assetHolding?.isFrozen ?? false
+    const nativeAsset = useNativeAsset()
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)
@@ -78,7 +75,7 @@ export const AssetActionButtons = ({
     }
 
     const handleSwap = useCallback(() => {
-        const isAlgo = isAlgoAssetId(asset.assetId)
+        const isAlgo = asset.assetId === nativeAsset.assetId
         if (isAlgo) {
             trackEvent(AssetDetailsEvent.SwapAlgo)
         }
@@ -86,9 +83,9 @@ export const AssetActionButtons = ({
             screen: 'Swap',
             params: isAlgo
                 ? undefined
-                : { assetInId: ALGO_ASSET_ID, assetOutId: asset.assetId },
+                : { assetInId: nativeAsset.assetId, assetOutId: asset.assetId },
         })
-    }, [asset.assetId, navigation])
+    }, [asset.assetId, nativeAsset.assetId, navigation])
 
     const handleSend = useCallback(() => {
         trackEvent(AssetDetailsEvent.Send)

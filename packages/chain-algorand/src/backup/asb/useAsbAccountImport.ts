@@ -17,6 +17,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { isValidAlgorandAddress } from '../../blockchain'
 import { useImportAlgo25FromSeed } from '../useImportAlgo25FromSeed'
 import {
@@ -82,8 +83,9 @@ export const useAsbAccountImport = (): UseAsbAccountImportResult => {
             }
 
             const newWatch = buildAccount({
-                address: account.address,
-                provenance: { kind: 'watch' },
+                custody: { kind: 'watch' },
+                chainId: ALGORAND_CHAIN_ID,
+                chains: { [ALGORAND_CHAIN_ID]: { address: account.address } },
                 ...(account.name ? { name: account.name } : {}),
             })
 

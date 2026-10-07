@@ -106,6 +106,15 @@ export const groupHasQuantumSigner = ({
  * so the new `grp` is what algod will verify. Untouched partitions and
  * ungrouped transactions keep their original object references.
  *
+ * Co-signed partitions are never touched: a group with any member outside
+ * `signableIndices` is returned as received, whatever its quantum fees are.
+ * Raising a fee changes the group ID, and the other signer (a dApp's logic
+ * sig or its own keys) only ever receives `null` for its slots, so it would
+ * submit them with the old `grp` and algod rejects the whole group with
+ * "inconsistent group values". A raise there can never produce a
+ * submittable group; whether such a group is funded is for the dApp to
+ * price. Partitions Pera signs in full are safe to re-group.
+ *
  * Pooled fees: the surcharge is ADDED to the fee the dApp set, never clamped
  * to the PQ minimum. Fees pool across a group, so a fee above the base minimum
  * is budget for something else — most often an app call's inner transactions —
@@ -116,7 +125,7 @@ export const groupHasQuantumSigner = ({
  * Underfunded groups are out of scope: a group whose fees don't cover its
  * pre-quantum cost already fails for an Ed25519 signer, and the wallet can't
  * know a group's true cost offline (inner-transaction count is only knowable
- * from `simulate` —).
+ * from `simulate`).
  *
  * ARC-0001 `groupContext` consumers see the modified group: the returned
  * array replaces the original payload for everything downstream (display,
@@ -143,6 +152,16 @@ export const assignMinimumFeesToGroup = ({
         pqMultiplier,
     })
 
+    // Group partitions (keyed by the claimed group ID) with a member Pera
+    // won't sign. Their group ID must survive, so they are never touched.
+    const signable = new Set(signableIndices)
+    const coSignedGroupKeys = new Set<string>()
+    transactions.forEach((tx, index) => {
+        if (tx.group && !signable.has(index)) {
+            coSignedGroupKeys.add(bytesToHex(tx.group))
+        }
+    })
+
     // Plan the adjustments: only signable txns whose effective authorizer
     // resolves to a quantum signer. Non-quantum senders are NEVER touched,
     // even if their fee is below the plain minimum.
@@ -158,6 +177,7 @@ export const assignMinimumFeesToGroup = ({
         )
         const signer = getSignerFor(authorizer, accounts, LEGACY_CHAIN_ID)
         if (signer === null || !isQuantumAccount(signer)) continue
+        if (tx.group && coSignedGroupKeys.has(bytesToHex(tx.group))) continue
         // Add the premium to what the dApp set, then floor at the PQ minimum
         // for a fee that wouldn't even cover a plain transaction. The floor
         // makes this pointwise ≥ the fee any given group carries today, so no

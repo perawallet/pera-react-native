@@ -20,9 +20,9 @@ import {
 import { mutationDefaults } from '@perawallet/wallet-core-shared'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
+const mockUseSelectedScope = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
+    useSelectedScope: mockUseSelectedScope,
 }))
 
 const api = vi.hoisted(() => ({
@@ -31,6 +31,7 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/card', () => api)
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useFreezeCardMutation } from '../useFreezeCardMutation'
 import { useUnfreezeCardMutation } from '../useUnfreezeCardMutation'
 import { cardQueryKeys } from '../querykeys'
@@ -49,7 +50,7 @@ describe('card lifecycle mutation hooks', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
         api.freezeCard.mockResolvedValue(undefined)
         api.unfreezeCard.mockResolvedValue(undefined)
     })
@@ -93,7 +94,7 @@ describe('card lifecycle mutation hooks', () => {
     })
 
     it('useFreezeCardMutation marks the cached card frozen on success', async () => {
-        const key = cardQueryKeys.status('mainnet')
+        const key = cardQueryKeys.status(scopeForLegacyNetwork('mainnet'))
         queryClient.setQueryData<Card>(key, {
             status: CardStatus.Active,
         } as Card)
@@ -110,7 +111,7 @@ describe('card lifecycle mutation hooks', () => {
     })
 
     it('useUnfreezeCardMutation clears the frozen state on success', async () => {
-        const key = cardQueryKeys.status('mainnet')
+        const key = cardQueryKeys.status(scopeForLegacyNetwork('mainnet'))
         queryClient.setQueryData<Card>(key, {
             status: CardStatus.Frozen,
         } as Card)

@@ -13,8 +13,7 @@
 import type { Decimal } from 'decimal.js'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
-
-const ALGO_ASSET_ID = '0'
+import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
 
 // Absorbs the few µAlgo of network fees (and any small native-ALGO movement a
 // provider may route through a payment `amount` rather than the `fee` field) so
@@ -86,7 +85,9 @@ export const validateSwapGroupAgainstQuote = (
     const boundFor = (assetId: string): bigint =>
         (assetId === inputAssetId ? maxInput : 0n) +
         (assetId === peraFeeAssetId ? maxPeraFee : 0n) +
-        (assetId === ALGO_ASSET_ID ? NETWORK_FEE_ALLOWANCE_MICRO_ALGO : 0n)
+        (isAlgorandNativeAssetId(assetId)
+            ? NETWORK_FEE_ALLOWANCE_MICRO_ALGO
+            : 0n)
 
     const outflow = new Map<string, bigint>()
     const addOutflow = (assetId: string, amount: bigint): void => {
@@ -119,7 +120,10 @@ export const validateSwapGroupAgainstQuote = (
                     'Swap transaction closes the account',
                 )
             }
-            addOutflow(ALGO_ASSET_ID, toBig(payment.amount))
+            addOutflow(
+                algorandDescriptor.nativeAsset.ref.assetId,
+                toBig(payment.amount),
+            )
         }
 
         const axfer = tx.assetTransferTransaction

@@ -54,12 +54,12 @@ describe('prefetchLedgerAccountPreview', () => {
 
         expect(
             queryClient.getQueryData(
-                getOnChainAccountInformationQueryKey('ADDR', 'mainnet'),
+                getOnChainAccountInformationQueryKey('ADDR', MAINNET_SCOPE),
             ),
         ).toBeDefined()
         expect(
             queryClient.getQueryData(
-                getRekeyedAddressesQueryKey('ADDR', 'mainnet'),
+                getRekeyedAddressesQueryKey('ADDR', MAINNET_SCOPE),
             ),
         ).toBeDefined()
         expect(mocks.fetchOnChainAccountInformation).toHaveBeenCalledWith(

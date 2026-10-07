@@ -22,6 +22,7 @@ import {
     accountsChainAdapters,
     type AccountsChainAdapter,
 } from '../chain-adapter'
+import { AccountError } from '../errors'
 import { DerivationTypes } from '../models'
 import { canSignDirectly } from '../utils'
 
@@ -36,8 +37,8 @@ export const fakeEncode = (publicKey: Uint8Array): string =>
 
 const fakeHdKeyPairId: AccountsChainAdapter['hdKeyPairId'] = (
     seedKeyId,
-    { account, keyIndex, derivationType },
-) => `${seedKeyId}-acc${account}-idx${keyIndex}-dt${derivationType}`
+    { account, keyIndex },
+) => `${seedKeyId}-acc${account}-idx${keyIndex}-dt9`
 
 const BASE32_ADDRESS = /^[A-Z2-7]{58}$/
 
@@ -62,11 +63,7 @@ const createFakeKeyDerivation = (): KeyDerivation => ({
     deriveAccount: vi.fn(async (_kms, seedRef, account, keyIndex) => {
         const publicKey = new Uint8Array([account, keyIndex, 0xfa, 0xce])
         return {
-            keyPairId: fakeHdKeyPairId(seedRef, {
-                account,
-                keyIndex,
-                derivationType: DerivationTypes.Peikert,
-            }),
+            keyPairId: fakeHdKeyPairId(seedRef, { account, keyIndex }),
             publicKey,
             address: fakeEncode(publicKey),
         }
@@ -77,7 +74,6 @@ const createFakeKeyDerivation = (): KeyDerivation => ({
 
 const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     chainId: FAKE_CHAIN_ID,
-    hdDerivationType: DerivationTypes.Peikert,
     fetchAccountState: vi.fn(),
     toAccountInformationAddress: vi.fn(
         ((address: string) =>
@@ -93,6 +89,23 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     createPublicKeyGetter: vi.fn(() => async () => new Uint8Array(32)),
     hdKeyPairId: vi.fn(fakeHdKeyPairId),
     assertHdPathMatches: vi.fn(),
+    legacyDetails: (custody, entry) => {
+        if (custody.kind === 'local' && custody.seed === 'bip39') {
+            return {
+                hdWalletDetails: {
+                    ...custody.hd,
+                    change: 0,
+                    derivationType: DerivationTypes.Peikert,
+                },
+            }
+        }
+        if (custody.kind === 'multisig') {
+            const multisig = entry.native?.multisig
+            if (!multisig) throw new AccountError('multisig missing')
+            return { multisigDetails: { ...multisig } }
+        }
+        return {}
+    },
     quantum: {
         deriveKeygenSeed: vi.fn((entropy: Uint8Array) => entropy.slice()),
         addressFromPublicKey: vi.fn((publicKey: Uint8Array) =>

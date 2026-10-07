@@ -13,7 +13,6 @@
 import { create } from 'zustand'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { registerStore } from '@perawallet/wallet-core-shared'
-import type { DerivationType } from '../models'
 
 /**
  * Holds the in-flight HD import session: the data we computed in memory
@@ -26,7 +25,6 @@ export type HDImportSession = {
     walletKeyId: string
     rootKey: Uint8Array
     entropy: Uint8Array
-    derivationType: DerivationType
 }
 
 type State = {

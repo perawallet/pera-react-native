@@ -30,6 +30,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ethereumChainModule } from './ethereum-chain-module'
 
 const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
     getScope: () => ({
@@ -64,7 +65,10 @@ export const registerChainAdapters = (): void => {
     const { chains } = getProvider()
     chains.setCapabilityOverrides(readCapabilityLayers)
     registerChainSetup(
-        buildChainSetup(config.chains, { algorand: algorandChainModule }),
+        buildChainSetup(config.chains, {
+            algorand: algorandChainModule,
+            ethereum: ethereumChainModule,
+        }),
         chains,
         chainContextFor,
     )

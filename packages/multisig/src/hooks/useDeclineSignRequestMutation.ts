@@ -11,6 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Network } from '@perawallet/wallet-core-shared'
 import { addSignature } from '../api/endpoints'
 import type { ProposeSignRequestResponse } from '../api/schema'
@@ -56,7 +57,10 @@ export const useDeclineSignRequestMutation = ({
             ]),
         onSuccess: () => {
             void rqClient.invalidateQueries({
-                queryKey: getSignRequestDetailQueryKey(network, signRequestId),
+                queryKey: getSignRequestDetailQueryKey(
+                    scopeForLegacyNetwork(network),
+                    signRequestId,
+                ),
             })
         },
     })

@@ -18,7 +18,8 @@ import { type SQLiteColumn, customType } from 'drizzle-orm/sqlite-core'
  * A high-precision numeric column stored as TEXT in SQLite that maps to `Decimal` in TypeScript.
  *
  * Use for all numeric values that require precision beyond JS `number`:
- * balances, amounts, fees, prices, asset IDs, total supply, etc.
+ * balances, amounts, fees, prices, total supply, etc. Never for an identifier:
+ * decimal.js reads `0x…` as hex, so asset ids use a plain `text` column.
  *
  * TEXT storage preserves full precision — SQLite's NUMERIC/REAL types and JS
  * drivers lose precision for values exceeding Number.MAX_SAFE_INTEGER (~9e15).

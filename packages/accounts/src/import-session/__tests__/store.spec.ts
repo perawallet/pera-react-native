@@ -17,7 +17,6 @@ const sample = () => ({
     walletKeyId: 'w-1',
     rootKey: new Uint8Array(96).fill(7),
     entropy: new Uint8Array(32).fill(3),
-    derivationType: 9 as const,
 })
 
 describe('useHDImportSessionStore', () => {
@@ -56,7 +55,6 @@ describe('useHDImportSessionStore', () => {
             walletKeyId: 'w-2',
             rootKey: new Uint8Array(96).fill(8),
             entropy: new Uint8Array(32).fill(4),
-            derivationType: 9 as const,
         }
         useHDImportSessionStore.getState().start(b)
 

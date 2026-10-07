@@ -15,15 +15,15 @@ import type {
     TransactionHistoryItemApiResponse,
     TransactionHistoryApiResponse,
 } from './schema'
-import {
-    resolveAssetFacts,
-    type TransactionHistoryItem,
-    type TransactionHistoryResult,
-    type TransactionAssetSummary,
-    type TransactionSwapGroupDetail,
-    type TransactionInterpretedMeaning,
-    type TransactionBalanceImpact,
+import type {
+    TransactionHistoryItem,
+    TransactionHistoryResult,
+    TransactionAssetSummary,
+    TransactionSwapGroupDetail,
+    TransactionInterpretedMeaning,
+    TransactionBalanceImpact,
 } from '@perawallet/wallet-core-transactions'
+import { resolveAlgorandAssetFacts } from './assetFacts'
 import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
 
 /**
@@ -39,11 +39,11 @@ const transformSwapGroupDetail = (
 
     const assetInId = detail.asset_in?.asset_id ?? null
     const assetOutId = detail.asset_out?.asset_id ?? null
-    const assetIn = resolveAssetFacts(assetInId, {
+    const assetIn = resolveAlgorandAssetFacts(assetInId, {
         unitName: detail.asset_in?.unit_name ?? '',
         decimals: detail.asset_in?.fraction_decimals ?? ALGO_DECIMALS,
     })
-    const assetOut = resolveAssetFacts(assetOutId, {
+    const assetOut = resolveAlgorandAssetFacts(assetOutId, {
         unitName: detail.asset_out?.unit_name ?? '',
         decimals: detail.asset_out?.fraction_decimals ?? ALGO_DECIMALS,
     })
@@ -73,7 +73,7 @@ const transformAssetSummary = (
 ): Nullable<TransactionAssetSummary> => {
     if (!asset) return null
 
-    const facts = resolveAssetFacts(asset.asset_id, {
+    const facts = resolveAlgorandAssetFacts(asset.asset_id, {
         unitName: asset.unit_name ?? '',
         decimals: asset.fraction_decimals ?? 0,
     })
@@ -94,7 +94,7 @@ const transformBalanceImpacts = (
     impacts: TransactionHistoryItemApiResponse['balance_impacts'],
 ): TransactionBalanceImpact[] =>
     (impacts ?? []).map(impact => {
-        const facts = resolveAssetFacts(impact.asset_id, {
+        const facts = resolveAlgorandAssetFacts(impact.asset_id, {
             unitName: impact.unit_name ?? '',
             decimals: impact.fraction_decimals ?? 0,
         })

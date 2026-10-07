@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { ActivityIndicator } from 'react-native'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PWView, PWText, PWButton, PWFlatList } from '@components/core'
@@ -89,7 +88,7 @@ export const LedgerAccountInfoContent = ({
                                     variant='bodyCompact'
                                 />
                                 <PreferredAmount
-                                    sourceAssetId={ALGO_ASSET_ID}
+                                    sourceAssetId={nativeAsset.assetId}
                                     sourceAmount={item.algoBalance}
                                     usdPrice={item.algoUsdPrice}
                                     density='compact'

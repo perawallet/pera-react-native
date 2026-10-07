@@ -153,7 +153,6 @@ describe('useImportAccount', () => {
 
         expect(imported.type).toBe('hdWallet')
         expect(imported.walletKeyId).toBe('WALLET1')
-        expect(imported.derivationType).toBe(9)
         expect(useAccountsStore.getState().accounts).toHaveLength(0)
         expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
         expect(importOp()).not.toHaveBeenCalled()

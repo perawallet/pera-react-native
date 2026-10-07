@@ -13,7 +13,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     ALGO_ASSET_NAME,
     isAlgoAssetName,
@@ -57,7 +58,7 @@ export const useSettingsCurrencyScreen =
 
         const { data } = useCurrenciesQuery()
         const { invalidateAssetPrices } = useInvalidateAssetPrices()
-        const { network } = useNetwork()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { hasInternet } = useNetworkStatus()
         const queryClient = useQueryClient()
 
@@ -69,9 +70,9 @@ export const useSettingsCurrencyScreen =
             if (isAlgoAssetName(preferredCurrency)) return false
 
             return !queryClient.getQueryData(
-                currencyQueryKeys.price(network, preferredCurrency),
+                currencyQueryKeys.price(scope, preferredCurrency),
             )
-        }, [hasInternet, preferredCurrency, network, queryClient])
+        }, [hasInternet, preferredCurrency, scope, queryClient])
 
         useEffect(() => {
             if (!search?.length) {

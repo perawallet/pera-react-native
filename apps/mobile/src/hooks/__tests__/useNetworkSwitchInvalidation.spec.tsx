@@ -19,7 +19,7 @@ const { mockInvalidateQueries, mockGetSyncService, networkState } = vi.hoisted(
     () => ({
         mockInvalidateQueries: vi.fn(),
         mockGetSyncService: vi.fn(),
-        networkState: { network: 'mainnet' },
+        networkState: { networkId: 'mainnet' },
     }),
 )
 
@@ -43,7 +43,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: networkState.network }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: networkState.networkId,
+    }),
 }))
 
 // The global test setup stubs these packages; the release helper needs the
@@ -63,8 +66,6 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => {
 
 import { getAssetsQueryKey } from '@perawallet/wallet-core-assets'
 import {
-    queryKeyNetworkValue,
-    legacyNetworkOf,
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -88,7 +89,7 @@ const renderWithClient = () => {
 describe('useNetworkSwitchInvalidation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        networkState.network = 'mainnet'
+        networkState.networkId = 'mainnet'
         mockGetSyncService.mockReturnValue({
             invalidateQueries: mockInvalidateQueries,
         })
@@ -103,7 +104,7 @@ describe('useNetworkSwitchInvalidation', () => {
     it('invalidates exactly once when the network changes', () => {
         const { rerender } = renderWithClient()
 
-        networkState.network = 'testnet'
+        networkState.networkId = 'testnet'
         rerender()
 
         expect(mockInvalidateQueries).toHaveBeenCalledTimes(1)
@@ -119,7 +120,7 @@ describe('useNetworkSwitchInvalidation', () => {
         })
         const { rerender } = renderWithClient()
 
-        networkState.network = 'testnet'
+        networkState.networkId = 'testnet'
 
         expect(() => rerender()).not.toThrow()
     })
@@ -137,12 +138,12 @@ describe('useNetworkSwitchInvalidation', () => {
         const balanceKey = (scope: ChainScope) => [
             'accounts',
             'balance',
-            { address: 'A1', network: queryKeyNetworkValue(scope) },
+            { address: 'A1', scope },
         ]
         const departedKeys = [
             balanceKey(MAINNET),
             getAssetsQueryKey(['1'], MAINNET),
-            transactionQueryKeys.history('A1', legacyNetworkOf(MAINNET)),
+            transactionQueryKeys.history('A1', MAINNET),
         ]
         const currentKey = balanceKey(TESTNET)
         const chartKeys = [
@@ -152,7 +153,7 @@ describe('useNetworkSwitchInvalidation', () => {
                 {
                     period: 'one-week',
                     addresses: ['A1'],
-                    network: queryKeyNetworkValue(MAINNET),
+                    scope: MAINNET,
                 },
             ],
             [
@@ -162,7 +163,7 @@ describe('useNetworkSwitchInvalidation', () => {
                 {
                     assetID: '1',
                     period: 'one-week',
-                    network: queryKeyNetworkValue(MAINNET),
+                    scope: MAINNET,
                 },
             ],
         ]
@@ -177,7 +178,7 @@ describe('useNetworkSwitchInvalidation', () => {
             const { client, rerender } = renderWithClient()
             seed(client)
 
-            networkState.network = 'testnet'
+            networkState.networkId = 'testnet'
             rerender()
 
             for (const key of departedKeys) {
@@ -189,7 +190,7 @@ describe('useNetworkSwitchInvalidation', () => {
             const { client, rerender } = renderWithClient()
             seed(client)
 
-            networkState.network = 'testnet'
+            networkState.networkId = 'testnet'
             rerender()
 
             expect(client.getQueryData(currentKey)).toEqual(['rows'])

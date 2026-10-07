@@ -16,13 +16,13 @@ import { useLedgerRekeyedScan } from '../useLedgerRekeyedScan'
 
 const mocks = vi.hoisted(() => ({
     useQueries: vi.fn(),
-    useNetwork: vi.fn(),
+    useSelectedScope: vi.fn(),
     useAllAccounts: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-query', () => ({ useQueries: mocks.useQueries }))
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mocks.useNetwork,
+    useSelectedScope: mocks.useSelectedScope,
 }))
 vi.mock('../useAllAccounts', () => ({ useAllAccounts: mocks.useAllAccounts }))
 
@@ -34,7 +34,10 @@ const derived = (address: string, accountIndex: number) => ({
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+    mocks.useSelectedScope.mockReturnValue({
+        chainId: 'algorand',
+        networkId: 'mainnet',
+    })
     mocks.useAllAccounts.mockReturnValue([])
 })
 

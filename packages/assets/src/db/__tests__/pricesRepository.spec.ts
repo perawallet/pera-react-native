@@ -69,6 +69,24 @@ describe('asset prices repository', () => {
             )
         })
 
+        it('reads a non-numeric asset id back byte-identical', async () => {
+            // A checksummed ERC-20 address; a decimal-mapped column parsed it as hex.
+            const erc20 = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: erc20, usdPrice: new Decimal('1') }],
+                scope: MAINNET_SCOPE,
+            })
+
+            const result = await getAssetPricesByIds({
+                db,
+                assetIds: [erc20],
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(result.map(r => r.assetId)).toEqual([erc20])
+        })
+
         it('updates existing prices on conflict', async () => {
             await upsertAssetPrices({
                 db,

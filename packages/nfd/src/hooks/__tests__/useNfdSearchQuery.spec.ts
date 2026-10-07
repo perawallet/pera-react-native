@@ -23,7 +23,10 @@ vi.mock('../../api', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: 'mainnet',
+    }),
 }))
 
 describe('useNfdSearchQuery', () => {

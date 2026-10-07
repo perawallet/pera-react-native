@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { Query } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAccountHoldingsInvalidator } from '../useAccountHoldingsInvalidator'
 import {
     getAccountBalancesQueryKey,
@@ -43,8 +44,14 @@ describe('useAccountHoldingsInvalidator', () => {
     })
 
     it('matches holdings-page keys and leaves other account keys alone', () => {
-        const holdings = getAccountHoldingsPageQueryKey('ADDRESS', 'mainnet')
-        const balances = getAccountBalancesQueryKey('ADDRESS', 'mainnet')
+        const holdings = getAccountHoldingsPageQueryKey(
+            'ADDRESS',
+            scopeForLegacyNetwork('mainnet'),
+        )
+        const balances = getAccountBalancesQueryKey(
+            'ADDRESS',
+            scopeForLegacyNetwork('mainnet'),
+        )
 
         expect(getInvalidateAccountHoldingsPredicate(asQuery(holdings))).toBe(
             true,

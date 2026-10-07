@@ -9,7 +9,7 @@ import { withoutTests } from '../shared/scope.js'
  * Mirrors `CHAIN_IDS` in packages/chain-contract/src/models/identity.ts, which
  * lanekeep's rule loader can't import. The spec fails until the two match.
  */
-export const CHAIN_IDS = ['algorand'] as const
+export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
 const SHARED_PACKAGES = [
     'chain-contract',
@@ -54,6 +54,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Legacy shim: every row stored before scope keys existed belongs to this chain.',
     },
     {
+        file: 'packages/chain-contract/src/scope.ts',
+        text: '(part as Partial<ChainScope>).chainId === scope.chainId',
+        reason: "Compares a query key's scope against whichever scope the caller passes, never a named chain.",
+    },
+    {
         file: 'packages/walletconnect/src/v2/handler.ts',
         text: 'event.params.chainId !== activeChainId',
         reason: "WalletConnect's chainId is a CAIP-2 string, not a ChainId.",
@@ -72,6 +77,21 @@ const ALLOWED: readonly Allowed[] = [
         file: 'packages/chain-contract/src/models/domain.ts',
         text: "'algorand'",
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',
+    },
+    {
+        file: 'packages/accounts/src/credentials/backfill.ts',
+        text: "'algorand'",
+        reason: "Writes Algorand's native member from the legacy multisig details; both go together.",
+    },
+    {
+        file: 'packages/backup/src/cloud/hooks/useCloudBackupImport.ts',
+        text: "'algorand'",
+        reason: "A backup's multisig payload is Algorand's, so its native member is written as such.",
+    },
+    {
+        file: 'packages/accounts/src/credentials/accessors.ts',
+        text: 'scope.chainId !== LEGACY_CHAIN_ID',
+        reason: "The legacy rekey fields it reads are the Algorand chain's; per-chain authority replaces them.",
     },
     {
         file: 'packages/backup/src/cloud/hooks/useCloudBackupContactImport.ts',

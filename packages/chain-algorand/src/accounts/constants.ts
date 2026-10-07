@@ -12,8 +12,8 @@
 
 import { DerivationTypes } from '@perawallet/wallet-core-accounts'
 
-// New HD accounts derive with Peikert; the key derivation and the adapter's
-// `hdDerivationType` must agree, or the stored details name the wrong key.
+// Every HD account derives with Peikert. Stored accounts reference keys by an
+// id that ends in this value, so changing it orphans them.
 export const ALGORAND_HD_DERIVATION_TYPE = DerivationTypes.Peikert
 
 // Max holdings per indexer page; the split account read and the opt-in-rounds

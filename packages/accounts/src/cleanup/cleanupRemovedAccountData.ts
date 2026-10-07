@@ -15,12 +15,12 @@ import {
     InvalidScopeKeyError,
     scopeFromNetworkColumn,
 } from '@perawallet/wallet-core-chain-contract'
+import { logger, runAccountCleanups } from '@perawallet/wallet-core-shared'
 import {
-    isAlgoAssetId,
-    logger,
-    runAccountCleanups,
-} from '@perawallet/wallet-core-shared'
-import { deleteAssets, deleteAssetPrices } from '@perawallet/wallet-core-assets'
+    deleteAssets,
+    deleteAssetPrices,
+    isNativeAssetId,
+} from '@perawallet/wallet-core-assets'
 import {
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
@@ -84,11 +84,11 @@ export async function cleanupRemovedAccountData({
         // ALGO is a holding row like any ASA, so it looks orphaned once the
         // last account holding it is gone — but its metadata is a local
         // constant seeded per network at bootstrap and nothing re-seeds it
-        // mid-session (the asset syncer skips id 0). Pruning it leaves every
+        // mid-session (the asset syncer skips it). Pruning it leaves every
         // later ALGO read without decimals, which skeletons the asset row and
         // strands Send on a spinner until the next cold start.
         const orphans = [...hadIds].filter(
-            id => !remaining.has(id) && !isAlgoAssetId(id),
+            id => !remaining.has(id) && !isNativeAssetId(scope.chainId, id),
         )
         if (orphans.length === 0) continue
 

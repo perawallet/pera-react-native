@@ -20,7 +20,6 @@ import {
     it,
     vi,
 } from 'vitest'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import { renderHook, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
@@ -61,6 +60,8 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
+
+const NATIVE_ASSET_ID = '0'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
@@ -171,7 +172,7 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
 
     it('Given a quantum sender, when the confirmation screen settles, then the quantum-fee explainer renders in the fee row', async () => {
         seedQuantumSender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -197,7 +198,7 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
         // The account type gates the explainer: a standard signer must never
         // surface it.
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

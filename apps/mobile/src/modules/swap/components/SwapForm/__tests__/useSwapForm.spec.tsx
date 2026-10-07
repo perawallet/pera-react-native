@@ -116,6 +116,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    useNativeAsset: () => ({ assetId: '0' }),
     useAssetsQuery: () => ({
         data: new Map([
             [
@@ -205,7 +206,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             typeof import('@packages/shared/src/utils/unit-conversion')
         >('@packages/shared/src/utils/unit-conversion')
     return {
-        ALGO_ASSET_ID: '0',
         ALGO_ASSET_NAME: 'ALGO',
         isAlgoAssetName: (value: string) => value === 'ALGO',
         isDecimalEqual: (a: Nullable<Decimal>, b: Nullable<Decimal>) => {

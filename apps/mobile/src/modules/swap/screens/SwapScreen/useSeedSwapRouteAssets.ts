@@ -13,6 +13,7 @@
 import { useEffect } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import {
+    useIsNativeAssetId,
     getAssetsQueryKey,
     useSingleAssetDetailsQuery,
     type PeraAsset,
@@ -22,7 +23,6 @@ import {
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 
 type UseSeedSwapRouteAssetsParams = {
     assetInId?: string
@@ -50,12 +50,13 @@ export const useSeedSwapRouteAssets = ({
     assetOutId,
 }: UseSeedSwapRouteAssetsParams): void => {
     const { network } = useNetwork()
+    const isNativeAssetId = useIsNativeAssetId()
     const queryClient = useQueryClient()
 
     // ALGO is always in the DB and the API skips it, so only seed non-ALGO ids.
     // An empty-string id disables the query via its `enabled: !!assetId.length`.
     const routeAssetId = (id?: string): string =>
-        id && !isAlgoAssetId(id) ? id : ''
+        id && !isNativeAssetId(id) ? id : ''
 
     const { data: outAsset } = useSingleAssetDetailsQuery(
         routeAssetId(assetOutId),

@@ -15,9 +15,9 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
+const mockUseSelectedScope = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mockUseNetwork,
+    useSelectedScope: mockUseSelectedScope,
 }))
 
 const { fetchOnboardingDetails } = vi.hoisted(() => ({
@@ -28,6 +28,7 @@ vi.mock('../../api/onboarding', async () => ({
     fetchOnboardingDetails,
 }))
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useOnboardingKycGate } from '../useOnboardingKycGate'
 import { cardQueryKeys } from '../querykeys'
 
@@ -57,7 +58,10 @@ const waitForFetchedRecord = () =>
     waitFor(() =>
         expect(
             queryClient.getQueryData(
-                cardQueryKeys.onboardingDetails('testnet', ONBOARDING_ID),
+                cardQueryKeys.onboardingDetails(
+                    scopeForLegacyNetwork('testnet'),
+                    ONBOARDING_ID,
+                ),
             ),
         ).toBeDefined(),
     )
@@ -68,7 +72,7 @@ describe('useOnboardingKycGate', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        mockUseSelectedScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
     })
 
     it.each([

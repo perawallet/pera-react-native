@@ -118,7 +118,7 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
                 await queryClient.invalidateQueries({
                     queryKey: getOnChainAccountInformationQueryKey(
                         escrowCardAddress,
-                        network,
+                        scopeForLegacyNetwork(network),
                     ),
                 })
                 invalidateAccountQueriesForAddresses(queryClient, [

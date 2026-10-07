@@ -439,7 +439,6 @@ describe('useSearchAccountsScreen', () => {
         mockRouteParams.current = {
             mode: 'import',
             walletKeyId: 'w-1',
-            derivationType: 9,
         } as SearchAccountsParams
         const discovered = [
             {
@@ -474,7 +473,6 @@ describe('useSearchAccountsScreen', () => {
         mockRouteParams.current = {
             mode: 'import',
             walletKeyId: 'w-1',
-            derivationType: 9,
         } as SearchAccountsParams
         mockDiscoverImportAccounts.mockResolvedValue([])
 
@@ -496,7 +494,6 @@ describe('useSearchAccountsScreen', () => {
         mockRouteParams.current = {
             mode: 'import',
             walletKeyId: 'w-1',
-            derivationType: 9,
         } as SearchAccountsParams
         mockDiscoverImportAccounts.mockRejectedValue(new Error('boom'))
 

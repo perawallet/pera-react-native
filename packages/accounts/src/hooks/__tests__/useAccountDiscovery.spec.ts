@@ -43,8 +43,6 @@ describe('useAccountDiscovery', () => {
             await act(async () => {
                 discovered = await result.current.discoverAccounts({
                     walletKeyId: 'WALLET1',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    derivationType: 9 as any,
                     accountGapLimit: 3,
                     keyIndexGapLimit: 2,
                 })
@@ -57,7 +55,6 @@ describe('useAccountDiscovery', () => {
             const baseCall = mockBaseDiscoverAccounts.mock.calls[0]?.[0]
             expect(baseCall).toMatchObject({
                 walletKeyId: 'WALLET1',
-                derivationType: 9,
                 accountGapLimit: 3,
                 keyIndexGapLimit: 2,
             })
@@ -66,7 +63,6 @@ describe('useAccountDiscovery', () => {
             const pubKey = await baseCall.getPublicKey({
                 account: 1,
                 keyIndex: 0,
-                derivationType: 9,
             })
             expect(deriveAccount).toHaveBeenCalledWith(
                 expect.anything(),

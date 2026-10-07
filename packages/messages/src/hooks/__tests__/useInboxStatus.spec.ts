@@ -21,9 +21,10 @@ import {
 } from '../../api/notifications'
 import { useInboxQuery } from '../useInboxQuery'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useChainCapability,
-    useNetwork,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
@@ -31,11 +32,13 @@ import {
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() =>
         ['mainnet', 'testnet'].includes(
-            vi.mocked(useNetwork).mock.results.at(-1)?.value?.network ??
+            vi.mocked(useSelectedScope).mock.results.at(-1)?.value?.networkId ??
                 'mainnet',
         ),
     ),
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
+    useSelectedScope: vi
+        .fn()
+        .mockReturnValue({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('../../api/notifications', () => ({
@@ -65,9 +68,9 @@ describe('useInboxStatus', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockInbox(0)
-        vi.mocked(useNetwork).mockReturnValue({
-            network: 'mainnet',
-        } as ReturnType<typeof useNetwork>)
+        vi.mocked(useSelectedScope).mockReturnValue(
+            scopeForLegacyNetwork('mainnet'),
+        )
     })
 
     it('surfaces the unread flags and inbox count from message-status', async () => {
@@ -206,9 +209,9 @@ describe('useInboxStatus', () => {
         it.each([Networks.betanet, Networks.custom])(
             'returns zeroed-out defaults and flags isUnavailableOnNetwork on %s without polling',
             network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
+                vi.mocked(useSelectedScope).mockReturnValue(
+                    scopeForLegacyNetwork(network),
+                )
 
                 const { result } = renderHook(() => useInboxStatus(), {
                     wrapper: createWrapper(),
