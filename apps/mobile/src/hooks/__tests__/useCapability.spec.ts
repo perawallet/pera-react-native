@@ -35,9 +35,7 @@ describe('useCapability', () => {
     beforeEach(() => {
         mocks.chainMode = 'live'
         mocks.isChainAllowed = true
-        mocks.checkChain.mockImplementation(
-            () => mocks.isChainAllowed,
-        )
+        mocks.checkChain.mockImplementation(() => mocks.isChainAllowed)
     })
 
     it.each([

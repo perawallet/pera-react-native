@@ -817,5 +817,4 @@ describe('useCollectibleDetail', () => {
 
         expect(result.current.canManageAssets).toBe(false)
     })
-
 })

@@ -202,7 +202,11 @@ describe('useChainCapabilityCheck', () => {
         const { result } = renderHook(() => useChainCapabilityCheck())
 
         expect(result.current({ anyChain: 'swap' })).toBe(true)
-        expect(result.current({ chain: { chainId: SECOND_CHAIN_ID, capability: 'swap' } })).toBe(false)
+        expect(
+            result.current({
+                chain: { chainId: SECOND_CHAIN_ID, capability: 'swap' },
+            }),
+        ).toBe(false)
 
         setDeveloperSwap(false)
 
