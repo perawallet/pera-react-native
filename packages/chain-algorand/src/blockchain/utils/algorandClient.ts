@@ -16,6 +16,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    getAlgorandChainConfig,
     getChainConfig,
     Networks,
     type Network,
@@ -40,7 +41,7 @@ export const getAlgorandClient = (target?: ChainScope | Network) => {
             ? scopeForLegacyNetwork(target)
             : (target ??
               scopeForLegacyNetwork(useNetworkStore.getState().network))
-    return createTimeoutBoundedAlgorandClient(getChainConfig(scope))
+    return createTimeoutBoundedAlgorandClient(getAlgorandChainConfig(scope))
 }
 
 const pushResolvedEndpointsForAllNetworks = (): void => {

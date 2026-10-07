@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
     scopeForLegacyNetwork,
     type ChainId,
@@ -33,8 +33,7 @@ import {
     type PeraService,
 } from '../network-config'
 
-const algorandScope = (network: Network): ChainScope =>
-    scopeForLegacyNetwork(network)
+const algorandScope = (network: Network) => scopeForLegacyNetwork(network)
 
 // A chain id outside the compiled-in union, standing in for a chain package
 // that is not built in.
@@ -352,5 +351,139 @@ describe('configuredScopes', () => {
                 networkId: network,
             })),
         )
+    })
+})
+
+type EthereumValues = Partial<
+    Pick<
+        typeof config,
+        | 'ethereumMainnetRpcUrl'
+        | 'ethereumSepoliaRpcUrl'
+        | 'ethereumMainnetPeraServices'
+        | 'ethereumSepoliaPeraServices'
+    >
+>
+
+// `config` is frozen at import, so a configured value needs fresh modules.
+const withEthereumConfig = async (values: EthereumValues) => {
+    vi.resetModules()
+    vi.doMock('../main', async importOriginal => {
+        const actual = await importOriginal<typeof import('../main')>()
+        return { ...actual, config: { ...actual.config, ...values } }
+    })
+    const networkConfig = await import('../network-config')
+    const errors = await import('../errors')
+    const { config: mocked } = await import('../main')
+    return { ...networkConfig, ...errors, config: mocked }
+}
+
+const ETHEREUM_MAINNET: ChainScope = {
+    chainId: 'ethereum',
+    networkId: 'mainnet',
+}
+const ETHEREUM_SEPOLIA: ChainScope = {
+    chainId: 'ethereum',
+    networkId: 'sepolia',
+}
+
+describe('ethereum scopes', () => {
+    afterEach(() => {
+        vi.doUnmock('../main')
+        vi.resetModules()
+    })
+
+    test('getChainConfig returns the configured RPC URL per network', async () => {
+        const { getChainConfig: fresh } = await withEthereumConfig({
+            ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
+            ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
+        })
+
+        expect(fresh({ chainId: 'ethereum', networkId: 'sepolia' })).toStrictEqual(
+            { rpcUrl: 'https://sepolia.rpc.example' },
+        )
+        expect(fresh({ chainId: 'ethereum', networkId: 'mainnet' })).toStrictEqual(
+            { rpcUrl: 'https://mainnet.rpc.example' },
+        )
+    })
+
+    test('a network without an RPC URL is unconfigured', async () => {
+        const { getChainConfig: fresh, UnconfiguredScopeError: FreshError } =
+            await withEthereumConfig({
+                ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
+                ethereumSepoliaRpcUrl: '',
+            })
+
+        expect(() => fresh(ETHEREUM_SEPOLIA)).toThrow(FreshError)
+    })
+
+    test('getAlgorandChainConfig refuses an Ethereum scope', async () => {
+        const { getAlgorandChainConfig, UnconfiguredScopeError: FreshError } =
+            await withEthereumConfig({
+                ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
+            })
+
+        expect(() => getAlgorandChainConfig(ETHEREUM_MAINNET)).toThrow(
+            FreshError,
+        )
+    })
+
+    test('getAlgorandChainConfig serves an Algorand scope', async () => {
+        const { getAlgorandChainConfig, config: fresh } =
+            await withEthereumConfig({})
+
+        expect(
+            getAlgorandChainConfig(algorandScope(Networks.mainnet)).algodUrl,
+        ).toBe(fresh.mainnetAlgodUrl)
+    })
+
+    test('peraServicesFor reflects the configured list', async () => {
+        const { peraServicesFor: fresh, hasPeraService: freshHas } =
+            await withEthereumConfig({
+                ethereumMainnetPeraServices: ['prices', 'history'],
+            })
+
+        expect(fresh(ETHEREUM_MAINNET)).toStrictEqual(
+            new Set(['prices', 'history']),
+        )
+        expect(freshHas(ETHEREUM_MAINNET, 'prices')).toBe(true)
+        expect(freshHas(ETHEREUM_MAINNET, 'assets')).toBe(false)
+    })
+
+    test.each([
+        [ETHEREUM_MAINNET, 'mainnetBackendUrl'],
+        [ETHEREUM_SEPOLIA, 'testnetBackendUrl'],
+    ] as const)(
+        '%o reuses the Pera base URL of its tier',
+        async (scope, backendField) => {
+            const { getPeraServicesConfig: fresh, config: freshConfig } =
+                await withEthereumConfig({
+                    ethereumMainnetPeraServices: ['assets'],
+                    ethereumSepoliaPeraServices: ['assets'],
+                })
+
+            expect(fresh(scope)).toStrictEqual({
+                ...NO_PERA_SERVICES,
+                backendUrl: freshConfig[backendField],
+            })
+        },
+    )
+
+    // The query client refuses every Pera request for a scope whose
+    // backendUrl is empty, so an empty list must empty it too.
+    test('an empty list leaves the scope with no Pera deployment', async () => {
+        const { getPeraServicesConfig: fresh, peraServicesFor: freshFor } =
+            await withEthereumConfig({ ethereumMainnetPeraServices: [] })
+
+        expect(freshFor(ETHEREUM_MAINNET).size).toBe(0)
+        expect(fresh(ETHEREUM_MAINNET)).toStrictEqual(NO_PERA_SERVICES)
+    })
+
+    test('configuredScopes keeps Ethereum out of the Algorand client build', async () => {
+        const { configuredScopes: fresh } = await withEthereumConfig({
+            ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
+            ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
+        })
+
+        expect(fresh().map(scope => scope.chainId)).not.toContain('ethereum')
     })
 })

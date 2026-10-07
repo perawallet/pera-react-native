@@ -227,7 +227,7 @@ vi.mock('@perawallet/wallet-core-config', () => {
             })),
             ...extraScopes.map(extra => extra.scope),
         ],
-        getChainConfig: (scope: Scope) =>
+        getAlgorandChainConfig: (scope: Scope) =>
             isAlgorand(scope)
                 ? chainUrlsByNetwork[scope.networkId]
                 : {
@@ -1020,6 +1020,35 @@ describe('queryClient', () => {
                 url: '/v1/prices/',
             })
             expect(mockKy).toHaveBeenCalledTimes(1)
+        })
+
+        // An Ethereum scope whose configuration lists no Pera services resolves
+        // to an empty backendUrl.
+        test('a configured scope with no Pera deployment refuses a request naming no service', async () => {
+            const ethereumMainnet: ChainScope = {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            }
+            extraScopes.push({ scope: ethereumMainnet, backendUrl: '' })
+            servicesByScopeKey['ethereum/mainnet'] = []
+            vi.resetModules()
+            mockKy.mockClear()
+            const { queryClient } = await import('../query-client')
+            const {
+                PeraServiceUnavailableError: FreshPeraServiceUnavailableError,
+            } = await import('../../errors/pera-service')
+
+            const refused = queryClient({
+                backend: 'pera',
+                scope: ethereumMainnet,
+                method: 'GET',
+                url: '/v1/prices/',
+            })
+
+            await expect(refused).rejects.toBeInstanceOf(
+                FreshPeraServiceUnavailableError,
+            )
+            expect(mockKy).not.toHaveBeenCalled()
         })
 
         test('a listed service is still refused where the scope has no Pera deployment', async () => {
