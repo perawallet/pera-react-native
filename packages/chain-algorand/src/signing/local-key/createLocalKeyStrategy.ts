@@ -12,6 +12,7 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
+    accountType,
     hasSigningKeys,
     isAlgo25Account,
     isHDWalletAccount,
@@ -76,7 +77,7 @@ export const createLocalKeyStrategy = (
             ) {
                 throw new CannotSignError(
                     account.address,
-                    `Unsupported account type: ${account.type}`,
+                    `Unsupported account type: ${accountType(account)}`,
                 )
             }
 
@@ -163,7 +164,7 @@ export const createLocalKeyStrategy = (
                     // a keystore fault is indistinguishable from a network one.
                     logger.error('Local-key signing failed', {
                         error: cause,
-                        accountType: account.type,
+                        accountType: accountType(account),
                         dataType: group.data.type,
                     })
                 }

@@ -25,6 +25,7 @@ import type {
     PeraTransactionGroup,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    accountType,
     isAlgo25Account,
     isHDWalletAccount,
     isQuantumAccount,
@@ -74,7 +75,7 @@ const signSingleAccountTransactions = async (
         !isQuantumAccount(account)
     ) {
         return Promise.reject(
-            `Unsupported account type ${account.type} for ${account.address}`,
+            `Unsupported account type ${accountType(account)} for ${account.address}`,
         )
     }
 

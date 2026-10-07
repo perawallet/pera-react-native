@@ -11,7 +11,7 @@
  */
 
 import {
-    AccountTypes,
+    isWatchAccount,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -78,7 +78,11 @@ export const runMigrationLoop = async (
                 (account.secretKey !== null && account.secretKey.length > 0) ||
                 account.hdWalletId !== null
 
-            if (existing?.type === AccountTypes.watch && hasSigningMaterial) {
+            if (
+                existing !== undefined &&
+                isWatchAccount(existing) &&
+                hasSigningMaterial
+            ) {
                 // Earlier migration builds imported this as watch (key was
                 // withheld natively); reimport now that the key is present.
                 removeAccountFromStore(account.address)
@@ -86,7 +90,8 @@ export const runMigrationLoop = async (
                 removedForReconcile = existing
             } else {
                 if (
-                    existing?.type === AccountTypes.watch &&
+                    existing !== undefined &&
+                    isWatchAccount(existing) &&
                     existing.rekeyAddress === undefined &&
                     account.authAddress !== null
                 ) {

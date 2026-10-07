@@ -12,6 +12,7 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
+    accountType,
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
@@ -65,7 +66,7 @@ const determineSignerType = (
     }
     throw new CannotSignError(
         signerAccount.address,
-        `No signing capability found for account type: ${authAccount.type}`,
+        `No signing capability found for account type: ${accountType(authAccount)}`,
     )
 }
 
