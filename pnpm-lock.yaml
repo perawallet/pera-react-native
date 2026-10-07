@@ -2541,6 +2541,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
+      msw:
+        specifier: 'catalog:'
+        version: 2.15.0(@types/node@20.19.43)(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -14868,9 +14871,7 @@ snapshots:
       metro-runtime: 0.84.6
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

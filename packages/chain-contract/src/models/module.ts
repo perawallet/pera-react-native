@@ -39,6 +39,16 @@ export interface ChainHttpClient {
 }
 
 /**
+ * The wallet's ceilings for a node request, in milliseconds. A chain client
+ * adds no retries on top: TanStack Query retries reads and the signing
+ * pipeline retries submission.
+ */
+export interface ChainRequestTimeouts {
+    readMs: number
+    submitMs: number
+}
+
+/**
  * Everything a chain package may reach; it never reads config or a store
  * directly. Scope and endpoints are getters because `register` runs once,
  * before the selected network can change.
@@ -46,6 +56,7 @@ export interface ChainHttpClient {
 export interface ChainContext<E extends ChainEndpoints = ChainEndpoints> {
     getScope(): ChainScope
     getEndpoints(): E
+    timeouts: ChainRequestTimeouts
     http: ChainHttpClient
     kms: ChainKeyStore
 }

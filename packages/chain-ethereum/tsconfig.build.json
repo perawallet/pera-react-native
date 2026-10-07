@@ -19,6 +19,8 @@
     "dist",
     "**/__tests__/**",
     "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "**/*.spec.tsx",
+    "**/test-handlers.ts",
+    "**/*-handlers.ts"
   ]
 }

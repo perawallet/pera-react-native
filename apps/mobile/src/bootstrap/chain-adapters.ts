@@ -17,6 +17,7 @@ import {
     registerChainSetup,
     type ChainCapabilityOverrides,
     type ChainContext,
+    type ChainEndpoints,
     type ChainId,
     type ChainMode,
     type ChainSetupEntry,
@@ -26,11 +27,33 @@ import {
     selectChainNetworkId,
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
-import { config } from '@perawallet/wallet-core-config'
+import {
+    config,
+    getChainConfig,
+    UnconfiguredScopeError,
+} from '@perawallet/wallet-core-config'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { readCapabilityOverrides } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ethereumChainModule } from './ethereum-chain-module'
+
+// Keyed by network id rather than resolved for the selected network: an EVM
+// client is built for an explicit scope. A network without an RPC URL is left out.
+const ethereumRpcEndpoints = (entry: ChainSetupEntry): ChainEndpoints =>
+    Object.fromEntries(
+        entry.module.descriptor.networks.flatMap(({ id }) => {
+            try {
+                const { rpcUrl } = getChainConfig({
+                    chainId: 'ethereum',
+                    networkId: id,
+                })
+                return [[id, rpcUrl]]
+            } catch (error) {
+                if (error instanceof UnconfiguredScopeError) return []
+                throw error
+            }
+        }),
+    )
 
 const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
     getScope: () => ({
@@ -40,7 +63,14 @@ const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
             entry.chainId,
         ),
     }),
-    getEndpoints: () => entry.endpoints,
+    getEndpoints: () =>
+        entry.chainId === 'ethereum'
+            ? ethereumRpcEndpoints(entry)
+            : entry.endpoints,
+    timeouts: {
+        readMs: config.algodReadTimeout,
+        submitMs: config.algodSubmitTimeout,
+    },
     // Nothing implements ChainHttpClient; a module that calls it must fail loudly.
     http: {
         request: () =>
