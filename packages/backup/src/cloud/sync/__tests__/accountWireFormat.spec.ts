@@ -160,16 +160,7 @@ const legacyShaped: Record<AccountKind, WalletAccount> = {
     hardware: {
         id: 'hardware',
         name: 'Ledger',
-        custody: {
-            kind: 'hardware',
-            device: {
-                manufacturer: 'ledger',
-                deviceId: 'device-1',
-                deviceName: 'Nano X',
-                transportType: 'ble',
-            },
-            accountIndex: 2,
-        },
+        custody: { kind: 'hardware', device: LEDGER, accountIndex: 2 },
         address: 'LEDGERADDR',
         hardwareDetails: { ...LEDGER, accountIndex: 2 },
     },
