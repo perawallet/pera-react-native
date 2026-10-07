@@ -380,7 +380,10 @@ export const getAlgorandChainConfig = (
     if (scope.chainId !== 'algorand') {
         throw new UnconfiguredScopeError(scope)
     }
-    return getChainConfig({ chainId: scope.chainId, networkId: scope.networkId })
+    return getChainConfig({
+        chainId: scope.chainId,
+        networkId: scope.networkId,
+    })
 }
 
 export const getPeraServicesConfig = (scope: ChainScope): PeraServices => ({

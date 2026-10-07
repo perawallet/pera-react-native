@@ -398,12 +398,12 @@ describe('ethereum scopes', () => {
             ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
         })
 
-        expect(fresh({ chainId: 'ethereum', networkId: 'sepolia' })).toStrictEqual(
-            { rpcUrl: 'https://sepolia.rpc.example' },
-        )
-        expect(fresh({ chainId: 'ethereum', networkId: 'mainnet' })).toStrictEqual(
-            { rpcUrl: 'https://mainnet.rpc.example' },
-        )
+        expect(
+            fresh({ chainId: 'ethereum', networkId: 'sepolia' }),
+        ).toStrictEqual({ rpcUrl: 'https://sepolia.rpc.example' })
+        expect(
+            fresh({ chainId: 'ethereum', networkId: 'mainnet' }),
+        ).toStrictEqual({ rpcUrl: 'https://mainnet.rpc.example' })
     })
 
     test('a network without an RPC URL is unconfigured', async () => {

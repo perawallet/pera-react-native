@@ -307,7 +307,10 @@ export type Config = z.infer<typeof configSchema>
 // Input, not output, types: generate-config.sh bakes list fields as flat
 // strings that the schema splits.
 type ConfigOverrides = Partial<
-    Omit<z.input<typeof configSchema>, 'discoverBaseUrl' | 'integrityCheckOrigin'>
+    Omit<
+        z.input<typeof configSchema>,
+        'discoverBaseUrl' | 'integrityCheckOrigin'
+    >
 >
 
 const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {

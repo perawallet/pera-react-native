@@ -184,7 +184,9 @@ describe('tools/dev/generate-config.sh', () => {
                         [variable]: '',
                     }),
                 ).toMatch(
-                    new RegExp(`${variable} is unset but CHAINS ships ethereum`),
+                    new RegExp(
+                        `${variable} is unset but CHAINS ships ethereum`,
+                    ),
                 )
             },
         )
