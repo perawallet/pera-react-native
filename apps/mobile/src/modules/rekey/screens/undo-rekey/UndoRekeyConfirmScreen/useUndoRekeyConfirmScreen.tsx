@@ -13,8 +13,8 @@
 import { useCallback, useRef } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-    AccountTypes,
     getAccountDisplayName,
+    isWatchAccount,
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -152,7 +152,7 @@ export const useUndoRekeyConfirmScreen =
             const currentAuthName = currentAuth
                 ? getAccountDisplayName(currentAuth)
                 : ''
-            const willBecomeNoAuth = source.type === AccountTypes.watch
+            const willBecomeNoAuth = isWatchAccount(source)
             const i18nPrefix = willBecomeNoAuth
                 ? 'rekey.undo.no_auth_warning'
                 : 'rekey.undo.warning'

@@ -14,11 +14,12 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useMemo } from 'react'
 
 import {
+    accountType,
+    type AccountType,
     AccountTypes,
     isRekeyedAccount,
     useCanSignWith,
     useRekeyAccount,
-    type AccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { IconName } from '@components/core'
@@ -133,9 +134,11 @@ export const useAccountIcon = (
             case 'rekeyedSignable': {
                 // Key off the auth account's type (what it's rekeyed *to*),
                 // not the account's own type — a standard account rekeyed to
-                // a Ledger keeps type `algo25`, so indexing by `account.type`
+                // a Ledger keeps type `algo25`, so indexing by its own type
                 // wrongly picks the standard glyph instead of the ledger one.
-                const resolvedAuthType = rekeyAccount?.type ?? authType
+                const resolvedAuthType = rekeyAccount
+                    ? accountType(rekeyAccount)
+                    : authType
                 const authGlyph = resolvedAuthType
                     ? REKEYED_SIGNABLE_GLYPH[resolvedAuthType]
                     : undefined
@@ -145,7 +148,7 @@ export const useAccountIcon = (
                 return REKEYED_UNSIGNABLE_GLYPH
             }
             case 'base': {
-                return accountGlyphForType(account.type)
+                return accountGlyphForType(accountType(account))
             }
         }
         // rekeyAccount keeps the memo invalidating when the auth account

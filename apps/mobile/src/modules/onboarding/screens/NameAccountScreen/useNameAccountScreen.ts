@@ -12,16 +12,18 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react'
 import {
-    useAllAccounts,
+    clearPendingAccountRollback,
+    consumePendingAccountRollback,
     getAccountDisplayName,
-    type WalletAccount,
+    isHardwareWalletAccount,
+    isHDWalletAccount,
+    isWatchAccount,
+    useAccountsStore,
+    useAllAccounts,
     useCreateAccount,
     useSelectedAccountAddress,
-    isHDWalletAccount,
     useUpdateAccount,
-    useAccountsStore,
-    consumePendingAccountRollback,
-    clearPendingAccountRollback,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
@@ -126,9 +128,9 @@ export const useNameAccountScreen = () => {
 
             trackEvent(OnboardingEvent.RegisterAccount, {
                 [AnalyticsMetadataKey.AccountCreationType]:
-                    targetAccount.type === 'hardware'
+                    isHardwareWalletAccount(targetAccount)
                         ? 'ledger'
-                        : targetAccount.type === 'watch'
+                        : isWatchAccount(targetAccount)
                           ? 'watch'
                           : 'create',
             })

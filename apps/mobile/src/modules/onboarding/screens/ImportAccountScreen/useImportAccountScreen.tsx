@@ -211,10 +211,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     navigation.replace('SearchAccounts', {
                         account: result[0],
                     })
-                } else if (
-                    result.type === 'hdWallet' &&
-                    'walletKeyId' in result
-                ) {
+                } else if ('walletKeyId' in result) {
                     navigation.replace('SearchAccounts', {
                         mode: 'import',
                         walletKeyId: result.walletKeyId,

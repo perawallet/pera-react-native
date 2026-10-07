@@ -15,11 +15,12 @@ import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
+    accountType,
     AccountTypes,
-    useAllAccounts,
-    prefetchLedgerAccountPreview,
-    useLedgerRekeyedScan,
     type LedgerSelectableAccount,
+    prefetchLedgerAccountPreview,
+    useAllAccounts,
+    useLedgerRekeyedScan,
 } from '@perawallet/wallet-core-accounts'
 import {
     type LedgerAccount,
@@ -161,7 +162,7 @@ export const useLedgerSelectAccountsScreen =
         const accountTypeByAddress = useMemo(() => {
             const m = new Map<string, string>()
             for (const acc of allAccounts) {
-                if (acc.address) m.set(acc.address, acc.type)
+                if (acc.address) m.set(acc.address, accountType(acc))
             }
             return m
         }, [allAccounts])

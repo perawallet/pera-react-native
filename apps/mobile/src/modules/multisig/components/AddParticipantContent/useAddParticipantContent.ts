@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AccountTypes, useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    isQuantumAccount,
+    isWatchAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import {
     AccountSigTypes,
     useAccountSigTypeQuery,
@@ -142,11 +146,11 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         (address: string, nfdName?: string) => {
             const localAccount = accounts.find(a => a.address === address)
             if (localAccount) {
-                if (localAccount.type === AccountTypes.watch) {
+                if (isWatchAccount(localAccount)) {
                     showValidationError(new ParticipantIsWatchError())
                     return
                 }
-                if (localAccount.type === AccountTypes.quantum) {
+                if (isQuantumAccount(localAccount)) {
                     showValidationError(new ParticipantIsQuantumError())
                     return
                 }

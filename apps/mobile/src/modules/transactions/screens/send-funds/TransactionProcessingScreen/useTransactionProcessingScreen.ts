@@ -15,7 +15,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { BackHandler } from 'react-native'
 
 import {
-    AccountTypes,
+    accountType,
     isHardwareWalletAccount,
     resolveAuthAccount,
     useAccountBalancesInvalidator,
@@ -162,8 +162,9 @@ export const useTransactionProcessingScreen =
                         [AnalyticsMetadataKey.AssetId]: selectedAssetId ?? '',
                         [AnalyticsMetadataKey.Amount]: amount?.toNumber() ?? 0,
                         [AnalyticsMetadataKey.TransactionId]: txId,
-                        [AnalyticsMetadataKey.AccountType]:
-                            selectedAccount?.type,
+                        [AnalyticsMetadataKey.AccountType]: selectedAccount
+                            ? accountType(selectedAccount)
+                            : undefined,
                     })
                     invalidateAccountBalances()
                     navigation.replace('TransactionSuccess', {
@@ -210,7 +211,8 @@ export const useTransactionProcessingScreen =
             }
         }, [selectedAccount, allAccounts])
 
-        const isHardwareSender = signingAccount?.type === AccountTypes.hardware
+        const isHardwareSender =
+            !!signingAccount && isHardwareWalletAccount(signingAccount)
         const hardwareDeviceName =
             signingAccount && isHardwareWalletAccount(signingAccount)
                 ? (signingAccount.hardwareDetails.deviceName ?? null)

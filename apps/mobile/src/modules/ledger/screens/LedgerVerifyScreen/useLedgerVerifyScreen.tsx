@@ -14,12 +14,15 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
-    useAccountsStore,
-    useSetAccounts,
-    useSelectedAccountAddress,
-    AccountTypes,
+    buildAccount,
     type HardwareWalletDetails,
+    isHardwareWalletAccount,
+    isLedgerAccount,
+    isWatchAccount,
     type LedgerSelectableAccount,
+    useAccountsStore,
+    useSelectedAccountAddress,
+    useSetAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
@@ -35,11 +38,8 @@ import {
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import {
-    generateOrderedUniqueId,
-    type AppError,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -225,12 +225,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         // Default names number on from the ledger accounts already in the
         // wallet ("Ledger 3" after two prior imports) — count-based, so
         // renames/removals can repeat a number; names are not unique.
-        let nextDefaultNameNumber =
-            current.filter(
-                a =>
-                    a.type === AccountTypes.hardware &&
-                    a.hardwareDetails.manufacturer === 'ledger',
-            ).length + 1
+        let nextDefaultNameNumber = current.filter(isLedgerAccount).length + 1
 
         const detailsFor = (
             acc: HardwareWalletDerivedAccount,
@@ -247,7 +242,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             if (added.has(acc.address)) return
             const collision = byAddress.get(acc.address)
             if (collision) {
-                if (collision.type === AccountTypes.watch) {
+                if (isWatchAccount(collision)) {
                     if (!upgrades.some(u => u.address === acc.address)) {
                         upgrades.push({
                             address: acc.address,
@@ -255,7 +250,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                         })
                     }
                 } else if (
-                    collision.type === AccountTypes.hardware &&
+                    isHardwareWalletAccount(collision) &&
                     (collision.hardwareDetails.deviceId !== deviceId ||
                         collision.hardwareDetails.transportType !==
                             transportType)
@@ -271,15 +266,17 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 return
             }
             added.add(acc.address)
-            batch.push({
-                id: generateOrderedUniqueId(),
-                name: t('ledger.default_account_name', {
-                    number: nextDefaultNameNumber++,
+            const { accountIndex, ...device } = detailsFor(acc)
+            batch.push(
+                buildAccount({
+                    name: t('ledger.default_account_name', {
+                        number: nextDefaultNameNumber++,
+                    }),
+                    custody: { kind: 'hardware', device, accountIndex },
+                    chainId: LEGACY_CHAIN_ID,
+                    chains: { [LEGACY_CHAIN_ID]: { address: acc.address } },
                 }),
-                type: AccountTypes.hardware,
-                address: acc.address,
-                hardwareDetails: detailsFor(acc),
-            })
+            )
         }
 
         for (const sel of selectedAccounts) {
@@ -293,11 +290,11 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 // present-but-watch auth can no longer slip through into an
                 // unsignable pair.
                 const authAddress = sel.authAccount.address
+                const presentAuth = byAddress.get(authAddress)
                 const authPresent =
                     added.has(authAddress) ||
                     upgrades.some(u => u.address === authAddress) ||
-                    (byAddress.has(authAddress) &&
-                        byAddress.get(authAddress)?.type !== AccountTypes.watch)
+                    (presentAuth !== undefined && !isWatchAccount(presentAuth))
                 if (
                     authPresent &&
                     isValidAlgorandAddress(sel.address) &&
@@ -308,12 +305,16 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     // Every account carries a unique `id`; dedup within this
                     // import still keys on `address` (see `addHardware` above)
                     // because all account kinds today are on-chain.
-                    batch.push({
-                        id: generateOrderedUniqueId(),
-                        type: AccountTypes.watch,
-                        address: sel.address,
-                        rekeyAddress: sel.authAccount.address,
-                    })
+                    batch.push(
+                        buildAccount({
+                            custody: { kind: 'watch' },
+                            chainId: LEGACY_CHAIN_ID,
+                            chains: {
+                                [LEGACY_CHAIN_ID]: { address: sel.address },
+                            },
+                            rekeyAddress: sel.authAccount.address,
+                        }),
+                    )
                 }
             }
         }
