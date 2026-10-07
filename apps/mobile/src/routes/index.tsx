@@ -28,6 +28,8 @@ import { ContactsStackNavigator } from '@modules/contacts/routes'
 import { SettingsStackNavigator } from '@modules/settings/routes'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
+import { useCapabilityCheck } from '@hooks/useCapability'
+import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
@@ -69,6 +71,7 @@ export const MainRoutes = () => {
     const { isOnboarding } = useIsOnboarding()
     const { needsMigration } = useNeedsMigration()
     const isPeraCardEnabled = useIsPeraCardEnabled()
+    const isAllowed = useCapabilityCheck()
 
     return (
         <NavigationContainer
@@ -103,14 +106,16 @@ export const MainRoutes = () => {
                             name='TabBar'
                             component={TabBarStackNavigator}
                         />
-                        <RootStack.Screen
-                            name='Messages'
-                            options={{
-                                headerShown: false,
-                            }}
-                            layout={fullScreenLayout}
-                            component={MessagesStackNavigator}
-                        />
+                        {isAllowed({ anyChain: 'notifications' }) && (
+                            <RootStack.Screen
+                                name='Messages'
+                                options={{
+                                    headerShown: false,
+                                }}
+                                layout={fullScreenLayout}
+                                component={MessagesStackNavigator}
+                            />
+                        )}
                         <RootStack.Screen
                             name='Settings'
                             component={SettingsStackNavigator}
@@ -119,18 +124,25 @@ export const MainRoutes = () => {
                             name='Contacts'
                             component={ContactsStackNavigator}
                         />
-                        <RootStack.Screen
-                            name='Search'
-                            component={SearchStackNavigator}
-                        />
+                        {isAllowed({ anyChain: 'assetSearch' }) && (
+                            <RootStack.Screen
+                                name='Search'
+                                component={SearchStackNavigator}
+                            />
+                        )}
                         <RootStack.Screen
                             name='AddAccount'
                             component={AddAccountStackNavigator}
                         />
-                        <RootStack.Screen
-                            name='Multisig'
-                            component={MultisigStackNavigator}
-                        />
+                        {isAllowed({
+                            platform: 'sharedAccounts',
+                            anyChain: 'multisig',
+                        }) && (
+                            <RootStack.Screen
+                                name='Multisig'
+                                component={MultisigStackNavigator}
+                            />
+                        )}
                         {isPeraCardEnabled && (
                             <>
                                 <RootStack.Screen
@@ -153,44 +165,75 @@ export const MainRoutes = () => {
                             component={BackupStackNavigator}
                             options={{ headerShown: false }}
                         />
-                        <RootStack.Screen
-                            name='RekeyToStandard'
-                            component={RekeyToStandardStackNavigator}
-                        />
-                        <RootStack.Screen
-                            name='RekeyToQuantum'
-                            component={RekeyToQuantumStackNavigator}
-                        />
-                        <RootStack.Screen
-                            name='UndoRekey'
-                            component={UndoRekeyStackNavigator}
-                        />
-                        <RootStack.Screen
-                            name='RekeyToLedger'
-                            component={RekeyToLedgerStackNavigator}
-                        />
-                        <RootStack.Screen
-                            name='RekeyToShared'
-                            component={RekeyToSharedStackNavigator}
-                        />
-                        <RootStack.Screen
-                            name='RescanRekeyed'
-                            component={RescanRekeyedStackNavigator}
-                        />
-                        <RootStack.Screen
-                            name='Staking'
-                            options={headeredScreen('staking.title')}
-                            layout={fullScreenLayout}
-                            component={GatedStakingScreen}
-                        />
-                        <RootStack.Screen
-                            name='DiscoverDetail'
-                            options={headeredScreen(
-                                'asset_details.markets.title',
-                            )}
-                            layout={fullScreenLayout}
-                            component={DiscoverDetailScreen}
-                        />
+                        {isAllowed(REKEY_REQUIREMENT) && (
+                            <RootStack.Screen
+                                name='RekeyToStandard'
+                                component={RekeyToStandardStackNavigator}
+                            />
+                        )}
+                        {isAllowed({
+                            ...REKEY_REQUIREMENT,
+                            anyChain: 'quantumAccounts',
+                        }) && (
+                            <RootStack.Screen
+                                name='RekeyToQuantum'
+                                component={RekeyToQuantumStackNavigator}
+                            />
+                        )}
+                        {isAllowed(REKEY_REQUIREMENT) && (
+                            <RootStack.Screen
+                                name='UndoRekey'
+                                component={UndoRekeyStackNavigator}
+                            />
+                        )}
+                        {isAllowed({
+                            ...REKEY_REQUIREMENT,
+                            anyChain: 'ledger',
+                        }) && (
+                            <RootStack.Screen
+                                name='RekeyToLedger'
+                                component={RekeyToLedgerStackNavigator}
+                            />
+                        )}
+                        {isAllowed({
+                            ...REKEY_REQUIREMENT,
+                            anyChain: 'multisig',
+                        }) && (
+                            <RootStack.Screen
+                                name='RekeyToShared'
+                                component={RekeyToSharedStackNavigator}
+                            />
+                        )}
+                        {isAllowed(REKEY_REQUIREMENT) && (
+                            <RootStack.Screen
+                                name='RescanRekeyed'
+                                component={RescanRekeyedStackNavigator}
+                            />
+                        )}
+                        {isAllowed({
+                            platform: 'staking',
+                            anyChain: 'staking',
+                        }) && (
+                            <RootStack.Screen
+                                name='Staking'
+                                options={headeredScreen('staking.title')}
+                                layout={fullScreenLayout}
+                                component={GatedStakingScreen}
+                            />
+                        )}
+                        {isAllowed({
+                            platform: 'discoverTab',
+                            anyChain: 'discover',
+                        }) && (
+                            <RootStack.Screen
+                                name='DiscoverDetail'
+                                options={headeredScreen(
+                                    'asset_details.markets.title',
+                                )}
+                                layout={fullScreenLayout}
+                                component={DiscoverDetailScreen}
+                            />
+                        )}
                         <RootStack.Screen
                             name='BannersCarouselModal'
                             component={BannersCarouselModalScreen}

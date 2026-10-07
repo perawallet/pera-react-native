@@ -16,6 +16,7 @@ import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { screenListeners } from '@routes/listeners'
 import { routeCapabilities } from '@routes/capabilities'
+import { useCapabilityCheck } from '@hooks/useCapability'
 import { VaultSecuritySettingsScreen } from './vault-security'
 import { developerGalleryScreens } from './developer-gallery'
 import { SettingsScreen } from '@modules/settings/screens/SettingsScreen'
@@ -242,6 +243,7 @@ export type SettingsStackParamsList = {
 const SettingsStack = createAppStackNavigator()
 
 export const SettingsStackNavigator = () => {
+    const isAllowed = useCapabilityCheck()
     return (
         <SettingsStack.Navigator
             initialRouteName='SettingsHome'
@@ -288,7 +290,10 @@ export const SettingsStackNavigator = () => {
                         component={VaultSecuritySettingsScreen}
                     />
                 )}
-            {routeCapabilities.pushNotificationSettings && (
+            {isAllowed({
+                platform: 'pushNotificationSettings',
+                anyChain: 'notifications',
+            }) && (
                 <SettingsStack.Screen
                     name='NotificationsSettings'
                     options={{
@@ -297,7 +302,10 @@ export const SettingsStackNavigator = () => {
                     component={SettingsNotificationsScreen}
                 />
             )}
-            {routeCapabilities.walletConnectSettings && (
+            {isAllowed({
+                platform: 'walletConnectSettings',
+                anyChain: 'dappConnect',
+            }) && (
                 <SettingsStack.Screen
                     name='WalletConnectSettings'
                     options={{
@@ -307,7 +315,10 @@ export const SettingsStackNavigator = () => {
                     component={WalletConnectSettingsStackNavigator}
                 />
             )}
-            {routeCapabilities.passkeysAutofillSettings && (
+            {isAllowed({
+                platform: 'passkeysAutofillSettings',
+                anyChain: 'liquidAuth',
+            }) && (
                 <SettingsStack.Screen
                     name='PasskeysSettings'
                     options={{
@@ -316,7 +327,10 @@ export const SettingsStackNavigator = () => {
                     component={SettingsPasskeyScreen}
                 />
             )}
-            {routeCapabilities.connectionsSettings && (
+            {isAllowed({
+                platform: 'connectionsSettings',
+                anyChain: 'dappConnect',
+            }) && (
                 <SettingsStack.Screen
                     name='ConnectionsSettings'
                     options={{

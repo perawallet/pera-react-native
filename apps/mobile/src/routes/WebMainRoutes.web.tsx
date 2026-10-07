@@ -38,6 +38,8 @@ import { CameraAccessScreen, ScanQRScreen } from '@modules/menu/web'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
+import { useCapabilityCheck } from '@hooks/useCapability'
+import { REKEY_REQUIREMENT } from '@hooks/capabilityRequirements'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { GroupTransactionListScreen } from '@modules/transactions/routes'
 import { StakingScreen } from '@modules/staking'
@@ -62,7 +64,6 @@ import { createAppStackNavigator } from './createAppStackNavigator'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation.web'
 import { useTabResume, useTabResumeResultToast } from './useTabResume.web'
-import { routeCapabilities } from '@routes/capabilities'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import type { RootStackParamList } from './types'
 
@@ -86,6 +87,7 @@ export const WebMainRoutes = ({
 }: WebMainRoutesProps): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
     const isPeraCardEnabled = useIsPeraCardEnabled()
+    const isAllowed = useCapabilityCheck()
     useDeviceRegistration(useDeviceAccountRegistrations())
     // Native mounts these in RootComponent, which the web shell replaces; without
     // them devices register with no push token and notification-tap deeplinks drop.
@@ -147,14 +149,18 @@ export const WebMainRoutes = ({
                         name='Contacts'
                         component={ContactsStackNavigator}
                     />
-                    <RootStack.Screen
-                        name='Search'
-                        component={SearchStackNavigator}
-                    />
-                    <RootStack.Screen
-                        name='Messages'
-                        component={MessagesStackNavigator}
-                    />
+                    {isAllowed({ anyChain: 'assetSearch' }) && (
+                        <RootStack.Screen
+                            name='Search'
+                            component={SearchStackNavigator}
+                        />
+                    )}
+                    {isAllowed({ anyChain: 'notifications' }) && (
+                        <RootStack.Screen
+                            name='Messages'
+                            component={MessagesStackNavigator}
+                        />
+                    )}
                     {isPeraCardEnabled && (
                         <>
                             <RootStack.Screen
@@ -172,12 +178,17 @@ export const WebMainRoutes = ({
                             ))}
                         </>
                     )}
-                    <RootStack.Screen
-                        name='Staking'
-                        options={headeredScreen('staking.title')}
-                        layout={fullScreenLayout}
-                        component={GatedStakingScreen}
-                    />
+                    {isAllowed({
+                        platform: 'staking',
+                        anyChain: 'staking',
+                    }) && (
+                        <RootStack.Screen
+                            name='Staking'
+                            options={headeredScreen('staking.title')}
+                            layout={fullScreenLayout}
+                            component={GatedStakingScreen}
+                        />
+                    )}
                     <RootStack.Screen
                         name='AddAccount'
                         component={AddAccountStackNavigator}
@@ -209,39 +220,59 @@ export const WebMainRoutes = ({
                             headerShown: false,
                         }}
                     />
-                    {routeCapabilities.sharedAccounts && (
+                    {isAllowed({
+                        platform: 'sharedAccounts',
+                        anyChain: 'multisig',
+                    }) && (
                         <RootStack.Screen
                             name='Multisig'
                             component={MultisigStackNavigator}
                         />
                     )}
-                    {routeCapabilities.rekeyFlows && (
-                        <>
-                            <RootStack.Screen
-                                name='UndoRekey'
-                                component={UndoRekeyStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='RekeyToLedger'
-                                component={RekeyToLedgerStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='RekeyToStandard'
-                                component={RekeyToStandardStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='RekeyToQuantum'
-                                component={RekeyToQuantumStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='RekeyToShared'
-                                component={RekeyToSharedStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='RescanRekeyed'
-                                component={RescanRekeyedStackNavigator}
-                            />
-                        </>
+                    {isAllowed(REKEY_REQUIREMENT) && (
+                        <RootStack.Screen
+                            name='UndoRekey'
+                            component={UndoRekeyStackNavigator}
+                        />
+                    )}
+                    {isAllowed({
+                        ...REKEY_REQUIREMENT,
+                        anyChain: 'ledger',
+                    }) && (
+                        <RootStack.Screen
+                            name='RekeyToLedger'
+                            component={RekeyToLedgerStackNavigator}
+                        />
+                    )}
+                    {isAllowed(REKEY_REQUIREMENT) && (
+                        <RootStack.Screen
+                            name='RekeyToStandard'
+                            component={RekeyToStandardStackNavigator}
+                        />
+                    )}
+                    {isAllowed({
+                        ...REKEY_REQUIREMENT,
+                        anyChain: 'quantumAccounts',
+                    }) && (
+                        <RootStack.Screen
+                            name='RekeyToQuantum'
+                            component={RekeyToQuantumStackNavigator}
+                        />
+                    )}
+                    {isAllowed({
+                        ...REKEY_REQUIREMENT,
+                        anyChain: 'multisig',
+                    }) && (
+                        <RootStack.Screen
+                            name='RekeyToShared'
+                            component={RekeyToSharedStackNavigator}
+                        />
+                    )}
+                    {isAllowed(REKEY_REQUIREMENT) && (
+                        <RootStack.Screen
+                            name='RescanRekeyed'
+                            component={RescanRekeyedStackNavigator}
+                        />
                     )}
                 </RootStack.Navigator>
             </ConnectionsProvider>
