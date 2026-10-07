@@ -36,6 +36,17 @@ export const useStyles = makeStyles(theme => ({
     balanceLabel: {
         color: theme.colors.textGray,
     },
+    fundingTypeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        gap: theme.spacing.xs,
+    },
+    fundingTypeLabelGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
     // Action buttons (stacked)
     buttons: {
         gap: theme.spacing.md,

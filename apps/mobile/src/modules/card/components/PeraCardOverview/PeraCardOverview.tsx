@@ -23,6 +23,8 @@ export const PeraCardOverview = () => {
     const styles = useStyles()
     const {
         isAutoFunding,
+        fundingTypeLabel,
+        onChangeFundingType,
         currency,
         balance,
         isBalanceLoading,
@@ -46,6 +48,8 @@ export const PeraCardOverview = () => {
                 balance={balance}
                 isLoading={isBalanceLoading}
                 currency={currency}
+                fundingTypeLabel={fundingTypeLabel}
+                onChangeFundingType={onChangeFundingType}
             />
 
             <PeraCardActionButtons

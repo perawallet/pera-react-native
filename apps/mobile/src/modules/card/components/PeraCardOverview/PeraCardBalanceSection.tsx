@@ -11,7 +11,14 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import { PWImage, PWSkeleton, PWText, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWImage,
+    PWSkeleton,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import peraCardImage from '@assets/images/pera-card.png'
 import { useLanguage } from '@hooks/useLanguage'
@@ -26,12 +33,17 @@ type PeraCardBalanceSectionProps = {
     /** True while the balances are still being fetched. */
     isLoading: boolean
     currency: string
+    /** Localised "Auto/Manual Funding enabled" status. */
+    fundingTypeLabel: string
+    onChangeFundingType: () => void
 }
 
 export const PeraCardBalanceSection = ({
     balance,
     isLoading,
     currency,
+    fundingTypeLabel,
+    onChangeFundingType,
 }: PeraCardBalanceSectionProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -67,6 +79,32 @@ export const PeraCardBalanceSection = ({
                     variant='h1'
                 />
             )}
+
+            <PWTouchableOpacity
+                onPress={onChangeFundingType}
+                hitSlop={8}
+                style={styles.fundingTypeRow}
+                testID='pera_card_overview_funding_type_row'
+            >
+                <PWView style={styles.fundingTypeLabelGroup}>
+                    <PWIcon
+                        name='buy-sell'
+                        size='sm'
+                        variant='secondary'
+                    />
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.balanceLabel}
+                    >
+                        {fundingTypeLabel}
+                    </PWText>
+                </PWView>
+                <PWIcon
+                    name='chevron-right'
+                    size='sm'
+                    variant='secondary'
+                />
+            </PWTouchableOpacity>
         </PWView>
     )
 }

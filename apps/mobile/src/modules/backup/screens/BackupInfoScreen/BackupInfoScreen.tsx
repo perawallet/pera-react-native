@@ -21,6 +21,7 @@ export const BackupInfoScreen = () => {
 
     return (
         <PWInfoView
+            testID='backup_info_screen'
             illustration={ShieldCheckImage}
             title={t('backup.info.title')}
             body={t('backup.info.body')}
