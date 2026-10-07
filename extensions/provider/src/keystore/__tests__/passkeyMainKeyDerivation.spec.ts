@@ -22,8 +22,8 @@ import {
 
 /**
  * Pins the two things that decide how the passkey main key is derived, both of
- * which `createPeraKeystore` gets by supplying no `shims` and no `dp256`
- * override.
+ * which `createPeraKeystore` gets by building its shims with
+ * `createDefaultShims({ falcon })` and no `dp256` override.
  *
  * `createDefaultShims` wraps the bundled dp256 binding in
  * `withSubtleDerivedMainKey` **only when no `dp256` override is passed**
