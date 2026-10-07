@@ -11,11 +11,20 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import type { Key } from '@algorandfoundation/keystore-core'
+import { KeyManagementError } from '../../errors'
 import {
     FALCON_CHILD_KEY_TYPE,
     PQ_DERIVATION_CANONICAL,
     PQ_DERIVATION_LEGACY,
+    decodeSecp256k1Signature,
+    encodeSecp256k1Signature,
+    isSecp256k1Key,
+    isValidSecp256k1PrivateKey,
     quantumSignKeyId,
+    SECP256K1_DERIVED_KEY_TYPE,
+    SECP256K1_IMPORTED_KEY_TYPE,
+    secp256k1SignKeyId,
 } from '../keys'
 
 describe('PQDerivation constants', () => {
@@ -68,5 +77,100 @@ describe('FALCON_CHILD_KEY_TYPE', () => {
     // every "is this child quantum?" guard read false.
     test('names the concrete algorithm on the keystore child entry', () => {
         expect(FALCON_CHILD_KEY_TYPE).toBe('falcon-1024')
+    })
+})
+
+describe('secp256k1SignKeyId', () => {
+    test('keys the child by seed, account and key index', () => {
+        expect(secp256k1SignKeyId('seed-1', 0, 3)).toBe(
+            'seed-1-bip32-acc0-idx3',
+        )
+    })
+
+    test('never names the algorithm', () => {
+        const id = secp256k1SignKeyId('seed-1', 2, 7)
+
+        expect(id).not.toMatch(/secp256k1|ecdsa/i)
+    })
+})
+
+describe('isSecp256k1Key', () => {
+    const entry = (type: string): Key => ({
+        id: 'k',
+        type,
+        algorithm: 'ECDSA-secp256k1',
+        extractable: false,
+        metadata: {},
+    })
+
+    test.each([SECP256K1_DERIVED_KEY_TYPE, SECP256K1_IMPORTED_KEY_TYPE])(
+        'recognises a %s entry',
+        type => {
+            expect(isSecp256k1Key(entry(type))).toBe(true)
+        },
+    )
+
+    test('rejects an entropy secret, an ed25519 child and a missing key', () => {
+        expect(isSecp256k1Key(entry('secret-key'))).toBe(false)
+        expect(isSecp256k1Key(entry('hd-derived-ed25519'))).toBe(false)
+        expect(isSecp256k1Key(undefined)).toBe(false)
+    })
+})
+
+describe('isValidSecp256k1PrivateKey', () => {
+    const ORDER_HEX =
+        'fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141'
+    const fromHex = (hex: string): Uint8Array =>
+        Uint8Array.from(hex.match(/../g)!, byte => parseInt(byte, 16))
+    const plus = (hex: string, delta: bigint): Uint8Array =>
+        fromHex((BigInt(`0x${hex}`) + delta).toString(16).padStart(64, '0'))
+
+    test.each([
+        ['zero', new Uint8Array(32)],
+        ['the curve order', fromHex(ORDER_HEX)],
+        ['the curve order plus one', plus(ORDER_HEX, 1n)],
+        ['all ones', new Uint8Array(32).fill(0xff)],
+        ['31 bytes', new Uint8Array(31).fill(1)],
+        ['33 bytes', new Uint8Array(33).fill(1)],
+    ])('rejects %s', (_label, key) => {
+        expect(isValidSecp256k1PrivateKey(key)).toBe(false)
+    })
+
+    test.each([
+        ['one', plus('0'.repeat(64), 1n)],
+        ['the curve order minus one', plus(ORDER_HEX, -1n)],
+    ])('accepts %s', (_label, key) => {
+        expect(isValidSecp256k1PrivateKey(key)).toBe(true)
+    })
+})
+
+describe('secp256k1 signature encoding', () => {
+    const signature = {
+        r: new Uint8Array(32).fill(0x11),
+        s: new Uint8Array(32).fill(0x22),
+        recovery: 1 as const,
+    }
+
+    test('lays out r, s and the recovery byte in 65 bytes', () => {
+        const bytes = encodeSecp256k1Signature(signature)
+
+        expect(bytes).toHaveLength(65)
+        expect(bytes[0]).toBe(0x11)
+        expect(bytes[32]).toBe(0x22)
+        expect(bytes[64]).toBe(1)
+        expect(decodeSecp256k1Signature(bytes)).toEqual(signature)
+    })
+
+    test('rejects a wrong length or a recovery byte other than 0 or 1', () => {
+        const bytes = encodeSecp256k1Signature(signature)
+        const badRecovery = new Uint8Array(bytes)
+        badRecovery[64] = 2
+
+        expect(() => decodeSecp256k1Signature(bytes.slice(0, 64))).toThrow(
+            KeyManagementError,
+        )
+        expect(() => decodeSecp256k1Signature(badRecovery)).toThrow(
+            KeyManagementError,
+        )
     })
 })

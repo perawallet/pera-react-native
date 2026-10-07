@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-export { canAccess } from './access'
-export { kmsCore } from './kmsCore'
-export type {
-    KmsDerivationRequest,
-    KmsDerivedKey,
-    KmsImportRequest,
-    KmsKeyScheme,
-    Secp256k1ChildRef,
-    Secp256k1DerivationRequest,
-    Secp256k1ImportRequest,
-} from './types'
+import { tagShim, type SubtleShim } from '@algorandfoundation/keystore-core'
+import { secp256k1Binding } from './binding'
+import { SECP256K1_ALGORITHM, withSubtleSecp256k1 } from './shim'
+
+export { SECP256K1_ALGORITHM, withSubtleSecp256k1 } from './shim'
+export type { Secp256k1Binding } from './binding'
+
+export const secp256k1Shim = (): SubtleShim =>
+    tagShim(SECP256K1_ALGORITHM, host =>
+        withSubtleSecp256k1(host, secp256k1Binding),
+    )

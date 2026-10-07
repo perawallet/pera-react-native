@@ -24,6 +24,12 @@ regexes = [
 ]
 
 [[allowlists]]
+description = "Keystore entry type names (e.g. kms's SECP256K1_DERIVED_KEY_TYPE = 'hd-derived-secp256k1') are public identifiers the keystore engine writes on every record; the KEY-named constant trips generic-api-key"
+regexes = [
+    '''hd-derived-secp256k1''',
+]
+
+[[allowlists]]
 description = "Lockfiles are hash digests, not secrets"
 paths = [
     '''.*\.lock$''',

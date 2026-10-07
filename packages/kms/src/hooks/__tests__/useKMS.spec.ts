@@ -66,6 +66,8 @@ const mockKeyStoreGenerate = vi.fn(
 )
 const mockKeyStoreSign = vi.fn()
 const mockKeyStoreExport = vi.fn()
+const mockKeyStoreDerive = vi.fn()
+const mockKeyStoreImport = vi.fn()
 const mockCheckAccess = vi.fn()
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
@@ -75,6 +77,8 @@ vi.mock('../useKMSServices', () => ({
             sign: (...args: any[]) => mockKeyStoreSign(...args),
             export: (...args: any[]) => mockKeyStoreExport(...args),
             generate: (...args: any[]) => mockKeyStoreGenerate(...args),
+            deriveFromSeed: (...args: any[]) => mockKeyStoreDerive(...args),
+            import: (...args: any[]) => mockKeyStoreImport(...args),
         },
         withExportedKey: async (
             keyId: string,
@@ -1174,5 +1178,95 @@ describe('useKMS', () => {
 
         expect(result.current.hasSeedWithEntropy('hd-1')).toBe(false)
         expect(result.current.hasSeedWithEntropy('hd-2')).toBe(true)
+    })
+})
+
+describe('useKMS secp256k1 primitives', () => {
+    const publicKey = new Uint8Array(65).fill(4)
+    const addEntry = (id: string, type: string, parentKeyId?: string) => {
+        mockKeystoreKeys.push({
+            id,
+            type,
+            algorithm: 'ECDSA-secp256k1',
+            extractable: false,
+            publicKey,
+            metadata: parentKeyId ? { parentKeyId } : {},
+        })
+        return id
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockKeystoreKeys = []
+        mockKeyStoreDerive.mockImplementation(
+            async (_parent: string, _path: string, opts: any) =>
+                addEntry(opts.id, 'hd-derived-secp256k1', 'hd-1'),
+        )
+        mockKeyStoreImport.mockImplementation(async (data: any) =>
+            addEntry(data.id, 'secp256k1'),
+        )
+        mockKeyStoreSign.mockResolvedValue(new Uint8Array(65))
+    })
+
+    it('derives a child from the HD seed through the keystore', async () => {
+        seedBip39Root('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-entropy',
+            type: 'secret-key',
+            algorithm: 'raw',
+            extractable: false,
+            metadata: { parentKeyId: 'hd-1', entropyKey: true },
+        })
+        const { result } = renderHook(() => useKMS())
+
+        const child = await result.current.deriveSecp256k1Child(
+            'hd-1',
+            { path: "m/44'/60'/0'/0/0", id: 'hd-1-bip32-acc0-idx0' },
+            'pera.accounts',
+        )
+
+        expect(child).toEqual({ keyPairId: 'hd-1-bip32-acc0-idx0', publicKey })
+        expect(mockKeyStoreDerive).toHaveBeenCalledWith(
+            'hd-1-entropy',
+            "m/44'/60'/0'/0/0",
+            expect.objectContaining({
+                curve: 'secp256k1',
+                metadata: { parentKeyId: 'hd-1' },
+            }),
+        )
+    })
+
+    it('imports and signs with a key through the keystore', async () => {
+        const { result } = renderHook(() => useKMS())
+        const input = new Uint8Array(32).fill(1)
+
+        await result.current.importSecp256k1Key(
+            input,
+            { id: 'imported-1' },
+            'pera.accounts',
+        )
+        const signature = await result.current.signSecp256k1Digest(
+            'imported-1',
+            new Uint8Array(32).fill(9),
+            'pera.accounts',
+        )
+
+        expect(input.every(b => b === 0)).toBe(true)
+        expect(mockKeyStoreImport).toHaveBeenCalledTimes(1)
+        expect(signature.recovery).toBe(0)
+        expect(mockKeyStoreSign).toHaveBeenCalledTimes(1)
+    })
+
+    it('rejects a digest that is not 32 bytes before the keystore signs', async () => {
+        const { result } = renderHook(() => useKMS())
+
+        await expect(
+            result.current.signSecp256k1Digest(
+                'imported-1',
+                new Uint8Array(33),
+                'pera.accounts',
+            ),
+        ).rejects.toBeInstanceOf(KeyManagementError)
+        expect(mockKeyStoreSign).not.toHaveBeenCalled()
     })
 })
