@@ -17,9 +17,9 @@ import {
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     AccountTypes,
-    type AccountProvenance,
+    type AccountCustody,
     type AccountType,
-    type LocalProvenance,
+    type LocalCustody,
     type HardwareWalletAccount,
     type HDWalletAccount,
     type Algo25Account,
@@ -64,12 +64,12 @@ const LOCAL_ACCOUNT_TYPES = {
     algo25: AccountTypes.algo25,
     quantum: AccountTypes.quantum,
     bip39: AccountTypes.hdWallet,
-} as const satisfies Record<LocalProvenance['seed'], AccountType>
+} as const satisfies Record<LocalCustody['seed'], AccountType>
 
-const accountTypeOf = (provenance: AccountProvenance): AccountType => {
-    switch (provenance.kind) {
+const accountTypeOf = (custody: AccountCustody): AccountType => {
+    switch (custody.kind) {
         case 'local': {
-            return LOCAL_ACCOUNT_TYPES[provenance.seed]
+            return LOCAL_ACCOUNT_TYPES[custody.seed]
         }
         case 'hardware': {
             return AccountTypes.hardware
@@ -85,10 +85,10 @@ const accountTypeOf = (provenance: AccountProvenance): AccountType => {
 
 /**
  * Rekey state is ignored: a watch account with an auth address stays `watch`.
- * A record the backfill left without a provenance keeps its stored `type`.
+ * A record the backfill left without a custody keeps its stored `type`.
  */
 export const accountType = (account: WalletAccount): AccountType =>
-    account.provenance ? accountTypeOf(account.provenance) : account.type
+    account.custody ? accountTypeOf(account.custody) : account.type
 
 export const isHDWalletAccount = (
     account: WalletAccount,

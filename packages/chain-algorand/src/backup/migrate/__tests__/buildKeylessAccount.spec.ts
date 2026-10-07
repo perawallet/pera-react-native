@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<object>()),
@@ -86,8 +87,8 @@ describe('buildWatchAccount', () => {
             name: 'My Watcher',
             type: AccountTypes.watch,
             address: 'ADDR_WATCH',
-            provenance: { kind: 'watch' },
-            credentials: {},
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: 'ADDR_WATCH' } },
         })
     })
 
@@ -155,7 +156,7 @@ describe('buildLedgerAccount', () => {
                 deviceName: 'Ledger Nano X',
                 accountIndex: 3,
             },
-            provenance: {
+            custody: {
                 kind: 'hardware',
                 device: {
                     manufacturer: 'ledger',
@@ -165,7 +166,7 @@ describe('buildLedgerAccount', () => {
                 },
                 accountIndex: 3,
             },
-            credentials: {},
+            chains: { algorand: { address: 'ADDR_LEDGER' } },
         })
     })
 
@@ -248,13 +249,20 @@ describe('buildMultiSigAccount', () => {
                 addresses: ['P1', 'P2', 'P3'],
                 version: 1,
             },
-            provenance: {
-                kind: 'multisig',
-                threshold: 2,
-                members: ['P1', 'P2', 'P3'],
-                version: 1,
+            custody: { kind: 'multisig' },
+            chains: {
+                algorand: {
+                    address: 'ADDR_MSIG',
+                    native: {
+                        family: 'algorand',
+                        multisig: {
+                            version: 1,
+                            threshold: 2,
+                            addresses: ['P1', 'P2', 'P3'],
+                        },
+                    },
+                },
             },
-            credentials: {},
         })
         expect(deriveAddress).not.toHaveBeenCalled()
     })

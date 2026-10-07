@@ -75,7 +75,6 @@ describe('useHDImportSession', () => {
             prep = await result.current.prepareImport({ mnemonic: 'm' })
         })
         expect(prep.walletKeyId).toBe('w-1')
-        expect(prep.derivationType).toBe(DerivationTypes.Peikert)
         expect(useHDImportSessionStore.getState().pending?.walletKeyId).toBe(
             'w-1',
         )

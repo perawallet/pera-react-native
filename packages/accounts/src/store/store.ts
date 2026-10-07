@@ -30,13 +30,14 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { accountsAdapterFor } from '../chain-adapter'
 import { buildAccount, withCustody } from '../credentials'
 import { rebuildCustody } from '../credentials/backfill'
 import { DuplicateAccountError } from '../errors'
 import { accountType, isHardwareWalletAccount, isWatchAccount } from '../utils'
 
 const STORE_NAME = 'accounts-store'
-const STORE_VERSION = 1
+const STORE_VERSION = 2
 
 type PersistedAccountsState = Pick<
     AccountsState,
@@ -48,20 +49,30 @@ type PersistedAccountsState = Pick<
     | 'launchAccountAddress'
 >
 
+// v1 persisted `provenance`/`credentials`, which `custody`/`chains` replace.
+const stripV1Custody = (account: WalletAccount): WalletAccount => {
+    const rest: Record<string, unknown> = { ...account }
+    delete rest.provenance
+    delete rest.credentials
+    return rest as WalletAccount
+}
+
 /**
- * v0 accounts have no `provenance`/`credentials`; they are backfilled from
- * `type` and the details object. `withCustody` skips accounts that already
- * have a provenance, so re-running this over migrated state is a no-op.
+ * The legacy `type` and details are authoritative, so v0 and v1 both drop
+ * whatever custody they carry and derive it again; the output depends only on
+ * those fields, so re-running this over migrated state is a no-op.
  */
 export const migrateAccountsState = (
     persistedState: unknown,
     version: number,
 ): PersistedAccountsState => {
     const state = persistedState as PersistedAccountsState
-    if (version < 1) {
+    if (version < 2) {
         return {
             ...state,
-            accounts: (state.accounts ?? []).map(withCustody),
+            accounts: (state.accounts ?? []).map(account =>
+                rebuildCustody(stripV1Custody(account)),
+            ),
         }
     }
     return state
@@ -312,12 +323,14 @@ export const useAccountsStore: UseBoundStore<
                 const activeNetwork = get().activeRekeyNetwork
                 const isActiveNetwork =
                     activeNetwork === null || activeNetwork === network
+                const { chainId } = accountsAdapterFor(network)
                 const watchAccounts = addresses
                     .filter(addr => !currentAddresses.has(addr))
                     .map(address =>
                         buildAccount({
-                            address,
-                            provenance: { kind: 'watch' },
+                            custody: { kind: 'watch' },
+                            chainId,
+                            chains: { [chainId]: { address } },
                             ...(isActiveNetwork
                                 ? { rekeyAddress: sourceAddress }
                                 : {}),

@@ -215,7 +215,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     navigation.replace('SearchAccounts', {
                         mode: 'import',
                         walletKeyId: result.walletKeyId,
-                        derivationType: result.derivationType,
                     })
                 } else {
                     markBackupComplete(result as WalletAccount)
